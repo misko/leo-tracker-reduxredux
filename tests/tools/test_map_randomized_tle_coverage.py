@@ -17,10 +17,13 @@ SPEC.loader.exec_module(MODULE)
 
 def test_one_cell_kernel_matches_standard_rank_curves():
     y = np.asarray([4.0, 1.0, 7.0, 3.0, 9.0])
-    predictions = np.asarray([
-        [[0, 1, 2, 3, 4], [1, 2, 3, 4, 5], [2, 3, 4, 5, 6]],
-        [[5, 4, 3, 2, 1], [6, 5, 4, 3, 2], [7, 6, 5, 4, 3]],
-    ], dtype=float)
+    predictions = np.asarray(
+        [
+            [[0, 1, 2, 3, 4], [1, 2, 3, 4, 5], [2, 3, 4, 5, 6]],
+            [[5, 4, 3, 2, 1], [6, 5, 4, 3, 2], [7, 6, 5, 4, 3]],
+        ],
+        dtype=float,
+    )
     mask = np.asarray([True, False, True, False, True])
     # Construct radial states whose Doppler is exactly the supplied bank.
     position = np.zeros((2, 3, 5, 3))
@@ -29,8 +32,14 @@ def test_one_cell_kernel_matches_standard_rank_curves():
     velocity[..., 0] = -predictions * LIGHT_KM_S / REFERENCE_RF_HZ
     sites = Region(0, 0, 100, 100).points([0], [0])
     best, rows, _ = MODULE._score_track(
-        y, position, velocity, np.asarray([10, 20]), sites, mask[None],
-        np.asarray([-1., 0., 1.]), 800,
+        y,
+        position,
+        velocity,
+        np.asarray([10, 20]),
+        sites,
+        mask[None],
+        np.asarray([-1.0, 0.0, 1.0]),
+        800,
     )
     expected = rank_curves(y, predictions, training_mask=mask)
     assert best[0] == np.min(expected["heldout_rms"])
@@ -110,8 +119,14 @@ def test_cell_batching_preserves_every_candidate_and_cell_result():
         ]
     )
     arguments = (
-        np.zeros(4), position, velocity, np.asarray([10, 20]), sites, masks,
-        np.asarray([-5.0, 5.0]), 800.0,
+        np.zeros(4),
+        position,
+        velocity,
+        np.asarray([10, 20]),
+        sites,
+        masks,
+        np.asarray([-5.0, 5.0]),
+        800.0,
     )
     small = MODULE._score_track(*arguments, cell_block=1)
     large = MODULE._score_track(*arguments, cell_block=8)
@@ -149,9 +164,7 @@ def test_edge_visible_candidate_is_not_excluded_by_centre_visibility():
 
 def test_partition_seed_matches_frozen_standard_protocol():
     rows = [
-        SimpleNamespace(
-            observation_id="sha256:" + hashlib.sha256(str(index).encode()).hexdigest()
-        )
+        SimpleNamespace(observation_id="sha256:" + hashlib.sha256(str(index).encode()).hexdigest())
         for index in range(10)
     ]
     site = ObserverSiteV1(
@@ -160,9 +173,7 @@ def test_partition_seed_matches_frozen_standard_protocol():
         altitude_m=0,
         label="spinnaker-sausalito",
     )
-    mask, seed = MODULE._partition(
-        rows, "sha256:" + "1" * 64, "sha256:" + "2" * 64, site
-    )
+    mask, seed = MODULE._partition(rows, "sha256:" + "1" * 64, "sha256:" + "2" * 64, site)
     assert seed == "sha256:428887ef1da094d038b813d2f10cb5746b42b7308b42f6d07d06794f5bc951b3"
     np.testing.assert_array_equal(
         mask, [True, True, False, True, True, True, False, True, False, False]

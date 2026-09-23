@@ -20,20 +20,28 @@ def evidence(tmp_path, monkeypatch):
     (folder / "archived.tle").write_text(text)
     digest = "sha256:" + hashlib.sha256(text.encode()).hexdigest()
     authority = {
-        "session_id": "session", "reference_utc_ns": 1_000_000_000_000,
-        "known_position_used": False, "fixed_candidates": {},
-        "tle_file": "archived.tle", "tle_digest": digest,
-        "tle_collected_ns": 400_000_000_000, "partition": "chronological",
+        "session_id": "session",
+        "reference_utc_ns": 1_000_000_000_000,
+        "known_position_used": False,
+        "fixed_candidates": {},
+        "tle_file": "archived.tle",
+        "tle_digest": digest,
+        "tle_collected_ns": 400_000_000_000,
+        "partition": "chronological",
     }
     path = folder / "session.json"
     path.write_text(json.dumps({"inventory": authority}))
     snapshot = SimpleNamespace(digest=digest, collected_utc_ns=authority["tle_collected_ns"])
-    monkeypatch.setattr(MODULE, "TleArchiveReader", lambda _: SimpleNamespace(
-        select_latest_before=lambda cutoff: snapshot
-    ))
-    monkeypatch.setattr(MODULE, "parse_element_sets", lambda _: SimpleNamespace(
-        names=("STARLINK-1", "STARLINK-2 DEB", "OTHER")
-    ))
+    monkeypatch.setattr(
+        MODULE,
+        "TleArchiveReader",
+        lambda _: SimpleNamespace(select_latest_before=lambda cutoff: snapshot),
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "parse_element_sets",
+        lambda _: SimpleNamespace(names=("STARLINK-1", "STARLINK-2 DEB", "OTHER")),
+    )
     return tmp_path, path, authority, snapshot
 
 
@@ -66,10 +74,14 @@ def test_catalogue_rejects_leaked_or_mismatched_authority(evidence, change):
 def test_duplicate_observations_cannot_silently_receive_double_weight(evidence, monkeypatch):
     root, _, authority, _ = evidence
     row = SimpleNamespace(observation_id="same", measured_cfo_hz=1.0)
-    selected = [("track", object(), [row, row], [0., 1.], 1.)]
-    monkeypatch.setattr(MODULE, "reference_kernel", lambda: SimpleNamespace(
-        _tracks=lambda *_: (authority["reference_utc_ns"], object(), selected, 1, 1)
-    ))
+    selected = [("track", object(), [row, row], [0.0, 1.0], 1.0)]
+    monkeypatch.setattr(
+        MODULE,
+        "reference_kernel",
+        lambda: SimpleNamespace(
+            _tracks=lambda *_: (authority["reference_utc_ns"], object(), selected, 1, 1)
+        ),
+    )
     with pytest.raises(ValueError, match="union-aware"):
         MODULE.load("session", root, root, root, track_count=1)
 
@@ -79,10 +91,12 @@ def test_all_track_selection_reconstructs_three_second_tracks_without_top_ten_li
     for index in range(13):
         span = 3.0 if index < 11 else 2.9
         count = 6 if index != 12 else 5
-        graphs[str(index)] = SimpleNamespace(observations=[
-            SimpleNamespace(support_center_utc_ns=int(1e12 + i * span * 1e9 / (count - 1)))
-            for i in range(count)
-        ])
+        graphs[str(index)] = SimpleNamespace(
+            observations=[
+                SimpleNamespace(support_center_utc_ns=int(1e12 + i * span * 1e9 / (count - 1)))
+                for i in range(count)
+            ]
+        )
     source = SimpleNamespace(timing=SimpleNamespace(first_sample_estimate_utc_ns=int(1e12)))
     closed = []
     kernel = SimpleNamespace(

@@ -19,12 +19,10 @@ def test_component_evidence_matches_independent_identity_and_null_oracle():
     actual_train, actual_joint = MODULE.component_log_evidence(
         train, heldout, null_train, null_heldout, population, prior
     )
-    expected_train = prior / population * np.sum(np.exp(train)) + (1 - prior) * np.exp(
-        null_train
+    expected_train = prior / population * np.sum(np.exp(train)) + (1 - prior) * np.exp(null_train)
+    expected_joint = prior / population * np.sum(np.exp(train + heldout)) + (1 - prior) * np.exp(
+        null_train + null_heldout
     )
-    expected_joint = prior / population * np.sum(np.exp(train + heldout)) + (
-        1 - prior
-    ) * np.exp(null_train + null_heldout)
     assert actual_train == pytest.approx(np.log(expected_train), abs=1e-14)
     assert actual_joint == pytest.approx(np.log(expected_joint), abs=1e-14)
 
@@ -44,9 +42,7 @@ def test_predictive_difference_uses_one_joint_latent_state_not_mixed_conditional
     independent_joint, shared_joint = -12.0, -9.0
     mixed_train = MODULE.mixed_log_evidence(independent_train, shared_train, q)
     mixed_joint = MODULE.mixed_log_evidence(independent_joint, shared_joint, q)
-    predictive_delta = (mixed_joint - mixed_train) - (
-        independent_joint - independent_train
-    )
+    predictive_delta = (mixed_joint - mixed_train) - (independent_joint - independent_train)
     probability_oracle = np.log(
         ((1 - q) * np.exp(independent_joint) + q * np.exp(shared_joint))
         / ((1 - q) * np.exp(independent_train) + q * np.exp(shared_train))
@@ -68,9 +64,7 @@ def test_shared_five_block_partition_excludes_anchors_and_never_splits_visit():
         "y_hz": list(range(12)),
     }
     visits = {**{f"l{x}": x for x in range(12)}, **{f"r{x}": x for x in range(12)}}
-    partition = MODULE.shared_five_block_partition(
-        left, right, {"l3", "l4"}, {"r4"}, visits
-    )
+    partition = MODULE.shared_five_block_partition(left, right, {"l3", "l4"}, {"r4"}, visits)
     left_arc, left_visit = MODULE._arc(left, {"l3", "l4"}, partition, visits)
     right_arc, right_visit = MODULE._arc(right, {"r4"}, partition, visits)
     for visit in set(left_visit).intersection(right_visit):

@@ -38,9 +38,14 @@ class AdaptiveTrackPrediction:
             raise ValueError("track prediction is incomplete")
         if len(set(self.observation_ids)) != n:
             raise ValueError("observation IDs must be unique")
-        if any(np.asarray(value).shape != (n,) for value in (
-            self.times_s, self.measured_hz, self.training_mask,
-        )):
+        if any(
+            np.asarray(value).shape != (n,)
+            for value in (
+                self.times_s,
+                self.measured_hz,
+                self.training_mask,
+            )
+        ):
             raise ValueError("observation vector shape mismatch")
         training = np.asarray(self.training_mask)
         if training.dtype != bool or not np.any(training) or not np.any(~training):
@@ -120,12 +125,17 @@ def _candidate_order(value: object) -> tuple[int, int | str]:
 
 
 def fixed_randomized_training_mask(
-    observation_ids: Sequence[str], *, seed: str, training_fraction: float = 0.6,
+    observation_ids: Sequence[str],
+    *,
+    seed: str,
+    training_fraction: float = 0.6,
 ) -> np.ndarray:
     """Return a position-independent deterministic randomized split."""
     ids = tuple(str(value) for value in observation_ids)
     training, _ = deterministic_randomized_observation_partition(
-        ids, training_fraction=training_fraction, split_seed=seed,
+        ids,
+        training_fraction=training_fraction,
+        split_seed=seed,
     )
     selected = set(training)
     return np.asarray([value in selected for value in ids], dtype=bool)
@@ -139,7 +149,9 @@ def effective_one_second_bin_weight(times_s: Sequence[float]) -> int:
 
 
 def score_track_prediction(
-    track: AdaptiveTrackPrediction, *, qualifying_threshold_hz: float = 200.0,
+    track: AdaptiveTrackPrediction,
+    *,
+    qualifying_threshold_hz: float = 200.0,
 ) -> AdaptiveTrackScore:
     """Profile tau/offset on training, then select identity on evaluation RMS.
 
@@ -153,8 +165,14 @@ def score_track_prediction(
     visible = np.asarray(track.visible, dtype=bool)
     if not len(track.candidate_ids):
         return AdaptiveTrackScore(
-            track.track_id, None, effective_one_second_bin_weight(track.times_s),
-            None, None, None, None, (),
+            track.track_id,
+            None,
+            effective_one_second_bin_weight(track.times_s),
+            None,
+            None,
+            None,
+            None,
+            (),
         )
     residual = measured[None, None, :] - prediction
     offsets = np.mean(residual[:, :, training], axis=2)
@@ -171,22 +189,36 @@ def score_track_prediction(
     usable = np.isfinite(selected_train)
     if not np.any(usable):
         return AdaptiveTrackScore(
-            track.track_id, None, effective_one_second_bin_weight(track.times_s),
-            None, None, None, None, (),
+            track.track_id,
+            None,
+            effective_one_second_bin_weight(track.times_s),
+            None,
+            None,
+            None,
+            None,
+            (),
         )
     choices = np.flatnonzero(usable)
-    winner = min(choices, key=lambda index: (
-        selected_held[index], selected_train[index], _candidate_order(track.candidate_ids[index])
-    ))
+    winner = min(
+        choices,
+        key=lambda index: (
+            selected_held[index],
+            selected_train[index],
+            _candidate_order(track.candidate_ids[index]),
+        ),
+    )
     tau = int(tau_index[winner])
     held = float(selected_held[winner])
-    qualifying = (
-        track.observation_ids if held < qualifying_threshold_hz else ()
-    )
+    qualifying = track.observation_ids if held < qualifying_threshold_hz else ()
     return AdaptiveTrackScore(
-        track.track_id, held, effective_one_second_bin_weight(track.times_s),
-        str(track.candidate_ids[winner]), float(track.taus_s[tau]),
-        float(selected_train[winner]), float(offsets[winner, tau]), tuple(qualifying),
+        track.track_id,
+        held,
+        effective_one_second_bin_weight(track.times_s),
+        str(track.candidate_ids[winner]),
+        float(track.taus_s[tau]),
+        float(selected_train[winner]),
+        float(offsets[winner, tau]),
+        tuple(qualifying),
     )
 
 
@@ -214,27 +246,29 @@ def score_point(
         previous = metadata.get(track.track_id)
         if previous is not None and (
             previous[0] != signature[0]
-            or any(not np.array_equal(left, right)
-                   for left, right in zip(previous[1:], signature[1:], strict=True))
+            or any(
+                not np.array_equal(left, right)
+                for left, right in zip(previous[1:], signature[1:], strict=True)
+            )
         ):
             raise ValueError("candidate blocks for a track have different observations")
         metadata[track.track_id] = signature
-        candidate = score_track_prediction(
-            track, qualifying_threshold_hz=qualifying_threshold_hz
-        )
+        candidate = score_track_prediction(track, qualifying_threshold_hz=qualifying_threshold_hz)
         current = winners.get(track.track_id)
         candidate_key = (
             np.inf if candidate.heldout_rms_hz is None else candidate.heldout_rms_hz,
             np.inf if candidate.training_rms_hz is None else candidate.training_rms_hz,
-            (-1, "") if candidate.candidate_id is None
+            (-1, "")
+            if candidate.candidate_id is None
             else _candidate_order(candidate.candidate_id),
         )
         current_key = (
-            np.inf if current is None or current.heldout_rms_hz is None
-            else current.heldout_rms_hz,
-            np.inf if current is None or current.training_rms_hz is None
+            np.inf if current is None or current.heldout_rms_hz is None else current.heldout_rms_hz,
+            np.inf
+            if current is None or current.training_rms_hz is None
             else current.training_rms_hz,
-            (-1, "") if current is None or current.candidate_id is None
+            (-1, "")
+            if current is None or current.candidate_id is None
             else _candidate_order(current.candidate_id),
         )
         if current is None or candidate_key < current_key:
@@ -243,19 +277,28 @@ def score_point(
     if not scores:
         raise ValueError("nonempty tracks required")
     total_weight = sum(row.weight_s for row in scores)
-    loss = sum(row.weight_s * min(
-        unmatched_penalty_hz if row.heldout_rms_hz is None else row.heldout_rms_hz,
-        unmatched_penalty_hz,
-    ) ** 2 for row in scores)
+    loss = sum(
+        row.weight_s
+        * min(
+            unmatched_penalty_hz if row.heldout_rms_hz is None else row.heldout_rms_hz,
+            unmatched_penalty_hz,
+        )
+        ** 2
+        for row in scores
+    )
     qualifying_ids = {
         observation_id for row in scores for observation_id in row.qualifying_observation_ids
     }
     return AdaptivePointScore(
-        float(east_km), float(north_km), float(loss / total_weight),
-        float(np.sqrt(loss / total_weight)), len(qualifying_ids),
+        float(east_km),
+        float(north_km),
+        float(loss / total_weight),
+        float(np.sqrt(loss / total_weight)),
+        len(qualifying_ids),
         sum(bool(row.qualifying_observation_ids) for row in scores),
         sum(row.heldout_rms_hz is not None for row in scores),
-        sum(row.heldout_rms_hz is None for row in scores), scores,
+        sum(row.heldout_rms_hz is None for row in scores),
+        scores,
     )
 
 
@@ -267,11 +310,17 @@ def make_point_evaluator(
 ) -> PointEvaluator:
     def evaluate(points: np.ndarray) -> tuple[AdaptivePointScore, ...]:
         coordinates = np.asarray(points, dtype=float).reshape(-1, 2)
-        return tuple(score_point(
-            east, north, evaluate_tracks(float(east), float(north)),
-            unmatched_penalty_hz=unmatched_penalty_hz,
-            qualifying_threshold_hz=qualifying_threshold_hz,
-        ) for east, north in coordinates)
+        return tuple(
+            score_point(
+                east,
+                north,
+                evaluate_tracks(float(east), float(north)),
+                unmatched_penalty_hz=unmatched_penalty_hz,
+                qualifying_threshold_hz=qualifying_threshold_hz,
+            )
+            for east, north in coordinates
+        )
+
     return evaluate
 
 
@@ -290,21 +339,30 @@ def adaptive_best_first_search(
 ) -> AdaptiveSearchResult:
     """Run exact-child-priority refinement with an explicit point budget."""
     levels = tuple(float(value) for value in levels_km)
-    if (not levels or radius_km <= 0 or region_size_km <= 0 or budget_points <= 0
-            or radius_km > 500 or region_size_km > 1000
-            or radius_km > region_size_km / 2):
+    if (
+        not levels
+        or radius_km <= 0
+        or region_size_km <= 0
+        or budget_points <= 0
+        or radius_km > 500
+        or region_size_km > 1000
+        or radius_km > region_size_km / 2
+    ):
         raise ValueError("invalid bounded search policy")
-    if any(not np.isclose(coarse / fine, 2) for coarse, fine in zip(
-        levels, levels[1:], strict=False
-    )):
+    if any(
+        not np.isclose(coarse / fine, 2) for coarse, fine in zip(levels, levels[1:], strict=False)
+    ):
         raise ValueError("levels must be aligned halvings")
     count = int(round(region_size_km / levels[0]))
     if not np.isclose(count * levels[0], region_size_km):
         raise ValueError("initial spacing must divide search box")
     axis = (np.arange(count) + 0.5) * levels[0] - region_size_km / 2
-    cells = [SearchCell(float(e), float(n), levels[0], 0, None,
-                        bool(np.hypot(e, n) <= radius_km), 0.0)
-             for n in axis for e in axis if _intersects(e, n, levels[0], radius_km)]
+    cells = [
+        SearchCell(float(e), float(n), levels[0], 0, None, bool(np.hypot(e, n) <= radius_km), 0.0)
+        for n in axis
+        for e in axis
+        if _intersects(e, n, levels[0], radius_km)
+    ]
     inside = [cell for cell in cells if cell.centre_inside]
     if len(inside) > budget_points:
         raise ValueError("budget cannot evaluate initial centres")
@@ -324,10 +382,16 @@ def adaptive_best_first_search(
             raise ValueError("evaluator changed coordinate order")
         for row, cell in zip(rows, selected, strict=True):
             cache[(cell.east_km, cell.north_km)] = row
-            trace.append({"event": "evaluate", "depth": cell.depth,
-                          "spacing_km": cell.spacing_km, "east_km": cell.east_km,
-                          "north_km": cell.north_km,
-                          "weighted_mse_hz2": row.weighted_mse_hz2})
+            trace.append(
+                {
+                    "event": "evaluate",
+                    "depth": cell.depth,
+                    "spacing_km": cell.spacing_km,
+                    "east_km": cell.east_km,
+                    "north_km": cell.north_km,
+                    "weighted_mse_hz2": row.weighted_mse_hz2,
+                }
+            )
 
     def queue(cell: SearchCell, parent: AdaptivePointScore | None) -> None:
         nonlocal serial
@@ -336,12 +400,15 @@ def adaptive_best_first_search(
             return
         queued.add(key)
         exact = cache.get((cell.east_km, cell.north_km))
-        priority = exact.weighted_mse_hz2 if exact else (
-            parent.weighted_mse_hz2 if parent else 0.0
-        )
+        priority = exact.weighted_mse_hz2 if exact else (parent.weighted_mse_hz2 if parent else 0.0)
         populated = SearchCell(
-            cell.east_km, cell.north_km, cell.spacing_km, cell.depth, cell.parent,
-            cell.centre_inside, float(priority),
+            cell.east_km,
+            cell.north_km,
+            cell.spacing_km,
+            cell.depth,
+            cell.parent,
+            cell.centre_inside,
+            float(priority),
         )
         heapq.heappush(heap, (priority, cell.east_km, cell.north_km, serial, populated))
         serial += 1
@@ -351,48 +418,78 @@ def adaptive_best_first_search(
         queue(cell, cache.get((cell.east_km, cell.north_km)))
     while heap and len(cache) < budget_points:
         _, _, _, _, cell = heapq.heappop(heap)
-        trace.append({"event": "pop", "depth": cell.depth,
-                      "spacing_km": cell.spacing_km, "east_km": cell.east_km,
-                      "north_km": cell.north_km, "priority_hz2": cell.priority_hz2})
+        trace.append(
+            {
+                "event": "pop",
+                "depth": cell.depth,
+                "spacing_km": cell.spacing_km,
+                "east_km": cell.east_km,
+                "north_km": cell.north_km,
+                "priority_hz2": cell.priority_hz2,
+            }
+        )
         if cell.depth == len(levels) - 1:
             continue
         spacing = levels[cell.depth + 1]
         offset = cell.spacing_km / 4
-        children = [SearchCell(cell.east_km + de, cell.north_km + dn, spacing,
-                               cell.depth + 1, (cell.east_km, cell.north_km),
-                               bool(np.hypot(cell.east_km + de, cell.north_km + dn)
-                                    <= radius_km), 0.0)
-                    for de, dn in ((-offset, -offset), (-offset, offset),
-                                   (offset, -offset), (offset, offset))
-                    if _intersects(cell.east_km + de, cell.north_km + dn,
-                                   spacing, radius_km)]
+        children = [
+            SearchCell(
+                cell.east_km + de,
+                cell.north_km + dn,
+                spacing,
+                cell.depth + 1,
+                (cell.east_km, cell.north_km),
+                bool(np.hypot(cell.east_km + de, cell.north_km + dn) <= radius_km),
+                0.0,
+            )
+            for de, dn in (
+                (-offset, -offset),
+                (-offset, offset),
+                (offset, -offset),
+                (offset, offset),
+            )
+            if _intersects(cell.east_km + de, cell.north_km + dn, spacing, radius_km)
+        ]
         available = budget_points - len(cache)
-        fresh = [child for child in children if child.centre_inside and
-                 (child.east_km, child.north_km) not in cache][:available]
+        fresh = [
+            child
+            for child in children
+            if child.centre_inside and (child.east_km, child.north_km) not in cache
+        ][:available]
         evaluate(fresh)
         parent = cache.get((cell.east_km, cell.north_km))
         for child in children:
             queue(child, parent)
-        trace.append({"event": "subdivide", "depth": cell.depth,
-                      "spacing_km": cell.spacing_km, "east_km": cell.east_km,
-                      "north_km": cell.north_km,
-                      "proposed_children": [
-                          [child.east_km, child.north_km] for child in children
-                      ],
-                      "evaluated_children": [
-                          [child.east_km, child.north_km] for child in fresh
-                      ]})
+        trace.append(
+            {
+                "event": "subdivide",
+                "depth": cell.depth,
+                "spacing_km": cell.spacing_km,
+                "east_km": cell.east_km,
+                "north_km": cell.north_km,
+                "proposed_children": [[child.east_km, child.north_km] for child in children],
+                "evaluated_children": [[child.east_km, child.north_km] for child in fresh],
+            }
+        )
     finest_coordinates = {
-        (row["east_km"], row["north_km"]) for row in trace
+        (row["east_km"], row["north_km"])
+        for row in trace
         if row["event"] == "evaluate" and row["spacing_km"] == levels[-1]
     }
+
     def ranking(row: AdaptivePointScore) -> tuple[float, float, float]:
         return row.weighted_mse_hz2, row.east_km, row.north_km
+
     all_rows = tuple(sorted(cache.values(), key=ranking))
     finest = tuple(sorted((cache[key] for key in finest_coordinates), key=ranking))
     deferred = tuple(item[-1] for item in sorted(heap))
     return AdaptiveSearchResult(
-        not deferred, "frontier-exhausted" if not deferred else "point-budget-reached",
-        all_rows[0] if all_rows else None, finest[0] if finest else None,
-        all_rows, finest, deferred, tuple(trace),
+        not deferred,
+        "frontier-exhausted" if not deferred else "point-budget-reached",
+        all_rows[0] if all_rows else None,
+        finest[0] if finest else None,
+        all_rows,
+        finest,
+        deferred,
+        tuple(trace),
     )

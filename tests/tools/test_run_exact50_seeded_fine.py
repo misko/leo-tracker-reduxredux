@@ -12,11 +12,18 @@ sys.path.pop(0)
 
 
 def receipt():
-    return {"complete": True, "session_id": "scan-fixture", "city": "sacramento",
-            "mode": "uniform", "uniform_policy": "exact-topk", "spacing_km": 50.,
-            "partition_mode": "fixed", "primary_threshold_hz": 200.,
-            "radius_km": 500.,
-            "top_cells": [{"east_km": float(i), "north_km": 0.} for i in range(15)]}
+    return {
+        "complete": True,
+        "session_id": "scan-fixture",
+        "city": "sacramento",
+        "mode": "uniform",
+        "uniform_policy": "exact-topk",
+        "spacing_km": 50.0,
+        "partition_mode": "fixed",
+        "primary_threshold_hz": 200.0,
+        "radius_km": 500.0,
+        "top_cells": [{"east_km": float(i), "north_km": 0.0} for i in range(15)],
+    }
 
 
 def test_exact_seed_input_accepts_matching_completed_search(tmp_path):
@@ -26,11 +33,20 @@ def test_exact_seed_input_accepts_matching_completed_search(tmp_path):
     np.testing.assert_array_equal(seeds[:, 0], np.arange(15))
 
 
-@pytest.mark.parametrize("key,value", [
-    ("complete", False), ("session_id", "other"), ("city", "reno"),
-    ("mode", "adaptive"), ("spacing_km", 100.), ("partition_mode", "legacy"),
-    ("primary_threshold_hz", 800.), ("top_cells", []), ("radius_km", 750.),
-])
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("complete", False),
+        ("session_id", "other"),
+        ("city", "reno"),
+        ("mode", "adaptive"),
+        ("spacing_km", 100.0),
+        ("partition_mode", "legacy"),
+        ("primary_threshold_hz", 800.0),
+        ("top_cells", []),
+        ("radius_km", 750.0),
+    ],
+)
 def test_exact_seed_input_rejects_wrong_search_authority(tmp_path, key, value):
     data = receipt()
     data[key] = value

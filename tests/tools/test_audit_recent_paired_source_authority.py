@@ -30,9 +30,7 @@ def test_timing_and_cfo_match_is_mutually_unique_and_shift_control_breaks_it():
     edges = subject._timing_edges(rows, 2_500_000)
     model = subject._fit_offset([edge for edge in edges if edge[0].visit % 2 == 0])
     held = subject._matches([edge for edge in edges if edge[0].visit % 2], model)
-    shifted = subject._matches(
-        subject._timing_edges(rows, 2_500_000, visit_shift=17), model
-    )
+    shifted = subject._matches(subject._timing_edges(rows, 2_500_000, visit_shift=17), model)
 
     assert len(held) == 15
     assert shifted == []

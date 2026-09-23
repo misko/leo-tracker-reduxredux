@@ -93,13 +93,21 @@ def test_score_matches_qualified_research_kernel_on_frozen_arrays():
     spec.loader.exec_module(reference)
     track = prediction()
     rows = reference.score_prediction_bank(
-        track.measured_hz, track.predictions_hz, track.training_mask,
-        track.taus_s, np.ones(len(track.candidate_ids), dtype=bool), (200.0,),
+        track.measured_hz,
+        track.predictions_hz,
+        track.training_mask,
+        track.taus_s,
+        np.ones(len(track.candidate_ids), dtype=bool),
+        (200.0,),
     )
-    expected = min(rows, key=lambda row: (
-        row["heldout_rms_hz"], row["training_rms_hz"],
-        int(track.candidate_ids[row["candidate_index"]]),
-    ))
+    expected = min(
+        rows,
+        key=lambda row: (
+            row["heldout_rms_hz"],
+            row["training_rms_hz"],
+            int(track.candidate_ids[row["candidate_index"]]),
+        ),
+    )
     actual = score_track_prediction(track)
 
     assert int(actual.candidate_id) == int(track.candidate_ids[expected["candidate_index"]])
@@ -134,8 +142,11 @@ def test_search_preserves_global_and_finest_incumbents_with_bounded_frontier():
         return (prediction(("10",), values),)
 
     result = adaptive_best_first_search(
-        make_point_evaluator(tracks), radius_km=100, region_size_km=200,
-        levels_km=(100, 50), budget_points=8,
+        make_point_evaluator(tracks),
+        radius_km=100,
+        region_size_km=200,
+        levels_km=(100, 50),
+        budget_points=8,
     )
 
     assert result.global_incumbent is not None
@@ -148,11 +159,19 @@ def test_search_preserves_global_and_finest_incumbents_with_bounded_frontier():
 def test_track_eligibility_and_search_policy_fail_closed():
     with pytest.raises(ValueError, match="incomplete"):
         AdaptiveTrackPrediction(
-            "short", ("1", "2"), np.asarray([0.0, 3.0]), np.ones(2),
-            np.asarray([True, False]), np.asarray([1]), np.asarray([0.0]),
-            np.zeros((1, 1, 2)), np.ones(1, dtype=bool),
+            "short",
+            ("1", "2"),
+            np.asarray([0.0, 3.0]),
+            np.ones(2),
+            np.asarray([True, False]),
+            np.asarray([1]),
+            np.asarray([0.0]),
+            np.zeros((1, 1, 2)),
+            np.ones(1, dtype=bool),
         )
     with pytest.raises(ValueError, match="bounded search policy"):
         adaptive_best_first_search(
-            lambda _points: (), radius_km=501, region_size_km=1000,
+            lambda _points: (),
+            radius_km=501,
+            region_size_km=1000,
         )

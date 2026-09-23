@@ -35,9 +35,12 @@ def digest(path: Path) -> str:
 def content_digest(document: dict) -> str:
     body = dict(document)
     claimed = body.pop("content_digest", None)
-    actual = "sha256:" + hashlib.sha256(
-        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    actual = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     if claimed != actual:
         raise ValueError("content digest mismatch")
     return actual
@@ -67,9 +70,7 @@ def component_log_evidence(
         raise ValueError("full catalogue size and signal prior are invalid")
     log_prior = np.log(signal_prior / catalogue_size)
     null_prior = np.log1p(-signal_prior)
-    training = float(
-        np.logaddexp(logsumexp(train + log_prior), null_train + null_prior)
-    )
+    training = float(np.logaddexp(logsumexp(train + log_prior), null_train + null_prior))
     joint = float(
         np.logaddexp(
             logsumexp(train + heldout + log_prior),
@@ -138,12 +139,7 @@ def _arc(row: dict, excluded: set[str], partition: dict[int, bool], visits: dict
 def _prediction(position, velocity, receiver):
     delta = position[None] - receiver.ecef_km[:, None, None]
     distance = np.linalg.norm(delta, axis=-1)
-    prediction = (
-        -REFERENCE_RF_HZ
-        / LIGHT_KM_S
-        * np.sum(delta * velocity[None], axis=-1)
-        / distance
-    )
+    prediction = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * velocity[None], axis=-1) / distance
     elevation = np.sum(delta * receiver.up[:, None, None], axis=-1) / distance
     return prediction, elevation
 
@@ -244,12 +240,8 @@ def run(args) -> None:
                 partition = shared_five_block_partition(
                     left, right, excluded_left, excluded_right, visit_by_group
                 )
-                left_arc, left_visit = _arc(
-                    left, excluded_left, partition, visit_by_group
-                )
-                right_arc, right_visit = _arc(
-                    right, excluded_right, partition, visit_by_group
-                )
+                left_arc, left_visit = _arc(left, excluded_left, partition, visit_by_group)
+                right_arc, right_visit = _arc(right, excluded_right, partition, visit_by_group)
                 states = []
                 evidences = []
                 for arc, visits in ((left_arc, left_visit), (right_arc, right_visit)):
@@ -292,9 +284,9 @@ def run(args) -> None:
                 combined_p = np.concatenate((states[0][1], states[1][1]), axis=1)
                 combined_v = np.concatenate((states[0][2], states[1][2]), axis=1)
                 prediction, elevation = _prediction(combined_p, combined_v, grid)
-                visible = np.min(
-                    elevation[..., combined_arc.training], axis=-1
-                ) >= np.sin(np.deg2rad(config.minimum_elevation_deg))
+                visible = np.min(elevation[..., combined_arc.training], axis=-1) >= np.sin(
+                    np.deg2rad(config.minimum_elevation_deg)
+                )
                 shared = _factor_evidence(
                     combined_factor, prediction, visible, population, config, 6.0
                 )
@@ -302,16 +294,12 @@ def run(args) -> None:
                     independent_train = evidences[0][point][0] + evidences[1][point][0]
                     independent_joint = evidences[0][point][1] + evidences[1][point][1]
                     for q in Q_ARMS:
-                        mixed_train = mixed_log_evidence(
-                            independent_train, shared[point][0], q
-                        )
-                        mixed_joint = mixed_log_evidence(
-                            independent_joint, shared[point][1], q
-                        )
+                        mixed_train = mixed_log_evidence(independent_train, shared[point][0], q)
+                        mixed_joint = mixed_log_evidence(independent_joint, shared[point][1], q)
                         totals[q][point, 0] += mixed_train - independent_train
-                        totals[q][point, 1] += (
-                            mixed_joint - mixed_train
-                        ) - (independent_joint - independent_train)
+                        totals[q][point, 1] += (mixed_joint - mixed_train) - (
+                            independent_joint - independent_train
+                        )
                 accounting.append(
                     {
                         "rx0_tracklet_id": left_id,
@@ -389,9 +377,12 @@ def run(args) -> None:
             "source_digest": digest(Path(__file__)),
         },
     }
-    output["content_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    output["content_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")
 

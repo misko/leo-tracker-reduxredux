@@ -32,9 +32,7 @@ def test_prepares_all_eligible_tracks_with_fixed_position_independent_split(monk
         lambda graph: SimpleNamespace(content_digest="sha256:" + "4" * 64),
     )
     monkeypatch.setattr(subject, "exclude_labelled_starlink_debris", lambda value: (value, ()))
-    catalogue = SimpleNamespace(
-        names=("STARLINK-A", "OTHER"), satellite_numbers=(123, 999)
-    )
+    catalogue = SimpleNamespace(names=("STARLINK-A", "OTHER"), satellite_numbers=(123, 999))
     monkeypatch.setattr(subject, "parse_element_sets", lambda value: catalogue)
     source = SimpleNamespace(
         timing=SimpleNamespace(first_sample_estimate_utc_ns=start),

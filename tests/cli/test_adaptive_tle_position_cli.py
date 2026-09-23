@@ -35,12 +35,8 @@ def test_completion_rejects_stale_source_or_configuration(tmp_path):
     )
     other = tmp_path / "other"
     other.mkdir()
-    AdaptiveTlePositionStore(other, read_only=False).publish(
-        changed, b"\x89PNG\r\n\x1a\nmap"
-    )
-    assert not adaptive_tle_position_complete(
-        other, "scan-1", expected_input="sha256:" + "9" * 64
-    )
+    AdaptiveTlePositionStore(other, read_only=False).publish(changed, b"\x89PNG\r\n\x1a\nmap")
+    assert not adaptive_tle_position_complete(other, "scan-1", expected_input="sha256:" + "9" * 64)
     assert not adaptive_tle_position_complete(
         other, "scan-1", expected_analysis="sha256:" + "9" * 64
     )

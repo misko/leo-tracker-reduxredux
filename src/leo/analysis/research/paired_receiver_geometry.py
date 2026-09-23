@@ -44,8 +44,10 @@ class PairedDopplerFactor:
         object.__setattr__(self, "visit_id", visit)
         object.__setattr__(self, "training", training)
         arrays = (receiver, visit, training)
-        if observed.ndim != 1 or len(observed) < 4 or any(
-            np.asarray(value).shape != observed.shape for value in arrays
+        if (
+            observed.ndim != 1
+            or len(observed) < 4
+            or any(np.asarray(value).shape != observed.shape for value in arrays)
         ):
             raise ValueError("paired factor arrays must be matching nonempty vectors")
         if np.asarray(self.training).dtype != bool or not np.all(np.isfinite(observed)):
@@ -131,9 +133,12 @@ def score_paired_doppler_factor(
     heldout_ll = np.where(visible_array, likelihood(~factor.training), -np.inf)
     best = int(np.argmax(training_ll)) if np.any(visible_array) else -1
     training_visit_count = len(np.unique(factor.visit_id[factor.training]))
-    joint_training_energy_score = -0.5 * min(effective_count, training_visit_count) * np.sum(
-        weights[factor.training] * centered[:, factor.training] ** 2, axis=1
-    ) / (training_visit_count * sigma_hz**2)
+    joint_training_energy_score = (
+        -0.5
+        * min(effective_count, training_visit_count)
+        * np.sum(weights[factor.training] * centered[:, factor.training] ** 2, axis=1)
+        / (training_visit_count * sigma_hz**2)
+    )
     joint_training_energy_score = np.where(visible_array, joint_training_energy_score, -np.inf)
     independent_choices = []
     independent_training_score = 0.0
@@ -256,18 +261,10 @@ def score_paired_states(
                 1e-12,
             )
         )
-        numerator = np.sum(p * v, axis=-1)[None] - (
-            receiver @ v.reshape(-1, 3).T
-        ).reshape(shape)
-        prediction = (
-            -_REFERENCE_RF_HZ
-            / _LIGHT_KM_S
-            * numerator
-            / distance
-        )
+        numerator = np.sum(p * v, axis=-1)[None] - (receiver @ v.reshape(-1, 3).T).reshape(shape)
+        prediction = -_REFERENCE_RF_HZ / _LIGHT_KM_S * numerator / distance
         elevation = (
-            (up @ p.reshape(-1, 3).T).reshape(shape)
-            - np.sum(receiver * up, axis=-1)[:, None, None]
+            (up @ p.reshape(-1, 3).T).reshape(shape) - np.sum(receiver * up, axis=-1)[:, None, None]
         ) / distance
         visible = np.min(elevation[..., factor.training], axis=-1) >= horizon
         flat = score_paired_doppler_factor(
@@ -283,9 +280,7 @@ def score_paired_states(
         null_prior = np.log1p(-signal_prior)
         signal = np.asarray([_logsumexp(row + prior) for row in train])
         evidence = np.logaddexp(signal, null_train + null_prior)
-        joint = np.asarray(
-            [_logsumexp(row + prior) for row in train + heldout]
-        )
+        joint = np.asarray([_logsumexp(row + prior) for row in train + heldout])
         joint = np.logaddexp(joint, null_train + null_heldout + null_prior)
         outputs.append(
             {

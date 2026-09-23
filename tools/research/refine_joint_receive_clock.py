@@ -95,9 +95,7 @@ def visibility_mask(position, receiver, up, training, minimum_elevation_deg):
     delta = position - receiver
     distance = np.linalg.norm(delta, axis=-1)
     elevation = np.sum(delta * up, axis=-1) / distance
-    return np.min(elevation[:, training], axis=-1) >= np.sin(
-        np.deg2rad(minimum_elevation_deg)
-    )
+    return np.min(elevation[:, training], axis=-1) >= np.sin(np.deg2rad(minimum_elevation_deg))
 
 
 def qualifies(*, converged, maximum_error_hz, visibility_mismatches, score_delta):
@@ -136,9 +134,13 @@ def run(args) -> None:
         raise ValueError("sealed truth-free completed refinement required")
     audit = json.loads(args.clock_audit.read_text())
     claimed = audit.pop("content_digest")
-    if claimed != "sha256:" + hashlib.sha256(
-        json.dumps(audit, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest():
+    if (
+        claimed
+        != "sha256:"
+        + hashlib.sha256(
+            json.dumps(audit, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    ):
         raise ValueError("clock audit content digest mismatch")
     if (
         not audit["summary"]["all_qualified"]
@@ -150,9 +152,10 @@ def run(args) -> None:
     region = Region(**refinement["region"])
     acquisition_path = Path(refinement["run"]) / "result.json"
     expected_acquisition = refinement["acquisition_file_digests"]["result.json"]
-    if digest(acquisition_path) != expected_acquisition or expected_acquisition != refinement[
-        "source_result_digest"
-    ]:
+    if (
+        digest(acquisition_path) != expected_acquisition
+        or expected_acquisition != refinement["source_result_digest"]
+    ):
         raise ValueError("sealed acquisition result binding mismatch")
     acquisition = json.loads(acquisition_path.read_text())
     config = ScoreConfig(**acquisition["score"])
@@ -213,13 +216,11 @@ def run(args) -> None:
                 states.append((p, v))
             assert retained0 is not None
             norads = np.asarray(catalogue.satellite_numbers)[retained0]
-            support_digest = "sha256:" + hashlib.sha256(
-                np.sort(norads).astype("<i8").tobytes()
-            ).hexdigest()
+            support_digest = (
+                "sha256:" + hashlib.sha256(np.sort(norads).astype("<i8").tobytes()).hexdigest()
+            )
             baseline_support = next(
-                row
-                for row in provenance["evaluated_support"]
-                if row["episode_id"] == episode_id
+                row for row in provenance["evaluated_support"] if row["episode_id"] == episode_id
             )
             if (
                 support_digest != baseline_support["evaluated_norad_digest"]
@@ -346,17 +347,13 @@ def run(args) -> None:
                     "episode_id": episode_id,
                     "clock_s": float(audit_clock),
                     "maximum_abs_error_hz": float(error),
-                    "visibility_mismatch_count": int(
-                        np.sum(approximate_visible != exact_visible)
-                    ),
+                    "visibility_mismatch_count": int(np.sum(approximate_visible != exact_visible)),
                 }
             )
         exact_score = score_states(arc, exact_p, exact_v, fitted_grid, population, config)
         exact_train += float(exact_score["train_logbf"][0])
         exact_heldout += float(exact_score["heldout_logbf"][0])
-        weights, null = refiner.posterior_at(
-            arc, exact_p, exact_v, fitted_grid, population, config
-        )
+        weights, null = refiner.posterior_at(arc, exact_p, exact_v, fitted_grid, population, config)
         order = np.argsort(-weights, kind="stable")[:8]
         top_support.append(
             {
@@ -414,9 +411,7 @@ def run(args) -> None:
             "latitude_deg": float(latitude),
             "longitude_deg": float(longitude),
             "clock_s": {key: float(value) for key, value in clocks.items()},
-            "clock_at_bound": {
-                key: distance_to_clock_bound[key] <= 1e-5 for key in clocks
-            },
+            "clock_at_bound": {key: distance_to_clock_bound[key] <= 1e-5 for key in clocks},
             "clock_distance_to_nearest_bound_s": distance_to_clock_bound,
             "approximate_training_score": approximate_fitted_train,
             "training_score": exact_train,

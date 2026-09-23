@@ -63,9 +63,7 @@ def test_visibility_and_exact_gate_fail_closed():
 
 def test_run_rejects_mutated_refinement_checksum(tmp_path):
     refinement = tmp_path / "result.json"
-    refinement.write_text(
-        json.dumps({"complete": True, "position_truth_used": False}) + "\n"
-    )
+    refinement.write_text(json.dumps({"complete": True, "position_truth_used": False}) + "\n")
     refinement.with_name("result.sha256").write_text("0" * 64 + "\n")
     args = SimpleNamespace(
         output=tmp_path / "output",
@@ -83,9 +81,7 @@ def test_run_rejects_mutated_refinement_checksum(tmp_path):
 
 def test_run_rejects_mutated_clock_audit_digest(tmp_path):
     refinement = tmp_path / "result.json"
-    refinement.write_text(
-        json.dumps({"complete": True, "position_truth_used": False}) + "\n"
-    )
+    refinement.write_text(json.dumps({"complete": True, "position_truth_used": False}) + "\n")
     import hashlib
 
     refinement.with_name("result.sha256").write_text(

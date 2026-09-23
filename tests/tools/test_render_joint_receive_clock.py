@@ -17,11 +17,18 @@ def test_seal_keeps_failed_optimization_and_rejects_tampering(tmp_path):
     clock = tmp_path / "clock.json"
     clock.write_text("{}")
     result = tmp_path / "result.json"
-    result.write_text(json.dumps({
-        "complete": True, "qualification": "insufficient", "truth_accessed": False,
-        "known_position_used": False, "refinement_digest": module.digest(nominal),
-        "clock_audit_digest": module.digest(clock),
-    }))
+    result.write_text(
+        json.dumps(
+            {
+                "complete": True,
+                "qualification": "insufficient",
+                "truth_accessed": False,
+                "known_position_used": False,
+                "refinement_digest": module.digest(nominal),
+                "clock_audit_digest": module.digest(clock),
+            }
+        )
+    )
     result.with_suffix(".sha256").write_text(module.digest(result).removeprefix("sha256:"))
     _, docs = module.seal_inputs([result], nominal, clock, tmp_path / "sealed")
     assert docs[0]["qualification"] == "insufficient"

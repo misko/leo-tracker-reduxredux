@@ -54,20 +54,24 @@ def test_later_same_epoch_revision_does_not_hide_causal_current_element():
 
 @pytest.mark.parametrize("cutoff", [100, 101])
 def test_prior_rejects_training_at_or_after_first_capture(cutoff):
-    prior = {"frozen_model": {
-        "training_cutoff_utc_ns": cutoff,
-        "winner": {"validation_rms_rate_error_s_h": 0.09},
-    }}
+    prior = {
+        "frozen_model": {
+            "training_cutoff_utc_ns": cutoff,
+            "winner": {"validation_rms_rate_error_s_h": 0.09},
+        }
+    }
     with pytest.raises(ValueError, match="precede every capture"):
         MODULE.validate_prior(prior, 100)
 
 
 @pytest.mark.parametrize("sigma", [0, -1, float("nan"), float("inf")])
 def test_prior_rejects_invalid_uncertainty(sigma):
-    prior = {"frozen_model": {
-        "training_cutoff_utc_ns": 99,
-        "winner": {"validation_rms_rate_error_s_h": sigma},
-    }}
+    prior = {
+        "frozen_model": {
+            "training_cutoff_utc_ns": 99,
+            "winner": {"validation_rms_rate_error_s_h": sigma},
+        }
+    }
     with pytest.raises(ValueError, match="finite and positive"):
         MODULE.validate_prior(prior, 100)
 

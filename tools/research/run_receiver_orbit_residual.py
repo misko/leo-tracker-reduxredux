@@ -145,8 +145,7 @@ def main() -> None:
     runtime_s = time.monotonic() - started
     source_paths = [
         Path(__file__),
-        Path(__file__).parents[2]
-        / "src/leo/analysis/research/receiver_orbit_residual.py",
+        Path(__file__).parents[2] / "src/leo/analysis/research/receiver_orbit_residual.py",
     ]
     document = {
         "schema": "receiver-orbit-residual-diagnostic/v1",
@@ -162,8 +161,7 @@ def main() -> None:
         "sensitivity_weak_receiver_prior": asdict(weak_receiver_prior),
         "runtime": {"elapsed_s": runtime_s, "thread_limit": 1},
         "sources": {
-            str(path.relative_to(Path(__file__).parents[2])): digest(path)
-            for path in source_paths
+            str(path.relative_to(Path(__file__).parents[2])): digest(path) for path in source_paths
         },
         "limitations": [
             "satellite coefficients are descriptive phase-rate proxies, not orbit corrections",

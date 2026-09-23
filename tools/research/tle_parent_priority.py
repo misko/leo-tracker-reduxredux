@@ -36,11 +36,15 @@ class ParentPriority:
     derivative_step_km: float = 0.25
 
     def __post_init__(self):
-        if (self.derivative_step_km <= 0 or self.unmatched_penalty_hz <= 0
-                or set(self.weights) != set(self.banks)):
+        if (
+            self.derivative_step_km <= 0
+            or self.unmatched_penalty_hz <= 0
+            or set(self.weights) != set(self.banks)
+        ):
             raise ValueError("positive settings and one frozen weight per track required")
-        self._models: dict[tuple[float, float, str, int], tuple[np.ndarray, np.ndarray,
-                                                                np.ndarray, np.ndarray]] = {}
+        self._models: dict[
+            tuple[float, float, str, int], tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        ] = {}
         self._model_builds = 0
         self._model_hits = 0
         self._calls = 0
@@ -64,12 +68,16 @@ class ParentPriority:
         north_derivative = (north_plus - north_minus) / (2 * h)
         fixed_site = ObserverSiteV1(
             latitude_deg=float(self.region.latitude_deg),
-            longitude_deg=float(self.region.longitude_deg), altitude_m=0,
+            longitude_deg=float(self.region.longitude_deg),
+            altitude_m=0,
             label="best-first-fixed-partition",
         )
         training, _ = partition_mask(
-            bank.observation_ids, bank.support_digest, self.trajectory_digest,
-            fixed_site, mode="fixed",
+            bank.observation_ids,
+            bank.support_digest,
+            self.trajectory_digest,
+            fixed_site,
+            mode="fixed",
         )
         value = (centre, east_derivative, north_derivative, training)
         self._models[key] = value
@@ -84,7 +92,8 @@ class ParentPriority:
         half = cell.spacing_km / 2
         stencil = [
             (cell.east_km + de, cell.north_km + dn)
-            for de in (-half, 0.0, half) for dn in (-half, 0.0, half)
+            for de in (-half, 0.0, half)
+            for dn in (-half, 0.0, half)
         ]
         estimated = [[] for _ in stencil]
         by_track = {row.track_id: row for row in parent.tracks}
@@ -100,20 +109,23 @@ class ParentPriority:
             )
             for index, (east, north) in enumerate(stencil):
                 approximation = (
-                    centre + east_jacobian * (east - parent.east_km)
+                    centre
+                    + east_jacobian * (east - parent.east_km)
                     + north_jacobian * (north - parent.north_km)
                 )
                 row = score_prediction_bank(
-                    bank.measured_hz, approximation[None], training, self.taus,
-                    np.asarray([True]), (200.0,),
+                    bank.measured_hz,
+                    approximation[None],
+                    training,
+                    self.taus,
+                    np.asarray([True]),
+                    (200.0,),
                 )[0]
-                estimated[index].append(TrackResidual(
-                    track_id, row["heldout_rms_hz"], self.weights[track_id]
-                ))
+                estimated[index].append(
+                    TrackResidual(track_id, row["heldout_rms_hz"], self.weights[track_id])
+                )
         estimate = min(
-            weighted_all_track_objective(
-                rows, unmatched_penalty_hz=self.unmatched_penalty_hz
-            )[0]
+            weighted_all_track_objective(rows, unmatched_penalty_hz=self.unmatched_penalty_hz)[0]
             for rows in estimated
         )
         exact = cache.get((cell.east_km, cell.north_km))
@@ -143,7 +155,11 @@ def make_parent_priority(
     derivative_step_km: float = 0.25,
 ) -> ParentPriority:
     return ParentPriority(
-        {bank.tracklet_id: bank for bank in banks}, region, trajectory_digest,
-        weights, np.arange(-5.0, 6.0) if taus is None else np.asarray(taus, dtype=float),
-        unmatched_penalty_hz, derivative_step_km,
+        {bank.tracklet_id: bank for bank in banks},
+        region,
+        trajectory_digest,
+        weights,
+        np.arange(-5.0, 6.0) if taus is None else np.asarray(taus, dtype=float),
+        unmatched_penalty_hz,
+        derivative_step_km,
     )

@@ -37,13 +37,22 @@ def test_fixed_partition_is_coordinate_independent_and_legacy_is_not():
     first = ObserverSiteV1(latitude_deg=38.5816, longitude_deg=-121.4944, altitude_m=0, label="a")
     second = ObserverSiteV1(latitude_deg=39.5296, longitude_deg=-119.8138, altitude_m=0, label="b")
     fixed_one = MODULE.partition_mask(
-        _ids(10), "sha256:" + "1" * 64, "sha256:" + "2" * 64, first,
+        _ids(10),
+        "sha256:" + "1" * 64,
+        "sha256:" + "2" * 64,
+        first,
     )
     fixed_two = MODULE.partition_mask(
-        _ids(10), "sha256:" + "1" * 64, "sha256:" + "2" * 64, second,
+        _ids(10),
+        "sha256:" + "1" * 64,
+        "sha256:" + "2" * 64,
+        second,
     )
     legacy = MODULE.partition_mask(
-        _ids(10), "sha256:" + "1" * 64, "sha256:" + "2" * 64, second,
+        _ids(10),
+        "sha256:" + "1" * 64,
+        "sha256:" + "2" * 64,
+        second,
         mode="legacy",
     )
     np.testing.assert_array_equal(fixed_one[0], fixed_two[0])
@@ -54,10 +63,12 @@ def test_fixed_partition_is_coordinate_independent_and_legacy_is_not():
 
 def test_prediction_score_is_exact_training_frozen_rank_curves_with_strict_gate():
     measured = np.asarray([0.0, 0.0, 800.0, -800.0])
-    predictions = np.asarray([
-        [[0.0, 0.0, 800.0, -800.0], [10.0, -10.0, 0.0, 0.0]],
-        [[0.0, 0.0, 800.01, -800.01], [10.0, -10.0, 0.0, 0.0]],
-    ])
+    predictions = np.asarray(
+        [
+            [[0.0, 0.0, 800.0, -800.0], [10.0, -10.0, 0.0, 0.0]],
+            [[0.0, 0.0, 800.01, -800.01], [10.0, -10.0, 0.0, 0.0]],
+        ]
+    )
     training = np.asarray([True, True, False, False])
     result = MODULE.score_prediction_bank(
         measured, predictions, training, np.asarray([-5.0, 5.0]), np.asarray([True, True]), [800.0]
@@ -74,9 +85,11 @@ def test_prediction_score_is_exact_training_frozen_rank_curves_with_strict_gate(
 
 def test_ranking_uses_unique_observations_then_clipped_rms_then_coordinates():
     def cell(east, north, observations, duration, tracks, rms):
-        return MODULE.CellScore(east, north, (MODULE.ThresholdCoverage(
-            800.0, observations, duration, tracks, rms, rms
-        ),))
+        return MODULE.CellScore(
+            east,
+            north,
+            (MODULE.ThresholdCoverage(800.0, observations, duration, tracks, rms, rms),),
+        )
 
     cells = [
         cell(2, 0, 5, 90, 2, 100),
@@ -106,11 +119,12 @@ def test_rim_parent_is_retained_when_its_fine_child_is_inside_circle():
 
     def evaluator(points):
         calls.append(points.copy())
-        return [MODULE.CellScore(
-            float(east), float(north), (MODULE.ThresholdCoverage(
-                800.0, 1, 1.0, 1, 1.0, 1.0
-            ),)
-        ) for east, north in points]
+        return [
+            MODULE.CellScore(
+                float(east), float(north), (MODULE.ThresholdCoverage(800.0, 1, 1.0, 1, 1.0, 1.0),)
+            )
+            for east, north in points
+        ]
 
     _, trace = MODULE.multiresolution_search(
         evaluator, radius_km=355.0, levels_km=(200.0, 100.0), basins=1
@@ -123,12 +137,23 @@ def test_rim_parent_is_retained_when_its_fine_child_is_inside_circle():
 
 def test_returned_comparator_contains_only_last_declared_lattice():
     def evaluator(points):
-        return [MODULE.CellScore(
-            float(east), float(north), (MODULE.ThresholdCoverage(
-                800.0, 99 if (east, north) == (0.0, 0.0) else 1,
-                1.0, 1, 1.0, 1.0,
-            ),)
-        ) for east, north in points]
+        return [
+            MODULE.CellScore(
+                float(east),
+                float(north),
+                (
+                    MODULE.ThresholdCoverage(
+                        800.0,
+                        99 if (east, north) == (0.0, 0.0) else 1,
+                        1.0,
+                        1,
+                        1.0,
+                        1.0,
+                    ),
+                ),
+            )
+            for east, north in points
+        ]
 
     final, trace = MODULE.multiresolution_search(
         evaluator, radius_km=300.0, levels_km=(200.0, 100.0), basins=1
@@ -145,16 +170,24 @@ def test_coarse_visibility_keeps_near_horizon_candidates_until_exact_gate():
     tangent /= np.linalg.norm(tangent)
 
     def bank(elevation_deg):
-        direction = (
-            tangent * np.cos(np.deg2rad(elevation_deg))
-            + up * np.sin(np.deg2rad(elevation_deg))
+        direction = tangent * np.cos(np.deg2rad(elevation_deg)) + up * np.sin(
+            np.deg2rad(elevation_deg)
         )
         nodes = np.arange(507, 512)
         coarse = np.broadcast_to(site.ecef_km[0] + 1000 * direction, (1, len(nodes), 3)).copy()
         position = coarse[:, None, :4, :].copy()
         return MODULE.TrackPredictionBank(
-            "track", _ids(4), np.zeros(4), np.arange(4.0), 3.0, "sha256:" + "1" * 64,
-            position, np.zeros_like(position), np.asarray([1]), coarse, nodes,
+            "track",
+            _ids(4),
+            np.zeros(4),
+            np.arange(4.0),
+            3.0,
+            "sha256:" + "1" * 64,
+            position,
+            np.zeros_like(position),
+            np.asarray([1]),
+            coarse,
+            nodes,
         )
 
     evaluator = MODULE.CoverageEvaluator(
@@ -175,8 +208,17 @@ def test_cache_keys_physical_site_and_rebinds_cached_score_to_requested_offsets(
     coarse = np.broadcast_to(first.ecef_km[0] + 1000 * direction, (1, len(nodes), 3)).copy()
     position = coarse[:, None, :4, :].copy()
     track = MODULE.TrackPredictionBank(
-        "track", _ids(4), np.zeros(4), np.arange(4.0), 3.0, "sha256:" + "1" * 64,
-        position, np.zeros_like(position), np.asarray([1]), coarse, nodes,
+        "track",
+        _ids(4),
+        np.zeros(4),
+        np.arange(4.0),
+        3.0,
+        "sha256:" + "1" * 64,
+        position,
+        np.zeros_like(position),
+        np.asarray([1]),
+        coarse,
+        nodes,
     )
     evaluator = MODULE.CoverageEvaluator(
         (track,), np.asarray([0.0]), "sha256:" + "2" * 64, (800.0,)
@@ -187,8 +229,13 @@ def test_cache_keys_physical_site_and_rebinds_cached_score_to_requested_offsets(
     assert evaluator.metrics()["cached_cell_count"] == 2
 
     same_physical_new_offsets = MODULE.Grid(
-        np.asarray([321.0]), np.asarray([-123.0]), first.latitude_deg, first.longitude_deg,
-        first.altitude_m, first.ecef_km, first.up,
+        np.asarray([321.0]),
+        np.asarray([-123.0]),
+        first.latitude_deg,
+        first.longitude_deg,
+        first.altitude_m,
+        first.ecef_km,
+        first.up,
     )
     rebound = evaluator.evaluate_points(same_physical_new_offsets)[0]
     assert (rebound.east_km, rebound.north_km) == (321.0, -123.0)
@@ -203,9 +250,17 @@ def test_exact_top_k_keeps_equal_bound_late_improvement_and_skips_partial_cache(
         position = np.zeros((1, 1, 4, 3))
         coarse = np.zeros((1, len(nodes), 3))
         return MODULE.TrackPredictionBank(
-            f"track-{index}", _ids(4 * index + 4)[4 * index:], np.zeros(4),
-            np.arange(4.0), 3.0, "sha256:" + str(index + 1) * 64,
-            position, np.zeros_like(position), np.asarray([index]), coarse, nodes,
+            f"track-{index}",
+            _ids(4 * index + 4)[4 * index :],
+            np.zeros(4),
+            np.arange(4.0),
+            3.0,
+            "sha256:" + str(index + 1) * 64,
+            position,
+            np.zeros_like(position),
+            np.asarray([index]),
+            coarse,
+            nodes,
         )
 
     tracks = tuple(track(index) for index in range(3))
@@ -213,9 +268,15 @@ def test_exact_top_k_keeps_equal_bound_late_improvement_and_skips_partial_cache(
     # later tracks improve clipped RMS. Cell 20 cannot reach eight after two
     # failed tracks and must be pruned without a cache entry.
     best = {
-        (0, "track-0"): 100.0, (0, "track-1"): 100.0, (0, "track-2"): 900.0,
-        (10, "track-0"): 900.0, (10, "track-1"): 10.0, (10, "track-2"): 10.0,
-        (20, "track-0"): 900.0, (20, "track-1"): 900.0, (20, "track-2"): 900.0,
+        (0, "track-0"): 100.0,
+        (0, "track-1"): 100.0,
+        (0, "track-2"): 900.0,
+        (10, "track-0"): 900.0,
+        (10, "track-1"): 10.0,
+        (10, "track-2"): 10.0,
+        (20, "track-0"): 900.0,
+        (20, "track-1"): 900.0,
+        (20, "track-2"): 900.0,
     }
 
     def evaluator():
@@ -224,8 +285,10 @@ def test_exact_top_k_keeps_equal_bound_late_improvement_and_skips_partial_cache(
         )
         instance._coarse_elevation = lambda _: np.zeros((1, len(nodes)))
         instance._track_best = lambda item, grid, training, *_args, **_kwargs: (
-            best[(round(float(grid.east_km[0])), item.tracklet_id)], int(np.sum(~training)),
-            None, [],
+            best[(round(float(grid.east_km[0])), item.tracklet_id)],
+            int(np.sum(~training)),
+            None,
+            [],
         )
         return instance
 
@@ -233,9 +296,11 @@ def test_exact_top_k_keeps_equal_bound_late_improvement_and_skips_partial_cache(
     expected = MODULE.rank_coverage_cells(full.evaluate_points(site), 800.0, 1)
     bounded = evaluator()
     actual, pruned = bounded.evaluate_top_k(site, top_k=1, threshold_hz=800.0)
-    assert [(row.east_km, row.north_km) for row in actual] == [
-        (row.east_km, row.north_km) for row in expected
-    ] == [(10.0, 0.0)]
+    assert (
+        [(row.east_km, row.north_km) for row in actual]
+        == [(row.east_km, row.north_km) for row in expected]
+        == [(10.0, 0.0)]
+    )
     assert len(pruned) == 1 and pruned[0]["east_km"] == 20.0
     assert bounded.metrics()["cached_cell_count"] == 2
     assert bounded.metrics()["early_abandoned_cell_count"] == 1

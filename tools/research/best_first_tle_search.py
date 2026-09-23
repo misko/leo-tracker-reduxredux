@@ -104,8 +104,14 @@ def point_evaluation(
         tracks, unmatched_penalty_hz=unmatched_penalty_hz
     )
     return PointEvaluation(
-        float(east_km), float(north_km), rmse, mse, observations,
-        qualifying_tracks, tuple(tracks), {} if metadata is None else metadata,
+        float(east_km),
+        float(north_km),
+        rmse,
+        mse,
+        observations,
+        qualifying_tracks,
+        tuple(tracks),
+        {} if metadata is None else metadata,
     )
 
 
@@ -143,11 +149,17 @@ def best_first_search(
 ) -> SearchResult:
     """Search a circle with heuristic ordering and optional separately certified pruning."""
     levels = tuple(float(value) for value in levels_km)
-    if (not levels or budget_points <= 0 or radius_km <= 0 or region_size_km <= 0
-            or radius_km > region_size_km / 2 + 1e-12):
+    if (
+        not levels
+        or budget_points <= 0
+        or radius_km <= 0
+        or region_size_km <= 0
+        or radius_km > region_size_km / 2 + 1e-12
+    ):
         raise ValueError("valid positive search geometry and budget required")
-    if any(not np.isclose(coarse / fine, 2.0)
-           for coarse, fine in zip(levels, levels[1:], strict=False)):
+    if any(
+        not np.isclose(coarse / fine, 2.0) for coarse, fine in zip(levels, levels[1:], strict=False)
+    ):
         raise ValueError("levels must be aligned halvings")
     if heuristic_discard_margin_hz2 is not None and (
         not np.isfinite(heuristic_discard_margin_hz2) or heuristic_discard_margin_hz2 < 0
@@ -165,7 +177,8 @@ def best_first_search(
     def priority(cell: SearchCell, parent: PointEvaluation | None) -> float:
         exact = cache.get((cell.east_km, cell.north_km))
         value = (
-            exact.weighted_mse_hz2 if exact is not None
+            exact.weighted_mse_hz2
+            if exact is not None
             else (parent.weighted_mse_hz2 if parent is not None else 0.0)
         )
         if estimate_priority is not None:
@@ -175,8 +188,11 @@ def best_first_search(
         return value
 
     def queue_cell(
-        cell: SearchCell, parent: PointEvaluation | None, *,
-        priority_override: float | None = None, priority_kind: str | None = None,
+        cell: SearchCell,
+        parent: PointEvaluation | None,
+        *,
+        priority_override: float | None = None,
+        priority_kind: str | None = None,
     ) -> None:
         nonlocal serial
         key = (cell.depth, cell.east_km, cell.north_km)
@@ -193,11 +209,15 @@ def best_first_search(
             if bound is not None and (not np.isfinite(bound) or bound < 0):
                 raise ValueError("certified lower bound must be finite and nonnegative")
         populated = SearchCell(
-            cell.cell_id, cell.east_km, cell.north_km, cell.spacing_km,
-            cell.depth, cell.parent_id, cell.centre_inside_circle, estimate,
-            priority_kind or (
-                "heuristic-local-model" if estimate_priority else "parent-objective"
-            ),
+            cell.cell_id,
+            cell.east_km,
+            cell.north_km,
+            cell.spacing_km,
+            cell.depth,
+            cell.parent_id,
+            cell.centre_inside_circle,
+            estimate,
+            priority_kind or ("heuristic-local-model" if estimate_priority else "parent-objective"),
             None if bound is None else float(bound),
         )
         heapq.heappush(
@@ -210,29 +230,50 @@ def best_first_search(
     for east, north in initial:
         if _square_intersects_circle(east, north, levels[0], radius_km):
             inside = np.hypot(east, north) <= radius_km + 1e-12
-            initial_cells.append(SearchCell(
-                _cell_id(0, east, north), float(east), float(north), levels[0], 0,
-                None, bool(inside), 0.0, "initial", None,
-            ))
+            initial_cells.append(
+                SearchCell(
+                    _cell_id(0, east, north),
+                    float(east),
+                    float(north),
+                    levels[0],
+                    0,
+                    None,
+                    bool(inside),
+                    0.0,
+                    "initial",
+                    None,
+                )
+            )
     inside_initial = [cell for cell in initial_cells if cell.centre_inside_circle]
     if len(inside_initial) > budget_points:
         raise ValueError("budget cannot evaluate all initial in-circle centres")
     points = np.asarray([[cell.east_km, cell.north_km] for cell in inside_initial])
     evaluations = list(evaluate_points(points))
-    if (len(evaluations) != len(points)
-            or any((row.east_km, row.north_km) != tuple(point)
-                   for row, point in zip(evaluations, points, strict=True))):
+    if len(evaluations) != len(points) or any(
+        (row.east_km, row.north_km) != tuple(point)
+        for row, point in zip(evaluations, points, strict=True)
+    ):
         raise ValueError("evaluator changed coordinate order")
     for cell, evaluation in zip(inside_initial, evaluations, strict=True):
         cache[(cell.east_km, cell.north_km)] = evaluation
-        if best is None or (evaluation.weighted_mse_hz2, evaluation.east_km,
-                            evaluation.north_km) < (best.weighted_mse_hz2, best.east_km,
-                                                   best.north_km):
+        if best is None or (
+            evaluation.weighted_mse_hz2,
+            evaluation.east_km,
+            evaluation.north_km,
+        ) < (best.weighted_mse_hz2, best.east_km, best.north_km):
             best = evaluation
         queue_cell(cell, evaluation)
-        trace.append({"event": "evaluate", "cell_id": cell.cell_id, "depth": 0,
-                      "spacing_km": levels[0], "east_km": cell.east_km,
-                      "north_km": cell.north_km, "weighted_mse_hz2": evaluation.weighted_mse_hz2})
+        trace.append(
+            {
+                "event": "evaluate",
+                "cell_id": cell.cell_id,
+                "depth": 0,
+                "spacing_km": levels[0],
+                "east_km": cell.east_km,
+                "north_km": cell.north_km,
+                "weighted_mse_hz2": evaluation.weighted_mse_hz2,
+            }
+        )
     for cell in initial_cells:
         if not cell.centre_inside_circle:
             queue_cell(cell, None)
@@ -240,27 +281,51 @@ def best_first_search(
     while heap and len(cache) < budget_points:
         _, _, _, _, cell = heapq.heappop(heap)
         parent_evaluation = cache.get((cell.east_km, cell.north_km))
-        trace.append({
-            "event": "pop", "cell_id": cell.cell_id, "depth": cell.depth,
-            "spacing_km": cell.spacing_km, "east_km": cell.east_km,
-            "north_km": cell.north_km, "priority_hz2": cell.priority,
-            "priority_kind": cell.priority_kind,
-            "certified_lower_bound_hz2": cell.certified_lower_bound,
-            "certified": cell.certified_lower_bound is not None,
-        })
-        if (cell.certified_lower_bound is not None and best is not None
-                and cell.certified_lower_bound > best.weighted_mse_hz2):
+        trace.append(
+            {
+                "event": "pop",
+                "cell_id": cell.cell_id,
+                "depth": cell.depth,
+                "spacing_km": cell.spacing_km,
+                "east_km": cell.east_km,
+                "north_km": cell.north_km,
+                "priority_hz2": cell.priority,
+                "priority_kind": cell.priority_kind,
+                "certified_lower_bound_hz2": cell.certified_lower_bound,
+                "certified": cell.certified_lower_bound is not None,
+            }
+        )
+        if (
+            cell.certified_lower_bound is not None
+            and best is not None
+            and cell.certified_lower_bound > best.weighted_mse_hz2
+        ):
             certified_prunes += 1
-            trace.append({"event": "certified-prune", "cell_id": cell.cell_id,
-                          "bound_hz2": cell.certified_lower_bound,
-                          "incumbent_hz2": best.weighted_mse_hz2, "certified": True})
+            trace.append(
+                {
+                    "event": "certified-prune",
+                    "cell_id": cell.cell_id,
+                    "bound_hz2": cell.certified_lower_bound,
+                    "incumbent_hz2": best.weighted_mse_hz2,
+                    "certified": True,
+                }
+            )
             continue
-        if (heuristic_discard_margin_hz2 is not None and best is not None
-                and cell.priority > best.weighted_mse_hz2 + heuristic_discard_margin_hz2):
+        if (
+            heuristic_discard_margin_hz2 is not None
+            and best is not None
+            and cell.priority > best.weighted_mse_hz2 + heuristic_discard_margin_hz2
+        ):
             heuristic_drops += 1
-            trace.append({"event": "heuristic-drop", "cell_id": cell.cell_id,
-                          "priority_hz2": cell.priority, "incumbent_hz2": best.weighted_mse_hz2,
-                          "certified": False})
+            trace.append(
+                {
+                    "event": "heuristic-drop",
+                    "cell_id": cell.cell_id,
+                    "priority_hz2": cell.priority,
+                    "incumbent_hz2": best.weighted_mse_hz2,
+                    "certified": False,
+                }
+            )
             continue
         if cell.depth == len(levels) - 1:
             continue
@@ -273,59 +338,110 @@ def best_first_search(
             if not _square_intersects_circle(east, north, child_spacing, radius_km):
                 continue
             inside = np.hypot(east, north) <= radius_km + 1e-12
-            children.append(SearchCell(
-                _cell_id(child_depth, east, north), east, north, child_spacing,
-                child_depth, cell.cell_id, bool(inside), 0.0, "pending", None,
-            ))
+            children.append(
+                SearchCell(
+                    _cell_id(child_depth, east, north),
+                    east,
+                    north,
+                    child_spacing,
+                    child_depth,
+                    cell.cell_id,
+                    bool(inside),
+                    0.0,
+                    "pending",
+                    None,
+                )
+            )
         available = budget_points - len(cache)
-        to_evaluate = [child for child in children if child.centre_inside_circle
-                       and (child.east_km, child.north_km) not in cache][:available]
-        child_evaluations = list(evaluate_points(np.asarray([
-            [child.east_km, child.north_km] for child in to_evaluate
-        ]))) if to_evaluate else []
-        if (len(child_evaluations) != len(to_evaluate)
-                or any((row.east_km, row.north_km) != (child.east_km, child.north_km)
-                       for row, child in zip(child_evaluations, to_evaluate, strict=True))):
+        to_evaluate = [
+            child
+            for child in children
+            if child.centre_inside_circle and (child.east_km, child.north_km) not in cache
+        ][:available]
+        child_evaluations = (
+            list(
+                evaluate_points(
+                    np.asarray([[child.east_km, child.north_km] for child in to_evaluate])
+                )
+            )
+            if to_evaluate
+            else []
+        )
+        if len(child_evaluations) != len(to_evaluate) or any(
+            (row.east_km, row.north_km) != (child.east_km, child.north_km)
+            for row, child in zip(child_evaluations, to_evaluate, strict=True)
+        ):
             raise ValueError("evaluator changed child coordinate order")
         for child, evaluation in zip(to_evaluate, child_evaluations, strict=True):
             cache[(child.east_km, child.north_km)] = evaluation
-            if best is None or (evaluation.weighted_mse_hz2, evaluation.east_km,
-                                evaluation.north_km) < (best.weighted_mse_hz2, best.east_km,
-                                                       best.north_km):
+            if best is None or (
+                evaluation.weighted_mse_hz2,
+                evaluation.east_km,
+                evaluation.north_km,
+            ) < (best.weighted_mse_hz2, best.east_km, best.north_km):
                 best = evaluation
-            trace.append({"event": "evaluate", "cell_id": child.cell_id,
-                          "parent_id": cell.cell_id, "depth": child.depth,
-                          "spacing_km": child.spacing_km, "east_km": child.east_km,
-                          "north_km": child.north_km,
-                          "weighted_mse_hz2": evaluation.weighted_mse_hz2})
+            trace.append(
+                {
+                    "event": "evaluate",
+                    "cell_id": child.cell_id,
+                    "parent_id": cell.cell_id,
+                    "depth": child.depth,
+                    "spacing_km": child.spacing_km,
+                    "east_km": child.east_km,
+                    "north_km": child.north_km,
+                    "weighted_mse_hz2": evaluation.weighted_mse_hz2,
+                }
+            )
         for child in children:
             evaluation = cache.get((child.east_km, child.north_km))
             if evaluation is not None:
-                queue_cell(child, parent_evaluation, priority_kind=(
-                    "heuristic-child-potential-clamped-to-exact-centre"
-                    if estimate_priority else "exact-child-objective"
-                ))
+                queue_cell(
+                    child,
+                    parent_evaluation,
+                    priority_kind=(
+                        "heuristic-child-potential-clamped-to-exact-centre"
+                        if estimate_priority
+                        else "exact-child-objective"
+                    ),
+                )
             else:
-                queue_cell(child, parent_evaluation, priority_kind=(
-                    "heuristic-child-potential" if estimate_priority else "parent-objective"
-                ))
-        trace.append({"event": "subdivide", "cell_id": cell.cell_id,
-                      "children": [child.cell_id for child in children],
-                      "evaluated_children": [child.cell_id for child in to_evaluate]})
+                queue_cell(
+                    child,
+                    parent_evaluation,
+                    priority_kind=(
+                        "heuristic-child-potential" if estimate_priority else "parent-objective"
+                    ),
+                )
+        trace.append(
+            {
+                "event": "subdivide",
+                "cell_id": cell.cell_id,
+                "children": [child.cell_id for child in children],
+                "evaluated_children": [child.cell_id for child in to_evaluate],
+            }
+        )
 
     finest = sorted(
-        (row for (east, north), row in cache.items()
-         if any(event.get("east_km") == east and event.get("north_km") == north
-                and event.get("spacing_km") == levels[-1] for event in trace)),
+        (
+            row
+            for (east, north), row in cache.items()
+            if any(
+                event.get("east_km") == east
+                and event.get("north_km") == north
+                and event.get("spacing_km") == levels[-1]
+                for event in trace
+            )
+        ),
         key=lambda row: (row.weighted_mse_hz2, row.east_km, row.north_km),
     )
-    all_rows = tuple(sorted(cache.values(), key=lambda row: (
-        row.weighted_mse_hz2, row.east_km, row.north_km
-    )))
+    all_rows = tuple(
+        sorted(cache.values(), key=lambda row: (row.weighted_mse_hz2, row.east_km, row.north_km))
+    )
     deferred = tuple(item[-1] for item in sorted(heap))
     complete = not heap and heuristic_drops == 0
     stop_reason = (
-        "heuristic-frontier-discarded" if heuristic_drops
+        "heuristic-frontier-discarded"
+        if heuristic_drops
         else ("frontier-exhausted" if not heap else "point-budget-reached")
     )
     return SearchResult(
@@ -338,16 +454,21 @@ def best_first_search(
         trace=tuple(trace),
         deferred_cells=deferred,
         metrics={
-            "evaluated_point_count": len(cache), "initial_inside_count": len(inside_initial),
+            "evaluated_point_count": len(cache),
+            "initial_inside_count": len(inside_initial),
             "initial_intersecting_boundary_count": len(initial_cells) - len(inside_initial),
             "certified_prune_count": certified_prunes,
             "heuristic_drop_count": heuristic_drops,
             "certified_pruning_enabled": certified_lower_bound is not None,
             "heuristic_discard_enabled": heuristic_discard_margin_hz2 is not None,
             "result_guarantee": (
-                "heuristic-incomplete" if heuristic_drops
-                else ("budget-bounded-incomplete" if heap
-                      else "exhaustive-with-certified-pruning-only")
+                "heuristic-incomplete"
+                if heuristic_drops
+                else (
+                    "budget-bounded-incomplete"
+                    if heap
+                    else "exhaustive-with-certified-pruning-only"
+                )
             ),
             "unmatched_penalty_hz": 800.0,
         },

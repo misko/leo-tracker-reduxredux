@@ -14,9 +14,12 @@ SPEC.loader.exec_module(MODULE)
 
 
 def row(episode, norad, weight):
-    return {"session_id": "s", "episode_id": episode,
-            "candidates": [{"norad": norad, "weight": weight}],
-            "null_weight": 1-weight}
+    return {
+        "session_id": "s",
+        "episode_id": episode,
+        "candidates": [{"norad": norad, "weight": weight}],
+        "null_weight": 1 - weight,
+    }
 
 
 def test_matches_by_episode_and_distinguishes_weak_candidate_from_null():
@@ -39,8 +42,7 @@ def test_duplicate_or_disjoint_episodes_rejected():
 
 def test_load_rejects_changed_or_nonblind_result(tmp_path):
     path = tmp_path / "result.json"
-    document = {"complete": True, "position_truth_used": False,
-                "selected": {"converged": True}}
+    document = {"complete": True, "position_truth_used": False, "selected": {"converged": True}}
     path.write_text(json.dumps(document))
     checksum = tmp_path / "result.sha256"
     checksum.write_text(hashlib.sha256(path.read_bytes()).hexdigest())

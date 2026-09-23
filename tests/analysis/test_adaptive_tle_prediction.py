@@ -19,8 +19,11 @@ from leo.analysis.adaptive_tle_prediction import (
 def bank(*, coarse_z=7000.0):
     times = np.asarray([0.0, 0.7, 1.5, 2.2, 3.1, 3.8])
     source = AdaptiveTrackInput(
-        "track", tuple(f"obs-{index}" for index in range(6)), times,
-        np.linspace(1.0, 6.0, 6), np.asarray([True, True, True, False, False, False]),
+        "track",
+        tuple(f"obs-{index}" for index in range(6)),
+        times,
+        np.linspace(1.0, 6.0, 6),
+        np.asarray([True, True, True, False, False, False]),
     )
     taus = np.arange(-5.0, 6.0)
     nodes = required_geometry_nodes((times,), taus)
@@ -30,7 +33,12 @@ def bank(*, coarse_z=7000.0):
     coarse = np.zeros((2, len(nodes), 3))
     coarse[..., 2] = coarse_z
     return AdaptiveTrackStateBank(
-        source, np.asarray([10, 20]), position, velocity, coarse, nodes,
+        source,
+        np.asarray([10, 20]),
+        position,
+        velocity,
+        coarse,
+        nodes,
         np.asarray([0, 1]),
     )
 
@@ -44,7 +52,8 @@ def test_required_nodes_include_both_interpolation_endpoints():
 
 def test_regional_evaluator_streams_candidate_blocks_and_scores_once_per_track():
     evaluator = RegionalTrackPredictionEvaluator(
-        (bank(),), lambda _east, _north: ReceiverPoint(np.zeros(3), np.asarray([0, 0, 1])),
+        (bank(),),
+        lambda _east, _north: ReceiverPoint(np.zeros(3), np.asarray([0, 0, 1])),
         candidate_block=1,
     )
     blocks = tuple(evaluator(0.0, 0.0))
@@ -74,7 +83,8 @@ def test_endpoint_first_gather_matches_direct_union_node_interpolation():
     coarse[0, :, 2] = -7000.0
     varied = replace(original, coarse_position_km=coarse)
     evaluator = RegionalTrackPredictionEvaluator(
-        (varied,), lambda _east, _north: ReceiverPoint(np.zeros(3), np.asarray([0, 0, 1])),
+        (varied,),
+        lambda _east, _north: ReceiverPoint(np.zeros(3), np.asarray([0, 0, 1])),
         candidate_block=1,
     )
 

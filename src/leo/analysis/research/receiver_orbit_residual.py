@@ -109,9 +109,10 @@ def _validate(episodes: tuple[ResidualEpisode, ...]) -> None:
         if not episode.receiver_drift_group or not episode.candidates:
             raise ValueError("receiver group and candidates are required")
         probability = episode.null_probability + episode.omitted_probability_mass
-        if not np.isfinite(probability) or min(
-            episode.null_probability, episode.omitted_probability_mass
-        ) < -1e-12:
+        if (
+            not np.isfinite(probability)
+            or min(episode.null_probability, episode.omitted_probability_mass) < -1e-12
+        ):
             raise ValueError("probability masses must be finite and nonnegative")
         norads: set[int] = set()
         for candidate in episode.candidates:
@@ -183,8 +184,7 @@ def diagnose_receiver_orbit_residuals(
         nr = len(receiver_groups) if receiver else 0
         ns = len(satellites) if satellite else 0
         parameter_scales = np.asarray(
-            [config.receiver_slope_sigma_hz_h] * nr
-            + [config.satellite_rate_sigma_unit] * ns
+            [config.receiver_slope_sigma_hz_h] * nr + [config.satellite_rate_sigma_unit] * ns
         )
 
         def evaluate(
@@ -203,9 +203,7 @@ def diagnose_receiver_orbit_residuals(
                     satellite_column = nr + satellite_index[candidate.catalog_number]
                     if receiver:
                         prediction += (
-                            parameters[receiver_column]
-                            * parameter_scales[receiver_column]
-                            * time_h
+                            parameters[receiver_column] * parameter_scales[receiver_column] * time_h
                         )
                     if satellite:
                         prediction += (
@@ -220,13 +218,11 @@ def diagnose_receiver_orbit_residuals(
                         score = -z / (config.robust_scale_hz * np.sqrt(1.0 + z * z))
                         if receiver:
                             derivative[receiver_column] += mass * float(
-                                np.mean(score * time_h[mask])
-                                * parameter_scales[receiver_column]
+                                np.mean(score * time_h[mask]) * parameter_scales[receiver_column]
                             )
                         if satellite:
                             derivative[satellite_column] += mass * float(
-                                np.mean(score * design[mask])
-                                * parameter_scales[satellite_column]
+                                np.mean(score * design[mask]) * parameter_scales[satellite_column]
                             )
                 total += episode_loss
             return total, derivative
@@ -300,9 +296,7 @@ def diagnose_receiver_orbit_residuals(
     tolerance = singular[0] * max(weighted.shape) * np.finfo(float).eps if singular.size else 0
     rank = int(np.count_nonzero(singular > tolerance))
     condition = (
-        float(singular[0] / singular[-1])
-        if singular.size and singular[-1] > tolerance
-        else None
+        float(singular[0] / singular[-1]) if singular.size and singular[-1] > tolerance else None
     )
     correlations = []
     for left in range(len(receiver_groups)):

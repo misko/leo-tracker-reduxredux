@@ -171,9 +171,7 @@ def main():
     held_edges = [edge for edge in timing_edges if edge[0].visit % 2 == 1]
     matches = _matches(held_edges, model)
     shifted = _matches(_timing_edges(detections, source.sample_rate_hz, visit_shift=17), model)
-    shifted_53 = _matches(
-        _timing_edges(detections, source.sample_rate_hz, visit_shift=53), model
-    )
+    shifted_53 = _matches(_timing_edges(detections, source.sample_rate_hz, visit_shift=53), model)
     track_by_group = {}
     for track in shard["tracks"]:
         for row in track["observations"]:
@@ -190,9 +188,7 @@ def main():
             ):
                 continue
             scale = lane["canonical_rf_hz"] / lane["actual_rf_hz"]
-            residual = _wrapped(
-                row["measured_cfo_hz"] - detection.cfo_hz * scale, ALIAS_HZ * scale
-            )
+            residual = _wrapped(row["measured_cfo_hz"] - detection.cfo_hz * scale, ALIAS_HZ * scale)
             if abs(residual) < 1:
                 matches.append(track["tracklet_id"])
         return matches
@@ -268,9 +264,7 @@ def main():
             "evaluation_timing_edge_count": len(held_edges),
             "evaluation_unique_match_count": len(matches),
             "shifted_control_unique_match_count": len(shifted),
-            "shifted_control_lane_comparison_count": _shifted_lane_comparison_count(
-                detections, 17
-            ),
+            "shifted_control_lane_comparison_count": _shifted_lane_comparison_count(detections, 17),
             "shifted_53_control_unique_match_count": len(shifted_53),
             "shifted_53_control_lane_comparison_count": _shifted_lane_comparison_count(
                 detections, 53
@@ -286,9 +280,12 @@ def main():
             "carrier-specific",
         ],
     }
-    document["content_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    document["content_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     _atomic(args.output, document)
     print(json.dumps(document["accounting"], sort_keys=True))
 

@@ -78,9 +78,7 @@ class AdaptiveTlePriorResultV1(ContractModel):
 
 class AdaptiveTlePositionDocumentV1(ContractModel):
     schema_version: Literal[1] = 1
-    analysis_id: Literal["scanner-adaptive-tle-position-v1"] = (
-        "scanner-adaptive-tle-position-v1"
-    )
+    analysis_id: Literal["scanner-adaptive-tle-position-v1"] = "scanner-adaptive-tle-position-v1"
     session_id: SessionId
     input_manifest_sha256: Sha256Digest
     analysis_manifest_sha256: Sha256Digest
@@ -88,9 +86,7 @@ class AdaptiveTlePositionDocumentV1(ContractModel):
     evidence_sha256: Sha256Digest
     known_position_used_for_inference: Literal[False] = False
     position_fix_claimed: Literal[False] = False
-    identity_selection: Literal["randomized-evaluation-rms-v1"] = (
-        "randomized-evaluation-rms-v1"
-    )
+    identity_selection: Literal["randomized-evaluation-rms-v1"] = "randomized-evaluation-rms-v1"
     objective: Literal["duration-weighted-capped-rmse-800hz-v1"] = (
         "duration-weighted-capped-rmse-800hz-v1"
     )

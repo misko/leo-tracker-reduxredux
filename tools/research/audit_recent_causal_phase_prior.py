@@ -27,9 +27,7 @@ def digest(path: Path) -> str:
 
 def tle_key(text: str) -> tuple[str, ...]:
     return tuple(
-        line.strip()
-        for line in text.splitlines()
-        if line.strip().startswith(("1 ", "2 "))
+        line.strip() for line in text.splitlines() if line.strip().startswith(("1 ", "2 "))
     )
 
 
@@ -37,8 +35,7 @@ def sequence_before(records: list[dict], cutoff_ns: int) -> list[dict]:
     eligible = [
         row
         for row in records
-        if row["epoch_utc_ns"] < cutoff_ns
-        and row["first_collected_utc_ns"] < cutoff_ns
+        if row["epoch_utc_ns"] < cutoff_ns and row["first_collected_utc_ns"] < cutoff_ns
     ]
     by_epoch: dict[int, dict] = {}
     for row in eligible:
@@ -54,8 +51,7 @@ def history_support(records: list[dict], current_text: str, cutoff_ns: int) -> d
     sequence = [
         row
         for row in records
-        if row["epoch_utc_ns"] < cutoff_ns
-        and row["first_collected_utc_ns"] < cutoff_ns
+        if row["epoch_utc_ns"] < cutoff_ns and row["first_collected_utc_ns"] < cutoff_ns
     ]
     current_key = tle_key(current_text)
     current = next((row for row in sequence if tle_key(row["text"]) == current_key), None)
@@ -64,9 +60,7 @@ def history_support(records: list[dict], current_text: str, cutoff_ns: int) -> d
     prior = [row for row in sequence if row["epoch_utc_ns"] < current["epoch_utc_ns"]]
     if not prior:
         return {"status": "no-predecessor", "predicted_phase_fallback_s": 0.0}
-    previous = max(
-        prior, key=lambda row: (row["epoch_utc_ns"], row["first_collected_utc_ns"])
-    )
+    previous = max(prior, key=lambda row: (row["epoch_utc_ns"], row["first_collected_utc_ns"]))
     gap_h = (current["epoch_utc_ns"] - previous["epoch_utc_ns"]) / NS_HOUR
     if not 1 <= gap_h <= 72:
         return {
@@ -104,9 +98,12 @@ def load_histories(reader: TleArchiveReader, wanted: set[int], last_capture_ns: 
 
 
 def canonical_digest(value: dict) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+    )
 
 
 def validate_prior(prior: dict, first_capture_ns: int) -> dict:
@@ -147,9 +144,7 @@ def run(evidence: Path, archive: Path, prior_path: Path, output: Path) -> None:
         wanted.update(by_norad)
         sessions.append((item, path, tle_path, by_norad))
     prior = json.loads(prior_path.read_text())
-    winner = validate_prior(
-        prior, min(int(item["reference_utc_ns"]) for item, *_ in sessions)
-    )
+    winner = validate_prior(prior, min(int(item["reference_utc_ns"]) for item, *_ in sessions))
     last_capture = max(int(item["reference_utc_ns"]) for item, *_ in sessions)
     histories, snapshots = load_histories(TleArchiveReader(archive), wanted, last_capture)
     counts: dict[str, int] = defaultdict(int)

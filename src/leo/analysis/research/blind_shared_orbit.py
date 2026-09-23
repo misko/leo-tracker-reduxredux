@@ -504,9 +504,8 @@ def fit_blind_shared_orbit(
         frozen_rates = np.asarray(
             [frozen_rate_corrections_s_h[int(norad)] for norad in all_norads], dtype=float
         )
-        if (
-            not np.all(np.isfinite(frozen_rates))
-            or np.any(np.abs(frozen_rates) > selected_config.phase_rate_bound_s_h)
+        if not np.all(np.isfinite(frozen_rates)) or np.any(
+            np.abs(frozen_rates) > selected_config.phase_rate_bound_s_h
         ):
             raise ValueError(
                 "frozen rates must cover retained NORADs and satisfy configured bounds"
@@ -670,8 +669,7 @@ def fit_blind_shared_orbit(
 
     exact_complete = exact_prediction is not None and all(map(audit_passes, audits))
     frozen_acquisition_score = -sum(
-        float(acquisition["full_catalogue_training_log_evidence"])
-        for acquisition in acquisitions
+        float(acquisition["full_catalogue_training_log_evidence"]) for acquisition in acquisitions
     )
     current_full_catalogue_score = None if reused_acquisition else frozen_acquisition_score
     origin_branch_ids = tuple(
@@ -746,9 +744,7 @@ def fit_blind_shared_orbit_branches(
 
     def branch_score(branch_id: str) -> float:
         scores = cast(dict[str, object], results[branch_id]["outer_position_scores"])
-        value = scores[
-            "current_branch_full_catalogue_nominal_training_negative_log_evidence"
-        ]
+        value = scores["current_branch_full_catalogue_nominal_training_negative_log_evidence"]
         if not isinstance(value, (int, float)):
             raise TypeError("branch score is not numeric")
         return float(value)

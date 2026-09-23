@@ -73,7 +73,9 @@ class AdaptiveTlePositionStore:
             raise PermissionError("adaptive TLE position store is read-only")
         with self._directory(session_id, create=True) as directory:
             descriptor = os.open(
-                ".writer.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o640,
+                ".writer.lock",
+                os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW,
+                0o640,
                 dir_fd=directory.fileno(),
             )
             try:
