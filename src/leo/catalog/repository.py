@@ -2249,7 +2249,7 @@ class CatalogRepository:
         configuration_digest: str,
         priority: int = 0,
     ) -> bool:
-        """Create one immutable adaptive trajectory/TLE job in the shared queue."""
+        """Create a tracking job bounded by memory capacity for shared orbit banks."""
         return self._enqueue_adaptive_job(
             job_kind="adaptive_tracking",
             stage_key="adaptive-tracking-v4",
@@ -2257,7 +2257,7 @@ class CatalogRepository:
             input_manifest_digest=input_manifest_digest,
             configuration_digest=configuration_digest,
             priority=priority,
-            resource_class="heavy",
+            resource_class="memory",
         )
 
     def _enqueue_adaptive_job(

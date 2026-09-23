@@ -10,6 +10,10 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 from leo.application.scanner_tracking import ScannerTrackingService
+from leo.cli.adaptive_tle_position import (
+    adaptive_tle_position_complete,
+    run_adaptive_tle_position,
+)
 from leo.cli.blind_regional import blind_regional_complete, run_blind_regional
 from leo.cli.scan_position_methods import position_methods_complete, run_position_methods
 from leo.contracts.scanner_tracking import (
@@ -42,6 +46,10 @@ def _position_methods_available(
             bulk_root,
             session_id,
             expected_input_manifest_sha256=input_manifest_sha256,
+        ) and adaptive_tle_position_complete(
+            bulk_root,
+            session_id,
+            expected_input=input_manifest_sha256,
         )
     except (OSError, ValueError):
         return False
@@ -194,6 +202,7 @@ def main():
                     status = service.run(sid, maximum_seconds=remaining)
                     position_complete = False
                     blind_complete = False
+                    adaptive_position_complete = False
                     if status.state == "complete":
                         source = sources.load(sid)
                         _publish_position_methods_verified(
@@ -211,6 +220,16 @@ def main():
                         )
                         if not blind_complete:
                             raise ValueError("blind regional publication failed verification")
+                        run_adaptive_tle_position(args.bulk_root, args.tle_root, sid)
+                        adaptive_position_complete = adaptive_tle_position_complete(
+                            args.bulk_root,
+                            sid,
+                            expected_input=source.input_manifest_sha256,
+                        )
+                        if not adaptive_position_complete:
+                            raise ValueError(
+                                "adaptive TLE position publication failed verification"
+                            )
                 except BundleNotFoundError:
                     continue
                 except Exception as error:
@@ -246,6 +265,9 @@ def main():
                                 if position_complete
                                 else "pending",
                                 "blind_regional_state": "complete" if blind_complete else "pending",
+                                "adaptive_tle_position_state": (
+                                    "complete" if adaptive_position_complete else "pending"
+                                ),
                                 "trajectory": status.product.trajectory_state
                                 if status.product
                                 else None,
