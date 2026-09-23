@@ -1,0 +1,81 @@
+{
+  "schema": "eight-hour-quarter-baseline-report/v1",
+  "scope": {
+    "available_scans": 44,
+    "training_scans": 8,
+    "holdout_scans": 14,
+    "training_tracks": 198,
+    "training_observations": 5890
+  },
+  "method": "fixed-zero-residual-rate causal-orbit baseline",
+  "rows": [
+    {
+      "region": "sacramento",
+      "start_latitude_deg": 38.5816,
+      "start_longitude_deg": -121.4944,
+      "latitude_deg": 37.868736229725634,
+      "longitude_deg": -122.50480854187857,
+      "horizontal_error_km": 2.761874938959396,
+      "negative_log_posterior": 9034.553965767645,
+      "projected_gradient_max": 0.00016686646021391027,
+      "fit_digest": "sha256:d791ca4f33fc878908411b69ffdf3455a5784350a4ab10715c23975119077c23",
+      "exact_digest": "sha256:818fa61eda7b753bb293dc7c7d8cdc6b4462eaa46d3bf01a99caf03655cd75af",
+      "exact_cases": 2161682,
+      "exact_objective_difference": -1.0680378181859851e-07
+    },
+    {
+      "region": "reno",
+      "start_latitude_deg": 39.5296,
+      "start_longitude_deg": -119.8138,
+      "latitude_deg": 37.868736198904635,
+      "longitude_deg": -122.50480854798471,
+      "horizontal_error_km": 2.761872546874664,
+      "negative_log_posterior": 9034.553965767622,
+      "projected_gradient_max": 3.4211621766644384e-05,
+      "fit_digest": "sha256:fc8804356afbff7e1c37af1cffb881ca8808233b99df3460017cab60841205a3",
+      "exact_digest": "sha256:d11b9a2f25b7c125945b6bd0593ec3cdc0444c86337bc3abbddd0f86f3e87b23",
+      "exact_cases": 2161682,
+      "exact_objective_difference": -1.0680923878680915e-07
+    },
+    {
+      "region": "denver",
+      "start_latitude_deg": 39.7392,
+      "start_longitude_deg": -104.9903,
+      "latitude_deg": 37.868736186015994,
+      "longitude_deg": -122.50480844665732,
+      "horizontal_error_km": 2.7618659938954084,
+      "negative_log_posterior": 9034.553965767622,
+      "projected_gradient_max": 5.206673361612957e-05,
+      "fit_digest": "sha256:81e18a6840b17b37a53106ccc6ecf584a20efa456b42b0c78bcd2639114becd6",
+      "exact_digest": "sha256:a98f9a00db68549d36e9c1b42726950832b60f4bd9b60f744efb18801995da67",
+      "exact_cases": 2161682,
+      "exact_objective_difference": -1.068074197974056e-07
+    }
+  ],
+  "association_stability": {
+    "track_count": 198,
+    "same_winner_all_initializations": 198,
+    "leader_above_0_9": 142,
+    "leader_above_0_5": 179,
+    "null_majority": 6
+  },
+  "paired_association_diagnostic": {
+    "pair_count": 20,
+    "available": 20,
+    "same_leader": 17,
+    "high_weight_disagreements": 0
+  },
+  "holdout": {
+    "quarter8_log_predictive": -18173.482046069472,
+    "five_scan_log_predictive": -18189.345927416787,
+    "difference": 15.863881347315328,
+    "comparison_is_pure_scan_count_experiment": false
+  },
+  "limitations": [
+    "This is a subset result: 8 training scans, 198 tracks, and 5890 observations.",
+    "This is not a completed joint fit or a fit over all 30 training scans.",
+    "Association weights are not calibrated identity probabilities or identity truth.",
+    "The nominal 80 mm paired-receiver geometry does not yet justify a calibrated positioning claim.",
+    "The five-scan comparison differs in more than scan count."
+  ]
+}
