@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import Engine
 
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
@@ -41,6 +42,10 @@ def _position_methods_complete(
             bulk_root,
             session_id,
             expected_input_manifest_sha256=expected_input_manifest_sha256,
+        ) and adaptive_tle_position_complete(
+            bulk_root,
+            session_id,
+            expected_input=expected_input_manifest_sha256,
         )
     except (OSError, ValueError):
         return False
@@ -70,6 +75,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "position": "scanner-conditional-position-v1",
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",
+            "adaptive_tle_position": "scanner-adaptive-tle-position-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -342,6 +348,7 @@ def run_once(
         lease.job_kind == "adaptive_tracking"
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
+        and payload.get("adaptive_tle_position_state") == "complete"
         and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(

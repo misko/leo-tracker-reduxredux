@@ -2,13 +2,20 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from sqlalchemy import text
+
 
 def _digest(character: str) -> str:
     return "sha256:" + character * 64
 
 
-def test_tracking_jobs_use_heavy_capacity_and_keep_their_immutable_binding(catalog_harness) -> None:
+def test_tracking_jobs_use_memory_capacity_and_keep_their_immutable_binding(catalog_harness) -> None:
     repository = catalog_harness.repository
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(text(
+            "UPDATE processing_resource_capacity SET maximum_leases = 2 "
+            "WHERE resource_class = 'memory'"
+        ))
     for index in range(3):
         assert repository.enqueue_adaptive_tracking_job(
             session_id=f"scan-fw-tracking-{index}",
@@ -29,7 +36,9 @@ def test_tracking_jobs_use_heavy_capacity_and_keep_their_immutable_binding(catal
     assert first is not None
     assert second is not None
     assert first.job_kind == second.job_kind == "adaptive_tracking"
-    assert first.resource_class == second.resource_class == "heavy"
+    assert first.resource_class == second.resource_class == "memory"
+    assert first.input_manifest_digest == _digest("1")
+    assert first.configuration_digest == _digest("4")
     assert third is None
 
 

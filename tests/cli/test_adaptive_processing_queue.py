@@ -203,6 +203,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     )
     monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
     monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
+    monkeypatch.setattr(subject, "adaptive_tle_position_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject.subprocess,
         "run",
@@ -210,7 +211,10 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
             command.extend(args)
             or SimpleNamespace(
                 returncode=0,
-                stdout='{"state":"complete","position_methods_state":"complete"}',
+                stdout=(
+                    '{"state":"complete","position_methods_state":"complete",'
+                    '"adaptive_tle_position_state":"complete"}'
+                ),
                 stderr="",
             )
         ),
@@ -268,6 +272,7 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
     calls: list[dict[str, object]] = []
     observed = []
     monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
+    monkeypatch.setattr(subject, "adaptive_tle_position_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject,
         "position_methods_complete",
@@ -315,6 +320,22 @@ def test_assisted_completion_does_not_hide_missing_blind_product(monkeypatch, tm
         tmp_path, "scan-test", expected_input_manifest_sha256=digest
     )
     assert observed == [{"expected_input_manifest_sha256": digest}]
+
+
+def test_legacy_completion_does_not_hide_missing_adaptive_position(monkeypatch, tmp_path):
+    monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
+    monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
+    observed = []
+    monkeypatch.setattr(
+        subject,
+        "adaptive_tle_position_complete",
+        lambda *_, **kwargs: observed.append(kwargs) or False,
+    )
+    digest = "sha256:" + "1" * 64
+    assert not subject._position_methods_complete(
+        tmp_path, "scan-test", expected_input_manifest_sha256=digest
+    )
+    assert observed == [{"expected_input": digest}]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
