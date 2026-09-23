@@ -107,6 +107,15 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     fig, ax = plt.subplots(figsize=(9, 4.8), layout="constrained")
+    background = [window for window in windows if window["both_qualified"]]
+    ax.scatter(
+        [window["center_s"] for window in background],
+        [window["differential_phase_deg"] for window in background],
+        s=5,
+        alpha=0.18,
+        color="gray",
+        label="all qualified artifact windows (context)",
+    )
     for partition, marker in (("train", "o"), ("held", "s")):
         q = [r for r in rows if r["partition"] == partition and r["qualified"]]
         ax.scatter(

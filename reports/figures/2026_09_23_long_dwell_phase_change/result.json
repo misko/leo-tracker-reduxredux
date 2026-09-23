@@ -1,0 +1,176 @@
+{
+  "schema": "long-dwell-phase-change/v1",
+  "input": "reports/figures/2026_09_16_dual_rx_pilot_phase/105915-coherent-pilot-20ms.json",
+  "seed": 20260923,
+  "selection": "16 fixed evenly spaced artifact rows before qualification",
+  "rows": [
+    {
+      "group": 0,
+      "source_index": 0,
+      "partition": "train",
+      "center_s": 23.610000000000003,
+      "qualified": true,
+      "phase_rad": -0.3948861140507171,
+      "failure": null
+    },
+    {
+      "group": 1,
+      "source_index": 47,
+      "partition": "train",
+      "center_s": 24.080000000000076,
+      "qualified": true,
+      "phase_rad": -0.3754794833527217,
+      "failure": null
+    },
+    {
+      "group": 2,
+      "source_index": 94,
+      "partition": "train",
+      "center_s": 24.55000000000015,
+      "qualified": true,
+      "phase_rad": -0.16122282120056597,
+      "failure": null
+    },
+    {
+      "group": 3,
+      "source_index": 141,
+      "partition": "train",
+      "center_s": 25.020000000000223,
+      "qualified": true,
+      "phase_rad": -0.1563540884292547,
+      "failure": null
+    },
+    {
+      "group": 4,
+      "source_index": 187,
+      "partition": "held",
+      "center_s": 25.480000000000295,
+      "qualified": true,
+      "phase_rad": 0.14373994100799692,
+      "failure": null
+    },
+    {
+      "group": 5,
+      "source_index": 234,
+      "partition": "train",
+      "center_s": 25.95000000000037,
+      "qualified": true,
+      "phase_rad": 0.2344943525121464,
+      "failure": null
+    },
+    {
+      "group": 6,
+      "source_index": 281,
+      "partition": "held",
+      "center_s": 26.420000000000442,
+      "qualified": true,
+      "phase_rad": 0.5196029869119086,
+      "failure": null
+    },
+    {
+      "group": 7,
+      "source_index": 328,
+      "partition": "held",
+      "center_s": 26.890000000000516,
+      "qualified": true,
+      "phase_rad": 0.24065986354296953,
+      "failure": null
+    },
+    {
+      "group": 8,
+      "source_index": 375,
+      "partition": "held",
+      "center_s": 27.36000000000059,
+      "qualified": true,
+      "phase_rad": 0.290567479850571,
+      "failure": null
+    },
+    {
+      "group": 9,
+      "source_index": 422,
+      "partition": "held",
+      "center_s": 27.830000000000663,
+      "qualified": true,
+      "phase_rad": 0.5856818219828324,
+      "failure": null
+    },
+    {
+      "group": 10,
+      "source_index": 469,
+      "partition": "held",
+      "center_s": 28.300000000000736,
+      "qualified": true,
+      "phase_rad": 0.6744019713934339,
+      "failure": null
+    },
+    {
+      "group": 11,
+      "source_index": 516,
+      "partition": "train",
+      "center_s": 28.77000000000081,
+      "qualified": true,
+      "phase_rad": 0.6754593914103801,
+      "failure": null
+    },
+    {
+      "group": 12,
+      "source_index": 562,
+      "partition": "held",
+      "center_s": 29.23000000000088,
+      "qualified": true,
+      "phase_rad": 0.9063574910076897,
+      "failure": null
+    },
+    {
+      "group": 13,
+      "source_index": 609,
+      "partition": "train",
+      "center_s": 29.700000000000955,
+      "qualified": true,
+      "phase_rad": 0.8900116901057369,
+      "failure": null
+    },
+    {
+      "group": 14,
+      "source_index": 656,
+      "partition": "train",
+      "center_s": 30.17000000000103,
+      "qualified": true,
+      "phase_rad": 0.8909196650826194,
+      "failure": null
+    },
+    {
+      "group": 15,
+      "source_index": 703,
+      "partition": "held",
+      "center_s": 30.640000000001102,
+      "qualified": false,
+      "phase_rad": null,
+      "failure": "one_or_both_sources_failed"
+    }
+  ],
+  "fit": {
+    "reference_s": 26.48125000000045,
+    "intercept_rad": 0.20036782400970254,
+    "rate_rad_per_s": 0.20557465259599914,
+    "rate_deg_per_s": 11.778559968618863
+  },
+  "held": {
+    "selected": 8,
+    "qualified": 7,
+    "coverage": 0.875,
+    "affine_median_abs_error_deg": 6.190533113495503,
+    "constant_median_abs_error_deg": 18.648125209839957,
+    "wrong_time_median_abs_error_deg": 8.059025085932074,
+    "affine_errors_deg": [
+      8.548744469823117,
+      19.01226430454572,
+      2.505922573943265,
+      5.182349979211151,
+      6.190533113495503,
+      5.737900047241323,
+      8.073911585084904
+    ]
+  },
+  "interpretation": "conditional restored-model phase predictability; no source identity, geometry, or position claim"
+}
