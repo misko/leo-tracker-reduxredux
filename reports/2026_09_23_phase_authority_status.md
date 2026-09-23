@@ -86,8 +86,39 @@ path-local; an equal ID across receivers can merely mean equal sample-start,
 candidate-rank, and method labels. Such equality is not independent emitter
 matching evidence and must not be used as a global source join.
 
-This gives a concrete, bounded next investigation using existing data, without
-declaring the geometric goal complete or assuming the missing calibration.
+The subsequent [probe-level audit](figures/2026_09_23_independent_phase/geometry-sensitivity/continuous-branch-discrimination.json)
+checked that exact 31.8–32.625 s intersection using all archived branch-associated
+candidates. It read metadata/products only; no IQ or phase holdout was opened.
+
+| Associated probe opportunities | RX0 | RX1 |
+|---|---:|---:|
+| Selected branch | 31 | 33 |
+| Secondary branch | 2 | 13 |
+| Both branches at the same probe start | 0 | 12 |
+| Ambiguous branch associations | 0 | 0 |
+
+There are **zero probe starts with all four branches**. Consequently, the
+common receiver-offset closure `(RX1 selected − RX1 secondary) −
+(RX0 selected − RX0 secondary)` cannot be evaluated on these archived
+opportunities. Overlapping track support intervals did not establish simultaneous
+two-source support. This rules out that test on this interval's retained
+detections; it does not prove that a second signal is absent from its raw IQ.
+
+The selected RX0/RX1 branches share 30 probe starts, all passing the existing
+two-sample modulo-frame timing gate. RX0 selected versus RX1 secondary shares
+13 starts and none passes; RX0 secondary versus RX1 selected shares two and
+both pass; the two secondary branches share none. These are local template
+timing diagnostics, not verified common phase references or emitter identities.
+The [reproducible builder](figures/2026_09_23_independent_phase/geometry-sensitivity/build_continuous_branch_discrimination.py)
+retains every associated candidate and reports ambiguity explicitly. It does
+not select an alias path, unwrap CFO across gaps, or fit a receiver drift model.
+
+Before a two-source cancellation study, another predeclared interval/cohort or
+fresh analysis of saved IQ must establish simultaneous, independently isolated
+pilot support on both receivers. Any subsequent model qualification must freeze
+pairing, aliases, and masks on seeded random whole-group training data and test
+random held groups. Neither alternating nor chronological splits are used.
+The geometric goal remains unproven, and the missing calibration is not assumed.
 
 For absolute geometric interpretation, the missing input is a calibration or hardware reference
 authority that constrains differential receiver phase/frequency/delay over the
