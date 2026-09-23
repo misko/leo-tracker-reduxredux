@@ -56,3 +56,19 @@ For tomorrow's comparison, use captures starting at or after the confirmation
 boundary and preserve RX0/RX1 electrical identities. The 2026-09-24 matching
 eight-hour window is entirely after this boundary. This confirms the physical
 intervention without asserting a measured orientation or verified cable mapping.
+
+## 2026-09-23: operator axis observation
+
+- **Operator statement:** "axis is 79deg east", supplied in response to a
+  question about the pre-rotation recordings' geometry.
+- **Recorded value:** 79 degrees east; operator-reported, not independently
+  surveyed. The precise observation time and validity interval were not supplied.
+- **Interpretation pending:** whether this is the line between antenna centers
+  or antenna pointing direction; whether the angle is clockwise from north;
+  true versus magnetic north; tilt; and which electrical receiver lies along
+  the positive direction.
+- **Use:** retain as orientation evidence for a future calibration record.
+  Do not reinterpret it as verified RF phase-center geometry or change the
+  immutable deployed station manifest. The earlier 180-degree rotation remains
+  a separately logged intervention; a directed post-rotation bearing is not
+  inferred until the axis convention and capture interval are confirmed.
