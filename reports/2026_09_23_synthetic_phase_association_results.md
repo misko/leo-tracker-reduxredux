@@ -3,7 +3,7 @@
 The supervised observation-level qualification met its prespecified condition.
 In the calibrated held scenario, phase reduced mean true-candidate log loss from
 0.0888 to 0.0520 at 100% coverage. Top-one accuracy remained 17/18 for both the
-Doppler baseline and augmented scorer, so the gain is better probability ranking,
+Doppler baseline and augmented scorer, so the gain is better probability assignment,
 not another correctly identified trajectory. The fixed 90-degree orientation
 control scored worse at 0.0747 log loss. Orientation was a frozen diagnostic,
 not part of the prespecified success condition; this comparison is descriptive.
@@ -47,6 +47,19 @@ sensor scenario. Real deployment therefore needs external calibration authority,
 and real validation still needs independently labeled same/different-source
 tracks. The counterfactual 8 cm baseline and analytic trajectories are sensitivity
 fixtures, not measurements of the hardware or sky.
+
+These are four-second scenarios; a 20 ms expected-null experiment was discussed
+but is not part of this frozen evaluation. Generation and scoring share the
+same geometric family, so the calibrated result is an internal qualification,
+not robustness to orbit-model error. Each mismatch experiment supplies matching
+labeled training data: abstention here does not prove detection of a new receiver
+fault appearing only after training. The 90-degree control is a frozen diagnostic,
+not an additional success criterion introduced after viewing results. Eighteen
+held trajectories and one random split do not establish a population-level gain.
+
+Validation: four focused tests passed, including a held-label mutation check
+that leaves candidate losses unchanged. Terra independently reviewed the final
+scenario separation and supervised-calibration assumptions.
 No bootstrap uncertainty was prespecified, and 18 held units per scenario are
 too few for a precise generalization estimate. Results also depend on the fixed
 analytic LOS/range-rate model, Gaussian observation noise, candidate construction,
