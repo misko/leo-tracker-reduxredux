@@ -195,9 +195,9 @@ def run(args) -> None:
             support = next(
                 row for row in provenance["evaluated_support"] if row["episode_id"] == episode_id
             )
-            support_digest = "sha256:" + hashlib.sha256(
-                np.sort(norads).astype("<i8").tobytes()
-            ).hexdigest()
+            support_digest = (
+                "sha256:" + hashlib.sha256(np.sort(norads).astype("<i8").tobytes()).hexdigest()
+            )
             if (
                 len(norads) != support["evaluated_candidate_count"]
                 or support_digest != support["evaluated_norad_digest"]
@@ -207,12 +207,10 @@ def run(args) -> None:
             for candidate in frozen["candidates"][:8]:
                 match = np.flatnonzero(norads == candidate["norad"])
                 minus_match = np.flatnonzero(
-                    np.asarray(catalogue.satellite_numbers)[minus_retained]
-                    == candidate["norad"]
+                    np.asarray(catalogue.satellite_numbers)[minus_retained] == candidate["norad"]
                 )
                 plus_match = np.flatnonzero(
-                    np.asarray(catalogue.satellite_numbers)[plus_retained]
-                    == candidate["norad"]
+                    np.asarray(catalogue.satellite_numbers)[plus_retained] == candidate["norad"]
                 )
                 if len(match) != 1 or len(minus_match) != 1 or len(plus_match) != 1:
                     phase_propagation_failures += 1
@@ -227,9 +225,9 @@ def run(args) -> None:
                     / distance
                 )
                 exported, offsets = residual_rows(rows, raw)
-                receive_utc_ns = metadata["reference_utc_ns"] + np.rint(
-                    arc.time_s * 1e9
-                ).astype(np.int64)
+                receive_utc_ns = metadata["reference_utc_ns"] + np.rint(arc.time_s * 1e9).astype(
+                    np.int64
+                )
                 tle_epoch_ns = catalogue.element_epoch_utc_ns()[retained[index]]
                 age_h = (receive_utc_ns - tle_epoch_ns) / 3.6e12
                 if np.any(age_h < 0):
@@ -242,9 +240,7 @@ def run(args) -> None:
                     plus_velocities[int(plus_match[0])],
                     age_h,
                 )
-                for row, utc_ns, design_value in zip(
-                    exported, receive_utc_ns, design, strict=True
-                ):
+                for row, utc_ns, design_value in zip(exported, receive_utc_ns, design, strict=True):
                     row["utc_ns"] = int(utc_ns)
                     row["satellite_design_hz_per_s_h"] = float(design_value)
                 candidates.append(

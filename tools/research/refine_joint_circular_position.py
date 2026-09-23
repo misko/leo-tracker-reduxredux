@@ -89,9 +89,7 @@ def circular_factor(offset_hz, grid_hz, sigma_hz, outlier_probability):
     kernel = np.zeros_like(residual, dtype=float)
     for image in range(-image_count, image_count + 1):
         kernel += np.exp(-0.5 * ((residual + image * PILOT_ALIAS_HZ) / sigma_hz) ** 2)
-    wrapped_normal_times_period = (
-        PILOT_ALIAS_HZ / (np.sqrt(2 * np.pi) * sigma_hz) * kernel
-    )
+    wrapped_normal_times_period = PILOT_ALIAS_HZ / (np.sqrt(2 * np.pi) * sigma_hz) * kernel
     return (1 - outlier_probability) * wrapped_normal_times_period + outlier_probability
 
 
@@ -127,9 +125,7 @@ class CircularArm:
         return f"sigma-{self.sigma_hz:g}-outlier-{self.outlier_probability:g}"
 
     def grid_hz(self) -> np.ndarray:
-        return np.linspace(
-            -PILOT_ALIAS_HZ / 2, PILOT_ALIAS_HZ / 2, self.grid_size, endpoint=False
-        )
+        return np.linspace(-PILOT_ALIAS_HZ / 2, PILOT_ALIAS_HZ / 2, self.grid_size, endpoint=False)
 
 
 @dataclass(frozen=True)
@@ -197,10 +193,7 @@ def track_shape(track: CachedTrack, receiver, config: ScoreConfig) -> TrackShape
     delta = track.positions_km - receiver.ecef_km[0]
     distance = np.linalg.norm(delta, axis=-1)
     prediction = (
-        -REFERENCE_RF_HZ
-        / LIGHT_KM_S
-        * np.sum(delta * track.velocities_km_s, axis=-1)
-        / distance
+        -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * track.velocities_km_s, axis=-1) / distance
     )
     elevation = np.sum(delta * receiver.up[0], axis=-1) / distance
     visible = np.min(elevation[:, arc.training], axis=-1) >= np.sin(
@@ -220,18 +213,16 @@ def track_shape(track: CachedTrack, receiver, config: ScoreConfig) -> TrackShape
         + np.log(config.signal_prior / track.catalogue_size)
     )
     candidate_train = np.where(visible, candidate_train, -np.inf)
-    candidate_test = (
-        -0.5 * n * test_mse / config.signal_sigma_hz**2
-        - n * np.log(config.signal_sigma_hz)
+    candidate_test = -0.5 * n * test_mse / config.signal_sigma_hz**2 - n * np.log(
+        config.signal_sigma_hz
     )
     null_train = (
         -0.5 * n * null_train_mse / config.null_sigma_hz**2
         - n * np.log(config.null_sigma_hz)
         + np.log1p(-config.signal_prior)
     )
-    null_test = (
-        -0.5 * n * null_test_mse / config.null_sigma_hz**2
-        - n * np.log(config.null_sigma_hz)
+    null_test = -0.5 * n * null_test_mse / config.null_sigma_hz**2 - n * np.log(
+        config.null_sigma_hz
     )
     return TrackShape(
         candidate_train,
@@ -368,9 +359,7 @@ def score_shape_groups(
             arm,
             track_log_error_budget=per_curve_budget,
         )
-        total_bound += float(train_info["log_error_bound"]) + float(
-            joint_info["log_error_bound"]
-        )
+        total_bound += float(train_info["log_error_bound"]) + float(joint_info["log_error_bound"])
         curves.append((train, joint, train_info, joint_info))
     groups: dict[object, list[int]] = defaultdict(list)
     for index, group in enumerate(group_keys):
@@ -434,11 +423,7 @@ def evaluate_position(
         train_evidence = group_value["train_evidence"]
         if details:
             posterior = np.exp(train_sum - logsumexp(train_sum))
-            angles = (
-                2 * np.pi * arm.grid_hz() / PILOT_ALIAS_HZ
-                if not arm.uniform
-                else np.zeros(1)
-            )
+            angles = 2 * np.pi * arm.grid_hz() / PILOT_ALIAS_HZ if not arm.uniform else np.zeros(1)
             vector = np.sum(posterior * np.exp(1j * angles))
             mode_index = int(np.argmax(posterior))
             group_rows.append(
@@ -526,18 +511,14 @@ def training_identity_posterior(
     """Marginalize one track identity under the all-training group posterior."""
     baseline = np.asarray(train_info.get("baseline_candidate_weights", []), dtype=float)
     if arm.uniform:
-        evidence = float(
-            np.logaddexp(logsumexp(shape.candidate_train_log), shape.null_train_log)
-        )
+        evidence = float(np.logaddexp(logsumexp(shape.candidate_train_log), shape.null_train_log))
         baseline = np.exp(shape.candidate_train_log - evidence)
         circular = baseline.copy()
         null_weight = float(np.exp(shape.null_train_log - evidence))
     else:
         grid = arm.grid_hz()
         retained = np.asarray(train_info["retained_indices"], dtype=int)
-        evidence = float(
-            np.logaddexp(logsumexp(shape.candidate_train_log), shape.null_train_log)
-        )
+        evidence = float(np.logaddexp(logsumexp(shape.candidate_train_log), shape.null_train_log))
         null_weight = float(np.exp(shape.null_train_log - evidence))
         factor = np.ones((len(baseline), len(grid)))
         if len(retained):
@@ -767,9 +748,9 @@ def build_state_cache(
                 catalogue, indices, metadata["reference_utc_ns"], arc.time_s
             )
             norads = np.asarray(catalogue.satellite_numbers)[retained]
-            support_digest = "sha256:" + hashlib.sha256(
-                np.sort(norads).astype("<i8").tobytes()
-            ).hexdigest()
+            support_digest = (
+                "sha256:" + hashlib.sha256(np.sort(norads).astype("<i8").tobytes()).hexdigest()
+            )
             baseline = support.get(episode_id)
             if baseline is None or baseline["evaluated_norad_digest"] != support_digest:
                 raise ValueError("full candidate support differs from sealed refinement")
@@ -821,9 +802,7 @@ def build_state_cache(
         }
         if actual_sources != expected_sources:
             raise ValueError("replayed training mask differs from sealed partition receipt")
-    expected_tracks, expected_observations = (
-        (39, 1415) if len(sessions) == 1 else (165, 5432)
-    )
+    expected_tracks, expected_observations = (39, 1415) if len(sessions) == 1 else (165, 5432)
     observation_count = sum(len(track.arc.time_s) for track in tracks)
     if (
         len(tracks) != expected_tracks
@@ -884,9 +863,7 @@ def run(args) -> None:
         "training": abs(
             uniform_parity["training_score"] - cache.provenance["sealed_training_score"]
         ),
-        "heldout": abs(
-            uniform_parity["heldout_score"] - cache.provenance["sealed_heldout_score"]
-        ),
+        "heldout": abs(uniform_parity["heldout_score"] - cache.provenance["sealed_heldout_score"]),
     }
     if max(parity_errors.values()) > 1e-6:
         raise ValueError("uniform-factor score does not reproduce sealed five-block baseline")
@@ -917,20 +894,26 @@ def run(args) -> None:
     for arm in arms:
         fits = []
         for seed in seeds:
+
             def objective(point, selected_arm=arm):
                 nonlocal evaluations
                 guard()
                 result = evaluate_position(cache, point, selected_arm)
                 evaluations += 1
                 with (args.output / "checkpoint.jsonl").open("a") as stream:
-                    stream.write(json.dumps({
-                        "arm": selected_arm.name,
-                        "evaluation": evaluations,
-                        "east_km": float(point[0]),
-                        "north_km": float(point[1]),
-                        "training_score": result["training_score"],
-                        "elapsed_s": time.monotonic() - started,
-                    }) + "\n")
+                    stream.write(
+                        json.dumps(
+                            {
+                                "arm": selected_arm.name,
+                                "evaluation": evaluations,
+                                "east_km": float(point[0]),
+                                "north_km": float(point[1]),
+                                "training_score": result["training_score"],
+                                "elapsed_s": time.monotonic() - started,
+                            }
+                        )
+                        + "\n"
+                    )
                 return result["training_score"]
 
             fits.append(
@@ -947,9 +930,7 @@ def run(args) -> None:
             cache, [selected["east_km"], selected["north_km"]], arm, details=True
         )
         guard()
-        latitude, longitude = cache.region.coordinates(
-            selected["east_km"], selected["north_km"]
-        )
+        latitude, longitude = cache.region.coordinates(selected["east_km"], selected["north_km"])
         outputs.append(
             {
                 "arm": arm.name,

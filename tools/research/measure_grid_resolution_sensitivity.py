@@ -36,12 +36,30 @@ def offset_samples(count: int, seed: int) -> tuple[np.ndarray, list[str]]:
     if count < 1:
         raise ValueError("positive uniform sample count required")
     uniform = np.random.default_rng(seed).uniform(-0.5, 0.5, size=(count, 2))
-    special = np.asarray([
-        [0.0, 0.0], [-0.5, 0.0], [0.5, 0.0], [0.0, -0.5], [0.0, 0.5],
-        [-0.5, -0.5], [-0.5, 0.5], [0.5, -0.5], [0.5, 0.5],
-    ])
-    labels = ["center", "west_edge", "east_edge", "south_edge", "north_edge",
-              "southwest_corner", "northwest_corner", "southeast_corner", "northeast_corner"]
+    special = np.asarray(
+        [
+            [0.0, 0.0],
+            [-0.5, 0.0],
+            [0.5, 0.0],
+            [0.0, -0.5],
+            [0.0, 0.5],
+            [-0.5, -0.5],
+            [-0.5, 0.5],
+            [0.5, -0.5],
+            [0.5, 0.5],
+        ]
+    )
+    labels = [
+        "center",
+        "west_edge",
+        "east_edge",
+        "south_edge",
+        "north_edge",
+        "southwest_corner",
+        "northwest_corner",
+        "southeast_corner",
+        "northeast_corner",
+    ]
     return np.concatenate((uniform, special)), ["uniform"] * count + labels
 
 
@@ -89,10 +107,15 @@ def finite_summary(values: np.ndarray) -> dict:
     values = np.asarray(values, dtype=float)
     finite = values[np.isfinite(values)]
     if not len(finite):
-        return {"median_hz": None, "p90_hz": None, "max_hz": None, "nonfinite_count": int(values.size)}
+        return {
+            "median_hz": None,
+            "p90_hz": None,
+            "max_hz": None,
+            "nonfinite_count": int(values.size),
+        }
     return {
         "median_hz": float(np.median(finite)),
-        "p90_hz": float(np.quantile(finite, .9)),
+        "p90_hz": float(np.quantile(finite, 0.9)),
         "max_hz": float(np.max(finite)),
         "nonfinite_count": int(values.size - len(finite)),
     }
@@ -105,7 +128,7 @@ def coverage_summary(rms: np.ndarray, observation_counts: np.ndarray, threshold_
         "all_tracks_survive_fraction": float(np.mean(np.all(qualified, axis=0))),
         "pooled_track_survival_fraction": float(np.mean(qualified)),
         "unique_observation_coverage_median": float(np.median(covered)),
-        "unique_observation_coverage_p10": float(np.quantile(covered, .1)),
+        "unique_observation_coverage_p10": float(np.quantile(covered, 0.1)),
         "unique_observation_coverage_min": int(np.min(covered)),
     }
 
@@ -118,16 +141,23 @@ def analytic_rms_coefficient(
     north_km: float,
     tau_index: int,
     training: np.ndarray,
-    step_km: float = .25,
+    step_km: float = 0.25,
 ) -> float:
     """Return tr(G)/12 for uniform-square quantization RMS²≈s² tr(G)/12."""
-    coordinates = np.asarray([[east_km - step_km, north_km], [east_km + step_km, north_km],
-                              [east_km, north_km - step_km], [east_km, north_km + step_km]])
+    coordinates = np.asarray(
+        [
+            [east_km - step_km, north_km],
+            [east_km + step_km, north_km],
+            [east_km, north_km - step_km],
+            [east_km, north_km + step_km],
+        ]
+    )
     sites = region.points(coordinates[:, 0], coordinates[:, 1])
     prediction, _ = _doppler(position, velocity, sites)
     curve = prediction[:, tau_index]
-    derivative = np.column_stack(((curve[1] - curve[0]) / (2 * step_km),
-                                  (curve[3] - curve[2]) / (2 * step_km)))
+    derivative = np.column_stack(
+        ((curve[1] - curve[0]) / (2 * step_km), (curve[3] - curve[2]) / (2 * step_km))
+    )
     held = ~training
     adjusted = derivative[held] - np.mean(derivative[training], axis=0)
     return float(np.trace(adjusted.T @ adjusted / np.sum(held)) / 12.0)
@@ -144,10 +174,14 @@ def load_anchor(path: Path) -> tuple[dict, list[dict]]:
         candidate = row.get("best_candidate")
         if candidate is None:
             raise ValueError("anchor lacks a best candidate for one track")
-        tracks.append({
-            "tracklet_id": row["tracklet_id"], "norad": int(candidate["norad"]),
-            "tau_s": float(candidate["tau_s"]), "partition_seed": row["partition_seed"],
-        })
+        tracks.append(
+            {
+                "tracklet_id": row["tracklet_id"],
+                "norad": int(candidate["norad"]),
+                "tau_s": float(candidate["tau_s"]),
+                "partition_seed": row["partition_seed"],
+            }
+        )
     return anchor, tracks
 
 
@@ -176,8 +210,10 @@ def run(args: argparse.Namespace) -> dict:
     taus = np.arange(-5.0, 6.0)
     anchor_site = region.points([args.anchor_offset_km[0]], [args.anchor_offset_km[1]])
     fixed_site = ObserverSiteV1(
-        latitude_deg=float(anchor_site.latitude_deg[0]), longitude_deg=float(anchor_site.longitude_deg[0]),
-        altitude_m=0.0, label="fast-coverage-cell",
+        latitude_deg=float(anchor_site.latitude_deg[0]),
+        longitude_deg=float(anchor_site.longitude_deg[0]),
+        altitude_m=0.0,
+        label="fast-coverage-cell",
     )
     phases, labels = offset_samples(args.uniform_samples, args.seed)
     frozen = []
@@ -190,7 +226,10 @@ def run(args: argparse.Namespace) -> dict:
         if len(candidate) != 1 or len(tau) != 1:
             raise ValueError("anchor candidate or tau is absent from frozen bank")
         mask, seed = partition_mask(
-            bank.observation_ids, bank.support_digest, inputs["trajectory_digest"], fixed_site,
+            bank.observation_ids,
+            bank.support_digest,
+            inputs["trajectory_digest"],
+            fixed_site,
             mode="fixed",
         )
         if seed != choice["partition_seed"]:
@@ -200,8 +239,13 @@ def run(args: argparse.Namespace) -> dict:
         anchor_prediction, _ = _doppler(position, velocity, anchor_site)
         synthetic = anchor_prediction[0, int(tau[0])]
         coefficient = analytic_rms_coefficient(
-            position, velocity, region, args.anchor_offset_km[0], args.anchor_offset_km[1],
-            int(tau[0]), mask,
+            position,
+            velocity,
+            region,
+            args.anchor_offset_km[0],
+            args.anchor_offset_km[1],
+            int(tau[0]),
+            mask,
         )
         frozen.append((bank, position, velocity, mask, synthetic, coefficient, choice))
     results = []
@@ -218,7 +262,11 @@ def run(args: argparse.Namespace) -> dict:
             held_model, _, tau_model = score_trials(synthetic, prediction, mask, visible)
             fixed_index = int(np.flatnonzero(taus == choice["tau_s"])[0])
             held_fixed, _, _ = score_trials(
-                synthetic, prediction, mask, visible, fixed_tau_index=fixed_index,
+                synthetic,
+                prediction,
+                mask,
+                visible,
+                fixed_tau_index=fixed_index,
             )
             real.append(held_real)
             model_refit.append(held_model)
@@ -232,59 +280,105 @@ def run(args: argparse.Namespace) -> dict:
         uniform = np.asarray(labels) == "uniform"
         special_rows = []
         for index in np.flatnonzero(~uniform):
-            special_rows.append({
-                "label": labels[index], "east_offset_km": float(phases[index, 0] * spacing),
-                "north_offset_km": float(phases[index, 1] * spacing),
-                "model_tau_refit_heldout_rms_hz": [float(value) if np.isfinite(value) else None for value in model_refit[:, index]],
-                "model_fixed_anchor_tau_heldout_rms_hz": [float(value) if np.isfinite(value) else None for value in model_fixed[:, index]],
-                "measured_heldout_rms_hz": [float(value) if np.isfinite(value) else None for value in real[:, index]],
-            })
+            special_rows.append(
+                {
+                    "label": labels[index],
+                    "east_offset_km": float(phases[index, 0] * spacing),
+                    "north_offset_km": float(phases[index, 1] * spacing),
+                    "model_tau_refit_heldout_rms_hz": [
+                        float(value) if np.isfinite(value) else None
+                        for value in model_refit[:, index]
+                    ],
+                    "model_fixed_anchor_tau_heldout_rms_hz": [
+                        float(value) if np.isfinite(value) else None
+                        for value in model_fixed[:, index]
+                    ],
+                    "measured_heldout_rms_hz": [
+                        float(value) if np.isfinite(value) else None for value in real[:, index]
+                    ],
+                }
+            )
         track_rows = []
         for index, (_, _, _, _, _, coefficient, choice) in enumerate(frozen):
-            track_rows.append({
-                **choice,
-                "model_tau_refit_uniform": finite_summary(model_refit[index, uniform]),
-                "model_fixed_anchor_tau_uniform": finite_summary(model_fixed[index, uniform]),
-                "measured_uniform": finite_summary(real[index, uniform]),
-                "model_tau_refit_200hz_survival_fraction": float(np.mean(model_refit[index, uniform] < 200.0)),
-                "model_fixed_anchor_tau_200hz_survival_fraction": float(np.mean(model_fixed[index, uniform] < 200.0)),
-                "measured_200hz_survival_fraction": float(np.mean(real[index, uniform] < 200.0)),
-                "analytic_expected_model_rms_hz": float(spacing * np.sqrt(coefficient)),
-            })
-        results.append({
-            "spacing_km": float(spacing), "uniform_sample_count": int(uniform.sum()),
-            "uniform_model_tau_refit": {"pooled_rms": finite_summary(model_refit[:, uniform]),
-                                         "coverage": coverage_summary(model_refit[:, uniform], observation_counts, 200.0)},
-            "uniform_model_fixed_anchor_tau": {"pooled_rms": finite_summary(model_fixed[:, uniform]),
-                                                "coverage": coverage_summary(model_fixed[:, uniform], observation_counts, 200.0)},
-            "uniform_measured": {"pooled_rms": finite_summary(real[:, uniform]),
-                                  "coverage": coverage_summary(real[:, uniform], observation_counts, 200.0)},
-            "raw_uniform_by_track": [{
-                "tracklet_id": choice["tracklet_id"],
-                "model_tau_refit_heldout_rms_hz": model_refit[index, uniform].tolist(),
-                "model_fixed_anchor_tau_heldout_rms_hz": model_fixed[index, uniform].tolist(),
-                "measured_heldout_rms_hz": real[index, uniform].tolist(),
-                "real_selected_tau_index": chosen_tau_real[index][uniform].tolist(),
-                "model_selected_tau_index": chosen_tau_model[index][uniform].tolist(),
-                "exact_any_tau_visibility": visibility[index][uniform].tolist(),
-            } for index, (*_, choice) in enumerate(frozen)],
-            "per_track": track_rows, "edges_and_corners": special_rows,
-        })
+            track_rows.append(
+                {
+                    **choice,
+                    "model_tau_refit_uniform": finite_summary(model_refit[index, uniform]),
+                    "model_fixed_anchor_tau_uniform": finite_summary(model_fixed[index, uniform]),
+                    "measured_uniform": finite_summary(real[index, uniform]),
+                    "model_tau_refit_200hz_survival_fraction": float(
+                        np.mean(model_refit[index, uniform] < 200.0)
+                    ),
+                    "model_fixed_anchor_tau_200hz_survival_fraction": float(
+                        np.mean(model_fixed[index, uniform] < 200.0)
+                    ),
+                    "measured_200hz_survival_fraction": float(
+                        np.mean(real[index, uniform] < 200.0)
+                    ),
+                    "analytic_expected_model_rms_hz": float(spacing * np.sqrt(coefficient)),
+                }
+            )
+        results.append(
+            {
+                "spacing_km": float(spacing),
+                "uniform_sample_count": int(uniform.sum()),
+                "uniform_model_tau_refit": {
+                    "pooled_rms": finite_summary(model_refit[:, uniform]),
+                    "coverage": coverage_summary(
+                        model_refit[:, uniform], observation_counts, 200.0
+                    ),
+                },
+                "uniform_model_fixed_anchor_tau": {
+                    "pooled_rms": finite_summary(model_fixed[:, uniform]),
+                    "coverage": coverage_summary(
+                        model_fixed[:, uniform], observation_counts, 200.0
+                    ),
+                },
+                "uniform_measured": {
+                    "pooled_rms": finite_summary(real[:, uniform]),
+                    "coverage": coverage_summary(real[:, uniform], observation_counts, 200.0),
+                },
+                "raw_uniform_by_track": [
+                    {
+                        "tracklet_id": choice["tracklet_id"],
+                        "model_tau_refit_heldout_rms_hz": model_refit[index, uniform].tolist(),
+                        "model_fixed_anchor_tau_heldout_rms_hz": model_fixed[
+                            index, uniform
+                        ].tolist(),
+                        "measured_heldout_rms_hz": real[index, uniform].tolist(),
+                        "real_selected_tau_index": chosen_tau_real[index][uniform].tolist(),
+                        "model_selected_tau_index": chosen_tau_model[index][uniform].tolist(),
+                        "exact_any_tau_visibility": visibility[index][uniform].tolist(),
+                    }
+                    for index, (*_, choice) in enumerate(frozen)
+                ],
+                "per_track": track_rows,
+                "edges_and_corners": special_rows,
+            }
+        )
     result = {
-        "schema": "grid-resolution-fixed-candidate-sensitivity/v1", "complete": True,
-        "truth_accessed": False, "identity_selection": "fixed anchor finalists; no displaced-position reselection",
+        "schema": "grid-resolution-fixed-candidate-sensitivity/v1",
+        "complete": True,
+        "truth_accessed": False,
+        "identity_selection": "fixed anchor finalists; no displaced-position reselection",
         "scientific_status": "conditional grid-quantization sensitivity, not identity proof or location confidence",
-        "session_id": args.session, "anchor_offset_km": list(args.anchor_offset_km),
-        "anchor_finalists": str(args.anchor_finalists), "anchor_finalists_digest": digest(args.anchor_finalists),
+        "session_id": args.session,
+        "anchor_offset_km": list(args.anchor_offset_km),
+        "anchor_finalists": str(args.anchor_finalists),
+        "anchor_finalists_digest": digest(args.anchor_finalists),
         "fixed_partition": "spatially independent fixed randomized 60/40; constant offset is refit on training rows only",
         "synthetic_tau_protocol": "reported both pipeline tau-refit over [-5,+5] s and fixed recorded anchor tau; synthetic baseline is the fixed anchor candidate/tau prediction",
         "uniform_phase_distribution": "shared deterministic U[-0.5,0.5]^2 phases, scaled by spacing",
         "special_phase_note": "edges/corners are explicitly reported; sampled maximum is not a certified global maximum",
         "visibility_note": "RMS is set nonfinite when exact sampled geometry has no above-horizon tau/observation; this is a conditional diagnostic, not a claim of full coarse-gate pipeline eligibility parity",
         "source_digests_before_compute": source_digests,
-        "spacings_km": list(args.spacings_km), "uniform_samples": args.uniform_samples, "seed": args.seed,
-        "input_provenance": inputs["provenance"], "prediction_bank": bank_metadata,
-        "tool_digest": digest(Path(__file__)), "results": results,
+        "spacings_km": list(args.spacings_km),
+        "uniform_samples": args.uniform_samples,
+        "seed": args.seed,
+        "input_provenance": inputs["provenance"],
+        "prediction_bank": bank_metadata,
+        "tool_digest": digest(Path(__file__)),
+        "results": results,
     }
     source_digests_after = {name: digest(path) for name, path in source_paths.items()}
     if source_digests_after != source_digests:
@@ -307,7 +401,9 @@ def main() -> None:
     parser.add_argument("--center-lat", type=float, default=38.5816)
     parser.add_argument("--center-lon", type=float, default=-121.4944)
     parser.add_argument("--anchor-offset-km", type=float, nargs=2, default=(-81.25, -81.25))
-    parser.add_argument("--spacings-km", type=float, nargs="+", default=(12.5, 25., 50., 100., 200., 400.))
+    parser.add_argument(
+        "--spacings-km", type=float, nargs="+", default=(12.5, 25.0, 50.0, 100.0, 200.0, 400.0)
+    )
     parser.add_argument("--uniform-samples", type=int, default=32)
     parser.add_argument("--seed", type=int, default=20260923)
     args = parser.parse_args()

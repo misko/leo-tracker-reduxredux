@@ -37,9 +37,12 @@ def _verify_content_digest(document):
     claimed = document.get("content_digest")
     payload = dict(document)
     payload.pop("content_digest", None)
-    actual = "sha256:" + hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    actual = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     if claimed != actual:
         raise ValueError("authority content digest differs")
 
@@ -61,14 +64,10 @@ def _arc(series, excluded, training_by_visit, visit_by_group):
 
 def _shared_partition(left, right, excluded_left, excluded_right, visit_by_group):
     left_visits = [
-        visit_by_group[group]
-        for group in left["paired_visit_ids"]
-        if group not in excluded_left
+        visit_by_group[group] for group in left["paired_visit_ids"] if group not in excluded_left
     ]
     right_visits = [
-        visit_by_group[group]
-        for group in right["paired_visit_ids"]
-        if group not in excluded_right
+        visit_by_group[group] for group in right["paired_visit_ids"] if group not in excluded_right
     ]
     visits = sorted(set((*left_visits, *right_visits)))
     candidates = []
@@ -188,12 +187,8 @@ def main():
     if len(set(ownership)) != len(ownership):
         raise ValueError("pair authority has ambiguous many-to-one track ownership")
     linked_rows = {episode_order.index(track_to_episode[value]) for value in ownership}
-    unlinked_train = np.sum(
-        np.delete(original_train, sorted(linked_rows), axis=0), axis=0
-    )
-    unlinked_heldout = np.sum(
-        np.delete(original_heldout, sorted(linked_rows), axis=0), axis=0
-    )
+    unlinked_train = np.sum(np.delete(original_train, sorted(linked_rows), axis=0), axis=0)
+    unlinked_heldout = np.sum(np.delete(original_heldout, sorted(linked_rows), axis=0), axis=0)
     independent_train = unlinked_train.copy()
     independent_heldout = unlinked_heldout.copy()
     paired_train = unlinked_train.copy()
@@ -213,15 +208,15 @@ def main():
             effective_count=effective_count,
             minimum_elevation_deg=score_settings["minimum_elevation_deg"],
         )
+
     accounting = []
     for link, partition in qualified_links:
         left_id, right_id = link["rx0_tracklet_id"], link["rx1_tracklet_id"]
         excluded_left = {item["rx0_source_group_id"] for item in link["anchors"]}
         excluded_right = {item["rx1_source_group_id"] for item in link["anchors"]}
-        left_arc, right_arc = _arc(
-            series[left_id], excluded_left, partition, visit_by_group
-        ), _arc(
-            series[right_id], excluded_right, partition, visit_by_group
+        left_arc, right_arc = (
+            _arc(series[left_id], excluded_left, partition, visit_by_group),
+            _arc(series[right_id], excluded_right, partition, visit_by_group),
         )
         states = []
         path_inputs = (
@@ -340,9 +335,12 @@ def main():
             "replay_helper": _digest(replay_path),
         },
     }
-    document["content_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    document["content_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"independent": document["independent"], "paired": document["paired"]}))

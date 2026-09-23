@@ -33,13 +33,11 @@ def load_exact_seeds(
     path: Path, *, session: str, city: str, radius_km: float = MAXIMUM_RADIUS_KM
 ) -> tuple[np.ndarray, dict]:
     result = json.loads(path.read_text())
-    full_uniform = (
-        result.get("partially_scored_pruned_points") == 0
-        and len(result.get("scores", ())) == result.get("requested_points")
-    )
+    full_uniform = result.get("partially_scored_pruned_points") == 0 and len(
+        result.get("scores", ())
+    ) == result.get("requested_points")
     if (
-        result.get("schema", "fast-coverage-search-run/v1")
-        != "fast-coverage-search-run/v1"
+        result.get("schema", "fast-coverage-search-run/v1") != "fast-coverage-search-run/v1"
         or result.get("complete") is not True
         or result.get("session_id") != session
         or result.get("city") != city
@@ -53,9 +51,9 @@ def load_exact_seeds(
         or len(result.get("top_cells", ())) < 15
     ):
         raise ValueError("exact 50 km seed result contract mismatch")
-    seeds = np.asarray([
-        [row["east_km"], row["north_km"]] for row in result["top_cells"][:15]
-    ], dtype=float)
+    seeds = np.asarray(
+        [[row["east_km"], row["north_km"]] for row in result["top_cells"][:15]], dtype=float
+    )
     if seeds.shape != (15, 2) or not np.all(np.isfinite(seeds)):
         raise ValueError("invalid exact seed coordinates")
     return seeds, result
@@ -65,8 +63,11 @@ def run(args) -> dict:
     if not 0 < args.radius_km <= MAXIMUM_RADIUS_KM:
         raise ValueError("radius must be positive and no greater than 500 km")
     requested_cities = [str(city) for city, _ in args.exact]
-    if (not requested_cities or len(requested_cities) != len(set(requested_cities))
-            or any(city not in CITIES for city in requested_cities)):
+    if (
+        not requested_cities
+        or len(requested_cities) != len(set(requested_cities))
+        or any(city not in CITIES for city in requested_cities)
+    ):
         raise ValueError("one unique supported city required per exact root")
     started = time.monotonic()
     source_paths = {
@@ -75,16 +76,18 @@ def run(args) -> dict:
         "runner_digest": Path(__file__),
     }
     source_before = {name: digest(path) for name, path in source_paths.items()}
-    inputs = fast_coverage_inputs.load(
-        args.session, args.evidence, args.bulk_root, args.tle_root
-    )
+    inputs = fast_coverage_inputs.load(args.session, args.evidence, args.bulk_root, args.tle_root)
     banks, metadata = search.build_prediction_banks(inputs)
     evaluator = search.CoverageEvaluator(
-        banks, np.arange(-5.0, 6.0), inputs["trajectory_digest"],
-        (200.0, 500.0, 800.0), partition_mode="fixed",
+        banks,
+        np.arange(-5.0, 6.0),
+        inputs["trajectory_digest"],
+        (200.0, 500.0, 800.0),
+        partition_mode="fixed",
     )
     receipt = {
-        "schema": "exact50-seeded-fine-coverage/v1", "complete": True,
+        "schema": "exact50-seeded-fine-coverage/v1",
+        "complete": True,
         "truth_accessed": False,
         "scientific_status": (
             "exact 50 km top-15 seeds followed by heuristic local 25/12.5 km "
@@ -93,15 +96,14 @@ def run(args) -> dict:
         "radius_km": args.radius_km,
         "search_box_km": SEARCH_BOX_KM,
         **source_before,
-        "prediction_bank": metadata, "cities": {},
+        "prediction_bank": metadata,
+        "cities": {},
     }
     for city, exact_root in args.exact:
         latitude, longitude = CITIES[city]
         radius = args.radius_km
         result_path = exact_root / f"{city}-uniform-50km" / "result.json"
-        seeds, _ = load_exact_seeds(
-            result_path, session=args.session, city=city, radius_km=radius
-        )
+        seeds, _ = load_exact_seeds(result_path, session=args.session, city=city, radius_km=radius)
         region = Region(latitude, longitude, SEARCH_BOX_KM, SEARCH_BOX_KM)
 
         def evaluate(points, region=region):
@@ -109,17 +111,24 @@ def run(args) -> dict:
 
         city_started = time.monotonic()
         ranked, trace = search.refine_from_centres(
-            evaluate, seeds, initial_spacing_km=50.0, radius_km=radius,
-            region_size_km=SEARCH_BOX_KM, levels_km=(25.0, 12.5),
-            basins=(32, 32), threshold_hz=200.0,
+            evaluate,
+            seeds,
+            initial_spacing_km=50.0,
+            radius_km=radius,
+            region_size_km=SEARCH_BOX_KM,
+            levels_km=(25.0, 12.5),
+            basins=(32, 32),
+            threshold_hz=200.0,
         )
         top = ranked[:15]
-        finalists = evaluator.evaluate_finalists(region.points(
-            [row.east_km for row in top[:5]], [row.north_km for row in top[:5]]
-        ))
+        finalists = evaluator.evaluate_finalists(
+            region.points([row.east_km for row in top[:5]], [row.north_km for row in top[:5]])
+        )
         receipt["cities"][city] = {
-            "exact50_result_digest": digest(result_path), "seed_count": len(seeds),
-            "elapsed_s": time.monotonic() - city_started, "trace": trace,
+            "exact50_result_digest": digest(result_path),
+            "seed_count": len(seeds),
+            "elapsed_s": time.monotonic() - city_started,
+            "trace": trace,
             "top_cells": [asdict(row) for row in top],
             "top_five_finalists": finalists,
         }
@@ -127,9 +136,7 @@ def run(args) -> dict:
     if {name: digest(path) for name, path in source_paths.items()} != source_before:
         raise ValueError("research source changed during seeded refinement")
     args.output.mkdir(parents=True)
-    (args.output / "result.json").write_text(
-        json.dumps(receipt, indent=2, allow_nan=False) + "\n"
-    )
+    (args.output / "result.json").write_text(json.dumps(receipt, indent=2, allow_nan=False) + "\n")
     return receipt
 
 
@@ -142,13 +149,20 @@ def main() -> None:
     parser.add_argument("--tle-root", type=Path, default=Path("/var/lib/leo/tle"))
     parser.add_argument("--radius-km", type=float, default=MAXIMUM_RADIUS_KM)
     parser.add_argument(
-        "--exact", nargs=2, action="append", metavar=("CITY", "RESULT_ROOT"), required=True,
+        "--exact",
+        nargs=2,
+        action="append",
+        metavar=("CITY", "RESULT_ROOT"),
+        required=True,
         type=lambda value: Path(value) if "/" in value else value,
     )
     args = parser.parse_args()
     args.exact = [(str(city), Path(root)) for city, root in args.exact]
-    if (not args.exact or len(args.exact) != len(set(city for city, _ in args.exact))
-            or any(city not in CITIES for city, _ in args.exact)):
+    if (
+        not args.exact
+        or len(args.exact) != len(set(city for city, _ in args.exact))
+        or any(city not in CITIES for city, _ in args.exact)
+    ):
         raise ValueError("one unique supported city required per exact root")
     if not 0 < args.radius_km <= MAXIMUM_RADIUS_KM:
         raise ValueError("radius must be positive and no greater than 500 km")

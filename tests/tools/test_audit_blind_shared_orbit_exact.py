@@ -52,9 +52,7 @@ def test_exact_audit_separates_constant_offset_from_shape_error():
         "heldout_log_predictive": -1.0,
     }
     config = {"signal_sigma_hz": 250.0, "unassigned_sigma_hz": 30_000.0, "signal_prior": 0.5}
-    result = subject.audit_episode(
-        track, batch, Exact(), diagnostic, {"123": 0.1}, config
-    )
+    result = subject.audit_episode(track, batch, Exact(), diagnostic, {"123": 0.1}, config)
 
     assert np.isclose(result["raw_maximum_error_hz"], 2.0)
     assert result["offset_centered_maximum_error_hz"] < 1e-12

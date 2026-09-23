@@ -19,6 +19,4 @@ def test_api_serves_digest_bound_map_and_machine_document(tmp_path):
     assert response.json()["manifest"]["document"]["position_fix_claimed"] is False
     map_url = url + "/map.png"
     assert client.get(map_url, params={"sha256": manifest.artifacts[0].sha256}).content == image
-    assert (
-        client.get(map_url, params={"sha256": "sha256:" + "b" * 64}).status_code == 409
-    )
+    assert client.get(map_url, params={"sha256": "sha256:" + "b" * 64}).status_code == 409

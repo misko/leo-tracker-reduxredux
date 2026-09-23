@@ -59,18 +59,12 @@ def circular_factor(offset_hz, grid_hz, sigma_hz, outlier_probability):
         raise ValueError("invalid circular-factor controls")
     # Center the finite image stencil. This also makes the public helper invariant
     # to callers supplying an equivalent offset outside the principal interval.
-    residual = wrap_alias_hz(
-        np.asarray(offset_hz)[..., None] - np.asarray(grid_hz)
-    )
+    residual = wrap_alias_hz(np.asarray(offset_hz)[..., None] - np.asarray(grid_hz))
     image_count = int(np.ceil(8 * sigma_hz / PILOT_ALIAS_HZ)) + 1
     kernel = np.zeros_like(residual, dtype=float)
     for image in range(-image_count, image_count + 1):
-        kernel += np.exp(
-            -0.5 * ((residual + image * PILOT_ALIAS_HZ) / sigma_hz) ** 2
-        )
-    wrapped_normal_times_period = (
-        PILOT_ALIAS_HZ / (np.sqrt(2 * np.pi) * sigma_hz) * kernel
-    )
+        kernel += np.exp(-0.5 * ((residual + image * PILOT_ALIAS_HZ) / sigma_hz) ** 2)
+    wrapped_normal_times_period = PILOT_ALIAS_HZ / (np.sqrt(2 * np.pi) * sigma_hz) * kernel
     return (1 - outlier_probability) * wrapped_normal_times_period + outlier_probability
 
 
@@ -143,9 +137,10 @@ def run(args) -> None:
         tle_path = evidence_path.parent / metadata["tle_file"]
         if Path(metadata["tle_file"]).name != metadata["tle_file"]:
             raise ValueError("unsafe TLE basename")
-        if digest(tle_path) != metadata["tle_digest"] or digest(tle_path) != provenance[
-            "tle_digest"
-        ]:
+        if (
+            digest(tle_path) != metadata["tle_digest"]
+            or digest(tle_path) != provenance["tle_digest"]
+        ):
             raise ValueError("TLE binding mismatch")
         catalogue = parse_element_sets(tle_path.read_text())
         indices, population = replay.regional_catalogue(
@@ -172,9 +167,9 @@ def run(args) -> None:
                 catalogue, indices, metadata["reference_utc_ns"], arc.time_s
             )
             norads = np.asarray(catalogue.satellite_numbers)[retained]
-            support_digest = "sha256:" + hashlib.sha256(
-                np.sort(norads).astype("<i8").tobytes()
-            ).hexdigest()
+            support_digest = (
+                "sha256:" + hashlib.sha256(np.sort(norads).astype("<i8").tobytes()).hexdigest()
+            )
             baseline = next(
                 item for item in provenance["evaluated_support"] if item["episode_id"] == episode_id
             )
@@ -182,16 +177,9 @@ def run(args) -> None:
                 raise ValueError("candidate support differs from frozen refinement")
             delta = p - receiver.ecef_km[0]
             distance = np.linalg.norm(delta, axis=-1)
-            prediction = (
-                -REFERENCE_RF_HZ
-                / LIGHT_KM_S
-                * np.sum(delta * v, axis=-1)
-                / distance
-            )
+            prediction = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * v, axis=-1) / distance
             elevation = np.sum(delta * receiver.up[0], axis=-1) / distance
-            visible = np.min(elevation, axis=-1) >= np.sin(
-                np.deg2rad(config.minimum_elevation_deg)
-            )
+            visible = np.min(elevation, axis=-1) >= np.sin(np.deg2rad(config.minimum_elevation_deg))
             observed = np.asarray(arc.frequency_hz)
             residual = observed[None, :] - prediction
             means = np.mean(residual, axis=1)
@@ -272,9 +260,7 @@ def run(args) -> None:
                             "pilot_edge": group[1],
                             "fold": fold,
                             "training_track_count": int(np.sum(training)),
-                            "delta_log_score": predictive_delta(
-                                likelihood, training, evaluation
-                            ),
+                            "delta_log_score": predictive_delta(likelihood, training, evaluation),
                         }
                     )
             arms.append(
@@ -316,9 +302,12 @@ def run(args) -> None:
             "source_code_digest": digest(Path(__file__)),
         },
     }
-    output["content_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    output["content_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")
 

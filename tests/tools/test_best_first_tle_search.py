@@ -28,19 +28,23 @@ def flat_evaluator(calls, value=0.0):
     def evaluate(points):
         points = np.asarray(points, dtype=float)
         calls.extend(map(tuple, points))
-        return [MODULE.point_evaluation(
-            east, north, (residual("track", value, 1.0, ("obs",)),)
-        ) for east, north in points]
+        return [
+            MODULE.point_evaluation(east, north, (residual("track", value, 1.0, ("obs",)),))
+            for east, north in points
+        ]
+
     return evaluate
 
 
 def test_capped_all_track_objective_uses_timebin_weight_and_strict_200_diagnostics():
-    mse, rmse, observations, qualifying_tracks = MODULE.weighted_all_track_objective((
-        residual("short", 100.0, 2.0, ("one", "shared")),
-        residual("missing", None, 3.0),
-        residual("at-threshold", 200.0, 1.0, ("two", "shared")),
-        residual("over-cap", 1000.0, 4.0, ("three",)),
-    ))
+    mse, rmse, observations, qualifying_tracks = MODULE.weighted_all_track_objective(
+        (
+            residual("short", 100.0, 2.0, ("one", "shared")),
+            residual("missing", None, 3.0),
+            residual("at-threshold", 200.0, 1.0, ("two", "shared")),
+            residual("over-cap", 1000.0, 4.0, ("three",)),
+        )
+    )
 
     expected = (2 * 100**2 + 3 * 800**2 + 200**2 + 4 * 800**2) / 10
     assert mse == expected
@@ -77,8 +81,11 @@ def test_effective_timebin_weight_ignores_duplicate_sample_density():
 def test_equal_certified_bound_is_retained_and_final_lattice_is_complete():
     calls = []
     result = MODULE.best_first_search(
-        flat_evaluator(calls, value=0.0), radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0), budget_points=20,
+        flat_evaluator(calls, value=0.0),
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0),
+        budget_points=20,
         certified_lower_bound=lambda _cell, _parent, _cache: 0.0,
     )
 
@@ -92,8 +99,11 @@ def test_equal_certified_bound_is_retained_and_final_lattice_is_complete():
 def test_heuristic_drop_never_claims_global_completion():
     calls = []
     result = MODULE.best_first_search(
-        flat_evaluator(calls, value=0.0), radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0), budget_points=20,
+        flat_evaluator(calls, value=0.0),
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0),
+        budget_points=20,
         estimate_priority=lambda _cell, _parent, _cache: 1.0,
         heuristic_discard_margin_hz2=0.0,
     )
@@ -106,8 +116,11 @@ def test_heuristic_drop_never_claims_global_completion():
 def test_strictly_worse_certified_bound_can_preserve_completion_guarantee():
     calls = []
     result = MODULE.best_first_search(
-        flat_evaluator(calls, value=0.0), radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0), budget_points=20,
+        flat_evaluator(calls, value=0.0),
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0),
+        budget_points=20,
         certified_lower_bound=lambda _cell, _parent, _cache: 1.0,
     )
 
@@ -122,14 +135,17 @@ def test_global_incumbent_and_best_finest_are_separately_reported():
         rows = []
         for east, north in points:
             coarse = abs(east) == 50.0 and abs(north) == 50.0
-            rows.append(MODULE.point_evaluation(
-                east, north, (residual("track", 0.0 if coarse else 1.0),)
-            ))
+            rows.append(
+                MODULE.point_evaluation(east, north, (residual("track", 0.0 if coarse else 1.0),))
+            )
         return rows
 
     result = MODULE.best_first_search(
-        evaluate, radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0), budget_points=20,
+        evaluate,
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0),
+        budget_points=20,
     )
 
     assert result.best is not None and result.best.weighted_mse_hz2 == 0.0
@@ -146,16 +162,21 @@ def test_default_priority_uses_evaluated_child_cost_not_parent_cost():
         return rows
 
     result = MODULE.best_first_search(
-        evaluate, radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0, 25.0), budget_points=100,
+        evaluate,
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0, 25.0),
+        budget_points=100,
     )
 
     evaluated = {
         row["cell_id"]: row["weighted_mse_hz2"]
-        for row in result.trace if row["event"] == "evaluate"
+        for row in result.trace
+        if row["event"] == "evaluate"
     }
     fine_pops = [
-        row for row in result.trace
+        row
+        for row in result.trace
         if row["event"] == "pop" and row["depth"] > 0 and row["cell_id"] in evaluated
     ]
     assert fine_pops
@@ -165,8 +186,11 @@ def test_default_priority_uses_evaluated_child_cost_not_parent_cost():
 def test_budget_limited_children_remain_deferred_not_silently_lost():
     calls = []
     result = MODULE.best_first_search(
-        flat_evaluator(calls), radius_km=100.0, region_size_km=200.0,
-        levels_km=(100.0, 50.0), budget_points=5,
+        flat_evaluator(calls),
+        radius_km=100.0,
+        region_size_km=200.0,
+        levels_km=(100.0, 50.0),
+        budget_points=5,
     )
 
     deferred = {(cell.depth, cell.east_km, cell.north_km) for cell in result.deferred_cells}
@@ -182,8 +206,11 @@ def test_budget_limited_children_remain_deferred_not_silently_lost():
 def test_outside_parent_is_kept_when_an_aligned_child_reaches_circle_rim():
     calls = []
     MODULE.best_first_search(
-        flat_evaluator(calls), radius_km=445.0, region_size_km=1000.0,
-        levels_km=(100.0, 50.0), budget_points=200,
+        flat_evaluator(calls),
+        radius_km=445.0,
+        region_size_km=1000.0,
+        levels_km=(100.0, 50.0),
+        budget_points=200,
         estimate_priority=lambda cell, _parent, _cache: (
             -1.0 if (cell.east_km, cell.north_km) == (450.0, 50.0) else 1.0
         ),
@@ -196,14 +223,20 @@ def test_outside_parent_is_kept_when_an_aligned_child_reaches_circle_rim():
 def test_levels_must_be_exact_aligned_halvings_and_evaluator_order_is_preserved():
     with pytest.raises(ValueError, match="aligned halvings"):
         MODULE.best_first_search(
-            lambda _points: (), radius_km=100.0, region_size_km=200.0,
-            levels_km=(100.0, 40.0), budget_points=20,
+            lambda _points: (),
+            radius_km=100.0,
+            region_size_km=200.0,
+            levels_km=(100.0, 40.0),
+            budget_points=20,
         )
     with pytest.raises(ValueError, match="coordinate order"):
         MODULE.best_first_search(
-            lambda points: [MODULE.point_evaluation(
-                -points[0, 0], points[0, 1], (residual("track", 0.0),)
-            ) for _ in points],
-            radius_km=100.0, region_size_km=200.0,
-            levels_km=(100.0,), budget_points=20,
+            lambda points: [
+                MODULE.point_evaluation(-points[0, 0], points[0, 1], (residual("track", 0.0),))
+                for _ in points
+            ],
+            radius_km=100.0,
+            region_size_km=200.0,
+            levels_km=(100.0,),
+            budget_points=20,
         )

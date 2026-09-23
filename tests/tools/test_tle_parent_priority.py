@@ -37,9 +37,9 @@ def bank(track_id, measured=None):
     tangent = np.cross(up, [0.0, 0.0, 1.0])
     tangent /= np.linalg.norm(tangent)
     offsets = np.asarray([-30.0, -10.0, 10.0, 30.0])
-    position = np.asarray([
-        [site.ecef_km[0] + up * 1000.0 + tangent * offset for offset in offsets]
-    ])[None]
+    position = np.asarray(
+        [[site.ecef_km[0] + up * 1000.0 + tangent * offset for offset in offsets]]
+    )[None]
     velocity = np.broadcast_to(tangent * 7.0, position.shape).copy()
     return PRIORITY.TrackPredictionBank(
         tracklet_id=track_id,
@@ -61,7 +61,10 @@ def bank(track_id, measured=None):
 
 def parent_row(track_id, norad):
     return SEARCH.TrackResidual(
-        track_id, 0.0, 1.0, best_candidate={"norad": norad, "tau_s": 0.0},
+        track_id,
+        0.0,
+        1.0,
+        best_candidate={"norad": norad, "tau_s": 0.0},
     )
 
 
@@ -96,18 +99,25 @@ def test_parent_stencil_minimizes_joint_position_not_each_track_separately():
     source_b = bank("b", measured=-25.0 * derivative[0])
     region = Region(0.0, 0.0, 200.0, 200.0)
     parent = SEARCH.point_evaluation(
-        0.0, 0.0, (parent_row("a", 100), parent_row("b", 200)),
+        0.0,
+        0.0,
+        (parent_row("a", 100), parent_row("b", 200)),
     )
 
     def fixed_model(_east, _north, _bank, _norad):
         return (
-            np.zeros((1, 4)), derivative, np.zeros((1, 4)),
+            np.zeros((1, 4)),
+            derivative,
+            np.zeros((1, 4)),
             np.asarray([True, True, False, False]),
         )
 
     joint = PRIORITY.make_parent_priority(
-        (source_a, source_b), region, "sha256:" + "4" * 64,
-        {"a": 1.0, "b": 1.0}, taus=np.asarray([0.0]),
+        (source_a, source_b),
+        region,
+        "sha256:" + "4" * 64,
+        {"a": 1.0, "b": 1.0},
+        taus=np.asarray([0.0]),
     )
     joint._model = fixed_model
     one_a = PRIORITY.make_parent_priority(
@@ -140,6 +150,7 @@ def test_exact_cache_clamps_priority_and_unexplored_parent_none_is_explicit_zero
 
     assert priority(target, parent, {(target.east_km, target.north_km): exact}) == 0.0
     assert priority(target, None, {}) == 0.0
-    assert (priority(target, None, {(target.east_km, target.north_km): exact})
-            == exact.weighted_mse_hz2)
+    assert (
+        priority(target, None, {(target.east_km, target.north_km): exact}) == exact.weighted_mse_hz2
+    )
     assert priority.metrics()["priority_is_certified_bound"] is False

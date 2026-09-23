@@ -80,9 +80,7 @@ def audit_episode(track, batch, exact, diagnostic, rates, config):
         pseudo_huber_log_likelihood(null_centered, ~training, config["unassigned_sigma_hz"])
     )
     frozen_weights = np.r_[diagnostic["candidate_posterior"], diagnostic["unassigned_posterior"]]
-    frozen_exact_predictive = logsumexp(
-        np.log(frozen_weights) + np.r_[exact_heldout, null_heldout]
-    )
+    frozen_exact_predictive = logsumexp(np.log(frozen_weights) + np.r_[exact_heldout, null_heldout])
     exact_train = pseudo_huber_log_likelihood(
         exact_centered, training, config["signal_sigma_hz"]
     ) + np.log(config["signal_prior"] / track["catalogue_size"])
@@ -150,8 +148,7 @@ def main() -> int:
         info = catalogues[track["snapshot_digest"]]
         numbers = np.asarray(info["catalogue"].satellite_numbers)[info["indices"]]
         lookup = {
-            int(number): int(index)
-            for number, index in zip(numbers, info["indices"], strict=True)
+            int(number): int(index) for number, index in zip(numbers, info["indices"], strict=True)
         }
         chosen = np.asarray([lookup[int(number)] for number in diagnostic["candidate_norad"]])
         receiver = validator.geodetic_to_ecef_km(

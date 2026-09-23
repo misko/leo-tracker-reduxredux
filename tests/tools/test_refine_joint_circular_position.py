@@ -32,9 +32,7 @@ def shapes_from_scene(scene):
             float(nt + ne),
             np.ones(len(tr), dtype=bool),
         )
-        for tr, te, nt, ne, means in zip(
-            train, test, null_train, null_test, offsets, strict=True
-        )
+        for tr, te, nt, ne, means in zip(train, test, null_train, null_test, offsets, strict=True)
     ]
     return shapes, groups
 
@@ -76,9 +74,7 @@ def test_bounded_objective_matches_independent_dense_oracle():
     null_train = sum(scene[2])
     null_test = sum(scene[3])
     assert actual["training_score"] == pytest.approx(dense_train - null_train, abs=2e-9)
-    assert actual["heldout_score"] == pytest.approx(
-        dense_predictive - null_test, abs=2e-9
-    )
+    assert actual["heldout_score"] == pytest.approx(dense_predictive - null_test, abs=2e-9)
     assert actual["pruning_log_error_bound"] <= 1e-9
 
 
@@ -131,12 +127,8 @@ def test_identity_posterior_divides_track_mixture_inside_group_integral():
     )
     other = np.log(0.2 + 0.8 * TOOL.circular_factor(35_000.0, arm.grid_hz(), 3_000.0, 0.05))
     group_posterior = np.exp(curve + other - logsumexp(curve + other))
-    baseline, circular, null = TOOL.training_identity_posterior(
-        shape, info, group_posterior, arm
-    )
-    factor = TOOL.circular_factor(
-        shape.candidate_native_mean_hz, arm.grid_hz(), 3_000.0, 0.05
-    )
+    baseline, circular, null = TOOL.training_identity_posterior(shape, info, group_posterior, arm)
+    factor = TOOL.circular_factor(shape.candidate_native_mean_hz, arm.grid_hz(), 3_000.0, 0.05)
     normalization = 0.2 + np.sum(baseline[:, None] * factor, axis=0)
     expected = np.sum(group_posterior * baseline[:, None] * factor / normalization, axis=1)
     expected_null = np.sum(group_posterior * 0.2 / normalization)
@@ -195,7 +187,7 @@ def test_track_shape_never_recenters_heldout_and_keeps_full_catalogue_prior():
         config.signal_prior / 100
     )
     expected_test = (
-        -0.5 * config.effective_count * 100 / config.signal_sigma_hz**2
+        -0.5 * config.effective_count * 100 / config.signal_sigma_hz** 2
         - config.effective_count * np.log(config.signal_sigma_hz)
     )
     assert shape.candidate_train_log[0] == pytest.approx(expected_train)

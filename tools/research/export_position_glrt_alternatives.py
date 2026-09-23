@@ -46,10 +46,7 @@ def alternative_diagnostics(groups: list[dict]) -> dict:
         for candidate in group["candidates"]:
             if not candidate["passed_fractional_margin_gate"]:
                 continue
-            epoch = (
-                candidate["integer_epoch_sample"]
-                + candidate["fractional_epoch_offset_samples"]
-            )
+            epoch = candidate["integer_epoch_sample"] + candidate["fractional_epoch_offset_samples"]
             if any(
                 abs(candidate["fractional_tracking_cfo_hz"] - row[0]) < 0.01
                 and abs(epoch - row[1]) < 0.01
@@ -86,8 +83,7 @@ def export_session(source, shard: dict, *, projector=project_scanner_candidates)
         or session["session_id"] != source.session_id
         or session["input_manifest_sha256"] != source.input_manifest_sha256
         or session["analysis_manifest_sha256"] != source.analysis_manifest_sha256
-        or session["raw_recording_authority_digest"]
-        != source.raw_recording_authority_digest
+        or session["raw_recording_authority_digest"] != source.raw_recording_authority_digest
     ):
         raise ValueError("RF shard and public tracking input authority differ")
     probes = {}
@@ -132,9 +128,7 @@ def export_session(source, shard: dict, *, projector=project_scanner_candidates)
             )
         ):
             raise ValueError("selected RF row differs from its saved GLRT candidate")
-        projected_selected = projected.get(
-            (identity, observation["fractional_candidate_rank"])
-        )
+        projected_selected = projected.get((identity, observation["fractional_candidate_rank"]))
         support_fields = (
             "source_sample_start",
             "source_sample_end",
@@ -149,14 +143,10 @@ def export_session(source, shard: dict, *, projector=project_scanner_candidates)
         scale = CANONICAL_RF_HZ / probe.actual_rf_hz
         alias_spacing = PILOT_ALIAS_HZ * scale
         selected_native = observation["measured_cfo_hz"] / scale
-        alias_value = (
-            projected_selected.measured_cfo_hz - selected_native
-        ) / PILOT_ALIAS_HZ
+        alias_value = (projected_selected.measured_cfo_hz - selected_native) / PILOT_ALIAS_HZ
         alias_index = round(alias_value)
         alias_closure_hz = abs(
-            projected_selected.measured_cfo_hz
-            - selected_native
-            - alias_index * PILOT_ALIAS_HZ
+            projected_selected.measured_cfo_hz - selected_native - alias_index * PILOT_ALIAS_HZ
         )
         if alias_closure_hz > 1e-5:
             raise ValueError("selected trajectory CFO is not an integer-alias transform")

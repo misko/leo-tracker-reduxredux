@@ -50,20 +50,28 @@ def catalogue_authority(
     ):
         raise ValueError("saved catalogue is not the exact latest causal snapshot")
     catalogue = parse_element_sets(tle_path.read_text())
-    indices = np.asarray([
-        i for i, name in enumerate(catalogue.names)
-        if name.startswith("STARLINK") and not name.upper().endswith(" DEB")
-    ], dtype=int)
+    indices = np.asarray(
+        [
+            i
+            for i, name in enumerate(catalogue.names)
+            if name.startswith("STARLINK") and not name.upper().endswith(" DEB")
+        ],
+        dtype=int,
+    )
     if not len(indices):
         raise ValueError("causal catalogue has no eligible Starlink entries")
-    return catalogue, indices, {
-        "snapshot_digest": snapshot.digest,
-        "snapshot_collected_utc_ns": snapshot.collected_utc_ns,
-        "evidence_digest": file_digest(evidence_path),
-        "catalogue_cutoff_utc_ns": cutoff,
-        "catalogue_candidate_count": len(indices),
-        "archived_evidence_partition_not_used": authority.get("partition"),
-    }
+    return (
+        catalogue,
+        indices,
+        {
+            "snapshot_digest": snapshot.digest,
+            "snapshot_collected_utc_ns": snapshot.collected_utc_ns,
+            "evidence_digest": file_digest(evidence_path),
+            "catalogue_cutoff_utc_ns": cutoff,
+            "catalogue_candidate_count": len(indices),
+            "archived_evidence_partition_not_used": authority.get("partition"),
+        },
+    )
 
 
 def load(
@@ -104,36 +112,40 @@ def load(
             raise ValueError("nonfinite trajectory evidence")
         measured.setflags(write=False)
         times.setflags(write=False)
-        tracks.append({
-            "rank": rank,
-            "tracklet_id": tracklet_id,
-            "support_digest": CataloguePredictionSupportV1.from_graph(graph).content_digest,
-            "observation_ids": ids,
-            "times_s": times,
-            "measured_hz": measured,
-            "span_s": float(span),
-            "observation_count": len(ids),
-        })
+        tracks.append(
+            {
+                "rank": rank,
+                "tracklet_id": tracklet_id,
+                "support_digest": CataloguePredictionSupportV1.from_graph(graph).content_digest,
+                "observation_ids": ids,
+                "times_s": times,
+                "measured_hz": measured,
+                "span_s": float(span),
+                "observation_count": len(ids),
+            }
+        )
     if not tracks or (track_count is not None and len(tracks) != track_count):
         raise ValueError("recording has fewer eligible tracks than requested")
     if file_digest(KERNEL_PATH) != before:
         raise ValueError("reference source changed while loading evidence")
-    provenance.update({
-        "session_id": session,
-        "truth_accessed": False,
-        "fixed_satellite_identities_used": False,
-        "source_port": "ScannerTrackingInputStore via standard longest-track selection",
-        "reference_kernel_digest": before,
-        "loader_digest": file_digest(Path(__file__)),
-        "reconstructed_track_count": reconstructed,
-        "eligible_track_count": eligible,
-        "selected_track_count": len(tracks),
-        "unique_observation_count": len(observed_ids),
-        "observation_ids_disjoint": True,
-        "minimum_track_span_s": min_span_s,
-        "minimum_track_observations": min_observations,
-        "selection_limit": track_count,
-    })
+    provenance.update(
+        {
+            "session_id": session,
+            "truth_accessed": False,
+            "fixed_satellite_identities_used": False,
+            "source_port": "ScannerTrackingInputStore via standard longest-track selection",
+            "reference_kernel_digest": before,
+            "loader_digest": file_digest(Path(__file__)),
+            "reconstructed_track_count": reconstructed,
+            "eligible_track_count": eligible,
+            "selected_track_count": len(tracks),
+            "unique_observation_count": len(observed_ids),
+            "observation_ids_disjoint": True,
+            "minimum_track_span_s": min_span_s,
+            "minimum_track_observations": min_observations,
+            "selection_limit": track_count,
+        }
+    )
     return {
         "start_ns": start,
         "catalogue": catalogue,

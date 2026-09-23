@@ -90,9 +90,7 @@ def test_bind_before_reference_and_preserve_failed_arms(tmp_path):
     assert len(binding["inputs"]) == 6
     reference_path = tmp_path / "reference.json"
     reference_path.write_text('{"latitude_deg":37.5,"longitude_deg":-122.2}')
-    summary = MODULE.summarize(
-        loaded, json.loads(reference_path.read_text()), reference_path
-    )
+    summary = MODULE.summarize(loaded, json.loads(reference_path.read_text()), reference_path)
     assert len(summary["runs"]) == 6
     assert all(len(run["arms"]) == 7 for run in summary["runs"])
     row = summary["runs"][0]
@@ -135,9 +133,7 @@ def test_plot_writes_png(tmp_path):
     loaded = MODULE.bind_inputs(six_inputs(tmp_path), tmp_path / "bound")
     reference_path = tmp_path / "reference.json"
     reference_path.write_text('{"latitude_deg":37.5,"longitude_deg":-122.2}')
-    summary = MODULE.summarize(
-        loaded, json.loads(reference_path.read_text()), reference_path
-    )
+    summary = MODULE.summarize(loaded, json.loads(reference_path.read_text()), reference_path)
     target = tmp_path / "plot.png"
     MODULE.plot(summary, target)
     assert target.read_bytes().startswith(b"\x89PNG")

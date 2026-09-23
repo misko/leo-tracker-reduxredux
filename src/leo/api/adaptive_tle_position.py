@@ -50,9 +50,13 @@ def adaptive_tle_position_router(reader: AdaptiveTlePositionReader | None) -> AP
             ) from error
         if payload is None:
             raise HTTPException(404, "adaptive TLE position PNG has not been published")
-        return Response(payload, media_type="image/png", headers={
-            "Cache-Control": "private, max-age=3600, immutable",
-            "X-Content-Type-Options": "nosniff",
-        })
+        return Response(
+            payload,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
 
     return router

@@ -38,18 +38,22 @@ def _position_methods_available(
     *, bulk_root: Path, session_id: str, input_manifest_sha256: str
 ) -> bool:
     try:
-        return position_methods_complete(
-            bulk_root,
-            session_id,
-            expected_input_manifest_sha256=input_manifest_sha256,
-        ) and blind_regional_complete(
-            bulk_root,
-            session_id,
-            expected_input_manifest_sha256=input_manifest_sha256,
-        ) and adaptive_tle_position_complete(
-            bulk_root,
-            session_id,
-            expected_input=input_manifest_sha256,
+        return (
+            position_methods_complete(
+                bulk_root,
+                session_id,
+                expected_input_manifest_sha256=input_manifest_sha256,
+            )
+            and blind_regional_complete(
+                bulk_root,
+                session_id,
+                expected_input_manifest_sha256=input_manifest_sha256,
+            )
+            and adaptive_tle_position_complete(
+                bulk_root,
+                session_id,
+                expected_input=input_manifest_sha256,
+            )
         )
     except (OSError, ValueError):
         return False

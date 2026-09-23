@@ -33,12 +33,20 @@ class AdaptiveTrackInput:
         n = len(self.observation_ids)
         if not self.track_id or n < 6 or len(set(self.observation_ids)) != n:
             raise ValueError("eligible track requires six unique observations")
-        if any(np.asarray(value).shape != (n,) for value in (
-            self.times_s, self.measured_hz, self.training_mask,
-        )):
+        if any(
+            np.asarray(value).shape != (n,)
+            for value in (
+                self.times_s,
+                self.measured_hz,
+                self.training_mask,
+            )
+        ):
             raise ValueError("track input vector shape mismatch")
-        if (np.asarray(self.training_mask).dtype != bool
-                or not np.any(self.training_mask) or not np.any(~self.training_mask)):
+        if (
+            np.asarray(self.training_mask).dtype != bool
+            or not np.any(self.training_mask)
+            or not np.any(~self.training_mask)
+        ):
             raise ValueError("fixed training and evaluation rows required")
         if not np.all(np.isfinite(self.times_s)) or not np.all(np.isfinite(self.measured_hz)):
             raise ValueError("finite track values required")
@@ -102,10 +110,10 @@ def propagate_candidate_states(
     taus_s: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Propagate candidates at exact rounded receive-plus-tau epochs."""
-    orbit_ns = np.asarray([
-        start_utc_ns + round(float(value + tau) * 1e9)
-        for tau in taus_s for value in times_s
-    ], dtype=np.int64)
+    orbit_ns = np.asarray(
+        [start_utc_ns + round(float(value + tau) * 1e9) for tau in taus_s for value in times_s],
+        dtype=np.int64,
+    )
     grid = SamplingGrid(tuple(int(value) for value in orbit_ns), 0, 1.0)
     state = propagate_grid(catalogue, grid, candidate_indices)
     jd, fraction = julian_day_from_utc_ns(orbit_ns)
@@ -138,8 +146,11 @@ def build_prediction_banks(
         raise ValueError("tracks required")
     nodes = required_geometry_nodes([row.times_s for row in tracks], taus)
     coarse, _, coarse_indices = propagate_candidate_states(
-        catalogue, candidate_indices, start_utc_ns,
-        np.arange(-507.0, 809.0), np.asarray([0.0]),
+        catalogue,
+        candidate_indices,
+        start_utc_ns,
+        np.arange(-507.0, 809.0),
+        np.asarray([0.0]),
     )
     coarse = coarse[:, 0, nodes]
     lookup = {int(value): index for index, value in enumerate(coarse_indices)}
@@ -148,18 +159,33 @@ def build_prediction_banks(
     numbers = np.asarray(catalogue.satellite_numbers)
     for track in tracks:
         position, velocity, valid = propagate_candidate_states(
-            catalogue, candidate_indices, start_utc_ns, track.times_s, taus,
+            catalogue,
+            candidate_indices,
+            start_utc_ns,
+            track.times_s,
+            taus,
         )
         keep = np.asarray([int(value) in lookup for value in valid])
         valid, position, velocity = valid[keep], position[keep], velocity[keep]
-        banks.append(AdaptiveTrackStateBank(
-            track, numbers[valid], position, velocity, coarse, nodes,
-            np.asarray([lookup[int(value)] for value in valid]),
-        ))
+        banks.append(
+            AdaptiveTrackStateBank(
+                track,
+                numbers[valid],
+                position,
+                velocity,
+                coarse,
+                nodes,
+                np.asarray([lookup[int(value)] for value in valid]),
+            )
+        )
         propagated += len(valid) * len(taus) * len(track.times_s)
     return tuple(banks), PredictionBankReceipt(
-        time.monotonic() - started, len(banks), len(coarse_indices), 1316,
-        tuple(int(value) for value in nodes), int(propagated),
+        time.monotonic() - started,
+        len(banks),
+        len(coarse_indices),
+        1316,
+        tuple(int(value) for value in nodes),
+        int(propagated),
     )
 
 
@@ -188,22 +214,34 @@ class RegionalTrackPredictionEvaluator:
         shared_position = self.banks[0].coarse_position_km
         shared_delta = shared_position - receiver
         shared_distance = np.linalg.norm(shared_delta, axis=-1)
-        shared_elevation = np.rad2deg(np.arcsin(np.clip(
-            np.sum(shared_delta * up, axis=-1) / shared_distance, -1.0, 1.0,
-        )))
+        shared_elevation = np.rad2deg(
+            np.arcsin(
+                np.clip(
+                    np.sum(shared_delta * up, axis=-1) / shared_distance,
+                    -1.0,
+                    1.0,
+                )
+            )
+        )
         for bank in self.banks:
             if not len(bank.candidate_ids):
                 yield AdaptiveTrackPrediction(
-                    bank.source.track_id, bank.source.observation_ids,
-                    bank.source.times_s, bank.source.measured_hz,
-                    bank.source.training_mask, bank.candidate_ids, self.taus_s,
+                    bank.source.track_id,
+                    bank.source.observation_ids,
+                    bank.source.times_s,
+                    bank.source.measured_hz,
+                    bank.source.training_mask,
+                    bank.candidate_ids,
+                    self.taus_s,
                     np.empty((0, len(self.taus_s), len(bank.source.times_s))),
                     np.empty(0, dtype=bool),
                 )
                 continue
-            if (bank.coarse_position_km.shape != shared_position.shape
-                    or not np.shares_memory(bank.coarse_position_km, shared_position)
-                    and not np.array_equal(bank.coarse_position_km, shared_position)):
+            if (
+                bank.coarse_position_km.shape != shared_position.shape
+                or not np.shares_memory(bank.coarse_position_km, shared_position)
+                and not np.array_equal(bank.coarse_position_km, shared_position)
+            ):
                 raise ValueError("track banks do not share one coarse state authority")
             node_lookup = {int(node): index for index, node in enumerate(bank.coarse_node_indices)}
             query = bank.source.times_s[None, :] + self.taus_s[:, None] + 507.0
@@ -239,28 +277,45 @@ class RegionalTrackPredictionEvaluator:
                 position, velocity = bank.position_km[active], bank.velocity_km_s[active]
                 exact_delta = position - receiver
                 exact_distance = np.linalg.norm(exact_delta, axis=-1)
-                visible = np.max(np.sum(exact_delta * up, axis=-1) / exact_distance,
-                                 axis=(1, 2)) >= 0
-                prediction = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(
-                    exact_delta * velocity, axis=-1
-                ) / exact_distance
+                visible = (
+                    np.max(np.sum(exact_delta * up, axis=-1) / exact_distance, axis=(1, 2)) >= 0
+                )
+                prediction = (
+                    -REFERENCE_RF_HZ
+                    / LIGHT_KM_S
+                    * np.sum(exact_delta * velocity, axis=-1)
+                    / exact_distance
+                )
                 yielded = True
                 yield AdaptiveTrackPrediction(
-                    bank.source.track_id, bank.source.observation_ids,
-                    bank.source.times_s, bank.source.measured_hz,
-                    bank.source.training_mask, bank.candidate_ids[active],
-                    self.taus_s, prediction, visible,
+                    bank.source.track_id,
+                    bank.source.observation_ids,
+                    bank.source.times_s,
+                    bank.source.measured_hz,
+                    bank.source.training_mask,
+                    bank.candidate_ids[active],
+                    self.taus_s,
+                    prediction,
+                    visible,
                 )
             if not yielded:
                 position, velocity = bank.position_km[:1], bank.velocity_km_s[:1]
                 exact_delta = position - receiver
                 exact_distance = np.linalg.norm(exact_delta, axis=-1)
-                prediction = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(
-                    exact_delta * velocity, axis=-1
-                ) / exact_distance
+                prediction = (
+                    -REFERENCE_RF_HZ
+                    / LIGHT_KM_S
+                    * np.sum(exact_delta * velocity, axis=-1)
+                    / exact_distance
+                )
                 yield AdaptiveTrackPrediction(
-                    bank.source.track_id, bank.source.observation_ids,
-                    bank.source.times_s, bank.source.measured_hz,
-                    bank.source.training_mask, bank.candidate_ids[:1], self.taus_s,
-                    prediction, np.zeros(1, dtype=bool),
+                    bank.source.track_id,
+                    bank.source.observation_ids,
+                    bank.source.times_s,
+                    bank.source.measured_hz,
+                    bank.source.training_mask,
+                    bank.candidate_ids[:1],
+                    self.taus_s,
+                    prediction,
+                    np.zeros(1, dtype=bool),
                 )

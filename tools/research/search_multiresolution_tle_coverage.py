@@ -107,9 +107,7 @@ class CoverageEvaluator:
         self._early_abandoned = 0
         self._evaluation_elapsed_s = 0.0
 
-    def _coarse_elevation(
-        self, site: Grid, position: np.ndarray | None = None
-    ) -> np.ndarray:
+    def _coarse_elevation(self, site: Grid, position: np.ndarray | None = None) -> np.ndarray:
         position = self.tracks[0].coarse_position_km if position is None else position
         delta = position - site.ecef_km[0]
         distance = np.linalg.norm(delta, axis=-1)
@@ -117,7 +115,9 @@ class CoverageEvaluator:
         return np.rad2deg(np.arcsin(np.clip(sine, -1.0, 1.0)))
 
     def _coarse_visible(
-        self, track: TrackPredictionBank, site: Grid,
+        self,
+        track: TrackPredictionBank,
+        site: Grid,
         shared_elevation: np.ndarray | _LazyCoarseElevation | None = None,
     ) -> np.ndarray:
         node_lookup = {int(node): i for i, node in enumerate(track.coarse_node_indices)}
@@ -148,7 +148,8 @@ class CoverageEvaluator:
         else:
             elevation = (
                 self._coarse_elevation(site, track.coarse_position_km)
-                if shared_elevation is None else shared_elevation
+                if shared_elevation is None
+                else shared_elevation
             )
         if track.coarse_candidate_rows is not None:
             elevation = elevation[track.coarse_candidate_rows]
@@ -164,9 +165,13 @@ class CoverageEvaluator:
         return visible
 
     def _track_best(
-        self, track: TrackPredictionBank, site: Grid, training: np.ndarray,
+        self,
+        track: TrackPredictionBank,
+        site: Grid,
+        training: np.ndarray,
         shared_elevation: np.ndarray | _LazyCoarseElevation | None = None,
-        *, retain_candidates: bool = False,
+        *,
+        retain_candidates: bool = False,
     ) -> tuple[float, int, dict | None, list[dict]]:
         coarse = self._coarse_visible(track, site, shared_elevation)
         best = np.inf
@@ -182,14 +187,17 @@ class CoverageEvaluator:
             velocity = track.velocity_km_s[active]
             delta = position - site.ecef_km[0]
             distance = np.linalg.norm(delta, axis=-1)
-            exact_visible = np.max(np.sum(delta * site.up[0], axis=-1) / distance,
-                                   axis=(1, 2)) >= 0
-            prediction = -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(
-                delta * velocity, axis=-1
-            ) / distance
+            exact_visible = np.max(np.sum(delta * site.up[0], axis=-1) / distance, axis=(1, 2)) >= 0
+            prediction = (
+                -REFERENCE_RF_HZ / LIGHT_KM_S * np.sum(delta * velocity, axis=-1) / distance
+            )
             rows = score_prediction_bank(
-                track.measured_hz, prediction, training, self.taus,
-                exact_visible, (max(self.thresholds),),
+                track.measured_hz,
+                prediction,
+                training,
+                self.taus,
+                exact_visible,
+                (max(self.thresholds),),
             )
             finite = [row["heldout_rms_hz"] for row in rows if row["visible"]]
             if finite:
@@ -205,17 +213,25 @@ class CoverageEvaluator:
                     "qualifies": row["qualifies"],
                 }
                 if best_row is None or (
-                    detail["heldout_rms_hz"], detail["training_rms_hz"], detail["norad"]
+                    detail["heldout_rms_hz"],
+                    detail["training_rms_hz"],
+                    detail["norad"],
                 ) < (
-                    best_row["heldout_rms_hz"], best_row["training_rms_hz"],
+                    best_row["heldout_rms_hz"],
+                    best_row["training_rms_hz"],
                     best_row["norad"],
                 ):
                     best_row = detail
                 if retain_candidates and detail["heldout_rms_hz"] < max(self.thresholds):
                     candidates.append(detail)
-        candidates.sort(key=lambda row: (
-            row["heldout_rms_hz"], row["training_rms_hz"], row["norad"], row["tau_s"]
-        ))
+        candidates.sort(
+            key=lambda row: (
+                row["heldout_rms_hz"],
+                row["training_rms_hz"],
+                row["norad"],
+                row["tau_s"],
+            )
+        )
         return float(best), heldout_count, best_row, candidates
 
     def evaluate_points(
@@ -231,20 +247,33 @@ class CoverageEvaluator:
         output = []
         for cell in range(len(sites)):
             key = (
-                float(sites.latitude_deg[cell]), float(sites.longitude_deg[cell]),
+                float(sites.latitude_deg[cell]),
+                float(sites.longitude_deg[cell]),
                 float(sites.altitude_m[cell]),
             )
             if key in self.cache:
                 self._cache_hits += 1
                 cached = self.cache[key]
-                output.append(CellScore(
-                    float(sites.east_km[cell]), float(sites.north_km[cell]), cached.coverage
-                ))
+                output.append(
+                    CellScore(
+                        float(sites.east_km[cell]), float(sites.north_km[cell]), cached.coverage
+                    )
+                )
                 continue
-            one = Grid(*(getattr(sites, name)[cell:cell + 1] for name in (
-                "east_km", "north_km", "latitude_deg", "longitude_deg", "altitude_m",
-                "ecef_km", "up",
-            )))
+            one = Grid(
+                *(
+                    getattr(sites, name)[cell : cell + 1]
+                    for name in (
+                        "east_km",
+                        "north_km",
+                        "latitude_deg",
+                        "longitude_deg",
+                        "altitude_m",
+                        "ecef_km",
+                        "up",
+                    )
+                )
+            )
             site_contract = ObserverSiteV1(
                 latitude_deg=float(one.latitude_deg[0]),
                 longitude_deg=float(one.longitude_deg[0]),
@@ -253,48 +282,56 @@ class CoverageEvaluator:
             )
             track_rows = []
             details = []
-            shared_elevation = _LazyCoarseElevation(
-                self.tracks[0].coarse_position_km, one
-            )
+            shared_elevation = _LazyCoarseElevation(self.tracks[0].coarse_position_km, one)
             for track in self.tracks:
                 mask, seed = partition_mask(
-                    track.observation_ids, track.support_digest, self.trajectory_digest,
-                    site_contract, mode=self.partition_mode, fixed_site=self.fixed_site,
+                    track.observation_ids,
+                    track.support_digest,
+                    self.trajectory_digest,
+                    site_contract,
+                    mode=self.partition_mode,
+                    fixed_site=self.fixed_site,
                     fixed_partition_salt=self.fixed_partition_salt,
                 )
                 best, heldout_count, best_row, _ = self._track_best(
                     track, one, mask, shared_elevation
                 )
                 track_rows.append((track, best, heldout_count))
-                details.append({
-                    "tracklet_id": track.tracklet_id,
-                    "partition_seed": seed,
-                    "training_count": int(np.sum(mask)),
-                    "heldout_count": heldout_count,
-                    "best_candidate": best_row,
-                })
+                details.append(
+                    {
+                        "tracklet_id": track.tracklet_id,
+                        "partition_seed": seed,
+                        "training_count": int(np.sum(mask)),
+                        "heldout_count": heldout_count,
+                        "best_candidate": best_row,
+                    }
+                )
             coverage = []
             for threshold in self.thresholds:
                 qualified = [row for row in track_rows if row[1] < threshold]
                 observation_ids = {
-                    observation_id for track, _, _ in qualified
+                    observation_id
+                    for track, _, _ in qualified
                     for observation_id in track.observation_ids
                 }
                 weight = sum(heldout for _, _, heldout in qualified)
                 weighted = (
                     np.sqrt(sum(heldout * best**2 for _, best, heldout in qualified) / weight)
-                    if weight else None
+                    if weight
+                    else None
                 )
-                coverage.append(ThresholdCoverage(
-                    threshold_hz=threshold,
-                    unique_observation_count=len(observation_ids),
-                    duration_s=sum(track.span_s for track, _, _ in qualified),
-                    track_count=len(qualified),
-                    clipped_best_rms_sum_hz=sum(
-                        min(best, threshold) for _, best, _ in track_rows
-                    ),
-                    observation_weighted_rms_hz=(None if weighted is None else float(weighted)),
-                ))
+                coverage.append(
+                    ThresholdCoverage(
+                        threshold_hz=threshold,
+                        unique_observation_count=len(observation_ids),
+                        duration_s=sum(track.span_s for track, _, _ in qualified),
+                        track_count=len(qualified),
+                        clipped_best_rms_sum_hz=sum(
+                            min(best, threshold) for _, best, _ in track_rows
+                        ),
+                        observation_weighted_rms_hz=(None if weighted is None else float(weighted)),
+                    )
+                )
             score = CellScore(
                 float(sites.east_km[cell]), float(sites.north_km[cell]), tuple(coverage)
             )
@@ -325,32 +362,48 @@ class CoverageEvaluator:
         output = []
         for index in range(len(sites)):
             physical = (
-                float(sites.latitude_deg[index]), float(sites.longitude_deg[index]),
+                float(sites.latitude_deg[index]),
+                float(sites.longitude_deg[index]),
                 float(sites.altitude_m[index]),
             )
             if physical not in self._details:
-                one = Grid(*(getattr(sites, name)[index:index + 1] for name in (
-                    "east_km", "north_km", "latitude_deg", "longitude_deg", "altitude_m",
-                    "ecef_km", "up",
-                )))
+                one = Grid(
+                    *(
+                        getattr(sites, name)[index : index + 1]
+                        for name in (
+                            "east_km",
+                            "north_km",
+                            "latitude_deg",
+                            "longitude_deg",
+                            "altitude_m",
+                            "ecef_km",
+                            "up",
+                        )
+                    )
+                )
                 self._details[physical] = self.evaluate_finalists(one)[0]["tracks"]
             tracks = []
             for row in self._details[physical]:
                 best = row["best_candidate"]
-                tracks.append({
-                    "tracklet_id": row["tracklet_id"],
-                    "partition_seed": row["partition_seed"],
-                    "training_count": row["training_count"],
-                    "heldout_count": row["heldout_count"],
-                    "heldout_rms_hz": None if best is None else best["heldout_rms_hz"],
-                    "best_candidate": None if best is None else dict(best),
-                })
-            output.append({
-                "east_km": float(sites.east_km[index]),
-                "north_km": float(sites.north_km[index]),
-                "latitude_deg": physical[0], "longitude_deg": physical[1],
-                "tracks": tracks,
-            })
+                tracks.append(
+                    {
+                        "tracklet_id": row["tracklet_id"],
+                        "partition_seed": row["partition_seed"],
+                        "training_count": row["training_count"],
+                        "heldout_count": row["heldout_count"],
+                        "heldout_rms_hz": None if best is None else best["heldout_rms_hz"],
+                        "best_candidate": None if best is None else dict(best),
+                    }
+                )
+            output.append(
+                {
+                    "east_km": float(sites.east_km[index]),
+                    "north_km": float(sites.north_km[index]),
+                    "latitude_deg": physical[0],
+                    "longitude_deg": physical[1],
+                    "tracks": tracks,
+                }
+            )
         return output
 
     def evaluate_top_k(
@@ -373,27 +426,40 @@ class CoverageEvaluator:
         pruned = []
         for cell in range(len(sites)):
             physical = (
-                float(sites.latitude_deg[cell]), float(sites.longitude_deg[cell]),
+                float(sites.latitude_deg[cell]),
+                float(sites.longitude_deg[cell]),
                 float(sites.altitude_m[cell]),
             )
             if physical in self.cache:
                 cached = self.cache[physical]
-                complete.append(CellScore(
-                    float(sites.east_km[cell]), float(sites.north_km[cell]), cached.coverage
-                ))
+                complete.append(
+                    CellScore(
+                        float(sites.east_km[cell]), float(sites.north_km[cell]), cached.coverage
+                    )
+                )
                 self._cache_hits += 1
                 continue
-            one = Grid(*(getattr(sites, name)[cell:cell + 1] for name in (
-                "east_km", "north_km", "latitude_deg", "longitude_deg", "altitude_m",
-                "ecef_km", "up",
-            )))
+            one = Grid(
+                *(
+                    getattr(sites, name)[cell : cell + 1]
+                    for name in (
+                        "east_km",
+                        "north_km",
+                        "latitude_deg",
+                        "longitude_deg",
+                        "altitude_m",
+                        "ecef_km",
+                        "up",
+                    )
+                )
+            )
             contract = ObserverSiteV1(
-                latitude_deg=physical[0], longitude_deg=physical[1],
-                altitude_m=physical[2], label=self.observer_label,
+                latitude_deg=physical[0],
+                longitude_deg=physical[1],
+                altitude_m=physical[2],
+                label=self.observer_label,
             )
-            shared_elevation = _LazyCoarseElevation(
-                self.tracks[0].coarse_position_km, one
-            )
+            shared_elevation = _LazyCoarseElevation(self.tracks[0].coarse_position_km, one)
             rows = []
             covered_ids: set[str] = set()
             abandoned = False
@@ -401,31 +467,36 @@ class CoverageEvaluator:
             if len(complete) >= top_k:
                 kth = rank_coverage_cells(complete, threshold_hz, top_k)[-1]
                 kth_count = next(
-                    row.unique_observation_count for row in kth.coverage
+                    row.unique_observation_count
+                    for row in kth.coverage
                     if row.threshold_hz == threshold_hz
                 )
             for index, track in enumerate(self.tracks):
                 mask, _ = partition_mask(
-                    track.observation_ids, track.support_digest, self.trajectory_digest,
-                    contract, mode=self.partition_mode, fixed_site=self.fixed_site,
+                    track.observation_ids,
+                    track.support_digest,
+                    self.trajectory_digest,
+                    contract,
+                    mode=self.partition_mode,
+                    fixed_site=self.fixed_site,
                     fixed_partition_salt=self.fixed_partition_salt,
                 )
-                best, heldout, _, _ = self._track_best(
-                    track, one, mask, shared_elevation
-                )
+                best, heldout, _, _ = self._track_best(track, one, mask, shared_elevation)
                 rows.append((track, best, heldout))
                 if best < threshold_hz:
                     covered_ids.update(track.observation_ids)
                 if kth_count is not None:
                     upper = len(covered_ids | remaining[index + 1])
                     if upper < kth_count:
-                        pruned.append({
-                            "east_km": float(one.east_km[0]),
-                            "north_km": float(one.north_km[0]),
-                            "tracks_scored": index + 1,
-                            "unique_observation_upper_bound": upper,
-                            "incumbent_kth_unique_observation_count": kth_count,
-                        })
+                        pruned.append(
+                            {
+                                "east_km": float(one.east_km[0]),
+                                "north_km": float(one.north_km[0]),
+                                "tracks_scored": index + 1,
+                                "unique_observation_upper_bound": upper,
+                                "incumbent_kth_unique_observation_count": kth_count,
+                            }
+                        )
                         self._early_abandoned += 1
                         abandoned = True
                         break
@@ -436,13 +507,21 @@ class CoverageEvaluator:
                 qualified = [row for row in rows if row[1] < threshold]
                 ids = {value for track, _, _ in qualified for value in track.observation_ids}
                 weight = sum(heldout for _, _, heldout in qualified)
-                weighted = (np.sqrt(sum(heldout * best**2 for _, best, heldout in qualified)
-                                    / weight) if weight else None)
-                coverage.append(ThresholdCoverage(
-                    threshold, len(ids), sum(track.span_s for track, _, _ in qualified),
-                    len(qualified), sum(min(best, threshold) for _, best, _ in rows),
-                    None if weighted is None else float(weighted),
-                ))
+                weighted = (
+                    np.sqrt(sum(heldout * best**2 for _, best, heldout in qualified) / weight)
+                    if weight
+                    else None
+                )
+                coverage.append(
+                    ThresholdCoverage(
+                        threshold,
+                        len(ids),
+                        sum(track.span_s for track, _, _ in qualified),
+                        len(qualified),
+                        sum(min(best, threshold) for _, best, _ in rows),
+                        None if weighted is None else float(weighted),
+                    )
+                )
             score = CellScore(float(one.east_km[0]), float(one.north_km[0]), tuple(coverage))
             self.cache[physical] = score
             self._fully_scored += 1
@@ -455,40 +534,61 @@ class CoverageEvaluator:
         self.evaluate_points(sites)
         output = []
         for cell in range(len(sites)):
-            one = Grid(*(getattr(sites, name)[cell:cell + 1] for name in (
-                "east_km", "north_km", "latitude_deg", "longitude_deg", "altitude_m",
-                "ecef_km", "up",
-            )))
+            one = Grid(
+                *(
+                    getattr(sites, name)[cell : cell + 1]
+                    for name in (
+                        "east_km",
+                        "north_km",
+                        "latitude_deg",
+                        "longitude_deg",
+                        "altitude_m",
+                        "ecef_km",
+                        "up",
+                    )
+                )
+            )
             site_contract = ObserverSiteV1(
                 latitude_deg=float(one.latitude_deg[0]),
                 longitude_deg=float(one.longitude_deg[0]),
-                altitude_m=float(one.altitude_m[0]), label=self.observer_label,
+                altitude_m=float(one.altitude_m[0]),
+                label=self.observer_label,
             )
             tracks = []
-            shared_elevation = _LazyCoarseElevation(
-                self.tracks[0].coarse_position_km, one
-            )
+            shared_elevation = _LazyCoarseElevation(self.tracks[0].coarse_position_km, one)
             for track in self.tracks:
                 mask, seed = partition_mask(
-                    track.observation_ids, track.support_digest, self.trajectory_digest,
-                    site_contract, mode=self.partition_mode, fixed_site=self.fixed_site,
+                    track.observation_ids,
+                    track.support_digest,
+                    self.trajectory_digest,
+                    site_contract,
+                    mode=self.partition_mode,
+                    fixed_site=self.fixed_site,
                     fixed_partition_salt=self.fixed_partition_salt,
                 )
                 best, heldout, best_row, candidates = self._track_best(
                     track, one, mask, shared_elevation, retain_candidates=True
                 )
-                tracks.append({
-                    "tracklet_id": track.tracklet_id, "partition_seed": seed,
-                    "training_count": int(np.sum(mask)), "heldout_count": heldout,
-                    "best_heldout_rms_hz": None if not np.isfinite(best) else best,
-                    "best_candidate": best_row,
-                    "qualifying_candidates": candidates,
-                })
-            output.append({
-                "east_km": float(one.east_km[0]), "north_km": float(one.north_km[0]),
-                "latitude_deg": float(one.latitude_deg[0]),
-                "longitude_deg": float(one.longitude_deg[0]), "tracks": tracks,
-            })
+                tracks.append(
+                    {
+                        "tracklet_id": track.tracklet_id,
+                        "partition_seed": seed,
+                        "training_count": int(np.sum(mask)),
+                        "heldout_count": heldout,
+                        "best_heldout_rms_hz": None if not np.isfinite(best) else best,
+                        "best_candidate": best_row,
+                        "qualifying_candidates": candidates,
+                    }
+                )
+            output.append(
+                {
+                    "east_km": float(one.east_km[0]),
+                    "north_km": float(one.north_km[0]),
+                    "latitude_deg": float(one.latitude_deg[0]),
+                    "longitude_deg": float(one.longitude_deg[0]),
+                    "tracks": tracks,
+                }
+            )
         return output
 
 
@@ -504,8 +604,11 @@ def build_prediction_banks(
     track_times = [np.asarray(row["times_s"], dtype=float) for row in inputs["tracks"]]
     nodes = required_geometry_nodes(track_times, taus)
     coarse_position, _, coarse_indices = exhaustive._states(
-        inputs["catalogue"], inputs["indices"], inputs["start_ns"],
-        np.arange(-507.0, 809.0, 1.0), np.asarray([0.0]),
+        inputs["catalogue"],
+        inputs["indices"],
+        inputs["start_ns"],
+        np.arange(-507.0, 809.0, 1.0),
+        np.asarray([0.0]),
     )
     coarse_position = coarse_position[:, 0, nodes]
     coarse_lookup = {int(value): index for index, value in enumerate(coarse_indices)}
@@ -513,28 +616,33 @@ def build_prediction_banks(
     propagated_values = 1316 * len(coarse_indices)
     for row in inputs["tracks"]:
         position, velocity, valid_indices = exhaustive._states(
-            inputs["catalogue"], inputs["indices"], inputs["start_ns"],
-            np.asarray(row["times_s"], dtype=float), taus,
+            inputs["catalogue"],
+            inputs["indices"],
+            inputs["start_ns"],
+            np.asarray(row["times_s"], dtype=float),
+            taus,
         )
         keep = np.asarray([int(value) in coarse_lookup for value in valid_indices])
         valid_indices = valid_indices[keep]
         position, velocity = position[keep], velocity[keep]
         coarse_local = np.asarray([coarse_lookup[int(value)] for value in valid_indices])
         norads = np.asarray(inputs["catalogue"].satellite_numbers)[valid_indices]
-        banks.append(TrackPredictionBank(
-            tracklet_id=row["tracklet_id"],
-            observation_ids=tuple(row["observation_ids"]),
-            measured_hz=np.asarray(row["measured_hz"], dtype=float),
-            times_s=np.asarray(row["times_s"], dtype=float),
-            span_s=float(row["span_s"]),
-            support_digest=row["support_digest"],
-            position_km=position,
-            velocity_km_s=velocity,
-            norads=norads,
-            coarse_position_km=coarse_position,
-            coarse_node_indices=nodes,
-            coarse_candidate_rows=coarse_local,
-        ))
+        banks.append(
+            TrackPredictionBank(
+                tracklet_id=row["tracklet_id"],
+                observation_ids=tuple(row["observation_ids"]),
+                measured_hz=np.asarray(row["measured_hz"], dtype=float),
+                times_s=np.asarray(row["times_s"], dtype=float),
+                span_s=float(row["span_s"]),
+                support_digest=row["support_digest"],
+                position_km=position,
+                velocity_km_s=velocity,
+                norads=norads,
+                coarse_position_km=coarse_position,
+                coarse_node_indices=nodes,
+                coarse_candidate_rows=coarse_local,
+            )
+        )
         propagated_values += len(valid_indices) * len(taus) * len(row["times_s"])
     metadata = {
         "schema": "fast-coverage-prediction-bank/v1",
@@ -592,20 +700,24 @@ def partition_mask(
         if mode == "fixed" and fixed_site is None
         else (fixed_site if mode == "fixed" else site).model_dump(mode="json")
     )
-    protocol = canonical_digest({
-        "algorithm": "scanner-shared-tracking-v12",
-        "utc_qualification_limit_ns": 2_000_000_000,
-        "trajectory": trajectory_digest,
-        "group_limit": 4,
-        "selection": "eligible-first-longest-support-v1",
-        "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
-        "observer": observer_authority,
-    })
-    seed = canonical_digest({
-        "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
-        "response_free_support_digest": support_digest,
-        "selection_protocol_digest": protocol,
-    })
+    protocol = canonical_digest(
+        {
+            "algorithm": "scanner-shared-tracking-v12",
+            "utc_qualification_limit_ns": 2_000_000_000,
+            "trajectory": trajectory_digest,
+            "group_limit": 4,
+            "selection": "eligible-first-longest-support-v1",
+            "catalogue": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
+            "observer": observer_authority,
+        }
+    )
+    seed = canonical_digest(
+        {
+            "policy": "persistent-hop-fixed-orbit-randomized-residual-v1",
+            "response_free_support_digest": support_digest,
+            "selection_protocol_digest": protocol,
+        }
+    )
     training, _ = deterministic_randomized_observation_partition(
         tuple(observation_ids), training_fraction=0.6, split_seed=seed
     )
@@ -642,19 +754,21 @@ def score_prediction_bank(
     selected_held = held_rms[index, tau_index]
     result = []
     for candidate in range(len(prediction)):
-        result.append({
-            "candidate_index": candidate,
-            "tau_s": float(taus[tau_index[candidate]]),
-            "training_rms_hz": float(selected_train[candidate]),
-            "heldout_rms_hz": float(selected_held[candidate]),
-            "visible": bool(visible[candidate]),
-            "qualifies": {
-                float(threshold): bool(
-                    visible[candidate] and selected_held[candidate] < threshold
-                )
-                for threshold in thresholds_hz
-            },
-        })
+        result.append(
+            {
+                "candidate_index": candidate,
+                "tau_s": float(taus[tau_index[candidate]]),
+                "training_rms_hz": float(selected_train[candidate]),
+                "heldout_rms_hz": float(selected_held[candidate]),
+                "visible": bool(visible[candidate]),
+                "qualifies": {
+                    float(threshold): bool(
+                        visible[candidate] and selected_held[candidate] < threshold
+                    )
+                    for threshold in thresholds_hz
+                },
+            }
+        )
     return result
 
 
@@ -685,13 +799,18 @@ def rank_coverage_cells(
     Duration and track count remain reported diagnostics; they do not alter the
     declared primary scientific ordering.
     """
+
     def metric(cell: CellScore):
         rows = [row for row in cell.coverage if row.threshold_hz == threshold_hz]
         if len(rows) != 1:
             raise ValueError("cell has no unique requested threshold")
         row = rows[0]
-        return (-row.unique_observation_count, row.clipped_best_rms_sum_hz,
-                cell.east_km, cell.north_km)
+        return (
+            -row.unique_observation_count,
+            row.clipped_best_rms_sum_hz,
+            cell.east_km,
+            cell.north_km,
+        )
 
     ordered = sorted(cells, key=metric)
     return ordered if top_k is None else ordered[:top_k]
@@ -707,11 +826,13 @@ def multiresolution_search(
     threshold_hz: float = 800.0,
 ) -> tuple[list[CellScore], list[dict]]:
     """Run a deterministic heuristic multi-basin refinement on aligned lattices."""
-    schedule = (
-        (basins,) * len(levels_km) if isinstance(basins, int) else tuple(basins)
-    )
-    if (len(schedule) != len(levels_km) or any(value <= 0 for value in schedule)
-            or not levels_km or any(value <= 0 for value in levels_km)):
+    schedule = (basins,) * len(levels_km) if isinstance(basins, int) else tuple(basins)
+    if (
+        len(schedule) != len(levels_km)
+        or any(value <= 0 for value in schedule)
+        or not levels_km
+        or any(value <= 0 for value in levels_km)
+    ):
         raise ValueError("positive basins and levels required")
     if any(fine >= coarse for coarse, fine in zip(levels_km, levels_km[1:], strict=False)):
         raise ValueError("levels must be strictly decreasing")
@@ -723,9 +844,7 @@ def multiresolution_search(
     previous = None
     for level, level_basins in zip(levels_km, schedule, strict=True):
         if previous is None:
-            proposed = regional_circle_offsets(
-                region_size_km, radius_km, level, intersecting=True
-            )
+            proposed = regional_circle_offsets(region_size_km, radius_km, level, intersecting=True)
         else:
             cells = int(np.ceil(region_size_km / level))
             axis = ((np.arange(cells) + 0.5) / cells - 0.5) * region_size_km
@@ -735,9 +854,9 @@ def multiresolution_search(
                 north_indices = np.flatnonzero(np.abs(axis - north) <= previous / 2 + 1e-12)
                 local.update(
                     (float(axis[i]), float(axis[j]))
-                    for i in east_indices for j in north_indices
-                    if np.hypot(axis[i], axis[j])
-                    <= radius_km + level / np.sqrt(2.0) + 1e-12
+                    for i in east_indices
+                    for j in north_indices
+                    if np.hypot(axis[i], axis[j]) <= radius_km + level / np.sqrt(2.0) + 1e-12
                 )
             proposed = np.asarray(sorted(local), dtype=float).reshape(-1, 2)
         keys = sorted({(float(e), float(n)) for e, n in proposed} - seen)
@@ -751,36 +870,52 @@ def multiresolution_search(
             all_scores[key] = score
         seen.update(keys)
         proposed_scores = [all_scores[(float(e), float(n))] for e, n in proposed]
-        inside = [row for row in all_scores.values()
-                  if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12]
-        final_level_inside = [row for row in proposed_scores
-                              if np.hypot(row.east_km, row.north_km)
-                              <= radius_km + 1e-12]
+        inside = [
+            row
+            for row in all_scores.values()
+            if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+        ]
+        final_level_inside = [
+            row
+            for row in proposed_scores
+            if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+        ]
         leaders = rank_coverage_cells(inside, threshold_hz, level_basins)
-        boundary = [row for row in proposed_scores
-                    if radius_km < np.hypot(row.east_km, row.north_km)
-                    <= radius_km + level / np.sqrt(2.0) + 1e-12]
+        boundary = [
+            row
+            for row in proposed_scores
+            if radius_km
+            < np.hypot(row.east_km, row.north_km)
+            <= radius_km + level / np.sqrt(2.0) + 1e-12
+        ]
         centres = np.asarray(
             [[row.east_km, row.north_km] for row in [*leaders, *boundary]], dtype=float
         ).reshape(-1, 2)
-        trace.append({"spacing_km": level, "new_cell_count": len(keys),
-                      "cumulative_cell_count": len(all_scores),
-                      "evaluated_coordinates": [list(value) for value in keys],
-                      "level_inside_leaders": [
-                          [row.east_km, row.north_km]
-                          for row in rank_coverage_cells(
-                              [row for row in proposed_scores
-                               if np.hypot(row.east_km, row.north_km)
-                               <= radius_km + 1e-12],
-                              threshold_hz,
-                              level_basins,
-                          )
-                      ],
-                      "union_incumbents": [
-                          [row.east_km, row.north_km]
-                          for row in rank_coverage_cells(inside, threshold_hz, level_basins)
-                      ],
-                      "basin_centres": centres.tolist()})
+        trace.append(
+            {
+                "spacing_km": level,
+                "new_cell_count": len(keys),
+                "cumulative_cell_count": len(all_scores),
+                "evaluated_coordinates": [list(value) for value in keys],
+                "level_inside_leaders": [
+                    [row.east_km, row.north_km]
+                    for row in rank_coverage_cells(
+                        [
+                            row
+                            for row in proposed_scores
+                            if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+                        ],
+                        threshold_hz,
+                        level_basins,
+                    )
+                ],
+                "union_incumbents": [
+                    [row.east_km, row.north_km]
+                    for row in rank_coverage_cells(inside, threshold_hz, level_basins)
+                ],
+                "basin_centres": centres.tolist(),
+            }
+        )
         previous = level
     # The returned comparator is restricted to the final declared lattice;
     # trace.union_incumbents separately records best points over all levels.
@@ -803,24 +938,30 @@ def refine_from_centres(
     if centres.ndim != 2 or centres.shape[1] != 2 or not len(centres):
         raise ValueError("nonempty east/north initial centres required")
     schedule = (basins,) * len(levels_km) if isinstance(basins, int) else tuple(basins)
-    if (initial_spacing_km <= 0 or len(schedule) != len(levels_km)
-            or any(value <= 0 for value in (*levels_km, *schedule))):
+    if (
+        initial_spacing_km <= 0
+        or len(schedule) != len(levels_km)
+        or any(value <= 0 for value in (*levels_km, *schedule))
+    ):
         raise ValueError("positive aligned levels and basin schedule required")
     spacings = (initial_spacing_km, *levels_km)
     if any(fine >= coarse for coarse, fine in zip(spacings, spacings[1:], strict=False)):
         raise ValueError("refinement levels must be strictly decreasing")
     initial_scores = list(evaluator(centres))
-    if (len(initial_scores) != len(centres)
-            or any((row.east_km, row.north_km) != tuple(point)
-                   for row, point in zip(initial_scores, centres, strict=True))):
+    if len(initial_scores) != len(centres) or any(
+        (row.east_km, row.north_km) != tuple(point)
+        for row, point in zip(initial_scores, centres, strict=True)
+    ):
         raise ValueError("evaluator changed initial coordinate order")
     all_scores = {(row.east_km, row.north_km): row for row in initial_scores}
-    trace = [{
-        "spacing_km": initial_spacing_km,
-        "new_cell_count": len(initial_scores),
-        "cumulative_cell_count": len(all_scores),
-        "seed_centres": centres.tolist(),
-    }]
+    trace = [
+        {
+            "spacing_km": initial_spacing_km,
+            "new_cell_count": len(initial_scores),
+            "cumulative_cell_count": len(all_scores),
+            "seed_centres": centres.tolist(),
+        }
+    ]
     previous = initial_spacing_km
     final_level = initial_scores
     for level, level_basins in zip(levels_km, schedule, strict=True):
@@ -836,38 +977,53 @@ def refine_from_centres(
         keys = sorted(proposed - set(all_scores))
         points = np.asarray(keys, dtype=float).reshape(-1, 2)
         evaluated = list(evaluator(points)) if len(points) else []
-        if (len(evaluated) != len(points)
-                or any((row.east_km, row.north_km) != key
-                       for row, key in zip(evaluated, keys, strict=True))):
+        if len(evaluated) != len(points) or any(
+            (row.east_km, row.north_km) != key for row, key in zip(evaluated, keys, strict=True)
+        ):
             raise ValueError("evaluator changed refinement coordinate order")
         all_scores.update({(row.east_km, row.north_km): row for row in evaluated})
         final_level = [all_scores[key] for key in sorted(proposed)]
-        inside = [row for row in all_scores.values()
-                  if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12]
+        inside = [
+            row
+            for row in all_scores.values()
+            if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+        ]
         leaders = rank_coverage_cells(inside, threshold_hz, level_basins)
-        boundary = [row for row in final_level
-                    if radius_km < np.hypot(row.east_km, row.north_km)
-                    <= radius_km + level / np.sqrt(2.0) + 1e-12]
+        boundary = [
+            row
+            for row in final_level
+            if radius_km
+            < np.hypot(row.east_km, row.north_km)
+            <= radius_km + level / np.sqrt(2.0) + 1e-12
+        ]
         centres = np.asarray(
             [[row.east_km, row.north_km] for row in [*leaders, *boundary]], dtype=float
         ).reshape(-1, 2)
-        trace.append({
-            "spacing_km": level, "new_cell_count": len(evaluated),
-            "cumulative_cell_count": len(all_scores),
-            "level_inside_leaders": [
-                [row.east_km, row.north_km]
-                for row in rank_coverage_cells(
-                    [row for row in final_level
-                     if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12],
-                    threshold_hz, level_basins,
-                )
-            ],
-            "union_incumbents": [
-                [row.east_km, row.north_km]
-                for row in rank_coverage_cells(inside, threshold_hz, level_basins)
-            ],
-        })
+        trace.append(
+            {
+                "spacing_km": level,
+                "new_cell_count": len(evaluated),
+                "cumulative_cell_count": len(all_scores),
+                "level_inside_leaders": [
+                    [row.east_km, row.north_km]
+                    for row in rank_coverage_cells(
+                        [
+                            row
+                            for row in final_level
+                            if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+                        ],
+                        threshold_hz,
+                        level_basins,
+                    )
+                ],
+                "union_incumbents": [
+                    [row.east_km, row.north_km]
+                    for row in rank_coverage_cells(inside, threshold_hz, level_basins)
+                ],
+            }
+        )
         previous = level
-    final_inside = [row for row in final_level
-                    if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12]
+    final_inside = [
+        row for row in final_level if np.hypot(row.east_km, row.north_km) <= radius_km + 1e-12
+    ]
     return rank_coverage_cells(final_inside, threshold_hz), trace

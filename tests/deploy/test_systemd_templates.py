@@ -27,9 +27,7 @@ def test_adaptive_workers_provision_position_tracking_root() -> None:
         assert "-o leo -g leo" in command
         assert "0750" in command
         adaptive = next(
-            line
-            for line in commands
-            if line.endswith("/scanner-adaptive-tle-position-v1")
+            line for line in commands if line.endswith("/scanner-adaptive-tle-position-v1")
         )
         assert adaptive.startswith("ExecStartPre=+/usr/bin/install -d ")
         assert "-o leo -g leo" in adaptive

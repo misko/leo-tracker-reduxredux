@@ -23,9 +23,7 @@ def test_alias_wrap_is_signed_and_periodic():
     values = np.array([-0.6 * period, -10.0, 0.0, 10.0, 0.6 * period])
     expected = np.array([0.4 * period, -10.0, 0.0, 10.0, -0.4 * period])
     np.testing.assert_allclose(MODULE.wrap_alias_hz(values), expected)
-    np.testing.assert_allclose(
-        MODULE.wrap_alias_hz(values + 3 * period), expected, atol=1e-9
-    )
+    np.testing.assert_allclose(MODULE.wrap_alias_hz(values + 3 * period), expected, atol=1e-9)
 
 
 def test_circular_mean_crosses_alias_seam():

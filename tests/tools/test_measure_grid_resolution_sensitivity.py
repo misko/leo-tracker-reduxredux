@@ -32,7 +32,10 @@ def test_uniform_phases_are_reproducible_and_special_points_are_labeled():
     assert np.all((first[:32] >= -0.5) & (first[:32] <= 0.5))
     assert labels[:32] == ["uniform"] * 32
     assert labels[-4:] == [
-        "southwest_corner", "northwest_corner", "southeast_corner", "northeast_corner",
+        "southwest_corner",
+        "northwest_corner",
+        "southeast_corner",
+        "northeast_corner",
     ]
 
 
@@ -42,7 +45,10 @@ def test_score_trials_chooses_tau_from_training_not_heldout_rows():
     # reverse pattern, so selecting on held data would wrongly choose it.
     predictions = np.array([[[0.0, 0.0, 10.0, 10.0], [10.0, 10.0, 0.0, 0.0]]])
     held, train, tau = MODULE.score_trials(
-        measured, predictions, np.array([True, True, False, False]), np.array([True]),
+        measured,
+        predictions,
+        np.array([True, True, False, False]),
+        np.array([True]),
     )
 
     assert tau.tolist() == [0]
@@ -54,7 +60,10 @@ def test_score_trials_can_hold_the_recorded_tau_fixed():
     measured = np.array([0.0, 0.0, 0.0, 0.0])
     predictions = np.array([[[0.0, 0.0, 10.0, 10.0], [10.0, 10.0, 0.0, 0.0]]])
     held, train, tau = MODULE.score_trials(
-        measured, predictions, np.array([True, True, False, False]), np.array([True]),
+        measured,
+        predictions,
+        np.array([True, True, False, False]),
+        np.array([True]),
         fixed_tau_index=1,
     )
 
@@ -65,7 +74,10 @@ def test_score_trials_can_hold_the_recorded_tau_fixed():
 
 def test_invisible_trials_are_excluded_from_survival_not_counted_as_good():
     held, _, _ = MODULE.score_trials(
-        np.zeros(4), np.zeros((1, 1, 4)), np.array([True, True, False, False]), np.array([False]),
+        np.zeros(4),
+        np.zeros((1, 1, 4)),
+        np.array([True, True, False, False]),
+        np.array([False]),
     )
     coverage = MODULE.coverage_summary(held[None], np.array([4]), 200.0)
 

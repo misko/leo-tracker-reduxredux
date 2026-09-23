@@ -49,7 +49,7 @@ def test_benchmark_cold_searches_do_not_inherit_scored_cells(
         def evaluate_points(self, sites):
             rows = []
             for i in range(len(sites)):
-                coverage = (SEARCH.ThresholdCoverage(200., 10, 1., 1, 10., 10.),)
+                coverage = (SEARCH.ThresholdCoverage(200.0, 10, 1.0, 1, 10.0, 10.0),)
                 row = SEARCH.CellScore(float(sites.east_km[i]), float(sites.north_km[i]), coverage)
                 self.cache[(float(sites.latitude_deg[i]), float(sites.longitude_deg[i]))] = row
                 rows.append(row)
@@ -59,29 +59,49 @@ def test_benchmark_cold_searches_do_not_inherit_scored_cells(
             return []
 
         def metrics(self):
-            return {"cached_cell_count": len(self.cache), "cache_hits": 0,
-                    "fully_scored_cell_count": len(self.cache),
-                    "early_abandoned_cell_count": 0, "evaluation_elapsed_s": 0.0}
+            return {
+                "cached_cell_count": len(self.cache),
+                "cache_hits": 0,
+                "fully_scored_cell_count": len(self.cache),
+                "early_abandoned_cell_count": 0,
+                "evaluation_elapsed_s": 0.0,
+            }
 
     def adaptive(evaluate, **kwargs):
-        rows = evaluate(np.asarray([[0., 0.]]))
-        return rows, [{"new_cell_count": 1, "spacing_km": 200.}]
+        rows = evaluate(np.asarray([[0.0, 0.0]]))
+        return rows, [{"new_cell_count": 1, "spacing_km": 200.0}]
 
-    monkeypatch.setattr(MODULE, "CITIES", {"unit": (0., 0.)})
+    monkeypatch.setattr(MODULE, "CITIES", {"unit": (0.0, 0.0)})
     monkeypatch.setattr(MODULE, "snapshot_sources", lambda _: {"files": {}})
-    monkeypatch.setattr(MODULE.fast_coverage_inputs, "load", lambda *a, **k: {
-        "trajectory_digest": "fixture", "provenance": {"truth_accessed": False}
-    })
+    monkeypatch.setattr(
+        MODULE.fast_coverage_inputs,
+        "load",
+        lambda *a, **k: {"trajectory_digest": "fixture", "provenance": {"truth_accessed": False}},
+    )
     monkeypatch.setattr(MODULE, "build_prediction_banks", lambda _: ((), {}))
     monkeypatch.setattr(MODULE, "CoverageEvaluator", Evaluator)
     monkeypatch.setattr(MODULE, "multiresolution_search", adaptive)
     args = SimpleNamespace(
-        output=tmp_path / "results", session="fixture", evidence=tmp_path,
-        bulk_root=tmp_path, tle_root=tmp_path, thresholds_hz=(200.,),
-        primary_threshold_hz=200., partition_mode="fixed", candidate_block=16,
-        cache_policy=policy, cities=("unit",), mode="both",
-        spacings_km=(200., 100.), single_point=None, uniform_policy="full",
-        top_k=1, levels_km=(200., 100.), basins=(8,), workers=1, radius_km=100.,
+        output=tmp_path / "results",
+        session="fixture",
+        evidence=tmp_path,
+        bulk_root=tmp_path,
+        tle_root=tmp_path,
+        thresholds_hz=(200.0,),
+        primary_threshold_hz=200.0,
+        partition_mode="fixed",
+        candidate_block=16,
+        cache_policy=policy,
+        cities=("unit",),
+        mode="both",
+        spacings_km=(200.0, 100.0),
+        single_point=None,
+        uniform_policy="full",
+        top_k=1,
+        levels_km=(200.0, 100.0),
+        basins=(8,),
+        workers=1,
+        radius_km=100.0,
     )
     summary = MODULE.run(args)
     assert len(instances) == expected_instances
@@ -92,8 +112,8 @@ def test_benchmark_cold_searches_do_not_inherit_scored_cells(
 
 
 def test_default_policy_bounds_grid_to_500_km_radius():
-    assert MODULE.MAXIMUM_RADIUS_KM == 500.
-    assert MODULE.SEARCH_BOX_KM == 1000.
-    points = MODULE.regional_circle_offsets(MODULE.SEARCH_BOX_KM, 500., 50.)
+    assert MODULE.MAXIMUM_RADIUS_KM == 500.0
+    assert MODULE.SEARCH_BOX_KM == 1000.0
+    points = MODULE.regional_circle_offsets(MODULE.SEARCH_BOX_KM, 500.0, 50.0)
     assert len(points) == 316
-    assert np.all(np.linalg.norm(points, axis=1) <= 500.)
+    assert np.all(np.linalg.norm(points, axis=1) <= 500.0)

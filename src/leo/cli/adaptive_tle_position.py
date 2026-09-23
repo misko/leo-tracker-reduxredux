@@ -31,8 +31,10 @@ _WORKER_TRACKS = None
 def configuration():
     return {
         "analysis_id": "scanner-adaptive-tle-position-v1",
-        "priors": {name: {"latitude_deg": lat, "longitude_deg": lon, "radius_km": 500}
-                   for name, (lat, lon) in PRIORS.items()},
+        "priors": {
+            name: {"latitude_deg": lat, "longitude_deg": lon, "radius_km": 500}
+            for name, (lat, lon) in PRIORS.items()
+        },
         "tracks": {"minimum_span_s": 3, "minimum_observations": 6, "limit": None},
         "partition": "cf510316-fixed-partition-v1",
         "taus_s": list(range(-5, 6)),
@@ -56,11 +58,12 @@ def adaptive_tle_position_complete(
     if status.manifest is None:
         return False
     document = status.manifest.document
-    return document.configuration_sha256 == canonical_digest(configuration()) and (
-        expected_input is None or document.input_manifest_sha256 == expected_input
-    ) and (
-        expected_analysis is None or document.analysis_manifest_sha256 == expected_analysis
-    ) and store.artifact(session_id) is not None
+    return (
+        document.configuration_sha256 == canonical_digest(configuration())
+        and (expected_input is None or document.input_manifest_sha256 == expected_input)
+        and (expected_analysis is None or document.analysis_manifest_sha256 == expected_analysis)
+        and store.artifact(session_id) is not None
+    )
 
 
 def _coordinates(latitude_deg, longitude_deg, east_km, north_km):
@@ -68,8 +71,7 @@ def _coordinates(latitude_deg, longitude_deg, east_km, north_km):
     bearing = np.arctan2(east_km, north_km)
     lat0, lon0 = np.deg2rad([latitude_deg, longitude_deg])
     latitude = np.arcsin(
-        np.sin(lat0) * np.cos(angular)
-        + np.cos(lat0) * np.sin(angular) * np.cos(bearing)
+        np.sin(lat0) * np.cos(angular) + np.cos(lat0) * np.sin(angular) * np.cos(bearing)
     )
     longitude = lon0 + np.arctan2(
         np.sin(bearing) * np.sin(angular) * np.cos(lat0),
@@ -83,9 +85,7 @@ def _point_factory(latitude_deg, longitude_deg):
     from leo.sky.frames import geodetic_to_ecef_km
 
     def point(east_km, north_km):
-        latitude, longitude = _coordinates(
-            latitude_deg, longitude_deg, east_km, north_km
-        )
+        latitude, longitude = _coordinates(latitude_deg, longitude_deg, east_km, north_km)
         return ReceiverPoint(
             geodetic_to_ecef_km(latitude, longitude, 0),
             np.asarray(
@@ -208,9 +208,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
         traces, frontiers = {}, {}
         context = multiprocessing.get_context("fork")
         for name, (latitude, longitude) in PRIORS.items():
-            evaluator = RegionalTrackPredictionEvaluator(
-                banks, _point_factory(latitude, longitude)
-            )
+            evaluator = RegionalTrackPredictionEvaluator(banks, _point_factory(latitude, longitude))
             with context.Pool(workers, initializer=_worker_start, initargs=(evaluator,)) as pool:
                 result = adaptive_best_first_search(
                     lambda points: pool.map(_worker_point, np.asarray(points).tolist())
@@ -265,21 +263,21 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
             frontiers[name] = [asdict(row) for row in result.deferred_cells]
         diagnostics = _json_diagnostics(
             {
-                    "evaluated_points": point_inventory,
-                    "selected_track_scores": selected_tracks,
-                    "finest_track_scores": finest_tracks,
-                    "search_trace": traces,
-                    "deferred_frontier": frontiers,
-                    "track_evidence": list(prepared.track_evidence),
-                    "prediction_bank": asdict(bank_receipt),
-                    "snapshot_digest": prepared.snapshot_digest,
-                    "snapshot_collected_utc_ns": prepared.snapshot_collected_utc_ns,
-                    "configuration": configuration(),
-                    "reference_evaluation_only": {
-                        "latitude_deg": REFERENCE[0],
-                        "longitude_deg": REFERENCE[1],
-                        "used_for_inference": False,
-                    },
+                "evaluated_points": point_inventory,
+                "selected_track_scores": selected_tracks,
+                "finest_track_scores": finest_tracks,
+                "search_trace": traces,
+                "deferred_frontier": frontiers,
+                "track_evidence": list(prepared.track_evidence),
+                "prediction_bank": asdict(bank_receipt),
+                "snapshot_digest": prepared.snapshot_digest,
+                "snapshot_collected_utc_ns": prepared.snapshot_collected_utc_ns,
+                "configuration": configuration(),
+                "reference_evaluation_only": {
+                    "latitude_deg": REFERENCE[0],
+                    "longitude_deg": REFERENCE[1],
+                    "used_for_inference": False,
+                },
             }
         )
         document = AdaptiveTlePositionDocumentV1(
@@ -304,11 +302,21 @@ def main():
     parser.add_argument("--workers", type=int, choices=range(1, 5), default=4)
     args = parser.parse_args()
     manifest = run_adaptive_tle_position(
-        args.bulk_root, args.tle_root, args.session_id,
-        output_root=args.output_root, workers=args.workers,
+        args.bulk_root,
+        args.tle_root,
+        args.session_id,
+        output_root=args.output_root,
+        workers=args.workers,
     )
-    print(json.dumps({"state": "complete", "session_id": args.session_id,
-                      "adaptive_tle_position_state": manifest.document.state}))
+    print(
+        json.dumps(
+            {
+                "state": "complete",
+                "session_id": args.session_id,
+                "adaptive_tle_position_state": manifest.document.state,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

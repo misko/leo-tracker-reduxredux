@@ -145,9 +145,7 @@ def test_completed_refinement_gets_content_seal(tmp_path):
     }
     (output / "result.json").write_text(json.dumps(result))
     (output / "result.sha256").write_text("checksum\n")
-    MODULE.seal_refinement(
-        output, acquisition, result, {"content_digest": "sha256:partition"}
-    )
+    MODULE.seal_refinement(output, acquisition, result, {"content_digest": "sha256:partition"})
     seal = json.loads((output / "refinement-seal.json").read_text())
     assert seal["all_fits_converged"] is True
     assert seal["partition_receipt_digest"] == "sha256:partition"

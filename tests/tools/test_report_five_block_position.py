@@ -14,9 +14,7 @@ SPEC.loader.exec_module(MODULE)
 
 def test_distance_is_zero_and_symmetric():
     assert MODULE.distance_km(10, 20, 10, 20) == 0
-    assert MODULE.distance_km(10, 20, 11, 21) == pytest.approx(
-        MODULE.distance_km(11, 21, 10, 20)
-    )
+    assert MODULE.distance_km(10, 20, 11, 21) == pytest.approx(MODULE.distance_km(11, 21, 10, 20))
 
 
 def test_load_sealed_rejects_mutated_result(tmp_path):

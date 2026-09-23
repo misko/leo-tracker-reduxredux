@@ -56,9 +56,7 @@ def circular_stats(values) -> dict:
         "circular_median_abs_deviation_hz": float(np.median(np.abs(residual))),
         "circular_max_abs_deviation_hz": float(np.max(np.abs(residual))),
         "circular_range_hz": float(np.max(residual) - np.min(residual)),
-        "resultant_length": float(
-            abs(np.mean(np.exp(1j * values * 2 * np.pi / ALIAS_SPACING_HZ)))
-        ),
+        "resultant_length": float(abs(np.mean(np.exp(1j * values * 2 * np.pi / ALIAS_SPACING_HZ)))),
     }
 
 
@@ -92,9 +90,7 @@ def run(args) -> None:
                 continue
             lane = lane_by_track[(entry["session_id"], episode["episode_id"])]
             for segment, offset in candidate["training_offset_hz_by_segment"].items():
-                rows = [
-                    row for row in candidate["rows"] if str(row["segment"]) == str(segment)
-                ]
+                rows = [row for row in candidate["rows"] if str(row["segment"]) == str(segment)]
                 actual_rf = {row["actual_rf_hz"] for row in rows}
                 receivers = {row["receiver_id"] for row in rows}
                 channels = {row["channel"] for row in rows}
@@ -154,9 +150,7 @@ def run(args) -> None:
                 "leave_one_track_out_rms_hz": (
                     float(np.sqrt(np.mean(np.square(loo)))) if loo else None
                 ),
-                "leave_one_track_out_max_abs_hz": (
-                    float(np.max(np.abs(loo))) if loo else None
-                ),
+                "leave_one_track_out_max_abs_hz": (float(np.max(np.abs(loo))) if loo else None),
             }
         )
         groups.append(stats)
@@ -182,9 +176,12 @@ def run(args) -> None:
             "source_code_digest": digest(Path(__file__)),
         },
     }
-    output["content_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    output["content_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(output, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n")
 

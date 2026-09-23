@@ -59,9 +59,7 @@ def render_adaptive_tle_position(document) -> bytes:
                 lat0, lon0 = np.deg2rad(
                     [prior.region.center_latitude_deg, prior.region.center_longitude_deg]
                 )
-                lat, lon = np.deg2rad(
-                    [reference["latitude_deg"], reference["longitude_deg"]]
-                )
+                lat, lon = np.deg2rad([reference["latitude_deg"], reference["longitude_deg"]])
                 angular = np.arccos(
                     np.clip(
                         np.sin(lat0) * np.sin(lat)
@@ -72,8 +70,7 @@ def render_adaptive_tle_position(document) -> bytes:
                 )
                 bearing = np.arctan2(
                     np.sin(lon - lon0) * np.cos(lat),
-                    np.cos(lat0) * np.sin(lat)
-                    - np.sin(lat0) * np.cos(lat) * np.cos(lon - lon0),
+                    np.cos(lat0) * np.sin(lat) - np.sin(lat0) * np.cos(lat) * np.cos(lon - lon0),
                 )
                 axis.plot(
                     6371.0088 * angular * np.sin(bearing),

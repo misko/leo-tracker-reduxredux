@@ -81,11 +81,11 @@ def _document(*, state: str = "diagnostic") -> AdaptiveTlePositionDocumentV1:
                 "sacramento": [
                     {"east_km": 12.5, "north_km": -12.5, "capped_weighted_rmse_hz": 185.0}
                 ],
-                "reno": [
-                    {"east_km": 12.5, "north_km": -12.5, "capped_weighted_rmse_hz": 185.0}
-                ],
+                "reno": [{"east_km": 12.5, "north_km": -12.5, "capped_weighted_rmse_hz": 185.0}],
             }
-        } if state == "diagnostic" else {},
+        }
+        if state == "diagnostic"
+        else {},
     )
 
 
@@ -172,9 +172,7 @@ def test_horizon_prefilter_retains_an_unmatched_track_in_the_all_track_objective
 
     def bank(*, exact_z: float, coarse_z: float) -> AdaptiveTrackStateBank:
         exact_position = np.tile(np.asarray([1.0, 0.0, exact_z]), (1, 1, len(times), 1))
-        coarse_position = np.tile(
-            np.asarray([1.0, 0.0, coarse_z]), (1, len(node_indices), 1)
-        )
+        coarse_position = np.tile(np.asarray([1.0, 0.0, coarse_z]), (1, len(node_indices), 1))
         return AdaptiveTrackStateBank(
             source=source,
             candidate_ids=np.asarray([42]),
@@ -187,6 +185,7 @@ def test_horizon_prefilter_retains_an_unmatched_track_in_the_all_track_objective
 
     def point(_east: float, _north: float) -> ReceiverPoint:
         return ReceiverPoint(ecef_km=np.zeros(3), up=np.asarray([0.0, 0.0, 1.0]))
+
     all_below = RegionalTrackPredictionEvaluator(
         (bank(exact_z=-0.01, coarse_z=-0.01),), point, taus_s=np.asarray([0.0])
     )

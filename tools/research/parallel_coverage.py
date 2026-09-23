@@ -26,24 +26,26 @@ def _initialize(evaluator):
 def _evaluate(payload):
     shard_id, sites, top_k, threshold_hz = payload
     before = _EVALUATOR.metrics()
-    scores, bounds = _EVALUATOR.evaluate_top_k(
-        sites, top_k=top_k, threshold_hz=threshold_hz
-    )
+    scores, bounds = _EVALUATOR.evaluate_top_k(sites, top_k=top_k, threshold_hz=threshold_hz)
     after = _EVALUATOR.metrics()
-    return scores, [dict(row, shard_id=shard_id) for row in bounds], {
-        "shard_id": shard_id,
-        "requested_points": len(sites),
-        "cache_hits": after["cache_hits"] - before["cache_hits"],
-        "fully_scored_cell_count": (
-            after["fully_scored_cell_count"] - before["fully_scored_cell_count"]
-        ),
-        "early_abandoned_cell_count": (
-            after["early_abandoned_cell_count"] - before["early_abandoned_cell_count"]
-        ),
-        "evaluation_elapsed_s": (
-            after["evaluation_elapsed_s"] - before["evaluation_elapsed_s"]
-        ),
-    }
+    return (
+        scores,
+        [dict(row, shard_id=shard_id) for row in bounds],
+        {
+            "shard_id": shard_id,
+            "requested_points": len(sites),
+            "cache_hits": after["cache_hits"] - before["cache_hits"],
+            "fully_scored_cell_count": (
+                after["fully_scored_cell_count"] - before["fully_scored_cell_count"]
+            ),
+            "early_abandoned_cell_count": (
+                after["early_abandoned_cell_count"] - before["early_abandoned_cell_count"]
+            ),
+            "evaluation_elapsed_s": (
+                after["evaluation_elapsed_s"] - before["evaluation_elapsed_s"]
+            ),
+        },
+    )
 
 
 def evaluate_top_k_parallel(evaluator, sites, *, top_k, threshold_hz, workers):
@@ -58,8 +60,7 @@ def evaluate_top_k_parallel(evaluator, sites, *, top_k, threshold_hz, workers):
     if not len(sites):
         return [], [], {"workers": 0, "wall_s": 0.0, "shards": []}
     worker_count = min(workers, len(sites))
-    fields = ("east_km", "north_km", "latitude_deg", "longitude_deg",
-              "altitude_m", "ecef_km", "up")
+    fields = ("east_km", "north_km", "latitude_deg", "longitude_deg", "altitude_m", "ecef_km", "up")
     # Interleaving distributes expensive geographical regions among workers.
     partitions = [np.arange(i, len(sites), worker_count) for i in range(worker_count)]
     payloads = [
@@ -73,10 +74,14 @@ def evaluate_top_k_parallel(evaluator, sites, *, top_k, threshold_hz, workers):
     scores = rank_coverage_cells(
         [score for shard, _, _ in results for score in shard], threshold_hz, top_k
     )
-    return scores, [row for _, rows, _ in results for row in rows], {
-        "workers": worker_count,
-        "wall_s": time.monotonic() - started,
-        "shards": [metrics for _, _, metrics in results],
-        "parent_cache_populated": False,
-        "exactness": "disjoint shard top-K union, identical total ordering",
-    }
+    return (
+        scores,
+        [row for _, rows, _ in results for row in rows],
+        {
+            "workers": worker_count,
+            "wall_s": time.monotonic() - started,
+            "shards": [metrics for _, _, metrics in results],
+            "parent_cache_populated": False,
+            "exactness": "disjoint shard top-K union, identical total ordering",
+        },
+    )
