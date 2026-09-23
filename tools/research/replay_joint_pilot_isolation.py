@@ -23,7 +23,8 @@ from tools.research.joint_template_source_isolation import fit_templates, seeded
 ROOT = Path(__file__).resolve().parents[2]
 INPUT = (
     ROOT
-    / "reports/figures/2026_09_23_independent_phase/geometry-sensitivity/raw-candidate-opportunities.json"
+    / "reports/figures/2026_09_23_independent_phase/geometry-sensitivity"
+    / "raw-candidate-opportunities.json"
 )
 FS = 2_500_000
 COUNT = 50_000
