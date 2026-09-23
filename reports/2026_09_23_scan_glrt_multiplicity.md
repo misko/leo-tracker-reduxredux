@@ -35,6 +35,17 @@ these filtering rules do not establish the physical absence of a second source.
 The [independent gate audit](2026_09_23_glrt_multiplicity_gate_audit.md) examines
 the rejected candidates in detail.
 
+That deeper audit materially qualifies the large raw multiplicity: after
+grouping alias-equivalent frequencies within 5 kHz, RX0 has multiple frequency
+groups in 33 dwells, RX1 in 134, and both receivers in only **nine**. All 112
+rejected matched-pair records overlap a retained pair within 5 kHz in both
+receivers and within one RX0 source-epoch sample. Their minimum frequency
+separation is below 1 Hz for 91 records, 1–100 Hz for nine, and 100–5,000 Hz
+for 12. Thus this pruning is predominantly duplicate/alias-like cleanup;
+the raw counts do not establish hundreds of independent simultaneous sources.
+The close-frequency cases still warrant caution, and five accepted pairs is
+not proof that only five dwells physically contain two sources.
+
 The published configuration uses a **20 ms GLRT probe with 120 ms stride** in
 each 120 ms dwell. The plot covers the full 300-second scan, but this inventory
 is not an exhaustive fresh GLRT search of every sample in each dwell. Candidate
