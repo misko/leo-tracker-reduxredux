@@ -51,7 +51,10 @@ def _distinct(candidates: list[object]) -> list[object]:
     return retained
 
 
-def run(output: Path = OUT) -> dict:
+def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
+    if anchor_receiver not in (0, 1):
+        raise ValueError("anchor_receiver must be 0 or 1")
+    opposite_receiver = 1 - anchor_receiver
     root = Path("/srv/bulk/leo")
     captures = AdaptiveHopIqStore(root, read_only=True)
     analyses = AdaptiveHopAnalysisStore(root, read_only=True)
@@ -83,23 +86,32 @@ def run(output: Path = OUT) -> dict:
                     for candidate in probe.candidates
                     if candidate.passed_fractional_margin_gate
                 ]
-                if not rx0 or not rx1:
+                by_receiver = {0: rx0, 1: rx1}
+                if not by_receiver[anchor_receiver] or not by_receiver[opposite_receiver]:
                     continue
-                anchors = _distinct(rx0)
+                anchors = _distinct(by_receiver[anchor_receiver])
                 frame_period = visit.configuration.sample_rate_hz / 750.0
                 source_rows = []
                 for anchor in anchors:
                     nearest = min(
-                        rx1,
+                        by_receiver[opposite_receiver],
                         key=lambda candidate: _timing_residual_samples(anchor, candidate, frame_period),
                     )
                     timing = _timing_residual_samples(anchor, nearest, frame_period)
                     source_rows.append(
                         {
                             **_candidate(anchor),
-                            "nearest_rx1_candidate": _candidate(nearest),
-                            "nearest_rx1_timing_residual_samples": timing,
-                            "nearest_rx1_tracking_offset_hz": nearest.fractional_tracking_cfo_hz
+                            "anchor_receiver": anchor_receiver,
+                            "native_acquired_cfo_hz": anchor.acquired_cfo_hz,
+                            "rx0_acquired_cfo_hz": anchor.acquired_cfo_hz
+                            if anchor_receiver == 0
+                            else None,
+                            "rx1_acquired_cfo_hz": anchor.acquired_cfo_hz
+                            if anchor_receiver == 1
+                            else None,
+                            "nearest_opposite_receiver_candidate": _candidate(nearest),
+                            "nearest_opposite_receiver_timing_residual_samples": timing,
+                            "nearest_opposite_receiver_tracking_offset_hz": nearest.fractional_tracking_cfo_hz
                             - anchor.fractional_tracking_cfo_hz,
                             "cross_receiver_timing_within_9_samples": timing <= 9.0,
                         }
@@ -108,8 +120,8 @@ def run(output: Path = OUT) -> dict:
                 phase_blind = _phase_blind_pairs(visit)
                 key = f"ch{target['channel']}{target['edge'][0].upper()}"
                 channels[key]["visits"] += 1
-                channels[key]["rx0_anchor_count"] += len(source_rows)
-                channels[key]["rx0_multi_anchor_visits"] += len(source_rows) >= 2
+                channels[key][f"rx{anchor_receiver}_anchor_count"] += len(source_rows)
+                channels[key][f"rx{anchor_receiver}_multi_anchor_visits"] += len(source_rows) >= 2
                 channels[key]["strict_pair_visits"] += len(phase_blind) >= 1
                 channels[key]["strict_reference_two_source_visits"] += len(phase_blind) >= 2
                 rows.append(
@@ -122,7 +134,10 @@ def run(output: Path = OUT) -> dict:
                         "channel": target["channel"],
                         "edge": target["edge"],
                         "time_s": (visit.valid_start_counter - visit.source_origin_counter) / sample_rate_hz,
-                        "rx0_anchor_sources": source_rows,
+                        "anchor_receiver": anchor_receiver,
+                        "anchor_sources": source_rows,
+                        # Kept as an explicit compatibility field for the first RX0 binding.
+                        "rx0_anchor_sources": source_rows if anchor_receiver == 0 else None,
                         "rx1_passed_candidate_count": len(rx1),
                         "strict_phase_blind_pair_count": len(phase_blind),
                         "strict_reference_two_source": len(phase_blind) >= 2,
@@ -130,19 +145,20 @@ def run(output: Path = OUT) -> dict:
                 )
         result = {
             "schema_version": 1,
-            "kind": "adaptive_relaxed_rx0_anchor_phase_binding",
+            "kind": f"adaptive_relaxed_rx{anchor_receiver}_anchor_phase_binding",
             "iq_opened": False,
             "selection_uses_phase": False,
             "session_id": SESSION_ID,
             "input_manifest_sha256": publication.manifest_sha256,
             "analysis_binding_sha256": binding.sha256,
             "sample_rate_hz": sample_rate_hz,
+            "anchor_receiver": anchor_receiver,
             "anchor_policy": (
-                "all RX0 candidates passing the persisted fractional-margin gate, "
+                f"all RX{anchor_receiver} candidates passing the persisted fractional-margin gate, "
                 "greedily deduplicated at 5 kHz modulo the 1/4.4 us symbol alias"
             ),
             "rx1_policy": (
-                "no RX1 timing gate for inclusion; later replay uses the RX0 anchor epoch "
+                f"no RX{opposite_receiver} timing gate for inclusion; later replay uses the RX{anchor_receiver} anchor epoch "
                 "and a training-only raw receiver-offset estimate"
             ),
             "strict_reference_policy": "current _phase_blind_pairs count retained only for comparison",
