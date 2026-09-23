@@ -1,5 +1,21 @@
 # Adaptive phase versus time, colored by RF channel
 
+The original paired-frame before/after figure is also available on the full
+scan clock, preserving **every frame point rather than averaging each dwell**:
+
+![Original frame-level differences over the full scan](figures/2026_09_23_adaptive_phase_300s/frame-double-difference-full-scan.png)
+
+This contains 445 paired-frame points, including 225 pairs where both frames
+were randomly held out. The y-value is `(RX1−RX0)B − (RX1−RX0)A`, wrapped to
+±180 degrees. The left column precedes separate source-rate subtraction; the
+right column follows it. Only x coordinates change from the original figure:
+each visit's device-counter start time is added to its local frame time. The
+top row spans 0–300 seconds; the bottom row magnifies the occupied interval.
+All points lie between 135.503600452 and 145.171584816 seconds. The complete
+published scan was checked for eligible two-source bindings, with only these
+five channel-4 dwells available. Blank intervals indicate unavailable
+measurements, not a measured zero. No interpolation or phase refit was used.
+
 The figure spans the full 300-second recording
 `scan-hop-28d7592ea614f624`. Colors identify RF channels 1–4, all lower edge;
 the acquisition used 2.5 MS/s and manual 40 dB gain. Times come from device
