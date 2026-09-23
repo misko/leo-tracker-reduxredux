@@ -12,6 +12,8 @@ component-tested vectorization of the same correlations and parameters.
 
 ![Saved within-dwell frame phases](figures/2026_09_23_adaptive_multiscale_phase_refined/phase-within-dwells.png)
 
+![Near-simultaneous cached frame double differences](figures/2026_09_23_adaptive_multiscale_phase_refined/double-difference-within-dwells.png)
+
 All 30 visit/duration/mode rows returned. The table summarizes the five
 visits. Coherence and control ratios use the weaker of the two sources in each
 visit; values are median (worst). The phase quantities are absolute wrapped
@@ -45,13 +47,27 @@ not competing measurements of a hardware change: V1 omitted the symbol-wise
 correction required before coherent summation, while V2 adds it.
 
 Using only that cached frame export, nearest A/B frames were paired within the
-predeclared half-frame bound; all 89 pairs per visit were retained, with actual
-maximum gaps of 79--97 microseconds. The 45 held-by-both pairs have DD
-resultants 0.882, 0.950, 0.965, 0.905, and 0.157 for visits 1065, 1077, 1109,
-1113, and 1140. The first four are compatible with cancellation of a shared
-within-dwell phase excursion after the saved source-specific rate removal;
-1140 is a retained counterexample. This is a conditional differential
-observable, not a raw-LO calibration or geometric phase measurement.
+predeclared half-frame bound. The table retains all pairs and reports circular
+resultants before and after independently removing each source's saved
+receiver-product rate. Both use the same 45 held-by-both pairs.
+
+| visit | paired frames | maximum gap | held-by-both | DD resultant before source-rate removal | DD resultant after separate source-rate removal |
+|---:|---:|---:|---:|---:|---:|
+| 1065 | 89 | 78.9 µs | 45 | 0.922 | 0.882 |
+| 1077 | 89 | 81.9 µs | 45 | 0.953 | 0.950 |
+| 1109 | 89 | 90.0 µs | 45 | 0.963 | 0.965 |
+| 1113 | 89 | 90.9 µs | 45 | 0.953 | 0.905 |
+| 1140 | 89 | 97.3 µs | 45 | 0.935 | 0.157 |
+
+The high pre-removal resultants are compatible with a stable conditional
+within-dwell source differential. Visit 1140 demonstrates why the detrended
+frame plot is not itself a differential-coherence test: its independently
+fitted source rates differ by 17.74 Hz, so subtracting them separately
+manufactures a DD sweep even though the cached near-simultaneous DD is
+concentrated. Small difference-of-averages train/held DD error likewise does
+not prove per-frame differential coherence. These diagnostics are conditional
+on the selected branches, source pair, timing, and saved train-only rate fits;
+they are not raw-LO calibration or geometric phase measurements.
 
 Each source's residual CFO is fitted only on its seeded random whole-frame
 training group before the 64-symbol coherent sum. That frozen residual and the
