@@ -36,9 +36,12 @@ non-overlapping in raw time because their centers are about 470 ms apart.
 Public `RecordingStore` inspection reconfirmed manifest digest
 `sha256:2f632b9f1a1acdbcd98ac44c67fc23f583f797638b08d0ebc2afc762f99635b8`.
 Stream 0 contains RX0 and RX1 on the same stored sample rows, at applied IF
-1,940,312,500 Hz, 2.5 MS/s, and 2.5 MHz bandwidth. The applied tuning resolves
-to the upper-edge template used by the retained artifact; the nominal/requested
-profile does not override these applied settings.
+1,940,312,500 Hz, 2.5 MS/s, and 2.5 MHz bandwidth. The production
+`resolve_manifest_starlink_tuning()` resolver returns channel 4 upper for
+stream 0 with evidence source `per_stream_manifest_tag` (and channel 2 upper
+for stream 1). That manifest tag, rather than an inference from IF, authorizes
+the upper-edge template used by the retained artifact. The lower-priority
+capture profile does not override it.
 
 Each original window fitted source/receiver residual carrier rotation locally
 and restored its frozen carrier-model phase at the common center. The present
@@ -48,12 +51,15 @@ restored-model-coordinate rate conditional on the historical timing, carrier,
 and source tracks. It must not be treated as independently calibrated physical
 phase velocity.
 
-The two source identities remain unverified. Without their authoritative lines
-of sight, the 0.10--0.30 m baseline vector is not identifiable from these data;
-fitting it against a guessed association would convert the desired test into a
-post hoc geometry fit. The next justified step is source qualification, followed
-by a frozen baseline-constrained held circular likelihood on these same sparse
-times. If source qualification fails, this result remains only an instrument
+The two source identities remain unverified, so this result cannot select a
+physical line of sight or support a geometric claim. That does not prevent a
+conditional candidate test. The next justified step is to freeze a finite
+catalog candidate bank and, for every candidate pair, fit the 0.10--0.30 m
+baseline vector on training windows only, then compare held circular likelihood
+with candidate-swap and wrong-time controls. The candidate list, baseline
+constraint, split, and selection rule must all be fixed before held scoring.
+Only a candidate that predicts held phase better than those controls would
+warrant stronger source qualification; absent that, this remains an instrument
 and extraction stability diagnostic.
 
 The evaluator and protocol were sealed at commit `a8c68259` before this held
