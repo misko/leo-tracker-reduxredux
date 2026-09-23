@@ -1,5 +1,9 @@
 # Unassociated candidates for simultaneous-source phase research
 
+Follow-up: the frozen [joint pilot replay](2026_09_23_joint_pilot_isolation_results.md)
+finds conditional incremental waveform evidence on both receivers in two of
+these six snippets. It does not yet establish calibrated two-source phase.
+
 The August 25 continuous recording retains candidate material that its final
 tracks do not represent. This does not yet establish a second physical source,
 receiver-drift cancellation, or improved satellite association. The purpose of
