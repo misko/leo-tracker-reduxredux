@@ -1,0 +1,1429 @@
+{
+  "bindings": {
+    "cache_manifest_sha256": {
+      "reports/2026_09_23_day_position_validation/replication/block_01/cache": "sha256:7554f23a62228c0a84438585eaee16800b975946b48c8e656ef002cffabcfb8a",
+      "reports/2026_09_23_day_position_validation/replication/block_02/cache": "sha256:d922468f3f6a339eab425d1111b4d03b4b8621b1f4b2fca2312592a48247ed3d",
+      "reports/2026_09_23_day_position_validation/replication/block_03/cache": "sha256:9082962d53bdb0e5ff749b6a3e3ee9209ef8961bbe87ddf072cffe2eeaecaa80",
+      "reports/2026_09_23_day_position_validation/replication/block_04/cache": "sha256:7d708f3606c93113316fa424ae463dc3bb757070d16b473109a7ddb698b0fe61",
+      "reports/2026_09_23_day_position_validation/replication/block_05/cache": "sha256:37408d050ad815c585d553cbb4c4fc5d9dd7c6c68c85de7089eeb168b02e514d",
+      "reports/2026_09_23_day_position_validation/replication/block_06/cache": "sha256:417ebe63505427a8b5142da94abea8c73ecebb718853dbe8339b04d10a4950c2",
+      "reports/2026_09_23_day_position_validation/replication/block_07/cache": "sha256:e6a7622be3bbb19abf2ca9237d0335bdeaa2dd47ad0f64e676831300f5f1aeef",
+      "reports/2026_09_23_day_position_validation/replication/block_08/cache": "sha256:741360eafaa1030323309bee144fd30ac187369e37260bab20b2b213dd2ca3ad",
+      "reports/2026_09_23_sixteen_scan_comparison/joint/cache": "sha256:64cad13603ddd02fae36d9f65827e113945a08dd0a522b44d3c17de8a102280e"
+    },
+    "inventory": "sha256:8155853576c278fb0a81590b6e99202bf2e9c6a575849a7f53367d5e9d4f1f1c",
+    "mapping": "sha256:9488f0819cd04ac4e165f5d0c37c09bbc4f7171da79c57f44a8a155c06fcd9f4",
+    "split": "sha256:55479748b0912fcc5b92cd1110758aa1da5a30fbf6dffd2f4130082f8296c884",
+    "timing": "sha256:29be1802299079d3c0babb0b63a5bdf966c3d0d4ee9b03c066f8b62f7c1105c7",
+    "tool": "sha256:57ed8781bd3466a6fb424687cce74ec394f1b86f132532732ea1b874783589e1",
+    "training_selection": "sha256:35ad0b3c7cc67153ba275b544f0e0ec0c8540150c37f010e55dc2539a9d6291f"
+  },
+  "position_truth_used": false,
+  "reference_coordinate": {
+    "latitude_deg": 37.84903264307456,
+    "longitude_deg": -122.4856541910174,
+    "role": "post-seal only"
+  },
+  "runtime_s": 346.2350642019883,
+  "schema": "receiver-drift-position/v1",
+  "selected_ridge_s2": 1000.0,
+  "test_evidence_accessed": false,
+  "windows": [
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 26,
+              "latitude_deg": 37.867316538623115,
+              "longitude_deg": -122.47789566111048,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.8352468841584,
+                -122.50506966661892
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 233.56723436392153
+            },
+            {
+              "converged": true,
+              "evaluations": 29,
+              "latitude_deg": 37.867329872910034,
+              "longitude_deg": -122.47759707098083,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.81155625230456,
+                -122.51746950750427
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 233.56674822631572
+            },
+            {
+              "converged": true,
+              "evaluations": 26,
+              "latitude_deg": 37.86660686760892,
+              "longitude_deg": -122.47785882808944,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.82340156823148,
+                -122.5112695870616
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 233.56715585823696
+            }
+          ],
+          "method": "zero_drift_capped800",
+          "ridge_s2": null,
+          "selected": {
+            "converged": true,
+            "evaluations": 29,
+            "latitude_deg": 37.867329872910034,
+            "longitude_deg": -122.47759707098083,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 2.154016804078867,
+            "reserved_capped800_rmse_hz": 250.6125681380512,
+            "reserved_uncapped_rmse_hz": 312.2411454453081,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 202.20912690907923,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 275,
+                "reserved_rms_hz": 178.74519381962722,
+                "reserved_sse_hz2": 8786207.186244426,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.181639954,
+                "training_rms_hz": 241.1849150337325
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 205.35658424749414,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 440,
+                "reserved_rms_hz": 207.6888662446564,
+                "reserved_sse_hz2": 18979252.671275944,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.181807921,
+                "training_rms_hz": 192.1935245211678
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 144.2687004229801,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 622,
+                "reserved_rms_hz": 148.56795871462157,
+                "reserved_sse_hz2": 13729056.657823548,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181869369,
+                "training_rms_hz": 142.93206177755053
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 196.77235000514173,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 403,
+                "reserved_rms_hz": 199.33600239816127,
+                "reserved_sse_hz2": 16013141.26638814,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.181708185,
+                "training_rms_hz": 191.4625003974091
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 243.8264325423288,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 432,
+                "reserved_rms_hz": 451.4560025300367,
+                "reserved_sse_hz2": 88047009.59921302,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.18303554,
+                "training_rms_hz": 242.66726884022913
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 218.937598365869,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 318,
+                "reserved_rms_hz": 489.6660620521941,
+                "reserved_sse_hz2": 76247767.03957362,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 3,
+                "tau_s": -0.1136725085625,
+                "training_rms_hz": 309.9210943379022
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 151.71525586125227,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 207,
+                "reserved_rms_hz": 145.359634853746,
+                "reserved_sse_hz2": 4373790.653076574,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 7,
+                "tau_s": -0.022700634187500013,
+                "training_rms_hz": 148.08383937776452
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 412.2690738000008,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 398,
+                "reserved_rms_hz": 449.09166223702147,
+                "reserved_sse_hz2": 80269961.79414277,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.182148226,
+                "training_rms_hz": 469.79335796599025
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 170.641146095174,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 525,
+                "reserved_rms_hz": 228.64442393822017,
+                "reserved_sse_hz2": 27446093.113971286,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181795681,
+                "training_rms_hz": 171.951603359948
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 293.2404039889395,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 224,
+                "reserved_rms_hz": 272.88942832464807,
+                "reserved_sse_hz2": 16680975.380463127,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.182123659,
+                "training_rms_hz": 308.26344287896035
+              }
+            ],
+            "seed": [
+              37.81155625230456,
+              -122.51746950750427
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 233.56674822631572
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 28,
+              "latitude_deg": 37.87450362854315,
+              "longitude_deg": -122.46735558580836,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.8352468841584,
+                -122.50506966661892
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 217.2054575363813
+            },
+            {
+              "converged": true,
+              "evaluations": 30,
+              "latitude_deg": 37.87483391648913,
+              "longitude_deg": -122.46744486455992,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.81155625230456,
+                -122.51746950750427
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 217.2049417510282
+            },
+            {
+              "converged": true,
+              "evaluations": 29,
+              "latitude_deg": 37.874354937372104,
+              "longitude_deg": -122.46683355190532,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.82340156823148,
+                -122.5112695870616
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 217.20554196284465
+            }
+          ],
+          "method": "receiver_drift_capped800",
+          "ridge_s2": 1000.0,
+          "selected": {
+            "converged": true,
+            "evaluations": 30,
+            "latitude_deg": 37.87483391648913,
+            "longitude_deg": -122.46744486455992,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 3.28426387200845,
+            "reserved_capped800_rmse_hz": 228.77769831502386,
+            "reserved_uncapped_rmse_hz": 287.21277148113643,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 202.99003321778625,
+                "penalty_hz2_s": 11433.364978024178,
+                "reserved_count": 275,
+                "reserved_rms_hz": 177.07408618825573,
+                "reserved_sse_hz2": 8622688.7998366,
+                "slopes_hz_per_s": {
+                  "rx-1": -3.381325920112431
+                },
+                "tau_index": 0,
+                "tau_s": -0.181639954,
+                "training_rms_hz": 242.28511286064546
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 204.43464842534908,
+                "penalty_hz2_s": 31198.623725005,
+                "reserved_count": 440,
+                "reserved_rms_hz": 204.87608702447736,
+                "reserved_sse_hz2": 18468652.855162933,
+                "slopes_hz_per_s": {
+                  "rx-0": -5.135432481820455,
+                  "rx-1": -2.1968060792132746
+                },
+                "tau_index": 6,
+                "tau_s": -0.045451980249999996,
+                "training_rms_hz": 189.44776659032286
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 140.28840646257737,
+                "penalty_hz2_s": 61411.885531134336,
+                "reserved_count": 622,
+                "reserved_rms_hz": 145.89905479945824,
+                "reserved_sse_hz2": 13240224.267035449,
+                "slopes_hz_per_s": {
+                  "rx-0": 2.746154857119109,
+                  "rx-1": -7.339653876842931
+                },
+                "tau_index": 16,
+                "tau_s": 0.181869369,
+                "training_rms_hz": 138.76893869728445
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 183.46068611711445,
+                "penalty_hz2_s": 456423.4104879541,
+                "reserved_count": 403,
+                "reserved_rms_hz": 184.5373945469212,
+                "reserved_sse_hz2": 13723782.144424925,
+                "slopes_hz_per_s": {
+                  "rx-0": -16.031577368965372,
+                  "rx-1": -14.121329170826357
+                },
+                "tau_index": 0,
+                "tau_s": -0.181708185,
+                "training_rms_hz": 176.51980712436608
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 214.97518064116545,
+                "penalty_hz2_s": 794966.8154935462,
+                "reserved_count": 432,
+                "reserved_rms_hz": 436.6442335895633,
+                "reserved_sse_hz2": 82364336.6660714,
+                "slopes_hz_per_s": {
+                  "rx-0": 26.171661008236697,
+                  "rx-1": -10.488611708109374
+                },
+                "tau_index": 16,
+                "tau_s": 0.18303554,
+                "training_rms_hz": 212.21557573535273
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 203.76512165888946,
+                "penalty_hz2_s": 125470.92833271308,
+                "reserved_count": 318,
+                "reserved_rms_hz": 486.5265112365024,
+                "reserved_sse_hz2": 75273158.67123608,
+                "slopes_hz_per_s": {
+                  "rx-0": 8.557935522108778,
+                  "rx-1": 7.227217163759633
+                },
+                "tau_index": 4,
+                "tau_s": -0.09093800675,
+                "training_rms_hz": 300.29981750324055
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 153.95915272584918,
+                "penalty_hz2_s": 42758.06398316723,
+                "reserved_count": 207,
+                "reserved_rms_hz": 142.27055323072926,
+                "reserved_sse_hz2": 4189868.435531598,
+                "slopes_hz_per_s": {
+                  "rx-1": -6.538965054438449
+                },
+                "tau_index": 6,
+                "tau_s": -0.04540126887500001,
+                "training_rms_hz": 146.9064647911222
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 367.16581097375416,
+                "penalty_hz2_s": 3892239.019103064,
+                "reserved_count": 398,
+                "reserved_rms_hz": 362.0144086123181,
+                "reserved_sse_hz2": 52159663.95308471,
+                "slopes_hz_per_s": {
+                  "rx-0": -29.085307324250607,
+                  "rx-1": 55.19315099681262
+                },
+                "tau_index": 0,
+                "tau_s": -0.182148226,
+                "training_rms_hz": 363.38535184441093
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 165.82601252328695,
+                "penalty_hz2_s": 30242.023354160643,
+                "reserved_count": 525,
+                "reserved_rms_hz": 185.13287829799432,
+                "reserved_sse_hz2": 17993945.87912249,
+                "slopes_hz_per_s": {
+                  "rx-0": 3.5934177212877105,
+                  "rx-1": -4.1628562831901945
+                },
+                "tau_index": 16,
+                "tau_s": 0.181795681,
+                "training_rms_hz": 166.72235692619435
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 275.68162975309997,
+                "penalty_hz2_s": 99861.74007212669,
+                "reserved_count": 224,
+                "reserved_rms_hz": 256.1289848897692,
+                "reserved_sse_hz2": 14694860.745748652,
+                "slopes_hz_per_s": {
+                  "rx-1": 9.993084612477105
+                },
+                "tau_index": 0,
+                "tau_s": -0.182123659,
+                "training_rms_hz": 286.02692578084736
+              }
+            ],
+            "seed": [
+              37.81155625230456,
+              -122.51746950750427
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 217.2049417510282
+          }
+        }
+      ],
+      "seeds": [
+        [
+          37.8352468841584,
+          -122.50506966661892
+        ],
+        [
+          37.81155625230456,
+          -122.51746950750427
+        ],
+        [
+          37.82340156823148,
+          -122.5112695870616
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-f835999e917f8264",
+        "scan-fw-6fdbf14afd5bb8cc",
+        "scan-fw-0120007f9880ed1a",
+        "scan-fw-0847a0c9dfef4378",
+        "scan-fw-525ec2bdd6d72e72",
+        "scan-fw-a5590056fbb039c0",
+        "scan-fw-c7fa658940337818",
+        "scan-fw-53a405ae9a5de3ce",
+        "scan-fw-2737189b469f63ed",
+        "scan-fw-29d81f76a2b35595"
+      ],
+      "window_id": "utc2h-20260922T1800Z"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 42,
+              "latitude_deg": 37.86003294087143,
+              "longitude_deg": -122.46488090217015,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.622429243690696,
+                -122.41691122054961
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 200.8667265446005
+            },
+            {
+              "converged": true,
+              "evaluations": 34,
+              "latitude_deg": 37.860396739154496,
+              "longitude_deg": -122.46457973736102,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.75715699306074,
+                -122.44420376079852
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 200.86638747104004
+            },
+            {
+              "converged": true,
+              "evaluations": 42,
+              "latitude_deg": 37.860809832501616,
+              "longitude_deg": -122.46520303749793,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.68979311837572,
+                -122.43055749067406
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 200.866665923852
+            }
+          ],
+          "method": "zero_drift_capped800",
+          "ridge_s2": null,
+          "selected": {
+            "converged": true,
+            "evaluations": 34,
+            "latitude_deg": 37.860396739154496,
+            "longitude_deg": -122.46457973736102,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 2.2405842225642503,
+            "reserved_capped800_rmse_hz": 184.11861386251746,
+            "reserved_uncapped_rmse_hz": 184.11861386251746,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 200.86638747104004,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 275,
+                "reserved_rms_hz": 178.27866349332993,
+                "reserved_sse_hz2": 8740402.510666192,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.181639954,
+                "training_rms_hz": 242.07606489020682
+              }
+            ],
+            "seed": [
+              37.75715699306074,
+              -122.44420376079852
+            ],
+            "seed_id": 2,
+            "training_rmse_hz": 200.86638747104004
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 42,
+              "latitude_deg": 37.858710981971946,
+              "longitude_deg": -122.46758871078399,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.622429243690696,
+                -122.41691122054961
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 201.38405841387106
+            },
+            {
+              "converged": true,
+              "evaluations": 32,
+              "latitude_deg": 37.858593150287305,
+              "longitude_deg": -122.468063318904,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.75715699306074,
+                -122.44420376079852
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 201.38642705425934
+            },
+            {
+              "converged": true,
+              "evaluations": 37,
+              "latitude_deg": 37.85885954751393,
+              "longitude_deg": -122.46767766126737,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.68979311837572,
+                -122.43055749067406
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 201.38505046904652
+            }
+          ],
+          "method": "receiver_drift_capped800",
+          "ridge_s2": 1000.0,
+          "selected": {
+            "converged": true,
+            "evaluations": 42,
+            "latitude_deg": 37.858710981971946,
+            "longitude_deg": -122.46758871078399,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 1.916737277557392,
+            "reserved_capped800_rmse_hz": 185.19989425839893,
+            "reserved_uncapped_rmse_hz": 185.19989425839893,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 201.38405841387106,
+                "penalty_hz2_s": 809.1999602113555,
+                "reserved_count": 275,
+                "reserved_rms_hz": 179.40086172002574,
+                "reserved_sse_hz2": 8850784.026119145,
+                "slopes_hz_per_s": {
+                  "rx-1": -0.899555423646234
+                },
+                "tau_index": 0,
+                "tau_s": -0.181639954,
+                "training_rms_hz": 241.4507548128178
+              }
+            ],
+            "seed": [
+              37.622429243690696,
+              -122.41691122054961
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 201.38405841387106
+          }
+        }
+      ],
+      "seeds": [
+        [
+          37.622429243690696,
+          -122.41691122054961
+        ],
+        [
+          37.75715699306074,
+          -122.44420376079852
+        ],
+        [
+          37.68979311837572,
+          -122.43055749067406
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-f835999e917f8264"
+      ],
+      "window_id": "utc2h-20260922T1800Z-first-scan"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 39,
+              "latitude_deg": 37.89566381875085,
+              "longitude_deg": -122.43654654729036,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.97167898598718,
+                -122.58399790990018
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 253.06644591163817
+            },
+            {
+              "converged": true,
+              "evaluations": 38,
+              "latitude_deg": 37.89526273597808,
+              "longitude_deg": -122.43693747925161,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.0513415323648,
+                -122.63726134704922
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 253.0653829099446
+            },
+            {
+              "converged": true,
+              "evaluations": 39,
+              "latitude_deg": 37.894633418584576,
+              "longitude_deg": -122.43681777077431,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.01151025917599,
+                -122.6106296284747
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 253.06313583060705
+            }
+          ],
+          "method": "zero_drift_capped800",
+          "ridge_s2": null,
+          "selected": {
+            "converged": true,
+            "evaluations": 39,
+            "latitude_deg": 37.894633418584576,
+            "longitude_deg": -122.43681777077431,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 6.639746340126149,
+            "reserved_capped800_rmse_hz": 272.0898034937211,
+            "reserved_uncapped_rmse_hz": 319.15214602016283,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 284.414920138515,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 356,
+                "reserved_rms_hz": 491.5815293310574,
+                "reserved_sse_hz2": 86028254.3926882,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181732093,
+                "training_rms_hz": 601.6376690035567
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 279.7341598969289,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 185,
+                "reserved_rms_hz": 528.2933351403723,
+                "reserved_sse_hz2": 51632361.871441476,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.182655862,
+                "training_rms_hz": 459.85943456102535
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 220.59570138007737,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 355,
+                "reserved_rms_hz": 217.46491350472294,
+                "reserved_sse_hz2": 16788300.954993904,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181801004,
+                "training_rms_hz": 220.61635913736438
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 243.04760949994744,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 344,
+                "reserved_rms_hz": 281.68084955466634,
+                "reserved_sse_hz2": 27294370.746008463,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181711651,
+                "training_rms_hz": 250.92021863410037
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 196.25603510611595,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 435,
+                "reserved_rms_hz": 235.77474565205125,
+                "reserved_sse_hz2": 24181532.848970916,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181980195,
+                "training_rms_hz": 194.2341871955356
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 195.8191072903996,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 358,
+                "reserved_rms_hz": 212.58617639824797,
+                "reserved_sse_hz2": 16179051.897634469,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 10,
+                "tau_s": 0.045621307,
+                "training_rms_hz": 197.88947409595875
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 252.15689938866004,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 363,
+                "reserved_rms_hz": 303.78729628382985,
+                "reserved_sse_hz2": 33500079.862188507,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181819665,
+                "training_rms_hz": 257.64540752060014
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 328.056614336641,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 245,
+                "reserved_rms_hz": 392.1868110904972,
+                "reserved_sse_hz2": 37683571.224366665,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.184242978,
+                "training_rms_hz": 354.58370685076363
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 324.9324522038047,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 280,
+                "reserved_rms_hz": 367.7030863984064,
+                "reserved_sse_hz2": 37857556.7291359,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.182320841,
+                "training_rms_hz": 321.6631607394127
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 241.50399735056374,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 458,
+                "reserved_rms_hz": 225.16684578433066,
+                "reserved_sse_hz2": 23220649.665732764,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.183883831,
+                "training_rms_hz": 258.6900646065315
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 313.1135132634814,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 132,
+                "reserved_rms_hz": 291.37952322963787,
+                "reserved_sse_hz2": 11207067.505594103,
+                "slopes_hz_per_s": {
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.182079511,
+                "training_rms_hz": 325.3580843942594
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 231.6592855172302,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 491,
+                "reserved_rms_hz": 288.974214495352,
+                "reserved_sse_hz2": 41001493.451813996,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 0,
+                "tau_s": -0.18178564,
+                "training_rms_hz": 269.86272151001964
+              }
+            ],
+            "seed": [
+              38.01151025917599,
+              -122.6106296284747
+            ],
+            "seed_id": 3,
+            "training_rmse_hz": 253.06313583060705
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 39,
+              "latitude_deg": 37.904406361017706,
+              "longitude_deg": -122.42099036919748,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.97167898598718,
+                -122.58399790990018
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 245.25820646627002
+            },
+            {
+              "converged": true,
+              "evaluations": 47,
+              "latitude_deg": 37.90389280189603,
+              "longitude_deg": -122.42209655212763,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.0513415323648,
+                -122.63726134704922
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 245.2563862787454
+            },
+            {
+              "converged": true,
+              "evaluations": 62,
+              "latitude_deg": 37.91619203474593,
+              "longitude_deg": -122.422663781817,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                38.01151025917599,
+                -122.6106296284747
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 244.8271603514781
+            }
+          ],
+          "method": "receiver_drift_capped800",
+          "ridge_s2": 1000.0,
+          "selected": {
+            "converged": true,
+            "evaluations": 62,
+            "latitude_deg": 37.91619203474593,
+            "longitude_deg": -122.422663781817,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 9.29135228741369,
+            "reserved_capped800_rmse_hz": 259.8473554933159,
+            "reserved_uncapped_rmse_hz": 305.9658359408503,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 298.42027093774294,
+                "penalty_hz2_s": 1293980.9636205523,
+                "reserved_count": 356,
+                "reserved_rms_hz": 510.15039348335057,
+                "reserved_sse_hz2": 92650218.9337534,
+                "slopes_hz_per_s": {
+                  "rx-0": 11.838413132238202,
+                  "rx-1": -33.96811649372103
+                },
+                "tau_index": 16,
+                "tau_s": 0.181732093,
+                "training_rms_hz": 585.2096087140108
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 278.95218787020616,
+                "penalty_hz2_s": 135748.95287409212,
+                "reserved_count": 185,
+                "reserved_rms_hz": 522.8682689718055,
+                "reserved_sse_hz2": 50577376.93905089,
+                "slopes_hz_per_s": {
+                  "rx-1": -11.651135261170566
+                },
+                "tau_index": 0,
+                "tau_s": -0.182655862,
+                "training_rms_hz": 451.5197763459043
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 200.19648454732473,
+                "penalty_hz2_s": 355792.6134748988,
+                "reserved_count": 355,
+                "reserved_rms_hz": 186.14658232464495,
+                "reserved_sse_hz2": 12300945.289456766,
+                "slopes_hz_per_s": {
+                  "rx-0": 18.82162345110646,
+                  "rx-1": 1.2406063596718013
+                },
+                "tau_index": 15,
+                "tau_s": 0.15907587856250002,
+                "training_rms_hz": 195.22016155967682
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 230.26860369025707,
+                "penalty_hz2_s": 277436.6863405637,
+                "reserved_count": 344,
+                "reserved_rms_hz": 267.3774235979297,
+                "reserved_sse_hz2": 24592796.20755415,
+                "slopes_hz_per_s": {
+                  "rx-1": -16.656430780349183
+                },
+                "tau_index": 16,
+                "tau_s": 0.181711651,
+                "training_rms_hz": 224.38524538463128
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 202.96645494904809,
+                "penalty_hz2_s": 1992.866737047248,
+                "reserved_count": 435,
+                "reserved_rms_hz": 239.29950397820807,
+                "reserved_sse_hz2": 24909949.88283414,
+                "slopes_hz_per_s": {
+                  "rx-0": 1.055900685954839,
+                  "rx-1": -0.9369847802645188
+                },
+                "tau_index": 16,
+                "tau_s": 0.181980195,
+                "training_rms_hz": 202.19632918044223
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 177.1148452358055,
+                "penalty_hz2_s": 287118.15369952226,
+                "reserved_count": 358,
+                "reserved_rms_hz": 186.7053098415939,
+                "reserved_sse_hz2": 12479476.434850318,
+                "slopes_hz_per_s": {
+                  "rx-0": -12.107865312253125,
+                  "rx-1": -11.854018360027112
+                },
+                "tau_index": 16,
+                "tau_s": 0.182485228,
+                "training_rms_hz": 175.5965096558365
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 209.14523542721813,
+                "penalty_hz2_s": 673566.0590718347,
+                "reserved_count": 363,
+                "reserved_rms_hz": 234.6483444772074,
+                "reserved_sse_hz2": 19986723.94041959,
+                "slopes_hz_per_s": {
+                  "rx-0": -6.855345011592362,
+                  "rx-1": -25.031386374786962
+                },
+                "tau_index": 16,
+                "tau_s": 0.181819665,
+                "training_rms_hz": 203.41811366353235
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 295.33710853262073,
+                "penalty_hz2_s": 1125374.455742452,
+                "reserved_count": 245,
+                "reserved_rms_hz": 332.4805903348123,
+                "reserved_sse_hz2": 27083119.022599388,
+                "slopes_hz_per_s": {
+                  "rx-0": -6.3366402994142845,
+                  "rx-1": 32.942699425795254
+                },
+                "tau_index": 0,
+                "tau_s": -0.184242978,
+                "training_rms_hz": 302.8311379012455
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 316.3389673579474,
+                "penalty_hz2_s": 45036.57132031816,
+                "reserved_count": 280,
+                "reserved_rms_hz": 353.76662514360805,
+                "reserved_sse_hz2": 35042231.01833947,
+                "slopes_hz_per_s": {
+                  "rx-1": -6.710929244174622
+                },
+                "tau_index": 0,
+                "tau_s": -0.182320841,
+                "training_rms_hz": 313.3540759429247
+              },
+              {
+                "boundary_hit": false,
+                "grid_size": 17,
+                "objective": 245.72938292590658,
+                "penalty_hz2_s": 95830.0705227511,
+                "reserved_count": 458,
+                "reserved_rms_hz": 216.81073502179046,
+                "reserved_sse_hz2": 21529157.82787558,
+                "slopes_hz_per_s": {
+                  "rx-0": -2.130499724880792,
+                  "rx-1": 9.554634553191136
+                },
+                "tau_index": 15,
+                "tau_s": 0.1608983521875,
+                "training_rms_hz": 244.53460506198726
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 304.41861999880194,
+                "penalty_hz2_s": 102219.1927996011,
+                "reserved_count": 132,
+                "reserved_rms_hz": 279.54447477130236,
+                "reserved_sse_hz2": 10315154.965521554,
+                "slopes_hz_per_s": {
+                  "rx-1": -10.110350775299594
+                },
+                "tau_index": 16,
+                "tau_s": 0.182079511,
+                "training_rms_hz": 313.557616655441
+              },
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 234.59445002372001,
+                "penalty_hz2_s": 300434.9752425297,
+                "reserved_count": 491,
+                "reserved_rms_hz": 272.63413556675494,
+                "reserved_sse_hz2": 36495721.591229774,
+                "slopes_hz_per_s": {
+                  "rx-0": -3.143229551205877,
+                  "rx-1": -17.045676379391807
+                },
+                "tau_index": 0,
+                "tau_s": -0.18178564,
+                "training_rms_hz": 258.48628714506356
+              }
+            ],
+            "seed": [
+              38.01151025917599,
+              -122.6106296284747
+            ],
+            "seed_id": 3,
+            "training_rmse_hz": 244.8271603514781
+          }
+        }
+      ],
+      "seeds": [
+        [
+          37.97167898598718,
+          -122.58399790990018
+        ],
+        [
+          38.0513415323648,
+          -122.63726134704922
+        ],
+        [
+          38.01151025917599,
+          -122.6106296284747
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-9f976649d8b948db",
+        "scan-fw-629ae15bd261499b",
+        "scan-fw-b7f43e85d51f3b4f",
+        "scan-fw-1d64e776fd2ce41f",
+        "scan-fw-45880d68d43ba2fb",
+        "scan-fw-894676bdae3d7b2c",
+        "scan-fw-5897fdb10f7a1b99",
+        "scan-fw-3cbfa1a0728c7f83",
+        "scan-fw-b6104701869aac86",
+        "scan-fw-13abc38caa0ff9de",
+        "scan-fw-d7e932a70bca7b3a",
+        "scan-fw-ec9d9b576dbd198c"
+      ],
+      "window_id": "utc2h-20260923T0800Z"
+    },
+    {
+      "arms": [
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 41,
+              "latitude_deg": 37.90286473783821,
+              "longitude_deg": -122.42759179035835,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.79253148588513,
+                -122.20566063801466
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 283.20472538005583
+            },
+            {
+              "converged": true,
+              "evaluations": 36,
+              "latitude_deg": 37.90350059365255,
+              "longitude_deg": -122.42848431612157,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.76031272744162,
+                -122.30209149385597
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 283.20715204573327
+            },
+            {
+              "converged": true,
+              "evaluations": 39,
+              "latitude_deg": 37.90295958224937,
+              "longitude_deg": -122.42728182765413,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.776422106663375,
+                -122.25387606593532
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 283.2048841730291
+            }
+          ],
+          "method": "zero_drift_capped800",
+          "ridge_s2": null,
+          "selected": {
+            "converged": true,
+            "evaluations": 41,
+            "latitude_deg": 37.90286473783821,
+            "longitude_deg": -122.42759179035835,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 7.861407408726002,
+            "reserved_capped800_rmse_hz": 300.79981837261334,
+            "reserved_uncapped_rmse_hz": 473.2190359634317,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 283.20472538005583,
+                "penalty_hz2_s": 0.0,
+                "reserved_count": 356,
+                "reserved_rms_hz": 490.1370351750404,
+                "reserved_sse_hz2": 85523415.51706366,
+                "slopes_hz_per_s": {
+                  "rx-0": 0.0,
+                  "rx-1": 0.0
+                },
+                "tau_index": 16,
+                "tau_s": 0.181732093,
+                "training_rms_hz": 599.4005997953477
+              }
+            ],
+            "seed": [
+              37.79253148588513,
+              -122.20566063801466
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 283.20472538005583
+          }
+        },
+        {
+          "fits": [
+            {
+              "converged": true,
+              "evaluations": 45,
+              "latitude_deg": 37.921262202590434,
+              "longitude_deg": -122.40246613423054,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.79253148588513,
+                -122.20566063801466
+              ],
+              "seed_id": 1,
+              "training_rmse_hz": 296.67599281495586
+            },
+            {
+              "converged": true,
+              "evaluations": 51,
+              "latitude_deg": 37.921502836694586,
+              "longitude_deg": -122.40231598879004,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.76031272744162,
+                -122.30209149385597
+              ],
+              "seed_id": 2,
+              "training_rmse_hz": 296.6762559784179
+            },
+            {
+              "converged": true,
+              "evaluations": 48,
+              "latitude_deg": 37.92189940158528,
+              "longitude_deg": -122.40372225734166,
+              "message": "Optimization terminated successfully.",
+              "outside_trial_count": 0,
+              "seed": [
+                37.776422106663375,
+                -122.25387606593532
+              ],
+              "seed_id": 3,
+              "training_rmse_hz": 296.68858292821125
+            }
+          ],
+          "method": "receiver_drift_capped800",
+          "ridge_s2": 1000.0,
+          "selected": {
+            "converged": true,
+            "evaluations": 45,
+            "latitude_deg": 37.921262202590434,
+            "longitude_deg": -122.40246613423054,
+            "message": "Optimization terminated successfully.",
+            "outside_trial_count": 0,
+            "reference_error_km": 10.853783232601952,
+            "reserved_capped800_rmse_hz": 312.6926257026089,
+            "reserved_uncapped_rmse_hz": 478.52076016007584,
+            "scans": [
+              {
+                "boundary_hit": true,
+                "grid_size": 17,
+                "objective": 296.67599281495586,
+                "penalty_hz2_s": 1831817.38126973,
+                "reserved_count": 356,
+                "reserved_rms_hz": 500.67762040029976,
+                "reserved_sse_hz2": 89241396.32681558,
+                "slopes_hz_per_s": {
+                  "rx-0": 11.762543562799692,
+                  "rx-1": -41.15167007793207
+                },
+                "tau_index": 16,
+                "tau_s": 0.181732093,
+                "training_rms_hz": 571.7912935230885
+              }
+            ],
+            "seed": [
+              37.79253148588513,
+              -122.20566063801466
+            ],
+            "seed_id": 1,
+            "training_rmse_hz": 296.67599281495586
+          }
+        }
+      ],
+      "seeds": [
+        [
+          37.79253148588513,
+          -122.20566063801466
+        ],
+        [
+          37.76031272744162,
+          -122.30209149385597
+        ],
+        [
+          37.776422106663375,
+          -122.25387606593532
+        ]
+      ],
+      "session_ids": [
+        "scan-fw-9f976649d8b948db"
+      ],
+      "window_id": "utc2h-20260923T0800Z-first-scan"
+    }
+  ]
+}

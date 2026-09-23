@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""Qualify every metadata-frozen Sep. 21 long-block recording via public ports."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+WANTED_GROUPS = ("2026-09-21T00:00:00+00:00", "2026-09-21T08:00:00+00:00")
+SCHEMA = "older-long-block-full-position-qualification/v1"
+
+
+def digest(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def freeze(inventory_path: Path, manifest_path: Path) -> dict:
+    inventory = json.loads(inventory_path.read_text())
+    source = {group["utc_8h_start"]: group for group in inventory["utc_8h_groups"]}
+    if set(WANTED_GROUPS) - set(source):
+        raise ValueError("the frozen inventory does not contain both requested long groups")
+    groups = []
+    seen = set()
+    for stamp in WANTED_GROUPS:
+        group = source[stamp]
+        session_ids = group["session_ids"]
+        if len(session_ids) != group["scan_count"] or len(session_ids) != len(set(session_ids)):
+            raise ValueError(f"invalid session IDs for {stamp}")
+        if seen & set(session_ids):
+            raise ValueError("a session occurs in more than one frozen group")
+        seen.update(session_ids)
+        groups.append(
+            {
+                "utc_8h_start": stamp,
+                "source_scan_count": group["scan_count"],
+                "metadata_max_inter_capture_gap_s": group["max_inter_capture_gap_s"],
+                "session_ids": session_ids,
+            }
+        )
+    manifest = {
+        "schema": "older-long-block-full-selection/v1",
+        "selection_rule": "all session IDs in the two named metadata-frozen groups",
+        "selection_precedes_track_or_position_outcomes": True,
+        "position_or_geographical_outcome_used_for_selection": False,
+        "prospective_or_test_sources_used": False,
+        "inventory_sha256": digest(inventory_path),
+        "groups": groups,
+        "selected_session_ids": [sid for group in groups for sid in group["session_ids"]],
+    }
+    manifest["selected_scan_count"] = len(manifest["selected_session_ids"])
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    return manifest
+
+
+WORKER = r"""
+import json,sys,traceback
+from pathlib import Path
+from leo.operations.adaptive_tle_position_inputs import prepare_adaptive_tle_position_inputs
+from leo.operations.tle_archive import TleArchiveReader
+from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
+
+store=ScannerTrackingInputStore(Path('/srv/bulk/leo'))
+archive=TleArchiveReader(Path('/var/lib/leo/tle'))
+rows=[]
+try:
+  for sid in sys.argv[1:]:
+    try:
+      source=store.load(sid)
+      base={
+        'session_id':sid, 'load_status':'ready', 'capture_mode':source.capture_mode,
+        'sample_rate_hz':source.sample_rate_hz, 'radio_id':source.radio_id,
+        'stream_generation':source.stream_generation,
+        'input_manifest_sha256':source.input_manifest_sha256,
+        'analysis_manifest_sha256':source.analysis_manifest_sha256,
+        'raw_recording_authority_digest':source.raw_recording_authority_digest,
+        'capture_start_utc_ns':source.capture_start_utc_ns,
+        'capture_end_utc_ns':source.capture_end_utc_ns,
+        'receiver_ids':sorted(set(p.receiver_id for p in source.probes)),
+        'channels':sorted(set(p.channel for p in source.probes)),
+        'actual_rf_hz':sorted(set(p.actual_rf_hz for p in source.probes)),
+        'probe_count':len(source.probes), 'timing_qualified':source.timing.qualified,
+        'timing_algorithm':source.timing.algorithm_version,
+        'first_sample_estimate_utc_ns':source.timing.first_sample_estimate_utc_ns,
+        'first_sample_bracket_width_ns':source.timing.first_sample_bracket_width_ns,
+      }
+      try:
+        prepared=prepare_adaptive_tle_position_inputs(sid,inputs=store,archive=archive)
+        masks=[value for track in prepared.tracks for value in track.training_mask]
+        spans=[float(track.times_s[-1]-track.times_s[0]) for track in prepared.tracks]
+        base.update({
+          'current_position_input_status':'ready',
+          'reconstructed_track_count':prepared.reconstructed_track_count,
+          'eligible_3s_track_count':prepared.eligible_track_count,
+          'eligible_observation_count':prepared.eligible_observation_count,
+          'training_observation_count':sum(masks),
+          'reserved_observation_count':len(masks)-sum(masks),
+          'track_span_s_min':min(spans) if spans else None,
+          'track_span_s_median':sorted(spans)[len(spans)//2] if spans else None,
+          'track_span_s_max':max(spans) if spans else None,
+          'trajectory_digest':prepared.trajectory_digest,
+          'evidence_sha256':prepared.evidence_sha256,
+          'snapshot_digest':prepared.snapshot_digest,
+          'snapshot_collected_utc_ns':prepared.snapshot_collected_utc_ns,
+          'causal_tle_candidate_count':len(prepared.candidate_indices),
+          'start_matches_timing_authority':prepared.start_utc_ns==source.timing.first_sample_estimate_utc_ns,
+        })
+      except Exception as error:
+        base.update({'current_position_input_status':'unavailable',
+          'position_input_error_type':type(error).__name__, 'position_input_error':str(error),
+          'position_input_traceback':traceback.format_exc(),
+          'fallback_tracking_source_available':bool(source.probes)})
+      rows.append(base)
+    except Exception as error:
+      rows.append({'session_id':sid,'load_status':'unavailable','error_type':type(error).__name__,
+        'error':str(error),'traceback':traceback.format_exc()})
+finally:
+  store.close()
+print(json.dumps(rows,sort_keys=True,default=lambda value:value.item()))
+"""
+
+
+def chunks(values: list[str], size: int):
+    for start in range(0, len(values), size):
+        yield values[start : start + size]
+
+
+def group_summary(group: dict, rows: list[dict]) -> dict:
+    ready = [row for row in rows if row.get("current_position_input_status") == "ready"]
+    starts = sorted(row["capture_start_utc_ns"] for row in rows if "capture_start_utc_ns" in row)
+    ends = [row["capture_end_utc_ns"] for row in rows if "capture_end_utc_ns" in row]
+    return {
+        "utc_8h_start": group["utc_8h_start"],
+        "selected_scan_count": len(group["session_ids"]),
+        "loaded_scan_count": sum(row.get("load_status") == "ready" for row in rows),
+        "position_input_ready_count": len(ready),
+        "failure_count": len(rows) - len(ready),
+        "eligible_3s_track_count": sum(row.get("eligible_3s_track_count", 0) for row in ready),
+        "eligible_observation_count": sum(
+            row.get("eligible_observation_count", 0) for row in ready
+        ),
+        "training_observation_count": sum(
+            row.get("training_observation_count", 0) for row in ready
+        ),
+        "reserved_observation_count": sum(
+            row.get("reserved_observation_count", 0) for row in ready
+        ),
+        "summed_capture_duration_s": sum(
+            (row["capture_end_utc_ns"] - row["capture_start_utc_ns"]) / 1e9
+            for row in rows
+            if "capture_start_utc_ns" in row and "capture_end_utc_ns" in row
+        ),
+        "elapsed_capture_span_s": (max(ends) - min(starts)) / 1e9 if starts and ends else None,
+        "max_inter_capture_start_gap_s": max(
+            ((b - a) / 1e9 for a, b in zip(starts, starts[1:], strict=False)), default=None
+        ),
+        "timing_qualified_count": sum(row.get("timing_qualified") is True for row in rows),
+        "timing_authority_start_match_count": sum(
+            row.get("start_matches_timing_authority") is True for row in ready
+        ),
+        "causal_tle_ready_count": sum(
+            row.get("causal_tle_candidate_count", 0) > 0 for row in ready
+        ),
+        "causal_tle_candidate_count_min": min(
+            (row["causal_tle_candidate_count"] for row in ready), default=None
+        ),
+        "causal_tle_candidate_count_max": max(
+            (row["causal_tle_candidate_count"] for row in ready), default=None
+        ),
+    }
+
+
+def qualify(manifest_path: Path, results_path: Path, batch_size: int, timeout_s: int) -> dict:
+    manifest = json.loads(manifest_path.read_text())
+    selected = manifest["selected_session_ids"]
+    if manifest["selected_scan_count"] != 152 or len(selected) != 152:
+        raise ValueError("expected exactly 152 frozen scans")
+    rows_by_id = {}
+    failures = []
+    for ordinal, batch in enumerate(chunks(selected, batch_size), start=1):
+        command = ["sudo", "-n", "-u", "leo", sys.executable, "-c", WORKER, *batch]
+        try:
+            completed = subprocess.run(
+                command, capture_output=True, text=True, check=True, timeout=timeout_s
+            )
+            rows = json.loads(completed.stdout)
+        except Exception as error:
+            rows = [
+                {
+                    "session_id": sid,
+                    "load_status": "unavailable",
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                    "worker_stderr": getattr(error, "stderr", None),
+                }
+                for sid in batch
+            ]
+        if {row.get("session_id") for row in rows} != set(batch):
+            raise RuntimeError(f"worker batch {ordinal} did not account for its exact frozen IDs")
+        rows_by_id.update({row["session_id"]: row for row in rows})
+        failures.extend(row for row in rows if row.get("current_position_input_status") != "ready")
+        print(
+            json.dumps(
+                {
+                    "batch": ordinal,
+                    "batches": -(-len(selected) // batch_size),
+                    "accounted_scans": len(rows_by_id),
+                    "failures": len(failures),
+                },
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+    ordered_rows = [rows_by_id[sid] for sid in selected]
+    groups = []
+    cursor = 0
+    for group in manifest["groups"]:
+        count = len(group["session_ids"])
+        group_rows = ordered_rows[cursor : cursor + count]
+        cursor += count
+        groups.append({**group_summary(group, group_rows), "scans": group_rows})
+    ready = [row for row in ordered_rows if row.get("current_position_input_status") == "ready"]
+    result = {
+        "schema": SCHEMA,
+        "qualified_at_utc": datetime.now(UTC).isoformat(),
+        "selection_manifest_sha256": digest(manifest_path),
+        "qualifier_sha256": digest(Path(__file__)),
+        "selected_session_ids": selected,
+        "accounting": {
+            "selected_scan_count": len(selected),
+            "returned_scan_count": len(ordered_rows),
+            "position_input_ready_count": len(ready),
+            "failure_count": len(failures),
+            "all_selected_ids_accounted_for": set(selected) == set(rows_by_id),
+        },
+        "summary": {
+            "eligible_3s_track_count": sum(row.get("eligible_3s_track_count", 0) for row in ready),
+            "eligible_observation_count": sum(
+                row.get("eligible_observation_count", 0) for row in ready
+            ),
+            "training_observation_count": sum(
+                row.get("training_observation_count", 0) for row in ready
+            ),
+            "reserved_observation_count": sum(
+                row.get("reserved_observation_count", 0) for row in ready
+            ),
+        },
+        "failures": failures,
+        "groups": groups,
+    }
+    results_path.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n")
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--inventory", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument("--freeze", action="store_true")
+    parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--timeout-s", type=int, default=300)
+    args = parser.parse_args()
+    if args.freeze:
+        if args.manifest.exists():
+            raise FileExistsError("refusing to overwrite an existing frozen manifest")
+        freeze(args.inventory, args.manifest)
+        return
+    if not args.manifest.exists() or args.results.exists():
+        raise FileExistsError("frozen manifest required and results must be fresh")
+    result = qualify(args.manifest, args.results, args.batch_size, args.timeout_s)
+    print(json.dumps({**result["accounting"], **result["summary"]}, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()
