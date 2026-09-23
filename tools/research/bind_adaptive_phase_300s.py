@@ -16,7 +16,6 @@ from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 
-
 SESSION_ID = "scan-hop-28d7592ea614f624"
 OUTPUT = Path("reports/figures/2026_09_23_adaptive_phase_300s/binding.json")
 PROBE_STRIDE_MS = 120
