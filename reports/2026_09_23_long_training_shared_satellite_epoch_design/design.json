@@ -1,0 +1,32 @@
+{
+  "bindings": {
+    "association_audit": "sha256:645ed13e2476444525dbfb2157f15267cdab5d7f7eb4c033e0ab73dc6a7de810",
+    "recurrence": "sha256:1d84208e44d7761427dc39bd6cafbf090fa87cbca5a13a25628508d055676d3c"
+  },
+  "constraints_for_future_fit": {
+    "bounds": "predeclare symmetric eta bounds/prior; causal update differences may motivate scale exploration but do not calibrate it",
+    "selection": "freeze candidates from TRAIN-only inference before nuisance fit",
+    "support": "cross-scan repeated support is required for a persistent-effects interpretation; within-scan relative effects can be explored separately with predeclared regularization and Jacobian checks",
+    "validation": "select all hyperparameters within TRAIN then score fixed assignments on reserved rows; no validation/test tuning"
+  },
+  "identifiability": {
+    "cfo": "retain the per-track constant CFO only; short tracks have weak time-shape information and must not receive independent timing terms",
+    "gauge": "one additive gauge per component: u_s+c and eta_k-c; fix one u_s or impose one weighted zero-sum eta constraint; constraining both families adds a model assumption",
+    "graph": "construct the scan-satellite bipartite graph, identify components, then check the actual profiled Doppler Jacobian rather than inferring full numerical rank from connectivity alone",
+    "location": "hold location fixed during a first epoch-nuisance fit, or impose a predeclared location prior; otherwise geometry-induced Doppler changes confound time shifts",
+    "single_scan_satellites": "relative eta contrasts among satellites in one scan can be identified; a common shift of all eta terms trades with the scan term, and useful precision remains data dependent"
+  },
+  "prior_work_consulted": [
+    "reports/2026_09_20_orbit_update_modes/all-improved-tracks.md",
+    "tools/study_causal_orbit_phase_prior.py",
+    "tools/compare_visible_starlink_tle_fit.py"
+  ],
+  "proposed_model": {
+    "measurement": "for track i in scan s assigned satellite k, predict Doppler at t_i + u_s + eta_k; retain one per-track constant CFO b_i",
+    "satellite_term": "eta_k is a bounded along-track/epoch nuisance shared only across scan edges for the same candidate k",
+    "scan_term": "u_s is one combined scan timing nuisance; do not separately estimate a receiver clock and a scan epoch because they enter the same propagation-time direction"
+  },
+  "recurrence_conclusion": "Only one candidate spans two scans, with 43 of 17,358 duration weights (0.2477%); none spans three. Cross-scan persistent-effect separation has little support, but this does not rule out regularized within-scan satellite contrasts.",
+  "schema": "shared-satellite-epoch-design/v1",
+  "status": "design-only-sparse-cross-scan-recurrence"
+}

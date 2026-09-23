@@ -1,0 +1,122 @@
+"""Fixed first-six TRAIN duration ablations with post-seal evaluation."""
+
+import hashlib
+import importlib.util
+import json
+import time
+from pathlib import Path
+
+import numpy as np
+
+HERE = Path(__file__).resolve().parent
+
+
+def digest(path):
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def restrict(sessions, threshold):
+    active = []
+    for session in sessions:
+        tracks = [row for row in session["prepared"] if np.ptp(row["times_s"]) >= threshold]
+        if not tracks:
+            raise ValueError("threshold removes an entire scan")
+        active.append({**session, "prepared": tracks, "weight": sum(t["weight_s"] for t in tracks)})
+    return active
+
+
+def held_summary(base, single, sessions, point):
+    _, scans = base.combined_score(
+        single, sessions, point["latitude_deg"], point["longitude_deg"], True
+    )
+    weighted = total = 0.0
+    for scan, source in zip(scans, sessions, strict=True):
+        for track, evidence in zip(scan["tracks"], source["prepared"], strict=True):
+            weight = evidence["weight_s"]
+            weighted += weight * min(track.get("evaluation_rms_hz", 800.0), 800.0) ** 2
+            total += weight
+    return {"capped800_rmse_hz": float(np.sqrt(weighted / total)), "scans": scans}
+
+
+def main():
+    output = HERE / "sealed"
+    if output.exists():
+        raise FileExistsError("fresh sealed output required")
+    base_path = HERE.parent / "2026_09_23_long_training_search_multi/search.py"
+    spec = importlib.util.spec_from_file_location("base", base_path)
+    base = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(base)
+    single_path = HERE.parent / "2026_09_23_long_training_search/search.py"
+    single = base.load_single(single_path)
+    single.LEVELS_KM = base.LEVELS_KM
+    manifest_path = HERE.parent / "2026_09_23_long_inventory_complete/manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    ids = manifest["partitions"]["train"]["session_ids"][:6]
+    cache_root = Path("/tmp/leo-long-training-cache-first16")
+    sessions = [base.load_session(single, cache_root / sid, sid) for sid in ids]
+    started = time.monotonic()
+    variants = []
+    for threshold in (10, 20, 30):
+        active = restrict(sessions, threshold)
+
+        def evaluate(lat, lon, held=False, support=active):
+            if held:
+                raise ValueError("reserved scoring forbidden during search")
+            return base.combined_score(single, support, lat, lon, False)
+
+        searches = [
+            single.search_prior(name, prior, evaluate) for name, prior in single.PRIORS.items()
+        ]
+        variants.append(
+            {
+                "minimum_span_s": threshold,
+                "included_tracks": sum(len(s["prepared"]) for s in active),
+                "included_observations": sum(
+                    len(t["times_s"]) for s in active for t in s["prepared"]
+                ),
+                "included_weight_s": sum(s["weight"] for s in active),
+                "searches": searches,
+            }
+        )
+        print(f"Completed training threshold {threshold} s", flush=True)
+    inference = {
+        "session_ids": ids,
+        "variants": variants,
+        "reference_used": False,
+        "reserved_frequency_used": False,
+        "runtime_s": time.monotonic() - started,
+        "bindings": {
+            "tool": digest(Path(__file__)),
+            "base": digest(base_path),
+            "single": digest(single_path),
+            "manifest": digest(manifest_path),
+            "caches": [
+                {
+                    "session_id": s["session_id"],
+                    "receipt": digest(s["receipt"]),
+                    "cache": digest(s["cache"]),
+                }
+                for s in sessions
+            ],
+        },
+    }
+    output.mkdir()
+    payload = json.dumps(inference, indent=2, sort_keys=True) + "\n"
+    (output / "inference.json").write_text(payload)
+    (output / "inference.sha256").write_text(hashlib.sha256(payload.encode()).hexdigest() + "\n")
+    results = json.loads(payload)
+    for variant in results["variants"]:
+        active = restrict(sessions, variant["minimum_span_s"])
+        for search in variant["searches"]:
+            point = search["selected"]
+            search["selected_support_reserved"] = held_summary(base, single, active, point)
+            search["all_3s_support_reserved"] = held_summary(base, single, sessions, point)
+            search["reference_error_km"] = single.haversine_km(
+                (point["latitude_deg"], point["longitude_deg"]), single.REFERENCE
+            )
+    (output / "results.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+    (output / "results.sha256").write_text(digest(output / "results.json") + "\n")
+
+
+if __name__ == "__main__":
+    main()
