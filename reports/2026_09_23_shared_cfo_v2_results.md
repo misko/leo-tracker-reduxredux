@@ -1,5 +1,9 @@
 # Shared receiver CFO v2 development comparison
 
+Follow-up: [known-solution nesting completion](2026_09_23_shared_cfo_nested_results.md)
+repairs both inclusion failures using training-only shared-seeded independent
+fits. This v2 report and its frozen outcomes remain unchanged below.
+
 **All eight executed fits now improve training SSE, but two of four comparisons
 still fail the nested-model optimization check.** The results do not justify
 turning the two-source waveform evidence into calibrated phase or motion.
