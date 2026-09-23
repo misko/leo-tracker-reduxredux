@@ -1,6 +1,9 @@
 import numpy as np
 
 from leo.analysis.starlink.adaptive_dual_rx_phase import coherent_pilot_frames, fit_linear_phasor
+from leo.analysis.starlink.fractional_epoch import fractional_take
+from leo.analysis.starlink.templates import OFDM_SYMBOL_DURATION_S, qin_edge_pilot_frame
+from tools.research import replay_adaptive_multiscale_phase_refined as refined
 from tools.research.replay_adaptive_multiscale_phase_refined import frame_origin_times
 
 
@@ -73,3 +76,32 @@ def test_frame_origin_gauge_recovers_center_phase_not_symbol_centroid_gauge():
     centroid_error = np.angle(np.exp(1j * (centroid_phase - expected)))
     assert abs(origin_error) < 1e-6
     assert abs(centroid_error) > np.radians(10.0)
+
+
+def test_vectorized_symbol_correlations_equal_scalar_fractional_reference():
+    """Flattening pilot symbols preserves every former per-symbol sum."""
+    refined.frontend.FS = 2_500_000
+    fs = refined.frontend.FS
+    rng = np.random.default_rng(20260923)
+    iq = (
+        rng.standard_normal((20_000, 2)) + 1j * rng.standard_normal((20_000, 2))
+    ).astype(np.complex128)
+    starts = np.array([4_000, 7_333, 10_667])
+    shift, fraction = 19, 0.375
+    model = (0.0, 0.0, 287_000.0)
+    template = qin_edge_pilot_frame(fs, "lower")
+    actual = refined.symbol_correlations(iq, starts, shift, model, 0, template, fraction)
+
+    expected = []
+    for start in starts + shift:
+        row = []
+        for symbol in range(2, 66):
+            begin = round(symbol * fs * OFDM_SYMBOL_DURATION_S)
+            end = round((symbol + 1) * fs * OFDM_SYMBOL_DURATION_S)
+            offsets = np.arange(begin, end)
+            positions = start + offsets + fraction
+            samples = fractional_take(iq[:, 0], positions)
+            phase = refined.frontend.carrier_phase(model, positions / fs)
+            row.append(np.sum(samples * np.exp(-1j * phase) * np.conj(template[offsets])))
+        expected.append(row)
+    np.testing.assert_allclose(actual, np.asarray(expected), rtol=0.0, atol=3e-12)
