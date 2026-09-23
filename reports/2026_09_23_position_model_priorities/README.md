@@ -62,6 +62,13 @@ views also include different tracks; their errors are not an independent learnin
 curve. See the [single-scan report](../2026_09_23_long_training_search/README.md)
 and [joint search](../2026_09_23_long_training_search_multi/README.md).
 
+A subsequent fixed-solution numerical audit compares cached predictions with
+direct SGP4 from the exact same causal snapshots. Across 3,212 nested
+view/track comparisons, constant-removed training RMS is 0.0278 Hz median and
+0.0739 Hz maximum (rounded upward). This is small relative to the fitting
+residuals; it does not validate satellite identity, orbit accuracy, or timing.
+See the [direct propagation audit](../2026_09_23_long_training_selected_interpolation_audit/README.md).
+
 ## Next experiments and responsibilities
 
 SOL implemented the blind joint search; Terra prepared and verified its caches,
