@@ -118,8 +118,9 @@ It retains the 78 historical observation IDs. Fractional GLRT support-center
 reconstruction matches their times to the public tracking input; full field
 and provenance checks must seal that binding before phase replay. Current
 canonical IDs differ from the historical projection version, so nearest-time
-matching or substituting current IDs would be insufficient. Its historical
-time split will not be reused for the new random validation.
+matching or substituting current IDs would be insufficient. Its existing
+randomized per-observation split will not be reused; the new validation will
+freeze random whole groups explicitly.
 
 The extraction retains fractional GLRT epoch metadata but uses an integer
 frame lattice. Fractional timing and sample-shift sensitivity remain untested;
