@@ -1,0 +1,66 @@
+{
+  "schema": "adaptive-tle-position-v2-queue-gate/v1",
+  "observed_at_utc": "2026-09-23T05:58:30.622814+00:00",
+  "database": "leo_tracker",
+  "read_only": true,
+  "deployment_revision": "fb152566148e662dc22d7948607fd65998f033a9",
+  "cutoff_utc": "2026-09-23T05:53:00Z",
+  "frozen_enqueue": {
+    "command_receipt": "v2-enqueue-command.json",
+    "reported_queued_count": 161,
+    "unique_queued_count": 161,
+    "all_present_after_enqueue": true,
+    "states": {
+      "pending": 161,
+      "leased": 0,
+      "succeeded": 0,
+      "cancelled": 0
+    }
+  },
+  "normal_producer_additional_sessions": [
+    "scan-fw-192f760c85926340",
+    "scan-fw-547e004082d486e7",
+    "scan-fw-6173fef18199b4f8",
+    "scan-fw-8240aa583830ca1b",
+    "scan-fw-bfcb142d3bebff2f",
+    "scan-fw-ead16f7f48901a57",
+    "scan-fw-f91acea118327e66",
+    "scan-fw-fb43b04ccf6f273e"
+  ],
+  "normal_producer_additional_count": 8,
+  "frozen_inventory": {
+    "inventory_receipt": "inventory.json",
+    "session_count": 165,
+    "covered_by_command_count": 161,
+    "covered_by_normal_producer_count": 4,
+    "missing_from_active_union": [],
+    "normal_producer_sessions_inside_inventory": [
+      "scan-fw-547e004082d486e7",
+      "scan-fw-8240aa583830ca1b",
+      "scan-fw-ead16f7f48901a57",
+      "scan-fw-fb43b04ccf6f273e"
+    ]
+  },
+  "active_union_sessions_outside_frozen_inventory": [
+    "scan-fw-192f760c85926340",
+    "scan-fw-6173fef18199b4f8",
+    "scan-fw-bfcb142d3bebff2f",
+    "scan-fw-f91acea118327e66"
+  ],
+  "union_new_v2_jobs": 169,
+  "union_active_jobs": 169,
+  "old_policy_pending_created_before_cutoff": 0,
+  "old_policy_leased": 0,
+  "superseded_pending_rows": 161,
+  "supersession_outcome": "superseded-by-tracking-policy",
+  "active_session_count": 169,
+  "duplicate_active_session_input_bindings": 0,
+  "different_policy_simultaneous_pending_pairs": 0,
+  "outside_union_requiring_enqueue_before_worker_start": [],
+  "queries": [
+    "SELECT count(*) FROM processing_job WHERE job_kind='adaptive_tracking' AND state='pending' AND created_at < TIMESTAMPTZ '2026-09-23 05:53:00+00';",
+    "SELECT state,outcome,count(*) FROM processing_job WHERE job_kind='adaptive_tracking' GROUP BY state,outcome;",
+    "SELECT adaptive_session_id,adaptive_input_manifest_digest,count(*) FROM processing_job WHERE job_kind='adaptive_tracking' AND state IN ('pending','leased') GROUP BY 1,2 HAVING count(*)>1;"
+  ],
+  "conclusion": "No old-policy pending or leased tracking job remained before workers started; the frozen enqueue and normal producer union was active and unique."
+}

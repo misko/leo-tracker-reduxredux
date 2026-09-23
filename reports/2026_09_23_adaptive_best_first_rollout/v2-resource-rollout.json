@@ -1,0 +1,28 @@
+{
+  "schema_version": "adaptive-tle-v2-resource-rollout-v1",
+  "release": "fb152566148e662dc22d7948607fd65998f033a9",
+  "status": "bounded-initial-sample; full 165-session backfill pending",
+  "monitoring": {
+    "duration_s": 348.5,
+    "sampling_interval_s": 15,
+    "first_tracking_lease_utc": "2026-09-23T06:04:13Z",
+    "initial_delay": "Four memory slots were occupied by bounded adaptive_scan hop analyses; this was queue-stage occupancy, not adaptive TLE estimator runtime.",
+    "sampled_swap_kib": 0,
+    "retry_or_lease_expiry_observed": false
+  },
+  "completed_examples": [
+    {"session_id":"scan-fw-192f760c85926340","tracks":34,"observations":1053,"candidates":10688,"bank_build_s":46.37048112601042,"sacramento_cumulative_runtime_s":132.929,"reno_cumulative_runtime_s":211.643,"peak_group_pss_gib":6.574,"peak_summed_rss_gib":30.312,"attempt_count":1},
+    {"session_id":"scan-fw-f91acea118327e66","tracks":31,"observations":873,"candidates":10688,"bank_build_s":38.40515707700979,"sacramento_cumulative_runtime_s":117.864,"reno_cumulative_runtime_s":190.475,"peak_group_pss_gib":5.883,"peak_summed_rss_gib":26.125,"attempt_count":1},
+    {"session_id":"scan-fw-bfcb142d3bebff2f","tracks":32,"observations":732,"candidates":10688,"bank_build_s":30.45806861203164,"sacramento_cumulative_runtime_s":101.901,"reno_cumulative_runtime_s":167.243,"peak_group_pss_gib":5.172,"peak_summed_rss_gib":22.350,"attempt_count":1},
+    {"session_id":"scan-fw-8240aa583830ca1b","tracks":24,"observations":535,"candidates":10688,"bank_build_s":23.41081440402195,"sacramento_cumulative_runtime_s":83.634,"reno_cumulative_runtime_s":138.079,"peak_group_pss_gib":4.045,"peak_summed_rss_gib":16.868,"attempt_count":1}
+  ],
+  "interpretation": {
+    "memory": "PSS is used for physical memory because summed RSS double-counts copy-on-write pages shared by four forked scoring workers.",
+    "throughput": "The first four v2 estimator runs completed both priors in 2.30-3.53 minutes of cumulative numerical runtime after bank construction. End-to-end queue timestamps include earlier adaptive_scan occupancy and are not estimator runtime.",
+    "limitations": [
+      "This is an initial four-session sample, not the final frozen-window audit.",
+      "Fifteen-second sampling may miss short memory peaks.",
+      "The full 165-session integrity receipt remains required before declaring the backfill complete."
+    ]
+  }
+}

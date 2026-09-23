@@ -1,0 +1,59 @@
+{
+  "schema_version": "adaptive-tle-resource-rollout-v1",
+  "source_commit": "7532ff9d7172997eb3c78d93fa4b212b8c6ee2a6",
+  "monitoring": {
+    "duration_s": 773.2,
+    "sampling_interval_s": 15,
+    "scope": "read-only PostgreSQL processing_job and Linux procfs sampling",
+    "final_state": "v1 backfill paused by operator for v2 rollout; no processes or leases remained",
+    "initial_pending_memory_jobs": 110,
+    "completed_memory_jobs_observed": 10,
+    "retry_or_lease_expiry_observed": false,
+    "successful_attempt_counts": [1],
+    "sampled_job_swap_kib": 0
+  },
+  "measured": {
+    "memory_note": "PSS is the physical-memory measure used because forked workers share large copy-on-write banks; summed RSS substantially double-counts those pages.",
+    "sessions": [
+      {"session_id":"scan-fw-fb43b04ccf6f273e","tracks":42,"observations":1291,"candidates":11102,"bank_build_s":111.73131532594562,"two_prior_cumulative_runtime_s":400.564,"peak_group_pss_gib":8.452,"peak_summed_rss_gib":38.277,"observed_process_span_s":354.2},
+      {"session_id":"scan-fw-ec373a5cddf1a470","tracks":37,"candidates":11102,"bank_build_s":58.198367167962715,"peak_group_pss_gib":6.340,"peak_summed_rss_gib":27.919,"observed_process_span_s":296.9},
+      {"session_id":"scan-fw-91e59b3fb15c25b7","tracks":32,"candidates":11102,"bank_build_s":55.00676677504089,"peak_group_pss_gib":5.210,"peak_summed_rss_gib":22.771,"observed_process_span_s":280.9},
+      {"session_id":"scan-fw-0fcac6eb710de2b8","tracks":39,"candidates":11102,"bank_build_s":40.212529956013896,"peak_group_pss_gib":5.211,"peak_summed_rss_gib":23.364,"observed_process_span_s":261.5},
+      {"session_id":"scan-fw-ead16f7f48901a57","tracks":29,"candidates":11102,"bank_build_s":35.718133238959126,"peak_group_pss_gib":5.644,"peak_summed_rss_gib":24.976,"observed_process_span_s":230.2}
+    ],
+    "duplicate_lease": {
+      "session_id": "scan-fw-192f760c85926340",
+      "resource_classes": ["heavy", "memory"],
+      "peak_group_pss_gib": 8.565,
+      "interpretation": "Both leases named the same session. The store writer lock prevented two independent published analyses; the process group still temporarily occupied an extra queue slot."
+    }
+  },
+  "estimated_before_rollout": {
+    "inventory_sessions": 165,
+    "median_observations": 781,
+    "p90_observations": 1334,
+    "p95_observations": 1491,
+    "maximum_observations": 1698,
+    "maximum_tracks": 52,
+    "densest_sample": {
+      "tracks": 52,
+      "observations": 1724,
+      "candidates": 11109,
+      "candidate_time_states": 225290520,
+      "stored_position_velocity_lower_bound_gib": 10.07,
+      "expected_peak_memory_gib": [12, 14],
+      "expected_runtime_min": [5, 7]
+    },
+    "four_job_expected_peak_gib": [48, 56]
+  },
+  "assessment": {
+    "lease_duration_min": 20,
+    "result": "No retry, lease expiry, worker swap, or memory-pressure failure was observed before the controlled pause. The densest completed measured job used 8.452 GiB PSS and finished both priors within 6.68 minutes, below the pre-rollout 12-14 GiB and 5-7 minute conservative bounds.",
+    "limitations": [
+      "Procfs was sampled every 15 seconds, so short peaks may be missed.",
+      "Observed process spans are censored for processes already active at the first sample and include pipeline work around the numerical search.",
+      "The controlled pause ended the observation window; pending jobs are not failures.",
+      "The input policy has no hard cap on total observations or tracks, so the 165-session inventory maximum is empirical rather than a contract bound."
+    ]
+  }
+}

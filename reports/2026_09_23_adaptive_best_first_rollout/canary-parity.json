@@ -1,0 +1,92 @@
+{
+  "schema": "adaptive-tle-position-canary-parity/v1",
+  "status": "pass",
+  "session_id": "scan-fw-cf510316ae7f05d5",
+  "known_position_used": false,
+  "canary": {
+    "document_path": "/home/mouse9911/.cache/leo-research/adaptive-tle-position-canary-v1/scanner-adaptive-tle-position-v1/scan-fw-cf510316ae7f05d5/document.json",
+    "document_sha256": "sha256:8b72fec0b4ca44bb13287e2577a97aa5f452140ce012a1ee7211ea0b9d68c798",
+    "manifest_sha256": "sha256:6007fdaf436a254014554a78e354fda2f71086a11b14dee1852cab394b469901",
+    "map_png_sha256": "sha256:c8fbd846c16902520cb5191f286b7778722d236e406ee40d5f0687a4492f7a62",
+    "analysis_source_sha256": "sha256:067e2f0397ee32d99347cf2d268426b9b370927f26639929df507030475ad428",
+    "prediction_source_sha256": "sha256:79e1660962a8dd50eb569315189e2b36913ae4f5aaa4b9f4dcd1fa742fe14144",
+    "track_count": 34,
+    "observation_count": 750,
+    "catalogue_candidate_count": 11104
+  },
+  "reference": {
+    "sacramento_result_sha256": "sha256:90f7e987f997c249298f1565128681b4c7d79c1f45411ae0e48112206cf3bbd3",
+    "reno_result_sha256": "sha256:7b4435d2ea07bf01b28c78cb96dfbe0aff35f2397e9c42c9ab4f3d81c8209d49",
+    "fixed_track_evidence_sha256": "sha256:de6b9442f81d16261eb819ce80cf7a27be4e1768209f7b82d65d647c166ee9da"
+  },
+  "inventory_parity": {
+    "track_ids_exact": true,
+    "observation_ids_exact": true,
+    "training_masks_exact": true,
+    "partition_seeds_exact": true,
+    "represented_second_weights_exact": true,
+    "track_mismatch_count": 0,
+    "observation_mismatch_count": 0,
+    "mask_mismatch_count": 0,
+    "weight_mismatch_count": 0
+  },
+  "numerical_parity": {
+    "evaluated_coordinate_sets_exact": true,
+    "sacramento_evaluated_point_count": 400,
+    "reno_evaluated_point_count": 400,
+    "maximum_common_point_rmse_difference_hz": 2.2737367544323206e-13,
+    "selected_track_candidate_tau_mismatch_count": 0,
+    "maximum_selected_track_heldout_rms_difference_hz": 0.0,
+    "sacramento": {
+      "global": {
+        "east_km": -75.0,
+        "north_km": -75.0,
+        "capped_weighted_rmse_hz": 184.78354136695506
+      },
+      "finest": {
+        "east_km": -93.75,
+        "north_km": -81.25,
+        "capped_weighted_rmse_hz": 185.0136233125215
+      },
+      "finest_evaluated_point_count": 219
+    },
+    "reno": {
+      "global": {
+        "east_km": -243.75,
+        "north_km": -181.25,
+        "capped_weighted_rmse_hz": 184.5109586304336
+      },
+      "finest": {
+        "east_km": -243.75,
+        "north_km": -181.25,
+        "capped_weighted_rmse_hz": 184.5109586304336
+      },
+      "finest_evaluated_point_count": 203
+    }
+  },
+  "post_canary_exact_optimization": {
+    "prediction_source_sha256": "sha256:0da58f5436f56c7dc8724140f4918964cffa34d679226967faf115374092d6a8",
+    "change": "Gather each track's interpolation endpoint columns before candidate filtering instead of copying the full shared union-node elevation matrix for every track.",
+    "estimator_changed": false,
+    "component_tests_passed": 11,
+    "real_canary_requalification_required": false,
+    "optimized_canary": {
+      "document_path": "/home/mouse9911/.cache/leo-research/adaptive-tle-position-canary-optimized-v1/scanner-adaptive-tle-position-v1/scan-fw-cf510316ae7f05d5/document.json",
+      "document_sha256": "sha256:db455b4d22fbe8e9d377900b0bb09de3813efee712aae309db58cbfa18e83744",
+      "manifest_sha256": "sha256:49a5f2b2adae30340c7c75b2d24767006b114ab4c585b7ac55cec23dec710840",
+      "map_png_sha256": "sha256:c8fbd846c16902520cb5191f286b7778722d236e406ee40d5f0687a4492f7a62",
+      "evaluated_coordinate_sets_exact": true,
+      "maximum_common_point_rmse_difference_hz": 2.2737367544323206e-13,
+      "selected_track_candidate_tau_mismatch_count": 0,
+      "sacramento_runtime_ms": 90205,
+      "reno_runtime_ms": 144888
+    }
+  },
+  "post_canary_type_check_only_sources": {
+    "analysis_source_sha256": "sha256:ff64ecfa3dea9665b7ceb6536353364010af0e584a7b75aea472f0a43c4f5267",
+    "prediction_source_sha256": "sha256:b55e38ed27a0cd5f14fe8066307702a1fe19d56ba17b73c01fe138f0433dfcc0",
+    "numerical_change": false,
+    "verification": "mypy clean, Ruff clean, 11 component tests pass"
+  },
+  "interpretation": "Both source-bound canaries exactly reproduce the qualified research estimator and search on this frozen recording. The endpoint-first optimization preserves all 400 coordinates, objectives, selected candidates, and taus. This remains a randomized-evaluation selection score, not an independent likelihood or calibrated position probability."
+}
