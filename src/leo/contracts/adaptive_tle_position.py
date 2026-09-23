@@ -16,8 +16,8 @@ SessionId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 class AdaptiveTleRegionV1(ContractModel):
     center_latitude_deg: Annotated[float, Field(ge=-90, le=90)]
     center_longitude_deg: Annotated[float, Field(ge=-180, le=180)]
-    radius_km: Literal[500.0] = 500.0
-    altitude_m: Literal[0.0] = 0.0
+    radius_km: Annotated[float, Field(ge=500.0, le=500.0)] = 500.0
+    altitude_m: Annotated[float, Field(ge=0.0, le=0.0)] = 0.0
 
 
 class AdaptiveTleCandidateV1(ContractModel):
