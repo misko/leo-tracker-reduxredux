@@ -1,0 +1,44 @@
+{
+  "schema": "phase-geometry-empirical-context/v1",
+  "purpose": "descriptive empirical context for an affine-surviving geometric phase bound",
+  "comparison_bound_rad": 2.04e-06,
+  "comparison_bound_description": "parent-computed maximum predicted phase remaining after a per-dwell phase intercept and rate are removed",
+  "rates": [
+    {
+      "sample_rate_hz": 2500000,
+      "selected_dwell_count": 8,
+      "native_supported_count": 3,
+      "native_later_b_discrepancy_median_rad": 0.36357252156859476,
+      "refined_pilot_discrepancy_median_rad": 0.07660389885160566,
+      "refined_pilot_comparable_count": 3,
+      "native_fft_block_duration_s": 0.0016384
+    },
+    {
+      "sample_rate_hz": 10000000,
+      "selected_dwell_count": 8,
+      "native_supported_count": 8,
+      "native_later_b_discrepancy_median_rad": 0.22396193502134232,
+      "refined_pilot_discrepancy_median_rad": 0.04675909789471537,
+      "refined_pilot_comparable_count": 7,
+      "native_fft_block_duration_s": 0.0004096
+    },
+    {
+      "sample_rate_hz": 15000000,
+      "selected_dwell_count": 8,
+      "native_supported_count": 7,
+      "native_later_b_discrepancy_median_rad": 0.22454902260455895,
+      "refined_pilot_discrepancy_median_rad": 0.05845518466711243,
+      "refined_pilot_comparable_count": 6,
+      "native_fft_block_duration_s": 0.00027306666666666667
+    }
+  ],
+  "historical_protocol": "first 60 ms fit the spectral response; the later time half supplies the B-band check; the A-band curve uses the documented historical fitting and selection",
+  "interpretation": "The phase values are conditional internal estimator discrepancies. They share fitted nuisances and are neither independent measurement errors nor noise floors. The comparison is descriptive and does not define a phase detection limit.",
+  "no_iq_read": true,
+  "no_refit": true,
+  "inputs": {
+    "reports/figures/2026_09_23_phase_multirate/summary.json": "e6e743fc7fe1586b1b55924052dd1bf3671354f903b243bc6578c1507e4de8e5",
+    "reports/figures/2026_09_23_phase_multirate/per-dwell.csv": "243b84853495a249edf79e3172f94279a8400a46f06924de12176065204dc247"
+  },
+  "source_sha256": "0d2eaa38836a2ba9b771c5b64d1aaa46f94ff6d82e36b4142df6dc01a32af69d"
+}
