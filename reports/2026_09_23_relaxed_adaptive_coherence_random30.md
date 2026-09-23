@@ -63,6 +63,17 @@ are two satellites, that their inter-receiver phase is calibrated, or that the
 pattern is geometric motion. The five reference visits are prior development
 evidence and their strong values are not an independent replication.
 
+As a post-fit guard against a forced-template artifact, every one of the 12
+random-subset DD pairs and all ten reference arm-pairs was checked using each
+source's arm-mapped native CFO plus its already saved train-only within-frame
+residual. No pair became closer than 5 kHz modulo the 227.27 kHz symbol alias
+in either receiver. The random-pair minima are 24.890 kHz in RX0 and 24.965
+kHz in RX1 (an unscreened pair); the four RX1 screened pairs remain separated
+by 33.869–45.934 kHz in both receivers. The reference-pair minima are 33.147
+kHz and 33.121 kHz. This rules out the narrow explanation that the reported DD
+screen simply relocked both anchors to the same effective carrier. It does not
+resolve waveform/source identity, pilot aliases, or the receiver phase gauge.
+
 The weaker criterion is useful for a bounded **coherence availability** map:
 retain every result, compare both native-anchor directions, and label failure
 or weak support. It is unsuitable as a relaxed source-association or position
