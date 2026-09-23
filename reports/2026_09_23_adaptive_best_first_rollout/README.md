@@ -1,6 +1,31 @@
 # Adaptive best-first TLE position rollout
 
-**Status: v2 deployed, canary-qualified and browser-verified; the frozen 24-hour v2 backfill is in progress.**
+**Status: v2 deployed and verified; 164/165 frozen scans published, one blocked by missing source timing authority.**
+
+## September 23 completion audit
+
+The [terminal backfill audit](v2-terminal-backfill-audit.json) finds 164 valid diagnostic
+publications and one missing publication: `scan-hop-6cd2560365a058bc`. Its tracking
+job exhausted 32 attempts because the source lacks complete counter-continuity authority.
+It cannot reconstruct the required trajectories; this is not a queue-throughput delay.
+The completion watcher was stopped after identifying this terminal input failure.
+No publication was fabricated for this scan, and this is not a 165/165 completion claim.
+
+The [explicit available subset](v2-available-subset-inventory.json) contains the 164
+published scans. [CSV](v2-available-summary/positions.csv),
+[JSON](v2-available-summary/position-summary.json), and
+[PNG](v2-available-summary/position-summary.png) summarize those scans only.
+
+| Prior | Median reference error | Range | Below 10 km | Below 50 km |
+|---|---:|---:|---:|---:|
+| Sacramento 250 km | 6.719 km | 5.791–363.582 km | 89/164 | 160/164 |
+| Reno 500 km | 9.407 km | 3.994–777.055 km | 83/164 | 150/164 |
+
+In 71/164 paired comparisons, the prior with the lower selection score had the
+higher reference error. These are post-selection descriptive results, not calibrated
+accuracy or uncertainty. The two priors differ in centre and search grid as well as
+radius, so this comparison does not isolate the effect of radius alone. The remainder
+of this report preserves the initial deployment and enqueue evidence chronologically.
 
 This directory records the qualification evidence and the fixed session inventory for promoting
 `scanner-adaptive-tle-position-v2` into the standard adaptive analysis pipeline. V2 changes only
