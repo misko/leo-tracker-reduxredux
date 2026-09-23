@@ -3,7 +3,9 @@
 The frozen blind TRAIN baseline is about 10 km from the reference after six or
 sixteen scans and 7.6 km across the full eight-hour group. A conditional fit of
 shared per-scan epoch shifts reduces these errors to about 5–6 km in the shorter
-views and 1.57 km in the full group at the weakest tested regularization. This is
+views and 1.57 km in the full group at the weakest tested regularization.
+Alternating catalogue reassignment and the scan-epoch fit further reduces the
+full-group error to 1.32 km. This is
 development progress, but it does not establish sub-300 m accuracy or validation
 generalization. Validation/test track outcomes remain closed.
 
@@ -27,6 +29,9 @@ generalization. Validation/test track outcomes remain closed.
 | 72 scans, fixed identities + global epoch scale 0.2 s | 1.887 km | 1.889 km | 302.63 / 302.59 Hz |
 | 72 scans, fixed identities + global epoch scale 1 s | 1.698 km | 1.706 km | 302.65 / 302.61 Hz |
 | 72 scans, fixed identities + global epoch scale 5 s | 1.690 km | 1.698 km | 302.65 / 302.61 Hz |
+| 72 scans, reassignment + scan epoch scale 0.2 s | 5.895 km | 5.895 km | 298.07 / 298.07 Hz |
+| 72 scans, reassignment + scan epoch scale 1 s | 1.399 km | 1.399 km | 284.87 / 284.87 Hz |
+| 72 scans, reassignment + scan epoch scale 5 s | 1.320 km | 1.320 km | 284.58 / 284.58 Hz |
 
 Rows labeled simply 'epoch' share one correction per scan; satellite-epoch rows
 share one per selected satellite and have no scan term. The satellite model
@@ -37,7 +42,7 @@ coupled position/free-epoch step when a bound prevents an outward epoch update.
 This corrects a line-search stall in the preserved unprojected attempt.
 
 All settings are reported; no setting was selected by geographic error. These
-are nested views of TRAIN, not independent validation. The epoch fit fixes each
+are nested views of TRAIN, not independent validation. The conditional epoch fit fixes each
 identity from the blind baseline and profiles its constant CFO on training rows.
 It is therefore conditional inference, not a new full-catalogue association
 search. Its fitted shifts may absorb clock, orbit, association or track-model
@@ -129,14 +134,25 @@ The six/sixteen views cover only about 35/107 minutes elapsed.
 The full-group shared scan-epoch experiment improves error to 1.57 km at the
 weakest tested regularization, with no timing-boundary or visibility failures.
 All six arms meet a heuristic stopping rule, without certified stationarity.
-These conditional fits retain the baseline identities, so alternating catalogue
-reassignment and continuous fitting is the next direct test of that limitation.
+Alternating catalogue reassignment and continuous fitting is now complete:
+all six arms reach the declared stable-identity/small-gain rule in five or six
+cycles, with 1.32 km error at the weakest regularization. The original three-cycle
+attempt is preserved; all arms were extended uniformly after training diagnostics
+showed remaining identity changes, with its post-seal outcomes already visible.
+This is local basin refinement, not certified global optimization.
 One global epoch term instead of 72 independent scan terms gives 1.69–1.89 km
 full-group error across all tested scales. Thus much of the localization gain
 can be reproduced by a simpler model, although its held frequency RMS is worse
 (about 303 Hz). The global fit reaches roughly −0.94 s at weak regularization;
 this remains an empirical nuisance, not independent evidence of clock bias.
 Synthetic success will not count as achieving the real-data accuracy objective.
+
+An independent Astropy frame transform on the same direct-SGP4 states gives
+only 0.236 Hz RMS Doppler-shape disagreement after removing each track's mean.
+It finds no large frame/sign error on the tested support, but shares SGP4 and
+TLE inputs and does not validate orbit accuracy. All 79 caches for the second
+TRAIN group have been verified. Its baseline computation has finished; detailed
+review and structured-model replication remain before validation is opened.
 
 The current experiment priorities are:
 
@@ -148,7 +164,7 @@ The current experiment priorities are:
 | Joint identity reassignment after structured correction | Are fixed baseline IDs limiting the conditional models? | Full retained causal candidate pools, unchanged support, training-only reassignment and held checks |
 | Frozen model comparison on independent groups | Do development gains generalize to different recording conditions? | All failures retained; group-level position error and residual metrics across 1/6/16/all-scan views |
 
-The last two steps require completing the preceding TRAIN experiments first.
+Independent-group validation requires completing the second TRAIN replication first.
 The final test must not become another model-development loop. Prior centres
 are initialization/search constraints, not independent repeated datasets.
 
@@ -175,6 +191,9 @@ test group closed until model selection is complete.
 - [Full eight-hour training residual concentration](../2026_09_23_long_full8h_residual_audit/README.md).
 - [Fitted epoch versus host-timing semantics](../2026_09_23_full8h_tau_timing_semantics_audit/README.md).
 - [One global epoch term across six/sixteen/seventy-two scans](../2026_09_23_long_global_epoch_position/README.md).
+- [Joint catalogue reassignment and scan-epoch fitting](../2026_09_23_long_joint_epoch_association/README.md).
+- [Independent Astropy frame/Doppler oracle](../2026_09_23_long_astropy_doppler_oracle/README.md).
+- [Second TRAIN group cache provenance](../2026_09_23_long_training_cache_second8h/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
