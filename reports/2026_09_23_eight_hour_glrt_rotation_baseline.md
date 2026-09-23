@@ -69,8 +69,14 @@ original totals and CSV rather than silently replacing them.
 At approximately **2026-09-23 14:44 UTC**, the operator stated an intention to
 rotate the array 180 degrees immediately. This is the announcement/log time,
 not a measured completion timestamp. Completion time, rotation axis, and
-unchanged cable-to-LNB connections remain unconfirmed in this report.
+unchanged cable-to-LNB connections were unconfirmed when the baseline was published.
 See the [station geometry observation log](../deploy/station/GEOMETRY_NOTES.md).
+
+**Completion update:** the operator subsequently confirmed "i just rotated the
+array 180deg", logged at **2026-09-23 14:49:09 UTC**. Use that confirmation time
+as a conservative post-rotation boundary; the precise physical completion time
+was not measured. Exclude captures overlapping the approximate 14:44:00–14:49:09
+UTC transition interval. Rotation axis and cable continuity remain unconfirmed.
 
 The intended test is whether the lower detection yield stays with **RX0** or
 changes receiver after rotating the physical array. Keep electrical receiver
