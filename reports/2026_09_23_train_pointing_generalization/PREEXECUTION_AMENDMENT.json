@@ -1,0 +1,33 @@
+{
+  "recorded_before_successful_execution_utc": "2026-09-23T21:50:07.825608+00:00",
+  "attempts": [
+    {
+      "outcome": "failed_preseal",
+      "reason": "absolute UTC support times passed to relative cache grid; no results written"
+    },
+    {
+      "outcome": "failed_preseal",
+      "reason": "selected candidate state sliced to 2D although interpolator requires candidate axis; no results written"
+    },
+    {
+      "outcome": "interrupted_preseal",
+      "reason": "unbounded nested orientation implementation; no results written"
+    },
+    {
+      "outcome": "superseded_postreview",
+      "reason": "first vectorized output pooled the two endpoint samples instead of taking each track's worst endpoint before applying its duration weight; midpoint results remain valid, endpoint results superseded and preserved separately"
+    }
+  ],
+  "protocol_change": "Yaw and tilt-azimuth resolution changed from initially drafted 1 degree to frozen 5 degrees before results, retaining full angular range; tilt remains 1 degree. This is a runtime discretization, not outcome guided.",
+  "current_protocol": "sha256:5ee9f1952834dd9d678217d8df5e34c60788e0c5a570f71051e6f28e3d86c00c",
+  "current_source": "sha256:95a1824b075dbe58241ff88804365edf3b432f0093a003fe5bc81bcee2bf3dd1",
+  "source_execution_amendment": "The 155592-orientation 0..30 degree table is constructed once per location and reused for the 0/15/30 bounds. Orientations are evaluated in fixed 1024-row NumPy batches; one per-row sort supplies all 50/80/95 weighted quantiles, and endpoints are evaluated only at each selected optimum. Strict improvement and grid order define deterministic ties.",
+  "source_tests": "sha256:e1aef8b6122ec1c0cd8e04703593da69180b9438222a0d4a221ec8956bcd3e84",
+  "preexecution_benchmark": {
+    "synthetic_track_count": 250,
+    "orientation_count": 155592,
+    "one_mapping_elapsed_s": 1.021
+  },
+  "locations": "sha256:7af93dce9cf7e16ea0d4281fff71321b077f58c99895c01ccf84da79f6da9a33",
+  "time_mapping": "Per-track UTC anchor is median(support center UTC - exact receipt relative time); all first6 tracks in both groups checked below 2 ms center residual and endpoints within cache."
+}
