@@ -5,6 +5,9 @@ Capture-start window: **2026-09-23 06:39:14 UTC inclusive to 14:39:14 UTC exclus
 This report audits existing recordings. No RF collection or production settings
 were changed to produce it.
 
+For location accuracy on this same cohort, see the
+[all-track position-error histograms and sample-rate conclusions](2026_09_23_position_error_by_sample_rate.md).
+
 ## Baseline counts
 
 | Capture sample rate | RX0 GLRT detections | RX1 GLRT detections | Analyzed / captured recordings |
