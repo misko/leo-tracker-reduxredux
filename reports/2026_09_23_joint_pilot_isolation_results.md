@@ -86,6 +86,11 @@ masks. The adjacent per-probe files preserve all numerical outcomes.
 
 ## Limits for phase, association, and motion
 
+A subsequent [shared receiver-CFO attempt](2026_09_23_shared_cfo_results.md)
+was inconclusive because its continuous optimizer failed to improve most
+training initializers. Its held losses must not be interpreted as rejecting
+the common-receiver hypothesis.
+
 Any useful isolated waveform response is only a prerequisite for phase
 research. Per-tone channel coefficients can contain source-dependent channel
 phase; their difference is not automatically a calibrated baseline phase.
