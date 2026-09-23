@@ -163,6 +163,14 @@ reassignment on this second group is now complete and worsens the 1 s result to
 It does not reproduce the first group's localization gain and should not be
 promoted on residual fit alone. Validation/test evidence remains unopened.
 
+A conditional common-position fit across all 151 TRAIN scans (6,988 tracks)
+now gives 0.869–0.872 km at scan-epoch scale 5 s, and 1.317–1.321 km at scale
+1 s. This pools the original fixed identities and separate scan corrections;
+all six arms meet their stopping rule without boundary/visibility failures.
+Additional diversity helps the weak-regularization case but still does not
+establish 300 m or generalization. The two separated groups are not sixteen
+continuous hours of capture.
+
 The current experiment priorities are:
 
 | Approach | Question it answers | Acceptance evidence |
@@ -206,6 +214,7 @@ test group closed until model selection is complete.
 - [Second TRAIN blind baseline at all durations](../2026_09_23_long_second8h_training_baseline/README.md).
 - [Second TRAIN timing-model replication, all 48 arms](../2026_09_23_second_train_epoch_replication/README.md).
 - [Second TRAIN joint reassignment: negative localization replication](../2026_09_23_second_train_joint_replication/README.md).
+- [One common position across both TRAIN groups](../2026_09_23_pooled_train_position/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
