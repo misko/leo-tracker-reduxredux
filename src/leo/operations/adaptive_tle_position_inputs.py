@@ -97,7 +97,7 @@ def prepare_adaptive_tle_position_inputs(session_id: str, *, inputs, archive):
     )
     graphs = _graphs(trajectory)
     tracks, supports, evidence = [], [], []
-    observed = set()
+    observed: set[str] = set()
     for track_id, graph in graphs:
         rows = tuple(sorted(graph.observations, key=lambda row: row.support_center_utc_ns))
         if len(rows) < 6:

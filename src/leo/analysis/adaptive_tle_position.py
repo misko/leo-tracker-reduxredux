@@ -119,7 +119,7 @@ PointEvaluator = Callable[[np.ndarray], Sequence[AdaptivePointScore]]
 
 def _candidate_order(value: object) -> tuple[int, int | str]:
     try:
-        return 0, int(value)
+        return 0, int(str(value))
     except (TypeError, ValueError):
         return 1, str(value)
 
@@ -141,7 +141,7 @@ def fixed_randomized_training_mask(
     return np.asarray([value in selected for value in ids], dtype=bool)
 
 
-def effective_one_second_bin_weight(times_s: Sequence[float]) -> int:
+def effective_one_second_bin_weight(times_s: Sequence[float] | np.ndarray) -> int:
     times = np.asarray(times_s, dtype=float)
     if times.ndim != 1 or not len(times) or not np.all(np.isfinite(times)):
         raise ValueError("finite one-dimensional times required")
