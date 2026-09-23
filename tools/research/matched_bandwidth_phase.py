@@ -147,7 +147,7 @@ def run() -> None:
             t=np.array([r['time_s'] for r in case]); p=np.array([r['arms'][arm]['pilot_phase_rad'] for r in case]); train=np.array([r['partition']=='train' for r in case]); held=~train
             intercept,hz=circular_affine(t,p,train)
             err=wrapped_phase_error(p, intercept+2*np.pi*hz*t)
-            summary['arms'][arm]={"train_phase_resultant":float(abs(np.mean(np.exp(2j*err[train])))),"held_phase_resultant":float(abs(np.mean(np.exp(2j*err[held])))),"held_phase_rms_rad":float(np.sqrt(np.mean(err[held]**2))),"training_only_slope_hz":hz,"median_exact_projection_rx0":float(np.median([r['arms'][arm]['exact_projection_rx0'] for r in case])),"median_exact_projection_rx1":float(np.median([r['arms'][arm]['exact_projection_rx1'] for r in case])),"median_broadband_cross_coherence":float(np.median([r['arms'][arm]['broadband_cross_coherence'] for r in case]))}
+            summary['arms'][arm]={"train_phase_resultant":float(abs(np.mean(np.exp(1j*err[train])))),"held_phase_resultant":float(abs(np.mean(np.exp(1j*err[held])))),"held_phase_rms_rad":float(np.sqrt(np.mean(err[held]**2))),"training_only_slope_hz":hz,"median_exact_projection_rx0":float(np.median([r['arms'][arm]['exact_projection_rx0'] for r in case])),"median_exact_projection_rx1":float(np.median([r['arms'][arm]['exact_projection_rx1'] for r in case])),"median_broadband_cross_coherence":float(np.median([r['arms'][arm]['broadband_cross_coherence'] for r in case]))}
             ax.plot(t[train]*1e3, p[train], 'o', color=color, label=f'{arm} train')
             ax.plot(t[held]*1e3, p[held], 'x', color=color, label=f'{arm} held')
         ax.set_title(f'{session} visit {visit}: raw pilot-vector RX phase')
