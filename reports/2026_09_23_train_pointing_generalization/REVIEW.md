@@ -8,8 +8,10 @@ the current files. The tests verify NORAD-group fold stability, preservation of
 receiver counts within shuffle strata, and isolation of orientation selection
 from held-angle perturbations.
 
-The fold medians in the report and plot are medians of five separately fitted
-held-fold weighted quantiles. They are not pooled track quantiles. Shuffle
+The retained `held_q95_controls.png` shows medians of five separately fitted
+held-fold weighted quantiles. The expanded `held_quantile_controls.png` and
+main report instead show duration-weighted means of fold quantiles for all
+three quantiles. Neither aggregation is a pooled track quantile. Shuffle
 ranges describe these 20 controls; counts are not calibrated probabilities of
 correct association. The six locations and their candidate identities were
 already selected using Doppler. Holding out NORAD groups for orientation does
