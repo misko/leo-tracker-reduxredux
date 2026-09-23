@@ -9,7 +9,8 @@ corrections explicitly; preserve the earlier observation and its uncertainty.
 
 - **Announcement recorded:** approximately 2026-09-23 14:44 UTC.
 - **Operator statement:** "im going to rotate the array 180degrees right now".
-- **State:** intended immediate intervention; completion has not yet been confirmed.
+- **State at announcement:** intended immediate intervention; completion was not
+  yet confirmed. See the subsequent completion entry below.
 - **Station / radio:** `station_gauss` / `radio_pluto_19f2` (r21).
 - **Existing fixture:** `LT3D-001A`; nominal revision `lt3d-001a-nominal-v1`.
 - **Existing geometry authority:**
@@ -36,3 +37,22 @@ chains and record any cable swap separately.
 This note does not rewrite the published geometry manifest, assert a measured
 orientation, or deploy a new capture-time geometry binding. A future measured
 world-orientation record must carry its own evidence and validity boundary.
+
+## 2026-09-23: rotation completion confirmed
+
+- **Confirmation logged:** 2026-09-23 14:49:09 UTC.
+- **Operator statement:** "i just rotated the array 180deg".
+- **State:** operator-confirmed completed 180-degree array rotation.
+- **Timing precision:** confirmation was logged at the time above; the exact
+  physical completion instant was not measured. Use 14:49:09 UTC as a conservative
+  post-confirmation boundary, not an exact movement timestamp.
+- **Transition exclusion:** treat 14:44:00–14:49:09 UTC as the approximate
+  announcement-to-confirmation interval; exclude any capture overlapping it.
+  The frozen baseline already ends before this interval.
+- **Still unconfirmed:** rotation axis, absolute azimuths, unchanged cable-to-LNB
+  connections, and any accompanying height or tilt changes.
+
+For tomorrow's comparison, use captures starting at or after the confirmation
+boundary and preserve RX0/RX1 electrical identities. The 2026-09-24 matching
+eight-hour window is entirely after this boundary. This confirms the physical
+intervention without asserting a measured orientation or verified cable mapping.
