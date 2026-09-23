@@ -1,0 +1,156 @@
+{
+  "schema": "fast-multiresolution-tle-coverage-integration-validation/v1",
+  "complete": true,
+  "truth_accessed": false,
+  "validation_scope": "fast-search component contracts, real frozen-corpus loader/bank/evaluator parity, and bounded fixed-mode harness smoke",
+  "source": {
+    "tool": "tools/research/search_multiresolution_tle_coverage.py",
+    "tool_sha256": "a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+    "test": "tests/tools/test_search_multiresolution_tle_coverage.py",
+    "test_sha256": "9cbb2682c95e89f103f7cb9fc76a1b9b4832ba4806a0218ed8ffbac607224207",
+    "loader": "tools/research/fast_coverage_inputs.py",
+    "loader_sha256": "af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+    "benchmark_harness": "tools/research/run_fast_coverage_benchmark.py",
+    "benchmark_harness_sha256": "f990dcf4f7e7251c0961e9128a04922cd3e4b9fad9a4ff5d1e154d9b4ad56f22",
+    "loader_test": "tests/tools/test_fast_coverage_inputs.py",
+    "loader_test_sha256": "664c91b2ef67387dc887e86da421853edca32e5c5068315babc244176bb48ca3",
+    "frozen_kernel": "tools/research/map_randomized_tle_coverage.py",
+    "frozen_kernel_sha256": "8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+  },
+  "commands": [
+    ".venv/bin/python -m pytest -q tests/tools/test_search_multiresolution_tle_coverage.py tests/tools/test_fast_coverage_inputs.py tests/tools/test_map_randomized_tle_coverage.py",
+    ".venv/bin/python -m ruff check tools/research/fast_coverage_inputs.py tools/research/search_multiresolution_tle_coverage.py tools/research/run_fast_coverage_benchmark.py tests/tools/test_fast_coverage_inputs.py tests/tools/test_search_multiresolution_tle_coverage.py",
+    "sudo -n env OPENBLAS_NUM_THREADS=1 PYTHONPATH=src:. .venv/bin/python tools/research/run_fast_coverage_benchmark.py --evidence /home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1/evidence --output /tmp/fast-coverage-sacramento-200-fixed-20260923 --cities sacramento --mode uniform --spacings-km 200 --partition-mode fixed --thresholds-hz 200,500,800 --primary-threshold-hz 200"
+  ],
+  "results": {
+    "pytest": {"passed": 22, "failed": 0},
+    "ruff": "passed",
+    "existing_corpus_geometry_node_read": "passed via authorized read-only sudo loader",
+    "cached_reference_geometry_node_derivation": {
+      "source": "/home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1/standard-top10-reference-sacramento/scan-fw-cf510316ae7f05d5-top5-polynomial-rms.json",
+      "track_count": 10,
+      "observation_count": 372,
+      "geometry_node_count": 209,
+      "minimum_node_index": 502,
+      "maximum_node_index": 789,
+      "node_array_sha256": "1d5234146df57d74134c2ccd01aede26d57428afc21e540b8e4d7268b199db76"
+    }
+  },
+  "validated_contracts": {
+    "interpolation_nodes": "Retains the exact lower and lower+1 nodes read by frozen sample_grid, including integer-time queries.",
+    "fixed_partition": "Default fixed-mode mask and seed are independent of coordinate and observer label; legacy mode retains observer-dependent seed lineage.",
+    "fitted_nuisance": "Tau and constant offset are selected using training observations only; selected hypotheses are then scored held-out with a strict RMS threshold.",
+    "point_score_parity": "Synthetic candidate banks exactly match frozen scanner_tle_screen.rank_curves training and held-out RMS values.",
+    "near_horizon_visibility": "The coarse -0.1 degree visibility gate retains a -0.05 degree candidate and rejects a -0.11 degree candidate before the exact nonnegative-elevation gate.",
+    "lattice_parity": "The final 50 km circle lattice exactly equals Region.grid(50) centre-in-circle coordinates used by the frozen oracle.",
+    "rim_control": "An outside 200 km parent whose 100 km descendant is inside the circle stays in the frontier.",
+    "coordinate_deduplication": "Adaptive evaluation does not duplicate coordinate calls.",
+    "final_comparator": "Returned cells are restricted to the final declared lattice; coarser incumbent diagnostics remain trace-only.",
+    "exact_top_k": "Strict observation-count upper-bound pruning matches exhaustive top-K; tied upper bounds continue to permit residual tie-breaking and abandoned partial cells are not cached.",
+    "lazy_geometry": "The real shared endpoint geometry cache reaches at most the 209 retained columns for a full point and uses fewer columns for early-pruned points."
+  },
+  "frozen_oracle_baseline": {
+    "session_id": "scan-fw-cf510316ae7f05d5",
+    "reconstructed_track_count": 28,
+    "eligible_track_count": 21,
+    "selected_track_count": 10,
+    "unique_observation_ids": 372,
+    "catalogue_candidate_count": 11104,
+    "partition": "legacy observer-dependent randomized 60/40; only for apples-to-apples oracle parity",
+    "source_cache_root": "/home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1"
+  },
+  "real_integration_validation": {
+    "loader_and_bank": {
+      "read_only_source_port": "ScannerTrackingInputStore via standard longest-track selection",
+      "reconstructed_track_count": 28,
+      "eligible_track_count": 21,
+      "selected_track_count": 10,
+      "unique_observation_count": 372,
+      "catalogue_candidate_count": 11104,
+      "causal_snapshot_digest": "sha256:ab927d9cbf2d6c58ae6e9d821a1e75fe725366f894091639b975d7b9fedbcc13",
+      "frozen_kernel_digest": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284",
+      "geometry_node_count": 209,
+      "full_validity_node_count": 1316,
+      "bank_build_elapsed_s": 19.019536143983714,
+      "propagated_candidate_time_values": 60050432
+    },
+    "legacy_three_point_parity": {
+      "comparison": "coverage-final-parity candidate inventories filtered at strict held-out RMS < 800 Hz, with each saved observer label",
+      "sacramento": {"candidate_rows": 20, "identity_and_tau_keys_exact": true, "max_training_rms_error_hz": 1.1368683772161603e-13, "max_heldout_rms_error_hz": 1.1816325695690466e-10, "point_score_elapsed_s": 0.2505006940336898},
+      "reno": {"candidate_rows": 19, "identity_and_tau_keys_exact": true, "max_training_rms_error_hz": 2.2737367544323206e-13, "max_heldout_rms_error_hz": 9.055156624526717e-11, "point_score_elapsed_s": 0.2477421088842675},
+      "denver": {"candidate_rows": 23, "identity_and_tau_keys_exact": true, "max_training_rms_error_hz": 1.1368683772161603e-13, "max_heldout_rms_error_hz": 5.800870894745458e-11, "point_score_elapsed_s": 0.26585593493655324}
+    },
+    "fixed_partition_and_cache": {
+      "fixed_mask_coordinate_invariant": true,
+      "legacy_mask_observer_dependent": true,
+      "cache_key": "physical latitude, longitude, altitude",
+      "cross_region_same_offsets_do_not_collide": true,
+      "same_physical_site_rebinds_returned_east_north": true
+    },
+    "harness_smoke": {
+      "mode": "fixed uniform Sacramento 200 km",
+      "requested_points": 9,
+      "newly_scored_points": 9,
+      "cache_hits": 0,
+      "input_load_elapsed_s": 4.297245969995856,
+      "prediction_bank_prepare_elapsed_s": 18.71587770304177,
+      "search_elapsed_s": 2.204084762954153,
+      "total_elapsed_s": 27.431283146957867
+    },
+    "lazy_geometry_profile": {
+      "legacy_full_point_column_ceiling": 209,
+      "legacy_full_point_columns": {"sacramento": 209, "reno": 209, "denver": 209},
+      "legacy_full_point_score_elapsed_s": {"sacramento": 0.22549055295530707, "reno": 0.22306856093928218, "denver": 0.23385194805450737},
+      "fixed_sacramento_200km_top_k_1": {
+        "point_count": 9,
+        "top_k_elapsed_s": 1.4628952170023695,
+        "fully_scored_points": 2,
+        "early_pruned_points": 7,
+        "lazy_columns_per_point": [209, 189, 209, 147, 189, 148, 110, 110, 110],
+        "ceiling_respected": true
+      }
+    }
+  },
+  "benchmark_artifact_audit": {
+    "scope": "fixed-partition objective-only comparison of final 50 km coordinate outputs; no position truth accessed",
+    "sacramento": {
+      "fixed_50": {"evaluated_points": 156, "score_elapsed_s": 36.0618297860492, "best_coordinate_km": [-75.00000000000007, -75.00000000000007], "best_unique_observation_count": 372, "best_clipped_rms_sum_hz": 1031.9381837202295},
+      "adaptive_beam_32": {"evaluated_points": 228, "score_elapsed_s": 52.791634797118604, "best_equals_fixed": true, "top_5_recall": 5, "top_15_recall": 15},
+      "adaptive_beam_8": {"evaluated_points": 155, "score_elapsed_s": 36.154008162091486, "best_equals_fixed": false, "best_coordinate_km": [-224.99999999999991, 125.00000000000011], "best_unique_observation_count": 256, "best_clipped_rms_sum_hz": 1432.795904086729, "top_5_recall": 1, "top_15_recall": 8, "missed_fixed_top_5_coordinates_km": [[-75.00000000000007, -75.00000000000007], [-125.00000000000011, -75.00000000000007], [-125.00000000000011, -25.00000000000002], [-75.00000000000007, -25.00000000000002]]},
+      "scoring_version_check": {"fixed_and_beam_32_source_sha256": "3569695f7e49bca52891ccc796fb6aaa1af950f2e04164b17511a49996b38c53", "beam_8_source_sha256": "eed6bd45ee513f38a7e281bd5b4a2db266a26db137f2d80b276af38a7e6483a4", "shared_beam_8_final_coordinates": 8, "shared_coordinate_scores_exact": true}
+    },
+    "reno": {
+      "exact_top_k_50": {"requested_points": 716, "fully_scored_points": 81, "early_pruned_points": 635, "search_elapsed_s": 106.05206233507488, "best_coordinate_km": [-224.99999999999991, -174.9999999999999], "best_unique_observation_count": 319, "best_clipped_rms_sum_hz": 940.3626300759677},
+      "adaptive_beam_8": {"best_equals_exact": true, "top_5_recall": 4, "top_15_recall": 6, "missed_exact_top_5_coordinate_km": [375.0000000000002, 75.00000000000007]}
+    },
+    "denver": {
+      "exact_top_k_50_parallel_16": {"requested_points": 7860, "fully_scored_points": 1129, "early_pruned_points": 6731, "search_elapsed_s": 161.4513365071034, "parallel_wall_s": 161.44107125105802, "best_coordinate_km": [2175.0000000000005, -524.9999999999999], "best_unique_observation_count": 356, "best_clipped_rms_sum_hz": 1128.9492969064536, "strict_pruning_bounds_verified": true},
+      "adaptive_beam_8_stage_50_coordinate_recall": {"top_5_recall": 1, "top_15_recall": 4, "best_coordinate_present": false},
+      "adaptive_beam_32_stage_50_coordinate_recall": {"leader_count": 32, "top_5_recall": 1, "top_15_recall": 4, "best_coordinate_present": false, "scope": "trace coordinate recall only; it is not a final-score comparison"},
+      "serial_exact_top_k_50": "interrupted deliberately when workers16 replacement was launched; excluded from this audit"
+    }
+  },
+  "parallel_exact_top_k_qualification": {
+    "artifact": "/home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1/fast-coverage-search-v1-sacramento-exact-topk50-parallel8",
+    "city": "sacramento",
+    "workers": 8,
+    "serial_comparator": "/home/mouse9911/.cache/leo-research/cf510316-prior-comparison-v1/fast-coverage-search-v1-sacramento-exact-topk50",
+    "merged_top_15_json_exact": true,
+    "requested_points": 156,
+    "worker_requested_point_sum": 156,
+    "worker_full_plus_pruned_sum": 156,
+    "worker_cache_hits": 0,
+    "fully_scored_points": 152,
+    "early_pruned_points": 4,
+    "strict_pruning_bounds_verified": true,
+    "parent_cache_populated_by_workers": false,
+    "parallel_search_wall_s": 6.100715855020098,
+    "serial_search_s": 27.773213887005113,
+    "parallel_finalist_recompute_s": 6.637036336003803
+  },
+  "limitations": [
+    "This validation ran a bounded 200 km Sacramento uniform grid, not the full fixed-grid versus adaptive-beam benchmark across all priors and refinement levels.",
+    "The bank preserves the 1316-node propagation validity screen while retaining 209 geometry nodes. Per-cell coarse-projection and candidate-array work must be recorded by the full benchmark before claiming an end-to-end 6.3x speedup.",
+    "Adaptive basin search is heuristic. It has no global best-cell guarantee without an admissible spatial upper bound. Benchmark beam widths against the fixed-partition exhaustive final lattice and report missed-mode recall and objective gap."
+  ]
+}
