@@ -1,0 +1,148 @@
+{
+  "bindings": {
+    "metadata": "sha256:cf80a6bead25b991993b664b3607b8ebc7e80146bd0c942ab2b2f8cb4b5e8f60",
+    "production_sources": {
+      "candidate_projection": "sha256:05d769be631055c2d91d8b8175c6c432c2921ebc0d3da00a8fe46c345ece8252",
+      "pilot_methods": "sha256:c33de1f8ed7b3d8f1f1b7de659d6aa2b110f658338eb2753ae2c5161757a2857",
+      "templates": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+      "trajectory_projection": "sha256:1951ba2c0843c7e23a94390257d611fa255dc5251f3c5bfde487ba2069ea80a8"
+    },
+    "sealed_pairs": "sha256:12a5906d2c9611799065d1e7fcb736f21de0ff0bb7b7d6ebb1a55fb6fdec65d1",
+    "tool": "sha256:ecc685e21c50281312acaf0fa987e6af07a1e6925a34407f04517ecaef8cf17b"
+  },
+  "position_refit_performed": false,
+  "reference_coordinate_used": false,
+  "schema": "leo.train_edge_convention_audit.v1",
+  "source_findings": {
+    "edge_selection": "edge changes the QIN pilot bins/template, not CFO sign",
+    "glrt_projection": "tracking_cfo_hz = acquired_cfo_hz + residual_cfo_hz for both edges",
+    "rf_projection": "actual_rf_hz = target.rf_center_hz - actual_if_offset_hz for both edges",
+    "trajectory_projection": "measured_cfo_hz is multiplied by positive canonical_rf_hz/actual_rf_hz"
+  },
+  "synthetic": [
+    {
+      "acquired_seed_hz": 40500.0,
+      "edge": "lower",
+      "injected_rate_hz_s": 0.0,
+      "injected_start_cfo_hz": 42000.0,
+      "margin": 0.9147989390607922,
+      "residual_cfo_hz": 1331.6761363636697,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": 41831.67613636367
+    },
+    {
+      "acquired_seed_hz": -40500.0,
+      "edge": "lower",
+      "injected_rate_hz_s": 0.0,
+      "injected_start_cfo_hz": -42000.0,
+      "margin": 0.9153165402771767,
+      "residual_cfo_hz": -1331.6761363636697,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": -41831.67613636367
+    },
+    {
+      "acquired_seed_hz": 40000.0,
+      "edge": "lower",
+      "injected_rate_hz_s": -1800.0,
+      "injected_start_cfo_hz": 40000.0,
+      "margin": 0.9216245978731482,
+      "residual_cfo_hz": 0.0,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": 40000.0
+    },
+    {
+      "acquired_seed_hz": 40000.0,
+      "edge": "lower",
+      "injected_rate_hz_s": -1800.0,
+      "injected_start_cfo_hz": 40000.0,
+      "margin": 0.9219908992220542,
+      "residual_cfo_hz": -1775.568181818226,
+      "time_offset_s": 1.0,
+      "tracking_cfo_hz": 38224.43181818177
+    },
+    {
+      "acquired_seed_hz": 40500.0,
+      "edge": "upper",
+      "injected_rate_hz_s": 0.0,
+      "injected_start_cfo_hz": 42000.0,
+      "margin": 0.8560304201329452,
+      "residual_cfo_hz": 1331.6761363636697,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": 41831.67613636367
+    },
+    {
+      "acquired_seed_hz": -40500.0,
+      "edge": "upper",
+      "injected_rate_hz_s": 0.0,
+      "injected_start_cfo_hz": -42000.0,
+      "margin": 0.8552385284968111,
+      "residual_cfo_hz": -1331.6761363636697,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": -41831.67613636367
+    },
+    {
+      "acquired_seed_hz": 40000.0,
+      "edge": "upper",
+      "injected_rate_hz_s": -1800.0,
+      "injected_start_cfo_hz": 40000.0,
+      "margin": 0.8614544963029976,
+      "residual_cfo_hz": 0.0,
+      "time_offset_s": 0.0,
+      "tracking_cfo_hz": 40000.0
+    },
+    {
+      "acquired_seed_hz": 40000.0,
+      "edge": "upper",
+      "injected_rate_hz_s": -1800.0,
+      "injected_start_cfo_hz": 40000.0,
+      "margin": 0.8600717869525765,
+      "residual_cfo_hz": -1775.568181818226,
+      "time_offset_s": 1.0,
+      "tracking_cfo_hz": 38224.43181818177
+    }
+  ],
+  "time_confounding": {
+    "absolute_time_quartile_counts": {
+      "1": {
+        "lower": 88,
+        "upper": 34
+      },
+      "2": {
+        "lower": 84,
+        "upper": 37
+      },
+      "3": {
+        "lower": 63,
+        "upper": 58
+      },
+      "4": {
+        "lower": 78,
+        "upper": 44
+      }
+    },
+    "absolute_time_standardized_mean_difference_lower_minus_upper": -0.34054073129443724,
+    "edge": {
+      "lower": {
+        "maximum_utc_s": 1790034784.231327,
+        "median_utc_s": 1789972823.96009,
+        "minimum_utc_s": 1789949208.1282692,
+        "pair_count": 313
+      },
+      "upper": {
+        "maximum_utc_s": 1790035146.268746,
+        "median_utc_s": 1790008725.2000287,
+        "minimum_utc_s": 1789948917.701026,
+        "pair_count": 173
+      }
+    },
+    "sessions_with_both_edges": 5,
+    "within_session_lower_minus_upper_slope_hz_s": {
+      "count": 5,
+      "maximum": 2.429479053565,
+      "mean": -9.413271940565895,
+      "median": -8.459531531077264,
+      "minimum": -17.855444952493762
+    }
+  },
+  "validation_or_test_used": false
+}
