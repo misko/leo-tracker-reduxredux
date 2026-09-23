@@ -33,6 +33,13 @@ source, tuning, time, and receiver state. A useful bandwidth test would process
 the same high-rate IQ both at full bandwidth and through a frozen 2.5 MHz
 filter; it is a separate short-visit test, not a substitute for continuity.
 
+The current Qin estimator uses the same eight edge tones at each sample rate,
+spaced by 234.375 kHz and spanning 1.640625 MHz. Increasing sample rate alone
+does not add pilot tones to that estimator. Wider captured bandwidth can help
+only if additional usable signal content is exploited, for example for source
+separation or broadband delay estimation. A matched comparison must use proper
+anti-alias filtering and equal physical integration times.
+
 ## Shortlist
 
 All listed recording streams are 60.000 s, 2.5 MS/s, 2.5 MHz applied
@@ -57,7 +64,9 @@ excluded from the shortlist even when their first-to-last timestamps are long.
 
 ## Bounded next extraction
 
-Use 031521 first. Before reading IQ, freeze one same-radio stream, two source
+Use 031521 first for a metadata source inventory. Its four-path overlap refers
+to receivers across two radios, not proof of two simultaneous sources on one
+radio. If two sources are available, before reading IQ freeze one same-radio stream, two source
 tracks, the exact common-time window centers, templates, carrier models, and a
 seeded random split of whole non-overlapping windows. Extract at most sixteen
 20 ms windows distributed across the existing 11 s overlap (320 ms total IQ).

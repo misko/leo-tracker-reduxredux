@@ -72,3 +72,17 @@ intervention without asserting a measured orientation or verified cable mapping.
   immutable deployed station manifest. The earlier 180-degree rotation remains
   a separately logged intervention; a directed post-rotation bearing is not
   inferred until the axis convention and capture interval are confirmed.
+
+## 2026-09-23: approximate geometry for historical long-dwell analysis
+
+- **Operator statement:** "we do not know the geometry exactly, but can assume
+  its a fixed distance 10-30cm apart and facing generally upwards".
+- **Research assumption:** fixed separation in the range 0.10–0.30 m within a
+  dwell; direction of the baseline remains unknown. Upward antenna pointing
+  does not determine the direction of the line between antennas.
+- **Use:** explore phase changes on counter-continuous historical dual-receiver
+  dwells with this bounded unknown baseline and unknown static channel offsets.
+  Do not require an exact surveyed baseline merely to begin that diagnostic.
+- **Scope:** this is an operator-supplied approximate prior, not a measured
+  phase-center calibration or an update to immutable geometry manifests. The
+  earlier nominal 8 cm fixture is not imposed on this historical analysis.
