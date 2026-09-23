@@ -1,5 +1,9 @@
 # Shared receiver CFO comparison: inconclusive optimizer attempt
 
+Follow-up: the separately frozen [v2 comparison](2026_09_23_shared_cfo_v2_results.md)
+improves every training initializer but identifies residual local-optimum
+limitations through an explicit nested-model check.
+
 **This attempt does not validate or reject a common receiver phase model.** The
 bounded continuous optimizer returned worse training objectives than its
 initializers in all four independent fits and three of four shared fits. The
