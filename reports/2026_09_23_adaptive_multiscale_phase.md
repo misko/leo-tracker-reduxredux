@@ -1,5 +1,12 @@
 # Adaptive-scan independent-chunk phase replay
 
+**Superseded interpretation:** this first replay omitted residual-frequency
+correction before coherent pilot-symbol summation. Its negative result is a
+frontend failure, not evidence that adaptive phase was physically lost. The
+[corrected replay](2026_09_23_adaptive_multiscale_phase_refined.md) recovers strong
+held pilot evidence and within-dwell two-source differential coherence. The
+original numbers below are retained for reproducibility.
+
 This retrospective development replay applied the long-dwell held-frame phase
 frontend to five predeclared visits of `scan-hop-28d7592ea614f624`: 1065, 1077,
 1109, 1113, and 1140. It read 0.60 s of saved IQ in about 70 s. The source and

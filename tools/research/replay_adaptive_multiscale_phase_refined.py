@@ -65,7 +65,9 @@ def symbol_correlations(iq, starts, shift, model, receiver, template, fraction):
     symbols = np.arange(2, 66)
     begins = np.rint(symbols * frontend.FS * OFDM_SYMBOL_DURATION_S).astype(int)
     ends = np.rint((symbols + 1) * frontend.FS * OFDM_SYMBOL_DURATION_S).astype(int)
-    offsets = np.concatenate([np.arange(begin, end) for begin, end in zip(begins, ends, strict=True)])
+    offsets = np.concatenate(
+        [np.arange(begin, end) for begin, end in zip(begins, ends, strict=True)]
+    )
     boundaries = np.cumsum(ends - begins)[:-1]
     positions = np.asarray(starts, dtype=float)[:, None] + shift + offsets[None, :] + fraction
     left_guard, right_guard = fractional_take_bounds(fraction)
