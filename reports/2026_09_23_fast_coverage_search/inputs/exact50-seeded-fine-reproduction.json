@@ -1,0 +1,35 @@
+{
+  "schema": "exact50-seeded-fine-reproduction/v1",
+  "created_utc": "2026-09-23T03:37:44.360803+00:00",
+  "retrospective_capture": true,
+  "note": "The completed run used an inline driver. The executed engine bytes were reconstructed exactly and match the engine digest bound in result.json. The new runner is a reusable equivalent with additional runner provenance for future runs; it was not the pre-run authority.",
+  "completed_result_digest": "sha256:9caac16b1d39204c2297e7e4acb607b5ae97bed5067fa24b52af8c973789efaa",
+  "sources": {
+    "source/fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+    "source/run_exact50_seeded_fine.py": "sha256:2ada53881f9e4dec66a3bcd10d9a58ddcb29e518e03b5cc8e9031778ddafefae",
+    "source/search_multiresolution_tle_coverage.current.py": "sha256:6bd3090c7d72aa2d4322cae2bcbdf07167dfb36c3ea70a523c28fb222ee96337",
+    "source/search_multiresolution_tle_coverage.executed.py": "sha256:ef397d45038388cfa75f5bc971363b23e393efd0b9b5785ebf02fb84d57a19bf"
+  },
+  "reproduction_command": [
+    "sudo",
+    "-n",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    ".venv/bin/python",
+    "tools/research/run_exact50_seeded_fine.py",
+    "--evidence",
+    "ROOT/evidence",
+    "--output",
+    "FRESH_OUTPUT",
+    "--exact",
+    "sacramento",
+    "ROOT/fast-coverage-search-v1-sacramento-exact-topk50-parallel8",
+    "--exact",
+    "reno",
+    "ROOT/fast-coverage-search-v1-reno-exact-topk50",
+    "--exact",
+    "denver",
+    "ROOT/fast-coverage-search-v1-denver-exact-topk50-workers16"
+  ],
+  "updated_utc": "2026-09-23T03:39:55.449801+00:00"
+}

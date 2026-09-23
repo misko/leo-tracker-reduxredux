@@ -1,0 +1,576 @@
+{
+  "schema": "fast-coverage-search-benchmark/v1",
+  "complete": true,
+  "session_id": "scan-fw-cf510316ae7f05d5",
+  "selected_track_count": 10,
+  "unique_observation_count": 372,
+  "primary_threshold_hz_strict_less_than": 200,
+  "partition_mode": "fixed-per-track-position-independent",
+  "latest_initialization_policy": {
+    "maximum_search_radius_km": 500,
+    "denver_historical_wide_prior_stress_only": true
+  },
+  "selection_score_not_independent_test_accuracy": true,
+  "runs": [
+    {
+      "city": "sacramento",
+      "label": "fixed 200 km",
+      "mode": "uniform",
+      "evaluated_points": 9,
+      "fully_scored_points": 9,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 18.099353787023574,
+        "search": 2.145626096986234,
+        "finalist_recompute": 2.1446982270572335
+      },
+      "finalist": {
+        "east_km": -199.9999999999999,
+        "north_km": 200.00000000000017,
+        "latitude_deg": 40.35683507881641,
+        "longitude_deg": -123.85463142979309,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 192,
+        "duration_s": 135.43274384799997,
+        "track_count": 5,
+        "clipped_best_rms_sum_hz": 1811.4688690537364,
+        "observation_weighted_rms_hz": 162.80266562604172
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:aebf98a26ef6a84b993519a0fd8fb14b3915b307f15012cc6decaeaa95b2c089",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:3569695f7e49bca52891ccc796fb6aaa1af950f2e04164b17511a49996b38c53",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "sacramento",
+      "label": "exact top-15 50 km",
+      "mode": "uniform",
+      "evaluated_points": 156,
+      "fully_scored_points": 152,
+      "pruned_points": 4,
+      "timing_s": {
+        "prepare": 26.389980708947405,
+        "search": 6.1014609599951655,
+        "finalist_recompute": 6.637036336003803
+      },
+      "finalist": {
+        "east_km": -75.00000000000007,
+        "north_km": -75.00000000000007,
+        "latitude_deg": 37.90398740525912,
+        "longitude_deg": -122.34921470922835,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 1031.9381837202295,
+        "observation_weighted_rms_hz": 110.2320369124064
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:331a2334eaec011721be8a6c1739533d0ab7530e23a923f700efb493dd97b128",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284",
+          "parallel_coverage.py": "sha256:d841f60f9186344eabd65a1d75fc3c392380a04ce904e6b49bf934f701a01e00"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "sacramento",
+      "label": "adaptive beam 32 to 12.5 km",
+      "mode": "adaptive",
+      "evaluated_points": 621,
+      "fully_scored_points": 621,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 28.585771803045645,
+        "search": 142.49987397901714,
+        "finalist_recompute": 3.3835092789959162
+      },
+      "finalist": {
+        "east_km": -81.24999999999993,
+        "north_km": -81.24999999999993,
+        "latitude_deg": 37.847242151605016,
+        "longitude_deg": -122.41973466328683,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 952.5153686504341,
+        "observation_weighted_rms_hz": 104.37713895563125
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 200.0,
+          "new_points": 21,
+          "cumulative_points": 21
+        },
+        {
+          "spacing_km": 100.0,
+          "new_points": 52,
+          "cumulative_points": 73
+        },
+        {
+          "spacing_km": 50.0,
+          "new_points": 164,
+          "cumulative_points": 237
+        },
+        {
+          "spacing_km": 25.0,
+          "new_points": 174,
+          "cumulative_points": 411
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 210,
+          "cumulative_points": 621
+        }
+      ]
+    },
+    {
+      "city": "sacramento",
+      "label": "exact-50-seeded local 12.5 km",
+      "mode": "adaptive-seeded",
+      "evaluated_points": 187,
+      "fully_scored_points": 187,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 18.51190667494666,
+        "search": 40.10231334902346,
+        "finalist_recompute": 0.0
+      },
+      "finalist": {
+        "east_km": -81.24999999999993,
+        "north_km": -81.24999999999993,
+        "latitude_deg": 37.847242151605016,
+        "longitude_deg": -122.41973466328683,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 952.5153686504341,
+        "observation_weighted_rms_hz": 104.37713895563125
+      },
+      "source_snapshot": {
+        "git_head": null,
+        "files": {
+          "search_multiresolution_tle_coverage.py": "sha256:ef397d45038388cfa75f5bc971363b23e393efd0b9b5785ebf02fb84d57a19bf",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 50,
+          "new_points": 15,
+          "cumulative_points": 15
+        },
+        {
+          "spacing_km": 25,
+          "new_points": 60,
+          "cumulative_points": 75
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 112,
+          "cumulative_points": 187
+        }
+      ]
+    },
+    {
+      "city": "reno",
+      "label": "fixed 200 km",
+      "mode": "uniform",
+      "evaluated_points": 45,
+      "fully_scored_points": 45,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 19.52252490504179,
+        "search": 9.787120367051102,
+        "finalist_recompute": 3.259045696933754
+      },
+      "finalist": {
+        "east_km": -400.00000000000006,
+        "north_km": -600.0,
+        "latitude_deg": 34.050341421590396,
+        "longitude_deg": -124.15035499760668,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 289,
+        "duration_s": 196.621607249,
+        "track_count": 7,
+        "clipped_best_rms_sum_hz": 1579.9717624504513,
+        "observation_weighted_rms_hz": 144.5399364056017
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "reno",
+      "label": "exact top-15 50 km",
+      "mode": "uniform",
+      "evaluated_points": 716,
+      "fully_scored_points": 81,
+      "pruned_points": 635,
+      "timing_s": {
+        "prepare": 22.110809878911823,
+        "search": 106.05206233507488,
+        "finalist_recompute": 3.548792995978147
+      },
+      "finalist": {
+        "east_km": -224.99999999999991,
+        "north_km": -174.9999999999999,
+        "latitude_deg": 37.92727918367501,
+        "longitude_deg": -122.37908082471127,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 319,
+        "duration_s": 236.791755407,
+        "track_count": 9,
+        "clipped_best_rms_sum_hz": 940.3626300759677,
+        "observation_weighted_rms_hz": 84.19776863467767
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "reno",
+      "label": "adaptive beam 32 to 12.5 km",
+      "mode": "adaptive",
+      "evaluated_points": 868,
+      "fully_scored_points": 868,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 28.60358468699269,
+        "search": 196.7367157159606,
+        "finalist_recompute": 3.970714198076166
+      },
+      "finalist": {
+        "east_km": -243.75000000000009,
+        "north_km": -181.25000000000003,
+        "latitude_deg": 37.86616295802748,
+        "longitude_deg": -122.59058145391954,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 917.9413516300883,
+        "observation_weighted_rms_hz": 101.46999020481206
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 200.0,
+          "new_points": 61,
+          "cumulative_points": 61
+        },
+        {
+          "spacing_km": 100.0,
+          "new_points": 156,
+          "cumulative_points": 217
+        },
+        {
+          "spacing_km": 50.0,
+          "new_points": 216,
+          "cumulative_points": 433
+        },
+        {
+          "spacing_km": 25.0,
+          "new_points": 205,
+          "cumulative_points": 638
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 230,
+          "cumulative_points": 868
+        }
+      ]
+    },
+    {
+      "city": "reno",
+      "label": "exact-50-seeded local 12.5 km",
+      "mode": "adaptive-seeded",
+      "evaluated_points": 183,
+      "fully_scored_points": 183,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 18.51190667494666,
+        "search": 37.10519987705629,
+        "finalist_recompute": 0.0
+      },
+      "finalist": {
+        "east_km": -243.75000000000009,
+        "north_km": -181.25000000000003,
+        "latitude_deg": 37.86616295802748,
+        "longitude_deg": -122.59058145391954,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 917.9413516300883,
+        "observation_weighted_rms_hz": 101.46999020481206
+      },
+      "source_snapshot": {
+        "git_head": null,
+        "files": {
+          "search_multiresolution_tle_coverage.py": "sha256:ef397d45038388cfa75f5bc971363b23e393efd0b9b5785ebf02fb84d57a19bf",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 50,
+          "new_points": 15,
+          "cumulative_points": 15
+        },
+        {
+          "spacing_km": 25,
+          "new_points": 60,
+          "cumulative_points": 75
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 108,
+          "cumulative_points": 183
+        }
+      ]
+    },
+    {
+      "city": "denver",
+      "label": "fixed 200 km",
+      "mode": "uniform",
+      "evaluated_points": 489,
+      "fully_scored_points": 489,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 19.641775157069787,
+        "search": 105.02912589290645,
+        "finalist_recompute": 3.211677061044611
+      },
+      "finalist": {
+        "east_km": 399.9999999999998,
+        "north_km": 399.9999999999998,
+        "latitude_deg": 43.234909854091555,
+        "longitude_deg": -100.05309657434222,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 287,
+        "duration_s": 202.620491522,
+        "track_count": 8,
+        "clipped_best_rms_sum_hz": 1435.3011398218407,
+        "observation_weighted_rms_hz": 132.3778049724083
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "denver",
+      "label": "exact top-15 50 km",
+      "mode": "uniform",
+      "evaluated_points": 7860,
+      "fully_scored_points": 1129,
+      "pruned_points": 6731,
+      "timing_s": {
+        "prepare": 18.274918682058342,
+        "search": 161.4513365071034,
+        "finalist_recompute": 6.74577502196189
+      },
+      "finalist": {
+        "east_km": 2175.0000000000005,
+        "north_km": -524.9999999999999,
+        "latitude_deg": 32.561300352770346,
+        "longitude_deg": -81.61303885597518,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 356,
+        "duration_s": 241.832857498,
+        "track_count": 9,
+        "clipped_best_rms_sum_hz": 1128.9492969064536,
+        "observation_weighted_rms_hz": 108.32409281432594
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:331a2334eaec011721be8a6c1739533d0ab7530e23a923f700efb493dd97b128",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284",
+          "parallel_coverage.py": "sha256:d841f60f9186344eabd65a1d75fc3c392380a04ce904e6b49bf934f701a01e00"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null
+    },
+    {
+      "city": "denver",
+      "label": "adaptive beam 32 to 12.5 km",
+      "mode": "adaptive",
+      "evaluated_points": 1494,
+      "fully_scored_points": 1494,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 28.58041620790027,
+        "search": 364.9990656860173,
+        "finalist_recompute": 4.870394708006643
+      },
+      "finalist": {
+        "east_km": 2018.7500000000002,
+        "north_km": 193.74999999999974,
+        "latitude_deg": 39.06262787424486,
+        "longitude_deg": -81.3349823466125,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 356,
+        "duration_s": 241.832857498,
+        "track_count": 9,
+        "clipped_best_rms_sum_hz": 1190.9986116262567,
+        "observation_weighted_rms_hz": 114.45950754802708
+      },
+      "source_snapshot": {
+        "git_head": "672b9023dbcb139aa21c976b3be49915f2d607ea",
+        "files": {
+          "run_fast_coverage_benchmark.py": "sha256:8adc3791005a4b5c9e166339a5394c60069f8b7ab78b5be471647b0839e50455",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d",
+          "search_multiresolution_tle_coverage.py": "sha256:a8706c84084efb62ebf083581c9254a633e48a8e9c64ef0cf2031164eb70b115",
+          "map_randomized_tle_coverage.py": "sha256:8cedd40518acb3c4920a6f149e75e6a419602eeef6bf32be6388f7438bb2d284"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 200.0,
+          "new_points": 533,
+          "cumulative_points": 533
+        },
+        {
+          "spacing_km": 100.0,
+          "new_points": 228,
+          "cumulative_points": 761
+        },
+        {
+          "spacing_km": 50.0,
+          "new_points": 199,
+          "cumulative_points": 960
+        },
+        {
+          "spacing_km": 25.0,
+          "new_points": 253,
+          "cumulative_points": 1213
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 281,
+          "cumulative_points": 1494
+        }
+      ]
+    },
+    {
+      "city": "denver",
+      "label": "exact-50-seeded local 12.5 km",
+      "mode": "adaptive-seeded",
+      "evaluated_points": 184,
+      "fully_scored_points": 184,
+      "pruned_points": 0,
+      "timing_s": {
+        "prepare": 18.51190667494666,
+        "search": 39.14864170202054,
+        "finalist_recompute": 0.0
+      },
+      "finalist": {
+        "east_km": -1543.7499999999998,
+        "north_km": -68.74999999999993,
+        "latitude_deg": 37.76066686918577,
+        "longitude_deg": -122.6582448454429,
+        "threshold_hz": 200.0,
+        "unique_observation_count": 372,
+        "duration_s": 265.43959115,
+        "track_count": 10,
+        "clipped_best_rms_sum_hz": 913.9645048327775,
+        "observation_weighted_rms_hz": 102.26167217351359
+      },
+      "source_snapshot": {
+        "git_head": null,
+        "files": {
+          "search_multiresolution_tle_coverage.py": "sha256:ef397d45038388cfa75f5bc971363b23e393efd0b9b5785ebf02fb84d57a19bf",
+          "fast_coverage_inputs.py": "sha256:af2e164733ce44a0e53568e7261e389a1c61242f9723e4c76e2370f0d6f5f40d"
+        }
+      },
+      "top_k_recall": null,
+      "objective_gap": null,
+      "resolution_progress": [
+        {
+          "spacing_km": 50,
+          "new_points": 15,
+          "cumulative_points": 15
+        },
+        {
+          "spacing_km": 25,
+          "new_points": 60,
+          "cumulative_points": 75
+        },
+        {
+          "spacing_km": 12.5,
+          "new_points": 109,
+          "cumulative_points": 184
+        }
+      ]
+    }
+  ]
+}
