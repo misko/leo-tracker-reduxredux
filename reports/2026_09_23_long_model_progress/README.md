@@ -55,14 +55,49 @@ NPZ arrays for every track: it produced exactly equal prepared data and reduced
 one-scan preparation from 3.171 s to 0.092 s in the recorded benchmark. This is
 a loading improvement, not an end-to-end fitting speed claim.
 
+## Synthetic controls and identifiability
+
+The completed direct-SGP4 synthetic control uses the first six TRAIN scans'
+476 track supports and 8,285 timestamps with known generating identities. Both
+initializations recover a planted noiseless position to numerical precision.
+One independent 300 Hz Gaussian noise draw gives 370 m error. Adding one seeded
+satellite-specific epoch perturbation draw raises error to 1.48 km while held
+RMS changes only from 321 to 326 Hz. These are conditional sensitivity examples,
+not measured receiver accuracy or a noise-distribution accuracy guarantee.
+The shared generator/fitter cannot detect common-mode physical-model errors.
+
+![Synthetic recovery controls](../2026_09_23_long_position_synthetic_control/synthetic_control.png)
+
+A separate TRAIN-only local curvature audit explains a risk of adding timing
+freedom. At the sealed zero-epoch baseline, profiling per-satellite epoch terms
+with scale 5 s retains only 3.3% and 19.4% of the two normalized position
+curvature directions; scale 0.2 s retains 78.3% and 84.7%. This is a local
+Gauss–Newton objective diagnostic with fixed identities and cap membership,
+not a calibrated position covariance and not a measurement at later fitted
+optima. Lower residuals can accompany weaker localization.
+
+![Curvature after profiling epoch effects](../2026_09_23_long_epoch_identifiability/profiled_curvature.png)
+
 ## Next evidence required
 
 The complete first eight-hour TRAIN group now has 72 verified causal caches,
 with zero export failures. The full-group baseline is the next duration test;
-the completed six/sixteen views cover only about 35/107 minutes elapsed. A
-synthetic known-position control is also being developed to separate numerical
-recovery from real-data model mismatch. Synthetic success will not count as
-achieving the real-data accuracy objective.
+the completed six/sixteen views cover only about 35/107 minutes elapsed.
+Synthetic success will not count as achieving the real-data accuracy objective.
+
+The current experiment priorities are:
+
+| Approach | Question it answers | Acceptance evidence |
+|---|---|---|
+| Full eight-hour joint blind baseline | Does more orbital diversity reduce the short-view bias? | Same fixed track policy and complete candidate search; both prior results sealed before reference evaluation |
+| Regularized scan versus satellite epoch terms | Which structured mismatch explains residuals without absorbing position? | Bound-aware solver diagnostics, training-only fits, regularization sensitivity, and local curvature |
+| Repeated synthetic noise controls | Was the single 370 m result representative under the assumed noise model? | Predetermined seeds, median/tail errors, both starts, no parameter selection by error |
+| Joint identity reassignment after structured correction | Are fixed baseline IDs limiting the conditional models? | Full retained causal candidate pools, unchanged support, training-only reassignment and held checks |
+| Frozen model comparison on independent groups | Do development gains generalize to different recording conditions? | All failures retained; group-level position error and residual metrics across 1/6/16/all-scan views |
+
+The last two steps require completing the preceding TRAIN experiments first.
+The final test must not become another model-development loop. Prior centres
+are initialization/search constraints, not independent repeated datasets.
 
 Before validation access, compare a small frozen set of complete model families
 on TRAIN, including failures and convergence limits. A smaller frequency RMS
@@ -78,6 +113,8 @@ test group closed until model selection is complete.
 - [Loading and scoring performance checks](../2026_09_23_long_training_fast_score/README.md).
 - [Full eight-hour cache manifest and receipts](../2026_09_23_long_training_cache_full8h/README.md).
 - [Frozen train/validation/test manifest](../2026_09_23_long_inventory_complete/manifest.json).
+- [Synthetic known-position control](../2026_09_23_long_position_synthetic_control/README.md).
+- [Epoch versus position-curvature audit](../2026_09_23_long_epoch_identifiability/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
