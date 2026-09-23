@@ -1,14 +1,22 @@
 import numpy as np
+import pytest
 from fit_formal_orbit import prepare_strict_phase_states
 
 from leo.analysis.research.formal_orbit import (
     FormalOrbitConfig,
     FormalOrbitData,
+    doppler_hz,
     fit_formal_orbit,
     phase_state,
     whiten_ar1,
 )
 from leo.analysis.research.regional_doppler import Region
+
+
+@pytest.mark.parametrize("receiver", [6378.0, [6378.0], [[6378.0], [0.0], [0.0]]])
+def test_doppler_rejects_missing_ecef_coordinates(receiver):
+    with pytest.raises(ValueError, match="three ECEF coordinates"):
+        doppler_hz(receiver, [[6800.0, 100.0, 0.0]], [[0.0, 7.0, 0.0]])
 
 
 def _synthetic(seed=3, collinear=False):

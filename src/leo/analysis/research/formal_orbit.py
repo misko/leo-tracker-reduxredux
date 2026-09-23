@@ -141,6 +141,12 @@ class FormalOrbitResult:
 
 
 def doppler_hz(receiver_ecef_km, p_km, v_km_s):
+    # Reject accidental scalar/one-coordinate broadcasting: it can produce
+    # plausible but physically wrong Doppler curves without a NumPy error.
+    for value in (receiver_ecef_km, p_km, v_km_s):
+        shape = np.shape(value)
+        if not shape or shape[-1] != 3:
+            raise ValueError("Doppler geometry must contain three ECEF coordinates")
     delta = np.asarray(p_km) - np.asarray(receiver_ecef_km)
     return (
         -REFERENCE_RF_HZ
