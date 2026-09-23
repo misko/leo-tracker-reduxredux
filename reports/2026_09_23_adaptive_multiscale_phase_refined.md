@@ -70,6 +70,10 @@ receiver-product rate. Both use the same 45 held-by-both pairs and pair weight
 | 1113 | 89 | 90.9 µs | 45 | 0.953 | 0.905 |
 | 1140 | 89 | 97.3 µs | 45 | 0.935 | 0.157 |
 
+For weighting sensitivity, the corresponding unweighted pre-removal held DD
+resultants span 0.848--0.958; visit 1140 is 0.848. It remains concentrated,
+while the stated weighted values are the report's primary numbers.
+
 The high pre-removal resultants are compatible with a stable conditional
 within-dwell source differential. Visit 1140 demonstrates why the detrended
 frame plot is not itself a differential-coherence test: its independently
