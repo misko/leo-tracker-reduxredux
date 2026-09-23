@@ -120,6 +120,50 @@ pairing, aliases, and masks on seeded random whole-group training data and test
 random held groups. Neither alternating nor chronological splits are used.
 The geometric goal remains unproven, and the missing calibration is not assumed.
 
+### Full-recording availability check
+
+The [full-capture audit](figures/2026_09_23_independent_phase/geometry-sensitivity/full-capture-branch-quartets.json)
+extends this check across the same 60-second stream-1 recording. It enumerates
+the five RX0 and fourteen RX1 linear branch representatives returned by the
+existing alias-deduplication helper,
+requiring a unique branch-associated candidate and two different candidate ranks
+within each receiver at an exact shared probe start. It finds **zero four-branch
+quartets**. No other interval in these archived track-associated detections
+therefore supplies the simultaneous support missing from the selected excerpt
+within that representative set.
+The scope audit confirms that all final trajectories are linear (10 RX0 and
+29 RX1) and alias variants have identical observation membership within every
+branch. Thus representative selection does not discard branch observations in
+these particular banks. RX0 has zero distinct-candidate branch-pair
+co-occurrences; RX1 has 14 branch pairs contributing 511 pair/probe
+opportunities. Every branch association is unique.
+
+Crucially, the underlying pilot scans retain at least two GLRT64-scored
+candidates at **all 2,400 probes on each receiver**, with 2,400 common probe
+starts. These are scored hypotheses, not qualified detections or independent
+emitters. The zero-quartet result is therefore a limitation of the retained
+trajectory associations, not absence of saved per-probe candidate material.
+The next available route is phase-blind qualification of those unassociated
+candidates: timing, fixed alias consistency, persistent separate support, and
+cross-receiver compatibility must precede any phase-based source choice.
+
+The [builder](figures/2026_09_23_independent_phase/geometry-sensitivity/build_full_capture_branch_quartets.py)
+reads digest-verified analysis products, without opening IQ, fitting phase, or
+choosing a favorable matching. This result concerns this stream and analysis
+run; it does not establish absence in unassociated detections, raw IQ, the other
+stream, or other recordings.
+
+A future two-source test must retain a global capture-counter phase reference.
+Coincident probe starts alone do not imply simultaneous pilot epochs. Exact
+common-time measurements cancel a receiver-common term; asynchronous phases
+need independently supported rate transport and propagated uncertainty.
+Different carrier offsets also retain frequency-dependent receiver response,
+including differential delay. Neither a mixed-signal broadband fit nor a free
+per-window nuisance fit supplies independent geometric calibration. Any future
+association claim must beat frozen no-geometry and wrong-pair/time controls on
+seeded random whole-group holdouts. Absolute speed/direction or position remains
+unverified by the present phase evidence.
+
 For absolute geometric interpretation, the missing input is a calibration or hardware reference
 authority that constrains differential receiver phase/frequency/delay over the
 analysis interval, together with capture-valid RF baseline/mapping information.
