@@ -23,3 +23,6 @@ CFO for each receiver using training whole frames only, through the production
 `coherent_pilot_frames` estimator. Apply that frozen residual to held exact and
 control symbols. This corrects the known v1 frontend omission without searching
 source aliases or changing the frozen cohort.
+The coherent helper references its output to each frame origin; subsequent
+product fitting therefore uses `(frame_start + timing_shift + fractional_epoch)
+/ Fs` exactly once, without adding a pilot-symbol centroid.
