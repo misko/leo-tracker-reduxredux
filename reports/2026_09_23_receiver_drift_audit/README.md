@@ -32,10 +32,13 @@ model should keep a null arm, report tau-boundary rates, constrain slope from tr
 data, and compare whole-scan predictive score rather than interpreting slope
 physically.
 
-The cached track contract contains no receiver, channel, device, or RX identifier.
-Consequently a per-receiver model cannot be identified from this evidence. Adding a
-receiver-specific parameter by grouping tracks through undocumented storage details
-would violate the evidence contract.
+The cached track contract contains no receiver, channel, device, or RX identifier,
+so this original audit used one slope per scan. A subsequent
+[exact public-contract reconstruction](../2026_09_23_receiver_identity_mapping/README.md)
+successfully joined all 840 cached observations in one training scan to receiver
+identities. Per-receiver modeling is therefore possible when that reconstruction
+passes for every included observation; it does not require undocumented storage
+details. The numerical results above remain the original scan-level audit.
 
 `receiver_drift.json` contains scan-level slopes, track-slope scatter, seed coordinates,
 reserved scores, timing-boundary fractions, and source/cache digests. Reproduce with:
