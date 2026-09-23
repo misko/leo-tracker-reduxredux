@@ -1,0 +1,1189 @@
+{
+  "schema": "longarc-phase-reliability/v1",
+  "outer_split": {
+    "train": 42,
+    "held": 36
+  },
+  "inner_split": "seeded random 3-fold assignment within each temporal stratum",
+  "held_visits_all_scored": true,
+  "phase_calibration_group_coverage": {
+    "minimum": 2,
+    "maximum": 3,
+    "all_three_groups": 76
+  },
+  "uniform_model": {
+    "inner_nll": 6.562579928403197,
+    "sigma_hz": 150.0,
+    "held_nll": 6.391997722043647,
+    "held_rms_hz": 144.2535104024245
+  },
+  "results": {
+    "phase_resultant": {
+      "inner_nll": 6.550730173769328,
+      "threshold": 0.8,
+      "good_sigma_hz": 150.0,
+      "bad_sigma_hz": 250.0,
+      "held_nll": 6.420919889082581,
+      "held_nll_gain_vs_uniform": -0.028922167038934354,
+      "held_flagged_visits": 3,
+      "held_flagged_rms_hz": 107.30493107003984,
+      "held_unflagged_rms_hz": 147.15315303486383
+    },
+    "even_cfo_scatter": {
+      "inner_nll": 6.5625799284031965,
+      "threshold": -200.0,
+      "good_sigma_hz": 150.0,
+      "bad_sigma_hz": 150.0,
+      "held_nll": 6.391997722043647,
+      "held_nll_gain_vs_uniform": 0.0,
+      "held_flagged_visits": 0,
+      "held_flagged_rms_hz": null,
+      "held_unflagged_rms_hz": 144.2535104024245
+    },
+    "rolled_control": {
+      "inner_nll": 6.5625799284031965,
+      "threshold": -0.014,
+      "good_sigma_hz": 150.0,
+      "bad_sigma_hz": 150.0,
+      "held_nll": 6.391997722043647,
+      "held_nll_gain_vs_uniform": 0.0,
+      "held_flagged_visits": 0,
+      "held_flagged_rms_hz": null,
+      "held_unflagged_rms_hz": 144.2535104024245
+    },
+    "phase_permuted_within_stratum": {
+      "inner_nll": 6.5625799284031965,
+      "threshold": 0.8,
+      "good_sigma_hz": 150.0,
+      "bad_sigma_hz": 150.0,
+      "held_nll": 6.391997722043647,
+      "held_nll_gain_vs_uniform": 0.0,
+      "held_flagged_visits": 3,
+      "held_flagged_rms_hz": 97.94715202978179,
+      "held_unflagged_rms_hz": 147.74525329102593
+    }
+  },
+  "configuration_selected_without_outer_held": true,
+  "interpretation": "reliability-screen diagnostic on a fixed GLRT candidate/nuisance model; not a weighted association improvement",
+  "input_sha256": {
+    "reports/figures/2026_09_23_longarc_phase/binding.json": "8e0a0798c07f5bd4243c015df32715831c99023e76c1e48271f107f23136402f",
+    "reports/figures/2026_09_23_longarc_phase/replay/frames.json.gz": "56c1d6ffafa3d56ce34d0f5b94e7f61c2848c09386c75cf9eb34452bc3600fca",
+    "reports/figures/2026_09_23_longarc_phase/evaluation.json": "6d4fa1abd8efbb5c64e87364be66d89481f474fcc7e30e8100cf91aa41d64deb",
+    "reports/artifacts/2026_09_21_shared_identity_orbit/candidate-phase-states.npz": "c6ad015bd864c05463cd99185edcfec45c00478084a6845ae3b34300d5ec7e4c",
+    "reports/artifacts/2026_09_21_shared_identity_orbit/audit.retained-tles.json.gz": "87383ab0ea4a54da3f30b02014ec64fd42cf6f173d51bbe6911b3aafcc9cb261",
+    "reports/artifacts/2026_09_21_shared_identity_orbit/fit.json": "0cc5f15fd076aa8a3f8a5dd9d0ff56ec4c0a7d74b942d435ebb5adb17c4a3a90"
+  },
+  "source_sha256": "0710ad7df70e14a3213cf047716eae144fe3bc6acd3443638527d8de3d77fdb0",
+  "visits": [
+    {
+      "visit_index": 30,
+      "time_s": 4.370625729,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8828915675388034,
+      "cfo_scatter_hz": 46.69435251634131,
+      "rolled_control_coherence": 0.010365741772068284,
+      "phase_group_count": 2
+    },
+    {
+      "visit_index": 34,
+      "time_s": 4.931964504,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9074640183438851,
+      "cfo_scatter_hz": 46.13915039535691,
+      "rolled_control_coherence": 0.010959205728721583,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 36,
+      "time_s": 5.212742916,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.7706037647503905,
+      "cfo_scatter_hz": 35.57926810357675,
+      "rolled_control_coherence": 0.010341283922262605,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 53,
+      "time_s": 7.597322557,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8774493807433164,
+      "cfo_scatter_hz": 38.48339844247451,
+      "rolled_control_coherence": 0.010674752005158208,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 75,
+      "time_s": 10.685348674,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8231016350694308,
+      "cfo_scatter_hz": 30.78553502728935,
+      "rolled_control_coherence": 0.011048761747082499,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.398789634591901,
+        "phase_resultant": 6.398789634591901,
+        "even_cfo_scatter": 6.398789634591901,
+        "rolled_control": 6.398789634591901,
+        "phase_permuted_within_stratum": 6.398789634591901
+      }
+    },
+    {
+      "visit_index": 85,
+      "time_s": 12.08802627,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8899908985736785,
+      "cfo_scatter_hz": 19.35005818436499,
+      "rolled_control_coherence": 0.011502972918915543,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 96,
+      "time_s": 13.630704265,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8486444608357399,
+      "cfo_scatter_hz": 35.28812713557131,
+      "rolled_control_coherence": 0.010312967198168764,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.04773400444176,
+        "phase_resultant": 6.04773400444176,
+        "even_cfo_scatter": 6.04773400444176,
+        "rolled_control": 6.04773400444176,
+        "phase_permuted_within_stratum": 6.04773400444176
+      }
+    },
+    {
+      "visit_index": 105,
+      "time_s": 14.893379662,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8578756294207794,
+      "cfo_scatter_hz": 45.605247775660544,
+      "rolled_control_coherence": 0.010778120997418886,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.036947263340427,
+        "phase_resultant": 6.036947263340427,
+        "even_cfo_scatter": 6.036947263340427,
+        "rolled_control": 6.036947263340427,
+        "phase_permuted_within_stratum": 6.036947263340427
+      }
+    },
+    {
+      "visit_index": 120,
+      "time_s": 16.997393202,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.7426316590638686,
+      "cfo_scatter_hz": 56.186942045664075,
+      "rolled_control_coherence": 0.010910314264575713,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.05471925086633,
+        "phase_resultant": 6.485451803550464,
+        "even_cfo_scatter": 6.05471925086633,
+        "rolled_control": 6.05471925086633,
+        "phase_permuted_within_stratum": 6.05471925086633
+      }
+    },
+    {
+      "visit_index": 125,
+      "time_s": 17.698730712,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.7991907754745933,
+      "cfo_scatter_hz": 48.197510889782876,
+      "rolled_control_coherence": 0.010303281403617626,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.006991246409509,
+        "phase_resultant": 6.468269721946007,
+        "even_cfo_scatter": 6.006991246409509,
+        "rolled_control": 6.006991246409509,
+        "phase_permuted_within_stratum": 6.006991246409509
+      }
+    },
+    {
+      "visit_index": 128,
+      "time_s": 18.120066459,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8394516566963007,
+      "cfo_scatter_hz": 39.878891751950555,
+      "rolled_control_coherence": 0.011143323589781644,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 144,
+      "time_s": 20.364078529,
+      "temporal_stratum": 0,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8002744308971327,
+      "cfo_scatter_hz": 33.97852264587546,
+      "rolled_control_coherence": 0.010947805224471608,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 146,
+      "time_s": 20.645413235,
+      "temporal_stratum": 0,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9430271916709426,
+      "cfo_scatter_hz": 37.5315375012192,
+      "rolled_control_coherence": 0.011064824570490392,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.1646262025270175,
+        "phase_resultant": 6.1646262025270175,
+        "even_cfo_scatter": 6.1646262025270175,
+        "rolled_control": 6.1646262025270175,
+        "phase_permuted_within_stratum": 6.1646262025270175
+      }
+    },
+    {
+      "visit_index": 152,
+      "time_s": 21.486750596,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9599585750857601,
+      "cfo_scatter_hz": 29.19268655879475,
+      "rolled_control_coherence": 0.010501324419999682,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.279262347399186,
+        "phase_resultant": 6.279262347399186,
+        "even_cfo_scatter": 6.279262347399186,
+        "rolled_control": 6.279262347399186,
+        "phase_permuted_within_stratum": 6.279262347399186
+      }
+    },
+    {
+      "visit_index": 159,
+      "time_s": 22.469421674,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.8670786695446862,
+      "cfo_scatter_hz": 22.81973856704937,
+      "rolled_control_coherence": 0.0106040257829089,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 163,
+      "time_s": 23.030757384,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8919143556662154,
+      "cfo_scatter_hz": 19.212878483143644,
+      "rolled_control_coherence": 0.012048299388821378,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 164,
+      "time_s": 23.172091285,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.6821990737284486,
+      "cfo_scatter_hz": 47.12358517688547,
+      "rolled_control_coherence": 0.011195968361104295,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 169,
+      "time_s": 23.87342744,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9098205615087108,
+      "cfo_scatter_hz": 32.155208249641696,
+      "rolled_control_coherence": 0.011445586159252783,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.2929340462232375,
+        "phase_resultant": 6.2929340462232375,
+        "even_cfo_scatter": 6.2929340462232375,
+        "rolled_control": 6.2929340462232375,
+        "phase_permuted_within_stratum": 6.2929340462232375
+      }
+    },
+    {
+      "visit_index": 172,
+      "time_s": 24.29423709,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.7872979118857389,
+      "cfo_scatter_hz": 36.83832643538582,
+      "rolled_control_coherence": 0.010833764168343389,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 173,
+      "time_s": 24.434762879,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.928099862813304,
+      "cfo_scatter_hz": 30.840819489812077,
+      "rolled_control_coherence": 0.011431932043245741,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.464239565750915,
+        "phase_resultant": 6.464239565750915,
+        "even_cfo_scatter": 6.464239565750915,
+        "rolled_control": 6.464239565750915,
+        "phase_permuted_within_stratum": 6.464239565750915
+      }
+    },
+    {
+      "visit_index": 175,
+      "time_s": 24.71551798,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.934640935528428,
+      "cfo_scatter_hz": 20.348977853151958,
+      "rolled_control_coherence": 0.011050883733444353,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.550687530274513,
+        "phase_resultant": 6.550687530274513,
+        "even_cfo_scatter": 6.550687530274513,
+        "rolled_control": 6.550687530274513,
+        "phase_permuted_within_stratum": 6.550687530274513
+      }
+    },
+    {
+      "visit_index": 176,
+      "time_s": 24.85609772,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.857826042224498,
+      "cfo_scatter_hz": 26.017207507640748,
+      "rolled_control_coherence": 0.010997852893250335,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 177,
+      "time_s": 24.996098235,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8858514276993766,
+      "cfo_scatter_hz": 31.626543600347535,
+      "rolled_control_coherence": 0.011303957855980089,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 178,
+      "time_s": 25.136098714,
+      "temporal_stratum": 1,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9064235769965713,
+      "cfo_scatter_hz": 32.05382074889391,
+      "rolled_control_coherence": 0.01011792412664453,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 179,
+      "time_s": 25.276099196,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9333071617594948,
+      "cfo_scatter_hz": 32.79974542935794,
+      "rolled_control_coherence": 0.011854986781349908,
+      "phase_group_count": 2,
+      "held_nll": {
+        "uniform": 6.446407955789446,
+        "phase_resultant": 6.446407955789446,
+        "even_cfo_scatter": 6.446407955789446,
+        "rolled_control": 6.446407955789446,
+        "phase_permuted_within_stratum": 6.446407955789446
+      }
+    },
+    {
+      "visit_index": 180,
+      "time_s": 25.416993161,
+      "temporal_stratum": 1,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9779232959314145,
+      "cfo_scatter_hz": 35.48206514896253,
+      "rolled_control_coherence": 0.011095954835940012,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.360161533442039,
+        "phase_resultant": 6.360161533442039,
+        "even_cfo_scatter": 6.360161533442039,
+        "rolled_control": 6.360161533442039,
+        "phase_permuted_within_stratum": 6.360161533442039
+      }
+    },
+    {
+      "visit_index": 183,
+      "time_s": 25.837434378,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9413464474406963,
+      "cfo_scatter_hz": 28.57018525102655,
+      "rolled_control_coherence": 0.01139726928916377,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 187,
+      "time_s": 26.398769485,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9569094708144124,
+      "cfo_scatter_hz": 28.00349340971169,
+      "rolled_control_coherence": 0.010777953172605792,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.398785379981962,
+        "phase_resultant": 6.398785379981962,
+        "even_cfo_scatter": 6.398785379981962,
+        "rolled_control": 6.398785379981962,
+        "phase_permuted_within_stratum": 6.398785379981962
+      }
+    },
+    {
+      "visit_index": 192,
+      "time_s": 27.100104851,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9267226748301264,
+      "cfo_scatter_hz": 24.43213763832518,
+      "rolled_control_coherence": 0.010189353566080589,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 193,
+      "time_s": 27.240105228,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8228627813169455,
+      "cfo_scatter_hz": 34.84449949582304,
+      "rolled_control_coherence": 0.01128633296480095,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 197,
+      "time_s": 27.801440047,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9414048066053057,
+      "cfo_scatter_hz": 24.607358336606012,
+      "rolled_control_coherence": 0.012058775185494692,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 204,
+      "time_s": 28.784109114,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9263362086403318,
+      "cfo_scatter_hz": 41.74701492243498,
+      "rolled_control_coherence": 0.011311803720409686,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.377639365274702,
+        "phase_resultant": 6.377639365274702,
+        "even_cfo_scatter": 6.377639365274702,
+        "rolled_control": 6.377639365274702,
+        "phase_permuted_within_stratum": 6.377639365274702
+      }
+    },
+    {
+      "visit_index": 205,
+      "time_s": 28.924109445,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9619221253903025,
+      "cfo_scatter_hz": 26.244771126706745,
+      "rolled_control_coherence": 0.009530000481297497,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.342093750019061,
+        "phase_resultant": 6.342093750019061,
+        "even_cfo_scatter": 6.342093750019061,
+        "rolled_control": 6.342093750019061,
+        "phase_permuted_within_stratum": 6.342093750019061
+      }
+    },
+    {
+      "visit_index": 206,
+      "time_s": 29.064949974,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.7236573721178509,
+      "cfo_scatter_hz": 54.758959282610185,
+      "rolled_control_coherence": 0.010806530656092377,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.494634200090014,
+        "phase_resultant": 6.64382118527099,
+        "even_cfo_scatter": 6.494634200090014,
+        "rolled_control": 6.494634200090014,
+        "phase_permuted_within_stratum": 6.494634200090014
+      }
+    },
+    {
+      "visit_index": 209,
+      "time_s": 29.486379736,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8556237095442363,
+      "cfo_scatter_hz": 41.20275102272366,
+      "rolled_control_coherence": 0.012043538421017951,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.336631273745707,
+        "phase_resultant": 6.336631273745707,
+        "even_cfo_scatter": 6.336631273745707,
+        "rolled_control": 6.336631273745707,
+        "phase_permuted_within_stratum": 6.336631273745707
+      }
+    },
+    {
+      "visit_index": 223,
+      "time_s": 31.456113938,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9270899800243972,
+      "cfo_scatter_hz": 25.709756451025285,
+      "rolled_control_coherence": 0.011014041582768757,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 227,
+      "time_s": 32.018202055,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8812738185136201,
+      "cfo_scatter_hz": 42.80727873069052,
+      "rolled_control_coherence": 0.010904144018330229,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 229,
+      "time_s": 32.298781611,
+      "temporal_stratum": 2,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.9232688471904047,
+      "cfo_scatter_hz": 28.01116629711728,
+      "rolled_control_coherence": 0.011907256614561006,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 241,
+      "time_s": 33.982782997,
+      "temporal_stratum": 2,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9395975780549076,
+      "cfo_scatter_hz": 29.281940379311106,
+      "rolled_control_coherence": 0.01135295922069573,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.248021067861072,
+        "phase_resultant": 6.248021067861072,
+        "even_cfo_scatter": 6.248021067861072,
+        "rolled_control": 6.248021067861072,
+        "phase_permuted_within_stratum": 6.248021067861072
+      }
+    },
+    {
+      "visit_index": 242,
+      "time_s": 34.12278305,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9888581861543301,
+      "cfo_scatter_hz": 24.467007383550587,
+      "rolled_control_coherence": 0.010963474379147088,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.313094645401473,
+        "phase_resultant": 6.313094645401473,
+        "even_cfo_scatter": 6.313094645401473,
+        "rolled_control": 6.313094645401473,
+        "phase_permuted_within_stratum": 6.313094645401473
+      }
+    },
+    {
+      "visit_index": 243,
+      "time_s": 34.26383366,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9107949956084657,
+      "cfo_scatter_hz": 31.47932198626948,
+      "rolled_control_coherence": 0.01111413584097809,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 246,
+      "time_s": 34.684116608,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.932649776409226,
+      "cfo_scatter_hz": 28.135519127820718,
+      "rolled_control_coherence": 0.011313463181288909,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.245882939756421,
+        "phase_resultant": 6.245882939756421,
+        "even_cfo_scatter": 6.245882939756421,
+        "rolled_control": 6.245882939756421,
+        "phase_permuted_within_stratum": 6.245882939756421
+      }
+    },
+    {
+      "visit_index": 253,
+      "time_s": 35.666783391,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8853866703676987,
+      "cfo_scatter_hz": 26.328889477074437,
+      "rolled_control_coherence": 0.011763593638231961,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 255,
+      "time_s": 35.946783358,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.8048918573224065,
+      "cfo_scatter_hz": 21.912283824174654,
+      "rolled_control_coherence": 0.010553164477634594,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 257,
+      "time_s": 36.226783314,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8559751539778578,
+      "cfo_scatter_hz": 32.55290270395737,
+      "rolled_control_coherence": 0.010057010841978435,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.2809442366376835,
+        "phase_resultant": 6.2809442366376835,
+        "even_cfo_scatter": 6.2809442366376835,
+        "rolled_control": 6.2809442366376835,
+        "phase_permuted_within_stratum": 6.2809442366376835
+      }
+    },
+    {
+      "visit_index": 258,
+      "time_s": 36.366783274,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9116396049897669,
+      "cfo_scatter_hz": 33.89641194136558,
+      "rolled_control_coherence": 0.010930374962204588,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.1898591426452265,
+        "phase_resultant": 6.1898591426452265,
+        "even_cfo_scatter": 6.1898591426452265,
+        "rolled_control": 6.1898591426452265,
+        "phase_permuted_within_stratum": 6.1898591426452265
+      }
+    },
+    {
+      "visit_index": 262,
+      "time_s": 36.92885962,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9541584497954299,
+      "cfo_scatter_hz": 23.491064504001756,
+      "rolled_control_coherence": 0.011289971851483302,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 264,
+      "time_s": 37.209449604,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8279549889361467,
+      "cfo_scatter_hz": 36.651498306008186,
+      "rolled_control_coherence": 0.011227376089960396,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.088433372614773,
+        "phase_resultant": 6.088433372614773,
+        "even_cfo_scatter": 6.088433372614773,
+        "rolled_control": 6.088433372614773,
+        "phase_permuted_within_stratum": 6.088433372614773
+      }
+    },
+    {
+      "visit_index": 266,
+      "time_s": 37.490782791,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9766500898471788,
+      "cfo_scatter_hz": 26.35704349677653,
+      "rolled_control_coherence": 0.00969636467784923,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 267,
+      "time_s": 37.630782689,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.9337536450325047,
+      "cfo_scatter_hz": 25.77284401081743,
+      "rolled_control_coherence": 0.010552796446629051,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 270,
+      "time_s": 38.052115728,
+      "temporal_stratum": 3,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9692273560170142,
+      "cfo_scatter_hz": 26.068669550034745,
+      "rolled_control_coherence": 0.012433916262279514,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 273,
+      "time_s": 38.472869418,
+      "temporal_stratum": 3,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9498516781361932,
+      "cfo_scatter_hz": 18.937513151496653,
+      "rolled_control_coherence": 0.01117448871226691,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.067809226941126,
+        "phase_resultant": 6.067809226941126,
+        "even_cfo_scatter": 6.067809226941126,
+        "rolled_control": 6.067809226941126,
+        "phase_permuted_within_stratum": 6.067809226941126
+      }
+    },
+    {
+      "visit_index": 282,
+      "time_s": 39.734780552,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8673523321703932,
+      "cfo_scatter_hz": 17.48918557835255,
+      "rolled_control_coherence": 0.010573358100921103,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 5.962015352795831,
+        "phase_resultant": 5.962015352795831,
+        "even_cfo_scatter": 5.962015352795831,
+        "rolled_control": 5.962015352795831,
+        "phase_permuted_within_stratum": 5.962015352795831
+      }
+    },
+    {
+      "visit_index": 283,
+      "time_s": 39.874780377,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8744503690216391,
+      "cfo_scatter_hz": 28.8857387048363,
+      "rolled_control_coherence": 0.010594584447727262,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 286,
+      "time_s": 40.296113078,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8033075933322342,
+      "cfo_scatter_hz": 29.508164605880943,
+      "rolled_control_coherence": 0.0106934819047792,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 288,
+      "time_s": 40.577111275,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.947929850034677,
+      "cfo_scatter_hz": 28.455832713306908,
+      "rolled_control_coherence": 0.010502267167114757,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 290,
+      "time_s": 40.858112154,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.9191758673507624,
+      "cfo_scatter_hz": 32.859097673064234,
+      "rolled_control_coherence": 0.010962621121019813,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 299,
+      "time_s": 42.121443053,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9451275312658995,
+      "cfo_scatter_hz": 34.302906432303644,
+      "rolled_control_coherence": 0.01004259797745793,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 5.945494719882003,
+        "phase_resultant": 5.945494719882003,
+        "even_cfo_scatter": 5.945494719882003,
+        "rolled_control": 5.945494719882003,
+        "phase_permuted_within_stratum": 5.945494719882003
+      }
+    },
+    {
+      "visit_index": 311,
+      "time_s": 43.804105655,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8290046839490054,
+      "cfo_scatter_hz": 36.05987094516257,
+      "rolled_control_coherence": 0.009872936850115215,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.004953019551816,
+        "phase_resultant": 6.004953019551816,
+        "even_cfo_scatter": 6.004953019551816,
+        "rolled_control": 6.004953019551816,
+        "phase_permuted_within_stratum": 6.004953019551816
+      }
+    },
+    {
+      "visit_index": 314,
+      "time_s": 44.22410451,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8439815828706703,
+      "cfo_scatter_hz": 44.5524496832643,
+      "rolled_control_coherence": 0.011505599306421482,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.017113511130749,
+        "phase_resultant": 6.017113511130749,
+        "even_cfo_scatter": 6.017113511130749,
+        "rolled_control": 6.017113511130749,
+        "phase_permuted_within_stratum": 6.017113511130749
+      }
+    },
+    {
+      "visit_index": 320,
+      "time_s": 45.066768703,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.7484143488495515,
+      "cfo_scatter_hz": 36.30235219232545,
+      "rolled_control_coherence": 0.010941935139842018,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 324,
+      "time_s": 45.628100265,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8573265629907102,
+      "cfo_scatter_hz": 31.67433403635291,
+      "rolled_control_coherence": 0.010665538523286925,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.16911204439123,
+        "phase_resultant": 6.16911204439123,
+        "even_cfo_scatter": 6.16911204439123,
+        "rolled_control": 6.16911204439123,
+        "phase_permuted_within_stratum": 6.16911204439123
+      }
+    },
+    {
+      "visit_index": 325,
+      "time_s": 45.768099833,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.8754908086922059,
+      "cfo_scatter_hz": 19.855668930402764,
+      "rolled_control_coherence": 0.011321819220296299,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 326,
+      "time_s": 45.908099353,
+      "temporal_stratum": 4,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8497537828066065,
+      "cfo_scatter_hz": 29.090055942903945,
+      "rolled_control_coherence": 0.011133649705876235,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 327,
+      "time_s": 46.048098887,
+      "temporal_stratum": 4,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9229606035949282,
+      "cfo_scatter_hz": 23.164834436319943,
+      "rolled_control_coherence": 0.011501729196878314,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.252018541655807,
+        "phase_resultant": 6.252018541655807,
+        "even_cfo_scatter": 6.252018541655807,
+        "rolled_control": 6.252018541655807,
+        "phase_permuted_within_stratum": 6.252018541655807
+      }
+    },
+    {
+      "visit_index": 328,
+      "time_s": 46.189210676,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8800452005793301,
+      "cfo_scatter_hz": 23.878171655307447,
+      "rolled_control_coherence": 0.01063177773084066,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.205090256675695,
+        "phase_resultant": 6.205090256675695,
+        "even_cfo_scatter": 6.205090256675695,
+        "rolled_control": 6.205090256675695,
+        "phase_permuted_within_stratum": 6.205090256675695
+      }
+    },
+    {
+      "visit_index": 333,
+      "time_s": 46.8907626,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.966075240940953,
+      "cfo_scatter_hz": 24.222153219114155,
+      "rolled_control_coherence": 0.010813037111409879,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 334,
+      "time_s": 47.030762107,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9367234309802247,
+      "cfo_scatter_hz": 42.142658974178325,
+      "rolled_control_coherence": 0.010252123871610156,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 336,
+      "time_s": 47.310761039,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8772164220350575,
+      "cfo_scatter_hz": 33.70419452003805,
+      "rolled_control_coherence": 0.01109484270348269,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 338,
+      "time_s": 47.592093297,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.9700062988783823,
+      "cfo_scatter_hz": 23.132576172192753,
+      "rolled_control_coherence": 0.010599094721041542,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 340,
+      "time_s": 47.872092226,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9081453448414777,
+      "cfo_scatter_hz": 30.688090169575226,
+      "rolled_control_coherence": 0.01058556272238702,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.519668625411941,
+        "phase_resultant": 6.519668625411941,
+        "even_cfo_scatter": 6.519668625411941,
+        "rolled_control": 6.519668625411941,
+        "phase_permuted_within_stratum": 6.519668625411941
+      }
+    },
+    {
+      "visit_index": 344,
+      "time_s": 48.433423296,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8385055435191221,
+      "cfo_scatter_hz": 22.384698633939887,
+      "rolled_control_coherence": 0.01182239415204546,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.627465506892648,
+        "phase_resultant": 6.627465506892648,
+        "even_cfo_scatter": 6.627465506892648,
+        "rolled_control": 6.627465506892648,
+        "phase_permuted_within_stratum": 6.627465506892648
+      }
+    },
+    {
+      "visit_index": 347,
+      "time_s": 48.860088217,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9268992664858416,
+      "cfo_scatter_hz": 25.65414305007695,
+      "rolled_control_coherence": 0.011447273123155077,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 6.7242098966872215,
+        "phase_resultant": 6.7242098966872215,
+        "even_cfo_scatter": 6.7242098966872215,
+        "rolled_control": 6.7242098966872215,
+        "phase_permuted_within_stratum": 6.7242098966872215
+      }
+    },
+    {
+      "visit_index": 351,
+      "time_s": 49.421419122,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 1,
+      "phase_resultant": 0.8257878542450822,
+      "cfo_scatter_hz": 24.869260592045308,
+      "rolled_control_coherence": 0.011119019225529455,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 361,
+      "time_s": 50.825412636,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 0,
+      "phase_resultant": 0.8909940081926834,
+      "cfo_scatter_hz": 31.04287524626419,
+      "rolled_control_coherence": 0.010499783936865431,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 367,
+      "time_s": 51.668075145,
+      "temporal_stratum": 5,
+      "outer_partition": "train",
+      "inner_fold": 2,
+      "phase_resultant": 0.9666169859197282,
+      "cfo_scatter_hz": 24.624298795191336,
+      "rolled_control_coherence": 0.01150237703442413,
+      "phase_group_count": 3
+    },
+    {
+      "visit_index": 377,
+      "time_s": 53.070734429,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.8283821114525819,
+      "cfo_scatter_hz": 54.00928956007883,
+      "rolled_control_coherence": 0.011463677210699868,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 8.201954197906339,
+        "phase_resultant": 8.201954197906339,
+        "even_cfo_scatter": 8.201954197906339,
+        "rolled_control": 8.201954197906339,
+        "phase_permuted_within_stratum": 8.201954197906339
+      }
+    },
+    {
+      "visit_index": 386,
+      "time_s": 54.333393934,
+      "temporal_stratum": 5,
+      "outer_partition": "held",
+      "inner_fold": -1,
+      "phase_resultant": 0.9317733399550078,
+      "cfo_scatter_hz": 45.09502964169429,
+      "rolled_control_coherence": 0.010974822093432599,
+      "phase_group_count": 3,
+      "held_nll": {
+        "uniform": 8.995493138564546,
+        "phase_resultant": 8.995493138564546,
+        "even_cfo_scatter": 8.995493138564546,
+        "rolled_control": 8.995493138564546,
+        "phase_permuted_within_stratum": 8.995493138564546
+      }
+    }
+  ]
+}
