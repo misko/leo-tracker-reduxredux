@@ -158,7 +158,10 @@ and global timing gives 1.36–1.57 km. All settings are reported, not selected 
 reference error. None reaches 300 m. Short views remain worse: roughly 6 km for
 the strongest-performing one-scan setting. All 48 fits meet the declared
 stopping rule without timing-boundary or visibility failures. Joint catalogue
-reassignment on this second group remains before validation is opened.
+reassignment on this second group is now complete and worsens the 1 s result to
+1.84 km and the 5 s result to 3.17 km, despite improving held frequency RMS.
+It does not reproduce the first group's localization gain and should not be
+promoted on residual fit alone. Validation/test evidence remains unopened.
 
 The current experiment priorities are:
 
@@ -202,6 +205,7 @@ test group closed until model selection is complete.
 - [Second TRAIN group cache provenance](../2026_09_23_long_training_cache_second8h/README.md).
 - [Second TRAIN blind baseline at all durations](../2026_09_23_long_second8h_training_baseline/README.md).
 - [Second TRAIN timing-model replication, all 48 arms](../2026_09_23_second_train_epoch_replication/README.md).
+- [Second TRAIN joint reassignment: negative localization replication](../2026_09_23_second_train_joint_replication/README.md).
 
 SOL implemented the epoch model; Terra audited associations, recurrence and
 cache provenance. Root implemented the corrected duration inference and loading
