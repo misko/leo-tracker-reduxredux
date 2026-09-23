@@ -27,6 +27,11 @@ PROTOCOL = ROOT / "reports/2026_09_23_adaptive_multiscale_phase_refined_protocol
 DURATIONS = (120, 60, 20)
 
 
+def frame_origin_times(starts, shift, fraction, sample_rate_hz):
+    """Times of phasors already transported to each coherent frame origin."""
+    return (np.asarray(starts) + shift + fraction) / sample_rate_hz
+
+
 def configure_frontend(row):
     frontend.FS = row["sample_rate_hz"]
     frontend.EPOCHS = {
@@ -116,8 +121,7 @@ def source_phase(iq, duration_ms, source_name, source, edge, local_timing):
         within_hz.append(float(residual))
     product = coeff[1] * np.conj(coeff[0])
     weights = np.sqrt(abs(coeff[0]) * abs(coeff[1]))
-    symbol_reference = float(np.mean(offsets_s))
-    times = starts / frontend.FS + symbol_reference
+    times = frame_origin_times(starts, shift, fraction, frontend.FS)
     frequency, phase, resultant = fit_linear_phasor(
         product[train], times[train], weights[train], center_s
     )
