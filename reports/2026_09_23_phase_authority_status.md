@@ -66,7 +66,30 @@ electrical calibration or a capture-valid directed RF baseline.
 
 ## Evidence needed to resume the geometric route
 
-The necessary next input is an existing calibration or hardware reference
+A further metadata-only check of the **full archived trajectory banks** found
+concrete candidate material beyond the single pair retained in the phase report:
+42 deduplicated branches across four paths, including five RX0 and fourteen RX1
+branches for stream-1. Two branches on each receiver overlap the selected
+31.8–32.8 s interval. The second RX0 branch overlaps both RX1 branches for
+0.825 s. Within each receiver, the two branches share no canonical or raw
+source-observation IDs, so they are separate archived hypotheses, not simply
+two alias entries of the same archived branch. This still does not prove two
+physical emitters.
+
+The [full inventory](figures/2026_09_23_independent_phase/geometry-sensitivity/continuous-branch-inventory.json)
+and [metadata-only builder](figures/2026_09_23_independent_phase/geometry-sensitivity/build_continuous_branch_inventory.py)
+preserve complete IDs, support intervals, source-product digests, and phase
+qualification counts. The secondary RX1 branch has zero archived qualified
+75 ms phase windows. Source matching and known-pilot isolation must therefore
+be established before treating it as a second phase source. Raw source IDs are
+path-local; an equal ID across receivers can merely mean equal sample-start,
+candidate-rank, and method labels. Such equality is not independent emitter
+matching evidence and must not be used as a global source join.
+
+This gives a concrete, bounded next investigation using existing data, without
+declaring the geometric goal complete or assuming the missing calibration.
+
+For absolute geometric interpretation, the missing input is a calibration or hardware reference
 authority that constrains differential receiver phase/frequency/delay over the
 analysis interval, together with capture-valid RF baseline/mapping information.
 A shared oscillator reference, if present, must be documented and its remaining
@@ -80,7 +103,15 @@ selected example's retained phase artifacts. This audit has not established
 their absence across the entire archive.
 
 A question about saved common-signal calibration and LNB oscillator-reference
-documentation has been sent to the operator. No new RF collection or hardware
+documentation was sent to the operator; the response was **“Not sure.”** The
+oscillator relationship therefore remains unverified, not assumed independent
+or shared. A repository search found the earlier
+[dual-LNB conducted drift reference](2026_08_22_dual_lnb_drift_reference.md): it
+documents separate sequential bench runs, not a simultaneous capture-bound
+differential phase calibration. Its physical mapping to the current station
+paths is incomplete, so it cannot supply the missing correction.
+
+No new RF collection or hardware
 change is authorized or performed here. Further association/position claims
-remain pending that authority; random whole-group holdouts remain mandatory
+require independent validation and the relevant authority; random whole-group holdouts remain mandatory
 for any subsequent method qualification.
