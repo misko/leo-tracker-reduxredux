@@ -1,0 +1,19 @@
+{
+  "checked_utc": "2026-09-23T06:16:10.885842+00:00",
+  "unit": "leo-adaptive-position-v2-completion-audit-20260923.service",
+  "helper_path": "/tmp/watch_adaptive_position_v2_completion.py",
+  "helper_sha256": "2ca2361f195ee897b0fd3e2d2e2031d012d34b3c43cf3feabf41e09db54ae726",
+  "service_user": "mouse9911",
+  "service_group": "leo",
+  "poll_seconds": 180,
+  "mutates_queue_or_bulk_store": false,
+  "publishes_git": false,
+  "expected_final_artifacts": [
+    "v2-post-rollout-audit.json",
+    "v2-rollout-summary/positions.csv",
+    "v2-rollout-summary/position-summary.json",
+    "v2-rollout-summary/position-summary.png",
+    "v2-completion-receipt.json"
+  ],
+  "state": "ActiveState=active\nExecMainStatus=0\nExecStart={ path=/usr/bin/python3 ; argv[]=/usr/bin/python3 /tmp/watch_adaptive_position_v2_completion.py --python /opt/leo-tracker/releases/fb152566148e662dc22d7948607fd65998f033a9/.venv/bin/python --auditor /opt/leo-tracker/releases/fb152566148e662dc22d7948607fd65998f033a9/tools/audit_adaptive_tle_position_rollout.py --summarizer /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/summarize.py --bulk-root /srv/bulk/leo --inventory /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/inventory.json --api-base http://127.0.0.1:8090 --receipt-dir /tmp/adaptive-position-v2-completion-polls --final-audit /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/v2-post-rollout-audit.json --summary-output /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/v2-rollout-summary --completion-receipt /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/v2-completion-receipt.json --failure-receipt /home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_23_adaptive_best_first_rollout/v2-completion-failure.json --poll-seconds 180 ; ignore_errors=no ; start_time=[Wed 2026-09-23 06:15:56 UTC] ; stop_time=[n/a] ; pid=4173936 ; code=(null) ; status=0/0 }\n"
+}

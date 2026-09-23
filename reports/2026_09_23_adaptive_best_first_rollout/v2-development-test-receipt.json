@@ -1,0 +1,453 @@
+{
+  "duration_seconds": 5.169425,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "c92a8917d42246b6e7c96a3c0d492748ae0984dc6b43732dd608ce31e72fd6d1",
+  "overlay_digest": "1d688573d0524620613dcc2fd9967d3f599c13dea95b79cccff67a3bced36284",
+  "passed": true,
+  "plan": {
+    "components": [
+      "analysis",
+      "api",
+      "catalog",
+      "deployment",
+      "documentation",
+      "python-general",
+      "web"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/api/test_adaptive_tle_position_api.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle",
+          "tests/catalog/test_adaptive_tracking_queue.py"
+        ],
+        "name": "pytest-changed-2",
+        "postgres": true
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_adaptive_processing_queue.py"
+        ],
+        "name": "pytest-changed-3",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_adaptive_tle_position_cli.py"
+        ],
+        "name": "pytest-changed-4",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/contracts/test_adaptive_tle_position.py"
+        ],
+        "name": "pytest-changed-5",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/deploy/test_systemd_templates.py"
+        ],
+        "name": "pytest-changed-6",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/storage/test_adaptive_tle_position_store.py"
+        ],
+        "name": "pytest-changed-7",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/tools/test_audit_adaptive_tle_position_rollout.py"
+        ],
+        "name": "pytest-changed-8",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "src/leo/api/adaptive_tle_position.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/catalog/repository.py",
+          "src/leo/cli/adaptive_processing_queue.py",
+          "src/leo/cli/adaptive_tle_position.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/adaptive_tle_position.py",
+          "src/leo/presentation/adaptive_tle_position.py",
+          "src/leo/storage/adaptive_tle_position.py",
+          "tests/api/test_adaptive_tle_position_api.py",
+          "tests/catalog/test_adaptive_tracking_queue.py",
+          "tests/cli/test_adaptive_processing_queue.py",
+          "tests/cli/test_adaptive_tle_position_cli.py",
+          "tests/contracts/test_adaptive_tle_position.py",
+          "tests/deploy/test_systemd_templates.py",
+          "tests/storage/test_adaptive_tle_position_store.py",
+          "tests/tools/test_audit_adaptive_tle_position_rollout.py",
+          "tools/audit_adaptive_tle_position_rollout.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "src/leo/api/adaptive_tle_position.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/catalog/repository.py",
+          "src/leo/cli/adaptive_processing_queue.py",
+          "src/leo/cli/adaptive_tle_position.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/adaptive_tle_position.py",
+          "src/leo/presentation/adaptive_tle_position.py",
+          "src/leo/storage/adaptive_tle_position.py",
+          "tests/api/test_adaptive_tle_position_api.py",
+          "tests/catalog/test_adaptive_tracking_queue.py",
+          "tests/cli/test_adaptive_processing_queue.py",
+          "tests/cli/test_adaptive_tle_position_cli.py",
+          "tests/contracts/test_adaptive_tle_position.py",
+          "tests/deploy/test_systemd_templates.py",
+          "tests/storage/test_adaptive_tle_position_store.py",
+          "tests/tools/test_audit_adaptive_tle_position_rollout.py",
+          "tools/audit_adaptive_tle_position_rollout.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "run",
+          "build"
+        ],
+        "name": "web-build",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "test",
+          "--",
+          "--run"
+        ],
+        "name": "web-test",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "deploy/systemd/leo-adaptive-analysis-worker@.service",
+      "deploy/systemd/recovery/leo-adaptive-analysis-worker@.service.d/80-immutable-release.conf.in",
+      "docs/operations/adaptive-tle-position.md",
+      "src/leo/api/adaptive_tle_position.py",
+      "src/leo/api/app.py",
+      "src/leo/api/production.py",
+      "src/leo/catalog/repository.py",
+      "src/leo/cli/adaptive_processing_queue.py",
+      "src/leo/cli/adaptive_tle_position.py",
+      "src/leo/cli/scanner_tracking.py",
+      "src/leo/contracts/adaptive_tle_position.py",
+      "src/leo/presentation/adaptive_tle_position.py",
+      "src/leo/storage/adaptive_tle_position.py",
+      "tests/api/test_adaptive_tle_position_api.py",
+      "tests/catalog/test_adaptive_tracking_queue.py",
+      "tests/cli/test_adaptive_processing_queue.py",
+      "tests/cli/test_adaptive_tle_position_cli.py",
+      "tests/contracts/test_adaptive_tle_position.py",
+      "tests/deploy/test_systemd_templates.py",
+      "tests/storage/test_adaptive_tle_position_store.py",
+      "tests/tools/test_audit_adaptive_tle_position_rollout.py",
+      "tools/audit_adaptive_tle_position_rollout.py",
+      "web/src/AdaptiveTlePosition.test.tsx",
+      "web/src/AdaptiveTlePosition.tsx"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 1.077799,
+      "exit_code": 0,
+      "name": "mypy",
+      "output_sha256": "3b5eaf9b454a04b79c2472f94f110d28e5d872b43e9e4f6ec437e5b624c8ed4a"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/api/test_adaptive_tle_position_api.py"
+      ],
+      "duration_seconds": 3.762547,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "4c97ded411d117cff95c07f350c8d5d4a0f1b391d1129a7465b2e2ddc99c9d57"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle",
+        "tests/catalog/test_adaptive_tracking_queue.py"
+      ],
+      "duration_seconds": 2.540484,
+      "exit_code": 0,
+      "name": "pytest-changed-2",
+      "output_sha256": "63f7234b232acc9c9efc30840c7c437dbce889a1714f83bf70059b8b6827fb5e"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_adaptive_processing_queue.py"
+      ],
+      "duration_seconds": 3.560818,
+      "exit_code": 0,
+      "name": "pytest-changed-3",
+      "output_sha256": "026dbc90d1501c8bfe19b2ae380529a11ce2e067c79d60f845794d8f00bdb345"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_adaptive_tle_position_cli.py"
+      ],
+      "duration_seconds": 3.322299,
+      "exit_code": 0,
+      "name": "pytest-changed-4",
+      "output_sha256": "de479b8f7851dbdc1b8d42042f9ecadbfc80bbf303df68123802391b1740ddbf"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/contracts/test_adaptive_tle_position.py"
+      ],
+      "duration_seconds": 0.643417,
+      "exit_code": 0,
+      "name": "pytest-changed-5",
+      "output_sha256": "580ff8d6754afc97775463e57c50000e811f60878d7b48367eb18a935bfb4550"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/deploy/test_systemd_templates.py"
+      ],
+      "duration_seconds": 3.795259,
+      "exit_code": 0,
+      "name": "pytest-changed-6",
+      "output_sha256": "7ee2af3aad86c96a9fe79349a8c8f86e75ba608265183336a7d8e2c9a577c8e3"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/storage/test_adaptive_tle_position_store.py"
+      ],
+      "duration_seconds": 2.544454,
+      "exit_code": 0,
+      "name": "pytest-changed-7",
+      "output_sha256": "077cc5aac71a0325a524e17e626c6d00b959a0c9dc16d98cbad9a41cd8be6d88"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/tools/test_audit_adaptive_tle_position_rollout.py"
+      ],
+      "duration_seconds": 2.589702,
+      "exit_code": 0,
+      "name": "pytest-changed-8",
+      "output_sha256": "e59c88ef1039ee7a505b97297ce2e1e53c34b18f87fa4f2d0ada118290ca8b5c"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "src/leo/api/adaptive_tle_position.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/catalog/repository.py",
+        "src/leo/cli/adaptive_processing_queue.py",
+        "src/leo/cli/adaptive_tle_position.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/adaptive_tle_position.py",
+        "src/leo/presentation/adaptive_tle_position.py",
+        "src/leo/storage/adaptive_tle_position.py",
+        "tests/api/test_adaptive_tle_position_api.py",
+        "tests/catalog/test_adaptive_tracking_queue.py",
+        "tests/cli/test_adaptive_processing_queue.py",
+        "tests/cli/test_adaptive_tle_position_cli.py",
+        "tests/contracts/test_adaptive_tle_position.py",
+        "tests/deploy/test_systemd_templates.py",
+        "tests/storage/test_adaptive_tle_position_store.py",
+        "tests/tools/test_audit_adaptive_tle_position_rollout.py",
+        "tools/audit_adaptive_tle_position_rollout.py"
+      ],
+      "duration_seconds": 0.008245,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-adaptive-position-deploy/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "src/leo/api/adaptive_tle_position.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/catalog/repository.py",
+        "src/leo/cli/adaptive_processing_queue.py",
+        "src/leo/cli/adaptive_tle_position.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/adaptive_tle_position.py",
+        "src/leo/presentation/adaptive_tle_position.py",
+        "src/leo/storage/adaptive_tle_position.py",
+        "tests/api/test_adaptive_tle_position_api.py",
+        "tests/catalog/test_adaptive_tracking_queue.py",
+        "tests/cli/test_adaptive_processing_queue.py",
+        "tests/cli/test_adaptive_tle_position_cli.py",
+        "tests/contracts/test_adaptive_tle_position.py",
+        "tests/deploy/test_systemd_templates.py",
+        "tests/storage/test_adaptive_tle_position_store.py",
+        "tests/tools/test_audit_adaptive_tle_position_rollout.py",
+        "tools/audit_adaptive_tle_position_rollout.py"
+      ],
+      "duration_seconds": 0.008072,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "a0a0f191878d553ae2b88299d5ead34d7a6367937ff1bd9e304fb73059c83f8a"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "run",
+        "build"
+      ],
+      "duration_seconds": 4.5004,
+      "exit_code": 0,
+      "name": "web-build",
+      "output_sha256": "32353abd45e3416763ab19305163afc8d20b6e8aa0e2f16cc814ce1d166a25cc"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "test",
+        "--",
+        "--run"
+      ],
+      "duration_seconds": 3.502907,
+      "exit_code": 0,
+      "name": "web-test",
+      "output_sha256": "7b9b0b4ec85f9ba55e3d0ab18171648426d3f0295e43c0339cfd04c34204f55a"
+    }
+  ],
+  "revision": "fb152566148e662dc22d7948607fd65998f033a9",
+  "schema_version": 1
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "adaptive-tle-v2-canary-comparison-v1",
+  "session_id": "scan-fw-cf510316ae7f05d5",
+  "analysis_id": "scanner-adaptive-tle-position-v2",
+  "source_commit": "7532ff9d7172997eb3c78d93fa4b212b8c6ee2a6",
+  "source_sha256": {
+    "adaptive_tle_position.py": "ff64ecfa3dea9665b7ceb6536353364010af0e584a7b75aea472f0a43c4f5267",
+    "adaptive_tle_prediction.py": "b55e38ed27a0cd5f14fe8066307702a1fe19d56ba17b73c01fe138f0433dfcc0",
+    "adaptive_tle_position_cli.py": "96e11a36bcc8e10008414d64ac9adf77088de4c5e6f3d39fd492b8df648ce8fe"
+  },
+  "bindings": {
+    "evidence_sha256": "sha256:0adb0182f9f4ee9f910e91a8bcdd9786baf793f9fcb801ee0e26b97ad8b6a078",
+    "input_manifest_sha256": "sha256:079a4f35d01e5b742d0c830fc52327068c1d546787da96702bad25871d088e1d",
+    "configuration_sha256": "sha256:d1061681332535d7a6dd17ef59052448e0d66c719e21df4521f16ae81b5af529",
+    "v1_document_sha256": "db455b4d22fbe8e9d377900b0bb09de3813efee712aae309db58cbfa18e83744",
+    "v2_document_sha256": "46768c979d52e1a102b6176eae6e035ace573d8607155c1903244cc83658aad5"
+  },
+  "input_parity": {
+    "track_count": 34,
+    "observation_count": 750,
+    "candidate_count": 11104,
+    "track_ids_equal": true,
+    "observation_ids_equal": true,
+    "training_mask_mismatch_count": 0,
+    "evidence_digest_equal": true,
+    "input_manifest_digest_equal": true
+  },
+  "search": {
+    "region_size_km": 1000.0,
+    "levels_km": [100.0, 50.0, 25.0, 12.5],
+    "point_budget_per_prior": 400,
+    "workers": 4,
+    "bank_build_s": 31.064132439903915
+  },
+  "sacramento_250_vs_500": {
+    "v1_radius_km": 500.0,
+    "v2_radius_km": 250.0,
+    "v1_selected": {"east_km":-75.0,"north_km":-75.0,"capped_weighted_rmse_hz":184.78354136695506,"post_selection_horizontal_error_m":13444.29627468804},
+    "v2_selected": {"east_km":-106.25,"north_km":-81.25,"capped_weighted_rmse_hz":184.35118554536405,"post_selection_horizontal_error_m":19215.448967976896},
+    "v1_finest": {"east_km":-93.75,"north_km":-81.25,"capped_weighted_rmse_hz":185.0136233125215,"post_selection_horizontal_error_m":6719.037076702814},
+    "v2_finest": {"east_km":-106.25,"north_km":-81.25,"capped_weighted_rmse_hz":184.35118554536405,"post_selection_horizontal_error_m":19215.448967976896},
+    "v2_evaluated_point_count": 400,
+    "v2_finest_evaluated_point_count": 271,
+    "v2_max_evaluated_radius_km": 249.53080972096413,
+    "common_evaluated_coordinate_count": 158,
+    "common_coordinate_max_score_difference_hz": 0.0,
+    "runtime_ms": 90046,
+    "interpretation": "The smaller prior changed search allocation and the selected point. Its lower selection score does not establish greater position accuracy; post-selection reference error increased for this scan."
+  },
+  "reno_500_regression": {
+    "radius_km": 500.0,
+    "evaluated_coordinate_count": 400,
+    "coordinate_sets_equal": true,
+    "max_score_difference_hz": 0.0,
+    "selected_equal": true,
+    "finest_equal": true,
+    "selected_candidate_tau_mismatch_count": 0,
+    "selected": {"east_km":-243.75,"north_km":-181.25,"capped_weighted_rmse_hz":184.5109586304336,"post_selection_horizontal_error_m":9406.731540376744},
+    "runtime_ms": 143497
+  },
+  "limitations": [
+    "Both searches reached the 400-point budget and left a deferred frontier; neither is an exhaustive optimum.",
+    "Candidate identity is selected by randomized evaluation RMS and is a diagnostic selection score, not a calibrated likelihood.",
+    "Reference position is used only for the reported post-selection horizontal error and did not enter inference."
+  ]
+}
