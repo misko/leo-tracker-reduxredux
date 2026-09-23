@@ -155,10 +155,12 @@ fractional-timing robustness or cross-dwell phase continuity. A free frequency
 rate for every dwell would absorb the proposed geometric signal and must not
 be introduced as a way to obtain a good fit.
 
-The next useful experiment is a bounded saved-IQ timing-sensitivity replay,
-with the same random dwell assignments and controls, followed by a source-bound
-dual-receiver test if continuity and electrical calibration can be established.
-Position improvement remains unproven. Production association is unchanged.
+A subsequent [saved-IQ timing-sensitivity replay](2026_09_23_longarc_timing.md)
+keeps the same random dwell assignments and controls; neither one-sample shifts
+nor the saved fractional epoch recover a significant geometry gain. A
+source-bound dual-receiver test still needs continuity and electrical
+calibration. Position improvement remains unproven. Production association is
+unchanged.
 
 ## Reproduction and validation
 
