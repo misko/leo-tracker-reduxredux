@@ -1,9 +1,10 @@
 # Synthetic phase-assisted association qualification protocol
 
-This observation-level simulation qualifies a candidate scorer, not waveform
+This supervised observation-level simulation qualifies a candidate scorer, not waveform
 extraction or real-sky association. Freeze protocol and source before generating
-or evaluating held trajectories. Seed 20260930 creates 36 independent whole
-trajectory units and assigns 18/18 to random outer train/held sets. Labels and
+or evaluating held trajectories. Seed 20260930 creates a separate 36-unit
+experiment for each declared nuisance regime and assigns the same 18/18 random
+whole-trajectory outer split. Labels and
 Doppler-close decoys are generated from latent trajectory state before noise or
 scores. No chronological split or held tuning is allowed.
 
@@ -18,7 +19,9 @@ geometric equation. The baseline is a sensitivity fixture, not hardware truth.
 Every trajectory randomly assigns complete observation times to local calibration
 or response. Candidate-independent Doppler offsets and one phase intercept are
 fit on calibration only. Outer training labels estimate global Doppler/phase
-scales and whether response-phase concentration supports use. Those fixed values
+scales and whether response-phase concentration supports use. This is explicitly
+supervised known-truth training calibration; labels never enter held candidate
+losses and are consulted afterward only for metrics. Those fixed values
 score every held candidate. Report true-candidate rank and log loss for Doppler
 alone, Doppler plus phase, and a 90-degree baseline-orientation control.
 
