@@ -44,6 +44,15 @@ nor a physical phase trajectory. The unrefined V1 and refined V2 outcomes are
 not competing measurements of a hardware change: V1 omitted the symbol-wise
 correction required before coherent summation, while V2 adds it.
 
+Using only that cached frame export, nearest A/B frames were paired within the
+predeclared half-frame bound; all 89 pairs per visit were retained, with actual
+maximum gaps of 79--97 microseconds. The 45 held-by-both pairs have DD
+resultants 0.882, 0.950, 0.965, 0.905, and 0.157 for visits 1065, 1077, 1109,
+1113, and 1140. The first four are compatible with cancellation of a shared
+within-dwell phase excursion after the saved source-specific rate removal;
+1140 is a retained counterexample. This is a conditional differential
+observable, not a raw-LO calibration or geometric phase measurement.
+
 Each source's residual CFO is fitted only on its seeded random whole-frame
 training group before the 64-symbol coherent sum. That frozen residual and the
 train-fitted receiver-product rate transport held phasors to the 60 ms dwell
