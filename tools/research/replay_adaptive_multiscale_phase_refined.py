@@ -14,7 +14,7 @@ from leo.analysis.starlink.adaptive_dual_rx_phase import (
     fit_linear_phasor,
     pilot_symbol_reference_offsets_s,
 )
-from leo.analysis.starlink.fractional_epoch import fractional_take
+from leo.analysis.starlink.fractional_epoch import fractional_take, fractional_take_bounds
 from leo.analysis.starlink.templates import OFDM_SYMBOL_DURATION_S, qin_edge_pilot_frame
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
@@ -55,22 +55,26 @@ def configure_frontend(row):
 
 
 def symbol_correlations(iq, starts, shift, model, receiver, template, fraction):
+    """Correlate every frame and pilot symbol with one fractional IQ take.
+
+    This is algebraically the former frame/symbol loop: offsets are merely
+    concatenated and reduced back into their original 64 symbol sums.  Keeping
+    the fractional sampler call vectorized avoids repeating its 16-tap
+    interpolation setup for every individual OFDM symbol.
+    """
     symbols = np.arange(2, 66)
     begins = np.rint(symbols * frontend.FS * OFDM_SYMBOL_DURATION_S).astype(int)
     ends = np.rint((symbols + 1) * frontend.FS * OFDM_SYMBOL_DURATION_S).astype(int)
-    out = []
-    for start in starts + shift:
-        row = []
-        for begin, end in zip(begins, ends, strict=True):
-            offsets = np.arange(begin, end)
-            positions = start + offsets + fraction
-            if positions.min() < 1 or positions.max() >= len(iq) - 2:
-                raise ValueError("fractional correlation escapes bounded visit")
-            received = fractional_take(iq[:, receiver], positions)
-            phase = frontend.carrier_phase(model, positions / frontend.FS)
-            row.append(np.sum(received * np.exp(-1j * phase) * np.conj(template[offsets])))
-        out.append(row)
-    return np.asarray(out)
+    offsets = np.concatenate([np.arange(begin, end) for begin, end in zip(begins, ends, strict=True)])
+    boundaries = np.cumsum(ends - begins)[:-1]
+    positions = np.asarray(starts, dtype=float)[:, None] + shift + offsets[None, :] + fraction
+    left_guard, right_guard = fractional_take_bounds(fraction)
+    if positions.min() < left_guard or positions.max() >= len(iq) - right_guard:
+        raise ValueError("fractional correlation escapes bounded visit")
+    received = fractional_take(iq[:, receiver], positions)
+    phase = frontend.carrier_phase(model, positions / frontend.FS)
+    terms = received * np.exp(-1j * phase) * np.conj(template[offsets])[None, :]
+    return np.add.reduceat(terms, np.r_[0, boundaries], axis=1)
 
 
 def source_phase(iq, duration_ms, source_name, source, edge, local_timing):
@@ -92,13 +96,13 @@ def source_phase(iq, duration_ms, source_name, source, edge, local_timing):
     scores = []
     for shift in shifts:
         ex = symbol_correlations(
-            iq, starts, shift, frontend.MODELS[source_name][0], 0, exact, fraction
+            iq, starts[train], shift, frontend.MODELS[source_name][0], 0, exact, fraction
         )
         co = symbol_correlations(
-            iq, starts, shift, frontend.MODELS[source_name][0], 0, control, fraction
+            iq, starts[train], shift, frontend.MODELS[source_name][0], 0, control, fraction
         )
         frames, _, _, _ = coherent_pilot_frames(
-            ex[train], co[train], offsets_s, OFDM_SYMBOL_DURATION_S
+            ex, co, offsets_s, OFDM_SYMBOL_DURATION_S
         )
         scores.append(float(np.sum(abs(frames) ** 2)))
     shift = shifts[int(np.argmax(scores))]
