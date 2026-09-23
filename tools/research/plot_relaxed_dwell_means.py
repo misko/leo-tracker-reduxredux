@@ -1,5 +1,6 @@
 """Plot saved held-frame circular DD means; no new fit or phase alignment."""
 
+import argparse
 import csv
 import json
 from pathlib import Path
@@ -9,6 +10,10 @@ import numpy as np
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--thresholds", nargs=2, type=float, default=[0.9, 0.8])
+    parser.add_argument("--suffix", default="")
+    args = parser.parse_args()
     out = Path("reports/figures/2026_09_23_relaxed_adaptive_coherence")
     parts = sorted(out.glob("results-part-*.json"))
     cache = out / "all-dwell-pair-means.json"
@@ -45,7 +50,7 @@ def main():
         2, 2, figsize=(15, 9), sharex=True, sharey=True, constrained_layout=True
     )
     counts = []
-    for row, threshold in enumerate([0.9, 0.8]):
+    for row, threshold in enumerate(args.thresholds):
         for arm in [0, 1]:
             ax = axs[row, arm]
             selected = [
@@ -90,8 +95,10 @@ def main():
     )
     fig.supxlabel("Time since scan start (s; dwell midpoint)")
     fig.supylabel("Wrapped mean source B−A receiver-phase difference (degrees)")
-    fig.savefig(out / "dwell-mean-phase-300s.png", dpi=170)
-    (out / "dwell-mean-phase-counts.json").write_text(json.dumps(counts, indent=2) + "\n")
+    fig.savefig(out / f"dwell-mean-phase-300s{args.suffix}.png", dpi=170)
+    (out / f"dwell-mean-phase-counts{args.suffix}.json").write_text(
+        json.dumps(counts, indent=2) + "\n"
+    )
     print(json.dumps(counts, indent=2))
 
 
