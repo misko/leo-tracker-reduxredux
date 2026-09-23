@@ -102,7 +102,7 @@ phase drift or prove shared-source identity. The [builder](figures/2026_09_23_in
 binds the input artifact hash and needs no IQ access.
 
 RX0's minimum source-component CFO separations modulo the native alias are
-approximately 60.716, 30.738, 75.320, 75.181, 74.578, and 73.550 kHz in the
+approximately 60.716, 30.738, 75.320, 75.181, 74.578, and 73.475 kHz in the
 same time order. These six surviving pairs are outside the 2.5 kHz initial
 Hough gate. Consequently, the general possibility of merging close-Doppler
 signals described above is **not evidence that it caused the loss of these
