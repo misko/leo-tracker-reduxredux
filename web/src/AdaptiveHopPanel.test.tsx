@@ -35,6 +35,67 @@ describe("adaptive actual-visit presentation", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(page)));
     await expect(getAdaptiveSessions(0)).rejects.toThrow("capture evidence");
   });
+  it("accepts feature-104 retained visits after a transport gap", async () => {
+    const legacy = adaptiveDetailFixture("feature104-sparse", 3);
+    const origin = BigInt(legacy.source_origin_counter!);
+    const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * 6n);
+    const visits = legacy.visits.map(v => ({
+      ...v,
+      proposed_target_index: v.target_index,
+      valid_start_counter: scale(v.valid_start_counter),
+      valid_end_counter: v.valid_end_counter === null ? null : scale(v.valid_end_counter),
+      decision_counter: scale(v.decision_counter),
+    }));
+    Object.assign(visits[0], { retained: false, valid_end_counter: null, valid_end_seconds: null });
+    Object.assign(visits[2], {
+      retained: true,
+      valid_end_counter: String(BigInt(visits[2].valid_start_counter) + 1_800_000n),
+      valid_end_seconds: visits[2].valid_start_seconds + .12,
+    });
+    const capture = {
+      ...legacy.capture,
+      schema_version: 7 as const,
+      sample_rate_hz: 15000000 as const,
+      bandwidth_hz: 15000000 as const,
+      analysis_state: "separate_product" as const,
+      radio_serial: "10400056f695001322002d0010ad1719f2",
+      selected_edge: "lower" as const,
+      allowed_target_mask: 15 as const,
+      target_coverage: legacy.capture.target_coverage.map(row => ({
+        ...row,
+        retained_visits: row.target_index === 0 ? 0 : row.target_index === 2 ? 1 : row.retained_visits,
+      })),
+    };
+    const detail = { ...legacy, schema_version: 7 as const, capture, visits };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    await expect(getAdaptiveSession("feature104-sparse")).resolves.toEqual(detail);
+
+    capture.retained_visits = 1;
+    capture.target_coverage[2].retained_visits = 0;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    await expect(getAdaptiveSession("feature104-sparse")).rejects.toThrow(
+      "retained visit inventory differs",
+    );
+  });
+  it("keeps legacy retained visits prefix-bound", async () => {
+    const detail = adaptiveDetailFixture("legacy-sparse", 3);
+    Object.assign(detail.visits[0], {
+      retained: false,
+      valid_end_counter: null,
+      valid_end_seconds: null,
+    });
+    Object.assign(detail.visits[2], {
+      retained: true,
+      valid_end_counter: String(BigInt(detail.visits[2].valid_start_counter) + 300_000n),
+      valid_end_seconds: detail.visits[2].valid_start_seconds + .12,
+    });
+    detail.capture.target_coverage[0].retained_visits = 0;
+    detail.capture.target_coverage[2].retained_visits = 1;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    await expect(getAdaptiveSession("legacy-sparse")).rejects.toThrow(
+      "visit evidence is invalid",
+    );
+  });
   it("admits new dual RX history and preserves zero-gap visit timing", async () => {
     const detail = adaptiveDetailFixture("feature103-test", 3);
     const capture = { ...detail.capture, schema_version: 6, analysis_state: "separate_product", radio_serial: "test", selected_edge: "lower", allowed_target_mask: 15 };
