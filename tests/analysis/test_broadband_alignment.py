@@ -92,3 +92,68 @@ def test_held_only_perturbation_cannot_change_frozen_model_or_mask() -> None:
     assert perturbed.training_physical_overlap_mask == baseline.training_physical_overlap_mask
     assert perturbed.training_bin_coherence == baseline.training_bin_coherence
     assert perturbed.held_out.corrected_coherence < baseline.held_out.corrected_coherence
+
+
+def test_random_group_training_preserves_physical_frequency_and_excludes_held_iq() -> None:
+    rate = 200_000.0
+    count = 65_536
+    cfo = -31_250.0
+    rng = np.random.default_rng(9127)
+    source = rng.normal(size=count) + 1j * rng.normal(size=count)
+    phase = 0.7 + 2 * np.pi * cfo * np.arange(count) / rate
+    iq = np.column_stack((source, source * np.exp(1j * phase)))
+    iq += 0.02 * (rng.normal(size=iq.shape) + 1j * rng.normal(size=iq.shape))
+    selected_groups = np.random.default_rng(913).permutation(8)[:4]
+    blocks = tuple(i for i in range(32) if i // 4 in selected_groups)
+    groups = tuple(i // 4 for i in blocks)
+    kwargs = dict(
+        receiver_cfo_seed_hz=cfo,
+        cfo_search_half_width_hz=2000,
+        block_samples=2048,
+        training_block_indices=blocks,
+        training_group_ids=groups,
+        heldout_block_indices=tuple(i for i in range(32) if i not in blocks),
+        heldout_group_ids=tuple(i // 4 for i in range(32) if i not in blocks),
+        random_seed=1821,
+    )
+    baseline = estimate_broadband_alignment(iq, rate, **kwargs)
+    changed = iq.copy()
+    for i in range(32):
+        if i not in blocks:
+            changed[i * 2048 : (i + 1) * 2048] = rng.normal(size=(2048, 2)) + 1j * rng.normal(
+                size=(2048, 2)
+            )
+    perturbed = estimate_broadband_alignment(changed, rate, **kwargs)
+    assert baseline.model.relative_cfo_hz == pytest.approx(cfo, abs=1)
+    assert baseline.held_out.corrected_coherence > 0.9
+    assert perturbed.model == baseline.model
+    assert perturbed.training_bin_coherence == baseline.training_bin_coherence
+    assert perturbed.held_out.corrected_coherence < 0.1
+
+
+@pytest.mark.parametrize(
+    "blocks,groups",
+    [
+        ((0, 0, 1, 2, 3, 4), (0, 0, 1, 1, 2, 2)),
+        ((0, 1, 2, 3, 4, 5), (0, 0, 0, 0, 1, 1)),
+        ((0, 1, 2, 3, 4, 500), (0, 0, 1, 1, 2, 2)),
+    ],
+)
+def test_random_training_rejects_invalid_or_insufficient_groups(blocks, groups) -> None:
+    iq, rate, _, _ = _case()
+    with pytest.raises(ValueError, match="random training"):
+        estimate_broadband_alignment(
+            iq, rate, block_samples=2048, training_block_indices=blocks, training_group_ids=groups
+        )
+
+
+def test_random_training_rejects_gaps_inside_one_group() -> None:
+    iq, rate, _, _ = _case()
+    with pytest.raises(ValueError, match="must be consecutive"):
+        estimate_broadband_alignment(
+            iq,
+            rate,
+            block_samples=2048,
+            training_block_indices=(0, 2, 3, 8, 9, 10, 16, 17, 18),
+            training_group_ids=(0, 0, 0, 1, 1, 1, 2, 2, 2),
+        )
