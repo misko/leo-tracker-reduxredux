@@ -15,7 +15,7 @@ hard pruning from a finite point grid; exact point visibility remains a later
 scoring operation.
 
 The first session has 11,114 causal non-debris Starlink candidates; the bound
-retains 880 on its 1-second grid. Its 1,354 eligible observations and integer
+retains 880 on its 1-second grid. Its 1,356 eligible observations and integer
 `[-5,+5]` tau support spans 14,894 exact query epochs, while the reusable grid
 has only 309 nodes. The ECEF position/velocity cache is 12 MiB compressed,
 avoiding a full-catalogue, full-300-second dense state tensor.
