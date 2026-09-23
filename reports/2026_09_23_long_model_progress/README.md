@@ -1,4 +1,16 @@
-# Long-cohort model experiments: timing helps, short-track removal does not
+# Long-cohort model experiments: training gains do not reach validation accuracy
+
+The frozen two-group validation is complete. The predeclared selection rule
+chooses global epoch scale 0.2 s, with 8.355 km mean error across equally weighted
+duration regimes/groups and 2.981/2.312 km full-group errors averaged over starts.
+None of 112 validation rows reaches 300 m; the best is 1.254 km. A one-scan case
+is about 33.8 km away. All seven configurations were eligible. Per-scan scale
+1 s is within the 10 m aggregate tie tolerance, resolved in favor of the simpler
+global model. The detailed TRAIN history below remains development evidence;
+its sub-kilometre result did not establish generalization. Final TEST was closed
+through selection and is reserved for a frozen, once-only selected-model check.
+
+[Complete validation report and independent reviews](../2026_09_23_frozen_validation/README.md).
 
 The frozen blind TRAIN baseline is about 10 km from the reference after six or
 sixteen scans and 7.6 km across the full eight-hour group. A conditional fit of
@@ -7,7 +19,7 @@ views and 1.57 km in the full group at the weakest tested regularization.
 Alternating catalogue reassignment and the scan-epoch fit further reduces the
 full-group error to 1.32 km. This is
 development progress, but it does not establish sub-300 m accuracy or validation
-generalization. Validation/test track outcomes remain closed.
+generalization. The subsequent validation outcome is summarized above.
 
 | TRAIN view / model | Sacramento error | Reno error | Common held capped RMS, Sac / Reno |
 |---|---:|---:|---:|
