@@ -19,6 +19,17 @@ RX0-native and RX1-native anchor analyses are kept in separate columns.
 |---|---:|---:|
 | R > 0.9 | 7 | 22 |
 | R > 0.8 | 7 | 27 |
+| R > 0.7 | 8 | 37 |
+| R > 0.6 | 11 | 49 |
+
+The requested lower-threshold comparison retains the same pilot-support checks,
+weights, and phase convention. It uses cached results without additional fits.
+
+![Lower-threshold mean phase](figures/2026_09_23_relaxed_adaptive_coherence/dwell-mean-phase-300s-07-06.png)
+
+Reproduce with `tools/research/plot_relaxed_dwell_means.py --thresholds 0.7 0.6 --suffix=-07-06`.
+These lower cuts admit more dispersed within-dwell phase measurements; their
+mean phase should be interpreted with correspondingly less concentration.
 
 All R > 0.9 points are channel 4. At R > 0.8, the RX1 arm has one
 channel-1, three channel-2, and 23 channel-4 points. No thresholded dwell
