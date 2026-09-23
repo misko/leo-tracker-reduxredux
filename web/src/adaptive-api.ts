@@ -208,7 +208,9 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
       || (c.source_span_attested ? !counter(detail.source_origin_counter) : detail.source_origin_counter !== null)) {
     throw new Error("Adaptive detail source binding is invalid");
   }
-  const sparse = c.schema_version === 3;
+  // Host-wide V3 and feature-104 V7 receipts explicitly preserve sparse
+  // retained-visit indices. Other published majors retain a strict prefix.
+  const sparse = c.schema_version === 3 || c.schema_version === 7;
   const retainedIndices = detail.visits.filter(v => v?.retained === true).map(v => v.visit_index);
   if (retainedIndices.length !== c.retained_visits) throw new Error("Adaptive retained visit inventory differs");
   if (c.schema_version === 2 || c.schema_version === 3) {
