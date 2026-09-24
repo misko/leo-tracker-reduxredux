@@ -110,12 +110,14 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
 
     rendered = scanner_tracking._review_renderer(
         bulk_root=tmp_path,
+        adaptive_analysis_root=tmp_path / "metrics",
         tle_root=tmp_path,
         site_name="spinnaker-sausalito",
         review_limit=64,
     )("scan-test")
 
     assert observed["maximum_tracks"] == 64
+    assert observed["adaptive_analysis_root"] == tmp_path / "metrics"
     reviews, eligible_count = rendered
     assert eligible_count == 1
     assert len(reviews) == 1
