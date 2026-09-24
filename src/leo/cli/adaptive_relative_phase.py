@@ -24,12 +24,22 @@ from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputSto
 from leo.storage.adaptive_relative_phase import RelativePhaseStore
 
 
-def run(root, session_id, *, probe_stride_ms=120, maximum_seconds=120):
+def run(
+    capture_root,
+    session_id,
+    *,
+    analysis_root=None,
+    output_root=None,
+    probe_stride_ms=120,
+    maximum_seconds=120,
+):
     if not 0 < maximum_seconds <= 560:
         raise ValueError("Phase budget must be in (0,560] seconds")
     started = time.monotonic()
-    captures = AdaptiveHopIqStore(root, read_only=True)
-    analyses = AdaptiveHopAnalysisStore(root, read_only=True)
+    analysis_root = capture_root if analysis_root is None else analysis_root
+    output_root = analysis_root if output_root is None else output_root
+    captures = AdaptiveHopIqStore(capture_root, read_only=True)
+    analyses = AdaptiveHopAnalysisStore(analysis_root, read_only=True)
     try:
         capture = captures.inspect(session_id)
         binding = bind_actual_visit_analysis(
@@ -38,7 +48,7 @@ def run(root, session_id, *, probe_stride_ms=120, maximum_seconds=120):
             probe_stride_ms=probe_stride_ms,
         )
         digest = relative_phase_binding(binding.input_manifest_sha256, binding.sha256)
-        with RelativePhaseStore(root).job(session_id, digest, writable=True) as output:
+        with RelativePhaseStore(output_root).job(session_id, digest, writable=True) as output:
             existing = output.manifest()
             if existing:
                 for artifact in existing.artifacts:

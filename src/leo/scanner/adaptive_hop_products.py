@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
     AdaptiveModel,
     Count,
     Index,
@@ -28,6 +29,8 @@ from leo.scanner.adaptive_hop_analysis import (
     Feature103VisitAnalysisV3,
     Feature104AnalysisConfigurationV4,
     Feature104VisitAnalysisV4,
+    VariableDwellAnalysisConfigurationV5,
+    VariableDwellVisitAnalysisV5,
     _compare_source_fields,
 )
 
@@ -107,14 +110,12 @@ class AdaptiveHopMetricsManifestV1(AdaptiveModel):
 
     @model_validator(mode="after")
     def _all_actual_visits_complete(self) -> Self:
-        expected_probes = (
-            len(self.configuration.receiver_ids) * self.configuration.scheduled_probe_count
-        )
+        expected_probes = self.configuration.scheduled_probe_counts
         indexes = tuple(v.visit_index for v in self.visits)
         if (
             len(indexes) != self.complete_visit_count
             or indexes != tuple(sorted(set(indexes)))
-            or any(v.probe_count != expected_probes for v in self.visits)
+            or any(v.probe_count not in expected_probes for v in self.visits)
         ):
             raise ValueError("adaptive metrics manifest does not cover every complete visit")
         return self
@@ -193,3 +194,28 @@ class Feature104MetricsManifestV7(AdaptiveHopMetricsManifestV1):
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
     visits: Annotated[tuple[Feature104VisitReferenceV7, ...], Field(max_length=2500)]
+
+
+class VariableDwellAnalysisBindingV8(AdaptiveHopAnalysisBindingV1):
+    """Receipt-V6 analysis bound to authoritative per-event valid spans."""
+
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    _visit_model: ClassVar[type[AdaptiveHopVisitAnalysisV1]] = VariableDwellVisitAnalysisV5
+    receipt: AdaptiveHopReceiptV6  # type: ignore[assignment]
+    configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
+
+
+class VariableDwellVisitReferenceV8(AdaptiveHopVisitReferenceV1):
+    schema_version: Literal[8] = 8
+    _filename_version: ClassVar[int] = 8
+    relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v8\.json\.zst$")]
+    probe_count: Annotated[int, Field(strict=True, ge=2, le=70)]  # type: ignore[assignment]
+    candidate_count: Annotated[int, Field(strict=True, ge=0, le=1120)]  # type: ignore[assignment]
+    fractional_candidate_count: Annotated[int, Field(strict=True, ge=0, le=1120)]  # type: ignore[assignment]
+    passed_fractional_candidate_count: Annotated[int, Field(strict=True, ge=0, le=1120)]  # type: ignore[assignment]
+
+
+class VariableDwellMetricsManifestV8(AdaptiveHopMetricsManifestV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
+    visits: Annotated[tuple[VariableDwellVisitReferenceV8, ...], Field(max_length=2500)]

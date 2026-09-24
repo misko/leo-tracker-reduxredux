@@ -12,6 +12,7 @@ from leo.scanner.adaptive_hop_presentation import (
     EdgeAdaptiveAnalysisStatusV4,
     Feature103AnalysisStatusV6,
     Feature104AnalysisStatusV7,
+    VariableDwellAnalysisStatusV8,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
@@ -19,6 +20,7 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
     Feature104AnalysisBindingV7,
+    VariableDwellAnalysisBindingV8,
 )
 from leo.scanner.host_adaptive_presentation import (
     HostAdaptiveAnalysisStatusV2,
@@ -37,8 +39,16 @@ from leo.storage.errors import BundleNotFoundError
 
 
 class AdaptiveHopAnalysisPresentationStore:
-    def __init__(self, root: Path):
-        self._root = root
+    def __init__(
+        self,
+        capture_root: Path,
+        *,
+        analysis_root: Path | None = None,
+        tracking_root: Path | None = None,
+    ):
+        self._capture_root = capture_root
+        self._analysis_root = analysis_root if analysis_root is not None else capture_root
+        self._tracking_root = tracking_root if tracking_root is not None else self._analysis_root
 
     def relative_phase_status(self, session_id: str, *, probe_stride_ms: int = 120):
         from leo.scanner.adaptive_relative_phase import (
@@ -52,7 +62,9 @@ class AdaptiveHopAnalysisPresentationStore:
             return None
         digest = relative_phase_binding(binding.input_manifest_sha256, binding.sha256)
         try:
-            with RelativePhaseStore(self._root, read_only=True).job(session_id, digest) as job:
+            with RelativePhaseStore(self._tracking_root, read_only=True).job(
+                session_id, digest
+            ) as job:
                 manifest = job.manifest()
         except FileNotFoundError:
             manifest = None
@@ -79,13 +91,15 @@ class AdaptiveHopAnalysisPresentationStore:
             return None
         if status.binding_sha256 != binding_sha256:
             raise ValueError("Phase artifact source changed")
-        with RelativePhaseStore(self._root, read_only=True).job(session_id, binding_sha256) as job:
+        with RelativePhaseStore(self._tracking_root, read_only=True).job(
+            session_id, binding_sha256
+        ) as job:
             return job.artifact(name, artifact_sha256)
 
     def _binding(
         self, session_id: str, probe_stride_ms: int
     ) -> AdaptiveHopAnalysisBindingV1 | None:
-        store = AdaptiveHopIqStore(self._root, read_only=True)
+        store = AdaptiveHopIqStore(self._capture_root, read_only=True)
         try:
             try:
                 capture = store.inspect(session_id)
@@ -124,14 +138,16 @@ class AdaptiveHopAnalysisPresentationStore:
         | HostAdaptiveAnalysisBindingV2
         | HostAdaptiveAnalysisBindingV3,
     ) -> AdaptiveHopAnalysisStatusV1:
-        store = AdaptiveHopAnalysisStore(self._root, read_only=True)
+        store = AdaptiveHopAnalysisStore(self._analysis_root, read_only=True)
         try:
             try:
                 with store.job(binding) as job:
                     return job.status()
             except BundleNotFoundError:
                 status_model: type[AdaptiveHopAnalysisStatusV1] = (
-                    Feature104AnalysisStatusV7
+                    VariableDwellAnalysisStatusV8
+                    if isinstance(binding, VariableDwellAnalysisBindingV8)
+                    else Feature104AnalysisStatusV7
                     if isinstance(binding, Feature104AnalysisBindingV7)
                     else Feature103AnalysisStatusV6
                     if isinstance(binding, Feature103AnalysisBindingV6)
@@ -174,7 +190,7 @@ class AdaptiveHopAnalysisPresentationStore:
             return None
         if binding.sha256 != binding_sha256:
             raise ValueError("adaptive artifact request changes source/configuration binding")
-        store = AdaptiveHopAnalysisStore(self._root, read_only=True)
+        store = AdaptiveHopAnalysisStore(self._analysis_root, read_only=True)
         try:
             try:
                 with store.job(binding) as job:
@@ -201,7 +217,7 @@ class AdaptiveHopAnalysisPresentationStore:
                 reason="requires_simultaneous_rx0_rx1",
                 manifest=None,
             )
-        store = AdaptiveDualRxPhaseStore(self._root, read_only=True)
+        store = AdaptiveDualRxPhaseStore(self._tracking_root, read_only=True)
         try:
             manifest = store.manifest(session_id, binding.input_manifest_sha256)
         finally:
@@ -239,7 +255,7 @@ class AdaptiveHopAnalysisPresentationStore:
             return None
         if status.manifest.glrt_binding_sha256 != glrt_binding_sha256:
             raise ValueError("adaptive phase artifact changed the GLRT binding")
-        store = AdaptiveDualRxPhaseStore(self._root, read_only=True)
+        store = AdaptiveDualRxPhaseStore(self._tracking_root, read_only=True)
         try:
             return store.artifact(status.manifest, expected_sha256=artifact_sha256)
         finally:
@@ -265,7 +281,7 @@ class AdaptiveHopAnalysisPresentationStore:
                 total_visit_count=total,
                 manifest=None,
             )
-        store = AdaptiveDualRxPhaseStoreV2(self._root, read_only=True)
+        store = AdaptiveDualRxPhaseStoreV2(self._tracking_root, read_only=True)
         try:
             completed = store.completed_visits(
                 session_id, binding.input_manifest_sha256, binding.sha256
@@ -308,7 +324,7 @@ class AdaptiveHopAnalysisPresentationStore:
             return None
         if status.manifest.glrt_binding_sha256 != glrt_binding_sha256:
             raise ValueError("adaptive phase V2 artifact changed the GLRT binding")
-        store = AdaptiveDualRxPhaseStoreV2(self._root, read_only=True)
+        store = AdaptiveDualRxPhaseStoreV2(self._tracking_root, read_only=True)
         try:
             return store.artifact(status.manifest, expected_sha256=artifact_sha256)
         finally:

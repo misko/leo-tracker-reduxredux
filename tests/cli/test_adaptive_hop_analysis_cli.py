@@ -159,6 +159,42 @@ def test_cli_persists_resumes_and_never_calls_radio(monkeypatch, tmp_path, capsy
     assert third["overview_metrics_manifest_sha256"] == second["overview_metrics_manifest_sha256"]
 
 
+def test_cli_keeps_capture_root_read_only_with_report_local_outputs(monkeypatch, tmp_path, capsys):
+    capture_root = tmp_path / "captures"
+    metrics_root = tmp_path / "report" / "metrics"
+    tracking_root = tmp_path / "report" / "tracking"
+    capture_root.mkdir()
+    metrics_root.mkdir(parents=True)
+    tracking_root.mkdir(parents=True)
+    capture = publish_capture(capture_root, count=2)
+    inventory = tuple(sorted(p.relative_to(capture_root) for p in capture_root.rglob("*")))
+    monkeypatch.setattr(cli.os, "nice", lambda _: None)
+    monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "analysis",
+            "--capture-root",
+            str(capture_root),
+            "--metrics-root",
+            str(metrics_root),
+            "--tracking-root",
+            str(tracking_root),
+            "--session-id",
+            capture.session_id,
+            "--metrics-only",
+        ],
+    )
+
+    cli.main()
+
+    assert json.loads(capsys.readouterr().out)["state"] == "metrics_complete"
+    assert tuple(sorted(p.relative_to(capture_root) for p in capture_root.rglob("*"))) == inventory
+    assert (metrics_root / "scanner-adaptive-analysis").is_dir()
+    assert not any(tracking_root.iterdir())
+
+
 def test_cli_metrics_only_then_failed_render_can_resume_without_reanalyzing(
     monkeypatch, tmp_path, capsys
 ):

@@ -6,7 +6,7 @@ import math
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Annotated, ClassVar, Literal, Protocol, Self, cast
+from typing import Annotated, Any, ClassVar, Literal, Protocol, Self, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -20,11 +20,16 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
 )
-from leo.scanner.detector import Glrt64CandidateResponse, analyze_glrt64_dwell
+from leo.scanner.detector import (
+    Glrt64CandidateResponse,
+    Glrt64DwellConfiguration,
+    analyze_glrt64_dwell,
+)
 from leo.scanner.models import ScanTarget
 
 Finite = Annotated[float, Field(allow_inf_nan=False)]
@@ -78,6 +83,10 @@ class AdaptiveHopAnalysisConfigurationV1(AdaptiveModel):
     @property
     def scheduled_probe_count(self) -> int:
         return (self.dwell_samples - self.probe_samples) // self.probe_stride_samples + 1
+
+    @property
+    def scheduled_probe_counts(self) -> tuple[int, ...]:
+        return (len(self.receiver_ids) * self.scheduled_probe_count,)
 
 
 class DualRx10mAdaptiveHopAnalysisConfigurationV2(AdaptiveHopAnalysisConfigurationV1):
@@ -182,12 +191,21 @@ class AdaptiveHopVisitAnalysisV1(AdaptiveModel):
     @model_validator(mode="after")
     def _source_and_coverage_close(self) -> Self:
         cfg = self.configuration
+        dwell_samples = self.valid_end_counter - self.valid_start_counter
+        scheduled_probe_count = (
+            cfg.scheduled_probe_count(dwell_samples)
+            if isinstance(cfg, VariableDwellAnalysisConfigurationV5)
+            else cfg.scheduled_probe_count
+        )
         keys = [(p.probe_index, p.receiver_id) for p in self.probes]
-        expected = [(p, rx) for p in range(cfg.scheduled_probe_count) for rx in cfg.receiver_ids]
+        expected = [(p, rx) for p in range(scheduled_probe_count) for rx in cfg.receiver_ids]
         if (
             keys != expected
             or not self.policy_generation
-            or self.valid_end_counter - self.valid_start_counter != cfg.dwell_samples
+            or (
+                not isinstance(cfg, VariableDwellAnalysisConfigurationV5)
+                and dwell_samples != cfg.dwell_samples
+            )
             or not self.source_origin_counter
             <= self.invalid_start_counter
             <= self.valid_start_counter
@@ -213,7 +231,7 @@ class AdaptiveHopVisitAnalysisV1(AdaptiveModel):
                 offset = candidate.fractional_epoch_offset_samples
                 if (
                     not 0 <= candidate.integer_epoch_sample < cfg.probe_samples
-                    or not 0 <= local + offset < cfg.dwell_samples
+                    or not 0 <= local + offset < dwell_samples
                     or candidate.integer_device_sample_counter != anchor
                     or candidate.integer_session_sample != relative
                     or candidate.fractional_time_s != (relative + offset) / cfg.sample_rate_hz
@@ -245,10 +263,94 @@ class Feature104AnalysisConfigurationV4(AdaptiveHopAnalysisConfigurationV1):
     sample_rate_hz: Literal[2_500_000, 10_000_000, 15_000_000]  # type: ignore[assignment]
 
 
+class VariableDwellAnalysisConfigurationV5(AdaptiveModel):
+    """One configuration whose probe inventory follows each attested event span."""
+
+    schema_version: Literal[5] = 5
+    analyzer_id: Literal["adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1"] = (
+        "adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1"
+    )
+    sample_rate_hz: Literal[2_500_000, 10_000_000]
+    allowed_valid_visit_ms: tuple[Literal[120], Literal[240], Literal[360]] = (
+        120,
+        240,
+        360,
+    )
+    probe_ms: Literal[20] = 20
+    probe_stride_ms: Annotated[int, Field(strict=True, ge=10, le=120)] = 10
+    glrt64_margin_gate: Annotated[float, Field(gt=0, allow_inf_nan=False)] = 0.025
+    maximum_acquisition_candidates: Annotated[int, Field(strict=True, ge=1, le=16)] = 8
+    receiver_ids: tuple[Literal[0], Literal[1]] = (0, 1)
+    timing_refinement: Literal["circular-five-cell-log-parabola-plus-lanczos16-v1"] = (
+        "circular-five-cell-log-parabola-plus-lanczos16-v1"
+    )
+    decision_score: Literal["fractional-epoch-conditioned-glrt64-v1"] = (
+        "fractional-epoch-conditioned-glrt64-v1"
+    )
+
+    @field_validator("receiver_ids", mode="before")
+    @classmethod
+    def _exact_receivers(cls, value: object) -> object:
+        return AdaptiveHopAnalysisConfigurationV1._exact_receivers(value)
+
+    @field_validator("allowed_valid_visit_ms", mode="before")
+    @classmethod
+    def _exact_durations(cls, value: object) -> object:
+        if not isinstance(value, (tuple, list)) or tuple(value) != (120, 240, 360):
+            raise ValueError("variable adaptive analysis requires exact attested durations")
+        return value
+
+    @property
+    def probe_samples(self) -> int:
+        return self.sample_rate_hz * self.probe_ms // 1000
+
+    @property
+    def probe_stride_samples(self) -> int:
+        return self.sample_rate_hz * self.probe_stride_ms // 1000
+
+    def valid_visit_ms(self, sample_count: int) -> int:
+        numerator = sample_count * 1000
+        if numerator % self.sample_rate_hz:
+            raise ValueError("adaptive event span is not an exact millisecond duration")
+        duration = numerator // self.sample_rate_hz
+        if duration not in self.allowed_valid_visit_ms:
+            raise ValueError("adaptive event span is outside the analysis contract")
+        return duration
+
+    def scheduled_probe_count(self, sample_count: int) -> int:
+        self.valid_visit_ms(sample_count)
+        return (sample_count - self.probe_samples) // self.probe_stride_samples + 1
+
+    @property
+    def scheduled_probe_counts(self) -> tuple[int, ...]:
+        return tuple(
+            len(self.receiver_ids)
+            * self.scheduled_probe_count(self.sample_rate_hz * duration // 1000)
+            for duration in self.allowed_valid_visit_ms
+        )
+
+
 class Feature104VisitAnalysisV4(AdaptiveHopVisitAnalysisV1):
     schema_version: Literal[4] = 4  # type: ignore[assignment]
     _allow_zero_gap: ClassVar[bool] = True
     configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
+
+
+class AdaptiveHopProbeAnalysisV2(AdaptiveHopProbeAnalysisV1):
+    """Probe coordinates for an event span of up to 360 milliseconds."""
+
+    schema_version: Literal[2] = 2
+    probe_index: Annotated[int, Field(strict=True, ge=0, le=34)]  # type: ignore[assignment]
+    probe_start_ms: Annotated[int, Field(strict=True, ge=0, le=340)]  # type: ignore[assignment]
+
+
+class VariableDwellVisitAnalysisV5(AdaptiveHopVisitAnalysisV1):
+    """Receipt-V6 analysis whose per-visit probe layout follows the event end."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    _allow_zero_gap: ClassVar[bool] = True
+    configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
+    probes: Annotated[tuple[AdaptiveHopProbeAnalysisV2, ...], Field(min_length=2, max_length=70)]  # type: ignore[assignment]
 
 
 class AdaptiveHopAnalysisReader(Protocol):
@@ -331,7 +433,24 @@ class Feature104AnalysisSourceV5(AdaptiveHopAnalysisSource):
     receipt: AdaptiveHopReceiptV5 = field(init=False)
 
 
+class VariableDwellAnalysisSourceV6(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV6]] = AdaptiveHopReceiptV6
+    receipt: AdaptiveHopReceiptV6 = field(init=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _VariableDwellDetectorConfiguration:
+    persisted: VariableDwellAnalysisConfigurationV5
+    dwell_samples: int
+    scheduled_probe_count: int
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.persisted, name)
+
+
 def _analysis_models(source):
+    if isinstance(source, VariableDwellAnalysisSourceV6):
+        return VariableDwellAnalysisConfigurationV5, VariableDwellVisitAnalysisV5
     if isinstance(source, Feature104AnalysisSourceV5):
         return Feature104AnalysisConfigurationV4, Feature104VisitAnalysisV4
     if isinstance(source, Feature103AnalysisSourceV4):
@@ -347,7 +466,7 @@ def _fractional_candidate(
     probe_start: int,
     visit_start: int,
     source_origin: int,
-    cfg: AdaptiveHopAnalysisConfigurationV1,
+    cfg,
 ) -> AdaptiveHopFractionalCandidateV1 | AdaptiveHopUnavailableCandidateV1:
     fractional = (
         response.fractional_epoch_offset_samples,
@@ -409,7 +528,9 @@ def analyze_adaptive_hop_visit(
     source: AdaptiveHopAnalysisSource,
     visit_index: int,
     *,
-    configuration: AdaptiveHopAnalysisConfigurationV1 | None = None,
+    configuration: AdaptiveHopAnalysisConfigurationV1
+    | VariableDwellAnalysisConfigurationV5
+    | None = None,
 ) -> AdaptiveHopVisitAnalysisV1:
     """Reuse the existing detector, keeping only complete fractional decisions."""
     model, product_model = _analysis_models(source)
@@ -427,7 +548,7 @@ def analyze_adaptive_hop_visit_batch(
     source: AdaptiveHopAnalysisSource,
     visit_indexes: tuple[int, ...],
     *,
-    configuration: AdaptiveHopAnalysisConfigurationV1,
+    configuration: AdaptiveHopAnalysisConfigurationV1 | VariableDwellAnalysisConfigurationV5,
 ) -> Iterator[AdaptiveHopVisitAnalysisV1]:
     """At most two independent visits; only the owning thread reads stored IQ.
 
@@ -461,12 +582,20 @@ def _analyze_loaded_visit(
     source: AdaptiveHopAnalysisSource,
     visit_index: int,
     samples: npt.NDArray[np.complex64],
-    cfg: AdaptiveHopAnalysisConfigurationV1,
+    cfg: AdaptiveHopAnalysisConfigurationV1 | VariableDwellAnalysisConfigurationV5,
     product_model: type[AdaptiveHopVisitAnalysisV1] = AdaptiveHopVisitAnalysisV1,
 ) -> AdaptiveHopVisitAnalysisV1:
     visit = source.visits[visit_index]
     event = visit.event
-    analysis = analyze_glrt64_dwell(samples, cfg, edge=event.target.edge)
+    if isinstance(cfg, VariableDwellAnalysisConfigurationV5):
+        detector_cfg: Glrt64DwellConfiguration = _VariableDwellDetectorConfiguration(
+            persisted=cfg,
+            dwell_samples=visit.valid_sample_count,
+            scheduled_probe_count=cfg.scheduled_probe_count(visit.valid_sample_count),
+        )
+    else:
+        detector_cfg = cfg
+    analysis = analyze_glrt64_dwell(samples, detector_cfg, edge=event.target.edge)
     rows = []
     for probe in analysis.probes:
         converted = tuple(
@@ -475,7 +604,7 @@ def _analyze_loaded_visit(
                 probe_start=probe.probe_start_ms * cfg.sample_rate_hz // 1000,
                 visit_start=event.valid_start_counter,
                 source_origin=source.receipt.terminal.first_counter,
-                cfg=cfg,
+                cfg=detector_cfg,
             )
             for response in probe.candidates
         )
@@ -487,7 +616,11 @@ def _analyze_loaded_visit(
             candidates, key=lambda c: (c.fractional_margin, -c.candidate_rank), default=None
         )
         rows.append(
-            AdaptiveHopProbeAnalysisV1(
+            (
+                AdaptiveHopProbeAnalysisV2
+                if isinstance(cfg, VariableDwellAnalysisConfigurationV5)
+                else AdaptiveHopProbeAnalysisV1
+            )(
                 receiver_id=probe.receiver_id,
                 probe_index=probe.probe_index,
                 probe_start_ms=probe.probe_start_ms,
@@ -500,7 +633,7 @@ def _analyze_loaded_visit(
     return product_model(
         session_id=source.receipt.session_id,
         input_manifest_sha256=source.input_manifest_sha256,
-        configuration=cfg,
+        configuration=cast(Any, cfg),
         policy_generation=source.receipt.plan.policy.generation,
         source_origin_counter=source.receipt.terminal.first_counter,
         visit_index=event.visit_index,
@@ -516,13 +649,23 @@ def _analyze_loaded_visit(
 
 def validate_adaptive_analysis_binding(
     product: AdaptiveHopVisitAnalysisV1,
-    receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3,
+    receipt: AdaptiveHopReceiptV1
+    | AdaptiveHopReceiptV2
+    | AdaptiveHopReceiptV3
+    | AdaptiveHopReceiptV6,
     *,
     input_manifest_sha256: str,
 ) -> None:
-    product = AdaptiveHopVisitAnalysisV1.model_validate(product.model_dump())
+    product_model = (
+        VariableDwellVisitAnalysisV5
+        if isinstance(product, VariableDwellVisitAnalysisV5)
+        else AdaptiveHopVisitAnalysisV1
+    )
+    product = product_model.model_validate(product.model_dump())
     receipt_model = (
-        AdaptiveHopReceiptV3
+        AdaptiveHopReceiptV6
+        if isinstance(receipt, AdaptiveHopReceiptV6)
+        else AdaptiveHopReceiptV3
         if isinstance(receipt, AdaptiveHopReceiptV3)
         else AdaptiveHopReceiptV2
         if isinstance(receipt, AdaptiveHopReceiptV2)

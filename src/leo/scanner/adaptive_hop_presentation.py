@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     Feature103AnalysisConfigurationV3,
     Feature104AnalysisConfigurationV4,
+    VariableDwellAnalysisConfigurationV5,
 )
 
 if TYPE_CHECKING:
@@ -145,6 +146,16 @@ class Feature104AnalysisStatusV7(AdaptiveHopAnalysisStatusV1):
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     configuration: Feature104AnalysisConfigurationV4  # type: ignore[assignment]
     overview: Feature104OverviewManifestV7 | None
+
+
+class VariableDwellOverviewManifestV8(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+
+
+class VariableDwellAnalysisStatusV8(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
+    overview: VariableDwellOverviewManifestV8 | None
 
 
 @dataclass(frozen=True, slots=True)
