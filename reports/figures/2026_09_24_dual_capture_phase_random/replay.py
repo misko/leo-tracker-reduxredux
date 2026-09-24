@@ -162,8 +162,8 @@ def _phase_blind_view(
     )
 
 
-def _v6_iq(reader: Any, receipt: AdaptiveHopReceiptV6, ordinal: int) -> np.ndarray:
-    """Read one exact V6 retained interval without retyping the receipt."""
+def _exact_iq(reader: Any, receipt: Any, ordinal: int) -> np.ndarray:
+    """Read one exact retained interval without retyping its receipt."""
     evidence, values = reader.read_visit_ci16(ordinal)
     visit = receipt.visits[ordinal]
     expected = (visit.valid_sample_count, len(receipt.plan.geometry.receiver_ids), 2)
@@ -174,7 +174,7 @@ def _v6_iq(reader: Any, receipt: AdaptiveHopReceiptV6, ordinal: int) -> np.ndarr
         or values.shape != expected
         or not values.flags.c_contiguous
     ):
-        raise ValueError("V6 analysis reader changed exact retained visit evidence")
+        raise ValueError("analysis reader changed exact retained visit evidence")
     output = np.empty(expected[:2], dtype=np.complex64)
     output.real = values[:, :, 0]
     output.imag = values[:, :, 1]
@@ -202,6 +202,15 @@ def dwell_seed(session_id: str, visit_index: int, global_seed: int = GLOBAL_SEED
     """Derive one stable independent uint32 seed for a session visit."""
     payload = f"{global_seed}:{session_id}:{visit_index}".encode()
     return int.from_bytes(hashlib.sha256(payload).digest()[:4], "big")
+
+
+def validate_capture_geometry(geometry: Any, session_id: str) -> None:
+    """Admit only the two frozen full-day dual-RX rate cohorts."""
+    if geometry.sample_rate_hz not in (2_500_000, 15_000_000) or tuple(geometry.receiver_ids) != (
+        0,
+        1,
+    ):
+        raise ValueError(f"capture is outside the frozen dual-RX rate cohorts: {session_id}")
 
 
 def carrier_seed_hz(
@@ -234,15 +243,15 @@ def carrier_seed_hz(
     return float(np.median([row["relative_cfo_hz"] for row in retained])), retained
 
 
-def _screen_v6_visits(
+def _screen_exact_visits(
     reader: Any,
-    receipt: AdaptiveHopReceiptV6,
+    receipt: Any,
     configuration: Feature103AnalysisConfigurationV3,
     protocol: dict[str, Any],
     checkpoint: Path,
     input_manifest_sha256: str,
 ) -> list[tuple[float, int]]:
-    """Build the same phase-blind priority inventory directly from exact V6 visits."""
+    """Build the phase-blind inventory directly from exact retained visits."""
     saved_rows: list[dict[str, Any]] = []
     if checkpoint.exists():
         saved = _load_gzip(checkpoint)
@@ -272,7 +281,7 @@ def _screen_v6_visits(
             loaded = []
             for ordinal in ordinals:
                 event = receipt.visits[ordinal].event
-                loaded.append((ordinal, event, _v6_iq(reader, receipt, ordinal)))
+                loaded.append((ordinal, event, _exact_iq(reader, receipt, ordinal)))
             futures = [
                 executor.submit(
                     _analyze_v6_loaded,
@@ -389,8 +398,9 @@ def _protocol(cohort_path: Path) -> dict[str, Any]:
         "per_dwell_seed": "first-uint32-sha256(global_seed:session_id:visit_index)",
         "selection": (
             f"top {SELECTED_VISITS_PER_SESSION} visits per session by phase-blind paired GLRT "
-            "fractional-margin floor; sealed metrics when contract-compatible, exact V6 "
-            "120ms report-local numerical replay otherwise"
+            "fractional-margin floor across the frozen September 24 2.5MS/s dual-RX cohort; "
+            "sealed complete metrics when available, exact 120ms report-local numerical "
+            "screening for V6 or incomplete sealed inventories otherwise"
         ),
         "grouping": "seeded 50/50 complete 20ms groups stratified over each 120ms dwell",
         "held_target": "disjoint band B conditioned on band A in the same random-held block",
@@ -424,8 +434,7 @@ def _session_result(
         raise ValueError(f"capture manifest differs from frozen cohort: {session_id}")
     receipt = capture.manifest.receipt
     geometry = receipt.plan.geometry
-    if geometry.sample_rate_hz != 2_500_000 or tuple(geometry.receiver_ids) != (0, 1):
-        raise ValueError(f"capture is not frozen 2.5 MS/s dual RX: {session_id}")
+    validate_capture_geometry(geometry, session_id)
     result.update(
         created_utc_ns=int(capture.manifest.created_utc_ns),
         finalized_utc_ns=int(capture.manifest.finalized_utc_ns),
@@ -434,8 +443,23 @@ def _session_result(
         receipt_schema_version=int(receipt.schema_version),
         sample_rate_hz=int(geometry.sample_rate_hz),
     )
-    if isinstance(receipt, AdaptiveHopReceiptV6):
-        receipt = AdaptiveHopReceiptV6.model_validate(receipt.model_dump())
+    report_local_screen = isinstance(receipt, AdaptiveHopReceiptV6) or bool(
+        specification.get("force_report_local_screen", False)
+    )
+    if not report_local_screen:
+        binding = bind_actual_visit_analysis(
+            receipt,
+            input_manifest_sha256=capture.manifest_sha256,
+            probe_stride_ms=120,
+        )
+        with analyses.job(binding) as metrics:
+            manifest = metrics.manifest()
+            indexes = metrics.completed_visits() if manifest is not None else ()
+            report_local_screen = len(indexes) != receipt.complete_visit_count
+
+    if report_local_screen:
+        if isinstance(receipt, AdaptiveHopReceiptV6):
+            receipt = AdaptiveHopReceiptV6.model_validate(receipt.model_dump())
         screening_configuration = Feature103AnalysisConfigurationV3(
             sample_rate_hz=geometry.sample_rate_hz,
             probe_stride_ms=120,
@@ -444,11 +468,11 @@ def _session_result(
             visit.valid_sample_count != screening_configuration.dwell_samples
             for visit in receipt.visits
         ):
-            raise ValueError("V6 report replay requires exact 120ms retained intervals")
+            raise ValueError("report-local replay requires exact 120ms retained intervals")
         with captures.reader(session_id) as reader:
             if reader.session.manifest_sha256 != specification["input_manifest_sha256"]:
-                raise ValueError(f"V6 analysis source differs from frozen cohort: {session_id}")
-            ranked = _screen_v6_visits(
+                raise ValueError(f"analysis source differs from frozen cohort: {session_id}")
+            ranked = _screen_exact_visits(
                 reader,
                 receipt,
                 screening_configuration,
@@ -456,13 +480,12 @@ def _session_result(
                 rows_root / f"{session_id}-phase-blind-screen.json.gz",
                 capture.manifest_sha256,
             )
-        result["analysis_inventory_source"] = "exact_v6_120ms_report_local_glrt"
-    else:
-        binding = bind_actual_visit_analysis(
-            receipt,
-            input_manifest_sha256=capture.manifest_sha256,
-            probe_stride_ms=120,
+        result["analysis_inventory_source"] = (
+            "exact_v6_120ms_report_local_glrt"
+            if isinstance(receipt, AdaptiveHopReceiptV6)
+            else "exact_v4_120ms_report_local_glrt_after_incomplete_sealed_inventory"
         )
+    else:
         with analyses.job(binding) as metrics:
             manifest = metrics.manifest()
             if manifest is None:
@@ -491,7 +514,7 @@ def _session_result(
         result.update(state="complete_no_phase_blind_candidates", reason="no paired GLRT visits")
         return result
 
-    if isinstance(receipt, AdaptiveHopReceiptV6):
+    if report_local_screen:
         dense_configuration = screening_configuration.model_copy(update={"probe_stride_ms": 20})
         ordinals = {
             visit.event.visit_index: ordinal for ordinal, visit in enumerate(receipt.visits)
@@ -502,7 +525,7 @@ def _session_result(
 
             def load_v6(visit_index: int) -> tuple[np.ndarray, _PhaseBlindVisit]:
                 ordinal = ordinals[visit_index]
-                iq = _v6_iq(reader, receipt, ordinal)
+                iq = _exact_iq(reader, receipt, ordinal)
                 event = receipt.visits[ordinal].event
                 dense = _analyze_v6_loaded(
                     iq,
