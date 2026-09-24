@@ -1,0 +1,33 @@
+{
+  "schema": "ds1-iteration18-timing-refresh-plan/v1",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration15_information_weighted/inference.json",
+  "identity_source": "reports/2026_09_24_ds1_iteration10_refinement/inference.json",
+  "association_policy": "fixed iteration-10 hard associations",
+  "group_weights": {
+    "20260921_00": 0.2742,
+    "20260921_16": 0.7258
+  },
+  "initial_group_taus_s": {
+    "20260921_00": -0.75,
+    "20260921_16": -0.5
+  },
+  "timing_search": {
+    "node_count": 9,
+    "spacing_s": 0.05,
+    "half_width_s": 0.2,
+    "maximum_translations": 4,
+    "transition_rule": "recenter by 0.20 s at unchanged spacing while the winner is on an edge",
+    "acceptance_rule": "each group must select an interior converged timing node before geographic search"
+  },
+  "model": "exact causal per-NORAD rate with profiled per-track CFO",
+  "geographic_objective": "information-weighted regularized exact rate selection objective",
+  "geographic_stages": [
+    {"spacing_km": 0.048828125, "maximum_translations": 4},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4},
+    {"spacing_km": 0.01220703125, "maximum_translations": 4}
+  ],
+  "geographic_transition_rule": "translate at unchanged spacing while the winner is on the edge; halve only after an interior winner",
+  "checkpoint_policy": "validate plan, parent, and identity-source digests before reusing complete timing or geographic steps",
+  "postseal_policy": "the geographic reference may be read only after inference.json is sealed"
+}
