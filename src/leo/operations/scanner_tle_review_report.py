@@ -217,13 +217,17 @@ def build_report(
     output: Path,
     *,
     bulk_root: Path = Path("/srv/bulk/leo"),
+    adaptive_analysis_root: Path | None = None,
     tle_root: Path = Path("/var/lib/leo/tle"),
     site_name: str = "spinnaker-sausalito",
     maximum_tracks: int | None = None,
 ) -> dict:
     if maximum_tracks is not None and not 1 <= maximum_tracks <= 128:
         raise ValueError("maximum tracks must be between 1 and 128")
-    sources = ScannerTrackingInputStore(bulk_root)
+    sources = ScannerTrackingInputStore(
+        bulk_root,
+        adaptive_analysis_root=adaptive_analysis_root,
+    )
     try:
         source = sources.load(session_id)
     finally:

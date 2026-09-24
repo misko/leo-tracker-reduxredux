@@ -79,7 +79,14 @@ def _publish_position_methods_verified(
         raise ValueError("position method publication failed completion verification")
 
 
-def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str, review_limit: int):
+def _review_renderer(
+    *,
+    bulk_root: Path,
+    adaptive_analysis_root: Path | None = None,
+    tle_root: Path,
+    site_name: str,
+    review_limit: int,
+):
     def render(
         session_id: str,
     ) -> tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]:
@@ -89,6 +96,7 @@ def _review_renderer(*, bulk_root: Path, tle_root: Path, site_name: str, review_
                 session_id,
                 output,
                 bulk_root=bulk_root,
+                adaptive_analysis_root=adaptive_analysis_root,
                 tle_root=tle_root,
                 site_name=site_name,
                 maximum_tracks=review_limit,
@@ -134,6 +142,21 @@ def main():
         "--bulk-root", type=Path, default=Path(os.environ.get("LEO_BULK_ROOT", "/srv/bulk/leo"))
     )
     parser.add_argument(
+        "--capture-root",
+        type=Path,
+        help="Read-only capture root for isolated backfills.",
+    )
+    parser.add_argument(
+        "--analysis-root",
+        type=Path,
+        help="Read-only adaptive metrics root; required with --capture-root.",
+    )
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        help="Writable report-local tracking root; required with --capture-root.",
+    )
+    parser.add_argument(
         "--tle-root", type=Path, default=Path(os.environ.get("LEO_TLE_ROOT", "/var/lib/leo/tle"))
     )
     parser.add_argument("--site", choices=preset_names(), required=True)
@@ -147,19 +170,38 @@ def main():
         help="The processing queue owns the session lease; do not take the standalone lock.",
     )
     args = parser.parse_args()
+    split_roots = args.capture_root is not None
+    if split_roots and (args.analysis_root is None or args.output_root is None):
+        parser.error("--capture-root requires --analysis-root and --output-root")
+    if not split_roots and (args.analysis_root is not None or args.output_root is not None):
+        parser.error("--analysis-root and --output-root require --capture-root")
+    capture_root = args.capture_root if split_roots else args.bulk_root
+    analysis_root = args.analysis_root if split_roots else args.bulk_root
+    output_root = args.output_root if split_roots else args.bulk_root
+    assert capture_root is not None and analysis_root is not None and output_root is not None
+    if split_roots:
+        capture = capture_root.resolve()
+        analysis = analysis_root.resolve()
+        output = output_root.resolve()
+        protected = (capture, analysis, Path("/srv/bulk"), Path("/mnt/qnap01"))
+        if any(root == output or root in output.parents for root in protected):
+            parser.error("--output-root must be report-local and outside read-only inputs")
     if (
         not 0 < args.maximum_seconds <= 1800
         or not 1 <= args.maximum_sessions <= 100
         or not 1 <= args.review_limit <= 128
     ):
         parser.error("invalid work bounds")
-    lock = nullcontext(True) if args.queue_worker else analysis_worker_lock(args.bulk_root)
+    lock = nullcontext(True) if args.queue_worker else analysis_worker_lock(output_root)
     with lock as acquired:
         if not acquired:
             print(json.dumps({"state": "busy"}))
             return
-        sources = ScannerTrackingInputStore(args.bulk_root)
-        products = ScannerTrackingStore(args.bulk_root, read_only=False)
+        sources = ScannerTrackingInputStore(
+            capture_root,
+            adaptive_analysis_root=analysis_root,
+        )
+        products = ScannerTrackingStore(output_root, read_only=False)
         site = resolve_preset(args.site)
         service = ScannerTrackingService(
             inputs=sources,
@@ -174,7 +216,8 @@ def main():
             renderer=render_persistent_hop_tracking_png,
             position_renderer=build_scan_position_diagnostic,
             review_renderer=_review_renderer(
-                bulk_root=args.bulk_root,
+                bulk_root=capture_root,
+                adaptive_analysis_root=analysis_root,
                 tle_root=args.tle_root,
                 site_name=args.site,
                 review_limit=args.review_limit,
@@ -183,20 +226,23 @@ def main():
         )
         try:
             ids = (args.session_id,) if args.session_id else sources.session_ids()
-            pending = [
-                s
-                for s in ids
-                if (
-                    products.analysis_status(s).state != "complete"
-                    or not _position_methods_available(
-                        bulk_root=args.bulk_root,
-                        session_id=s,
-                        input_manifest_sha256=sources.load(s).input_manifest_sha256,
-                        analysis_manifest_sha256=sources.load(s).analysis_manifest_sha256,
+            pending = []
+            for session_id in ids:
+                status = products.analysis_status(session_id)
+                core_pending = status.state != "complete"
+                auxiliary_pending = False
+                if not split_roots and not core_pending:
+                    source = sources.load(session_id)
+                    auxiliary_pending = not _position_methods_available(
+                        bulk_root=output_root,
+                        session_id=session_id,
+                        input_manifest_sha256=source.input_manifest_sha256,
+                        analysis_manifest_sha256=source.analysis_manifest_sha256,
                     )
-                )
-                and (args.session_id or products.analysis_status(s).state != "failed")
-            ]
+                if (core_pending or auxiliary_pending) and (
+                    args.session_id or status.state != "failed"
+                ):
+                    pending.append(session_id)
             pending.sort(
                 key=lambda s: (
                     products.analysis_status(s).state != "running",
@@ -213,26 +259,26 @@ def main():
                     position_complete = False
                     blind_complete = False
                     adaptive_position_complete = False
-                    if status.state == "complete":
+                    if status.state == "complete" and not split_roots:
                         source = sources.load(sid)
                         _publish_position_methods_verified(
-                            bulk_root=args.bulk_root,
+                            bulk_root=output_root,
                             tle_root=args.tle_root,
                             session_id=sid,
                             input_manifest_sha256=source.input_manifest_sha256,
                         )
                         position_complete = True
-                        run_blind_regional(args.bulk_root, args.tle_root, sid)
+                        run_blind_regional(output_root, args.tle_root, sid)
                         blind_complete = blind_regional_complete(
-                            args.bulk_root,
+                            output_root,
                             sid,
                             expected_input_manifest_sha256=source.input_manifest_sha256,
                         )
                         if not blind_complete:
                             raise ValueError("blind regional publication failed verification")
-                        run_adaptive_tle_position(args.bulk_root, args.tle_root, sid)
+                        run_adaptive_tle_position(output_root, args.tle_root, sid)
                         adaptive_position_complete = adaptive_tle_position_complete(
-                            args.bulk_root,
+                            output_root,
                             sid,
                             expected_input=source.input_manifest_sha256,
                             expected_analysis=source.analysis_manifest_sha256,
