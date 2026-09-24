@@ -11,6 +11,50 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
+def test_enqueue_pending_skips_variable_dwell_without_blocking_queue(monkeypatch, tmp_path) -> None:
+    class VariableReceipt:
+        pass
+
+    capture = SimpleNamespace(
+        manifest=SimpleNamespace(receipt=VariableReceipt(), created_utc_ns=1),
+        manifest_sha256="sha256:" + "1" * 64,
+    )
+
+    class Captures:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def publication_index(self):
+            return ((1, "scan-fw-variable"),)
+
+        def inspect(self, session_id):
+            assert session_id == "scan-fw-variable"
+            return capture
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(subject, "AdaptiveHopReceiptV6", VariableReceipt)
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", Captures)
+    monkeypatch.setattr(
+        subject,
+        "AdaptiveHopAnalysisPresentationStore",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            status_for_capture=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("variable dwell has no metrics binding")
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(subject, "_catalog", lambda: SimpleNamespace())
+
+    assert subject.enqueue_pending(bulk_root=tmp_path) == ()
+
+
 def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
     payloads = []
     monkeypatch.setattr(

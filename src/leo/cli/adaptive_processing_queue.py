@@ -19,6 +19,7 @@ from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV6
 from leo.sky.sites import resolve_preset
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
@@ -124,6 +125,11 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
         recent_cutoff = time.time_ns() - 2 * 3600 * 10**9
         for indexed_utc_ns, session_id in captures.publication_index():
             capture = captures.inspect(session_id)
+            # Variable-dwell receipts are published and presented, but do not
+            # yet have a compatible metrics binding. Leave them visible and
+            # keep reconciling the remaining supported captures.
+            if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV6):
+                continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
             phase_pending = False
