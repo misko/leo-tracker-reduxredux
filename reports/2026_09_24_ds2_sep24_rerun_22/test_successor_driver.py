@@ -108,3 +108,159 @@ def test_build_refuses_existing_output_and_unbound_cache(tmp_path: Path):
     (cache_root / "scan-0" / "state_cache.npz").write_bytes(b"changed")
     with pytest.raises(ValueError, match="digest mismatch"):
         driver.session_rows(manifest, cache_root)
+
+
+def seal_json(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = json.dumps(value, indent=2, sort_keys=True) + "\n"
+    path.write_text(content)
+    path.with_suffix(path.suffix + ".sha256").write_text(
+        hashlib.sha256(content.encode()).hexdigest() + "\n"
+    )
+
+
+def small_plan(driver, tmp_path: Path) -> dict:
+    single = driver.task(
+        "single__scan-0__baseline",
+        ["scan-0"],
+        "baseline",
+        tmp_path / "portable" / "inference" / "single.json",
+        joint=False,
+    )
+    joint = driver.task(
+        "joint-all2__baseline",
+        ["scan-0", "scan-1"],
+        "baseline",
+        tmp_path / "portable" / "inference" / "joint.json",
+        joint=True,
+    )
+    return {"joint_task_prefix": "joint-all2", "tasks": [single, joint]}
+
+
+def test_portable_execution_resumes_valid_outputs_and_seals_only_after_complete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    driver = load()
+    plan = small_plan(driver, tmp_path)
+    calls = []
+
+    class Adapter:
+        @staticmethod
+        def run_timing(task, _cache_root):
+            calls.append(task["task_id"])
+            seal_json(
+                Path(task["output_path"]),
+                {
+                    "task_id": task["task_id"],
+                    "reference_coordinate_present": False,
+                },
+            )
+            return {"task_id": task["task_id"]}
+
+        run_orbit = run_timing
+
+    monkeypatch.setattr(driver, "load_module", lambda *_args: Adapter)
+    cache_root = tmp_path / "cache"
+    driver.execute_portable(plan, cache_root, tmp_path, workers=1)
+    assert calls == ["single__scan-0__baseline", "joint-all2__baseline"]
+    execution = json.loads((tmp_path / "portable" / "execution.json").read_text())
+    assert [row["task_id"] for row in execution["rows"]] == calls
+
+    monkeypatch.setattr(
+        driver, "load_module", lambda *_args: pytest.fail("resume must not rerun a task")
+    )
+    driver.execute_portable(plan, cache_root, tmp_path, workers=4)
+
+
+def test_portable_execution_refuses_mismatched_sealed_output(tmp_path: Path):
+    driver = load()
+    plan = small_plan(driver, tmp_path)
+    first = Path(plan["tasks"][0]["output_path"])
+    seal_json(first, {"task_id": "wrong-task", "reference_coordinate_present": False})
+    with pytest.raises(ValueError, match="wrong task ID"):
+        driver.execute_portable(plan, tmp_path / "cache", tmp_path, workers=1)
+
+
+def test_portable_execution_bounded_workers(tmp_path: Path):
+    driver = load()
+    with pytest.raises(ValueError, match="workers"):
+        driver.execute_portable(
+            small_plan(driver, tmp_path), tmp_path / "cache", tmp_path, workers=5
+        )
+
+
+def test_portable_execution_uses_process_workers_for_independent_singles(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    driver = load()
+    plan = small_plan(driver, tmp_path)
+    extra = driver.task(
+        "single__scan-1__baseline",
+        ["scan-1"],
+        "baseline",
+        tmp_path / "portable" / "inference" / "second-single.json",
+        joint=False,
+    )
+    plan["tasks"].insert(1, extra)
+
+    class Adapter:
+        @staticmethod
+        def run_timing(task, _cache_root):
+            seal_json(
+                Path(task["output_path"]),
+                {
+                    "task_id": task["task_id"],
+                    "reference_coordinate_present": False,
+                },
+            )
+            return {"task_id": task["task_id"]}
+
+        run_orbit = run_timing
+
+    monkeypatch.setattr(driver, "load_module", lambda *_args: Adapter)
+    driver.execute_portable(plan, tmp_path / "cache", tmp_path, workers=2)
+    execution = json.loads((tmp_path / "portable" / "execution.json").read_text())
+    assert [row["task_id"] for row in execution["rows"]] == [
+        "single__scan-0__baseline",
+        "single__scan-1__baseline",
+        "joint-all2__baseline",
+    ]
+
+
+def test_portable_execution_does_not_write_final_receipt_after_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    driver = load()
+    plan = small_plan(driver, tmp_path)
+
+    class Adapter:
+        @staticmethod
+        def run_timing(task, _cache_root):
+            if task["task_id"].startswith("joint"):
+                raise RuntimeError("joint failure")
+            seal_json(
+                Path(task["output_path"]),
+                {
+                    "task_id": task["task_id"],
+                    "reference_coordinate_present": False,
+                },
+            )
+            return {"task_id": task["task_id"]}
+
+        run_orbit = run_timing
+
+    monkeypatch.setattr(driver, "load_module", lambda *_args: Adapter)
+    with pytest.raises(RuntimeError, match="joint failure"):
+        driver.execute_portable(plan, tmp_path / "cache", tmp_path, workers=1)
+    assert not (tmp_path / "portable" / "execution.json").exists()
+
+
+def test_declared_adapter_paths_resolve():
+    driver = load()
+    assert driver.PORTABLE_ADAPTER.is_file()
+    for relative in (
+        "2026_09_24_ds2_consistent_rate_screen/run_rate_screen.py",
+        "2026_09_24_ds2_missing_models/run.py",
+        "2026_09_24_ds2_geometry_cone_evaluation/run_blind_reassociated.py",
+    ):
+        assert (driver.REPORTS_ROOT / relative).is_file()
