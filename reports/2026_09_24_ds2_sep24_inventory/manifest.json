@@ -1,0 +1,101 @@
+{
+  "schema": "ds2-sep24-analysis-inventory/v1",
+  "kind": "read_only_inventory",
+  "session_id_prefix": "scan-fw-",
+  "date_utc": "2026-09-24",
+  "time_coverage": {
+    "first_capture_utc": "2026-09-24T00:00:02.155440Z",
+    "last_capture_utc": "2026-09-24T15:30:02.535971Z",
+    "nominal_duration_seconds": 300
+  },
+  "source_artifacts": {
+    "whole_corpus_manifest": "../2026_09_24_ds2_final_manifest/manifest.json",
+    "tracking_receipts": "../2026_09_24_ds2_final_manifest/tracking_receipts",
+    "quality_table": "../2026_09_24_ds2_quality/session-quality.csv",
+    "model_registry": "../2026_09_24_ds2_model_registry/model-registry.json"
+  },
+  "counts": {
+    "raw_same_day_sessions": 22,
+    "eligible_sessions": 20,
+    "excluded_same_day_sessions": 2,
+    "complete_v14_tracking_products": 20,
+    "retained_visits": 43730,
+    "tracklets": 441,
+    "tracklet_observations": 12694,
+    "reviews": 319,
+    "review_observations": 11449,
+    "geometry_conditional_sessions": 3
+  },
+  "cohorts": [
+    {"id": "19f2-15000000", "sessions": ["f3ce5fe73aa40506"], "joint": false, "geometry_conditional": true},
+    {"id": "19f2-2500000", "sessions": ["9f3d5067d149118e", "cfcf667726e80735"], "joint": true, "geometry_conditional": true},
+    {"id": "5d4d-2500000", "sessions": ["8d1424f9297d34fb", "573f6201b09f5ba4", "d30c80bd75815223", "b6659f13921e711b", "af33f52c96a606b7", "412a75e0665c8e93", "7fc0a2494f8caa5d", "51dadc5c6aa0e74b", "524e4ca2638f3601", "8634c361a1e38331", "3e1fe8de00bd8065", "d8925d2a4c00a806", "12cb866cbc37adb9", "98fb8c5147c1c77b", "32ebdbd20401472f", "b97ce25ed1ac630f", "d16389a0c7b4a70f"], "joint": true, "geometry_conditional": false}
+  ],
+  "same_day_exclusions": [
+    {
+      "session_id": "scan-fw-294be7850b76a34d",
+      "capture_start_utc": "2026-09-24T01:02:55.440281Z",
+      "input_manifest_sha256": "sha256:e6d7ddc8395ef6e2190d19934d12d0777d6e5142894517af7933bb10ad8f793e",
+      "capture_schema_version": 12,
+      "receipt_schema_version": 6,
+      "active_valid_visit_ms": 360,
+      "complete_visit_count": 2217,
+      "total_sample_count": 665100000,
+      "compressed_bytes": 3885840417,
+      "all_manifest_chunks_present_with_expected_size": true,
+      "qualified_utc_timing": true,
+      "device_dropped_events": 0,
+      "metrics_product_state": "not_started",
+      "processing_job_present": false,
+      "v14_product_state": "absent",
+      "reason": "AdaptiveHopReceiptV6 has no compatible metrics binding; queue release c528e9a2 skips it before enqueue"
+    },
+    {
+      "session_id": "scan-fw-ff02a0ba4200d0dc",
+      "capture_start_utc": "2026-09-24T01:10:11.176437Z",
+      "input_manifest_sha256": "sha256:715a4529ff1bd93bacd64d7c4efbf165c081f671c9141b686935c2adbd5dd725",
+      "capture_schema_version": 12,
+      "receipt_schema_version": 6,
+      "active_valid_visit_ms": 120,
+      "complete_visit_count": 2219,
+      "total_sample_count": 665700000,
+      "compressed_bytes": 3896401177,
+      "all_manifest_chunks_present_with_expected_size": true,
+      "qualified_utc_timing": true,
+      "device_dropped_events": 0,
+      "metrics_product_state": "not_started",
+      "processing_job_present": false,
+      "v14_product_state": "absent",
+      "reason": "AdaptiveHopReceiptV6 has no compatible metrics binding; queue release c528e9a2 skips it before enqueue"
+    }
+  ],
+  "variable_dwell_backfill": {
+    "state": "blocked_on_missing_contract_and_runner_support",
+    "required_contract": "immutable AdaptiveHopReceiptV6 metrics binding and product family",
+    "required_runner_change": "separate read-only capture root from report-local metrics and V14 output roots",
+    "current_cli_limitation": "adaptive_hop_analysis and scanner_tracking use one bulk root for both inputs and outputs",
+    "bounds_after_implementation": {
+      "metric_workers": 2,
+      "maximum_visits_per_session": 2500,
+      "maximum_seconds_per_metrics_slice": 560,
+      "maximum_tracking_sessions_per_invocation": 1,
+      "maximum_seconds_per_tracking_invocation": 560
+    },
+    "production_mutated_by_inventory": false,
+    "qnap_mutated_by_inventory": false
+  },
+  "receiver_geometry_policy": {
+    "all_eligible_sessions": "dual-RX tracking configuration",
+    "geometry_sessions": ["scan-fw-f3ce5fe73aa40506", "scan-fw-9f3d5067d149118e", "scan-fw-cfcf667726e80735"],
+    "fixture": "LT3D-001A",
+    "mapping": "provisional; symmetric two-mapping marginalization required",
+    "other_sessions": "geometry unavailable; fixture must not be inferred from radio identity"
+  },
+  "inference_contract": {
+    "corpus_role": "development_evaluation_only",
+    "grouping": "whole sessions and both RX streams remain intact",
+    "partition": "seeded randomized outer partition of independent whole sessions; record assignments",
+    "candidate_policy": "recompute at every geographic cell; do not use saved review leaders as identity labels",
+    "evaluation": "reference coordinate enters only after inference output is sealed"
+  }
+}

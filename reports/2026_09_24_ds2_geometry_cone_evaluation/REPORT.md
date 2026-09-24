@@ -149,7 +149,6 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 .venv/bin/python reports/2026_09_24_ds2_geometry_cone_evaluation/evaluate.py \
   --inference reports/2026_09_24_ds2_geometry_cone_evaluation/blind-inference.json \
   --reference-latitude-deg 37.84903264307456 --reference-longitude-deg -122.4856541910174 \
-  --method-prefix 'blind re-associated' \
   --method-prefix "blind re-associated" \
   --output reports/2026_09_24_ds2_geometry_cone_evaluation/blind-postseal-evaluation.json
 .venv/bin/python reports/2026_09_24_ds2_geometry_cone_evaluation/plot_blind.py
