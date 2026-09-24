@@ -1,0 +1,177 @@
+{
+  "all_steps_raw_and_regularized_agree": false,
+  "exact_replay_gates": [
+    {
+      "exact_full_observation_capped_loss": 0.03855807769854689,
+      "exact_sgp4_gate": {
+        "earth_rotation": "fixed at receive_time_plus_global_tau, not orbit-phase-shifted",
+        "maximum_absolute_hz": 5.6576996939838864e-05,
+        "maximum_phase_s": 5.713562310993664,
+        "observations": 8285,
+        "p99_absolute_hz": 2.6569970650598386e-05,
+        "passed": true,
+        "rms_hz": 4.607677308934851e-06,
+        "schema": "ds1-causal-rate-exact-sgp4-gate/v1",
+        "tolerance_hz": 0.2
+      },
+      "fit_converged": true,
+      "group_id": "20260921_00",
+      "rate_boundary_count": 0,
+      "selection_objective": 0.056061286085809785
+    },
+    {
+      "exact_full_observation_capped_loss": 0.07723057749785621,
+      "exact_sgp4_gate": {
+        "earth_rotation": "fixed at receive_time_plus_global_tau, not orbit-phase-shifted",
+        "maximum_absolute_hz": 4.838205495616421e-05,
+        "maximum_phase_s": 6.67629534861874,
+        "observations": 9686,
+        "p99_absolute_hz": 6.505709961857061e-06,
+        "passed": true,
+        "rms_hz": 2.0863264967494706e-06,
+        "schema": "ds1-causal-rate-exact-sgp4-gate/v1",
+        "tolerance_hz": 0.2
+      },
+      "fit_converged": true,
+      "group_id": "20260921_16",
+      "rate_boundary_count": 0,
+      "selection_objective": 0.10981334393462444
+    }
+  ],
+  "inference": {
+    "path": "reports/2026_09_24_ds1_iteration13_basin_closure/inference.json",
+    "sha256": "sha256:57fec7a2574302762c26d43406e6c5a25a4c5e93fa6df5d5eeed8af7bc127479"
+  },
+  "objective_agreement": [
+    {
+      "agrees": true,
+      "raw_cap800_margin": 1.7207359286661172e-05,
+      "raw_cap800_winner": [
+        -0.09765625,
+        -0.09765625
+      ],
+      "regularized_winner": [
+        -0.09765625,
+        -0.09765625
+      ],
+      "stage_index": 0,
+      "translation_index": 0
+    },
+    {
+      "agrees": true,
+      "raw_cap800_margin": 1.5370450977172934e-05,
+      "raw_cap800_winner": [
+        -0.1953125,
+        -0.1953125
+      ],
+      "regularized_winner": [
+        -0.1953125,
+        -0.1953125
+      ],
+      "stage_index": 0,
+      "translation_index": 1
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 1.326882237931426e-05,
+      "raw_cap800_winner": [
+        -0.29296875,
+        -0.29296875
+      ],
+      "regularized_winner": [
+        -0.29296875,
+        -0.1953125
+      ],
+      "stage_index": 0,
+      "translation_index": 2
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 1.1851116836811282e-05,
+      "raw_cap800_winner": [
+        -0.390625,
+        -0.29296875
+      ],
+      "regularized_winner": [
+        -0.390625,
+        -0.1953125
+      ],
+      "stage_index": 0,
+      "translation_index": 3
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 1.0593675593875695e-05,
+      "raw_cap800_winner": [
+        -0.48828125,
+        -0.29296875
+      ],
+      "regularized_winner": [
+        -0.48828125,
+        -0.1953125
+      ],
+      "stage_index": 0,
+      "translation_index": 4
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 9.339831184590475e-06,
+      "raw_cap800_winner": [
+        -0.5859375,
+        -0.29296875
+      ],
+      "regularized_winner": [
+        -0.48828125,
+        -0.1953125
+      ],
+      "stage_index": 0,
+      "translation_index": 5
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 4.945079240814554e-06,
+      "raw_cap800_winner": [
+        -0.537109375,
+        -0.244140625
+      ],
+      "regularized_winner": [
+        -0.48828125,
+        -0.1953125
+      ],
+      "stage_index": 1,
+      "translation_index": 0
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 2.541279591553036e-06,
+      "raw_cap800_winner": [
+        -0.5126953125,
+        -0.2197265625
+      ],
+      "regularized_winner": [
+        -0.5126953125,
+        -0.1708984375
+      ],
+      "stage_index": 2,
+      "translation_index": 0
+    },
+    {
+      "agrees": false,
+      "raw_cap800_margin": 2.492437367607181e-06,
+      "raw_cap800_winner": [
+        -0.537109375,
+        -0.1953125
+      ],
+      "regularized_winner": [
+        -0.5126953125,
+        -0.1708984375
+      ],
+      "stage_index": 2,
+      "translation_index": 1
+    }
+  ],
+  "qualification_rule": "the planned basin closes on an interior final cell, both group fits converge, and both direct exact-SGP4 replay gates pass at 0.2 Hz",
+  "qualified": true,
+  "reference_used": false,
+  "schema": "ds1-iteration13-basin-closure-qualification/v1"
+}

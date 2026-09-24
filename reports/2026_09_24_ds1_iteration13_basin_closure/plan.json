@@ -1,0 +1,28 @@
+{
+  "schema": "ds1-iteration13-basin-closure-plan/v1",
+  "partition": "train",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration12_session_scale/refinement.json",
+  "association_policy": "fixed iteration-10 hard associations inherited through the sealed parent",
+  "timing_policy": "fixed group timing inherited from iteration 10",
+  "model": "exact SGP4 causal per-NORAD rate with profiled per-track CFO",
+  "objective": "equal-group mean of regularized exact cap-800 selection objectives",
+  "stages": [
+    {
+      "spacing_km": 0.09765625,
+      "maximum_translations": 8
+    },
+    {
+      "spacing_km": 0.048828125,
+      "maximum_translations": 4
+    },
+    {
+      "spacing_km": 0.0244140625,
+      "maximum_translations": 4
+    }
+  ],
+  "transition_rule": "translate at unchanged spacing while the winner is on the 3x3 edge; advance to the next stage only after an interior winner",
+  "termination_rule": "stop after the final stage, or stop unqualified if any stage exhausts its translation budget on an edge",
+  "reuse_policy": "cache and reuse exact group-coordinate fits shared by overlapping lattices",
+  "postseal_policy": "the geographic reference may be read only after inference.json is sealed"
+}

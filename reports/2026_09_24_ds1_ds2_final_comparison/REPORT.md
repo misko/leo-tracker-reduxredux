@@ -2,8 +2,8 @@
 
 ## Result
 
-DS1 is complete. Its best reused-development result remains **0.787 km** from
-the expanded exact search. DS2 contains cleaner individual tracks, but does
+DS1 is complete. Its best reused-development result is **0.576 km** from the
+qualified information-weighted exact search. DS2 contains cleaner individual tracks, but does
 not reproduce the sub-kilometre DS1 location: the best DS2 result is **1.735
 km** from the consistent cap-800 objective. That DS2 result is a bounded local
 refinement of the independently sealed 250 km-prior search, whose best portable
@@ -24,7 +24,7 @@ spacing.
 
 | Method | Post-seal error | Scope | Finding |
 |---|---:|---|---|
-| DS1 expanded exact | **0.787 km** | Reused DS1 development groups | Best overall result; selected an edge cell in the expanded exact search. |
+| DS1 information-weighted exact | **0.576 km** | Reused DS1 development groups | Best overall result; closed an interior 24.4 m basin with exact replay gates. |
 | DS2 baseline Doppler | 1.939 km | Fresh 250 km-prior search, all 20 sessions | Baseline all-observation hard association. |
 | DS2 causal per-NORAD rate | **1.924 km** | Fresh 250 km-prior search, all 20 sessions | Best portable DS2 result; exact SGP4 replay passed. |
 | DS2 consistent cap-800 | **1.735 km** | Bounded 3x3 local refinement | Best DS2 coordinate; improves the sealed parent by 189 m and passes both exact gates. |

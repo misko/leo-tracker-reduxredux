@@ -1,0 +1,21 @@
+{
+  "schema": "ds1-iteration15-information-weighted-plan/v1",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration12_session_scale/refinement.json",
+  "weight_source": "reports/2026_09_24_ds1_joint_weighting/joint-weighting.json",
+  "group_weights": {
+    "20260921_00": 0.2742,
+    "20260921_16": 0.7258
+  },
+  "weight_policy": "source-tempered curvature-and-scale-normalized weights frozen before iteration 13",
+  "association_policy": "fixed iteration-10 hard associations",
+  "model": "exact causal per-NORAD rate with profiled per-track CFO",
+  "geographic_objective": "information-weighted regularized exact rate selection objective",
+  "stages": [
+    {"spacing_km": 0.09765625, "maximum_translations": 8},
+    {"spacing_km": 0.048828125, "maximum_translations": 4},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4}
+  ],
+  "transition_rule": "translate at unchanged spacing while the winner is on the edge; halve only after an interior winner",
+  "postseal_policy": "the geographic reference may be read only after inference.json is sealed"
+}
