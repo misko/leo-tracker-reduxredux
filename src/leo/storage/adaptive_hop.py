@@ -35,12 +35,14 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV4,
     AdaptiveHopPlanV5,
     AdaptiveHopPlanV6,
+    AdaptiveHopPlanV7,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
     AdaptiveHopVisitV1,
     AdaptiveHopVisitV2,
     AdaptiveHopVisitV3,
@@ -160,7 +162,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                     visit.valid_sample_count
                     for visit in visits[next_visit : next_visit + chunk.visit_count]
                 )
-                if self.schema_version in (11, 12)
+                if self.schema_version in (11, 12, 14, 15)
                 else chunk.visit_count * g.valid_visit_samples
             )
             if (
@@ -352,6 +354,41 @@ class UnboundFeature103DualRxAdaptiveHopIqManifestV13(AdaptiveHopIqManifestV1):
     chunks: Annotated[tuple[Feature103AdaptiveHopIqChunkV9, ...], Field(max_length=625)]
 
 
+class FixedDwellDualRxAdaptiveHopIqChunkV14(AdaptiveHopIqChunkV1):
+    """One independently bounded protocol-four fixed-dwell dual-RX visit."""
+
+    schema_version: Literal[14] = 14  # type: ignore[assignment]
+    chunk_index: Annotated[int, Field(strict=True, ge=0, lt=2500)]
+    visit_count: Annotated[int, Field(strict=True, ge=1, le=1)]
+    sample_count: Annotated[int, Field(strict=True, gt=0, le=900_000)]
+
+
+class UnboundFixedDwellDualRxAdaptiveHopIqManifestV14(AdaptiveHopIqManifestV1):
+    """Protocol-four dual-RX IQ without an inferred physical fixture geometry."""
+
+    schema_version: Literal[14] = 14  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 1
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = Feature103DualRxTimingV3
+    receipt: AdaptiveHopReceiptV7  # type: ignore[assignment]
+    timing: Feature103DualRxTimingV3 | None  # type: ignore[assignment]
+    chunks: Annotated[
+        tuple[FixedDwellDualRxAdaptiveHopIqChunkV14, ...], Field(max_length=2500)
+    ]
+
+
+class FixedDwellDualRxAdaptiveHopIqManifestV15(GeometryBoundAdaptiveHopIqManifestV6):
+    """Protocol-four dual-RX IQ with measured physical fixture geometry."""
+
+    schema_version: Literal[15] = 15  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 1
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = Feature103DualRxTimingV3
+    receipt: AdaptiveHopReceiptV7  # type: ignore[assignment]
+    timing: Feature103DualRxTimingV3 | None  # type: ignore[assignment]
+    chunks: Annotated[
+        tuple[FixedDwellDualRxAdaptiveHopIqChunkV14, ...], Field(max_length=2500)
+    ]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -366,7 +403,9 @@ class _ManifestSeal(AdaptiveModel):
         | Feature104DualRxAdaptiveHopIqManifestV10
         | VariableDualRxAdaptiveHopIqManifestV11
         | VariableDualRxAdaptiveHopIqManifestV12
-        | UnboundFeature103DualRxAdaptiveHopIqManifestV13,
+        | UnboundFeature103DualRxAdaptiveHopIqManifestV13
+        | UnboundFixedDwellDualRxAdaptiveHopIqManifestV14
+        | FixedDwellDualRxAdaptiveHopIqManifestV15,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -393,6 +432,8 @@ class PublishedAdaptiveHopIqSession:
         | VariableDualRxAdaptiveHopIqManifestV11
         | VariableDualRxAdaptiveHopIqManifestV12
         | UnboundFeature103DualRxAdaptiveHopIqManifestV13
+        | UnboundFixedDwellDualRxAdaptiveHopIqManifestV14
+        | FixedDwellDualRxAdaptiveHopIqManifestV15
     )
     manifest_sha256: str
 
@@ -598,7 +639,8 @@ class AdaptiveHopIqStore:
         | AdaptiveHopPlanV3
         | AdaptiveHopPlanV4
         | AdaptiveHopPlanV5
-        | AdaptiveHopPlanV6,
+        | AdaptiveHopPlanV6
+        | AdaptiveHopPlanV7,
         *,
         capacity_visits: int = 8,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
@@ -622,7 +664,8 @@ class AdaptiveHopIqStore:
         | AdaptiveHopPlanV3
         | AdaptiveHopPlanV4
         | AdaptiveHopPlanV5
-        | AdaptiveHopPlanV6,
+        | AdaptiveHopPlanV6
+        | AdaptiveHopPlanV7,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ) -> AdaptiveHopSessionWriter:
@@ -630,7 +673,9 @@ class AdaptiveHopIqStore:
             raise BundleStateError("adaptive IQ store is read-only")
         _identifier(session_id)
         plan_model = (
-            AdaptiveHopPlanV6
+            AdaptiveHopPlanV7
+            if isinstance(plan, AdaptiveHopPlanV7)
+            else AdaptiveHopPlanV6
             if isinstance(plan, AdaptiveHopPlanV6)
             else AdaptiveHopPlanV5
             if isinstance(plan, AdaptiveHopPlanV5)
@@ -1142,7 +1187,8 @@ class AdaptiveHopSessionWriter:
         | AdaptiveHopPlanV3
         | AdaptiveHopPlanV4
         | AdaptiveHopPlanV5
-        | AdaptiveHopPlanV6,
+        | AdaptiveHopPlanV6
+        | AdaptiveHopPlanV7,
         *,
         receiver_geometry: AdaptiveReceiverGeometryBindingV1 | None = None,
     ):
@@ -1156,11 +1202,11 @@ class AdaptiveHopSessionWriter:
             plan.schema_version if isinstance(plan, HostAdaptiveHopPlanV2) else 0
         )
         self._feature103 = isinstance(
-            plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6)
+            plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6, AdaptiveHopPlanV7)
         )
         self._visits_per_chunk = (
             1
-            if isinstance(plan, AdaptiveHopPlanV6)
+            if isinstance(plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
             else 4
             if self._host_adaptive_version == 3 or self._feature103
             else 8
@@ -1184,7 +1230,7 @@ class AdaptiveHopSessionWriter:
         try:
             visit_model = (
                 AdaptiveHopVisitV3
-                if isinstance(self._plan, AdaptiveHopPlanV6)
+                if isinstance(self._plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                 else AdaptiveHopVisitV2
                 if self._feature103
                 else AdaptiveHopVisitV1
@@ -1204,7 +1250,7 @@ class AdaptiveHopSessionWriter:
                 or e.decision.generation != self._plan.policy.generation
                 or e.valid_start_counter != e.transition_after_counter + g.transition_guard_samples
                 or (
-                    not isinstance(self._plan, AdaptiveHopPlanV6)
+                    not isinstance(self._plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                     and visit.valid_sample_count != g.valid_visit_samples
                 )
                 or block.receiver_ids != g.receiver_ids
@@ -1247,7 +1293,9 @@ class AdaptiveHopSessionWriter:
         chunk_sample_start = sum(visit.valid_sample_count for visit in self._visits[:first])
         index = len(self._chunks)
         chunk_model = (
-            VariableDualRxAdaptiveHopIqChunkV12
+            FixedDwellDualRxAdaptiveHopIqChunkV14
+            if isinstance(self._plan, AdaptiveHopPlanV7)
+            else VariableDualRxAdaptiveHopIqChunkV12
             if isinstance(self._plan, AdaptiveHopPlanV6)
             else Feature104AdaptiveHopIqChunkV10
             if isinstance(self._plan, AdaptiveHopPlanV5)
@@ -1266,12 +1314,12 @@ class AdaptiveHopSessionWriter:
                 visit_count=count,
                 sample_start=(
                     chunk_sample_start
-                    if isinstance(self._plan, AdaptiveHopPlanV6)
+                    if isinstance(self._plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                     else first * dwell
                 ),
                 sample_count=(
                     chunk_sample_count
-                    if isinstance(self._plan, AdaptiveHopPlanV6)
+                    if isinstance(self._plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                     else count * dwell
                 ),
                 relative_path=f"iq-block-{index:06d}.ci16.zst",
@@ -1292,7 +1340,8 @@ class AdaptiveHopSessionWriter:
         | AdaptiveHopReceiptV3
         | AdaptiveHopReceiptV4
         | AdaptiveHopReceiptV5
-        | AdaptiveHopReceiptV6,
+        | AdaptiveHopReceiptV6
+        | AdaptiveHopReceiptV7,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
@@ -1300,7 +1349,9 @@ class AdaptiveHopSessionWriter:
         self._require_open()
         try:
             receipt_model = (
-                AdaptiveHopReceiptV6
+                AdaptiveHopReceiptV7
+                if isinstance(self._plan, AdaptiveHopPlanV7)
+                else AdaptiveHopReceiptV6
                 if isinstance(self._plan, AdaptiveHopPlanV6)
                 else AdaptiveHopReceiptV5
                 if isinstance(self._plan, AdaptiveHopPlanV5)
@@ -1329,7 +1380,12 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                VariableDualRxAdaptiveHopIqManifestV12
+                FixedDwellDualRxAdaptiveHopIqManifestV15
+                if isinstance(receipt, AdaptiveHopReceiptV7)
+                and self._receiver_geometry is not None
+                else UnboundFixedDwellDualRxAdaptiveHopIqManifestV14
+                if isinstance(receipt, AdaptiveHopReceiptV7)
+                else VariableDualRxAdaptiveHopIqManifestV12
                 if isinstance(receipt, AdaptiveHopReceiptV6)
                 else Feature104DualRxAdaptiveHopIqManifestV10
                 if isinstance(receipt, AdaptiveHopReceiptV5)
@@ -1376,7 +1432,7 @@ class AdaptiveHopSessionWriter:
                     target_uncompressed_bytes=(
                         (
                             self._plan.geometry.active_valid_visit_samples
-                            if isinstance(self._plan, AdaptiveHopPlanV6)
+                            if isinstance(self._plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                             else self._plan.geometry.valid_visit_samples
                         )
                         * self._visits_per_chunk
@@ -1450,7 +1506,8 @@ class _SpoolingAdaptiveHopSessionWriter(AdaptiveHopSessionWriter):
         | AdaptiveHopReceiptV3
         | AdaptiveHopReceiptV4
         | AdaptiveHopReceiptV5
-        | AdaptiveHopReceiptV6,
+        | AdaptiveHopReceiptV6
+        | AdaptiveHopReceiptV7,
         *,
         timing: PersistentHopUtcTimingAuthorityV1 | None,
         queue_telemetry: PersistentHopQueueTelemetryV1 | None = None,
