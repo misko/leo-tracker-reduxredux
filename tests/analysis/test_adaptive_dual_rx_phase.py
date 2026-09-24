@@ -133,6 +133,26 @@ def test_symbol_reference_uses_template_energy_centroid() -> None:
     assert offset[0] == pytest.approx(expected)
 
 
+def test_coherent_frames_use_declared_spacing_for_strided_symbols() -> None:
+    symbol_stride_s = 2 * OFDM_SYMBOL_DURATION_S
+    offsets = np.arange(32, dtype=float) * symbol_stride_s + 10e-6
+    residual_hz = 24_321.5
+    frame_phase = np.asarray((-0.7, 0.2, 1.1))[:, None]
+    exact = np.exp(1j * (frame_phase + 2 * np.pi * residual_hz * offsets[None, :]))
+    control = 0.01 * np.ones_like(exact)
+
+    _, _, fitted_hz, ratio = coherent_pilot_frames(
+        exact,
+        control,
+        offsets,
+        OFDM_SYMBOL_DURATION_S,
+        coarse_frequency_sample_interval_s=symbol_stride_s,
+    )
+
+    assert fitted_hz == pytest.approx(residual_hz, abs=0.05)
+    assert ratio > 1_000
+
+
 def test_phasor_fit_rejects_non_positive_weights() -> None:
     with pytest.raises(ValueError, match="weights and frequency interval"):
         fit_linear_phasor(

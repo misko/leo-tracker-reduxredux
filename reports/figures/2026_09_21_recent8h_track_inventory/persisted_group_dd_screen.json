@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "window": {
+    "start_utc": "2026-09-21T06:34:16Z",
+    "end_utc": "2026-09-21T14:34:16Z",
+    "inclusion_field": "captured_at",
+    "bounds": "inclusive"
+  },
+  "coverage": {
+    "complete_products_screened": 75,
+    "published_tracklets_screened": 2914,
+    "method": "Compare distinct persisted catalogue physical groups within each v14 product. Each group must contain RX0 and RX1 tracklets on the same channel and edge; both groups must have overlapping UTC support.",
+    "limitation": "Only catalogue groups persisted among each product bounded attempted groups are covered. group_limit=4 and physical_group_count is often larger, so this is not an all-RF-group or exact same-visit exclusion.",
+    "exact_same_visit_reconstruction": "The five longest dual-RX pairs were reconstructed; no four-distinct-track same-channel/edge candidate shared at least two visits."
+  },
+  "metadata_candidates": [],
+  "conclusion": "No same-channel/edge two-source DD candidate exists among persisted catalogue groups in the 75 complete products. This does not exclude candidates among unpublished RF groups."
+}

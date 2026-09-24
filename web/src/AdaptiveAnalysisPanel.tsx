@@ -4,6 +4,8 @@ import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api"
 import type { AdaptiveAnalysisStatus, AdaptiveArtifact, AdaptiveFigure, AdaptiveProbeStride } from "./adaptive-analysis-api";
 import { adaptivePhaseFigureUrl, getAdaptivePhase } from "./adaptive-phase-api";
 import type { AdaptivePhaseStatus } from "./adaptive-phase-api";
+import { adaptivePhaseV2FigureUrl, getAdaptivePhaseV2 } from "./adaptive-phase-v2-api";
+import type { AdaptivePhaseV2Status } from "./adaptive-phase-v2-api";
 
 const figureCopy: Record<AdaptiveArtifact, { title: string; detail: string }> = {
   "coverage": { title: "Retained channel coverage", detail: "Actual valid intervals; empty time is not interpolated. An outlined marker is an incomplete hop start." },
@@ -53,6 +55,27 @@ function PhaseFigure({ status, probeStrideMs }: { status: AdaptivePhaseStatus; p
   </figure>;
 }
 
+function PhaseV2Figure({ status, probeStrideMs }: { status: AdaptivePhaseV2Status; probeStrideMs: number }) {
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const manifest = status.manifest;
+  if (!manifest?.artifact) return null;
+  const url = adaptivePhaseV2FigureUrl(status, probeStrideMs);
+  return <figure className="adaptive-analysis-figure adaptive-phase-replay">
+    <figcaption>
+      <h4>Dual-RX phase versus time</h4>
+      <p>Every point is a retained two-signal hypothesis formed after phase-blind, one-to-one RX pairing with a common receiver-frequency offset. CFO aliases and the pilot half-cycle phase branch remain unresolved; lines do not bridge retunes or gaps.</p>
+      <p>{manifest.qualified_visit_count} qualified visits · {manifest.hypothesis_count} retained hypotheses. Geometry phase: {manifest.geometry_phase_state.replace("_", " ")} — {manifest.geometry_phase_reason}.</p>
+    </figcaption>
+    {failed ? <p role="alert">The phase-versus-time figure could not be loaded.</p> : <>
+      {!loaded ? <p role="status">Loading phase-versus-time evidence…</p> : null}
+      <a href={url} target="_blank" rel="noreferrer" aria-label="Open dual-RX phase-versus-time PNG">
+        <img src={url} alt="Dual-RX phase versus time" loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+      </a>
+    </>}
+  </figure>;
+}
+
 export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture }) {
   const hostAdaptive = capture.schema_version === 2 || capture.schema_version === 3;
   const [probeStrideMs, setProbeStrideMs] = useState<AdaptiveProbeStride>(120);
@@ -60,23 +83,25 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<AdaptivePhaseStatus | null>(null);
+  const [phaseV2, setPhaseV2] = useState<AdaptivePhaseV2Status | null>(null);
   const [phaseError, setPhaseError] = useState<string | null>(null);
   useEffect(() => {
     let active = true; let busy = false;
     const controller = new AbortController();
-    setStatus(null); setPhase(null); setLoading(true); setError(null); setPhaseError(null);
+    setStatus(null); setPhase(null); setPhaseV2(null); setLoading(true); setError(null); setPhaseError(null);
     const refresh = async () => {
       if (busy) return;
       busy = true;
       try {
-        const [result, phaseResult] = await Promise.all([
+        const [result, phaseResult, phaseV2Result] = await Promise.all([
           getAdaptiveAnalysis(capture, controller.signal, probeStrideMs),
           getAdaptivePhase(capture, controller.signal, probeStrideMs).catch(failure => {
             if (active) setPhaseError(failure instanceof Error ? failure.message : "Adaptive phase is unavailable");
             return null;
           }),
+          getAdaptivePhaseV2(capture, controller.signal, probeStrideMs).catch(() => null),
         ]);
-        if (active) { setStatus(result); setPhase(phaseResult); setError(null); if (phaseResult) setPhaseError(null); }
+        if (active) { setStatus(result); setPhase(phaseResult); setPhaseV2(phaseV2Result); setError(null); if (phaseResult) setPhaseError(null); }
       } catch (failure) {
         if (active) { setStatus(null); setError(failure instanceof Error ? failure.message : "Adaptive analysis is unavailable"); }
       } finally { busy = false; if (active) setLoading(false); }
@@ -116,11 +141,14 @@ export function AdaptiveAnalysisPanel({ capture }: { capture: AdaptiveCapture })
         {status.overview.artifacts.map(figure => <FigureView key={`${status.binding_sha256}:${figure.name}:${figure.sha256}`} status={status} figure={figure} />)}
       </> : null}
       {phase?.state === "ready" ? <PhaseFigure status={phase} probeStrideMs={probeStrideMs} /> : null}
+      {phaseV2?.state === "ready" ? <PhaseV2Figure status={phaseV2} probeStrideMs={probeStrideMs} /> : null}
+      {phaseV2?.state === "pending" && phaseV2.checkpoint_visit_count > 0 ? <p>Dual-RX phase-versus-time extraction has {phaseV2.checkpoint_visit_count} / {phaseV2.total_visit_count} saved visit checkpoints.</p> : null}
       {phase?.state === "pending" ? <p>Dual-RX pilot phase analysis has not been published for this recording yet.</p> : null}
       {phase?.state === "insufficient_signal" ? <p>No simultaneous two-signal pilot pair passed the phase-quality gates, so no phase figure was published.</p> : null}
       {phase?.state === "not_applicable" ? <p>Dual-RX phase is not applicable: this capture retained only one physical receiver.</p> : null}
       {phaseError ? <p role="alert">{phaseError}. GLRT figures remain independently available.</p> : null}
     </> : null}
     {!status && phase?.state === "ready" ? <PhaseFigure status={phase} probeStrideMs={probeStrideMs} /> : null}
+    {!status && phaseV2?.state === "ready" ? <PhaseV2Figure status={phaseV2} probeStrideMs={probeStrideMs} /> : null}
   </section>;
 }

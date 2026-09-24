@@ -4,6 +4,7 @@ import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { adaptiveFigureUrl, getAdaptiveAnalysis } from "./adaptive-analysis-api";
 import type { AdaptiveAnalysisStatus } from "./adaptive-analysis-api";
 import type { AdaptivePhaseStatus } from "./adaptive-phase-api";
+import type { AdaptivePhaseV2Status } from "./adaptive-phase-v2-api";
 import { adaptiveDetailFixture, hostAdaptiveDetailFixture, multirateAdaptiveDetailFixture } from "./adaptive-fixtures";
 
 const capture = adaptiveDetailFixture().capture;
@@ -45,6 +46,25 @@ function phaseFixture(sessionId = capture.session_id): AdaptivePhaseStatus {
       state: "ready", reason: "published_phase_evidence", qualified_phase_count: 19,
       association_count: 3, finalized_utc_ns: "1789000000000000000",
       artifact: { name: "dual-rx-phase-progression", content_type: "image/png", sha256: sha("f"), byte_count: 541025 },
+    },
+  };
+}
+function phaseV2Fixture(sessionId = capture.session_id): AdaptivePhaseV2Status {
+  return {
+    schema_version: 2, kind: "adaptive_dual_rx_phase_status", session_id: sessionId,
+    input_manifest_sha256: capture.input_manifest_sha256, receiver_ids: [0, 1], state: "ready",
+    reason: "published_phase_time_hypotheses", checkpoint_visit_count: capture.retained_visits,
+    total_visit_count: capture.retained_visits, worker_activity: "not_observed",
+    manifest: {
+      schema_version: 2, kind: "adaptive_dual_rx_phase_manifest", analysis_id: "adaptive-qin-pilot-double-difference-v2",
+      session_id: sessionId, input_manifest_sha256: capture.input_manifest_sha256,
+      glrt_binding_sha256: sha("a"), glrt_metrics_manifest_sha256: sha("b"), state: "ready",
+      reason: "published_phase_time_hypotheses", total_visit_count: capture.retained_visits,
+      checkpoint_visit_count: capture.retained_visits, qualified_visit_count: 4, hypothesis_count: 6,
+      geometry_phase_state: "unavailable", geometry_phase_reason: "calibration unavailable",
+      receiver_product: "rx1_times_conjugate_rx0", phase_continuity_across_retunes: false,
+      association_uses_phase: false, aliases_resolved: false, pilot_phase_ambiguity: "modulo_pi", finalized_utc_ns: "1789000000000000000",
+      artifact: { name: "dual-rx-double-difference-time", content_type: "image/png", sha256: sha("e"), byte_count: 1234 },
     },
   };
 }
@@ -108,6 +128,19 @@ describe("adaptive analysis publication", () => {
     expect(screen.getAllByRole("img")).toHaveLength(4);
     expect(screen.getByText(/19 qualified double-difference estimates/)).toBeInTheDocument();
     expect(screen.getByText(/supplemental evidence/)).toBeInTheDocument();
+  });
+
+  it("renders V2 phase time with explicit alias and geometry limits", async () => {
+    const value = analysisFixture();
+    vi.stubGlobal("fetch", vi.fn((url: string) => Promise.resolve(
+      url.includes("dual-rx-phase-v2") ? respond(phaseV2Fixture())
+        : url.includes("dual-rx-phase") ? respond(null, 404) : respond(value),
+    )));
+    render(<AdaptiveAnalysisPanel capture={capture} />);
+    const image = await screen.findByRole("img", { name: "Dual-RX phase versus time" });
+    expect(image).toHaveAttribute("src", expect.stringContaining("dual-rx-phase-v2/artifact.png"));
+    expect(screen.getByText(/CFO aliases and the pilot half-cycle phase branch remain unresolved/)).toBeInTheDocument();
+    expect(screen.getByText(/Geometry phase: unavailable/)).toBeInTheDocument();
   });
 
   it("does not invent phase evidence for an unregistered or single-RX recording", async () => {
@@ -196,7 +229,7 @@ describe("adaptive analysis publication", () => {
     vi.stubGlobal("fetch", fetcher);
     const view = render(<AdaptiveAnalysisPanel capture={capture} />);
     await act(async () => { vi.advanceTimersByTime(60000); });
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(3);
     view.unmount();
     expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true);
   });
@@ -234,7 +267,10 @@ describe("adaptive analysis publication", () => {
     expect(screen.getByText(/20 ms probes \/ 120 ms stride/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole("combobox", { name: "Analysis sampling" }), { target: { value: "10" } });
     await screen.findByText(/20 ms probes \/ 10 ms stride/);
-    expect(fetcher.mock.calls[2][0]).toContain("probe_stride_ms=10");
+    const denseAnalysisCall = fetcher.mock.calls.find(call =>
+      !String(call[0]).includes("dual-rx-phase") && String(call[0]).includes("probe_stride_ms=10")
+    );
+    expect(denseAnalysisCall?.[0]).toContain("probe_stride_ms=10");
     expect(screen.getByText(/not scheduled automatically/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open fractional glrt response PNG" }).getAttribute("href")).toContain("probe_stride_ms=10");
   });
