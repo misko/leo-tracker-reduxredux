@@ -1,0 +1,151 @@
+{
+  "schema": "ds1-subkm-technique-matrix/v1",
+  "purpose": "Historical claims below one kilometre mapped to predeclared DS1 comparison arms. Historical point error is descriptive only; DS1 performance is deliberately null until an arm is run.",
+  "ds1_reference": {
+    "dataset": "reports/2026_09_24_ds1/dataset.json",
+    "protocol": "reports/2026_09_24_ds1/PROTOCOL.md:1-65",
+    "baseline": "Causal cached TLE prediction; TRAIN-only visible-candidate reselection and constant per-track CFO; occupied-second weighting; 800 Hz cap; randomized inner held rows.",
+    "current_nuisance": "Either tau=0 or one global tau in [-5,5] seconds. No per-NORAD rate, per-scan time, track time, cone, beam, drift, or correlated likelihood."
+  },
+  "techniques": [
+    {
+      "id": "configured_site_orbit_calibration",
+      "historical_claim_m": 292,
+      "corrected_error_m": 1579,
+      "mechanism": "Calibrate each orbit timing at the configured receiver coordinate, then pool conditional scan fits.",
+      "historical_hyperparameters": "Known configured site used during calibration; fixed height; pooled 19 scans.",
+      "evidence": ["reports/2026_09_07_eight_hour_scan_tracking_and_positioning.md:36-44", "reports/2026_09_20_matched_positioning.md:9-16"],
+      "implementation": ["tools/report_continental_positioning_synthesis.py"],
+      "truth_or_site_leakage": "yes: orbit calibration used the answer, and the old configured coordinate is 1.29 km from the confirmed antenna",
+      "qualification": "disqualified_as_subkm",
+      "ds1_arm": "none; retain only as a negative leakage control",
+      "reuse": "Do not reuse fitting logic for an accuracy arm. Its corrected coordinate error is not sub-kilometre."
+    },
+    {
+      "id": "site_selected_shared_utc",
+      "historical_claim_m": 895,
+      "mechanism": "One joint receiver UTC shift with robust position fit on fixed, site-selected identities.",
+      "historical_hyperparameters": "tau in [-0.5,+0.5] s; quadratic state interpolation at -0.5, 0, +0.5 s; observation-balanced robust residuals.",
+      "evidence": ["reports/2026_09_20_matched_positioning.md:42-52", "reports/2026_09_20_matched_positioning.md:69-75"],
+      "implementation": ["tools/compare_positioning_cohorts.py", "tools/report_matched_positioning.py"],
+      "truth_or_site_leakage": "yes: identities are historical site-selected; absolute clock has no independent authority",
+      "qualification": "conditional_only",
+      "ds1_arm": "already_run: global shared-time versus tau=0, but DS1 reselects candidates at each point/tau rather than fixing site-selected IDs",
+      "reuse": "DS1 reports/2026_09_24_ds1/run.py provides the transferable global-tau structure. Add a TRAIN-only fixed-ID control to isolate identity reselection from the time effect."
+    },
+    {
+      "id": "selected_policy_shared_utc",
+      "historical_claim_m": 968,
+      "mechanism": "Joint UTC with a 100 Hz cap and longest episode per satellite per scan.",
+      "historical_hyperparameters": "Minimum support 15 s; cap in {100,200,500} Hz; longest-per-satellite selection; the 100 Hz + UTC variant retained 85 episodes.",
+      "evidence": ["reports/2026_09_20_matched_positioning.md:54-65", "reports/2026_09_20_matched_positioning.md:69-75"],
+      "implementation": ["tools/replay_position_selection.py", "tools/prepare_randomized_positioning.py"],
+      "truth_or_site_leakage": "yes: it inherits identities from a prior continental run and the successful policy became visible after outcome comparison",
+      "qualification": "exploratory_policy_selection",
+      "ds1_arm": "exclude from primary DS1; optional frozen TRAIN-only support-selection sensitivity after the primary models are sealed",
+      "reuse": "The source whitelisting and selection-isolation tests are reusable. Do not import its policy winner or its historical identities."
+    },
+    {
+      "id": "causal_all_norad_phase_rate",
+      "historical_claim_m": 275,
+      "mechanism": "Causal TLE phase mean plus a signed, regularized phase-rate correction shared by each selected NORAD, with per-segment CFO offsets.",
+      "historical_hyperparameters": "446 fixed identities; rate bound +/-0.25 s/h; causal rate-prior sigma 0.09177 s/h; 250 Hz smooth robust scale; quadratic SGP4 state approximation at mean +/-1 s.",
+      "evidence": ["reports/2026_09_21_causal_orbit_error_model.md:7-18", "reports/2026_09_21_causal_orbit_error_model.md:28-56", "reports/2026_09_21_causal_orbit_error_model.md:60-84"],
+      "implementation": ["tools/study_causal_orbit_phase_prior.py", "tools/fit_causal_orbit_phase_uncertainty.py", "src/leo/analysis/research/formal_orbit.py"],
+      "truth_or_site_leakage": "site-conditioned fixed associations, but rate prior and fitting split are causal and reference is post-inference",
+      "qualification": "strongest_transferable_candidate",
+      "ds1_arm": "primary: causal prior plus a rate for every selected NORAD, reselected by the DS1 TRAIN-only scorer at every geographic point/time; compare global-tau-only, rate-only, and rate+global-tau. Also run a frozen-ID control.",
+      "reuse": "Reuse FormalOrbitConfig phase-rate design and exact-state check. Write an adapter from DS1 track/candidate cache to FormalOrbitData; do not use the old 446-ID list."
+    },
+    {
+      "id": "formal_orbit_likelihood",
+      "historical_claim_m": 328.4,
+      "mechanism": "The same causal per-NORAD rate model with learned scale, AR(1) within-track whitening, and Student-t innovations.",
+      "historical_hyperparameters": "AR(1) rho=0.65; Student-t df=4; nominal sigma=250 Hz with inferred sigma in [5,2000] Hz and log-prior width 1.5; phase-rate sigma=0.09176615913014215 s/h; rate bound +/-0.25 s/h.",
+      "evidence": ["reports/2026_09_21_formal_position_benchmark.md:8-55", "reports/2026_09_21_position_ablation_report.md:8-38", "reports/2026_09_21_position_ablation_report.md:61-77", "src/leo/analysis/research/formal_orbit.py:23-61"],
+      "implementation": ["src/leo/analysis/research/formal_orbit.py::fit_formal_orbit", "tools/fit_formal_orbit.py", "tools/benchmark_position_ablations.py"],
+      "truth_or_site_leakage": "fixed identities inherited from full historical analysis; local model is otherwise causal and reference is post-seal",
+      "qualification": "conditional_but_clean_component_ablation",
+      "ds1_arm": "after the rate-only DS1 arm: same rate data and candidate policy, first Gaussian independent learned-scale, then full AR(1)+Student-t learned-scale; select no likelihood setting by DS1 truth",
+      "reuse": "Full research core is reusable after an input adapter. Historical ablation says rate removal caused 328.4->3137.1 m, correlation removal 920.6 m, fixed sigma 927.9 m, and Gaussian independent learned-scale 335.7 m."
+    },
+    {
+      "id": "sixteen_scan_joint_conditional",
+      "historical_claim_m": 314,
+      "mechanism": "Joint continuous position over a conditional per-scan candidate union, individual integer track tau/CFO, plus exploratory timing and soft-association reranking.",
+      "historical_hyperparameters": "16 scans; candidate/tau support conditioned on prior Sacramento/Reno outputs; tau [-5,+5] s at 0.25 s; soft diagnostic used signal scale 250 Hz, null scale 30000 Hz, equal signal/null prior.",
+      "evidence": ["reports/2026_09_23_sixteen_scan_comparison/README.md:70-76", "reports/2026_09_23_sixteen_scan_comparison/README.md:94-137", "reports/2026_09_23_sixteen_scan_comparison/README.md:141-178"],
+      "implementation": ["tools/research/sixteen_joint_compare.py", "tools/research/sixteen_timing_robust.py", "tools/research/sixteen_soft_orbit.py"],
+      "truth_or_site_leakage": "yes: candidate union and seeds had historical evaluation exposure; some location ranking used recorded evaluation objective",
+      "qualification": "development_only_nontransferable_as_is",
+      "ds1_arm": "do not reproduce the exposed candidate pool or evaluation-ranked finalists. Use only its computational cache/search pattern with DS1's original candidate universe and TRAIN-only rank.",
+      "reuse": "Reuse cached state interpolation, local geographic refinement and transparent candidate accounting. Do not reuse exposed candidate IDs, seed points, or evaluation selection."
+    },
+    {
+      "id": "fractional_per_track_tau",
+      "historical_claim_m": 631,
+      "mechanism": "For each candidate, jointly profile continuous tau inside a cached 0.25 s interval and a constant track CFO.",
+      "historical_hyperparameters": "tau [-5,+5] s; 0.25 s nodes; capped 800 Hz or pseudo-Huber 150 Hz track loss; 150 geographic evaluations.",
+      "evidence": ["reports/2026_09_23_fractional_timing_position/README.md:1-31", "reports/2026_09_23_fractional_timing_position/README.md:35-63", "tools/research/position_fractional_timing.py:30-84"],
+      "implementation": ["tools/research/position_fractional_timing.py", "tools/research/sixteen_timing_robust.py"],
+      "truth_or_site_leakage": "conditional candidate pool; no direct truth input to its sealed inference, but support is much wider than time authority",
+      "qualification": "nontransferable_without_physical_constraint",
+      "ds1_arm": "diagnostic only: if run, constrain common scan tau to measured host/device brackets and compare with shared/global tau; never deploy independent +/-5s track tau as a primary estimator",
+      "reuse": "Fractional interpolation and synthetic recovery tests are reusable. The historical result reversed from 2.920->0.631 km in one group and 1.042->3.741 km in the other."
+    },
+    {
+      "id": "regularized_per_scan_epoch",
+      "historical_claim_m": 886,
+      "mechanism": "One bounded empirical epoch per scan, regularized around a global scan clock; fixed baseline identities and profiled track CFO.",
+      "historical_hyperparameters": "tau [-5,+5] s; scales 0.2, 1, 5 s; best displayed arm 79 scans, scale 1 s.",
+      "evidence": ["reports/2026_09_23_second_train_epoch_replication/README.md:1-33", "reports/2026_09_23_second_train_epoch_replication/README.md:35-50", "tools/research/position_regularized_timing.py:65-112", "tools/research/position_regularized_timing.py:327-344"],
+      "implementation": ["tools/research/position_regularized_timing.py"],
+      "truth_or_site_leakage": "fixed local baseline identities; TRAIN-only result; scale varied by group and has no unopened validation/test transfer",
+      "qualification": "plausible_secondary_candidate",
+      "ds1_arm": "primary secondary: fixed-ID and reselected-ID variants, one global tau plus per-scan residual epoch; predeclare bracket-derived and 0.2/1.0 s scales, select scale only on DS1 TRAIN, then report both validation groups",
+      "reuse": "The exact dynamic program/profiling helper is reusable, but map its tau grid to DS1 state cache and preserve DS1 randomized masks/track weights."
+    },
+    {
+      "id": "dual_lnb_beam_proxy",
+      "historical_claim_m": 347.7,
+      "mechanism": "Known-site-trained GLRT-margin response factor from RX0/RX1 directional asymmetry, combined with phase-aligned formal Doppler orbit fitting.",
+      "historical_hyperparameters": "Three NORAD-mod-3 folds; one midpoint per pass; one global cable-map sign; five heading offsets over +/-10 degrees; 20 shuffled controls per fold; 200 km known-site local search.",
+      "evidence": ["reports/2026_09_21_dual_lnb_geometry.md:180-223", "reports/2026_09_21_dual_lnb_geometry.md:241-272"],
+      "implementation": ["reports/2026_09_21_dual_lnb_geometry_followup/reproduction-sources.tar.gz::dual_lnb_tracking.py", "reports/2026_09_21_dual_lnb_geometry_followup/reproduction-sources.tar.gz::formal_orbit.py"],
+      "truth_or_site_leakage": "yes: beam calibration is trained at known site and includes same-window future captures",
+      "qualification": "rejected_by_shuffled_controls",
+      "ds1_arm": "excluded until independent RF gain/cable/heading calibration and a fixed phase-centre geometry are available",
+      "reuse": "Keep the dual-receiver pairing and ambiguity-rejection diagnostics. Do not use GLRT-margin beam response in DS1 location fitting."
+    },
+    {
+      "id": "native_rx1_receiver_reference",
+      "historical_claim_m": 897.853,
+      "mechanism": "Select native RX1 paths by coverage and add calibrated RX0 extensions to an anchor-excluded corpus.",
+      "historical_hyperparameters": "988-track site-conditioned corpus; calibration-anchor exclusion; native RX1 reference; quadratic orbit approximation.",
+      "evidence": ["reports/2026_09_22_paired_receiver_position_comparison.md:23-52", "reports/2026_09_22_paired_receiver_position_comparison.md:99-132"],
+      "implementation": ["reports/2026_09_22_paired_receiver_position_comparison/reproduction-sources.tar.gz::compare_dual_lnb_position_identity.py"],
+      "truth_or_site_leakage": "yes: candidate selection and local search are site-conditioned",
+      "qualification": "unqualified_numerical_and_uncertainty_failure",
+      "ds1_arm": "excluded as a position arm; optionally compare receiver-coverage extensions only after an exact-orbit and calibration-covariance-qualified baseline exists",
+      "reuse": "The matched-anchor-exclusion bookkeeping is reusable for future receiver-fusion controls; receiver choice itself is confounded with coverage."
+    }
+  ],
+  "deliberately_not_promoted": [
+    {
+      "method": "identity mixture / soft association alone",
+      "reason": "It did not produce a matched sub-kilometre result; it must remain an association-calibration diagnostic rather than be credited as the source of the 328 m result.",
+      "evidence": ["reports/2026_09_21_formal_position_benchmark.md:92-102", "reports/2026_09_23_random_group_model_comparison/README.md:39-68"]
+    },
+    {
+      "method": "receiver drift / scan-local slope",
+      "reason": "It did not produce a sub-kilometre held group and worsened complete validation-group position despite lower residuals.",
+      "evidence": ["reports/2026_09_23_receiver_drift_position/README.md:3-13", "reports/2026_09_23_position_drift_identifiability/README.md:1-34"]
+    }
+  ],
+  "required_common_ds1_gates": [
+    "Preserve the frozen DS1 recording membership, original randomized masks, >=3 s track eligibility, occupied-second weights, and explicit full-TEST continuity failure.",
+    "Choose geographic position, candidate policy, nuisance model and hyperparameters from TRAIN only; use validation/test only after inference is sealed.",
+    "For every rate/timing arm, report position error, TRAIN and randomized held capped/uncapped RMS, selected candidates, nuisance-bound occupancy, exact SGP4 discrepancy, convergence/failure accounting and fixed-ID versus reselection sensitivity.",
+    "Treat reference error as evaluation, never as a model or hyperparameter selector. Do not claim physical clock or orbital attribution from empirical nuisance terms."
+  ]
+}
