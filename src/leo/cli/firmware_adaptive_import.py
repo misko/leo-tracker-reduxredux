@@ -25,13 +25,16 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV4,
     AdaptiveHopPlanV5,
     AdaptiveHopPlanV6,
+    AdaptiveHopPlanV7,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
     AdaptiveHopTerminalV1,
     AdaptiveHopTerminalV2,
+    AdaptiveHopTerminalV3,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
 from leo.scanner.host_adaptive import (
@@ -53,6 +56,7 @@ from leo.scanner.persistent_hop import (
     Feature103DualRxTimingV3,
     Feature104DualRxPlanV4,
     Feature104DualRxTimingV4,
+    FixedDualRxPlanV6,
     PersistentHopProfileV1,
     PersistentHopRestorationReceiptV1,
     VariableDualRxPlanV5,
@@ -112,6 +116,15 @@ def _load(path: Path) -> tuple[dict, bytes]:
         )
     ):
         raise ValueError("protocol-three archive lacks protocol-three visit records")
+    if document.get("setup", {}).get("protocol_version") == 4 and (
+        not dual
+        or rate != 2_500_000
+        or any(
+            entry.get("record", {}).get("protocol_version") != 4
+            for entry in document.get("visits", [])
+        )
+    ):
+        raise ValueError("protocol-four archive lacks fixed-dwell visit records")
     return document, payload
 
 
@@ -121,6 +134,10 @@ def _is_dual(document: dict) -> bool:
 
 def _is_protocol_three(document: dict) -> bool:
     return _is_dual(document) and document.get("setup", {}).get("protocol_version") == 3
+
+
+def _is_protocol_four(document: dict) -> bool:
+    return _is_dual(document) and document.get("setup", {}).get("protocol_version") == 4
 
 
 def _dual_identity(document: dict) -> tuple[str, str, str]:
@@ -200,6 +217,7 @@ def _plan(
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
     | AdaptiveHopPlanV6
+    | AdaptiveHopPlanV7
     | HostAdaptiveHopPlanV2
     | HostAdaptiveHopPlanV3
 ):
@@ -236,6 +254,36 @@ def _plan(
             samples_per_block=1_000_000,
             profiles=profiles,
         )
+        if _is_protocol_four(document):
+            if rate != 2_500_000:
+                raise UnsupportedFirmwareArchiveError(
+                    "protocol-four dual firmware rate must be 2.5 MS/s"
+                )
+            dwell_ms = int(setup["dwell_ms"])
+            duration_ms = int(setup["duration_ms"])
+            if dwell_ms not in (120, 240, 360) or duration_ms % 1_000:
+                raise UnsupportedFirmwareArchiveError(
+                    "protocol-four dwell or duration is unsupported"
+                )
+            preparation = document["evidence"]["preparation"]["configured"]
+            if preparation["gain_modes"] != ["manual", "manual"]:
+                raise UnsupportedFirmwareArchiveError(
+                    "protocol-four fixed dwell requires manual gain"
+                )
+            return AdaptiveHopPlanV7(
+                geometry=FixedDualRxPlanV6.model_validate(
+                    {
+                        **geometry_fields,
+                        "gain_mode": GainMode.MANUAL,
+                        "gain_db": float(preparation["gain_db"][0]),
+                        "active_valid_visit_ms": dwell_ms,
+                        "quiet_valid_visit_ms": dwell_ms,
+                        "nominal_duration_seconds": duration_ms // 1_000,
+                    }
+                ),
+                policy=dual_policy,
+                classification_receiver=1,
+            )
         if _is_protocol_three(document):
             if rate not in (2_500_000, 10_000_000):
                 raise UnsupportedFirmwareArchiveError(
@@ -321,6 +369,7 @@ def _events(
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
     | AdaptiveHopPlanV6
+    | AdaptiveHopPlanV7
     | HostAdaptiveHopPlanV2
     | HostAdaptiveHopPlanV3,
 ) -> tuple[AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3, ...]:
@@ -331,7 +380,7 @@ def _events(
     events: list[AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3] = []
     event_model = (
         AdaptiveHopEventV3
-        if isinstance(plan, AdaptiveHopPlanV6)
+        if isinstance(plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
         else AdaptiveHopEventV2
         if isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5))
         else AdaptiveHopEventV1
@@ -373,7 +422,7 @@ def _events(
             valid_start_counter=valid_start,
             **(
                 {"valid_end_counter_exclusive": int(record["valid_end"])}
-                if isinstance(plan, AdaptiveHopPlanV6)
+                if isinstance(plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7))
                 else {}
             ),
             decision=AdaptiveHopDecisionV1(
@@ -397,7 +446,7 @@ def _events(
 
 def _event_end(
     event: AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3,
-    plan: AdaptiveHopPlanV4 | AdaptiveHopPlanV5 | AdaptiveHopPlanV6,
+    plan: AdaptiveHopPlanV4 | AdaptiveHopPlanV5 | AdaptiveHopPlanV6 | AdaptiveHopPlanV7,
 ) -> int:
     if isinstance(event, AdaptiveHopEventV3):
         return event.valid_end_counter_exclusive
@@ -406,7 +455,9 @@ def _event_end(
 
 def _dual_receipt(document: dict):
     plan = _plan(document)
-    if not isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6)):
+    if not isinstance(
+        plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6, AdaptiveHopPlanV7)
+    ):
         raise TypeError("dual firmware archive produced a single-RX plan")
     events = _events(document, plan)
     if not events:
@@ -427,7 +478,11 @@ def _dual_receipt(document: dict):
     original = _settings(document["evidence"]["preparation"]["original"], (0, 1))
     restored = _settings(document["evidence"]["restoration"]["observed"], (0, 1))
     terminal_model = (
-        AdaptiveHopTerminalV2 if isinstance(plan, AdaptiveHopPlanV6) else AdaptiveHopTerminalV1
+        AdaptiveHopTerminalV3
+        if isinstance(plan, AdaptiveHopPlanV7)
+        else AdaptiveHopTerminalV2
+        if isinstance(plan, AdaptiveHopPlanV6)
+        else AdaptiveHopTerminalV1
     )
     terminal = terminal_model(
         state="completed",
@@ -477,13 +532,16 @@ def _dual_receipt(document: dict):
             fastlock_inactive=True,
         ),
     )
-    if isinstance(plan, AdaptiveHopPlanV6):
+    if isinstance(plan, (AdaptiveHopPlanV6, AdaptiveHopPlanV7)):
         missing = sum(
             _event_end(event, plan) - event.valid_start_counter
             for index, event in enumerate(events)
             if index not in retained
         )
-        return AdaptiveHopReceiptV6(
+        receipt_model = (
+            AdaptiveHopReceiptV7 if isinstance(plan, AdaptiveHopPlanV7) else AdaptiveHopReceiptV6
+        )
+        return receipt_model(
             **common,
             retained_visit_indices=retained,
             transport_missing_sample_count=missing,
@@ -623,7 +681,15 @@ def _timing(document: dict, receipt):
     value = document["evidence"].get("utc_timing")
     if not value:
         return None
-    if isinstance(receipt, (AdaptiveHopReceiptV4, AdaptiveHopReceiptV5, AdaptiveHopReceiptV6)):
+    if isinstance(
+        receipt,
+        (
+            AdaptiveHopReceiptV4,
+            AdaptiveHopReceiptV5,
+            AdaptiveHopReceiptV6,
+            AdaptiveHopReceiptV7,
+        ),
+    ):
         if isinstance(receipt, AdaptiveHopReceiptV5):
             return Feature104DualRxTimingV4.from_host_bracket(
                 session_id=receipt.session_id,

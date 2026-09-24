@@ -10,6 +10,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
 )
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
@@ -198,6 +199,36 @@ def variable_dual_document(rate: int, dwell_ms: int, *, slow_attack: bool = Fals
     end = value["visits"][0]["record"]["valid_end"]
     value["visits"][0]["record"]["valid_start"] = end - dwell
     return value
+
+
+def fixed_dual_document(dwell_ms: int) -> dict:
+    value = variable_dual_document(2_500_000, dwell_ms)
+    value["setup"]["protocol_version"] = 4
+    value["visits"][0]["record"]["protocol_version"] = 4
+    return value
+
+
+@pytest.mark.parametrize("dwell_ms", [120, 240, 360])
+def test_protocol_four_receipt_preserves_one_scan_dwell(dwell_ms: int) -> None:
+    rate = 2_500_000
+    receipt = importer._receipt(fixed_dual_document(dwell_ms), "sha256:" + "b" * 64)
+
+    assert isinstance(receipt, AdaptiveHopReceiptV7)
+    assert receipt.terminal.wire_protocol_version == 4
+    assert receipt.plan.geometry.active_valid_visit_ms == dwell_ms
+    assert receipt.plan.geometry.quiet_valid_visit_ms == dwell_ms
+    event = receipt.events[0]
+    assert event.valid_end_counter_exclusive - event.valid_start_counter == (
+        rate * dwell_ms // 1_000
+    )
+
+
+def test_protocol_four_rejects_a_short_visit() -> None:
+    value = fixed_dual_document(360)
+    end = value["visits"][0]["record"]["valid_end"]
+    value["visits"][0]["record"]["valid_start"] = end - 2_500_000 * 120 // 1_000
+    with pytest.raises(ValueError, match="adaptive variable dwell is outside its plan"):
+        importer._receipt(value, "sha256:" + "b" * 64)
 
 
 @pytest.mark.parametrize("dwell_ms", [120, 240, 360])

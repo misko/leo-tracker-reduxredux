@@ -462,6 +462,21 @@ class VariableDualRxPlanV5(PersistentHopPlanV1):
         return self.sample_rate_hz * self.quiet_valid_visit_ms // 1_000
 
 
+class FixedDualRxPlanV6(VariableDualRxPlanV5):
+    """Protocol-four dual-RX geometry with one immutable scan dwell."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000] = 2_500_000  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000] = 2_500_000  # type: ignore[assignment]
+    quiet_valid_visit_ms: Literal[120, 240, 360]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _dwell_is_immutable(self) -> Self:
+        if self.quiet_valid_visit_ms != self.active_valid_visit_ms:
+            raise ValueError("protocol-four scan dwell must be immutable")
+        return self
+
+
 def compile_persistent_hop_plan_v1(
     *,
     sample_rate_hz: Literal[2_500_000, 5_000_000],
