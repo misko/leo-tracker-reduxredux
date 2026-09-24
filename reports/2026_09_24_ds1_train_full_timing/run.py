@@ -430,11 +430,26 @@ def validate_task(task: dict) -> dict:
     cap_hz = float(options.get("frequency_loss_cap_hz", CAP_HZ))
     if not np.isclose(cap_hz, CAP_HZ, rtol=0, atol=1e-12):
         raise ValueError("this runner has a fixed 800 Hz frequency-loss cap")
-    tau_limit = float(options.get("tau_limit_s", 5.0))
-    tau_step = float(options.get("tau_step_s", 0.25))
-    if not (0 < tau_step <= tau_limit <= 5.0):
-        raise ValueError("tau range must be inside the causal cache's +/-5 seconds")
-    tau_values = np.arange(-tau_limit, tau_limit + tau_step * 0.01, tau_step)
+    explicit_tau_grid = options.get("tau_grid_s")
+    if explicit_tau_grid is None:
+        tau_limit = float(options.get("tau_limit_s", 5.0))
+        tau_step = float(options.get("tau_step_s", 0.25))
+        if not (0 < tau_step <= tau_limit <= 5.0):
+            raise ValueError("tau range must be inside the causal cache's +/-5 seconds")
+        tau_values = np.arange(-tau_limit, tau_limit + tau_step * 0.01, tau_step)
+    else:
+        tau_values = np.asarray(explicit_tau_grid, dtype=float)
+        if (
+            tau_values.ndim != 1
+            or not 1 <= len(tau_values) <= 81
+            or not np.all(np.isfinite(tau_values))
+            or np.any(np.diff(tau_values) <= 0)
+            or tau_values[0] < -5.0
+            or tau_values[-1] > 5.0
+        ):
+            raise ValueError("tau_grid_s must be sorted, unique, finite, and inside +/-5 seconds")
+        tau_limit = float(max(abs(tau_values[0]), abs(tau_values[-1])))
+        tau_step = float(np.min(np.diff(tau_values))) if len(tau_values) > 1 else 0.0
     if not np.any(np.isclose(tau_values, 0.0, rtol=0, atol=1e-10)):
         raise ValueError("tau grid must contain zero")
     levels = tuple(
@@ -466,6 +481,7 @@ def validate_task(task: dict) -> dict:
             **options,
             "tau_limit_s": tau_limit,
             "tau_step_s": tau_step,
+            "tau_grid_s": tau_values.tolist(),
             "geographic_levels_km": levels,
             "beam_width": beam,
             "observation_policy": policy,
@@ -635,11 +651,7 @@ def run_task(task: dict) -> dict:
     search = _load(SEARCH_PATH, "ds1_train_full_timing_search")
     # The baseline fixes tau at zero.  Building and scoring the full 41-point
     # timing cube for it was scientifically redundant and dominated runtime.
-    requested_values = np.arange(
-        -task["options"]["tau_limit_s"],
-        task["options"]["tau_limit_s"] + task["options"]["tau_step_s"] * 0.01,
-        task["options"]["tau_step_s"],
-    )
+    requested_values = np.asarray(task["options"]["tau_grid_s"], dtype=float)
     values = np.asarray([0.0]) if task["method"] == "baseline" else requested_values
     engine = FullObservationEngine(sessions, search, values)
     winner, trace = _search(engine, task)
