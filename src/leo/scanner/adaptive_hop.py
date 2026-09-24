@@ -19,6 +19,7 @@ from leo.scanner.persistent_hop import (
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
+    VariableDualRxPlanV5,
     persistent_hop_wire_session_id,
 )
 
@@ -136,6 +137,18 @@ class AdaptiveHopPlanV5(AdaptiveHopPlanV2):
         return self
 
 
+class AdaptiveHopPlanV6(AdaptiveHopPlanV2):
+    """Protocol-three dual-RX plan with variable source-attested dwell lengths."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    geometry: VariableDualRxPlanV5  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        VariableDualRxPlanV5.model_validate(self.geometry.model_dump())
+        return self
+
+
 class AdaptiveHopDecisionV1(AdaptiveModel):
     schema_version: Literal[1] = 1
     mode: AdaptiveMode
@@ -214,6 +227,19 @@ class AdaptiveHopEventV2(AdaptiveHopEventV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
 
 
+class AdaptiveHopEventV3(AdaptiveHopEventV2):
+    """Protocol-three event carrying its authoritative source interval end."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    valid_end_counter_exclusive: PositiveCounter
+
+    @model_validator(mode="after")
+    def _valid_interval_increases(self) -> Self:
+        if self.valid_end_counter_exclusive <= self.valid_start_counter:
+            raise ValueError("adaptive variable valid interval does not increase")
+        return self
+
+
 class AdaptiveHopVisitV1(AdaptiveModel):
     """Only complete valid IQ, without an invented sweep coordinate."""
 
@@ -235,6 +261,17 @@ class AdaptiveHopVisitV1(AdaptiveModel):
 class AdaptiveHopVisitV2(AdaptiveHopVisitV1):
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     event: AdaptiveHopEventV2  # type: ignore[assignment]
+
+
+class AdaptiveHopVisitV3(AdaptiveHopVisitV1):
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    event: AdaptiveHopEventV3  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _end_matches_event(self) -> Self:
+        if self.valid_end_counter_exclusive != self.event.valid_end_counter_exclusive:
+            raise ValueError("adaptive variable visit end differs from its source event")
+        return self
 
 
 class AdaptiveHopTerminalV1(AdaptiveModel):
@@ -281,6 +318,14 @@ class AdaptiveHopTerminalV1(AdaptiveModel):
         return self
 
 
+class AdaptiveHopTerminalV2(AdaptiveHopTerminalV1):
+    """Terminal identity for feature-103 wire protocol three."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    wire_protocol_version: Literal[3] = 3  # type: ignore[assignment]
+    wire_feature_flags: Literal[255] = 255  # type: ignore[assignment]
+
+
 class AdaptiveHopReceiptV1(AdaptiveModel):
     schema_version: Literal[1] = 1
     kind: Literal["starlink_adaptive_hop_session"] = "starlink_adaptive_hop_session"
@@ -312,6 +357,14 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
         retained_indices = getattr(
             self, "retained_visit_indices", tuple(range(self.complete_visit_count))
         )
+
+        def event_end(event: AdaptiveHopEventV1) -> int:
+            return getattr(
+                event,
+                "valid_end_counter_exclusive",
+                event.valid_start_counter + g.valid_visit_samples,
+            )
+
         PersistentHopRestorationReceiptV1.model_validate(self.restoration.model_dump())
         if (
             terminal.session_id != persistent_hop_wire_session_id(self.session_id)
@@ -338,7 +391,7 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                 or event.from_profile_index != (previous.target_index if previous else None)
                 or event.valid_start_counter
                 != event.transition_after_counter + g.transition_guard_samples
-                or event.valid_start_counter + g.valid_visit_samples >= 1 << 64
+                or event_end(event) >= 1 << 64
                 or d.generation != p.generation
                 or d.mode != p.mode
                 or d.cooldown_remaining_samples > g.sample_rate_hz * p.cooldown_ms // 1000
@@ -346,7 +399,7 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             ):
                 raise ValueError("adaptive receipt event differs from its actual plan")
             if previous is not None and (
-                event.invalid_start_counter != previous.valid_start_counter + g.valid_visit_samples
+                event.invalid_start_counter != event_end(previous)
                 or event.device_event_id <= previous.device_event_id
                 or event.invalid_start_counter - terminal.first_counter
                 >= g.nominal_device_sample_count
@@ -359,8 +412,7 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                     "adaptive receipt event/counter/decision sequence is not contiguous"
                 )
             if d.basis_visit is not None and (
-                self.events[d.basis_visit].valid_start_counter + g.valid_visit_samples
-                > d.decision_counter
+                event_end(self.events[d.basis_visit]) > d.decision_counter
             ):
                 raise ValueError("adaptive decision uses an unfinished source dwell")
             previous = event
@@ -378,7 +430,10 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
             index < 0 or index >= len(self.events) for index in retained_indices
         ):
             raise ValueError("adaptive retained visit inventory is invalid")
-        valid = len(retained_indices) * g.valid_visit_samples
+        valid = sum(
+            event_end(self.events[index]) - self.events[index].valid_start_counter
+            for index in retained_indices
+        )
         invalid = sum(
             max(
                 0,
@@ -392,22 +447,16 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
         )
         if (
             retained_indices
-            and self.events[retained_indices[-1]].valid_start_counter + g.valid_visit_samples
-            > terminal.last_block_end_counter
+            and event_end(self.events[retained_indices[-1]]) > terminal.last_block_end_counter
         ):
             raise ValueError("adaptive receipt claims valid IQ beyond delivered counters")
         if terminal.state == "completed":
             if (
                 not self.events
-                or terminal.final_counter
-                != self.events[-1].valid_start_counter + g.valid_visit_samples
+                or terminal.final_counter != event_end(self.events[-1])
             ):
                 raise ValueError("adaptive completed receipt lacks its final full dwell")
-            overshoot = (
-                g.valid_visit_samples
-                + self.events[-1].valid_start_counter
-                - self.events[-1].invalid_start_counter
-            )
+            overshoot = event_end(self.events[-1]) - self.events[-1].invalid_start_counter
             transport_missing = getattr(self, "transport_missing_sample_count", 0)
             if (
                 not g.nominal_device_sample_count
@@ -450,8 +499,10 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
         return tuple(
             AdaptiveHopVisitV1(
                 event=e,
-                valid_end_counter_exclusive=(
-                    e.valid_start_counter + self.plan.geometry.valid_visit_samples
+                valid_end_counter_exclusive=getattr(
+                    e,
+                    "valid_end_counter_exclusive",
+                    e.valid_start_counter + self.plan.geometry.valid_visit_samples,
                 ),
             )
             for e in (
@@ -478,15 +529,22 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
                     )
                 ),
                 valid_sample_count=sum(
-                    e.target_index == p.target_index
+                    (
+                        getattr(
+                            e,
+                            "valid_end_counter_exclusive",
+                            e.valid_start_counter + self.plan.geometry.valid_visit_samples,
+                        )
+                        - e.valid_start_counter
+                    )
                     for e in (
                         self.events[index]
                         for index in getattr(
                             self, "retained_visit_indices", range(self.complete_visit_count)
                         )
                     )
-                )
-                * self.plan.geometry.valid_visit_samples,
+                    if e.target_index == p.target_index
+                ),
             )
             for p in self.plan.geometry.profiles
         )
@@ -572,12 +630,57 @@ class AdaptiveHopReceiptV5(AdaptiveHopReceiptV2):
         )
 
 
+class AdaptiveHopReceiptV6(AdaptiveHopReceiptV2):
+    """Protocol-three dual-RX receipt with exact per-event interval accounting."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV6  # type: ignore[assignment]
+    terminal: AdaptiveHopTerminalV2  # type: ignore[assignment]
+    events: Annotated[tuple[AdaptiveHopEventV3, ...], Field(max_length=2500)]  # type: ignore[assignment]
+    retained_visit_indices: Annotated[tuple[int, ...], Field(max_length=2500)]
+    transport_missing_sample_count: Counter
+
+    @model_validator(mode="after")
+    def _variable_intervals_are_exact(self) -> Self:
+        geometry = self.plan.geometry
+        active = geometry.active_valid_visit_samples
+        quiet = geometry.quiet_valid_visit_samples
+        allowed = {active, quiet}
+        durations = tuple(
+            event.valid_end_counter_exclusive - event.valid_start_counter
+            for event in self.events
+        )
+        if any(duration not in allowed for duration in durations):
+            raise ValueError("adaptive variable dwell is outside its plan")
+        retained = set(self.retained_visit_indices)
+        missing = sum(
+            duration for index, duration in enumerate(durations) if index not in retained
+        )
+        if (
+            self.transport_missing_sample_count != missing
+            or self.unclassified_sample_count < missing
+        ):
+            raise ValueError("adaptive variable transport accounting differs from event intervals")
+        return self
+
+    @property
+    def visits(self) -> tuple[AdaptiveHopVisitV3, ...]:
+        return tuple(
+            AdaptiveHopVisitV3(
+                event=event,
+                valid_end_counter_exclusive=event.valid_end_counter_exclusive,
+            )
+            for event in (self.events[index] for index in self.retained_visit_indices)
+        )
+
+
 AdaptiveHopPlan = (
     AdaptiveHopPlanV1
     | AdaptiveHopPlanV2
     | AdaptiveHopPlanV3
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
+    | AdaptiveHopPlanV6
 )
 AdaptiveHopReceipt = (
     AdaptiveHopReceiptV1
@@ -585,6 +688,7 @@ AdaptiveHopReceipt = (
     | AdaptiveHopReceiptV3
     | AdaptiveHopReceiptV4
     | AdaptiveHopReceiptV5
+    | AdaptiveHopReceiptV6
 )
 
 
@@ -597,7 +701,9 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopPlanV5
+        AdaptiveHopPlanV6
+        if version == 6
+        else AdaptiveHopPlanV5
         if version == 5
         else AdaptiveHopPlanV4
         if version == 4
@@ -619,7 +725,9 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopReceiptV5
+        AdaptiveHopReceiptV6
+        if version == 6
+        else AdaptiveHopReceiptV5
         if version == 5
         else AdaptiveHopReceiptV4
         if version == 4

@@ -83,7 +83,7 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
                 target_index=index,
                 target=profile.target,
                 retained_visits=count,
-                valid_seconds=count * receipt.plan.geometry.valid_visit_samples / rate,
+                valid_seconds=sum(visit.valid_sample_count for visit in retained) / rate,
                 allocation_ppm=count * 1_000_000 // len(visits) if visits else None,
                 maximum_revisit_seconds=revisit / rate if revisit is not None else None,
                 maximum_unobserved_seconds=blind / rate if blind is not None else None,
@@ -294,7 +294,11 @@ class AdaptiveHopPresentationStore:
         )
         for event in receipt.events:
             end = (
-                event.valid_start_counter + receipt.plan.geometry.valid_visit_samples
+                getattr(
+                    event,
+                    "valid_end_counter_exclusive",
+                    event.valid_start_counter + receipt.plan.geometry.valid_visit_samples,
+                )
                 if event.visit_index in retained_indices
                 else None
             )

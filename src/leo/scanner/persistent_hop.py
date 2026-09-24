@@ -408,6 +408,60 @@ class Feature104DualRxPlanV4(PersistentHopPlanV1):
         return self
 
 
+class VariableDualRxPlanV5(PersistentHopPlanV1):
+    """Protocol-three dual-RX geometry with source-attested visit durations."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    nominal_duration_seconds: Annotated[int, Field(strict=True, ge=1, le=300)] = 300  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 10_000_000]  # type: ignore[assignment]
+    transition_guard_samples: Literal[0] = 0  # type: ignore[assignment]
+    gain_mode: Literal[GainMode.MANUAL, GainMode.SLOW_ATTACK]  # type: ignore[assignment]
+    gain_db: float | None = None  # type: ignore[assignment]
+    base_valid_visit_ms: Literal[120] = 120
+    allowed_active_valid_visit_ms: tuple[Literal[120], Literal[240], Literal[360]] = (
+        120,
+        240,
+        360,
+    )
+    active_valid_visit_ms: Literal[120, 240, 360]
+    quiet_valid_visit_ms: Literal[120] = 120
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if self.bandwidth_hz != self.sample_rate_hz:
+            raise ValueError("variable dual-RX bandwidth must equal sample rate")
+        if self.gain_mode is GainMode.MANUAL:
+            if self.gain_db is None or not math.isfinite(self.gain_db):
+                raise ValueError("variable dual-RX manual gain must be finite")
+        elif self.gain_db is not None:
+            raise ValueError("variable dual-RX automatic gain cannot declare manual gain")
+        expected = tuple(
+            PersistentHopProfileV1(
+                target_index=index,
+                fastlock_profile_index=index,
+                target=target,
+            )
+            for index, target in enumerate(
+                scheduled_low_band_targets(
+                    bandwidth_hz=self.bandwidth_hz,
+                    lnb_lo_hz=self.lnb_lo_hz,
+                )
+            )
+        )
+        if self.profiles != expected:
+            raise ValueError("variable dual-RX targets must remain canonical")
+        return self
+
+    @property
+    def active_valid_visit_samples(self) -> int:
+        return self.sample_rate_hz * self.active_valid_visit_ms // 1_000
+
+    @property
+    def quiet_valid_visit_samples(self) -> int:
+        return self.sample_rate_hz * self.quiet_valid_visit_ms // 1_000
+
+
 def compile_persistent_hop_plan_v1(
     *,
     sample_rate_hz: Literal[2_500_000, 5_000_000],

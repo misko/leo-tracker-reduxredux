@@ -116,7 +116,11 @@ def validate_glrt_adaptive_binding(
             or result.edge != event.target.edge
             or result.valid_start != event.valid_start_counter
             or result.valid_end
-            != event.valid_start_counter + receipt.plan.geometry.valid_visit_samples
+            != getattr(
+                event,
+                "valid_end_counter_exclusive",
+                event.valid_start_counter + receipt.plan.geometry.valid_visit_samples,
+            )
         ):
             raise ValueError("adaptive GLRT result differs from actual source target/interval")
         if result.search_end > result.search_start and result.search_end > source_end:
