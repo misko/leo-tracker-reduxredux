@@ -14,13 +14,15 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import multiprocessing
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-PORTABLE_ADAPTER = ROOT / "2026_09_24_ds2_portable_evaluation/run_portable.py"
+REPORTS_ROOT = HERE.parent
+PORTABLE_ADAPTER = REPORTS_ROOT / "2026_09_24_ds2_portable_evaluation/run_portable.py"
 TIMING_METHODS = {
     "baseline",
     "shared_global_tau",
@@ -262,7 +264,10 @@ def followup_plan(prefix: str, output_root: Path) -> dict[str, Any]:
         "adapters": {
             "consistent_rate_screen": {
                 "source": str(
-                    (ROOT / "2026_09_24_ds2_consistent_rate_screen/run_rate_screen.py").resolve()
+                    (
+                        REPORTS_ROOT
+                        / "2026_09_24_ds2_consistent_rate_screen/run_rate_screen.py"
+                    ).resolve()
                 ),
                 "output": str((output_root / "followups" / "consistent-rate.json").resolve()),
                 "scope": (
@@ -271,7 +276,9 @@ def followup_plan(prefix: str, output_root: Path) -> dict[str, Any]:
                 ),
             },
             "missing_models": {
-                "source": str((ROOT / "2026_09_24_ds2_missing_models/run.py").resolve()),
+                "source": str(
+                    (REPORTS_ROOT / "2026_09_24_ds2_missing_models/run.py").resolve()
+                ),
                 "output": str((output_root / "followups" / "missing-models.json").resolve()),
                 "scope": (
                     "repaired session-scale and residual diagnostics from successor exact finalists"
@@ -332,12 +339,16 @@ def build(manifest_path: Path, cache_root: Path, output_root: Path) -> dict[str,
         "adapters": {
             "portable_evaluation": str(PORTABLE_ADAPTER.resolve()),
             "consistent_rate_screen": str(
-                (ROOT / "2026_09_24_ds2_consistent_rate_screen/run_rate_screen.py").resolve()
+                (
+                    REPORTS_ROOT / "2026_09_24_ds2_consistent_rate_screen/run_rate_screen.py"
+                ).resolve()
             ),
-            "missing_models": str((ROOT / "2026_09_24_ds2_missing_models/run.py").resolve()),
+            "missing_models": str(
+                (REPORTS_ROOT / "2026_09_24_ds2_missing_models/run.py").resolve()
+            ),
             "geometry_cone_evaluation": str(
                 (
-                    ROOT
+                    REPORTS_ROOT
                     / "2026_09_24_ds2_geometry_cone_evaluation/run_blind_reassociated.py"
                 ).resolve()
             ),
@@ -362,27 +373,158 @@ def load_module(path: Path, name: str) -> Any:
     return module
 
 
-def execute_portable(plan: dict[str, Any], cache_root: Path, output_root: Path) -> None:
-    """Run only explicitly requested portable tasks, never overwriting a result."""
+def _prepared_task(original: dict[str, Any], cache_root: Path) -> dict[str, Any]:
+    """Apply the reviewed adapter's implementation-only task fields."""
+    task_value = json.loads(json.dumps(original))
+    task_value["partition"] = "train"  # reviewed runner's implementation token
+    task_value["session_groups"] = {
+        session_id: "ds2" for session_id in task_value["session_ids"]
+    }
+    task_value["options"]["cache_root"] = str(cache_root)
+    return task_value
+
+
+def completed_task_row(original: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a verified completed row, or ``None`` when the task is absent.
+
+    A SHA sidecar alone is deliberately insufficient for resume: the sealed
+    document must name the task it is standing in for and remain on the
+    post-inference side of the reference boundary.
+    """
+    output = Path(original["output_path"])
+    if not output.exists():
+        return None
+    if not sealed(output):
+        raise ValueError(f"existing task output is not validly sealed: {output}")
+    document = load_json(output)
+    if document.get("task_id") != original["task_id"]:
+        raise ValueError(f"sealed task output has the wrong task ID: {output}")
+    if document.get("reference_coordinate_present") is not False:
+        raise ValueError(f"sealed task output crossed the reference boundary: {output}")
+    return {"task_id": original["task_id"], "state": "complete", "sha256": digest(output)}
+
+
+def _run_portable_task(original: dict[str, Any], cache_root_text: str) -> dict[str, Any]:
+    """Run one task in an isolated process; adapter modules mutate globals."""
+    cache_root = Path(cache_root_text)
+    task_value = _prepared_task(original, cache_root)
     adapter = load_module(PORTABLE_ADAPTER, "ds2_successor_portable_adapter")
-    rows = []
-    for original in plan["tasks"]:
-        output = Path(original["output_path"])
-        if output.exists():
-            raise FileExistsError(f"refusing to replace task result: {output}")
-        task_value = json.loads(json.dumps(original))
-        task_value["partition"] = "train"  # reviewed runner's implementation token
-        task_value["session_groups"] = {
-            session_id: "ds2" for session_id in task_value["session_ids"]
+    if task_value["method"] in TIMING_METHODS:
+        result = adapter.run_timing(task_value, cache_root)
+    else:
+        result = adapter.run_orbit(task_value, cache_root)
+    if result.get("task_id") != original["task_id"]:
+        raise RuntimeError(f"runner returned the wrong task ID: {original['task_id']}")
+    row = completed_task_row(original)
+    if row is None:
+        raise RuntimeError(f"runner did not seal output: {original['output_path']}")
+    return row
+
+
+def _sealed_execution_is_complete(plan: dict[str, Any], output_root: Path) -> bool:
+    """Validate a final receipt before treating an execution as resumable."""
+    path = output_root / "portable" / "execution.json"
+    if not path.exists():
+        return False
+    if not sealed(path):
+        raise ValueError(f"existing execution receipt is not validly sealed: {path}")
+    execution = load_json(path)
+    if (
+        execution.get("schema") != "ds2-successor-portable-execution/v1"
+        or execution.get("complete") is not True
+        or execution.get("reference_coordinate_present") is not False
+    ):
+        raise ValueError(f"existing execution receipt is invalid: {path}")
+    expected = [task_value["task_id"] for task_value in plan["tasks"]]
+    rows = execution.get("rows")
+    if not isinstance(rows, list) or [row.get("task_id") for row in rows] != expected:
+        raise ValueError(f"existing execution receipt does not cover this sealed plan: {path}")
+    for task_value, row in zip(plan["tasks"], rows, strict=True):
+        completed = completed_task_row(task_value)
+        if completed is None or row != completed:
+            raise ValueError(
+                "existing execution receipt disagrees with task output: "
+                f"{task_value['task_id']}"
+            )
+    return True
+
+
+def _parallel_rows(
+    tasks: list[dict[str, Any]], cache_root: Path, workers: int
+) -> dict[str, dict[str, Any]]:
+    """Execute independent single-session tasks with bounded process isolation."""
+    if not tasks:
+        return {}
+    if workers == 1:
+        return {
+            task_value["task_id"]: _run_portable_task(task_value, str(cache_root))
+            for task_value in tasks
         }
-        task_value["options"]["cache_root"] = str(cache_root)
-        if task_value["method"] in TIMING_METHODS:
-            result = adapter.run_timing(task_value, cache_root)
+    rows: dict[str, dict[str, Any]] = {}
+    # The portable adapter changes imported-module globals.  Forked workers
+    # prevent those changes from crossing task boundaries while bounding RAM.
+    with ProcessPoolExecutor(
+        max_workers=min(workers, len(tasks)), mp_context=multiprocessing.get_context("fork")
+    ) as pool:
+        futures = {
+            pool.submit(_run_portable_task, task_value, str(cache_root)): task_value["task_id"]
+            for task_value in tasks
+        }
+        for future in as_completed(futures):
+            task_id = futures[future]
+            row = future.result()
+            if row["task_id"] != task_id:
+                raise RuntimeError(f"worker returned a mismatched task row: {task_id}")
+            rows[task_id] = row
+    return rows
+
+
+def execute_portable(
+    plan: dict[str, Any], cache_root: Path, output_root: Path, *, workers: int = 4
+) -> None:
+    """Run a sealed plan, resuming only valid outputs; serialize joint models."""
+    if not 1 <= workers <= 4:
+        raise ValueError("workers must be in 1..4")
+    if _sealed_execution_is_complete(plan, output_root):
+        return
+
+    joint_prefix = plan["joint_task_prefix"] + "__"
+    singles = [
+        task_value
+        for task_value in plan["tasks"]
+        if not task_value["task_id"].startswith(joint_prefix)
+    ]
+    joints = [
+        task_value
+        for task_value in plan["tasks"]
+        if task_value["task_id"].startswith(joint_prefix)
+    ]
+    if len(singles) + len(joints) != len(plan["tasks"]):
+        raise ValueError("portable plan contains an unclassified task")
+
+    completed: dict[str, dict[str, Any]] = {}
+    pending_singles: list[dict[str, Any]] = []
+    pending_joints: list[dict[str, Any]] = []
+    for task_value in singles:
+        row = completed_task_row(task_value)
+        if row is None:
+            pending_singles.append(task_value)
         else:
-            result = adapter.run_orbit(task_value, cache_root)
-        if not sealed(output):
-            raise RuntimeError(f"runner did not seal output: {output}")
-        rows.append({"task_id": result["task_id"], "state": "complete", "sha256": digest(output)})
+            completed[row["task_id"]] = row
+    for task_value in joints:
+        row = completed_task_row(task_value)
+        if row is None:
+            pending_joints.append(task_value)
+        else:
+            completed[row["task_id"]] = row
+
+    completed.update(_parallel_rows(pending_singles, cache_root, workers))
+    # Each joint process currently peaks below 0.5 GiB on this corpus. Keep the
+    # same explicit worker ceiling while allowing independent model families to
+    # use the host's available cores; outputs and caches are disjoint/read-only.
+    completed.update(_parallel_rows(pending_joints, cache_root, workers))
+
+    rows = [completed[task_value["task_id"]] for task_value in plan["tasks"]]
     write_new_sealed(
         output_root / "portable" / "execution.json",
         {
@@ -400,6 +542,12 @@ def main() -> None:
     parser.add_argument("--cache-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--mode", choices=("plan", "portable"), default="plan")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="bounded worker count for independent single scans (1..4)",
+    )
     parser.add_argument(
         "--execute", action="store_true", help="required to run expensive portable models"
     )
@@ -421,7 +569,7 @@ def main() -> None:
     plan = load_json(plan_path)
     if plan["manifest"]["sha256"] != digest(args.manifest):
         raise ValueError("manifest differs from the sealed successor plan")
-    execute_portable(plan, args.cache_root, args.output_root)
+    execute_portable(plan, args.cache_root, args.output_root, workers=args.workers)
 
 
 if __name__ == "__main__":
