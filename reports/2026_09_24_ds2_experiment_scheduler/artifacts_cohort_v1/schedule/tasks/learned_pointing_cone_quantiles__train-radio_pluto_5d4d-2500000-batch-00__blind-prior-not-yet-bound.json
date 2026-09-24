@@ -1,0 +1,52 @@
+{
+  "block_reasons": [
+    "cache_path_missing:scan-fw-573f6201b09f5ba4",
+    "cache_path_missing:scan-fw-af33f52c96a606b7",
+    "cache_path_missing:scan-fw-7fc0a2494f8caa5d",
+    "cache_path_missing:scan-fw-8634c361a1e38331",
+    "blind_prior_not_ready:blind-prior-not-yet-bound",
+    "geometry_not_ready",
+    "dependency_unsealed:baseline_doppler:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "class": "diagnostic",
+  "configuration": {
+    "beam_width": 3,
+    "coarse_cell_km": 100.0,
+    "exact_finalists": 8,
+    "max_workers": 8,
+    "refinement_cells_km": [
+      25.0,
+      6.25
+    ],
+    "search_mode": "coarse_beam_then_exact_finalists"
+  },
+  "depends_on": [
+    "baseline_doppler:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "evaluation_policy": "external_after_sealed_inference",
+  "group_id": "train-radio_pluto_5d4d-2500000-batch-00",
+  "model_id": "learned_pointing_cone_quantiles",
+  "output_path": "inference/learned_pointing_cone_quantiles/train-radio_pluto_5d4d-2500000-batch-00/blind-prior-not-yet-bound.json",
+  "partition": "train",
+  "prior": {
+    "id": "blind-prior-not-yet-bound",
+    "reference_used_for_selection": false,
+    "status": "not_ready"
+  },
+  "reference_used_for_inference": false,
+  "registry_task_method": "geometry_diagnostic",
+  "runner_command": null,
+  "schema": "ds2-experiment-task/v1",
+  "session_ids": [
+    "scan-fw-573f6201b09f5ba4",
+    "scan-fw-af33f52c96a606b7",
+    "scan-fw-7fc0a2494f8caa5d",
+    "scan-fw-8634c361a1e38331"
+  ],
+  "source_code_paths": [
+    "reports/2026_09_23_train_pointing_cone/run.py",
+    "reports/2026_09_23_joint_cone_profile/prototype.py"
+  ],
+  "status": "blocked",
+  "task_id": "learned_pointing_cone_quantiles:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+}

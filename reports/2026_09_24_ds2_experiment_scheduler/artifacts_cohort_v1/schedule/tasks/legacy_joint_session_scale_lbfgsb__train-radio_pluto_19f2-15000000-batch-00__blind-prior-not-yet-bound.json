@@ -1,0 +1,45 @@
+{
+  "block_reasons": [
+    "cache_path_missing:scan-fw-f3ce5fe73aa40506",
+    "blind_prior_not_ready:blind-prior-not-yet-bound",
+    "rejected_or_diagnostic_only",
+    "dependency_unsealed:exact_finalists_only:train-radio_pluto_19f2-15000000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "class": "diagnostic",
+  "configuration": {
+    "beam_width": 3,
+    "coarse_cell_km": 100.0,
+    "exact_finalists": 8,
+    "max_workers": 8,
+    "refinement_cells_km": [
+      25.0,
+      6.25
+    ],
+    "search_mode": "coarse_beam_then_exact_finalists"
+  },
+  "depends_on": [
+    "exact_finalists_only:train-radio_pluto_19f2-15000000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "evaluation_policy": "external_after_sealed_inference",
+  "group_id": "train-radio_pluto_19f2-15000000-batch-00",
+  "model_id": "legacy_joint_session_scale_lbfgsb",
+  "output_path": "inference/legacy_joint_session_scale_lbfgsb/train-radio_pluto_19f2-15000000-batch-00/blind-prior-not-yet-bound.json",
+  "partition": "train",
+  "prior": {
+    "id": "blind-prior-not-yet-bound",
+    "reference_used_for_selection": false,
+    "status": "not_ready"
+  },
+  "reference_used_for_inference": false,
+  "registry_task_method": "legacy_session_scale",
+  "runner_command": null,
+  "schema": "ds2-experiment-task/v1",
+  "session_ids": [
+    "scan-fw-f3ce5fe73aa40506"
+  ],
+  "source_code_paths": [
+    "reports/2026_09_24_ds1_iteration6b_session_scale/run.py"
+  ],
+  "status": "blocked",
+  "task_id": "legacy_joint_session_scale_lbfgsb:train-radio_pluto_19f2-15000000-batch-00:blind-prior-not-yet-bound"
+}

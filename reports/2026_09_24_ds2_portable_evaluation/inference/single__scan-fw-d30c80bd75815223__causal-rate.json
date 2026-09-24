@@ -1,0 +1,1016 @@
+{
+  "adapter_bindings": {
+    "adapter": "sha256:26f581964a76f7d87b32ed0789631bd975fe4954bfcb05f4f0cad3bbab4d6b55",
+    "scientific_runner": "sha256:9d941f25552d87820ed2ca53922ca2d74197e7384993f3c09c6b054fb37c9509"
+  },
+  "association_model": "full-observation hard candidate reacquisition at every point; exact-rate staged after association",
+  "bindings": {
+    "exact_orbit_gate": "sha256:4257e342d52370a023e9e49285c6ce0c11ebc4d2266613f222e3ba50b3c9fffc",
+    "search": "sha256:2ec6ad196d93a745f0b3cf1c787f60cd1783b219ca310e9726a35fd435cb0718",
+    "session_caches": [
+      {
+        "cache": "sha256:1df871c154c3772552b4addbcea0f187b9872d29baa2a647a0f9af64f57e4336",
+        "receipt": "sha256:1887f3b95df07b953366cc30b80b7f9cb502ef2943bbe57d32464c2fae8a3eee",
+        "session_id": "scan-fw-d30c80bd75815223"
+      }
+    ],
+    "source": "sha256:9d941f25552d87820ed2ca53922ca2d74197e7384993f3c09c6b054fb37c9509"
+  },
+  "causal_tle": {
+    "only_receipt_bound_causal_archives": true,
+    "rate_bound_s_h": 0.25,
+    "rate_prior_sigma_s_h": 0.09176615913014215
+  },
+  "complete": true,
+  "elapsed_s": 13.805835466017015,
+  "equal_whole_session_weight": false,
+  "estimated_position": {
+    "latitude_deg": 37.17641193168041,
+    "longitude_deg": -121.4944
+  },
+  "exact_sgp4_winner_gate": {
+    "earth_rotation": "fixed at receive_time_plus_global_tau, not orbit-phase-shifted",
+    "maximum_absolute_hz": 3.867266059387475e-06,
+    "maximum_phase_s": 3.6897902828304807,
+    "observations": 559,
+    "p99_absolute_hz": 3.24567372445017e-06,
+    "passed": true,
+    "rms_hz": 1.2977772475275538e-06,
+    "schema": "ds1-causal-rate-exact-sgp4-gate/v1",
+    "tolerance_hz": 0.2
+  },
+  "execution_stages": {
+    "exact_finalist_count": 2,
+    "exact_rate_workers": 2,
+    "exact_refinement": "bounded exact SGP4 causal-rate fit only for deterministic RF-selected basins",
+    "screening": "cached nominal full-observation hard reassociation at every geographic/time trial"
+  },
+  "fitted": {
+    "converged": true,
+    "full_observation_capped_loss": 0.10901231115959768,
+    "full_observation_capped_rms_hz": 264.13609965724584,
+    "iterations": 43,
+    "maximum_phase_s": 3.6897902828304807,
+    "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+    "null_rate_full_observation_capped_loss": 0.228908025025019,
+    "rate_boundary_count": 1,
+    "rate_corrections_s_h": {
+      "49426": -0.15685733426056697,
+      "53053": 0.04615727216118526,
+      "53707": 0.16019235903821621,
+      "55784": -0.25,
+      "57529": 0.10584645879799466,
+      "57984": 0.041148559997237454,
+      "58628": 0.2105009749091819,
+      "63549": 0.022462896700892496,
+      "66196": -0.08309438990550484,
+      "66203": 0.052123901957776275,
+      "69172": 0.052447462464408734
+    },
+    "rate_fit_rejected_by_full_observation_loss": false,
+    "track_cfo_hz": {
+      "scan-fw-d30c80bd75815223:sha256:05fa9176fed4bddc719d5c66339ecc0f1568bf9e7c0141655d3b664c95ef85e3": -686542.5408432714,
+      "scan-fw-d30c80bd75815223:sha256:1932e5e8c3ff75dc170a6433bcfb1759c5a0f5f671b8f9b7119f8c76c30ae630": -699420.2296673537,
+      "scan-fw-d30c80bd75815223:sha256:1a79f562450ab2a273a40941da61c3cd1d7bfc2c7de35db71636aafc61608551": -870626.4063369123,
+      "scan-fw-d30c80bd75815223:sha256:23ac6459bd2419912eff135f96c7ad81ef515b4c1a7e70187f420dc83a1f7362": -726368.5796599213,
+      "scan-fw-d30c80bd75815223:sha256:2a19e7dc8def5fc9818b6bb1bae890269bf01ac46643d1b1979b3eaff9558b0b": -426620.8428664894,
+      "scan-fw-d30c80bd75815223:sha256:2a2780d3b5d9348f5b7214c465a79c69015e6ae2dbf9038db49e19a3fd68be12": 42330.47652576615,
+      "scan-fw-d30c80bd75815223:sha256:2c320d2b5221624dbd17adc76b8b2927a587157118bde5d3a89f941683717db6": -10878.289254315257,
+      "scan-fw-d30c80bd75815223:sha256:34aef66d6c1efbc5752429f549e6b1789e497d184d6181010737d29cc40f51b4": -217222.56889013638,
+      "scan-fw-d30c80bd75815223:sha256:39e4b257b776508bcbdb5b2b0f378daa8c96f983dee27fbba7b799c0079966bc": -879765.3159662908,
+      "scan-fw-d30c80bd75815223:sha256:4861ad557956237ec5e1ee5d395a5daa3b18853e2a4a421dbfba6fb690627249": -635318.6649104868,
+      "scan-fw-d30c80bd75815223:sha256:614bcd485427d615991412cc10649dbd4217bbc652a6c9ab6885c3675a7e6258": -226534.18351195223,
+      "scan-fw-d30c80bd75815223:sha256:7bf2ed8b6ce6df1fe34489a9a7a596be1adb525a53f3a77744d5cf34921139e2": -645937.7038421921,
+      "scan-fw-d30c80bd75815223:sha256:87cf6f09e66fc1dd3207f531230f2d546faa6cdfa8a40a5cdffbe3fcdb9b2766": 94611.73880312603,
+      "scan-fw-d30c80bd75815223:sha256:95a873ac5c7b8e9f45ef342baa4877ee2b4e63dca53d25f6b9083bc80434146f": -909792.349274874,
+      "scan-fw-d30c80bd75815223:sha256:9fef35e889d6f861f9be34ac26cf9adebabd638f8d9c8bd3ad02e2a6b5f7c55b": -931556.2425353179,
+      "scan-fw-d30c80bd75815223:sha256:c624636607a039da4f62f8e842966601eef5c7060f291e5f698ce53335cda482": 37363.461723418055,
+      "scan-fw-d30c80bd75815223:sha256:c68bd295b215bb31fabe973126a1b7c2440fe158d0175718a58cab40816fe471": 207735.653830476,
+      "scan-fw-d30c80bd75815223:sha256:d3aa1fec1d52c5af9bb381b42658ccb3ffd9e9248b68ec404849b444057b238e": -691169.5930779143,
+      "scan-fw-d30c80bd75815223:sha256:ffe0f80a571e0e9c141bc280f08ca5aaf541cdd2c8228fb638ed42e494ae2b9d": 1313.1692641761827
+    }
+  },
+  "fitted_parameters": {
+    "converged": true,
+    "full_observation_capped_loss": 0.10901231115959768,
+    "full_observation_capped_rms_hz": 264.13609965724584,
+    "global_tau_s": 0.0,
+    "iterations": 43,
+    "maximum_phase_s": 3.6897902828304807,
+    "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+    "null_rate_full_observation_capped_loss": 0.228908025025019,
+    "rate_boundary_count": 1,
+    "rate_corrections_s_h": {
+      "49426": -0.15685733426056697,
+      "53053": 0.04615727216118526,
+      "53707": 0.16019235903821621,
+      "55784": -0.25,
+      "57529": 0.10584645879799466,
+      "57984": 0.041148559997237454,
+      "58628": 0.2105009749091819,
+      "63549": 0.022462896700892496,
+      "66196": -0.08309438990550484,
+      "66203": 0.052123901957776275,
+      "69172": 0.052447462464408734
+    },
+    "rate_fit_rejected_by_full_observation_loss": false,
+    "track_cfo_hz": {
+      "scan-fw-d30c80bd75815223:sha256:05fa9176fed4bddc719d5c66339ecc0f1568bf9e7c0141655d3b664c95ef85e3": -686542.5408432714,
+      "scan-fw-d30c80bd75815223:sha256:1932e5e8c3ff75dc170a6433bcfb1759c5a0f5f671b8f9b7119f8c76c30ae630": -699420.2296673537,
+      "scan-fw-d30c80bd75815223:sha256:1a79f562450ab2a273a40941da61c3cd1d7bfc2c7de35db71636aafc61608551": -870626.4063369123,
+      "scan-fw-d30c80bd75815223:sha256:23ac6459bd2419912eff135f96c7ad81ef515b4c1a7e70187f420dc83a1f7362": -726368.5796599213,
+      "scan-fw-d30c80bd75815223:sha256:2a19e7dc8def5fc9818b6bb1bae890269bf01ac46643d1b1979b3eaff9558b0b": -426620.8428664894,
+      "scan-fw-d30c80bd75815223:sha256:2a2780d3b5d9348f5b7214c465a79c69015e6ae2dbf9038db49e19a3fd68be12": 42330.47652576615,
+      "scan-fw-d30c80bd75815223:sha256:2c320d2b5221624dbd17adc76b8b2927a587157118bde5d3a89f941683717db6": -10878.289254315257,
+      "scan-fw-d30c80bd75815223:sha256:34aef66d6c1efbc5752429f549e6b1789e497d184d6181010737d29cc40f51b4": -217222.56889013638,
+      "scan-fw-d30c80bd75815223:sha256:39e4b257b776508bcbdb5b2b0f378daa8c96f983dee27fbba7b799c0079966bc": -879765.3159662908,
+      "scan-fw-d30c80bd75815223:sha256:4861ad557956237ec5e1ee5d395a5daa3b18853e2a4a421dbfba6fb690627249": -635318.6649104868,
+      "scan-fw-d30c80bd75815223:sha256:614bcd485427d615991412cc10649dbd4217bbc652a6c9ab6885c3675a7e6258": -226534.18351195223,
+      "scan-fw-d30c80bd75815223:sha256:7bf2ed8b6ce6df1fe34489a9a7a596be1adb525a53f3a77744d5cf34921139e2": -645937.7038421921,
+      "scan-fw-d30c80bd75815223:sha256:87cf6f09e66fc1dd3207f531230f2d546faa6cdfa8a40a5cdffbe3fcdb9b2766": 94611.73880312603,
+      "scan-fw-d30c80bd75815223:sha256:95a873ac5c7b8e9f45ef342baa4877ee2b4e63dca53d25f6b9083bc80434146f": -909792.349274874,
+      "scan-fw-d30c80bd75815223:sha256:9fef35e889d6f861f9be34ac26cf9adebabd638f8d9c8bd3ad02e2a6b5f7c55b": -931556.2425353179,
+      "scan-fw-d30c80bd75815223:sha256:c624636607a039da4f62f8e842966601eef5c7060f291e5f698ce53335cda482": 37363.461723418055,
+      "scan-fw-d30c80bd75815223:sha256:c68bd295b215bb31fabe973126a1b7c2440fe158d0175718a58cab40816fe471": 207735.653830476,
+      "scan-fw-d30c80bd75815223:sha256:d3aa1fec1d52c5af9bb381b42658ccb3ffd9e9248b68ec404849b444057b238e": -691169.5930779143,
+      "scan-fw-d30c80bd75815223:sha256:ffe0f80a571e0e9c141bc280f08ca5aaf541cdd2c8228fb638ed42e494ae2b9d": 1313.1692641761827
+    }
+  },
+  "global_tau_s": 0.0,
+  "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+  "limitations": [
+    "Causal-rate associations are reacquired at every geographic/time trial, then rates are fitted on that hard support; this is not a full exact soft identity-and-rate marginalization."
+  ],
+  "method": "causal_per_norad_orbit_rate",
+  "observation_use": {
+    "heldout_observation_count": 0,
+    "policy": "all_qualified_observations"
+  },
+  "observations": {
+    "all_qualified_observations_used": true,
+    "held_mask_used": false,
+    "observation_count": 559,
+    "reference_coordinate_used": false,
+    "track_count": 19
+  },
+  "partition": "development",
+  "prior": {
+    "latitude_deg": 38.5816,
+    "longitude_deg": -121.4944,
+    "name": "sacramento-250km-predeclared",
+    "radius_km": 250.0
+  },
+  "qualified": true,
+  "reference_coordinate_present": false,
+  "reference_used_for_fit": false,
+  "requested_method": "causal_per_norad_orbit_rate",
+  "rf_objective": {
+    "name": "full_observation_rf_objective",
+    "selection_uses_reference": false,
+    "value": 0.10901231115959768
+  },
+  "rf_objective_value": 0.10901231115959768,
+  "schema": "ds2-portable-inference-result/v1",
+  "search_trace": [
+    {
+      "east_km": -250.0,
+      "latitude_deg": 38.54642220994562,
+      "level_km": 100.0,
+      "longitude_deg": -124.36955336369634,
+      "north_km": 0.0,
+      "objective": 0.7473321204392178,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -150.0,
+      "latitude_deg": 37.22030596861731,
+      "level_km": 100.0,
+      "longitude_deg": -123.18836131127898,
+      "north_km": -150.0,
+      "objective": 0.7222762693333054,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -150.0,
+      "latitude_deg": 38.11939259921031,
+      "level_km": 100.0,
+      "longitude_deg": -123.2091561229436,
+      "north_km": -50.0,
+      "objective": 0.6443813344881505,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -150.0,
+      "latitude_deg": 38.5689329715784,
+      "level_km": 100.0,
+      "longitude_deg": -123.21985234466256,
+      "north_km": 0.0,
+      "objective": 0.6676308459547988,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -150.0,
+      "latitude_deg": 39.0184713117666,
+      "level_km": 100.0,
+      "longitude_deg": -123.23075452324771,
+      "north_km": 50.0,
+      "objective": 0.4073246039709913,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -150.0,
+      "latitude_deg": 39.91754167364349,
+      "level_km": 100.0,
+      "longitude_deg": -123.25319809531534,
+      "north_km": 150.0,
+      "objective": 0.7727089636623357,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 37.231251133617945,
+      "level_km": 100.0,
+      "longitude_deg": -122.05910897610407,
+      "north_km": -150.0,
+      "objective": 0.3650312437805824,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 38.13054551887194,
+      "level_km": 100.0,
+      "longitude_deg": -122.06604379011213,
+      "north_km": -50.0,
+      "objective": 0.3986902432787678,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 38.58019238428849,
+      "level_km": 100.0,
+      "longitude_deg": -122.06961088760592,
+      "north_km": 0.0,
+      "objective": 0.5644112497065608,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 39.02983902375299,
+      "level_km": 100.0,
+      "longitude_deg": -122.07324669758698,
+      "north_km": 50.0,
+      "objective": 0.6624909692671047,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 39.92913160013548,
+      "level_km": 100.0,
+      "longitude_deg": -122.08073158082293,
+      "north_km": 150.0,
+      "objective": 0.44694815004117644,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 36.33329909068866,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": -250.0,
+      "objective": 0.7166217637082218,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.2326194544132,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": -150.0,
+      "objective": 0.2731017328633413,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 38.13193981813774,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": -50.0,
+      "objective": 0.6643006012478668,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 38.5816,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": 0.0,
+      "objective": 0.7231666607567241,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 39.03126018186227,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": 50.0,
+      "objective": 0.6706484427212142,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 39.93058054558681,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": 150.0,
+      "objective": 0.60565473029757,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 40.82990090931134,
+      "level_km": 100.0,
+      "longitude_deg": -121.4944,
+      "north_km": 250.0,
+      "objective": 0.3578107228520981,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 50.0,
+      "latitude_deg": 37.231251133617945,
+      "level_km": 100.0,
+      "longitude_deg": -120.92969102389593,
+      "north_km": -150.0,
+      "objective": 0.6692956085013083,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 50.0,
+      "latitude_deg": 38.13054551887194,
+      "level_km": 100.0,
+      "longitude_deg": -120.92275620988785,
+      "north_km": -50.0,
+      "objective": 0.6757173188188528,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 50.0,
+      "latitude_deg": 38.58019238428849,
+      "level_km": 100.0,
+      "longitude_deg": -120.91918911239406,
+      "north_km": 0.0,
+      "objective": 0.7763648854605586,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 50.0,
+      "latitude_deg": 39.02983902375299,
+      "level_km": 100.0,
+      "longitude_deg": -120.915553302413,
+      "north_km": 50.0,
+      "objective": 0.7457573373549079,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 50.0,
+      "latitude_deg": 39.92913160013548,
+      "level_km": 100.0,
+      "longitude_deg": -120.90806841917706,
+      "north_km": 150.0,
+      "objective": 0.6479330013904029,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 150.0,
+      "latitude_deg": 37.22030596861731,
+      "level_km": 100.0,
+      "longitude_deg": -119.800438688721,
+      "north_km": -150.0,
+      "objective": 0.8005232798911148,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 150.0,
+      "latitude_deg": 38.11939259921031,
+      "level_km": 100.0,
+      "longitude_deg": -119.77964387705639,
+      "north_km": -50.0,
+      "objective": 0.5974915123484832,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 150.0,
+      "latitude_deg": 38.5689329715784,
+      "level_km": 100.0,
+      "longitude_deg": -119.76894765533743,
+      "north_km": 0.0,
+      "objective": 0.6556433873843607,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 150.0,
+      "latitude_deg": 39.0184713117666,
+      "level_km": 100.0,
+      "longitude_deg": -119.75804547675229,
+      "north_km": 50.0,
+      "objective": 0.5733312104125357,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 150.0,
+      "latitude_deg": 39.91754167364349,
+      "level_km": 100.0,
+      "longitude_deg": -119.73560190468466,
+      "north_km": 150.0,
+      "objective": 0.5464950227716452,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 250.0,
+      "latitude_deg": 38.54642220994562,
+      "level_km": 100.0,
+      "longitude_deg": -118.61924663630364,
+      "north_km": 0.0,
+      "objective": 0.6886569383990389,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.007448870276114,
+      "level_km": 25.0,
+      "longitude_deg": -121.77591036567839,
+      "north_km": -175.0,
+      "objective": 0.39352832313720404,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.23227737056419,
+      "level_km": 25.0,
+      "longitude_deg": -121.776757076593,
+      "north_km": -150.0,
+      "objective": 0.2655317035471565,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.457105857801096,
+      "level_km": 25.0,
+      "longitude_deg": -121.7776117596088,
+      "north_km": -125.0,
+      "objective": 0.35699723641312425,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.007789363482054,
+      "level_km": 25.0,
+      "longitude_deg": -121.4944,
+      "north_km": -175.0,
+      "objective": 0.2726579346176428,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.45744954534434,
+      "level_km": 25.0,
+      "longitude_deg": -121.4944,
+      "north_km": -125.0,
+      "objective": 0.6062140709576972,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 25.0,
+      "latitude_deg": 37.007448870276114,
+      "level_km": 25.0,
+      "longitude_deg": -121.2128896343216,
+      "north_km": -175.0,
+      "objective": 0.3610050394033947,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 25.0,
+      "latitude_deg": 37.23227737056419,
+      "level_km": 25.0,
+      "longitude_deg": -121.21204292340698,
+      "north_km": -150.0,
+      "objective": 0.5645494918211001,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 25.0,
+      "latitude_deg": 37.457105857801096,
+      "level_km": 25.0,
+      "longitude_deg": -121.2111882403912,
+      "north_km": -125.0,
+      "objective": 0.6093940905276048,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 40.60470320739026,
+      "level_km": 25.0,
+      "longitude_deg": -121.79047282140363,
+      "north_km": 225.0,
+      "objective": 0.5931168517014018,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 40.605070818380206,
+      "level_km": 25.0,
+      "longitude_deg": -121.4944,
+      "north_km": 225.0,
+      "objective": 0.32208446467347507,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 25.0,
+      "latitude_deg": 40.60470320739026,
+      "level_km": 25.0,
+      "longitude_deg": -121.19832717859636,
+      "north_km": 225.0,
+      "objective": 0.29905078125404927,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -75.0,
+      "latitude_deg": 37.90398740525912,
+      "level_km": 25.0,
+      "longitude_deg": -122.34921470922835,
+      "north_km": -75.0,
+      "objective": 0.4846211325179006,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -75.0,
+      "latitude_deg": 38.12880270239628,
+      "level_km": 25.0,
+      "longitude_deg": -122.35185199070531,
+      "north_km": -50.0,
+      "objective": 0.3498308271019856,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -75.0,
+      "latitude_deg": 38.353617875779165,
+      "level_km": 25.0,
+      "longitude_deg": -122.35451439566263,
+      "north_km": -25.0,
+      "objective": 0.316759981267692,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 37.90572200328608,
+      "level_km": 25.0,
+      "longitude_deg": -122.06428547376284,
+      "north_km": -75.0,
+      "objective": 0.6024954215880627,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -50.0,
+      "latitude_deg": 38.35536897945012,
+      "level_km": 25.0,
+      "longitude_deg": -122.0678188576998,
+      "north_km": -25.0,
+      "objective": 0.4716127939846353,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.90676279243469,
+      "level_km": 25.0,
+      "longitude_deg": -121.77934543735368,
+      "north_km": -75.0,
+      "objective": 0.7150816393078501,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 38.13159123948065,
+      "level_km": 25.0,
+      "longitude_deg": -121.7802246341419,
+      "north_km": -50.0,
+      "objective": 0.6378861355284854,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 38.356419672773804,
+      "level_km": 25.0,
+      "longitude_deg": -121.78111220722487,
+      "north_km": -25.0,
+      "objective": 0.733703860975326,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -31.25,
+      "latitude_deg": 37.17587804997879,
+      "level_km": 6.25,
+      "longitude_deg": -121.84708021453288,
+      "north_km": -156.25,
+      "objective": 0.3432308989877069,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -31.25,
+      "latitude_deg": 37.23208494946853,
+      "level_km": 6.25,
+      "longitude_deg": -121.84734573903933,
+      "north_km": -150.0,
+      "objective": 0.300226291834501,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -31.25,
+      "latitude_deg": 37.28829184768379,
+      "level_km": 6.25,
+      "longitude_deg": -121.84761188634677,
+      "north_km": -143.75,
+      "objective": 0.2593286920484105,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.1760702467091,
+      "level_km": 6.25,
+      "longitude_deg": -121.77654465528701,
+      "north_km": -156.25,
+      "objective": 0.2927836385055523,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -25.0,
+      "latitude_deg": 37.28848449360359,
+      "level_km": 6.25,
+      "longitude_deg": -121.77696999614709,
+      "north_km": -143.75,
+      "objective": 0.24298282875795904,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -18.75,
+      "latitude_deg": 37.17621973358555,
+      "level_km": 6.25,
+      "longitude_deg": -121.70600877360309,
+      "north_km": -156.25,
+      "objective": 0.2393218016158671,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -18.75,
+      "latitude_deg": 37.2324270319487,
+      "level_km": 6.25,
+      "longitude_deg": -121.70616809057474,
+      "north_km": -150.0,
+      "objective": 0.24013872388970423,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -18.75,
+      "latitude_deg": 37.288634329853,
+      "level_km": 6.25,
+      "longitude_deg": -121.70632778123671,
+      "north_km": -143.75,
+      "objective": 0.25067544576691053,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 36.9515605845813,
+      "level_km": 6.25,
+      "longitude_deg": -121.56472517927759,
+      "north_km": -181.25,
+      "objective": 0.330938748241453,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 37.00776808258629,
+      "level_km": 6.25,
+      "longitude_deg": -121.56477779083936,
+      "north_km": -175.0,
+      "objective": 0.2790435547971259,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 37.06397558054094,
+      "level_km": 6.25,
+      "longitude_deg": -121.56483052545474,
+      "north_km": -168.75,
+      "objective": 0.23347835295960623,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 36.951581840749284,
+      "level_km": 6.25,
+      "longitude_deg": -121.4944,
+      "north_km": -181.25,
+      "objective": 0.32340876195772145,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.063996886214845,
+      "level_km": 6.25,
+      "longitude_deg": -121.4944,
+      "north_km": -168.75,
+      "objective": 0.23506309268747325,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 36.9515605845813,
+      "level_km": 6.25,
+      "longitude_deg": -121.4240748207224,
+      "north_km": -181.25,
+      "objective": 0.31199676535510257,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 37.00776808258629,
+      "level_km": 6.25,
+      "longitude_deg": -121.42402220916064,
+      "north_km": -175.0,
+      "objective": 0.26456296311747685,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 37.06397558054094,
+      "level_km": 6.25,
+      "longitude_deg": -121.42396947454525,
+      "north_km": -168.75,
+      "objective": 0.23800443903612167,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 37.17639057629863,
+      "level_km": 6.25,
+      "longitude_deg": -121.56493636534962,
+      "north_km": -156.25,
+      "objective": 0.21391789353414778,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 37.23259807410135,
+      "level_km": 6.25,
+      "longitude_deg": -121.56498947138482,
+      "north_km": -150.0,
+      "objective": 0.24665415511190575,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": -6.25,
+      "latitude_deg": 37.28880557185306,
+      "level_km": 6.25,
+      "longitude_deg": -121.56504270198506,
+      "north_km": -143.75,
+      "objective": 0.3083951092421848,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.17641193168041,
+      "level_km": 6.25,
+      "longitude_deg": -121.4944,
+      "north_km": -156.25,
+      "objective": 0.2289174690077677,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 0.0,
+      "latitude_deg": 37.28882697714599,
+      "level_km": 6.25,
+      "longitude_deg": -121.4944,
+      "north_km": -143.75,
+      "objective": 0.3546918176458602,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 37.17639057629863,
+      "level_km": 6.25,
+      "longitude_deg": -121.42386363465036,
+      "north_km": -156.25,
+      "objective": 0.26483983900956737,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 37.23259807410135,
+      "level_km": 6.25,
+      "longitude_deg": -121.42381052861516,
+      "north_km": -150.0,
+      "objective": 0.33071226822553745,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "east_km": 6.25,
+      "latitude_deg": 37.28880557185306,
+      "level_km": 6.25,
+      "longitude_deg": -121.42375729801492,
+      "north_km": -143.75,
+      "objective": 0.4249055805283222,
+      "screening_model": "cached nominal full-observation hard association",
+      "tau_s": 0.0
+    },
+    {
+      "latitude_deg": 37.17639057629863,
+      "longitude_deg": -121.56493636534962,
+      "objective": 0.10944048133614281,
+      "screening_objective": 0.21391789353414778,
+      "stage": "exact_rate_finalist",
+      "tau_s": 0.0
+    },
+    {
+      "latitude_deg": 37.17641193168041,
+      "longitude_deg": -121.4944,
+      "objective": 0.10901231115959768,
+      "screening_objective": 0.2289174690077677,
+      "stage": "exact_rate_finalist",
+      "tau_s": 0.0
+    }
+  ],
+  "session_groups": {
+    "scan-fw-d30c80bd75815223": "ds2"
+  },
+  "session_ids": [
+    "scan-fw-d30c80bd75815223"
+  ],
+  "task_id": "single__scan-fw-d30c80bd75815223__causal-rate",
+  "track_associations": [
+    {
+      "candidate_id": "69172",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:05fa9176fed4bddc719d5c66339ecc0f1568bf9e7c0141655d3b664c95ef85e3"
+    },
+    {
+      "candidate_id": "57529",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:1932e5e8c3ff75dc170a6433bcfb1759c5a0f5f671b8f9b7119f8c76c30ae630"
+    },
+    {
+      "candidate_id": "69172",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:1a79f562450ab2a273a40941da61c3cd1d7bfc2c7de35db71636aafc61608551"
+    },
+    {
+      "candidate_id": "57984",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:23ac6459bd2419912eff135f96c7ad81ef515b4c1a7e70187f420dc83a1f7362"
+    },
+    {
+      "candidate_id": "66196",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:2a19e7dc8def5fc9818b6bb1bae890269bf01ac46643d1b1979b3eaff9558b0b"
+    },
+    {
+      "candidate_id": "58628",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:2a2780d3b5d9348f5b7214c465a79c69015e6ae2dbf9038db49e19a3fd68be12"
+    },
+    {
+      "candidate_id": "66203",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:2c320d2b5221624dbd17adc76b8b2927a587157118bde5d3a89f941683717db6"
+    },
+    {
+      "candidate_id": "55784",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:34aef66d6c1efbc5752429f549e6b1789e497d184d6181010737d29cc40f51b4"
+    },
+    {
+      "candidate_id": "69172",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:39e4b257b776508bcbdb5b2b0f378daa8c96f983dee27fbba7b799c0079966bc"
+    },
+    {
+      "candidate_id": "66196",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:4861ad557956237ec5e1ee5d395a5daa3b18853e2a4a421dbfba6fb690627249"
+    },
+    {
+      "candidate_id": "55784",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:614bcd485427d615991412cc10649dbd4217bbc652a6c9ab6885c3675a7e6258"
+    },
+    {
+      "candidate_id": "53707",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:7bf2ed8b6ce6df1fe34489a9a7a596be1adb525a53f3a77744d5cf34921139e2"
+    },
+    {
+      "candidate_id": "58628",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:87cf6f09e66fc1dd3207f531230f2d546faa6cdfa8a40a5cdffbe3fcdb9b2766"
+    },
+    {
+      "candidate_id": "69172",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:95a873ac5c7b8e9f45ef342baa4877ee2b4e63dca53d25f6b9083bc80434146f"
+    },
+    {
+      "candidate_id": "63549",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:9fef35e889d6f861f9be34ac26cf9adebabd638f8d9c8bd3ad02e2a6b5f7c55b"
+    },
+    {
+      "candidate_id": "58628",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:c624636607a039da4f62f8e842966601eef5c7060f291e5f698ce53335cda482"
+    },
+    {
+      "candidate_id": "49426",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:c68bd295b215bb31fabe973126a1b7c2440fe158d0175718a58cab40816fe471"
+    },
+    {
+      "candidate_id": "53053",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:d3aa1fec1d52c5af9bb381b42658ccb3ffd9e9248b68ec404849b444057b238e"
+    },
+    {
+      "candidate_id": "55784",
+      "session_id": "scan-fw-d30c80bd75815223",
+      "track_id": "sha256:ffe0f80a571e0e9c141bc280f08ca5aaf541cdd2c8228fb638ed42e494ae2b9d"
+    }
+  ]
+}

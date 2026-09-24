@@ -1,0 +1,77 @@
+{
+  "block_reasons": [
+    "cache_path_missing:scan-fw-573f6201b09f5ba4",
+    "cache_path_missing:scan-fw-af33f52c96a606b7",
+    "cache_path_missing:scan-fw-7fc0a2494f8caa5d",
+    "cache_path_missing:scan-fw-8634c361a1e38331",
+    "blind_prior_not_ready:blind-prior-not-yet-bound",
+    "geometry_not_ready",
+    "dependency_unsealed:baseline_doppler:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "class": "diagnostic",
+  "configuration": {
+    "beam_width": 3,
+    "coarse_cell_km": 100.0,
+    "fixed_half_angles_deg": [
+      10,
+      15,
+      20,
+      30
+    ],
+    "full_fov_deg": [
+      10,
+      20,
+      25,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90
+    ],
+    "local_fov_deg": [
+      10,
+      20,
+      25,
+      30,
+      40,
+      50
+    ],
+    "refinement_cells_km": [
+      25.0,
+      6.25
+    ],
+    "search_mode": "upward_restricted_orientation_grid",
+    "upward_cone_limit_deg": 45.0
+  },
+  "depends_on": [
+    "baseline_doppler:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+  ],
+  "evaluation_policy": "external_after_sealed_inference",
+  "group_id": "train-radio_pluto_5d4d-2500000-batch-00",
+  "model_id": "fixed_hard_cone_orientation",
+  "output_path": "inference/fixed_hard_cone_orientation/train-radio_pluto_5d4d-2500000-batch-00/blind-prior-not-yet-bound.json",
+  "partition": "train",
+  "prior": {
+    "id": "blind-prior-not-yet-bound",
+    "reference_used_for_selection": false,
+    "status": "not_ready"
+  },
+  "reference_used_for_inference": false,
+  "registry_task_method": "fixed_geometry_diagnostic",
+  "runner_command": null,
+  "schema": "ds2-experiment-task/v1",
+  "session_ids": [
+    "scan-fw-573f6201b09f5ba4",
+    "scan-fw-af33f52c96a606b7",
+    "scan-fw-7fc0a2494f8caa5d",
+    "scan-fw-8634c361a1e38331"
+  ],
+  "source_code_paths": [
+    "reports/2026_09_23_train_fixed_cone/run.py",
+    "reports/2026_09_23_joint_cone_profile/staged_run.py"
+  ],
+  "status": "blocked",
+  "task_id": "fixed_hard_cone_orientation:train-radio_pluto_5d4d-2500000-batch-00:blind-prior-not-yet-bound"
+}

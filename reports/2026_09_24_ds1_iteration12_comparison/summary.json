@@ -1,0 +1,53 @@
+{
+  "schema": "ds1-iteration12-comparison/v1",
+  "partition": "train",
+  "reference_used_for_inference": false,
+  "results": [
+    {
+      "id": "iteration10_control",
+      "status": "complete",
+      "latitude_deg": 37.85822833461974,
+      "longitude_deg": -122.47896245860316,
+      "postseal_error_km": 1.179285838445297,
+      "balanced_exact_capped_loss": 0.05812765917125823
+    },
+    {
+      "id": "expanded_rate_only_level2",
+      "status": "complete_edge_selected",
+      "latitude_deg": 37.855596563599256,
+      "longitude_deg": -122.48229576373605,
+      "postseal_error_km": 0.7871880013564422,
+      "balanced_exact_capped_loss": 0.05799908211101036
+    },
+    {
+      "id": "expanded_session_scale_level2",
+      "status": "accepted_same_coordinate_as_rate_only",
+      "latitude_deg": 37.855596563599256,
+      "longitude_deg": -122.48229576373605,
+      "postseal_error_km": 0.7871880013564422,
+      "balanced_exact_capped_loss": 0.05691586410787969
+    },
+    {
+      "id": "shared_norad_cross_group",
+      "status": "exact_equivalence_zero_overlap",
+      "postseal_error_km": 1.179285838445297,
+      "balanced_exact_capped_loss": 0.05812765917125823,
+      "cross_group_shared_norad_count": 0
+    },
+    {
+      "id": "consistent_cap800",
+      "status": "compute_infeasible_within_one_hour",
+      "postseal_error_km": null,
+      "projected_runtime_min": [82, 100],
+      "partial_winner_published": false
+    }
+  ],
+  "sources": [
+    "reports/2026_09_24_ds1_iteration10_refinement/evaluation/iteration10-postseal.json",
+    "reports/2026_09_24_ds1_iteration12_session_scale/refinement.json",
+    "reports/2026_09_24_ds1_iteration12_session_scale/evaluation/iteration12-refinement-postseal.json",
+    "reports/2026_09_24_ds1_iteration12_shared_norad/inference.json",
+    "reports/2026_09_24_ds1_iteration12_shared_norad/evaluation/iteration12-postseal.json",
+    "reports/2026_09_24_ds1_iteration12_consistent_objective/run-status.json"
+  ]
+}
