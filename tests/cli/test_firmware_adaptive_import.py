@@ -201,8 +201,11 @@ def variable_dual_document(rate: int, dwell_ms: int, *, slow_attack: bool = Fals
     return value
 
 
-def fixed_dual_document(dwell_ms: int) -> dict:
+def fixed_dual_document(
+    dwell_ms: int, *, radio_serial: str = importer.DUAL_SERIAL
+) -> dict:
     value = variable_dual_document(2_500_000, dwell_ms)
+    value["evidence"]["radio_serial"] = radio_serial
     value["setup"]["protocol_version"] = 4
     value["visits"][0]["record"]["protocol_version"] = 4
     return value
@@ -221,6 +224,45 @@ def test_protocol_four_receipt_preserves_one_scan_dwell(dwell_ms: int) -> None:
     assert event.valid_end_counter_exclusive - event.valid_start_counter == (
         rate * dwell_ms // 1_000
     )
+
+
+def test_protocol_four_archive_crosses_the_immutable_store_boundary(tmp_path: Path) -> None:
+    dwell_ms = 360
+    archive = tmp_path / "scan-fw-fixed-dwell"
+    archive.mkdir()
+    value = fixed_dual_document(dwell_ms, radio_serial=importer.RADIO20_SERIAL)
+    samples = 2_500_000 * dwell_ms // 1_000
+    raw = np.zeros((samples, 2, 2), dtype="<i2").tobytes()
+    compressed = zstd.ZstdCompressor(level=1).compress(raw)
+    (archive / "visit-000000.ci16.zst").write_bytes(compressed)
+    value["visits"][0]["iq"].update(
+        uncompressed_bytes=len(raw),
+        compressed_sha256=importer.sha256_digest(compressed),
+        uncompressed_sha256=importer.sha256_digest(raw),
+    )
+    value["evidence"]["utc_timing"] = {
+        "begin_before_realtime_ns": 1_790_000_000_000_000_000,
+        "begin_before_monotonic_ns": 1_000_000_000,
+        "begin_after_realtime_ns": 1_790_000_000_000_100_000,
+        "begin_after_monotonic_ns": 1_000_050_000,
+        "terminal_realtime_ns": 1_790_000_300_000_000_000,
+        "terminal_monotonic_ns": 301_000_000_000,
+    }
+    (archive / "manifest.json").write_text(json.dumps(value))
+    (tmp_path / "bulk").mkdir()
+
+    session_id = importer.import_archive(archive, tmp_path / "bulk")
+    store = AdaptiveHopIqStore(tmp_path / "bulk", read_only=True)
+    try:
+        published = store.inspect(session_id)
+        assert published.manifest.schema_version == 14
+        assert isinstance(published.manifest.receipt, AdaptiveHopReceiptV7)
+        assert published.manifest.receipt.plan.geometry.active_valid_visit_ms == dwell_ms
+        assert published.manifest.chunks[0].schema_version == 14
+        assert published.manifest.chunks[0].sample_count == samples
+        assert getattr(published.manifest, "receiver_geometry", None) is None
+    finally:
+        store.close()
 
 
 def test_protocol_four_rejects_a_short_visit() -> None:
