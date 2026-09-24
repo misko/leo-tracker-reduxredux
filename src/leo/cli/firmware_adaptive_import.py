@@ -73,6 +73,8 @@ URI = "ip:192.168.1.17"
 DUAL_SERIAL = "10400056f695001322002d0010ad1719f2"
 DUAL_URI = "ip:192.168.1.21"
 DUAL_GEOMETRY_RESOURCE = "gauss-r21-lt3d-001a-20260920-v1.json"
+RADIO20_SERIAL = "1040005e0b100007100010000bf33a5d4d"
+RADIO20_URI = "ip:192.168.1.20"
 
 
 class UnsupportedFirmwareArchiveError(ValueError):
@@ -88,13 +90,17 @@ def _load(path: Path) -> tuple[dict, bytes]:
         document.get("physical_receiver") == 0
         and document["evidence"].get("radio_serial") == SERIAL
     )
-    dual = (
+    dual_shape = (
         document.get("physical_receivers") == [0, 1]
         and document.get("classifier_physical_receiver") == 1
         and document.get("sample_layout") == "sample_rx_iq_interleaved"
-        and document["evidence"].get("radio_serial") == DUAL_SERIAL
         and document.get("setup", {}).get("rx_mask") == 3
-        and document.get("setup", {}).get("source_rate_hz") in (2_500_000, 10_000_000, 15_000_000)
+    )
+    serial = document["evidence"].get("radio_serial")
+    rate = document.get("setup", {}).get("source_rate_hz")
+    dual = dual_shape and (
+        (serial == DUAL_SERIAL and rate in (2_500_000, 10_000_000, 15_000_000))
+        or (serial == RADIO20_SERIAL and rate == 2_500_000)
     )
     if not (legacy or dual):
         raise ValueError("firmware archive is not the pinned radio RX0 source")
@@ -117,14 +123,29 @@ def _is_protocol_three(document: dict) -> bool:
     return _is_dual(document) and document.get("setup", {}).get("protocol_version") == 3
 
 
-def _dual_geometry_binding() -> AdaptiveReceiverGeometryBindingV1:
+def _dual_identity(document: dict) -> tuple[str, str, str]:
+    serial = document["evidence"]["radio_serial"]
+    if serial == DUAL_SERIAL:
+        return "radio_pluto_19f2", DUAL_SERIAL, DUAL_URI
+    if serial == RADIO20_SERIAL:
+        return "radio_pluto_5d4d", RADIO20_SERIAL, RADIO20_URI
+    raise ValueError("firmware archive is not a pinned dual-receiver source")
+
+
+def _dual_geometry_binding(document: dict) -> AdaptiveReceiverGeometryBindingV1 | None:
+    radio_id, serial, _ = _dual_identity(document)
+    if serial == RADIO20_SERIAL:
+        # Radio .20 has a published hardware-path mapping, but no measured
+        # receiver-fixture geometry. Preserve that absence rather than binding
+        # the capture to radio .21's fixture.
+        return None
     geometry = StationReceiverGeometryV1.model_validate_json(
         files("leo.station").joinpath(DUAL_GEOMETRY_RESOURCE).read_bytes()
     )
     return AdaptiveReceiverGeometryBindingV1.create(
         geometry,
-        radio_id="radio_pluto_19f2",
-        radio_serial=DUAL_SERIAL,
+        radio_id=radio_id,
+        radio_serial=serial,
     )
 
 
@@ -427,11 +448,12 @@ def _dual_receipt(document: dict):
         startup_invalid_start_counter=first,
         startup_invalid_end_counter_exclusive=events[0].valid_start_counter,
     )
+    radio_id, radio_serial, radio_uri = _dual_identity(document)
     common = dict(
         session_id=session_id,
-        radio_id="radio_pluto_19f2",
-        radio_serial=DUAL_SERIAL,
-        radio_uri=DUAL_URI,
+        radio_id=radio_id,
+        radio_serial=radio_serial,
+        radio_uri=radio_uri,
         plan=plan,
         stream_generation=int(document["setup"]["session"]),
         source_span_attested=True,
@@ -641,7 +663,7 @@ def import_archive(archive: Path, bulk_root: Path) -> str:
         writer = store.begin(
             receipt.session_id,
             receipt.plan,
-            receiver_geometry=_dual_geometry_binding() if _is_dual(document) else None,
+            receiver_geometry=_dual_geometry_binding(document) if _is_dual(document) else None,
         )
         try:
             retained = getattr(

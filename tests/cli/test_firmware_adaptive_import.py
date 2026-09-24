@@ -132,7 +132,9 @@ def sparse_document(rate: int) -> dict:
     }
 
 
-def dual_document(rate: int, *, complete: bool = True) -> dict:
+def dual_document(
+    rate: int, *, complete: bool = True, radio_serial: str = importer.DUAL_SERIAL
+) -> dict:
     dwell = rate * 120 // 1000
     guard = rate // 1000
     final = 10_000_000_000
@@ -176,7 +178,7 @@ def dual_document(rate: int, *, complete: bool = True) -> dict:
         ],
         "terminal": {"restore_after": final + 1},
         "evidence": {
-            "radio_serial": importer.DUAL_SERIAL,
+            "radio_serial": radio_serial,
             "preparation": {"original": settings},
             "restoration": {"observed": settings},
         },
@@ -281,10 +283,36 @@ def test_dual_firmware_receipt_preserves_both_receivers(rate, receipt_type) -> N
 
 
 def test_dual_geometry_is_an_installed_package_resource() -> None:
-    binding = importer._dual_geometry_binding()
+    binding = importer._dual_geometry_binding(dual_document(2_500_000))
 
+    assert binding is not None
     assert binding.fixture.fixture_part_id == "LT3D-001A"
     assert binding.radio.radio_serial == importer.DUAL_SERIAL
+
+
+def test_radio20_dual_receipt_preserves_exact_identity_without_false_geometry(
+    tmp_path: Path,
+) -> None:
+    value = dual_document(2_500_000, radio_serial=importer.RADIO20_SERIAL)
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(value))
+
+    loaded, _ = importer._load(manifest)
+    receipt = importer._receipt(loaded, "sha256:" + "b" * 64)
+
+    assert receipt.radio_id == "radio_pluto_5d4d"
+    assert receipt.radio_serial == importer.RADIO20_SERIAL
+    assert receipt.radio_uri == importer.RADIO20_URI
+    assert importer._dual_geometry_binding(value) is None
+
+
+def test_radio20_dual_source_rejects_unqualified_rates(tmp_path: Path) -> None:
+    value = dual_document(10_000_000, radio_serial=importer.RADIO20_SERIAL)
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(value))
+
+    with pytest.raises(ValueError, match="not the pinned"):
+        importer._load(manifest)
 
 
 def test_dual_firmware_receipt_refuses_unrepresented_sparse_iq() -> None:
@@ -334,15 +362,25 @@ def test_dual_firmware_receipt_preserves_zero_gap_repeated_target() -> None:
 
 
 @pytest.mark.parametrize(
-    ("rate", "manifest_version", "history_version"),
-    [(2_500_000, 9, 6), (15_000_000, 10, 7)],
+    ("rate", "radio_serial", "manifest_version", "history_version", "has_geometry"),
+    [
+        (2_500_000, importer.DUAL_SERIAL, 9, 6, True),
+        (2_500_000, importer.RADIO20_SERIAL, 13, 6, False),
+        (15_000_000, importer.DUAL_SERIAL, 10, 7, True),
+    ],
 )
 def test_dual_firmware_archive_publishes_geometry_manifest(
-    tmp_path, monkeypatch, rate, manifest_version, history_version
+    tmp_path,
+    monkeypatch,
+    rate,
+    radio_serial,
+    manifest_version,
+    history_version,
+    has_geometry,
 ) -> None:
     archive = tmp_path / f"scan-fw-dual-{rate}"
     archive.mkdir()
-    value = dual_document(rate)
+    value = dual_document(rate, radio_serial=radio_serial)
     samples = rate * 120 // 1000
     if rate == 15_000_000:
         first = value["visits"][0]
@@ -381,8 +419,14 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
 
     assert published.manifest.schema_version == manifest_version
     assert published.manifest.receipt.plan.geometry.receiver_ids == (0, 1)
-    assert published.manifest.receiver_geometry.fixture.fixture_part_id == "LT3D-001A"
-    assert published.manifest.receiver_geometry.radio.assignments[0].mapping_status == "provisional"
+    if has_geometry:
+        assert published.manifest.receiver_geometry.fixture.fixture_part_id == "LT3D-001A"
+        assert (
+            published.manifest.receiver_geometry.radio.assignments[0].mapping_status
+            == "provisional"
+        )
+    else:
+        assert getattr(published.manifest, "receiver_geometry", None) is None
     store.close()
     page = AdaptiveHopPresentationStore(tmp_path / "bulk").page_v2(cursor=0, limit=20)
     assert page.items[0].session_id == session_id
