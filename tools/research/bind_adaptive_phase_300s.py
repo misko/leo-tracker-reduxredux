@@ -113,13 +113,9 @@ def run(output: Path = OUTPUT) -> dict:
                         "sample_rate_hz": sample_rate_hz,
                         "channel": target["channel"],
                         "edge": target["edge"],
-                        "time_s": (
-                            visit.valid_start_counter - visit.source_origin_counter
-                        )
+                        "time_s": (visit.valid_start_counter - visit.source_origin_counter)
                         / sample_rate_hz,
-                        "session_time_s": (
-                            visit.valid_start_counter - visit.source_origin_counter
-                        )
+                        "session_time_s": (visit.valid_start_counter - visit.source_origin_counter)
                         / sample_rate_hz,
                         "valid_start_counter": visit.valid_start_counter,
                         "source_origin_counter": visit.source_origin_counter,

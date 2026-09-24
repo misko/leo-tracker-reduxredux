@@ -112,8 +112,7 @@ def run(args):
         tracks = {row["track_id"]: row for row in evidence["tracks"]}
         receipt_rows = {(row["location_id"], row["track_id"]): row for row in receipt["rows"]}
         evaluation_rows = {
-            (row["location_id"], row["track_id"]): row
-            for row in result_sessions[sid]["evaluation"]
+            (row["location_id"], row["track_id"]): row for row in result_sessions[sid]["evaluation"]
         }
         expected = {(location_id, track_id) for location_id in locations for track_id in tracks}
         if set(receipt_rows) != expected or set(evaluation_rows) != expected:

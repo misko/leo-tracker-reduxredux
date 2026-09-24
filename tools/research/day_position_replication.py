@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+
 for _name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_name] = "1"
 
@@ -43,13 +44,21 @@ def _groups(inventory: dict) -> list[dict]:
     seen: set[str] = set()
     for index, row in enumerate(rows):
         sessions = row.get("session_ids", row.get("sessions"))
-        if not isinstance(sessions, list) or not sessions or not all(isinstance(x, str) for x in sessions):
+        if (
+            not isinstance(sessions, list)
+            or not sessions
+            or not all(isinstance(x, str) for x in sessions)
+        ):
             raise ValueError("every group requires session_ids")
         if len(set(sessions)) != len(sessions) or seen.intersection(sessions):
             raise ValueError("replication groups must be internally unique and disjoint")
         seen.update(sessions)
-        parsed.append({"group_id": str(row.get("group_id", row.get("block_id", index))),
-                       "session_ids": sessions})
+        parsed.append(
+            {
+                "group_id": str(row.get("group_id", row.get("block_id", index))),
+                "session_ids": sessions,
+            }
+        )
     return parsed
 
 
@@ -63,22 +72,37 @@ def _scan_summary(joint, session_id: str) -> dict:
     by_name = {row["name"]: row for row in document["priors"]}
     for name in ("sacramento", "reno"):
         row = by_name[name]
-        priors[name] = {"selected": row["selected"], "finest": row["finest"],
-                        "accounting": row["accounting"]}
-    return {"session_id": session_id, "priors": priors,
-            "input_manifest_sha256": document["input_manifest_sha256"],
-            "analysis_manifest_sha256": document["analysis_manifest_sha256"],
-            "snapshot_digest": diagnostics["snapshot_digest"]}
+        priors[name] = {
+            "selected": row["selected"],
+            "finest": row["finest"],
+            "accounting": row["accounting"],
+        }
+    return {
+        "session_id": session_id,
+        "priors": priors,
+        "input_manifest_sha256": document["input_manifest_sha256"],
+        "analysis_manifest_sha256": document["analysis_manifest_sha256"],
+        "snapshot_digest": diagnostics["snapshot_digest"],
+    }
 
 
 def _mean_control(joint, scans: list[dict], prior: str) -> dict:
-    points = np.asarray([[row["priors"][prior]["selected"]["latitude_deg"],
-                          row["priors"][prior]["selected"]["longitude_deg"]]
-                         for row in scans])
+    points = np.asarray(
+        [
+            [
+                row["priors"][prior]["selected"]["latitude_deg"],
+                row["priors"][prior]["selected"]["longitude_deg"],
+            ]
+            for row in scans
+        ]
+    )
     point = np.mean(points, axis=0)
-    return {"method": f"mean-{prior}", "latitude_deg": float(point[0]),
-            "longitude_deg": float(point[1]),
-            "error_km": joint.haversine_km(tuple(point), TRUTH)}
+    return {
+        "method": f"mean-{prior}",
+        "latitude_deg": float(point[0]),
+        "longitude_deg": float(point[1]),
+        "error_km": joint.haversine_km(tuple(point), TRUTH),
+    }
 
 
 def run(args) -> dict:
@@ -108,61 +132,90 @@ def run(args) -> dict:
                 if scan[key] != authority[key]:
                     raise ValueError(f"{scan['session_id']} changed after inventory freeze: {key}")
         # The reused cache builder accepts the original newest-first selection contract.
-        selection = {"rule": "frozen disjoint replication group; reversed only for cache adapter",
-                     "session_ids": list(reversed(group["session_ids"]))}
+        selection = {
+            "rule": "frozen disjoint replication group; reversed only for cache adapter",
+            "session_ids": list(reversed(group["session_ids"])),
+        }
         _write(directory / "selection.json", selection)
         _write(directory / "scans.json", scans)
         joint.build_cache(directory / "selection.json", directory / "cache")
-        comparison = joint.compare(directory / "cache", directory / "scans.json", directory,
-                                   args.budget_seconds)
-        comparison["results"] = [row for row in comparison["results"]
-                                 if row["scan_count"] <= len(scans)]
+        comparison = joint.compare(
+            directory / "cache", directory / "scans.json", directory, args.budget_seconds
+        )
+        comparison["results"] = [
+            row for row in comparison["results"] if row["scan_count"] <= len(scans)
+        ]
         _write(directory / "results.json", comparison)
         full = next(row for row in comparison["results"] if row["scan_count"] == len(scans))
         controls = [_mean_control(joint, scans, name) for name in ("sacramento", "reno")]
-        return {"group_id": group["group_id"], "session_ids": group["session_ids"],
-               "scan_count": len(scans), "joint": full, "controls": controls,
-               "complete_16_scan_block": len(scans) == 16,
-               "continuity_note": ("contains a development-removal gap; not continuous IQ"
-                                   if group["group_id"] == "block_04" else
-                                   "chronological eligible scans; not continuous IQ"),
-               "runtime_s": time.monotonic() - group_started}
+        return {
+            "group_id": group["group_id"],
+            "session_ids": group["session_ids"],
+            "scan_count": len(scans),
+            "joint": full,
+            "controls": controls,
+            "complete_16_scan_block": len(scans) == 16,
+            "continuity_note": (
+                "contains a development-removal gap; not continuous IQ"
+                if group["group_id"] == "block_04"
+                else "chronological eligible scans; not continuous IQ"
+            ),
+            "runtime_s": time.monotonic() - group_started,
+        }
+
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         results = list(pool.map(one_group, groups))
     for row in results:
         _write(args.output / row["group_id"] / "replication_result.json", row)
     errors = [row["joint"]["best"]["error_km"] for row in results]
-    complete_errors = [row["joint"]["best"]["error_km"] for row in results
-                       if row["complete_16_scan_block"]]
+    complete_errors = [
+        row["joint"]["best"]["error_km"] for row in results if row["complete_16_scan_block"]
+    ]
     summary = {
         "schema": "day-position-independent-replication/v1",
         "inventory_sha256": "sha256:" + hashlib.sha256(args.inventory.read_bytes()).hexdigest(),
-        "original_session_overlap": 0, "groups_disjoint": True,
+        "original_session_overlap": 0,
+        "groups_disjoint": True,
         "method_frozen_before_replication_truth_evaluation": True,
         "candidate_scope": "per-scan union of block-local production Sacramento/Reno selections",
-        "validation_limit": "production randomized evaluation rows were reused in candidate/location selection",
-        "group_count": len(results), "results": results,
-        "joint_error_km": {"values": errors, "median": float(np.median(errors)),
-                           "maximum": float(np.max(errors)),
-                           "within_0_3_km": int(np.sum(np.asarray(errors) <= 0.3))},
+        "validation_limit": (
+            "production randomized evaluation rows were reused in candidate/location selection"
+        ),
+        "group_count": len(results),
+        "results": results,
+        "joint_error_km": {
+            "values": errors,
+            "median": float(np.median(errors)),
+            "maximum": float(np.max(errors)),
+            "within_0_3_km": int(np.sum(np.asarray(errors) <= 0.3)),
+        },
         "complete_16_scan_joint_error_km": {
-            "values": complete_errors, "median": float(np.median(complete_errors)),
+            "values": complete_errors,
+            "median": float(np.median(complete_errors)),
             "maximum": float(np.max(complete_errors)),
-            "within_0_3_km": int(np.sum(np.asarray(complete_errors) <= 0.3))},
+            "within_0_3_km": int(np.sum(np.asarray(complete_errors) <= 0.3)),
+        },
         "runtime_s": time.monotonic() - started,
         "source_digest": "sha256:" + hashlib.sha256(joint_path.read_bytes()).hexdigest(),
     }
     _write(args.output / "results.json", summary)
     fig = Figure(figsize=(8, 4), layout="constrained")
     ax = fig.subplots()
-    x = np.arange(len(results)); width = 0.25
+    x = np.arange(len(results))
+    width = 0.25
     ax.bar(x - width, errors, width, label="Joint integer")
     ax.bar(x, [r["controls"][0]["error_km"] for r in results], width, label="Mean Sacramento")
     ax.bar(x + width, [r["controls"][1]["error_km"] for r in results], width, label="Mean Reno")
     ax.axhline(0.3, color="black", linestyle="--", linewidth=1, label="300 m")
-    ax.set(xticks=x, xticklabels=[r["group_id"] for r in results], ylabel="Position error (km)",
-           xlabel="Frozen disjoint scan group", title="Independent group replication")
-    ax.grid(axis="y", alpha=.25); ax.legend()
+    ax.set(
+        xticks=x,
+        xticklabels=[r["group_id"] for r in results],
+        ylabel="Position error (km)",
+        xlabel="Frozen disjoint scan group",
+        title="Independent group replication",
+    )
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend()
     fig.savefig(args.output / "replication.png", dpi=160)
     return summary
 
@@ -175,35 +228,46 @@ def summarize_existing(inventory_path: Path, output: Path) -> dict:
         row = json.loads((directory / "replication_result.json").read_text())
         comparison_path = directory / "results.json"
         comparison = json.loads(comparison_path.read_text())
-        comparison["results"] = [item for item in comparison["results"]
-                                 if item["scan_count"] <= row["scan_count"]]
+        comparison["results"] = [
+            item for item in comparison["results"] if item["scan_count"] <= row["scan_count"]
+        ]
         _write(comparison_path, comparison)
         ordered = sorted(comparison["results"], key=lambda item: item["scan_count"])
-        fig = Figure(figsize=(9, 4), layout="constrained"); axes = fig.subplots(1, 2)
-        axes[0].plot([x["scan_count"] for x in ordered],
-                     [x["best"]["rmse_hz"] for x in ordered], "o-")
-        axes[1].plot([x["scan_count"] for x in ordered],
-                     [x["best"]["error_km"] for x in ordered], "o-")
+        fig = Figure(figsize=(9, 4), layout="constrained")
+        axes = fig.subplots(1, 2)
+        axes[0].plot(
+            [x["scan_count"] for x in ordered], [x["best"]["rmse_hz"] for x in ordered], "o-"
+        )
+        axes[1].plot(
+            [x["scan_count"] for x in ordered], [x["best"]["error_km"] for x in ordered], "o-"
+        )
         axes[0].set(xlabel="Scans accumulated", ylabel="Selection RMS (Hz)")
         axes[1].set(xlabel="Scans accumulated", ylabel="Evaluation-only error (km)")
         for axis in axes:
-            axis.grid(alpha=.25); axis.set_xscale("log", base=2)
+            axis.grid(alpha=0.25)
+            axis.set_xscale("log", base=2)
             axis.set_xticks([x["scan_count"] for x in ordered])
             axis.get_xaxis().set_major_formatter("{x:g}")
         fig.savefig(directory / "comparison.png", dpi=160)
         results.append(row)
     errors = [row["joint"]["best"]["error_km"] for row in results]
-    complete = [row["joint"]["best"]["error_km"] for row in results
-                if row["complete_16_scan_block"]]
+    complete = [
+        row["joint"]["best"]["error_km"] for row in results if row["complete_16_scan_block"]
+    ]
     summary = json.loads((output / "results.json").read_text())
     summary["results"] = results
     summary["joint_error_km"] = {
-        "values": errors, "median": float(np.median(errors)), "maximum": float(np.max(errors)),
-        "within_0_3_km": int(np.sum(np.asarray(errors) <= .3))}
+        "values": errors,
+        "median": float(np.median(errors)),
+        "maximum": float(np.max(errors)),
+        "within_0_3_km": int(np.sum(np.asarray(errors) <= 0.3)),
+    }
     summary["complete_16_scan_joint_error_km"] = {
-        "values": complete, "median": float(np.median(complete)),
+        "values": complete,
+        "median": float(np.median(complete)),
         "maximum": float(np.max(complete)),
-        "within_0_3_km": int(np.sum(np.asarray(complete) <= .3))}
+        "within_0_3_km": int(np.sum(np.asarray(complete) <= 0.3)),
+    }
     summary["source_digest"] = "sha256:" + hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     _write(output / "results.json", summary)
     return summary
@@ -217,7 +281,9 @@ def main() -> None:
     parser.add_argument("--workers", type=int, choices=(1, 2), default=2)
     parser.add_argument("--summarize-existing", action="store_true")
     args = parser.parse_args()
-    result = summarize_existing(args.inventory, args.output) if args.summarize_existing else run(args)
+    result = (
+        summarize_existing(args.inventory, args.output) if args.summarize_existing else run(args)
+    )
     print(json.dumps(result, indent=2))
 
 

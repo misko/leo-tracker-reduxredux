@@ -103,9 +103,7 @@ def source_phase(iq, duration_ms, source_name, source, edge, local_timing):
         co = symbol_correlations(
             iq, starts[train], shift, frontend.MODELS[source_name][0], 0, control, fraction
         )
-        frames, _, _, _ = coherent_pilot_frames(
-            ex, co, offsets_s, OFDM_SYMBOL_DURATION_S
-        )
+        frames, _, _, _ = coherent_pilot_frames(ex, co, offsets_s, OFDM_SYMBOL_DURATION_S)
         scores.append(float(np.sum(abs(frames) ** 2)))
     shift = shifts[int(np.argmax(scores))]
     coeff, controls, within_hz = [], [], []

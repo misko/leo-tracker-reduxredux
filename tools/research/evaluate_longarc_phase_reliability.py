@@ -40,11 +40,7 @@ def normalized_nll(residual: np.ndarray, sigma_hz: float) -> float:
     if len(residual) == 0 or not np.isfinite(sigma_hz) or sigma_hz <= 0:
         raise ValueError("finite residuals and positive scale required")
     return float(
-        np.mean(
-            0.5 * (residual / sigma_hz) ** 2
-            + np.log(sigma_hz)
-            + 0.5 * np.log(2 * np.pi)
-        )
+        np.mean(0.5 * (residual / sigma_hz) ** 2 + np.log(sigma_hz) + 0.5 * np.log(2 * np.pi))
     )
 
 
@@ -90,8 +86,7 @@ def calibration_features(row: dict) -> dict:
             measured = np.angle(np.vdot(lv, rv))
             dt = right["session_time_s"] - left["session_time_s"]
             frequency = 0.5 * (
-                left["frame"]["even"]["absolute_cfo_hz"]
-                + right["frame"]["even"]["absolute_cfo_hz"]
+                left["frame"]["even"]["absolute_cfo_hz"] + right["frame"]["even"]["absolute_cfo_hz"]
             )
             phasors.append(np.exp(2j * (measured - 2 * np.pi * frequency * dt)))
         if phasors:
@@ -154,8 +149,7 @@ def main() -> None:
     times = np.asarray([row["observation"]["time_s"] for row in rows])
     training = np.asarray([row["outer_partition"] == "train" for row in rows])
     split = {
-        row["visit_index"]: row
-        for row in binding["phase_random_whole_visit_partition"]["rows"]
+        row["visit_index"]: row for row in binding["phase_random_whole_visit_partition"]["rows"]
     }
     strata = np.asarray(
         [split[row["observation"]["visit_index"]]["temporal_stratum"] for row in rows]
@@ -196,9 +190,7 @@ def main() -> None:
         responses.append(
             np.asarray(
                 [
-                    BASE.normalized_frame_cfo(
-                        item, observation, "odd", reject_boundary=False
-                    )
+                    BASE.normalized_frame_cfo(item, observation, "odd", reject_boundary=False)
                     for item in selected
                 ]
             )
@@ -261,18 +253,14 @@ def main() -> None:
     final_model = evaluation["glrt_model"]
     held = np.flatnonzero(~training)
     held_residuals = [residual_for(final_model, index_) for index_ in held]
-    baseline_nll = float(
-        np.mean([normalized_nll(row, uniform_sigma) for row in held_residuals])
-    )
+    baseline_nll = float(np.mean([normalized_nll(row, uniform_sigma) for row in held_residuals]))
     results, held_nll = {}, {}
     held_nll["uniform"] = [normalized_nll(row, uniform_sigma) for row in held_residuals]
     for name, (values, _) in covariates.items():
         config = configs[name]
         flagged = values[held] < config["threshold"]
         nll = [
-            normalized_nll(
-                row, config["bad_sigma_hz"] if flag else config["good_sigma_hz"]
-            )
+            normalized_nll(row, config["bad_sigma_hz"] if flag else config["good_sigma_hz"])
             for row, flag in zip(held_residuals, flagged, strict=True)
         ]
         rms = np.asarray([np.sqrt(np.mean(row**2)) for row in held_residuals])

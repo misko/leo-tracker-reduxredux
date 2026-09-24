@@ -18,13 +18,17 @@ def _prediction(measured, visible=True):
     measured = np.asarray(measured, dtype=float)
     base = np.arange(len(measured), dtype=float)
     predictions = np.stack(
-        [np.stack((base[::-1], base, base**1.2)),
-         np.stack((base * .2, base * .5, base * .8))]
+        [np.stack((base[::-1], base, base**1.2)), np.stack((base * 0.2, base * 0.5, base * 0.8))]
     )
     return AdaptiveTrackPrediction(
-        "track", tuple(f"o{i}" for i in range(len(base))), base, measured,
+        "track",
+        tuple(f"o{i}" for i in range(len(base))),
+        base,
+        measured,
         np.asarray([True, False, True, False, True, False, True, False]),
-        np.asarray(["10", "20"]), np.asarray([-1., 0., 1.]), predictions,
+        np.asarray(["10", "20"]),
+        np.asarray([-1.0, 0.0, 1.0]),
+        predictions,
         np.full(2, visible, dtype=bool),
     )
 
@@ -46,5 +50,9 @@ def test_all_invisible_candidates_are_unmatched():
 
 def test_quantile_summary_has_fixed_ordered_statistics():
     assert SUBJECT._quantiles([1, 2, 3, 4, 5]) == {
-        "min": 1.0, "p25": 2.0, "median": 3.0, "p75": 4.0, "max": 5.0
+        "min": 1.0,
+        "p25": 2.0,
+        "median": 3.0,
+        "p75": 4.0,
+        "max": 5.0,
     }

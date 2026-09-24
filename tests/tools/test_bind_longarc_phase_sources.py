@@ -2,10 +2,7 @@ from tools.research.bind_longarc_phase_sources import fresh_whole_visit_partitio
 
 
 def test_fresh_partition_is_seeded_disjoint_and_whole_visit():
-    observations = [
-        {"visit_index": visit, "time_s": float(visit) / 10}
-        for visit in range(78)
-    ]
+    observations = [{"visit_index": visit, "time_s": float(visit) / 10} for visit in range(78)]
     first = fresh_whole_visit_partition(observations)
     second = fresh_whole_visit_partition(list(reversed(observations)))
 

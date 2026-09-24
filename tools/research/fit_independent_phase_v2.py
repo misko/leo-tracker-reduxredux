@@ -69,12 +69,11 @@ def main() -> None:
         sorted(frames["rows"], key=lambda row: row["observation"]["time_s"])
     )
     split = {
-        row["visit_index"]: row["partition"]
-        for row in binding["fresh_random_whole_visit_split"]
+        row["visit_index"]: row["partition"] for row in binding["fresh_random_whole_visit_split"]
     }
-    if len(rows) != 15 or sorted(
-        row["observation"]["visit_index"] for row in rows
-    ) != sorted(visit for visit, role in split.items() if role == "train"):
+    if len(rows) != 15 or sorted(row["observation"]["visit_index"] for row in rows) != sorted(
+        visit for visit, role in split.items() if role == "train"
+    ):
         raise ValueError("v2 rows differ from the frozen training split")
     glrt_y = np.asarray([row["observation"]["normalized_cfo_hz"] for row in rows])
     glrt_t = np.asarray([row["observation"]["time_s"] for row in rows])
@@ -223,9 +222,7 @@ def main() -> None:
             "snapshot_digest": prepared.snapshot_digest,
             "snapshot_collected_utc_ns": prepared.snapshot_collected_utc_ns,
         },
-        "input_sha256": {
-            str(path.relative_to(ROOT)): v1.digest(path) for path in input_paths
-        },
+        "input_sha256": {str(path.relative_to(ROOT)): v1.digest(path) for path in input_paths},
         "implementation_sha256": {
             str(path.relative_to(ROOT)): v1.digest(path) for path in implementation_paths
         },

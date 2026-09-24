@@ -60,8 +60,7 @@ def main() -> None:
             raise ValueError("nominal TLE propagation omitted a candidate")
         states[label] = (p, v)
     exact_rate = (
-        doppler_hz(receiver, *states["plus"])
-        - doppler_hz(receiver, *states["minus"])
+        doppler_hz(receiver, *states["plus"]) - doppler_hz(receiver, *states["minus"])
     ) / (2 * STEP_S)
     cache_rate = (
         doppler_hz(
@@ -125,8 +124,7 @@ def main() -> None:
         },
         "derivative": {
             "method": (
-                "nominal causal TLE exact SGP4 at receive UTC +/-0.1 s; "
-                "Earth rotation advanced"
+                "nominal causal TLE exact SGP4 at receive UTC +/-0.1 s; Earth rotation advanced"
             ),
             "step_s": STEP_S,
             "rf_hz": 11_200_000_000.0,

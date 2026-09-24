@@ -39,8 +39,7 @@ def serial(value):
 
 def training_rows(binding: dict) -> list[dict]:
     partition = {
-        row["visit_index"]: row["partition"]
-        for row in binding["fresh_random_whole_visit_split"]
+        row["visit_index"]: row["partition"] for row in binding["fresh_random_whole_visit_split"]
     }
     observations = {row["visit_index"]: row for row in binding["observations"]}
     if set(partition) != set(observations):
@@ -98,9 +97,10 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
             if geometry.sample_rate_hz != binding["sample_rate_hz"]:
                 raise ValueError("sample rate changed")
             for observation in selected:
-                if source.visits[observation["iq_ordinal"]].event.visit_index != observation[
-                    "visit_index"
-                ]:
+                if (
+                    source.visits[observation["iq_ordinal"]].event.visit_index
+                    != observation["visit_index"]
+                ):
                     raise ValueError("IQ ordinal no longer binds the visit")
                 iq = source.read_visit(observation["iq_ordinal"])
                 receiver_column = geometry.receiver_ids.index(observation["receiver_id"])
@@ -143,96 +143,89 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
 
 
 def _extract_row(binding, observation, iq, receiver_column, protocol):
-        rate = binding["sample_rate_hz"]
-        epoch = round(observation["probe_start_ms"] * rate / 1000) + observation[
-            "integer_epoch_sample"
-        ]
-        opportunities = frame_opportunities(len(iq), rate, epoch)
-        if len(opportunities) != 24 or {group for group, _ in opportunities} != set(range(6)):
-            raise ValueError("expected 24 opportunities across six groups")
-        branches = []
-        for seed in seed_values(observation):
-            frames = []
-            content = round(302 * rate * template_module.OFDM_SYMBOL_DURATION_S)
-            for group, start in opportunities:
-                measured = estimate_edge_pilot_frame_complex_split(
-                    iq[start - 1 : start + content + 1, receiver_column],
-                    rate,
-                    frame_start_sample=start,
-                    acquisition_absolute_cfo_hz=seed,
-                    edge=observation["edge"],
-                )
-                frames.append(
-                    {
-                        "group_id": group,
-                        "frame": serial(asdict(measured)),
-                        "session_time_s": (
-                            observation["valid_start_counter"]
-                            - binding["source_first_counter"]
-                            + measured.reference_sample
-                        )
-                        / rate,
-                    }
-                )
-            group_margin = []
-            for group in protocol["inner_calibration_groups"]:
-                values = [
-                    row["frame"]["even"]["coherence_margin"]
-                    if row["frame"]["even"] is not None
-                    and not row["frame"]["even"]["search_boundary"]
-                    else 0.0
-                    for row in frames
-                    if row["group_id"] == group
-                ]
-                group_margin.append(float(np.mean(values)))
-            branches.append(
+    rate = binding["sample_rate_hz"]
+    epoch = round(observation["probe_start_ms"] * rate / 1000) + observation["integer_epoch_sample"]
+    opportunities = frame_opportunities(len(iq), rate, epoch)
+    if len(opportunities) != 24 or {group for group, _ in opportunities} != set(range(6)):
+        raise ValueError("expected 24 opportunities across six groups")
+    branches = []
+    for seed in seed_values(observation):
+        frames = []
+        content = round(302 * rate * template_module.OFDM_SYMBOL_DURATION_S)
+        for group, start in opportunities:
+            measured = estimate_edge_pilot_frame_complex_split(
+                iq[start - 1 : start + content + 1, receiver_column],
+                rate,
+                frame_start_sample=start,
+                acquisition_absolute_cfo_hz=seed,
+                edge=observation["edge"],
+            )
+            frames.append(
                 {
-                    "seed_cfo_hz": seed,
-                    "calibration_even_margin": float(np.mean(group_margin)),
-                    "frames": frames,
+                    "group_id": group,
+                    "frame": serial(asdict(measured)),
+                    "session_time_s": (
+                        observation["valid_start_counter"]
+                        - binding["source_first_counter"]
+                        + measured.reference_sample
+                    )
+                    / rate,
                 }
             )
-        chosen = int(np.argmax([branch["calibration_even_margin"] for branch in branches]))
-        diagnostic = [
-            row["frame"]["odd"]
-            for row in branches[chosen]["frames"]
-            if row["group_id"] in protocol["inner_diagnostic_groups"]
-            and row["frame"]["odd"] is not None
-        ]
-        calibration_eligible = sum(
-            row["group_id"] in protocol["inner_calibration_groups"]
-            and row["frame"]["training_supported"]
-            and row["frame"]["even"] is not None
-            for row in branches[chosen]["frames"]
-        )
-        diagnostic_eligible = sum(
-            row["group_id"] in protocol["inner_diagnostic_groups"]
-            and row["frame"]["training_supported"]
-            and row["frame"]["odd"] is not None
-            for row in branches[chosen]["frames"]
-        )
-        return {
-                "observation": observation,
-                "selected_seed_index": chosen,
-                "branches": branches,
-                "train_odd_diagnostic": {
-                    "frame_count": len(diagnostic),
-                    "exact_coherence": float(
-                        np.mean([item["exact_coherence"] for item in diagnostic])
-                    ),
-                    "control_coherence": float(
-                        np.mean([item["control_coherence"] for item in diagnostic])
-                    ),
-                },
-                "frame_coverage": {
-                    "calibration_even_opportunities": 12,
-                    "calibration_even_eligible": calibration_eligible,
-                    "diagnostic_odd_opportunities": 12,
-                    "diagnostic_odd_eligible": diagnostic_eligible,
-                },
-                "iq_sha256": hashlib.sha256(iq.tobytes()).hexdigest(),
-                "iq_shape": list(iq.shape),
+        group_margin = []
+        for group in protocol["inner_calibration_groups"]:
+            values = [
+                row["frame"]["even"]["coherence_margin"]
+                if row["frame"]["even"] is not None and not row["frame"]["even"]["search_boundary"]
+                else 0.0
+                for row in frames
+                if row["group_id"] == group
+            ]
+            group_margin.append(float(np.mean(values)))
+        branches.append(
+            {
+                "seed_cfo_hz": seed,
+                "calibration_even_margin": float(np.mean(group_margin)),
+                "frames": frames,
             }
+        )
+    chosen = int(np.argmax([branch["calibration_even_margin"] for branch in branches]))
+    diagnostic = [
+        row["frame"]["odd"]
+        for row in branches[chosen]["frames"]
+        if row["group_id"] in protocol["inner_diagnostic_groups"]
+        and row["frame"]["odd"] is not None
+    ]
+    calibration_eligible = sum(
+        row["group_id"] in protocol["inner_calibration_groups"]
+        and row["frame"]["training_supported"]
+        and row["frame"]["even"] is not None
+        for row in branches[chosen]["frames"]
+    )
+    diagnostic_eligible = sum(
+        row["group_id"] in protocol["inner_diagnostic_groups"]
+        and row["frame"]["training_supported"]
+        and row["frame"]["odd"] is not None
+        for row in branches[chosen]["frames"]
+    )
+    return {
+        "observation": observation,
+        "selected_seed_index": chosen,
+        "branches": branches,
+        "train_odd_diagnostic": {
+            "frame_count": len(diagnostic),
+            "exact_coherence": float(np.mean([item["exact_coherence"] for item in diagnostic])),
+            "control_coherence": float(np.mean([item["control_coherence"] for item in diagnostic])),
+        },
+        "frame_coverage": {
+            "calibration_even_opportunities": 12,
+            "calibration_even_eligible": calibration_eligible,
+            "diagnostic_odd_opportunities": 12,
+            "diagnostic_odd_eligible": diagnostic_eligible,
+        },
+        "iq_sha256": hashlib.sha256(iq.tobytes()).hexdigest(),
+        "iq_shape": list(iq.shape),
+    }
 
 
 if __name__ == "__main__":

@@ -97,9 +97,7 @@ def phase_cfo(row: dict) -> tuple[float, float]:
     values = []
     for frame in frames:
         native = frame["frame"]["even"]["absolute_cfo_hz"]
-        values.append(
-            (native + fixed_lift * native_period) * observation["rf_normalization_scale"]
-        )
+        values.append((native + fixed_lift * native_period) * observation["rf_normalization_scale"])
     return float(np.mean(values)), float(np.mean([item["session_time_s"] for item in frames]))
 
 
@@ -164,11 +162,7 @@ def predict_model(
         if len(valid) != 1:
             raise ValueError("sealed exact SGP4 propagation failed")
         base = doppler_hz(np.asarray(model["receiver_ecef_km"]), p[0, 0], v[0, 0])
-    return (
-        base
-        + model["offset_hz"]
-        + model["drift_hz_s"] * (times - model["time_centre_s"])
-    )
+    return base + model["offset_hz"] + model["drift_hz_s"] * (times - model["time_centre_s"])
 
 
 def main() -> None:
@@ -188,8 +182,7 @@ def main() -> None:
         raise ValueError("training replay opened reserved IQ")
     rows = sorted(frames["rows"], key=lambda row: row["observation"]["time_s"])
     split = {
-        row["visit_index"]: row["partition"]
-        for row in binding["fresh_random_whole_visit_split"]
+        row["visit_index"]: row["partition"] for row in binding["fresh_random_whole_visit_split"]
     }
     expected_visits = sorted(index for index, partition in split.items() if partition == "train")
     actual_visits = sorted(row["observation"]["visit_index"] for row in rows)

@@ -217,19 +217,19 @@ def fit_receiver_slopes(
             reserved_sse += float(np.sum(error[~mask] ** 2))
         train_count += int(np.sum(mask))
         reserved_count += int(np.sum(~mask)) if include_evaluation else 0
-        tracks.append({
-            "candidate_id": str(row.candidate_ids[choice]),
-            "offset_hz": float(intercept),
-            "training_rms_hz": float(np.sqrt(np.mean(error[mask] ** 2))),
-            "evaluation_rms_hz": (
-                float(np.sqrt(np.mean(error[~mask] ** 2))) if include_evaluation else None
-            ),
-            "weight_s": int(len(np.unique(np.floor(time_s)))),
-        })
+        tracks.append(
+            {
+                "candidate_id": str(row.candidate_ids[choice]),
+                "offset_hz": float(intercept),
+                "training_rms_hz": float(np.sqrt(np.mean(error[mask] ** 2))),
+                "evaluation_rms_hz": (
+                    float(np.sqrt(np.mean(error[~mask] ** 2))) if include_evaluation else None
+                ),
+                "weight_s": int(len(np.unique(np.floor(time_s)))),
+            }
+        )
     total_weight = sum(row["weight_s"] for row in tracks)
-    capped_loss = sum(
-        row["weight_s"] * min(800.0, row["training_rms_hz"]) ** 2 for row in tracks
-    )
+    capped_loss = sum(row["weight_s"] * min(800.0, row["training_rms_hz"]) ** 2 for row in tracks)
     penalty = 0.0 if ridge is None else ridge * sum(value * value for value in slopes.values())
     return {
         "objective": float(np.sqrt((capped_loss + penalty) / total_weight)),
@@ -245,9 +245,7 @@ def fit_receiver_slopes(
     }
 
 
-def fit_scan(
-    joint, evidence, arrays, point, timing_grid, mapping, ridge, include_evaluation=False
-):
+def fit_scan(joint, evidence, arrays, point, timing_grid, mapping, ridge, include_evaluation=False):
     predictions = [
         joint.prediction_for_track(
             evidence, arrays, track, float(point[0]), float(point[1]), taus_s=timing_grid
@@ -315,9 +313,14 @@ def training_select(args) -> None:
         fits = []
         for ridge in RIDGES:
             fit = fit_scan(
-                joint, evidence, arrays,
+                joint,
+                evidence,
+                arrays,
                 (point["latitude_deg"], point["longitude_deg"]),
-                grids[session], mappings[session], ridge, True,
+                grids[session],
+                mappings[session],
+                ridge,
+                True,
             )
             fits.append({"ridge_s2": ridge, **fit})
         rows.append({"session_id": session, "fits": fits})
@@ -340,8 +343,10 @@ def training_select(args) -> None:
         "rows": rows,
         "runtime_s": time.monotonic() - started,
         "bindings": {
-            "split": digest(args.split), "timing": digest(args.timing_metadata),
-            "mapping": digest(args.mapping), "tool": digest(Path(__file__)),
+            "split": digest(args.split),
+            "timing": digest(args.timing_metadata),
+            "mapping": digest(args.mapping),
+            "tool": digest(Path(__file__)),
             "cache_manifest_sha256": cache_digests,
         },
     }
@@ -354,14 +359,27 @@ def training_select(args) -> None:
 
 
 def score_window(
-    grouped, joint, prepared, sessions, point, grids, mappings, ridge,
+    grouped,
+    joint,
+    prepared,
+    sessions,
+    point,
+    grids,
+    mappings,
+    ridge,
     include_evaluation=False,
 ):
     scans, rows = [], []
     for session in sessions:
         evidence, arrays = prepared[session]
         fit = fit_scan(
-            joint, evidence, arrays, point, grids[session], mappings[session], ridge,
+            joint,
+            evidence,
+            arrays,
+            point,
+            grids[session],
+            mappings[session],
+            ridge,
             include_evaluation,
         )
         scans.append({key: value for key, value in fit.items() if key != "tracks"})
@@ -370,10 +388,7 @@ def score_window(
             for track in fit["tracks"]
         )
     total_weight = sum(row["weight_s"] for row in rows)
-    capped = sum(
-        row["weight_s"] * min(800.0, row["score"]["training_rms_hz"]) ** 2
-        for row in rows
-    )
+    capped = sum(row["weight_s"] * min(800.0, row["score"]["training_rms_hz"]) ** 2 for row in rows)
     penalty = sum(scan["penalty_hz2_s"] for scan in scans)
     objective = float(np.sqrt((capped + penalty) / total_weight))
     return objective, scans, rows
@@ -402,13 +417,15 @@ def validation_run(args) -> None:
     groups = [group for group in split["groups"] if group["group_id"] in validation["group_ids"]]
     windows = []
     for group in groups:
-        windows.extend((
-            {"window_id": group["group_id"], "session_ids": group["session_ids"]},
-            {
-                "window_id": group["group_id"] + "-first-scan",
-                "session_ids": group["session_ids"][:1],
-            },
-        ))
+        windows.extend(
+            (
+                {"window_id": group["group_id"], "session_ids": group["session_ids"]},
+                {
+                    "window_id": group["group_id"] + "-first-scan",
+                    "session_ids": group["session_ids"][:1],
+                },
+            )
+        )
     arms = (("zero_drift_capped800", None), ("receiver_drift_capped800", ridge))
     started = time.monotonic()
     output_windows = []
@@ -428,12 +445,14 @@ def validation_run(args) -> None:
                     max_evaluations=args.max_evaluations,
                 )
                 fits.append({"seed_id": seed_index, "seed": seed, **fit})
-            arm_rows.append({
-                "method": name,
-                "ridge_s2": selected_ridge,
-                "fits": fits,
-                "selected": min(fits, key=lambda row: row["training_rmse_hz"]),
-            })
+            arm_rows.append(
+                {
+                    "method": name,
+                    "ridge_s2": selected_ridge,
+                    "fits": fits,
+                    "selected": min(fits, key=lambda row: row["training_rmse_hz"]),
+                }
+            )
         output_windows.append({**window, "seeds": seeds, "arms": arm_rows})
     inference = {
         "schema": "receiver-drift-position/v1",
@@ -443,9 +462,12 @@ def validation_run(args) -> None:
         "windows": output_windows,
         "runtime_s": time.monotonic() - started,
         "bindings": {
-            "split": digest(args.split), "inventory": digest(args.inventory),
-            "timing": digest(args.timing_metadata), "mapping": digest(args.mapping),
-            "training_selection": digest(args.training_selection), "tool": digest(Path(__file__)),
+            "split": digest(args.split),
+            "inventory": digest(args.inventory),
+            "timing": digest(args.timing_metadata),
+            "mapping": digest(args.mapping),
+            "training_selection": digest(args.training_selection),
+            "tool": digest(Path(__file__)),
             "cache_manifest_sha256": cache_digests,
         },
     }
@@ -474,7 +496,8 @@ def validation_run(args) -> None:
             )
             selected["reference_error_km"] = prior.haversine_km(point, prior.REFERENCE)
     results["reference_coordinate"] = {
-        "latitude_deg": prior.REFERENCE[0], "longitude_deg": prior.REFERENCE[1],
+        "latitude_deg": prior.REFERENCE[0],
+        "longitude_deg": prior.REFERENCE[1],
         "role": "post-seal only",
     }
     (args.output / "results.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")

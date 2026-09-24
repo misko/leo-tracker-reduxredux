@@ -19,7 +19,6 @@ from leo.scanner.host_adaptive_products import bind_actual_visit_analysis
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 
-
 SESSION_ID = "scan-hop-28d7592ea614f624"
 OUT = Path("reports/figures/2026_09_23_scan_glrt_multiplicity/relaxed-rx0-anchor-binding.json")
 DISTINCT_HZ = 5_000.0
@@ -40,10 +39,18 @@ def _distinct(candidates: list[object]) -> list[object]:
     retained = []
     for candidate in sorted(
         candidates,
-        key=lambda item: (-item.fractional_margin, item.candidate_rank, item.fractional_tracking_cfo_hz),
+        key=lambda item: (
+            -item.fractional_margin,
+            item.candidate_rank,
+            item.fractional_tracking_cfo_hz,
+        ),
     ):
         if all(
-            abs(circular_frequency_delta(candidate.fractional_tracking_cfo_hz, old.fractional_tracking_cfo_hz))
+            abs(
+                circular_frequency_delta(
+                    candidate.fractional_tracking_cfo_hz, old.fractional_tracking_cfo_hz
+                )
+            )
             >= DISTINCT_HZ
             for old in retained
         ):
@@ -71,7 +78,6 @@ def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
             if job.manifest() is None:
                 raise RuntimeError("published analysis manifest unavailable")
             for visit in job.published_visits():
-                probes = {(probe.probe_index, probe.receiver_id): probe for probe in visit.probes}
                 rx0 = [
                     candidate
                     for probe in visit.probes
@@ -95,7 +101,9 @@ def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
                 for anchor in anchors:
                     nearest = min(
                         by_receiver[opposite_receiver],
-                        key=lambda candidate: _timing_residual_samples(anchor, candidate, frame_period),
+                        key=lambda candidate: _timing_residual_samples(
+                            anchor, candidate, frame_period
+                        ),
                     )
                     timing = _timing_residual_samples(anchor, nearest, frame_period)
                     source_rows.append(
@@ -111,8 +119,10 @@ def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
                             else None,
                             "nearest_opposite_receiver_candidate": _candidate(nearest),
                             "nearest_opposite_receiver_timing_residual_samples": timing,
-                            "nearest_opposite_receiver_tracking_offset_hz": nearest.fractional_tracking_cfo_hz
-                            - anchor.fractional_tracking_cfo_hz,
+                            "nearest_opposite_receiver_tracking_offset_hz": (
+                                nearest.fractional_tracking_cfo_hz
+                                - anchor.fractional_tracking_cfo_hz
+                            ),
                             "cross_receiver_timing_within_9_samples": timing <= 9.0,
                         }
                     )
@@ -133,7 +143,8 @@ def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
                         "sample_rate_hz": sample_rate_hz,
                         "channel": target["channel"],
                         "edge": target["edge"],
-                        "time_s": (visit.valid_start_counter - visit.source_origin_counter) / sample_rate_hz,
+                        "time_s": (visit.valid_start_counter - visit.source_origin_counter)
+                        / sample_rate_hz,
                         "anchor_receiver": anchor_receiver,
                         "anchor_sources": source_rows,
                         # Kept as an explicit compatibility field for the first RX0 binding.
@@ -158,10 +169,13 @@ def run(output: Path = OUT, *, anchor_receiver: int = 0) -> dict:
                 "greedily deduplicated at 5 kHz modulo the 1/4.4 us symbol alias"
             ),
             "rx1_policy": (
-                f"no RX{opposite_receiver} timing gate for inclusion; later replay uses the RX{anchor_receiver} anchor epoch "
+                f"no RX{opposite_receiver} timing gate for inclusion; later replay uses the "
+                f"RX{anchor_receiver} anchor epoch "
                 "and a training-only raw receiver-offset estimate"
             ),
-            "strict_reference_policy": "current _phase_blind_pairs count retained only for comparison",
+            "strict_reference_policy": (
+                "current _phase_blind_pairs count retained only for comparison"
+            ),
             "by_channel": {key: dict(value) for key, value in sorted(channels.items())},
             "rows": rows,
         }

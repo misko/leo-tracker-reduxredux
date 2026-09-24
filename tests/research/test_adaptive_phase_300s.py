@@ -30,8 +30,8 @@ def test_raw_training_offset_recovers_rx1_minus_rx0_without_held_frames():
     held_iq = iq.copy()
     rng = np.random.default_rng(20260923)
     for start in starts[~train]:
-        held_iq[start : start + 2048] = (
-            rng.standard_normal((2048, 2)) + 1j * rng.standard_normal((2048, 2))
+        held_iq[start : start + 2048] = rng.standard_normal((2048, 2)) + 1j * rng.standard_normal(
+            (2048, 2)
         )
     held_mutated, _ = raw_training_offset(held_iq, starts, train, fs)
     np.testing.assert_allclose(held_mutated, recovered, rtol=0.0, atol=1e-9)

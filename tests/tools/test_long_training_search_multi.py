@@ -6,10 +6,7 @@ import numpy as np
 
 
 def subject():
-    path = (
-        Path(__file__).parents[2]
-        / "reports/2026_09_23_long_training_search_multi/search.py"
-    )
+    path = Path(__file__).parents[2] / "reports/2026_09_23_long_training_search_multi/search.py"
     spec = importlib.util.spec_from_file_location("long_training_search_multi", path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
