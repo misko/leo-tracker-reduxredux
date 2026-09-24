@@ -12,6 +12,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
     AdaptiveHopVisitV1,
 )
 from leo.scanner.adaptive_hop_analysis import (
@@ -20,6 +21,7 @@ from leo.scanner.adaptive_hop_analysis import (
     EdgeAdaptiveHopAnalysisSourceV2,
     Feature103AnalysisSourceV4,
     Feature104AnalysisSourceV5,
+    VariableDwellAnalysisSourceV6,
 )
 from leo.scanner.host_adaptive import (
     HostAdaptiveHopReceiptV2,
@@ -57,6 +59,7 @@ class _BoundReader:
         | AdaptiveHopReceiptV3
         | AdaptiveHopReceiptV4
         | AdaptiveHopReceiptV5
+        | AdaptiveHopReceiptV6
     ):
         return self._reader.session.manifest.receipt
 
@@ -75,7 +78,9 @@ class AdaptiveHopAnalysisInputStore:
     def source(self, session_id: str) -> Iterator[AdaptiveHopAnalysisSource]:
         with self._store.reader(session_id) as reader:
             model = (
-                HostAdaptiveAnalysisSourceV5
+                VariableDwellAnalysisSourceV6
+                if isinstance(reader.session.manifest.receipt, AdaptiveHopReceiptV6)
+                else HostAdaptiveAnalysisSourceV5
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV5)
                 else HostAdaptiveAnalysisSourceV4
                 if isinstance(reader.session.manifest.receipt, HostAdaptiveHopReceiptV4)

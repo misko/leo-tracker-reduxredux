@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
@@ -20,6 +20,8 @@ from leo.scanner.adaptive_hop_analysis import (
     Feature103AnalysisSourceV4,
     Feature104AnalysisConfigurationV4,
     Feature104AnalysisSourceV5,
+    VariableDwellAnalysisConfigurationV5,
+    VariableDwellAnalysisSourceV6,
     analyze_adaptive_hop_visit,
     analyze_adaptive_hop_visit_batch,
 )
@@ -31,6 +33,7 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
     Feature104AnalysisBindingV7,
+    VariableDwellAnalysisBindingV8,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveAnalysisConfigurationV2,
@@ -133,8 +136,10 @@ class AdaptiveHopAnalysisService:
             if source.receipt.session_id != session_id:
                 raise ValueError("adaptive analysis input changed requested identity")
             wide = isinstance(source, HostAdaptiveAnalysisSourceV3)
-            configuration_model: type[AdaptiveHopAnalysisConfigurationV1] = (
-                Feature104AnalysisConfigurationV4
+            configuration_model: Any = (
+                VariableDwellAnalysisConfigurationV5
+                if isinstance(source, VariableDwellAnalysisSourceV6)
+                else Feature104AnalysisConfigurationV4
                 if isinstance(source, Feature104AnalysisSourceV5)
                 else Feature103AnalysisConfigurationV3
                 if isinstance(source, Feature103AnalysisSourceV4)
@@ -151,8 +156,10 @@ class AdaptiveHopAnalysisService:
                 receiver_ids=source.receipt.plan.geometry.receiver_ids,
                 probe_stride_ms=probe_stride_ms,
             )
-            binding_model: type[AdaptiveHopAnalysisBindingV1] = (
-                Feature104AnalysisBindingV7
+            binding_model: Any = (
+                VariableDwellAnalysisBindingV8
+                if isinstance(source, VariableDwellAnalysisSourceV6)
+                else Feature104AnalysisBindingV7
                 if isinstance(source, Feature104AnalysisSourceV5)
                 else Feature103AnalysisBindingV6
                 if isinstance(source, Feature103AnalysisSourceV4)

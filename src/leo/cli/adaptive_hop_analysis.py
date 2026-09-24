@@ -103,8 +103,26 @@ def pending_sessions(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    roots = parser.add_mutually_exclusive_group(required=True)
+    roots.add_argument(
+        "--bulk-root",
+        type=Path,
+        help="Legacy combined capture and product root.",
+    )
+    roots.add_argument(
+        "--capture-root",
+        type=Path,
+        help="Existing read-only capture root, including /srv/bulk or QNAP.",
+    )
     parser.add_argument(
-        "--bulk-root", type=Path, required=True, help="Existing local recording root; never QNAP."
+        "--metrics-root",
+        type=Path,
+        help="Writable analysis root; required with --capture-root.",
+    )
+    parser.add_argument(
+        "--tracking-root",
+        type=Path,
+        help="Writable phase/tracking root; defaults to --metrics-root.",
     )
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--session-id")
@@ -143,6 +161,21 @@ def main() -> None:
         help="Do not render the overview after metrics complete; metrics stay resumable.",
     )
     args = parser.parse_args()
+    if args.capture_root is not None and args.metrics_root is None:
+        parser.error("--capture-root requires a separate --metrics-root")
+    capture_root = args.capture_root if args.capture_root is not None else args.bulk_root
+    metrics_root = args.metrics_root if args.metrics_root is not None else args.bulk_root
+    tracking_root = args.tracking_root if args.tracking_root is not None else metrics_root
+    assert capture_root is not None and metrics_root is not None and tracking_root is not None
+    if args.capture_root is not None:
+        capture = capture_root.resolve()
+        for label, output in (("metrics", metrics_root), ("tracking", tracking_root)):
+            resolved = output.resolve()
+            protected = (capture, Path("/srv/bulk"), Path("/mnt/qnap01"))
+            if any(root == resolved or root in resolved.parents for root in protected):
+                parser.error(
+                    f"--{label}-root must be report-local and outside read-only capture storage"
+                )
     try:
         if args.session_id is not None:
             TypeAdapter(SessionId).validate_python(args.session_id)
@@ -151,15 +184,19 @@ def main() -> None:
     try:
         os.nice(10)
         with ExitStack() as resources:
-            products = AdaptiveHopAnalysisStore(args.bulk_root)
+            products = AdaptiveHopAnalysisStore(metrics_root)
             resources.callback(products.close)
-            captures = AdaptiveHopIqStore(args.bulk_root, read_only=True)
+            captures = AdaptiveHopIqStore(capture_root, read_only=True)
             resources.callback(captures.close)
             session_id = args.session_id
             if args.pending:
                 session_id = next_pending(
                     captures,
-                    AdaptiveHopAnalysisPresentationStore(args.bulk_root),
+                    AdaptiveHopAnalysisPresentationStore(
+                        capture_root,
+                        analysis_root=metrics_root,
+                        tracking_root=tracking_root,
+                    ),
                     probe_stride_ms=args.probe_stride_ms,
                 )
                 if session_id is None:
@@ -203,8 +240,10 @@ def main() -> None:
 
                 try:
                     relative_phase = run_relative_phase(
-                        args.bulk_root,
+                        capture_root,
                         session_id,
+                        analysis_root=metrics_root,
+                        output_root=tracking_root,
                         probe_stride_ms=args.probe_stride_ms,
                         maximum_seconds=120,
                     )
@@ -213,9 +252,11 @@ def main() -> None:
                 payload["relative_phase_state"] = relative_phase["state"]
                 if relative_phase["state"] != "complete":
                     payload["state"] = "partial"
-            phase = AdaptiveHopAnalysisPresentationStore(args.bulk_root).phase_status(
-                session_id, probe_stride_ms=args.probe_stride_ms
-            )
+            phase = AdaptiveHopAnalysisPresentationStore(
+                capture_root,
+                analysis_root=metrics_root,
+                tracking_root=tracking_root,
+            ).phase_status(session_id, probe_stride_ms=args.probe_stride_ms)
             payload["dual_rx_phase_state"] = None if phase is None else phase.state
             print(json.dumps(payload, sort_keys=True))
     except Exception as error:
