@@ -176,6 +176,7 @@ from leo.scanner.adaptive_hop_history import (
     EdgeAdaptiveSessionDetailV4,
     Feature103SessionDetailV6,
     Feature104SessionDetailV7,
+    VariableDwellSessionDetailV8,
 )
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisPresentationReader,
@@ -194,6 +195,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV4,
     AdaptiveHistoryPageV5,
     AdaptiveHistoryPageV6,
+    AdaptiveHistoryPageV7,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
@@ -485,7 +487,8 @@ def create_app(
         | AdaptiveHistoryPageV3
         | AdaptiveHistoryPageV4
         | AdaptiveHistoryPageV5
-        | AdaptiveHistoryPageV6,
+        | AdaptiveHistoryPageV6
+        | AdaptiveHistoryPageV7,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
@@ -494,7 +497,8 @@ def create_app(
         | AdaptiveHistoryPageV3
         | AdaptiveHistoryPageV4
         | AdaptiveHistoryPageV5
-        | AdaptiveHistoryPageV6,
+        | AdaptiveHistoryPageV6
+        | AdaptiveHistoryPageV7,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
@@ -505,6 +509,7 @@ def create_app(
         | AdaptiveHistoryPageV4
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
+        | AdaptiveHistoryPageV7
     ):
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
@@ -526,6 +531,7 @@ def create_app(
             | DualRx10mAdaptiveSessionDetailV5
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
+            | VariableDwellSessionDetailV8
         ),
     )
     @v2_router.api_route(
@@ -539,11 +545,12 @@ def create_app(
             | DualRx10mAdaptiveSessionDetailV5
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
+            | VariableDwellSessionDetailV8
         ),
     )
     def adaptive_detail_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
-    ) -> AdaptiveHopSessionDetailV1 | EdgeAdaptiveSessionDetailV4 | None:
+    ) -> AdaptiveHopSessionDetailV1 | EdgeAdaptiveSessionDetailV4 | VariableDwellSessionDetailV8:
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:

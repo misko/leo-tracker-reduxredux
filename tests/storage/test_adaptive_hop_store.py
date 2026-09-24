@@ -157,6 +157,22 @@ def test_adaptive_read_only_and_missing_records_create_nothing(tmp_path):
     store.close()
 
 
+def test_history_index_covers_maximum_variable_dwell_chunk_inventory(tmp_path):
+    directory = session_path(tmp_path, "scan-fw-variable-dwell-history")
+    directory.mkdir(parents=True)
+    padding = b"x" * (900 * 1024)
+    (directory / "manifest.json").write_bytes(
+        b'{"manifest":{"chunks":"'
+        + padding
+        + b'","created_utc_ns":123,"finalized_utc_ns":456,'
+        + b'"timing":{"first_sample_estimate_utc_ns":789}}}'
+    )
+
+    store = AdaptiveHopIqStore(tmp_path, read_only=True)
+    assert store.history_index() == ((789, "scan-fw-variable-dwell-history"),)
+    store.close()
+
+
 def test_reservation_query_includes_unpublished_evidence_without_creating_paths(tmp_path):
     store = AdaptiveHopIqStore(tmp_path)
     receipt = receipt_fixture(count=0)
