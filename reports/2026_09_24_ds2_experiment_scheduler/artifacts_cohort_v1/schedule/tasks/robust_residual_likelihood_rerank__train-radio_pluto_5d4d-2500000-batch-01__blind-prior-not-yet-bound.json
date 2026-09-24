@@ -1,0 +1,51 @@
+{
+  "block_reasons": [
+    "cache_path_missing:scan-fw-3e1fe8de00bd8065",
+    "cache_path_missing:scan-fw-32ebdbd20401472f",
+    "tracking_product_not_ready:scan-fw-b97ce25ed1ac630f",
+    "tracking_product_not_ready:scan-fw-d16389a0c7b4a70f",
+    "blind_prior_not_ready:blind-prior-not-yet-bound",
+    "rejected_or_diagnostic_only",
+    "dependency_unsealed:exact_finalists_only:train-radio_pluto_5d4d-2500000-batch-01:blind-prior-not-yet-bound"
+  ],
+  "class": "diagnostic",
+  "configuration": {
+    "beam_width": 3,
+    "coarse_cell_km": 100.0,
+    "exact_finalists": 8,
+    "max_workers": 8,
+    "refinement_cells_km": [
+      25.0,
+      6.25
+    ],
+    "search_mode": "coarse_beam_then_exact_finalists"
+  },
+  "depends_on": [
+    "exact_finalists_only:train-radio_pluto_5d4d-2500000-batch-01:blind-prior-not-yet-bound"
+  ],
+  "evaluation_policy": "external_after_sealed_inference",
+  "group_id": "train-radio_pluto_5d4d-2500000-batch-01",
+  "model_id": "robust_residual_likelihood_rerank",
+  "output_path": "inference/robust_residual_likelihood_rerank/train-radio_pluto_5d4d-2500000-batch-01/blind-prior-not-yet-bound.json",
+  "partition": "train",
+  "prior": {
+    "id": "blind-prior-not-yet-bound",
+    "reference_used_for_selection": false,
+    "status": "not_ready"
+  },
+  "reference_used_for_inference": false,
+  "registry_task_method": "fixed_finalist_rerank",
+  "runner_command": null,
+  "schema": "ds2-experiment-task/v1",
+  "session_ids": [
+    "scan-fw-3e1fe8de00bd8065",
+    "scan-fw-32ebdbd20401472f",
+    "scan-fw-b97ce25ed1ac630f",
+    "scan-fw-d16389a0c7b4a70f"
+  ],
+  "source_code_paths": [
+    "reports/2026_09_24_ds1_joint_rate_search/iteration7_residual_likelihood.py"
+  ],
+  "status": "blocked",
+  "task_id": "robust_residual_likelihood_rerank:train-radio_pluto_5d4d-2500000-batch-01:blind-prior-not-yet-bound"
+}

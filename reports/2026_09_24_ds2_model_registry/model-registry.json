@@ -1,0 +1,225 @@
+{
+  "schema": "ds2-position-model-registry/v1",
+  "purpose": "Read-only DS2 rerun plan. Paths are repository-relative and were checked on 2026-09-24. No model was executed for this registry.",
+  "common_prerequisites": [
+    "A frozen DS2 session manifest, outer TRAIN/validation/test partition, and independent whole-session evaluation bundle.",
+    "A declared blind geographic prior that contains the reference site; no reference coordinate in inference tasks.",
+    "Receipt-bound causal state caches, TLE archive read access, qualified >=3 s tracks, and a consistent candidate-policy digest.",
+    "Randomized within-track TRAIN/held masks only for evaluation; held rows and reference position must not select location, association, or nuisance parameters.",
+    "Exact replay gates and machine-readable inference/evaluation artifacts, with failures retained rather than silently dropped."
+  ],
+  "models": [
+    {
+      "id": "baseline_doppler",
+      "family": "Doppler and association",
+      "description": "Tau-zero full-observation hard Doppler association with one constant CFO per track.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_timing/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1/REPORT.md", "reports/2026_09_24_ds1_train_full_timing/README.md"],
+      "task_method": "baseline",
+      "rerun_status": "primary_portable",
+      "scientific_status": "Valid reference-free baseline. It must be present in every DS2 comparison.",
+      "prerequisites": ["Common prerequisites only; tau is fixed to zero."],
+      "notes": "Use identical geographic candidates and selected-track denominator for all comparator arms."
+    },
+    {
+      "id": "shared_global_receive_time",
+      "family": "Timing",
+      "description": "One receive-time shift shared by all scans, tracks, receivers, and satellites in an input bundle; identities and CFOs are reprofiled at every point/tau.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_timing/run.py", "reports/2026_09_24_ds1/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1/REPORT.md", "reports/2026_09_24_shared_clock_grid/REPORT.md"],
+      "task_method": "shared_global_tau",
+      "rerun_status": "primary_portable",
+      "scientific_status": "Valid nuisance-model comparator. DS1 improved held RMS broadly, but tau may absorb orbit phase and location coupling; do not label it a calibrated clock.",
+      "prerequisites": ["Predeclare tau range/grid and shared scope.", "DS2 caches must retain the required receive-time margin for the full tau range."],
+      "notes": "The local-grid implementation in shared_clock_grid is DS1-cohort-specific; use the generic timing worker for DS2."
+    },
+    {
+      "id": "regularized_per_scan_time",
+      "family": "Timing",
+      "description": "One common time term plus shrinkage-regularized per-scan deviations, with association and CFO profiling.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_timing/run.py", "reports/2026_09_24_ds1_timing_ablations/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1_timing_ablations/REPORT.md", "reports/2026_09_24_ds1_train_full_timing/README.md"],
+      "task_method": "regularized_per_scan_tau",
+      "rerun_status": "conditional_portable",
+      "scientific_status": "Scientifically usable only as a predeclared regularized nuisance comparison. DS1 timing residuals improved, but location benefit was not established as a primary result.",
+      "prerequisites": ["Freeze the deviation prior scale before inspecting DS2 geographic errors.", "Report convergence, parameter/guard hits, and comparison to shared-global tau on the same DS2 candidates."],
+      "notes": "Do not choose the regularization scale from DS2 validation/test outcomes."
+    },
+    {
+      "id": "independent_per_track_time",
+      "family": "Timing",
+      "description": "Separate tau for every track, with continuous profiling inside a selected time interval.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_timing/run.py", "reports/2026_09_24_ds1_timing_ablations/fractional_per_track_diagnostic.py"],
+      "report_paths": ["reports/2026_09_24_ds1_timing_ablations/REPORT.md", "reports/2026_09_24_ds1_train_full_timing/README.md"],
+      "task_method": "independent_per_track_tau",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "Rejected as a primary position model: DS1 had 3-10% tau-boundary selections and poor transfer. It remains useful to measure timing non-identifiability.",
+      "prerequisites": ["Freeze identities and geographic candidates for the diagnostic.", "Report tau-boundary fraction and never use the result as the primary DS2 location."],
+      "notes": "Its freedom can absorb geometric and orbital error track by track."
+    },
+    {
+      "id": "causal_per_norad_orbit_rate",
+      "family": "Orbit nuisance",
+      "description": "One causal TLE-age phase-rate correction per NORAD plus track CFO; hard identities are reacquired during cached geographic screening and final candidates receive exact SGP4 replay.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_orbit_soft/run.py", "reports/2026_09_24_ds1_orbit_arm/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1_orbit_arm/REPORT.md", "reports/2026_09_24_ds1_train_full_orbit_soft/README.md"],
+      "task_method": "global_tau_per_norad_orbit_rate",
+      "rerun_status": "primary_portable",
+      "scientific_status": "Valid bounded causal nuisance model when exact replay gates pass. It is not a full identity/rate marginalization.",
+      "prerequisites": ["Receipt-bound TLE epochs for each selected NORAD.", "Predeclared rate prior/bound and exact-finalist budget.", "Pass the 0.2 Hz exact replay gate for every accepted DS2 finalist."],
+      "notes": "Run both rate-only and global-tau-plus-rate forms where the time model is in scope."
+    },
+    {
+      "id": "rate_aware_joint_geographic_screen",
+      "family": "Orbit nuisance and search",
+      "description": "Cache-rate geographic screen with hard reassociation, then exact SGP4 rate audit; rates influence location screening rather than only finalists.",
+      "code_paths": ["reports/2026_09_24_ds1_joint_rate_search/joint_rate_search.py", "reports/2026_09_24_ds1_joint_rate_search/iteration3_prefix6.py", "reports/2026_09_24_ds1_joint_rate_search/iteration4_group_union.py"],
+      "report_paths": ["reports/2026_09_24_ds1_joint_rate_search/REPORT.md", "reports/2026_09_24_ds1_iterative_subkm/REPORT.md"],
+      "task_method": "custom_joint_rate_screen",
+      "rerun_status": "conditional_portable",
+      "scientific_status": "Exact gates and causal convention are sound, but DS1-wide geographic claims were development-only. It is a strong DS2 arm if candidate union and exact budget are frozen prospectively.",
+      "prerequisites": ["Fresh DS2 prior search or a predeclared seed union; do not reuse DS1 coordinates.", "Cache/tau derivative is screening only; exact replays decide accepted finalists."],
+      "notes": "Retain the matched no-rate baseline so search-model effects are visible."
+    },
+    {
+      "id": "soft_identity_mixture",
+      "family": "Association",
+      "description": "Full-observation soft satellite mixture with an unassigned component and per-track CFO; available with fixed tau or shared global tau.",
+      "code_paths": ["reports/2026_09_24_ds1_train_full_orbit_soft/run.py"],
+      "report_paths": ["reports/standard-position-methods-2026-09-22/README.md", "reports/2026_09_24_ds1_train_full_orbit_soft/README.md"],
+      "task_method": "soft_joint_association or soft_association_global_tau",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "Implemented reference-free, but its probabilities are model-dependent rather than calibrated and it lacks a DS1-wide independent positioning qualification.",
+      "prerequisites": ["Use the full causal catalogue and preserve the unassigned component.", "Predeclare mixture priors and validate association stability/held behavior before promotion."],
+      "notes": "Soft global-time plus per-NORAD rate is explicitly unsupported and must not be silently approximated."
+    },
+    {
+      "id": "equal_weight_joint_multiscan_position",
+      "family": "Joint multi-scan",
+      "description": "One shared receiver coordinate across independent recording groups, with separate group tau, hard association, per-NORAD rates, and track CFOs; equal group objective weights.",
+      "code_paths": ["reports/2026_09_24_ds1_iteration8_joint_groups/run.py", "reports/2026_09_24_ds1_iteration9_joint_refinement/run.py", "reports/2026_09_24_ds1_iteration10_refinement/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1_iteration8_joint_groups/REPORT.md", "reports/2026_09_24_ds1_iteration10_refinement/REPORT.md", "reports/2026_09_24_ds1_iterative_subkm/REPORT.md"],
+      "task_method": "custom_equal_weight_joint",
+      "rerun_status": "primary_portable",
+      "scientific_status": "Reference-free and exact-gated, but DS1 was iterative development on reused groups. DS2 must freeze group composition, weighting, tau grid, search levels, and finalist count before evaluation.",
+      "prerequisites": ["At least two independent whole-session DS2 groups.", "A fresh DS2 initial prior/seed policy and equal group weights.", "Separate post-seal evaluation; no grid continuation selected from DS2 errors."],
+      "notes": "The shared coordinate is the main route to exploit independent satellite geometries."
+    },
+    {
+      "id": "consistent_cap800_joint_objective",
+      "family": "Joint multi-scan",
+      "description": "Joint rate-aware search whose proposal and exact stages use the same cap-800 track-weighted loss.",
+      "code_paths": ["reports/2026_09_24_ds1_iteration12_consistent_objective/run.py", "reports/2026_09_24_ds1_iteration12_consistent_objective/leave_one_scan_out.py"],
+      "report_paths": ["reports/2026_09_24_ds1_iteration12_consistent_objective/"],
+      "task_method": "custom_consistent_joint",
+      "rerun_status": "conditional_portable",
+      "scientific_status": "Mechanically implemented with tests, but the DS1 artifact is still an uncommitted development arm and its seed set is DS1-specific. Treat it as a prospective DS2 comparator, not an established winner.",
+      "prerequisites": ["Predeclare DS2 seed-generation policy rather than loading iteration-8/9/10 seeds.", "Use the same cap, weights, tau shortlist, and exact objective throughout; run its leave-one-scan-out check."],
+      "notes": "This directly tests whether proposal/exact rank mismatch was a DS1 bottleneck."
+    },
+    {
+      "id": "shared_norad_rate_joint",
+      "family": "Joint multi-scan orbit nuisance",
+      "description": "One causal rate for a NORAD observed in more than one DS2 group, with group-local CFOs and exact supports.",
+      "code_paths": ["reports/2026_09_24_ds1_iteration12_shared_norad/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1_iteration12_shared_norad/REPORT.md"],
+      "task_method": "custom_shared_norad_rate",
+      "rerun_status": "conditional_portable",
+      "scientific_status": "Scientifically valid only when selected DS2 supports have repeated NORADs. DS1's two groups had zero selected NORAD overlap, so its result was a block-diagonal equivalence check.",
+      "prerequisites": ["Choose DS2 groups with repeated selected satellites or report no overlap.", "Keep one shared rate keyed only by NORAD and exact replay gates for all groups."],
+      "notes": "Do not spend the fresh-exact-refit budget if overlap is zero."
+    },
+    {
+      "id": "regularized_common_plus_session_scale",
+      "family": "Receiver nuisance",
+      "description": "Exact causal rate fit plus one common fractional Doppler scale and shrinkage-regularized per-session scale deviations, with track CFOs.",
+      "code_paths": ["reports/2026_09_24_ds1_iteration12_session_scale/run.py", "reports/2026_09_24_ds1_iteration12_session_scale/refine.py"],
+      "report_paths": ["reports/2026_09_24_ds1_iteration12_session_scale/REPORT.md", "reports/2026_09_24_ds1_iteration6b_session_scale/REPORT.md"],
+      "task_method": "custom_block_coordinate_session_scale",
+      "rerun_status": "conditional_portable",
+      "scientific_status": "The repaired block-coordinate fit converged and cleared guards. It reduced DS1 group losses, but matched rate-only selection chose the same coordinate, so no position-selection benefit is established.",
+      "prerequisites": ["Freeze 500 ppm common/session priors, +/-2000 ppm guard, scalar-rate/scale block stop rule, and local grid before DS2.", "Require matched rate-only loss, guard, convergence, and alternate-start diagnostics."],
+      "notes": "Original iteration 6B joint L-BFGS-B is rejected for nonconvergence; use only the repaired runner."
+    },
+    {
+      "id": "learned_pointing_cone_quantiles",
+      "family": "LNB geometry and orientation",
+      "description": "Fits near-zenith common orientation grid and reports duration-weighted cone quantiles for frozen Doppler identities/locations.",
+      "code_paths": ["reports/2026_09_23_train_pointing_cone/run.py", "reports/2026_09_23_joint_cone_profile/prototype.py"],
+      "report_paths": ["reports/2026_09_23_train_pointing_cone/REPORT.md", "reports/2026_09_23_joint_cone_profile/prototype_results.json"],
+      "task_method": "geometry_diagnostic",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "Useful for checking whether a DS2 location/association admits a plausible upward-looking mount. It does not itself estimate position or identify RX-to-LNB mapping.",
+      "prerequisites": ["DS2 receiver geometry, provisional RX-to-LNB mapping, ENU conversion, upward tilt bound, and frozen candidate identities/locations.", "Report both mapping symmetries and endpoint as well as midpoint coverage."],
+      "notes": "Orientation grid and broad required cones limit its spatial resolving power."
+    },
+    {
+      "id": "fixed_hard_cone_orientation",
+      "family": "LNB geometry and orientation",
+      "description": "Optimizes a common constrained mount orientation, applies hard cone support, and refits candidates at fixed positions; compares receiver-label controls.",
+      "code_paths": ["reports/2026_09_23_train_fixed_cone/run.py", "reports/2026_09_23_joint_cone_profile/staged_run.py"],
+      "report_paths": ["reports/2026_09_23_train_fixed_cone/REPORT.md", "reports/2026_09_23_joint_cone_profile/staged_results.json"],
+      "task_method": "fixed_geometry_diagnostic",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "A valid geometry consistency test, not a calibrated antenna or position model. It uses frozen cells and has broad/plateaued orientation optima.",
+      "prerequisites": ["Same geometry prerequisites as pointing-cone quantiles.", "Predeclare cone half-angle, orientation grid, all-track unmatched penalty, and mapping-control protocol."],
+      "notes": "The historical fixed-cone widths are half-angles of 10, 15, 20, and 30 degrees, not full FOV values."
+    },
+    {
+      "id": "staged_full_fov_cone_sweep",
+      "family": "LNB geometry and orientation",
+      "description": "Fixed-position common-orientation association sweep. Implemented full-FOV values are 10, 20, 25, 30, 40, 50, 60, 70, 80, and 90 degrees; the earlier compatibility subset is 10, 25, and 30 degrees.",
+      "code_paths": ["reports/2026_09_23_staged_cone_width_sweep/run.py", "reports/2026_09_23_staged_cone_to90/run.py"],
+      "report_paths": ["reports/2026_09_23_staged_cone_width_sweep/REPORT.md", "reports/2026_09_23_staged_cone_to90/REPORT.md"],
+      "task_method": "geometry_width_sweep",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "Valid support/association sensitivity sweep. Narrow 10-degree full FOV rejected most DS1 duration support; widths are not a calibrated gain model and do not estimate geographic position.",
+      "prerequisites": ["Frozen DS2 positions/identities and complete sampled direction tracks.", "Keep all-track unmatched penalties; do not compare supported-only RMS as a position score."],
+      "notes": "Run 10/20/25/30/40/50 first; extend through 90 only as a support diagnostic."
+    },
+    {
+      "id": "local_fitted_full_fov_cone_position",
+      "family": "LNB geometry and position",
+      "description": "At every geographic point, fits a constrained common orientation and hard-cone association. Implemented full-FOV variants are 10, 20, 25, 30, 40, and 50 degrees alongside ordinary Doppler.",
+      "code_paths": ["reports/2026_09_24_local_cone_grid/run.py", "reports/2026_09_24_local_cone_grid/evaluate.py"],
+      "report_paths": ["reports/2026_09_24_local_cone_grid/REPORT.md"],
+      "task_method": "local_fitted_cone_grid",
+      "rerun_status": "diagnostic_only",
+      "scientific_status": "Reference-free local position search is implemented, but every cone-constrained DS1 result was worse than ordinary Doppler. Its current code hardcodes DS1 centers/caches and must be parameterized before DS2.",
+      "prerequisites": ["Parameterize DS2 manifests, blind prior regions, receiver metadata, and cache roots.", "Freeze each full-FOV width, 15-degree tilt limit, orientation grid, regional beam, and unmatched-track penalty before execution."],
+      "notes": "Best use is a predeclared geometry stress test alongside the baseline, not the DS2 primary location estimator."
+    },
+    {
+      "id": "robust_residual_likelihood_rerank",
+      "family": "Residual model",
+      "description": "Gaussian learned-scale and AR(1)+Student-t reranking of fixed exact finalists.",
+      "code_paths": ["reports/2026_09_24_ds1_joint_rate_search/iteration7_residual_likelihood.py"],
+      "report_paths": ["reports/2026_09_24_ds1_joint_rate_search/REPORT.md", "reports/2026_09_24_ds1_iterative_subkm/REPORT.md"],
+      "task_method": "fixed_finalist_rerank",
+      "rerun_status": "rejected_or_diagnostic",
+      "scientific_status": "DS1 Gaussian rerank retained the rate-only winner; AR(1)+Student-t worsened group 00. Do not make it a primary DS2 arm.",
+      "prerequisites": ["If rerun, freeze finalist set and likelihood hyperparameters before DS2 evaluation."],
+      "notes": "Useful only to diagnose residual correlation after the main exact selection."
+    },
+    {
+      "id": "legacy_joint_session_scale_lbfgsb",
+      "family": "Receiver nuisance",
+      "description": "Original simultaneous rate/common-scale/session-scale L-BFGS-B formulation.",
+      "code_paths": ["reports/2026_09_24_ds1_iteration6b_session_scale/run.py"],
+      "report_paths": ["reports/2026_09_24_ds1_iteration6b_session_scale/REPORT.md"],
+      "task_method": "legacy_session_scale",
+      "rerun_status": "rejected",
+      "scientific_status": "All DS1 candidates exceeded the function-evaluation limit. No coordinate is portable from this formulation.",
+      "prerequisites": ["None: do not rerun. Use regularized_common_plus_session_scale instead."],
+      "notes": "Kept only for reproducibility of the rejection."
+    }
+  ],
+  "unsupported_combinations": [
+    {
+      "id": "soft_global_time_plus_per_norad_rate",
+      "code_path": "reports/2026_09_24_ds1_train_full_orbit_soft/run.py",
+      "status": "not_implemented",
+      "reason": "The runner explicitly rejects this combination; it must not be represented as an available DS2 arm."
+    }
+  ]
+}

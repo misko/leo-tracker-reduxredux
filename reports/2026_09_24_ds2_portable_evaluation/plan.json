@@ -1,0 +1,5330 @@
+{
+  "dataset_sha256": "sha256:45cb4164697f99ce9d7cee68ee9a17374ade9af9234e965de6dd3235af556020",
+  "joint_task_count": 6,
+  "reference_coordinate_present": false,
+  "schema": "ds2-portable-development-plan/v1",
+  "single_scan_task_count": 100,
+  "task_count": 106,
+  "tasks": [
+    {
+      "group_id": "ds2-single-scan-fw-f3ce5fe73aa40506",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-f3ce5fe73aa40506__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "task_id": "single__scan-fw-f3ce5fe73aa40506__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-f3ce5fe73aa40506",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-f3ce5fe73aa40506__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "task_id": "single__scan-fw-f3ce5fe73aa40506__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-f3ce5fe73aa40506",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-f3ce5fe73aa40506__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "task_id": "single__scan-fw-f3ce5fe73aa40506__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-f3ce5fe73aa40506",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-f3ce5fe73aa40506__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "task_id": "single__scan-fw-f3ce5fe73aa40506__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-f3ce5fe73aa40506",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-f3ce5fe73aa40506__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "task_id": "single__scan-fw-f3ce5fe73aa40506__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-9f3d5067d149118e",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-9f3d5067d149118e__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e"
+      ],
+      "task_id": "single__scan-fw-9f3d5067d149118e__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-9f3d5067d149118e",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-9f3d5067d149118e__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e"
+      ],
+      "task_id": "single__scan-fw-9f3d5067d149118e__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-9f3d5067d149118e",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-9f3d5067d149118e__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e"
+      ],
+      "task_id": "single__scan-fw-9f3d5067d149118e__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-9f3d5067d149118e",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-9f3d5067d149118e__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e"
+      ],
+      "task_id": "single__scan-fw-9f3d5067d149118e__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-9f3d5067d149118e",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-9f3d5067d149118e__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e"
+      ],
+      "task_id": "single__scan-fw-9f3d5067d149118e__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-cfcf667726e80735",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-cfcf667726e80735__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-cfcf667726e80735"
+      ],
+      "task_id": "single__scan-fw-cfcf667726e80735__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-cfcf667726e80735",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-cfcf667726e80735__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-cfcf667726e80735"
+      ],
+      "task_id": "single__scan-fw-cfcf667726e80735__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-cfcf667726e80735",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-cfcf667726e80735__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-cfcf667726e80735"
+      ],
+      "task_id": "single__scan-fw-cfcf667726e80735__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-cfcf667726e80735",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-cfcf667726e80735__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-cfcf667726e80735"
+      ],
+      "task_id": "single__scan-fw-cfcf667726e80735__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-cfcf667726e80735",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-cfcf667726e80735__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-cfcf667726e80735"
+      ],
+      "task_id": "single__scan-fw-cfcf667726e80735__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8d1424f9297d34fb",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8d1424f9297d34fb__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb"
+      ],
+      "task_id": "single__scan-fw-8d1424f9297d34fb__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8d1424f9297d34fb",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8d1424f9297d34fb__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb"
+      ],
+      "task_id": "single__scan-fw-8d1424f9297d34fb__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8d1424f9297d34fb",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8d1424f9297d34fb__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb"
+      ],
+      "task_id": "single__scan-fw-8d1424f9297d34fb__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8d1424f9297d34fb",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8d1424f9297d34fb__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb"
+      ],
+      "task_id": "single__scan-fw-8d1424f9297d34fb__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8d1424f9297d34fb",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8d1424f9297d34fb__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb"
+      ],
+      "task_id": "single__scan-fw-8d1424f9297d34fb__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-573f6201b09f5ba4",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-573f6201b09f5ba4__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-573f6201b09f5ba4"
+      ],
+      "task_id": "single__scan-fw-573f6201b09f5ba4__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-573f6201b09f5ba4",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-573f6201b09f5ba4__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-573f6201b09f5ba4"
+      ],
+      "task_id": "single__scan-fw-573f6201b09f5ba4__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-573f6201b09f5ba4",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-573f6201b09f5ba4__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-573f6201b09f5ba4"
+      ],
+      "task_id": "single__scan-fw-573f6201b09f5ba4__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-573f6201b09f5ba4",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-573f6201b09f5ba4__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-573f6201b09f5ba4"
+      ],
+      "task_id": "single__scan-fw-573f6201b09f5ba4__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-573f6201b09f5ba4",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-573f6201b09f5ba4__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-573f6201b09f5ba4"
+      ],
+      "task_id": "single__scan-fw-573f6201b09f5ba4__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d30c80bd75815223__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d30c80bd75815223"
+      ],
+      "task_id": "single__scan-fw-d30c80bd75815223__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d30c80bd75815223__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d30c80bd75815223"
+      ],
+      "task_id": "single__scan-fw-d30c80bd75815223__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d30c80bd75815223__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d30c80bd75815223"
+      ],
+      "task_id": "single__scan-fw-d30c80bd75815223__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d30c80bd75815223__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d30c80bd75815223"
+      ],
+      "task_id": "single__scan-fw-d30c80bd75815223__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d30c80bd75815223",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d30c80bd75815223__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d30c80bd75815223"
+      ],
+      "task_id": "single__scan-fw-d30c80bd75815223__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b6659f13921e711b",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b6659f13921e711b__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b6659f13921e711b"
+      ],
+      "task_id": "single__scan-fw-b6659f13921e711b__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b6659f13921e711b",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b6659f13921e711b__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b6659f13921e711b"
+      ],
+      "task_id": "single__scan-fw-b6659f13921e711b__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b6659f13921e711b",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b6659f13921e711b__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b6659f13921e711b"
+      ],
+      "task_id": "single__scan-fw-b6659f13921e711b__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b6659f13921e711b",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b6659f13921e711b__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b6659f13921e711b"
+      ],
+      "task_id": "single__scan-fw-b6659f13921e711b__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b6659f13921e711b",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b6659f13921e711b__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b6659f13921e711b"
+      ],
+      "task_id": "single__scan-fw-b6659f13921e711b__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-af33f52c96a606b7",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-af33f52c96a606b7__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-af33f52c96a606b7"
+      ],
+      "task_id": "single__scan-fw-af33f52c96a606b7__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-af33f52c96a606b7",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-af33f52c96a606b7__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-af33f52c96a606b7"
+      ],
+      "task_id": "single__scan-fw-af33f52c96a606b7__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-af33f52c96a606b7",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-af33f52c96a606b7__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-af33f52c96a606b7"
+      ],
+      "task_id": "single__scan-fw-af33f52c96a606b7__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-af33f52c96a606b7",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-af33f52c96a606b7__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-af33f52c96a606b7"
+      ],
+      "task_id": "single__scan-fw-af33f52c96a606b7__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-af33f52c96a606b7",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-af33f52c96a606b7__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-af33f52c96a606b7"
+      ],
+      "task_id": "single__scan-fw-af33f52c96a606b7__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-412a75e0665c8e93",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-412a75e0665c8e93__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-412a75e0665c8e93"
+      ],
+      "task_id": "single__scan-fw-412a75e0665c8e93__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-412a75e0665c8e93",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-412a75e0665c8e93__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-412a75e0665c8e93"
+      ],
+      "task_id": "single__scan-fw-412a75e0665c8e93__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-412a75e0665c8e93",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-412a75e0665c8e93__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-412a75e0665c8e93"
+      ],
+      "task_id": "single__scan-fw-412a75e0665c8e93__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-412a75e0665c8e93",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-412a75e0665c8e93__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-412a75e0665c8e93"
+      ],
+      "task_id": "single__scan-fw-412a75e0665c8e93__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-412a75e0665c8e93",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-412a75e0665c8e93__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-412a75e0665c8e93"
+      ],
+      "task_id": "single__scan-fw-412a75e0665c8e93__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-7fc0a2494f8caa5d",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-7fc0a2494f8caa5d__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-7fc0a2494f8caa5d"
+      ],
+      "task_id": "single__scan-fw-7fc0a2494f8caa5d__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-7fc0a2494f8caa5d",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-7fc0a2494f8caa5d__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-7fc0a2494f8caa5d"
+      ],
+      "task_id": "single__scan-fw-7fc0a2494f8caa5d__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-7fc0a2494f8caa5d",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-7fc0a2494f8caa5d__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-7fc0a2494f8caa5d"
+      ],
+      "task_id": "single__scan-fw-7fc0a2494f8caa5d__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-7fc0a2494f8caa5d",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-7fc0a2494f8caa5d__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-7fc0a2494f8caa5d"
+      ],
+      "task_id": "single__scan-fw-7fc0a2494f8caa5d__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-7fc0a2494f8caa5d",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-7fc0a2494f8caa5d__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-7fc0a2494f8caa5d"
+      ],
+      "task_id": "single__scan-fw-7fc0a2494f8caa5d__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-51dadc5c6aa0e74b",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-51dadc5c6aa0e74b__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-51dadc5c6aa0e74b"
+      ],
+      "task_id": "single__scan-fw-51dadc5c6aa0e74b__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-51dadc5c6aa0e74b",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-51dadc5c6aa0e74b__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-51dadc5c6aa0e74b"
+      ],
+      "task_id": "single__scan-fw-51dadc5c6aa0e74b__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-51dadc5c6aa0e74b",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-51dadc5c6aa0e74b__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-51dadc5c6aa0e74b"
+      ],
+      "task_id": "single__scan-fw-51dadc5c6aa0e74b__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-51dadc5c6aa0e74b",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-51dadc5c6aa0e74b__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-51dadc5c6aa0e74b"
+      ],
+      "task_id": "single__scan-fw-51dadc5c6aa0e74b__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-51dadc5c6aa0e74b",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-51dadc5c6aa0e74b__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-51dadc5c6aa0e74b"
+      ],
+      "task_id": "single__scan-fw-51dadc5c6aa0e74b__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-524e4ca2638f3601",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-524e4ca2638f3601__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-524e4ca2638f3601"
+      ],
+      "task_id": "single__scan-fw-524e4ca2638f3601__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-524e4ca2638f3601",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-524e4ca2638f3601__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-524e4ca2638f3601"
+      ],
+      "task_id": "single__scan-fw-524e4ca2638f3601__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-524e4ca2638f3601",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-524e4ca2638f3601__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-524e4ca2638f3601"
+      ],
+      "task_id": "single__scan-fw-524e4ca2638f3601__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-524e4ca2638f3601",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-524e4ca2638f3601__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-524e4ca2638f3601"
+      ],
+      "task_id": "single__scan-fw-524e4ca2638f3601__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-524e4ca2638f3601",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-524e4ca2638f3601__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-524e4ca2638f3601"
+      ],
+      "task_id": "single__scan-fw-524e4ca2638f3601__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8634c361a1e38331",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8634c361a1e38331__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8634c361a1e38331"
+      ],
+      "task_id": "single__scan-fw-8634c361a1e38331__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8634c361a1e38331",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8634c361a1e38331__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8634c361a1e38331"
+      ],
+      "task_id": "single__scan-fw-8634c361a1e38331__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8634c361a1e38331",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8634c361a1e38331__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8634c361a1e38331"
+      ],
+      "task_id": "single__scan-fw-8634c361a1e38331__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8634c361a1e38331",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8634c361a1e38331__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8634c361a1e38331"
+      ],
+      "task_id": "single__scan-fw-8634c361a1e38331__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-8634c361a1e38331",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-8634c361a1e38331__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-8634c361a1e38331"
+      ],
+      "task_id": "single__scan-fw-8634c361a1e38331__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-3e1fe8de00bd8065",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-3e1fe8de00bd8065__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-3e1fe8de00bd8065"
+      ],
+      "task_id": "single__scan-fw-3e1fe8de00bd8065__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-3e1fe8de00bd8065",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-3e1fe8de00bd8065__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-3e1fe8de00bd8065"
+      ],
+      "task_id": "single__scan-fw-3e1fe8de00bd8065__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-3e1fe8de00bd8065",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-3e1fe8de00bd8065__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-3e1fe8de00bd8065"
+      ],
+      "task_id": "single__scan-fw-3e1fe8de00bd8065__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-3e1fe8de00bd8065",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-3e1fe8de00bd8065__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-3e1fe8de00bd8065"
+      ],
+      "task_id": "single__scan-fw-3e1fe8de00bd8065__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-3e1fe8de00bd8065",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-3e1fe8de00bd8065__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-3e1fe8de00bd8065"
+      ],
+      "task_id": "single__scan-fw-3e1fe8de00bd8065__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d8925d2a4c00a806",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d8925d2a4c00a806__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d8925d2a4c00a806"
+      ],
+      "task_id": "single__scan-fw-d8925d2a4c00a806__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d8925d2a4c00a806",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d8925d2a4c00a806__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d8925d2a4c00a806"
+      ],
+      "task_id": "single__scan-fw-d8925d2a4c00a806__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d8925d2a4c00a806",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d8925d2a4c00a806__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d8925d2a4c00a806"
+      ],
+      "task_id": "single__scan-fw-d8925d2a4c00a806__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d8925d2a4c00a806",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d8925d2a4c00a806__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d8925d2a4c00a806"
+      ],
+      "task_id": "single__scan-fw-d8925d2a4c00a806__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d8925d2a4c00a806",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d8925d2a4c00a806__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d8925d2a4c00a806"
+      ],
+      "task_id": "single__scan-fw-d8925d2a4c00a806__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-12cb866cbc37adb9",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-12cb866cbc37adb9__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-12cb866cbc37adb9"
+      ],
+      "task_id": "single__scan-fw-12cb866cbc37adb9__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-12cb866cbc37adb9",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-12cb866cbc37adb9__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-12cb866cbc37adb9"
+      ],
+      "task_id": "single__scan-fw-12cb866cbc37adb9__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-12cb866cbc37adb9",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-12cb866cbc37adb9__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-12cb866cbc37adb9"
+      ],
+      "task_id": "single__scan-fw-12cb866cbc37adb9__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-12cb866cbc37adb9",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-12cb866cbc37adb9__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-12cb866cbc37adb9"
+      ],
+      "task_id": "single__scan-fw-12cb866cbc37adb9__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-12cb866cbc37adb9",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-12cb866cbc37adb9__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-12cb866cbc37adb9"
+      ],
+      "task_id": "single__scan-fw-12cb866cbc37adb9__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-98fb8c5147c1c77b",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-98fb8c5147c1c77b__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-98fb8c5147c1c77b"
+      ],
+      "task_id": "single__scan-fw-98fb8c5147c1c77b__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-98fb8c5147c1c77b",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-98fb8c5147c1c77b__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-98fb8c5147c1c77b"
+      ],
+      "task_id": "single__scan-fw-98fb8c5147c1c77b__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-98fb8c5147c1c77b",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-98fb8c5147c1c77b__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-98fb8c5147c1c77b"
+      ],
+      "task_id": "single__scan-fw-98fb8c5147c1c77b__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-98fb8c5147c1c77b",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-98fb8c5147c1c77b__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-98fb8c5147c1c77b"
+      ],
+      "task_id": "single__scan-fw-98fb8c5147c1c77b__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-98fb8c5147c1c77b",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-98fb8c5147c1c77b__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-98fb8c5147c1c77b"
+      ],
+      "task_id": "single__scan-fw-98fb8c5147c1c77b__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-32ebdbd20401472f",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-32ebdbd20401472f__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-32ebdbd20401472f"
+      ],
+      "task_id": "single__scan-fw-32ebdbd20401472f__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-32ebdbd20401472f",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-32ebdbd20401472f__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-32ebdbd20401472f"
+      ],
+      "task_id": "single__scan-fw-32ebdbd20401472f__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-32ebdbd20401472f",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-32ebdbd20401472f__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-32ebdbd20401472f"
+      ],
+      "task_id": "single__scan-fw-32ebdbd20401472f__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-32ebdbd20401472f",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-32ebdbd20401472f__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-32ebdbd20401472f"
+      ],
+      "task_id": "single__scan-fw-32ebdbd20401472f__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-32ebdbd20401472f",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-32ebdbd20401472f__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-32ebdbd20401472f"
+      ],
+      "task_id": "single__scan-fw-32ebdbd20401472f__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b97ce25ed1ac630f",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b97ce25ed1ac630f__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b97ce25ed1ac630f"
+      ],
+      "task_id": "single__scan-fw-b97ce25ed1ac630f__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b97ce25ed1ac630f",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b97ce25ed1ac630f__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b97ce25ed1ac630f"
+      ],
+      "task_id": "single__scan-fw-b97ce25ed1ac630f__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b97ce25ed1ac630f",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b97ce25ed1ac630f__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b97ce25ed1ac630f"
+      ],
+      "task_id": "single__scan-fw-b97ce25ed1ac630f__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b97ce25ed1ac630f",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b97ce25ed1ac630f__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b97ce25ed1ac630f"
+      ],
+      "task_id": "single__scan-fw-b97ce25ed1ac630f__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-b97ce25ed1ac630f",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-b97ce25ed1ac630f__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-b97ce25ed1ac630f"
+      ],
+      "task_id": "single__scan-fw-b97ce25ed1ac630f__soft-identity"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d16389a0c7b4a70f",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d16389a0c7b4a70f__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "single__scan-fw-d16389a0c7b4a70f__baseline"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d16389a0c7b4a70f",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d16389a0c7b4a70f__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "single__scan-fw-d16389a0c7b4a70f__shared-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d16389a0c7b4a70f",
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d16389a0c7b4a70f__causal-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "single__scan-fw-d16389a0c7b4a70f__causal-rate"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d16389a0c7b4a70f",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d16389a0c7b4a70f__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "single__scan-fw-d16389a0c7b4a70f__independent-track-time"
+    },
+    {
+      "group_id": "ds2-single-scan-fw-d16389a0c7b4a70f",
+      "method": "soft_joint_association",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": false,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/single__scan-fw-d16389a0c7b4a70f__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "single__scan-fw-d16389a0c7b4a70f__soft-identity"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "baseline",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__baseline.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__baseline"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "shared_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__shared-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__shared-time"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "regularized_per_scan_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__regularized-per-scan-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__regularized-per-scan-time"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "independent_per_track_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__independent-track-time.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__independent-track-time"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "soft_association_global_tau",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__soft-identity.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__soft-identity"
+    },
+    {
+      "group_id": "ds2-sept24-all",
+      "method": "global_tau_per_norad_orbit_rate",
+      "options": {
+        "beam_width": 3,
+        "equal_session_weight": true,
+        "exact_rate_finalists": 2,
+        "exact_rate_workers": 2,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "per_scan_delta_limit_s": 5.0,
+        "per_scan_penalty_weight": 0.01,
+        "per_scan_sigma_s": 1.0,
+        "search_levels_km": [
+          100.0,
+          25.0,
+          6.25,
+          1.5625
+        ],
+        "tau_grid_s": [
+          -5.0,
+          -3.0,
+          -1.0,
+          0.0,
+          1.0,
+          3.0,
+          5.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_portable_evaluation/inference/joint-all20__equal-weight-joint-rate.json",
+      "partition": "development",
+      "prior": {
+        "lat": 38.5816,
+        "lon": -121.4944,
+        "name": "sacramento-250km-predeclared",
+        "radius_km": 250.0,
+        "reference_used_for_selection": false
+      },
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ],
+      "task_id": "joint-all20__equal-weight-joint-rate"
+    }
+  ]
+}

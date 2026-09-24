@@ -1,0 +1,600 @@
+{
+  "association_policy": {
+    "blind_inference_requirement": "recompute candidate predictions at every tested geographic cell; do not freeze a prior location's candidate identities",
+    "identity_claims_permitted": false,
+    "input": "sealed V14 tracklet and candidate-review evidence"
+  },
+  "backfill_plan_sha256": "sha256:546ede9be98839bd5d129c563784e0cd3f652dd6d41bf99b0a353d78a5b99ea2",
+  "blind_priors": [
+    {
+      "center_wgs84": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944
+      },
+      "id": "sacramento-250km",
+      "radius_km": 250.0,
+      "reference_used_for_selection": false,
+      "source": "fixed administrative-centre initialization"
+    }
+  ],
+  "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+  "cohorts": [
+    {
+      "cohort_id": "radio_pluto_19f2-2500000",
+      "geometry_session_ids": [
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735"
+      ],
+      "joint_inference_eligible": true,
+      "radio_id": "radio_pluto_19f2",
+      "sample_rate_hz": 2500000,
+      "session_count": 2,
+      "session_ids": [
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735"
+      ]
+    },
+    {
+      "cohort_id": "radio_pluto_19f2-15000000",
+      "geometry_session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ],
+      "joint_inference_eligible": false,
+      "radio_id": "radio_pluto_19f2",
+      "sample_rate_hz": 15000000,
+      "session_count": 1,
+      "session_ids": [
+        "scan-fw-f3ce5fe73aa40506"
+      ]
+    },
+    {
+      "cohort_id": "radio_pluto_5d4d-2500000",
+      "geometry_session_ids": [],
+      "joint_inference_eligible": true,
+      "radio_id": "radio_pluto_5d4d",
+      "sample_rate_hz": 2500000,
+      "session_count": 17,
+      "session_ids": [
+        "scan-fw-8d1424f9297d34fb",
+        "scan-fw-573f6201b09f5ba4",
+        "scan-fw-d30c80bd75815223",
+        "scan-fw-b6659f13921e711b",
+        "scan-fw-af33f52c96a606b7",
+        "scan-fw-412a75e0665c8e93",
+        "scan-fw-7fc0a2494f8caa5d",
+        "scan-fw-51dadc5c6aa0e74b",
+        "scan-fw-524e4ca2638f3601",
+        "scan-fw-8634c361a1e38331",
+        "scan-fw-3e1fe8de00bd8065",
+        "scan-fw-d8925d2a4c00a806",
+        "scan-fw-12cb866cbc37adb9",
+        "scan-fw-98fb8c5147c1c77b",
+        "scan-fw-32ebdbd20401472f",
+        "scan-fw-b97ce25ed1ac630f",
+        "scan-fw-d16389a0c7b4a70f"
+      ]
+    }
+  ],
+  "corpus_role": "development_evaluation_only",
+  "counts": {
+    "cohorts": 3,
+    "completed_tracking_products": 20,
+    "geometry_conditional_sessions": 3,
+    "sessions": 20
+  },
+  "geometry_policy": {
+    "eligible_sessions": [
+      "scan-fw-f3ce5fe73aa40506",
+      "scan-fw-9f3d5067d149118e",
+      "scan-fw-cfcf667726e80735"
+    ],
+    "geometry_and_cone_models": "only sessions with explicit capture-time geometry",
+    "mapping_policy": "symmetric_two_mapping_marginalization required",
+    "ordinary_models": "all 20 completed sessions",
+    "other_sessions": "not geometry eligible; do not infer fixture from radio identity"
+  },
+  "inventory_manifest_sha256": "sha256:35a45340c020ddd058f8694002f7c860f6c0752940925eefee371c864c37e2fd",
+  "manifest_sealed": true,
+  "observed_utc": "2026-09-24T16:22:43.485690Z",
+  "position_evaluation": "external_post_inference_only",
+  "reference_coordinate_in_manifest": false,
+  "schema": "ds2-whole-corpus-manifest/v1",
+  "sessions": [
+    {
+      "captured_at": "2026-09-24T00:00:02.155440Z",
+      "input_manifest_sha256": "sha256:280b5b9bdb08b89d0e4edbe08e43a26fc76c9070c047e047c3820c27bacdf2d3",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_geometry": {
+        "assignments": [
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 0,
+            "slot_id": "negative-x"
+          },
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 1,
+            "slot_id": "positive-x"
+          }
+        ],
+        "capture_binding_digest": "sha256:55e5a117d885e8ac158a0a41895b66cb5be881d66630d2765fccf5711a21643f",
+        "eligibility": "conditional_provisional_mapping",
+        "fixture_digest": "sha256:6e6f8798e1465691fdb6ad973bc37443651408c4060f091144b1a470fb0817a4",
+        "fixture_part_id": "LT3D-001A",
+        "geometry_authority_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/src/leo/station/gauss-r21-lt3d-001a-20260920-v1.json",
+        "geometry_authority_sha256": "sha256:758262ecc67044065e2e2facc46f2cc77997883eabf0f7f1a4c5fa761fba65f7",
+        "mapping_uncertainty": {
+          "not_permitted": "reporting a selected RX-to-slot permutation as calibrated fact",
+          "required_treatment": "symmetric_two_mapping_marginalization",
+          "status": "provisional"
+        },
+        "model_use": "geometry and cone diagnostics only; marginalize both RX-to-slot permutations",
+        "station_geometry_digest": "sha256:006ff0cbaab43b3700e75b181733c0576d23747d4d37b025061101601e75c0d0"
+      },
+      "sample_rate_hz": 15000000,
+      "session_id": "scan-fw-f3ce5fe73aa40506",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-f3ce5fe73aa40506.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:0be5925e589f7974cbedb68d941951516ac06e84f8527858a9fb6f66f21bdc37"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T00:10:02.219855Z",
+      "input_manifest_sha256": "sha256:04ee2c90b4b6f7a5767ce2dbc790f5dc46921ae60e59b53d8b1d761b3d630605",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_geometry": {
+        "assignments": [
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 0,
+            "slot_id": "negative-x"
+          },
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 1,
+            "slot_id": "positive-x"
+          }
+        ],
+        "capture_binding_digest": "sha256:55e5a117d885e8ac158a0a41895b66cb5be881d66630d2765fccf5711a21643f",
+        "eligibility": "conditional_provisional_mapping",
+        "fixture_digest": "sha256:6e6f8798e1465691fdb6ad973bc37443651408c4060f091144b1a470fb0817a4",
+        "fixture_part_id": "LT3D-001A",
+        "geometry_authority_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/src/leo/station/gauss-r21-lt3d-001a-20260920-v1.json",
+        "geometry_authority_sha256": "sha256:758262ecc67044065e2e2facc46f2cc77997883eabf0f7f1a4c5fa761fba65f7",
+        "mapping_uncertainty": {
+          "not_permitted": "reporting a selected RX-to-slot permutation as calibrated fact",
+          "required_treatment": "symmetric_two_mapping_marginalization",
+          "status": "provisional"
+        },
+        "model_use": "geometry and cone diagnostics only; marginalize both RX-to-slot permutations",
+        "station_geometry_digest": "sha256:006ff0cbaab43b3700e75b181733c0576d23747d4d37b025061101601e75c0d0"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-9f3d5067d149118e",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-9f3d5067d149118e.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:f8e82c08c03bc10e387beb9409818a26bd241d37cdb1a9b0a381c810e589059a"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T00:20:01.896310Z",
+      "input_manifest_sha256": "sha256:eed6dad85b92630f26bae9dee9fce06be855748854e120eb1b30f954e2346f69",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_geometry": {
+        "assignments": [
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 0,
+            "slot_id": "negative-x"
+          },
+          {
+            "mapping_evidence": "receiver-order mapping; physical left/right cable trace not yet recorded",
+            "mapping_status": "provisional",
+            "receiver_id": 1,
+            "slot_id": "positive-x"
+          }
+        ],
+        "capture_binding_digest": "sha256:55e5a117d885e8ac158a0a41895b66cb5be881d66630d2765fccf5711a21643f",
+        "eligibility": "conditional_provisional_mapping",
+        "fixture_digest": "sha256:6e6f8798e1465691fdb6ad973bc37443651408c4060f091144b1a470fb0817a4",
+        "fixture_part_id": "LT3D-001A",
+        "geometry_authority_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/src/leo/station/gauss-r21-lt3d-001a-20260920-v1.json",
+        "geometry_authority_sha256": "sha256:758262ecc67044065e2e2facc46f2cc77997883eabf0f7f1a4c5fa761fba65f7",
+        "mapping_uncertainty": {
+          "not_permitted": "reporting a selected RX-to-slot permutation as calibrated fact",
+          "required_treatment": "symmetric_two_mapping_marginalization",
+          "status": "provisional"
+        },
+        "model_use": "geometry and cone diagnostics only; marginalize both RX-to-slot permutations",
+        "station_geometry_digest": "sha256:006ff0cbaab43b3700e75b181733c0576d23747d4d37b025061101601e75c0d0"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-cfcf667726e80735",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-cfcf667726e80735.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:66fef2e51c3660b4f35632f21692402d03fc890fbf4019505a03957ea7ba1cc6"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T12:50:02.860740Z",
+      "input_manifest_sha256": "sha256:696f49e112dd5251ddcc383b3ceb9d59590686ed27cb7f9747ae1193e25a6593",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-8d1424f9297d34fb",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-8d1424f9297d34fb.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:bdb79cfb9acadbbac7c5d5be88f41496e1347655787f6c29de287133b6fe96ff"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:00:02.850373Z",
+      "input_manifest_sha256": "sha256:775b5f98fa276ffc0a4ad5ecac0453f86a22463059c98aa252e69c0e0f54a044",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-573f6201b09f5ba4",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-573f6201b09f5ba4.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:abb28f3b5e47ba701e1a169a81f899374b378ef0e610c688707fea30e5ce335d"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:10:03.005429Z",
+      "input_manifest_sha256": "sha256:be24b443472a040036d2db0e216436ae5e3f536ccb0319645cdbcf1faaa2fc28",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-d30c80bd75815223",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-d30c80bd75815223.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:31471c12fbe454be079df7330f389884bedb1ec665b045ae9c65533f0ff88b89"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:20:02.940300Z",
+      "input_manifest_sha256": "sha256:d2f2dd939ab289d6987519a65596479e94e899bc84e4b546567ef508194132c4",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-b6659f13921e711b",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-b6659f13921e711b.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:0740ce6b846aaa63a34a1ce8e2d0466f10a064253d9c112ac3b1a37fd64dd09f"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:30:02.951733Z",
+      "input_manifest_sha256": "sha256:80fc1df1d007d49e9d9d1193fcc4ee5fd63b600ddf829229076c38300cc3c800",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-af33f52c96a606b7",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-af33f52c96a606b7.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:38f976160951c5abe39fd9f30bfe701536c345e18bcde09d43cc26b27712c693"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:40:02.923120Z",
+      "input_manifest_sha256": "sha256:8ffb6fd8761b546cbfe73419976d7778ae2d98577df43cb22af09fab38f2823a",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-412a75e0665c8e93",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-412a75e0665c8e93.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:2b4915576bcbcafeb6acad8cd8b7afb97d2ca5f27ce2e699bc89bef86833f7d0"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T13:50:02.958566Z",
+      "input_manifest_sha256": "sha256:cab2b44653d6f77f3af18e69c86b34577868674978fe84b6eb65bdf5d7648c7a",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-7fc0a2494f8caa5d",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-7fc0a2494f8caa5d.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:ded9920c90e8430f2b85b68600a4d725fb84ba52fdc0e8a42401b5486d97a3db"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:00:02.976296Z",
+      "input_manifest_sha256": "sha256:0d158cd5eacfe1257d105c0508b01b9c9bf546325bf7632c169edc060073a8c7",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-51dadc5c6aa0e74b",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-51dadc5c6aa0e74b.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:4adbdec634c63d7ba83d400b5879ad567f7e8c67dd3c03fc6035c967331e1363"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:10:02.964746Z",
+      "input_manifest_sha256": "sha256:292fa5f814633b8ec61b0e79b3a0290298d0baa5293b7ac8ef27b623ee81a507",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-524e4ca2638f3601",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-524e4ca2638f3601.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:0cb64e10d7ea039b385a76fa14d73034f786bef8009c594aa3c586d362b3caff"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:20:42.536461Z",
+      "input_manifest_sha256": "sha256:0f8f88f8f0665bacdfdf8d3fd78df5def41181d72f7d31da259d22e85c2fb902",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-8634c361a1e38331",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-8634c361a1e38331.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:ee07cfd32bcde2ff79e5cc29828def5dae6d97dd8f8c36f574fdcbfb83f1476c"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:30:02.798667Z",
+      "input_manifest_sha256": "sha256:32bafb43f5d2b7715e995333fa0e7ccd8a5414b1b4c1a9e20a382aabf18d0e85",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-3e1fe8de00bd8065",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-3e1fe8de00bd8065.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:50e4e0dd08e7a1b9b7958390e83f0057712f0b1a79fe7a87a9ebde95abd66570"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:40:02.621900Z",
+      "input_manifest_sha256": "sha256:1723cf086573c1a98384e20d8639f2cd54f144f93b72f52dcdf1da1651c0f99b",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-d8925d2a4c00a806",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-d8925d2a4c00a806.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:e419f6c0de312070ce6593aa65acc941c1f7f2e214d91e2e1c0f1722a68955f3"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T14:50:02.879207Z",
+      "input_manifest_sha256": "sha256:e0d3100e9fd43126847ce22d652bdd2fd4797a810bdccb34e1a2b20e5ae8f47f",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-12cb866cbc37adb9",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-12cb866cbc37adb9.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:c847329c113ef8e269fc4cc30f071bd59285114807b0b109a51327c42a4fe661"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T15:00:02.948941Z",
+      "input_manifest_sha256": "sha256:1d8d8ea89e71415dae51f18e421ad5550f5b172f9a7f0056a182b78af7850cb2",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-98fb8c5147c1c77b",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-98fb8c5147c1c77b.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:925b4c373eab1fbdce3ea2c4c6d6c24a60c16a61405ca172afda9a0c63bf9ec1"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T15:10:02.905658Z",
+      "input_manifest_sha256": "sha256:43deaa826fffa5af4ae41e9b6eec1db928afa401655e7302203fef38479ae7a0",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-32ebdbd20401472f",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-32ebdbd20401472f.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:1d28cd28c3486c18a59a2c30faca42afb62e133fd91e77986bf562b9d7951a1f"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T15:20:02.652945Z",
+      "input_manifest_sha256": "sha256:9e6c973bba2a50777942bc8615bfc89154e2feaba39bbab351e4aaa8c0043dbb",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-b97ce25ed1ac630f",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-b97ce25ed1ac630f.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:a1016464f1af84e51795e793ec406c2e811ffcc790f1046bca5c10c8423ad868"
+      }
+    },
+    {
+      "captured_at": "2026-09-24T15:30:02.535971Z",
+      "input_manifest_sha256": "sha256:c02280751338549349e1f86f43a1dc04c3aee5b41dbd525f1fb0332e9b3c99da",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_geometry": {
+        "eligibility": "unavailable",
+        "reason": "no_explicit_capture_time_receiver_geometry"
+      },
+      "sample_rate_hz": 2500000,
+      "session_id": "scan-fw-d16389a0c7b4a70f",
+      "tracking": {
+        "cache": {
+          "reason": "DS2 inference has not yet built a receipt-bound prediction cache",
+          "status": "not_materialized"
+        },
+        "candidate_policy_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+        "receipt_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds2_final_manifest/tracking_receipts/scan-fw-d16389a0c7b4a70f.json",
+        "status": "complete",
+        "tracking_product_digest": "sha256:dde1da788760a0139434fab1caaa78b4072c09c598fc339dfcc94a9af0a3e18c"
+      }
+    }
+  ],
+  "whole_session_policy": "every raw-eligible capture is included once; no train_validation_test_partition"
+}

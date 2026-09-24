@@ -1,0 +1,81 @@
+{
+  "schema": "ds1-iteration12-consistent-objective-status/v1",
+  "arm_status": "compute_infeasible_within_one_hour",
+  "complete_inference": false,
+  "winner": null,
+  "partition": "train",
+  "reference_used_for_fit": false,
+  "partial_winner_published": false,
+  "objective": {
+    "proposal": "cap-800 all-qualified-observation capped loss after regularized nuisance fit",
+    "exact": "cap-800 all-qualified-observation capped loss after exact SGP4 nuisance fit"
+  },
+  "search": {
+    "groups": [
+      "20260921_00",
+      "20260921_16"
+    ],
+    "tau_grid_s": [
+      -1.25,
+      -1.0,
+      -0.75,
+      -0.5,
+      -0.25
+    ],
+    "levels_km": [
+      0.390625,
+      0.1953125,
+      0.09765625
+    ],
+    "top_basins": 3,
+    "exact_top_coordinates": 6,
+    "exact_audit_count_planned": 24,
+    "workers": 4,
+    "proposal_optimizer_max_iterations": 300
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "elapsed_s_approx": 1320,
+      "disposition": "rejected_before_result",
+      "reason": "three overlapping 3x3 seed lattices created 27 first-level coordinates",
+      "change_after_attempt": "one shared 3x3 lattice plus the three sealed seed coordinates"
+    },
+    {
+      "attempt": 2,
+      "elapsed_s_approx": 620,
+      "disposition": "structural_gate_failure",
+      "reason": "fewer than two proposal taus converged at one coordinate under a 120-iteration cap",
+      "change_after_attempt": "restore the established 300-iteration analytic proposal limit"
+    },
+    {
+      "attempt": 3,
+      "elapsed_s_approx": 2460,
+      "disposition": "stopped_at_runtime_bound_projection",
+      "level_1": {
+        "coordinate_count": 12,
+        "elapsed_s_approx": 870,
+        "selection_gate_passed": true
+      },
+      "level_2": {
+        "elapsed_s_at_stop_approx": 1530,
+        "complete": false
+      },
+      "host_load_range": [
+        85,
+        131
+      ],
+      "reason": "measured throughput projected remaining level 3 and exact audit beyond one hour"
+    }
+  ],
+  "authoritative_projected_runtime_min": {
+    "low": 82,
+    "high": 100
+  },
+  "next_design": [
+    "checkpoint every completed level",
+    "persist and reuse hard supports for all tau-location pairs",
+    "warm-start adjacent tau nuisance fits while preserving the cap-800 selection loss",
+    "run exact SGP4 only after the complete cap-800 proposal ranking is sealed"
+  ]
+}
