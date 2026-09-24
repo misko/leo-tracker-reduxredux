@@ -1,0 +1,85 @@
+{
+  "schema": "ds1-iteration3-rate-diagnostic-summary/v1",
+  "complete": true,
+  "inference_reference_used": false,
+  "iteration3_input": {
+    "path": "../2026_09_24_ds1_joint_rate_search/iteration3-results.json",
+    "sha256": "sha256:7d08cc2303bd942c94ac9dd73e56da49f71736b94c9d49ae9a2690489ffe4e1e"
+  },
+  "convergence_experiment": {
+    "artifact": "convergence-diagnostic.json",
+    "reference_used_for_fit": false,
+    "selection_changed": false,
+    "iteration_caps": [30, 120, 300],
+    "conclusion": "all fixed-winner 30-iteration fits were truncated; each converged at 161-189 iterations under cap 300"
+  },
+  "cases": [
+    {
+      "group_id": "20260921_00",
+      "seed": "reno",
+      "winner": {"tau_s": -1.25, "east_km": 0.0, "north_km": -5.46875, "objective": 0.05996197907001187},
+      "association": {"tracks": 476, "candidate_count": 109, "median_tracks_per_candidate": 3, "one_track_candidates": 27},
+      "rate": {"winner_boundary_count": 1, "screen_boundary_histogram": {"1": 129, "2": 15}, "weak_curvature_candidates": 7, "cap_30_to_300_rate_rms_s_h": 0.0066174154789032935, "cap_30_to_300_objective_delta": 0.00018393325964240897},
+      "margins": {"best_other_tau_objective_margin": 0.00010555963067058185, "nearest_geographic_objective_margin": 0.00004004099154336543, "best_geographic_objective_margin": 0.00002872775787272946},
+      "tau_is_stencil_edge": true
+    },
+    {
+      "group_id": "20260921_00",
+      "seed": "sacramento",
+      "winner": {"tau_s": -1.25, "east_km": -3.125, "north_km": -3.90625, "objective": 0.06002088425983715},
+      "association": {"tracks": 476, "candidate_count": 109, "median_tracks_per_candidate": 3, "one_track_candidates": 27},
+      "rate": {"winner_boundary_count": 1, "screen_boundary_histogram": {"1": 120, "2": 24}, "weak_curvature_candidates": 6, "cap_30_to_300_rate_rms_s_h": 0.006636108661842909, "cap_30_to_300_objective_delta": 0.00031076317517994556},
+      "margins": {"best_other_tau_objective_margin": 0.00005263870293636121, "nearest_geographic_objective_margin": 0.00003218606861541617, "best_geographic_objective_margin": 0.00003218606861541617},
+      "tau_is_stencil_edge": true
+    },
+    {
+      "group_id": "20260921_16",
+      "seed": "reno",
+      "winner": {"tau_s": -0.75, "east_km": 3.125, "north_km": 4.6875, "objective": 0.10070745836362875},
+      "association": {"tracks": 298, "candidate_count": 130, "median_tracks_per_candidate": 2, "one_track_candidates": 48},
+      "rate": {"winner_boundary_count": 1, "screen_boundary_histogram": {"1": 53, "2": 79, "3": 8, "4": 4}, "weak_curvature_candidates": 11, "cap_30_to_300_rate_rms_s_h": 0.010417085158547218, "cap_30_to_300_objective_delta": 0.0025006045805820443},
+      "margins": {"best_other_tau_objective_margin": 0.0005305403983424919, "nearest_geographic_objective_margin": 0.0002846335048371672, "best_geographic_objective_margin": 0.00024279439635038078},
+      "tau_is_stencil_edge": true
+    },
+    {
+      "group_id": "20260921_16",
+      "seed": "sacramento",
+      "winner": {"tau_s": -1.25, "east_km": -1.5625, "north_km": -3.90625, "objective": 0.10387467626502472},
+      "association": {"tracks": 298, "candidate_count": 129, "median_tracks_per_candidate": 2, "one_track_candidates": 47},
+      "rate": {"winner_boundary_count": 2, "screen_boundary_histogram": {"1": 27, "2": 99, "3": 18}, "weak_curvature_candidates": 12, "cap_30_to_300_rate_rms_s_h": 0.010314506315739741, "cap_30_to_300_objective_delta": 0.0015973015843755711},
+      "margins": {"best_other_tau_objective_margin": 0.006179410503455937, "nearest_geographic_objective_margin": 0.0009182612354309952, "best_geographic_objective_margin": 0.00045079465336450053},
+      "tau_is_stencil_edge": true
+    }
+  ],
+  "seed_pairs": [
+    {
+      "group_id": "20260921_00",
+      "common_tracks": 476,
+      "same_candidate_assignments": 473,
+      "candidate_assignment_agreement": 0.9936974789915967,
+      "overlapping_rate_count": 108,
+      "cross_seed_rate_rms_s_h": 0.0044448468880580886,
+      "winner_separation_km": 0.9390993704877193,
+      "postseal_only": {"reno_reference_error_km": 4.260023693463152, "sacramento_reference_error_km": 4.203656075629354}
+    },
+    {
+      "group_id": "20260921_16",
+      "common_tracks": 298,
+      "same_candidate_assignments": 288,
+      "candidate_assignment_agreement": 0.9664429530201343,
+      "overlapping_rate_count": 125,
+      "cross_seed_rate_rms_s_h": 0.024158056126848158,
+      "winner_separation_km": 2.8832823822689386,
+      "postseal_only": {"reno_reference_error_km": 0.6347737143398362, "sacramento_reference_error_km": 2.948708033950095}
+    }
+  ],
+  "iteration5_predeclared_protocol": {
+    "tau_grid_s": [-2.25, -2.0, -1.75, -1.5, -1.25, -1.0, -0.75, -0.5, -0.25],
+    "rate_solver_max_iterations": 300,
+    "require_rate_convergence": true,
+    "exact_finalists_per_seed": 12,
+    "minimum_finalist_geographic_separation_km": 0.78125,
+    "selection_rule": "take the best candidate in each of the nine tau cells, then add three cache-ranked candidates at least the minimum separation from every already-selected candidate; exact SGP4-fit and re-rank all 12 finalists by exact capped loss",
+    "reference_used_for_fit": false
+  }
+}

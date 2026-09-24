@@ -1,0 +1,1225 @@
+{
+  "completed_task_count": 16,
+  "local_grid": {
+    "levels_km": [
+      6.25,
+      3.125,
+      1.5625,
+      0.78125,
+      0.390625
+    ],
+    "radius_km": 25.0,
+    "timing_policy": "tau zero plus each sealed stage-1 winner +/-0.25 seconds"
+  },
+  "manifest": {
+    "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_iteration2/iteration2-inference-manifest.json",
+    "sha256": "sha256:082fa1140ee0a5ebc0ddecb3554fe005904ae9d0bce50b341f28bf818677997e",
+    "task_count": 16
+  },
+  "missing_or_failed_task_count": 0,
+  "prior_convergence": [
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.20689309577508994,
+      "method": "global_time"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.20689309577508994,
+      "method": "per_scan_time"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.11645112453846934,
+      "method": "global_time"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "converged_within_final_grid_km": false,
+      "final_separation_km": 2.7349958422413385,
+      "method": "per_scan_time"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.2744503330709676,
+      "method": "global_time"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.2744503330709676,
+      "method": "per_scan_time"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "converged_within_final_grid_km": true,
+      "final_separation_km": 0.0922618106387368,
+      "method": "global_time"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "converged_within_final_grid_km": false,
+      "final_separation_km": 2.545877512148341,
+      "method": "per_scan_time"
+    }
+  ],
+  "reference_evaluation": {
+    "coordinate": {
+      "latitude_deg": 37.84903264307456,
+      "longitude_deg": -122.4856541910174
+    },
+    "introduced": true,
+    "role": "evaluation only after every expected result seal and contract validated",
+    "withheld_reason": null
+  },
+  "rows": [
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--first-singleton--reno--global_time.json",
+      "artifact_sha256": "32138ecf67e2e8cbb019e2cd4283b22273bb566d60d3e8dc96ebebdc407a4e20",
+      "case_id": "train-20260921_00--first-singleton",
+      "elapsed_s": 85.8657650250243,
+      "final_latitude_deg": 37.663491078035086,
+      "final_longitude_deg": -122.23804746787748,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": -0.78125,
+        "selected_north_km": -4.6875,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "peak_rss_kib": 77304,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.20689309577508994,
+      "prior_name": "reno",
+      "reference_error_km": 29.99154122569758,
+      "rf_objective_change": -0.004482660041796288,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1429858375633683,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.70564705280287,
+      "seed_longitude_deg": -122.22917199541568,
+      "seed_to_final_displacement_km": 4.75215822679531,
+      "stage1_artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+      "stage1_rf_objective_value": 0.1474684976051646,
+      "stage1_task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--first-singleton--reno--global_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.75,
+      "timing_nuisance_median_s": -1.75,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--first-singleton--reno--per_scan_time.json",
+      "artifact_sha256": "3de40c14961c00c812cc9372a2516586bcfe184ff8d9d4889d16ba36e2a3b087",
+      "case_id": "train-20260921_00--first-singleton",
+      "elapsed_s": 73.45306796603836,
+      "final_latitude_deg": 37.663491078035086,
+      "final_longitude_deg": -122.23804746787748,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": -0.78125,
+        "selected_north_km": -4.6875,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "peak_rss_kib": 77924,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.20689309577508994,
+      "prior_name": "reno",
+      "reference_error_km": 29.99154122569758,
+      "rf_objective_change": -0.004482660041796288,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1429858375633683,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.70564705280287,
+      "seed_longitude_deg": -122.22917199541568,
+      "seed_to_final_displacement_km": 4.75215822679531,
+      "stage1_artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+      "stage1_rf_objective_value": 0.1474684976051646,
+      "stage1_task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--first-singleton--reno--per_scan_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75,
+        "per_scan_delta_s": {
+          "scan-hop-85afa91453f8847b": 0.0
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--first-singleton--sacramento--global_time.json",
+      "artifact_sha256": "bf24f7cbd921b46cc5e3662e5e73e1f4b11d3617d5db2331cdb7f3f12e33727d",
+      "case_id": "train-20260921_00--first-singleton",
+      "elapsed_s": 102.7447800290538,
+      "final_latitude_deg": 37.662551352155866,
+      "final_longitude_deg": -122.24007607842718,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": -3.125,
+        "selected_north_km": -1.953125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "peak_rss_kib": 77316,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.20689309577508994,
+      "prior_name": "sacramento",
+      "reference_error_km": 29.93473875865434,
+      "rf_objective_change": -0.0019551765947179167,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14298194758612834,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.68012152434989,
+      "seed_longitude_deg": -122.20457463457035,
+      "seed_to_final_displacement_km": 3.68514887971014,
+      "stage1_artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+      "stage1_rf_objective_value": 0.14493712418084626,
+      "stage1_task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--first-singleton--sacramento--global_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.75,
+      "timing_nuisance_median_s": -1.75,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--first-singleton--sacramento--per_scan_time.json",
+      "artifact_sha256": "f457645d2691d35d8fb8081da1e786be89c05870c1727b696a2490cea186677d",
+      "case_id": "train-20260921_00--first-singleton",
+      "elapsed_s": 107.50362057203893,
+      "final_latitude_deg": 37.662551352155866,
+      "final_longitude_deg": -122.24007607842718,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": -3.125,
+        "selected_north_km": -1.953125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "peak_rss_kib": 77240,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.20689309577508994,
+      "prior_name": "sacramento",
+      "reference_error_km": 29.93473875865434,
+      "rf_objective_change": -0.0019551765947179167,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14298194758612834,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.68012152434989,
+      "seed_longitude_deg": -122.20457463457035,
+      "seed_to_final_displacement_km": 3.68514887971014,
+      "stage1_artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+      "stage1_rf_objective_value": 0.14493712418084626,
+      "stage1_task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--first-singleton--sacramento--per_scan_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75,
+        "per_scan_delta_s": {
+          "scan-hop-85afa91453f8847b": 0.0
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--prefix-6--reno--global_time.json",
+      "artifact_sha256": "8e712856fa11e0e29983ff268da508c362bc07da93aca0b28dd4a8164a513662",
+      "case_id": "train-20260921_00--prefix-6",
+      "elapsed_s": 376.5485351799289,
+      "final_latitude_deg": 37.90294363312386,
+      "final_longitude_deg": -122.49480272670209,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 130,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 2.34375,
+        "selected_north_km": -2.34375,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": false
+      },
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "peak_rss_kib": 158344,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.11645112453846934,
+      "prior_name": "reno",
+      "reference_error_km": 6.048176583445223,
+      "rf_objective_change": -0.0008533717484575376,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1303302503788231,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.92402447360248,
+      "seed_longitude_deg": -122.52151555023477,
+      "seed_to_final_displacement_km": 3.3145630368113994,
+      "stage1_artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+      "stage1_rf_objective_value": 0.13118362212728063,
+      "stage1_task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--prefix-6--reno--global_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.25,
+      "timing_nuisance_median_s": -1.25,
+      "timing_nuisance_min_s": -1.25,
+      "timing_parameters": {
+        "global_tau_s": -1.25
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--prefix-6--reno--per_scan_time.json",
+      "artifact_sha256": "06358e5f99a2c8688fa308d06ae59192e1746022d1ff5fe2cca4ad27b6379c51",
+      "case_id": "train-20260921_00--prefix-6",
+      "elapsed_s": 368.39057907590177,
+      "final_latitude_deg": 37.906458280669696,
+      "final_longitude_deg": -122.50370615063927,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 124,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 1.5625,
+        "selected_north_km": -1.953125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "peak_rss_kib": 158536,
+      "prior_converged_within_final_grid_km": false,
+      "prior_final_separation_km": 2.7349958422413385,
+      "prior_name": "reno",
+      "reference_error_km": 6.5790781755942005,
+      "rf_objective_change": -0.00217982270967787,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.12900379941760276,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.92402447360248,
+      "seed_longitude_deg": -122.52151555023477,
+      "seed_to_final_displacement_km": 2.5012204052474005,
+      "stage1_artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+      "stage1_rf_objective_value": 0.13118362212728063,
+      "stage1_task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--prefix-6--reno--per_scan_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.25,
+      "timing_nuisance_median_s": 0.00125,
+      "timing_nuisance_min_s": -1.5,
+      "timing_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "scan-hop-24ad6788936de72f": 0.25,
+          "scan-hop-30ff691861c6bb53": -0.25,
+          "scan-hop-75ec9d92534c0293": 0.0,
+          "scan-hop-79cca97e97a1541c": 0.25,
+          "scan-hop-85afa91453f8847b": 0.0,
+          "scan-hop-f749f13b64256b8d": 0.25
+        },
+        "per_scan_penalty": 0.0025
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--prefix-6--sacramento--global_time.json",
+      "artifact_sha256": "15ec0a302c368694b0c6d7c9486479f23757e045a7bb832701bf8e8d1ed2f3f6",
+      "case_id": "train-20260921_00--prefix-6",
+      "elapsed_s": 365.0607729689218,
+      "final_latitude_deg": 37.90285986657907,
+      "final_longitude_deg": -122.49612572182761,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 124,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "selected_east_km": -0.390625,
+        "selected_north_km": 0.0,
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "peak_rss_kib": 158312,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.11645112453846934,
+      "prior_name": "sacramento",
+      "reference_error_km": 6.05547868161656,
+      "rf_objective_change": -0.0013266526188470684,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1303312982094101,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 0.39062499999953265,
+      "stage1_artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+      "stage1_rf_objective_value": 0.13165795082825718,
+      "stage1_task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--prefix-6--sacramento--global_time",
+      "tau_grid_s": [
+        -1.25,
+        -1.0,
+        -0.75,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.25,
+      "timing_nuisance_median_s": -1.25,
+      "timing_nuisance_min_s": -1.25,
+      "timing_parameters": {
+        "global_tau_s": -1.25
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--prefix-6--sacramento--per_scan_time.json",
+      "artifact_sha256": "927a572025b3009d3348e307bbfdb52bdfa329fd9757f3be33320c27c48b82a4",
+      "case_id": "train-20260921_00--prefix-6",
+      "elapsed_s": 348.9930103101069,
+      "final_latitude_deg": 37.8993456388018,
+      "final_longitude_deg": -122.47386591092514,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "selected_east_km": 1.5625,
+        "selected_north_km": -0.390625,
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "peak_rss_kib": 156324,
+      "prior_converged_within_final_grid_km": false,
+      "prior_final_separation_km": 2.7349958422413385,
+      "prior_name": "sacramento",
+      "reference_error_km": 5.689434438954765,
+      "rf_objective_change": -0.002460865178085303,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.12919708565017188,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 1.6105881350057838,
+      "stage1_artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+      "stage1_rf_objective_value": 0.13165795082825718,
+      "stage1_task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_00--prefix-6--sacramento--per_scan_time",
+      "tau_grid_s": [
+        -1.25,
+        -1.0,
+        -0.75,
+        0.0
+      ],
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.25,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_parameters": {
+        "global_tau_s": -1.0,
+        "per_scan_delta_s": {
+          "scan-hop-24ad6788936de72f": 0.25,
+          "scan-hop-30ff691861c6bb53": -0.25,
+          "scan-hop-75ec9d92534c0293": 0.0,
+          "scan-hop-79cca97e97a1541c": 0.25,
+          "scan-hop-85afa91453f8847b": 0.0,
+          "scan-hop-f749f13b64256b8d": 0.0
+        },
+        "per_scan_penalty": 0.001875
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--first-singleton--reno--global_time.json",
+      "artifact_sha256": "7c3e37a1ef74c26138dad7e9bf30eb184d13de9188c3296ebda157971f1b7e44",
+      "case_id": "train-20260921_16--first-singleton",
+      "elapsed_s": 114.1578003159957,
+      "final_latitude_deg": 37.909968482499025,
+      "final_longitude_deg": -122.49034761347406,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "selected_east_km": 2.734375,
+        "selected_north_km": -1.5625,
+        "tau_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "timing_boundary_hit": false
+      },
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "peak_rss_kib": 107908,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.2744503330709676,
+      "prior_name": "reno",
+      "reference_error_km": 6.788275332895571,
+      "rf_objective_change": -0.0027855896379233025,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10256385537114149,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.92402447360248,
+      "seed_longitude_deg": -122.52151555023477,
+      "seed_to_final_displacement_km": 3.1493194329286918,
+      "stage1_artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+      "stage1_rf_objective_value": 0.10534944500906479,
+      "stage1_task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--first-singleton--reno--global_time",
+      "tau_grid_s": [
+        -2.25,
+        -2.0,
+        -1.75,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.75,
+      "timing_nuisance_median_s": -1.75,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--first-singleton--reno--per_scan_time.json",
+      "artifact_sha256": "96ef40d89bea4210b74266532042f85c3ca6e02331428cf465115451ebbf6a25",
+      "case_id": "train-20260921_16--first-singleton",
+      "elapsed_s": 120.49420129694045,
+      "final_latitude_deg": 37.909968482499025,
+      "final_longitude_deg": -122.49034761347406,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "selected_east_km": 2.734375,
+        "selected_north_km": -1.5625,
+        "tau_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "peak_rss_kib": 107996,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.2744503330709676,
+      "prior_name": "reno",
+      "reference_error_km": 6.788275332895571,
+      "rf_objective_change": -0.0027855896379233025,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10256385537114149,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.92402447360248,
+      "seed_longitude_deg": -122.52151555023477,
+      "seed_to_final_displacement_km": 3.1493194329286918,
+      "stage1_artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+      "stage1_rf_objective_value": 0.10534944500906479,
+      "stage1_task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--first-singleton--reno--per_scan_time",
+      "tau_grid_s": [
+        -2.25,
+        -2.0,
+        -1.75,
+        0.0
+      ],
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75,
+        "per_scan_delta_s": {
+          "scan-hop-f354f1c88a654681": 0.0
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--first-singleton--sacramento--global_time.json",
+      "artifact_sha256": "e11932c19b2e04a8b83812bbf813a6e474dde0396cde50ee88d9be1dfa65e3fc",
+      "case_id": "train-20260921_16--first-singleton",
+      "elapsed_s": 110.32586359395646,
+      "final_latitude_deg": 37.909885806908264,
+      "final_longitude_deg": -122.48722103225535,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 0.390625,
+        "selected_north_km": 0.78125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "peak_rss_kib": 108420,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.2744503330709676,
+      "prior_name": "sacramento",
+      "reference_error_km": 6.767969659931427,
+      "rf_objective_change": -0.0015281831811804342,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10257669379931919,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 0.8734640537119175,
+      "stage1_artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+      "stage1_rf_objective_value": 0.10410487698049962,
+      "stage1_task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--first-singleton--sacramento--global_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.75,
+      "timing_nuisance_median_s": -1.75,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--first-singleton--sacramento--per_scan_time.json",
+      "artifact_sha256": "5467c8c5a33e743a11c545640e051c2d441ffb51e0127e0d2d8bdae67b09933e",
+      "case_id": "train-20260921_16--first-singleton",
+      "elapsed_s": 112.42515711800661,
+      "final_latitude_deg": 37.909885806908264,
+      "final_longitude_deg": -122.48722103225535,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 0.390625,
+        "selected_north_km": 0.78125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "peak_rss_kib": 107768,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.2744503330709676,
+      "prior_name": "sacramento",
+      "reference_error_km": 6.767969659931427,
+      "rf_objective_change": -0.0015281831811804342,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10257669379931919,
+      "scan_count": 1,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 0.8734640537119175,
+      "stage1_artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+      "stage1_rf_objective_value": 0.10410487698049962,
+      "stage1_task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--first-singleton--sacramento--per_scan_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.75,
+      "timing_parameters": {
+        "global_tau_s": -1.75,
+        "per_scan_delta_s": {
+          "scan-hop-f354f1c88a654681": 0.0
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--prefix-6--reno--global_time.json",
+      "artifact_sha256": "ea5ee9da64bed06dea1e7325119ed8e6394845ae91d9933500bc79e35e3c972f",
+      "case_id": "train-20260921_16--prefix-6",
+      "elapsed_s": 509.48600969510153,
+      "final_latitude_deg": 37.85734236767354,
+      "final_longitude_deg": -122.46839388082124,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "selected_east_km": 4.296875,
+        "selected_north_km": 5.078125,
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "peak_rss_kib": 209012,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.0922618106387368,
+      "prior_name": "reno",
+      "reference_error_km": 1.7749026100105751,
+      "rf_objective_change": -0.01820823954094747,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1404652271472276,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.81168387740501,
+      "seed_longitude_deg": -122.51733707593512,
+      "seed_to_final_displacement_km": 6.652104049191153,
+      "stage1_artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+      "stage1_rf_objective_value": 0.15867346668817506,
+      "stage1_task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--prefix-6--reno--global_time",
+      "tau_grid_s": [
+        -1.25,
+        -1.0,
+        -0.75,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.25,
+      "timing_nuisance_median_s": -1.25,
+      "timing_nuisance_min_s": -1.25,
+      "timing_parameters": {
+        "global_tau_s": -1.25
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--prefix-6--reno--per_scan_time.json",
+      "artifact_sha256": "d9fd4681df9ca3de78ba7096f77c2c7366e922f0b2cdc3fb7f03a19341f63099",
+      "case_id": "train-20260921_16--prefix-6",
+      "elapsed_s": 520.2982665050076,
+      "final_latitude_deg": 37.85031241410396,
+      "final_longitude_deg": -122.45950063068084,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "selected_east_km": 5.078125,
+        "selected_north_km": 4.296875,
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "peak_rss_kib": 205200,
+      "prior_converged_within_final_grid_km": false,
+      "prior_final_separation_km": 2.545877512148341,
+      "prior_name": "reno",
+      "reference_error_km": 2.300746048033887,
+      "rf_objective_change": -0.020342796376106476,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.13833067031206858,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.81168387740501,
+      "seed_longitude_deg": -122.51733707593512,
+      "seed_to_final_displacement_km": 6.652104049191185,
+      "stage1_artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+      "stage1_rf_objective_value": 0.15867346668817506,
+      "stage1_task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--prefix-6--reno--per_scan_time",
+      "tau_grid_s": [
+        -1.25,
+        -1.0,
+        -0.75,
+        0.0
+      ],
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.25,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_parameters": {
+        "global_tau_s": -1.0,
+        "per_scan_delta_s": {
+          "scan-hop-0dcc48743f9f5487": 0.0,
+          "scan-hop-2ea5bcf9b18778cc": 0.25,
+          "scan-hop-5f69c606f9bb3a8f": 0.0,
+          "scan-hop-d026d3a5a705523e": -0.25,
+          "scan-hop-e1422297a1ff6598": -0.25,
+          "scan-hop-f354f1c88a654681": 0.0
+        },
+        "per_scan_penalty": 0.001875
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--prefix-6--sacramento--global_time.json",
+      "artifact_sha256": "29cc4fe0147b82de5a064edec084c71985b2548ed987fbe28d511fe9b6ed5040",
+      "case_id": "train-20260921_16--prefix-6",
+      "elapsed_s": 512.9967418159358,
+      "final_latitude_deg": 37.85718924404399,
+      "final_longitude_deg": -122.46942672975042,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 1.953125,
+        "selected_north_km": -5.078125,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": false
+      },
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "peak_rss_kib": 206244,
+      "prior_converged_within_final_grid_km": true,
+      "prior_final_separation_km": 0.0922618106387368,
+      "prior_name": "sacramento",
+      "reference_error_km": 1.6889310866071017,
+      "rf_objective_change": -0.008793473353989167,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14046154684526668,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 5.4407766707749055,
+      "stage1_artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+      "stage1_rf_objective_value": 0.14925502019925585,
+      "stage1_task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--prefix-6--sacramento--global_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.25,
+      "timing_nuisance_median_s": -1.25,
+      "timing_nuisance_min_s": -1.25,
+      "timing_parameters": {
+        "global_tau_s": -1.25
+      }
+    },
+    {
+      "artifact_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--prefix-6--sacramento--per_scan_time.json",
+      "artifact_sha256": "104b979482f635d17aadb30dfddfd6f51b823eb195cc2df3768acc9ad4567410",
+      "case_id": "train-20260921_16--prefix-6",
+      "elapsed_s": 509.07767937902827,
+      "final_latitude_deg": 37.86772949465264,
+      "final_longitude_deg": -122.47832356404817,
+      "grid_diagnostics": {
+        "geographic_boundary_hit": false,
+        "geographic_interior": true,
+        "geographic_trace_count": 121,
+        "reported_geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "reported_timing_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "selected_east_km": 1.171875,
+        "selected_north_km": -3.90625,
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_boundary_hit": true
+      },
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "peak_rss_kib": 203460,
+      "prior_converged_within_final_grid_km": false,
+      "prior_final_separation_km": 2.545877512148341,
+      "prior_name": "sacramento",
+      "reference_error_km": 2.1763303652706325,
+      "rf_objective_change": -0.010784122801985763,
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1384708973972701,
+      "scan_count": 6,
+      "seed_latitude_deg": 37.90285995042612,
+      "seed_longitude_deg": -122.49167358959859,
+      "seed_to_final_displacement_km": 4.078244730043341,
+      "stage1_artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+      "stage1_rf_objective_value": 0.14925502019925585,
+      "stage1_task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "iteration2--train-20260921_16--prefix-6--sacramento--per_scan_time",
+      "tau_grid_s": [
+        -1.75,
+        -1.5,
+        -1.25,
+        0.0
+      ],
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.25,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "scan-hop-0dcc48743f9f5487": 0.0,
+          "scan-hop-2ea5bcf9b18778cc": 0.25,
+          "scan-hop-5f69c606f9bb3a8f": 0.25,
+          "scan-hop-d026d3a5a705523e": -0.25,
+          "scan-hop-e1422297a1ff6598": 0.0,
+          "scan-hop-f354f1c88a654681": 0.0
+        },
+        "per_scan_penalty": 0.001875
+      }
+    }
+  ],
+  "schema": "ds1-iteration2-post-seal-evaluation/v1",
+  "status_counts": {
+    "completed": 16
+  }
+}

@@ -1,0 +1,1817 @@
+{
+  "iteration": 2,
+  "local_search": {
+    "levels_km": [
+      6.25,
+      3.125,
+      1.5625,
+      0.78125,
+      0.390625
+    ],
+    "radius_km": 25.0,
+    "timing_policy": "tau zero plus each sealed stage-1 winner +/-0.25 seconds"
+  },
+  "methods": {
+    "global_time": "shared global timing nuisance on the local grid",
+    "per_scan_time": "regularized per-scan timing nuisance on the same local grid"
+  },
+  "name": "DS1 iteration-2 sealed local geographic refinement",
+  "observation_policy": "all_qualified_observations",
+  "partitions_permitted": [
+    "train"
+  ],
+  "position_evaluation": "post_seal_external_only",
+  "priors": [
+    "sacramento",
+    "reno"
+  ],
+  "reference_coordinate_in_manifest": false,
+  "schema": "ds1-iteration2-local-refinement-manifest/v1",
+  "stage1": {
+    "artifacts": [
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--reno--global_time.json",
+        "sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+        "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--sacramento--global_time.json",
+        "sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+        "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--reno--global_time.json",
+        "sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+        "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--sacramento--global_time.json",
+        "sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+        "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--reno--global_time.json",
+        "sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+        "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--sacramento--global_time.json",
+        "sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+        "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--reno--global_time.json",
+        "sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+        "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time"
+      },
+      {
+        "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--sacramento--global_time.json",
+        "sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+        "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time"
+      }
+    ],
+    "manifest_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/one-hour-inference-manifest.json",
+    "manifest_sha256": "sha256:293d49c39ef1acb84854c3f557ab34df2663a3b80273bcc7c9ba1fba4d2a8d5d",
+    "method": "global_time",
+    "selection": "sealed_rf_objective_winner_coordinate"
+  },
+  "task_count": 16,
+  "tasks": [
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.70564705280287,
+        "longitude_deg": -122.22917199541568,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--first-singleton--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.70564705280287,
+        "longitude_deg": -122.22917199541568,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--reno--global_time.json",
+        "artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--first-singleton--reno--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.70564705280287,
+        "longitude_deg": -122.22917199541568,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--first-singleton--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.70564705280287,
+        "longitude_deg": -122.22917199541568,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--reno--global_time.json",
+        "artifact_sha256": "sha256:098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--first-singleton--reno--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.68012152434989,
+        "longitude_deg": -122.20457463457035,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--first-singleton--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.68012152434989,
+        "longitude_deg": -122.20457463457035,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--sacramento--global_time.json",
+        "artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--first-singleton--sacramento--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.68012152434989,
+        "longitude_deg": -122.20457463457035,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--first-singleton--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.68012152434989,
+        "longitude_deg": -122.20457463457035,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--sacramento--global_time.json",
+        "artifact_sha256": "sha256:9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--first-singleton--sacramento--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--prefix-6--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--reno--global_time.json",
+        "artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--prefix-6--reno--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--prefix-6--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--reno--global_time.json",
+        "artifact_sha256": "sha256:b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--prefix-6--reno--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+        "stage1_global_tau_s": -1.0,
+        "stage1_task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_00--prefix-6--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--sacramento--global_time.json",
+        "artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--prefix-6--sacramento--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_00",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+        "stage1_global_tau_s": -1.0,
+        "stage1_task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_00--prefix-6--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--sacramento--global_time.json",
+        "artifact_sha256": "sha256:0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_00--prefix-6--sacramento--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+        "stage1_global_tau_s": -2.0,
+        "stage1_task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--first-singleton--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--reno--global_time.json",
+        "artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--first-singleton--reno--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+        "stage1_global_tau_s": -2.0,
+        "stage1_task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -2.25,
+          -2.0,
+          -1.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--first-singleton--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.92402447360248,
+        "longitude_deg": -122.52151555023477,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--reno--global_time.json",
+        "artifact_sha256": "sha256:7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--first-singleton--reno--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--first-singleton--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--sacramento--global_time.json",
+        "artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--first-singleton--sacramento--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--first-singleton--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--sacramento--global_time.json",
+        "artifact_sha256": "sha256:0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--first-singleton--sacramento--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.81168387740501,
+        "longitude_deg": -122.51733707593512,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+        "stage1_global_tau_s": -1.0,
+        "stage1_task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--prefix-6--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.81168387740501,
+        "longitude_deg": -122.51733707593512,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--reno--global_time.json",
+        "artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--prefix-6--reno--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.81168387740501,
+        "longitude_deg": -122.51733707593512,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+        "stage1_global_tau_s": -1.0,
+        "stage1_task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.25,
+          -1.0,
+          -0.75,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--prefix-6--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.81168387740501,
+        "longitude_deg": -122.51733707593512,
+        "name": "reno",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--reno--global_time.json",
+        "artifact_sha256": "sha256:870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--prefix-6--reno--per_scan_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "iteration": 2,
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/global_time/iteration2--train-20260921_16--prefix-6--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--sacramento--global_time.json",
+        "artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--prefix-6--sacramento--global_time",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_16",
+      "initial_geographic_seed": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "selection": "sealed_stage1_global_time_rf_winner",
+        "stage1_artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+        "stage1_global_tau_s": -1.5,
+        "stage1_task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time"
+      },
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "iteration": 2,
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "geographic_seed_policy": "sealed_stage1_global_time_rf_winner",
+        "local_radius_km": 25.0,
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "tau_grid_s": [
+          -1.75,
+          -1.5,
+          -1.25,
+          0.0
+        ],
+        "timing_grid_policy": "tau zero plus sealed winner +/-0.25 seconds",
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/iteration2/per_scan_time/iteration2--train-20260921_16--prefix-6--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "altitude_m": 0.0,
+        "latitude_deg": 37.90285995042612,
+        "longitude_deg": -122.49167358959859,
+        "name": "sacramento",
+        "radius_km": 25.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "stage2_local_geographic_refinement",
+      "stage1_prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "stage1_source": {
+        "artifact_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--sacramento--global_time.json",
+        "artifact_sha256": "sha256:2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+        "selection": "stage1_global_time_rf_objective_winner",
+        "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time"
+      },
+      "task_id": "iteration2--train-20260921_16--prefix-6--sacramento--per_scan_time",
+      "tier": "extended"
+    }
+  ],
+  "version": 1,
+  "views": [
+    "train-20260921_00--first-singleton",
+    "train-20260921_00--prefix-6",
+    "train-20260921_16--first-singleton",
+    "train-20260921_16--prefix-6"
+  ],
+  "within_track_holdout": "forbidden"
+}
