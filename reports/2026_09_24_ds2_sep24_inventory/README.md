@@ -44,10 +44,16 @@ valid backfill: the deployed analysis workers at revision
 `51701a6ba364bd20170cbc167c1ee0db8c640483` also cannot decode the schema-12
 capture manifest.
 
-A safe bounded backfill requires a new immutable V6 metrics binding and visit,
-reference, manifest, presentation, and input-source variants, followed by
-component tests for 120/240/360-ms visits and retained-index accounting.  The
-runner must then separate its roots: read captures through
+A safe bounded backfill requires a new immutable metrics product version bound
+to receipt V6, with matching visit, reference, manifest, presentation, and
+input-source variants.  This is not an adapter-only change: the current
+analysis product fixes every visit at 120 ms, admits probe indices only 0--10,
+and validates each retained counter span against that fixed dwell, while
+receipt V6 makes each event's 120/240/360-ms counter span authoritative.  The
+new numerical policy must therefore say whether it analyzes the whole retained
+event or a declared 120-ms subset, then prove that choice with component tests
+covering mixed-duration events and sparse retained indices.  The runner must
+then separate its roots: read captures through
 `AdaptiveHopIqStore(Path("/srv/bulk/leo"), read_only=True)`, publish metrics to
 a fresh report-local `AdaptiveHopAnalysisStore`, load them through
 `ScannerTrackingInputStore(Path("/srv/bulk/leo"),
