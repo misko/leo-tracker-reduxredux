@@ -79,7 +79,10 @@ def export(args):
         raise FileExistsError("fresh output directory required")
     args.output.mkdir(parents=True)
     started = time.monotonic()
-    source_store = ScannerTrackingInputStore(args.bulk_root)
+    source_store = ScannerTrackingInputStore(
+        args.bulk_root,
+        adaptive_analysis_root=args.adaptive_analysis_root,
+    )
     try:
         prepared = prepare_adaptive_tle_position_inputs(
             args.session_id,
@@ -203,6 +206,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
+    parser.add_argument(
+        "--adaptive-analysis-root",
+        type=Path,
+        help="Separate read-only adaptive metrics root for isolated backfills.",
+    )
     parser.add_argument("--tle-root", type=Path, default=Path("/var/lib/leo/tle"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--candidate-block", type=int, default=128)
