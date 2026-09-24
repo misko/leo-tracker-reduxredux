@@ -302,7 +302,7 @@ def estimate_broadband_alignment(
         # Every selection fold consists of whole training groups, randomized
         # once. No outer held samples enter phase unwrapping or complexity choice.
         shuffled = np.random.default_rng(random_seed).permutation(np.unique(groups))
-        cv = {1: [], 2: []}
+        cv: dict[int, list[np.float64]] = {1: [], 2: []}
         for withheld in np.array_split(shuffled, min(3, len(shuffled))):
             held = np.isin(groups, withheld)
             retained = ~held
@@ -402,7 +402,7 @@ def estimate_broadband_alignment(
                 time_s[retained], block_phase[retained], abs(block_phasor[retained])
             )
         else:
-            design = np.column_stack((np.ones(np.sum(retained)), time_s[retained]))
+            design = np.column_stack((np.ones(int(np.sum(retained))), time_s[retained]))
             fit_root = np.sqrt(abs(block_phasor[retained]))
             fitted = np.linalg.lstsq(
                 design * fit_root[:, None], block_phase[retained] * fit_root, rcond=None

@@ -59,14 +59,10 @@ def summarize_frames(frames: list[dict], groups: tuple[int, ...]) -> dict:
             "present_count": len(folds),
             "eligible_count": len(eligible),
             "mean_exact_coherence": float(np.mean([row["exact_coherence"] for row in folds])),
-            "mean_control_coherence": float(
-                np.mean([row["control_coherence"] for row in folds])
-            ),
+            "mean_control_coherence": float(np.mean([row["control_coherence"] for row in folds])),
             "mean_coherence_margin": float(np.mean([row["coherence_margin"] for row in folds])),
             "mean_eligible_absolute_cfo_hz": (
-                float(np.mean([row["absolute_cfo_hz"] for row in eligible]))
-                if eligible
-                else None
+                float(np.mean([row["absolute_cfo_hz"] for row in eligible])) if eligible else None
             ),
         }
     return output
@@ -78,8 +74,7 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
     binding = json.loads(binding_path.read_text())
     observations = {row["visit_index"]: row for row in binding["observations"]}
     split = {
-        row["visit_index"]: row["partition"]
-        for row in binding["fresh_random_whole_visit_split"]
+        row["visit_index"]: row["partition"] for row in binding["fresh_random_whole_visit_split"]
     }
     if any(split.get(visit) != "train" for visit in VISITS):
         raise ValueError("qualification population is not entirely training")
@@ -101,9 +96,10 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
                     raise ValueError("IQ ordinal changed")
                 iq = source.read_visit(ordinal)
                 receiver = geometry.receiver_ids.index(observation["receiver_id"])
-                epoch = round(observation["probe_start_ms"] * rate / 1000) + observation[
-                    "integer_epoch_sample"
-                ]
+                epoch = (
+                    round(observation["probe_start_ms"] * rate / 1000)
+                    + observation["integer_epoch_sample"]
+                )
                 opportunities = frame_opportunities(len(iq), rate, epoch)
                 if len(opportunities) != 24:
                     raise ValueError("expected 24 frozen frame opportunities")
@@ -133,9 +129,7 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
                     {
                         "visit_index": visit,
                         "role": (
-                            "suspected_half_alias"
-                            if visit in (603, 711)
-                            else "ordinary_control"
+                            "suspected_half_alias" if visit in (603, 711) else "ordinary_control"
                         ),
                         "winner_from_calibration_even_only": winner,
                         "branches": branches,

@@ -18,11 +18,13 @@ def test_shared_slope_recovers_injected_value_with_track_intercepts():
     rows = []
     for offset in (10.0, -40.0, 90.0):
         time = np.arange(8.0)
-        rows.append({
-            "times_s": time,
-            "training_mask": np.array([1, 0, 1, 0, 1, 0, 1, 0], dtype=bool),
-            "residual_hz": offset + 2.5 * time,
-        })
+        rows.append(
+            {
+                "times_s": time,
+                "training_mask": np.array([1, 0, 1, 0, 1, 0, 1, 0], dtype=bool),
+                "residual_hz": offset + 2.5 * time,
+            }
+        )
     assert np.isclose(SUBJECT.fit_shared_slope(rows), 2.5)
 
 
@@ -30,9 +32,15 @@ def _prediction(measured):
     measured = np.asarray(measured, dtype=float)
     model = np.stack([np.arange(8), np.arange(8)[::-1]])[:, None, :]
     return AdaptiveTrackPrediction(
-        "t", tuple(map(str, range(8))), np.arange(8.0), measured,
-        np.array([1, 0, 1, 0, 1, 0, 1, 0], dtype=bool), np.array(["a", "b"]),
-        np.array([0.0]), model, np.ones(2, dtype=bool),
+        "t",
+        tuple(map(str, range(8))),
+        np.arange(8.0),
+        measured,
+        np.array([1, 0, 1, 0, 1, 0, 1, 0], dtype=bool),
+        np.array(["a", "b"]),
+        np.array([0.0]),
+        model,
+        np.ones(2, dtype=bool),
     )
 
 
@@ -43,6 +51,8 @@ def test_track_choice_and_fitted_values_ignore_reserved_frequency_mutation():
     before = SUBJECT.select_track(original)
     after = SUBJECT.select_track(_prediction(changed))
     assert (before["candidate_id"], before["tau_s"], before["cfo_hz"]) == (
-        after["candidate_id"], after["tau_s"], after["cfo_hz"]
+        after["candidate_id"],
+        after["tau_s"],
+        after["cfo_hz"],
     )
     assert SUBJECT.fit_shared_slope([before]) == SUBJECT.fit_shared_slope([after])

@@ -83,9 +83,9 @@ def test_vectorized_symbol_correlations_equal_scalar_fractional_reference():
     refined.frontend.FS = 2_500_000
     fs = refined.frontend.FS
     rng = np.random.default_rng(20260923)
-    iq = (
-        rng.standard_normal((20_000, 2)) + 1j * rng.standard_normal((20_000, 2))
-    ).astype(np.complex128)
+    iq = (rng.standard_normal((20_000, 2)) + 1j * rng.standard_normal((20_000, 2))).astype(
+        np.complex128
+    )
     starts = np.array([4_000, 7_333, 10_667])
     shift, fraction = 19, 0.375
     model = (0.0, 0.0, 287_000.0)

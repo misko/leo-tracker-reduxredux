@@ -85,8 +85,7 @@ def normalized_frame_cfo(
     # The binding froze this integer before phase replay. Never choose a gauge
     # from the held GLRT value or the held odd response.
     lifted_native = (
-        value["absolute_cfo_hz"]
-        + observation["historical_pilot_alias_index"] * native_period
+        value["absolute_cfo_hz"] + observation["historical_pilot_alias_index"] * native_period
     )
     expected_period = native_period * scale
     if abs(expected_period - observation["historical_pilot_alias_period_hz"]) > 1e-6:
@@ -158,8 +157,7 @@ def main() -> None:
             for frame in branch["frames"]
             if frame["group_id"] in (0, 3, 5)
             and frame["frame"]["training_supported"]
-            and normalized_frame_cfo(frame, observation, "even", reject_boundary=True)
-            is not None
+            and normalized_frame_cfo(frame, observation, "even", reject_boundary=True) is not None
         ]
         odd = [
             normalized_frame_cfo(frame, observation, "odd", reject_boundary=False)
@@ -172,8 +170,7 @@ def main() -> None:
             for frame in branch["frames"]
             if frame["group_id"] in (1, 2, 4)
             and frame["frame"]["training_supported"]
-            and normalized_frame_cfo(frame, observation, "odd", reject_boundary=False)
-            is not None
+            and normalized_frame_cfo(frame, observation, "odd", reject_boundary=False) is not None
         ]
         odd_frames = [
             frame["frame"]["odd"]
@@ -259,12 +256,8 @@ def main() -> None:
         "glrt_model": {**glrt_model, "norad": int(norad[glrt_model["candidate_index"]])},
         "pilot_model": {**pilot_model, "norad": int(norad[pilot_model["candidate_index"]])},
         "held_odd_equal_visit_rms_hz": {
-            "archived_glrt": equal_visit_rms(
-                residuals["archived_glrt"]
-            ),
-            "training_even_pilot": equal_visit_rms(
-                residuals["training_even_pilot"]
-            ),
+            "archived_glrt": equal_visit_rms(residuals["archived_glrt"]),
+            "training_even_pilot": equal_visit_rms(residuals["training_even_pilot"]),
         },
         "held_odd_visit_rms_hz_quantiles_0_25_50_75_100": {
             name: np.quantile(values, [0, 0.25, 0.5, 0.75, 1]).tolist()
@@ -277,9 +270,7 @@ def main() -> None:
             "training_even_pilot": int(
                 np.sum(visit_rms["training_even_pilot"] < visit_rms["archived_glrt"])
             ),
-            "ties": int(
-                np.sum(visit_rms["training_even_pilot"] == visit_rms["archived_glrt"])
-            ),
+            "ties": int(np.sum(visit_rms["training_even_pilot"] == visit_rms["archived_glrt"])),
         },
         "held_odd_visits": [
             {
@@ -289,23 +280,17 @@ def main() -> None:
                 "archived_glrt_mean_residual_hz": float(
                     np.mean(residuals["archived_glrt"][position])
                 ),
-                "archived_glrt_rms_hz": float(
-                    visit_rms["archived_glrt"][position]
-                ),
+                "archived_glrt_rms_hz": float(visit_rms["archived_glrt"][position]),
                 "training_even_pilot_mean_residual_hz": float(
                     np.mean(residuals["training_even_pilot"][position])
                 ),
-                "training_even_pilot_rms_hz": float(
-                    visit_rms["training_even_pilot"][position]
-                ),
+                "training_even_pilot_rms_hz": float(visit_rms["training_even_pilot"][position]),
             }
             for position, index in enumerate(common)
         ],
         "held_odd_equal_visit_coherence": {
             "exact": float(np.mean([held_coherence[index]["exact"] for index in held_indices])),
-            "control": float(
-                np.mean([held_coherence[index]["control"] for index in held_indices])
-            ),
+            "control": float(np.mean([held_coherence[index]["control"] for index in held_indices])),
             "search_boundary_frames_retained": int(
                 sum(held_coherence[index]["search_boundary_count"] for index in held_indices)
             ),

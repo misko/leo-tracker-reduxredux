@@ -27,11 +27,7 @@ def test_equal_visit_rms_does_not_pool_frame_counts():
 
 
 def test_held_glrt_value_cannot_choose_response_alias():
-    frame = {
-        "frame": {
-            "odd": {"absolute_cfo_hz": -95_000.0, "search_boundary": False}
-        }
-    }
+    frame = {"frame": {"odd": {"absolute_cfo_hz": -95_000.0, "search_boundary": False}}}
     observation = {
         "historical_rf_normalization_scale": 0.98,
         "historical_pilot_alias_period_hz": (1 / 4.4e-6) * 0.98,

@@ -28,16 +28,22 @@ def test_training_score_and_profiled_cfo_ignore_complementary_rows():
         measured = np.arange(6.0) * 100.0
         measured[~training] += held_delta
         track = {
-            "track_id": "track", "candidate_id": "candidate",
-            "times_s": np.arange(6.0), "measured_hz": measured,
-            "training_mask": training, "weight_s": 6,
-            "grid_ns": grid, "position": position, "velocity": velocity,
+            "track_id": "track",
+            "candidate_id": "candidate",
+            "times_s": np.arange(6.0),
+            "measured_hz": measured,
+            "training_mask": training,
+            "weight_s": 6,
+            "grid_ns": grid,
+            "position": position,
+            "velocity": velocity,
         }
         return [{"session_id": "scan", "tracks": [track]}]
 
     before = module.score(single, scan(0.0), (0.0, 0.0), [0.0], 1.0)
     after = module.score(single, scan(1e7), (0.0, 0.0), [0.0], 1.0)
     assert before["penalized_objective_rmse_hz"] == after["penalized_objective_rmse_hz"]
-    assert before["rows"][0]["tracks"][0]["frequency_offset_hz"] == (
-        after["rows"][0]["tracks"][0]["frequency_offset_hz"]
+    assert (
+        before["rows"][0]["tracks"][0]["frequency_offset_hz"]
+        == (after["rows"][0]["tracks"][0]["frequency_offset_hz"])
     )

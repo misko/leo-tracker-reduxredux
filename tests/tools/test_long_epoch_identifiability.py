@@ -14,10 +14,7 @@ def test_profile_matches_dense_schur_complement_and_strengthens_with_ridge():
     b = np.zeros((60, 3))
     b[np.arange(60), np.arange(60) % 3] = rng.normal(size=60)
     h = a.T @ a
-    groups = {
-        k: {"cross": a.T @ b[:, k], "epoch_curvature": b[:, k] @ b[:, k]}
-        for k in range(3)
-    }
+    groups = {k: {"cross": a.T @ b[:, k], "epoch_curvature": b[:, k] @ b[:, k]} for k in range(3)}
     previous = None
     for ridge in (0, 1, 1000):
         actual = module.profile_information(h, groups, ridge)

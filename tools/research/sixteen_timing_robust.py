@@ -92,9 +92,7 @@ def score_track(
     training = np.asarray(training_mask, dtype=bool)
     uncertainty = np.asarray(uncertainty_hz, dtype=float)
     sigma = np.hypot(uncertainty, config.uncertainty_floor_hz)
-    taus, prediction = fractional_prediction(
-        prediction_hz, source_taus_s, config.timing_step_s
-    )
+    taus, prediction = fractional_prediction(prediction_hz, source_taus_s, config.timing_step_s)
     if measured.shape != training.shape or measured.shape != uncertainty.shape:
         raise ValueError("observation arrays differ")
     if not np.any(training) or not np.any(~training) or np.any(sigma <= 0):
@@ -118,16 +116,13 @@ def score_track(
     if robust:
         offsets = np.mean(residual_bank[..., training], axis=-1)
         for _ in range(12):
-            standardized = (
-                residual_bank[..., training] - offsets[..., None]
-            ) / sigma[training]
+            standardized = (residual_bank[..., training] - offsets[..., None]) / sigma[training]
             weights = 1.0 / (
-                sigma[training] ** 2
-                * np.sqrt(1.0 + (standardized / config.huber_delta) ** 2)
+                sigma[training] ** 2 * np.sqrt(1.0 + (standardized / config.huber_delta) ** 2)
             )
-            offsets = np.sum(
-                weights * residual_bank[..., training], axis=-1
-            ) / np.sum(weights, axis=-1)
+            offsets = np.sum(weights * residual_bank[..., training], axis=-1) / np.sum(
+                weights, axis=-1
+            )
     else:
         offsets = np.mean(residual_bank[..., training], axis=-1)
     centered = residual_bank - offsets[..., None]
@@ -165,14 +160,14 @@ def score_track(
             }
         )
     train_key = "training_robust_loss" if robust else "training_rms_hz"
-    selection_key = train_key if config.identity_selection == "training" else (
-        "evaluation_robust_loss" if robust else "evaluation_rms_hz"
+    selection_key = (
+        train_key
+        if config.identity_selection == "training"
+        else ("evaluation_robust_loss" if robust else "evaluation_rms_hz")
     )
     winner = min(
         profiled,
-        key=lambda row: (
-            row[selection_key], row[train_key], row["candidate_id"], row["tau_s"]
-        ),
+        key=lambda row: (row[selection_key], row[train_key], row["candidate_id"], row["tau_s"]),
     )
     winner["timing_at_bound"] = bool(np.isclose(abs(winner["tau_s"]), 5.0))
     winner["uncertainty_hz"] = float(np.median(uncertainty))
@@ -184,20 +179,27 @@ def summarize_tracks(track_rows, config):
     matched = [row for row in track_rows if row.get("winner") is not None]
     total_weight = float(sum(row["weight_s"] for row in track_rows))
     if config.objective == "duration-capped-rmse-800hz":
-        loss = sum(
-            row["weight_s"]
-            * min(
-                config.unmatched_penalty_hz
-                if row.get("winner") is None
-                else row["winner"]["evaluation_rms_hz"],
-                config.unmatched_penalty_hz,
-            ) ** 2
-            for row in track_rows
-        ) / total_weight
+        loss = (
+            sum(
+                row["weight_s"]
+                * min(
+                    config.unmatched_penalty_hz
+                    if row.get("winner") is None
+                    else row["winner"]["evaluation_rms_hz"],
+                    config.unmatched_penalty_hz,
+                )
+                ** 2
+                for row in track_rows
+            )
+            / total_weight
+        )
         value = float(np.sqrt(loss))
     else:
-        unmatched = float(pseudo_huber(config.unmatched_penalty_hz / config.uncertainty_floor_hz,
-                                       config.huber_delta))
+        unmatched = float(
+            pseudo_huber(
+                config.unmatched_penalty_hz / config.uncertainty_floor_hz, config.huber_delta
+            )
+        )
         value = float(
             sum(
                 row["weight_s"]
@@ -211,13 +213,9 @@ def summarize_tracks(track_rows, config):
             / total_weight
         )
     taus = np.asarray([row["winner"]["tau_s"] for row in matched], dtype=float)
-    margins = np.asarray(
-        [row["winner"]["tau_training_margin"] for row in matched], dtype=float
-    )
+    margins = np.asarray([row["winner"]["tau_training_margin"] for row in matched], dtype=float)
     offsets = np.asarray([row["winner"]["offset_hz"] for row in matched], dtype=float)
-    sigmas = np.asarray(
-        [row["winner"]["effective_sigma_hz"] for row in matched], dtype=float
-    )
+    sigmas = np.asarray([row["winner"]["effective_sigma_hz"] for row in matched], dtype=float)
     return {
         "objective_value": value,
         "matched_track_count": len(matched),
@@ -309,9 +307,7 @@ def run_cache_ablation(cache, locations_path, output):
                         "session_id": session_id,
                         "track_id": prediction.track_id,
                         "observations": len(prediction.observation_ids),
-                        "weight_s": int(
-                            len(np.unique(np.floor(prediction.times_s).astype(int)))
-                        ),
+                        "weight_s": int(len(np.unique(np.floor(prediction.times_s).astype(int)))),
                         "winner": winner,
                     }
                 )
@@ -339,8 +335,9 @@ def run_cache_ablation(cache, locations_path, output):
                     **summary,
                 }
             )
-            diagnostics.append({"method": method, "prior": location.get("prior"),
-                                "tracks": track_rows})
+            diagnostics.append(
+                {"method": method, "prior": location.get("prior"), "tracks": track_rows}
+            )
     document = {
         "schema": "frozen16-timing-robust-ablation/v1",
         "complete": True,
@@ -418,13 +415,13 @@ def run_cache_ablation(cache, locations_path, output):
 
 
 def _self_test():
-    measured = np.array([0., 2., 4., 6., 8., 10.])
+    measured = np.array([0.0, 2.0, 4.0, 6.0, 8.0, 10.0])
     source = np.arange(-5.0, 5.01, 0.25)
     prediction = np.zeros((2, len(source), 6))
     prediction[0] = source[None, :, None] * 2 + np.arange(6)[None, None, :] * 2
     prediction[1] = 1000
     mask = np.array([1, 0, 1, 0, 1, 0], dtype=bool)
-    config = AblationConfig(.25, "duration-capped-rmse-800hz", "training")
+    config = AblationConfig(0.25, "duration-capped-rmse-800hz", "training")
     row = score_track(measured, prediction, mask, np.zeros(6), [1, 2], source, config)
     assert row["candidate_id"] == "1" and abs(row["training_rms_hz"]) < 1e-12
     assert row["tau_s"] == -5.0  # constant offset makes tau structurally unidentifiable here

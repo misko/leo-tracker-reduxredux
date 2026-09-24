@@ -164,12 +164,10 @@ def run(args):
             }
         )
     base_sse = sum(
-        row["reserved_observations"] * row["base_reserved_rms_hz"] ** 2
-        for row in scan_rows
+        row["reserved_observations"] * row["base_reserved_rms_hz"] ** 2 for row in scan_rows
     )
     drift_sse = sum(
-        row["reserved_observations"] * row["shared_slope_reserved_rms_hz"] ** 2
-        for row in scan_rows
+        row["reserved_observations"] * row["shared_slope_reserved_rms_hz"] ** 2 for row in scan_rows
     )
     count = sum(row["reserved_observations"] for row in scan_rows)
     slopes = np.asarray([row["shared_slope_hz_per_s"] for row in scan_rows])
@@ -201,12 +199,8 @@ def run(args):
             "tau_plus_or_minus_5_fraction": float(np.mean(boundary_flags)),
             "correlation_with_absolute_track_minus_scan_slope": boundary_correlation,
         },
-        "per_receiver_model_available": any(
-            row["receiver_metadata_fields"] for row in scan_rows
-        ),
-        "missing_receiver_metadata": not any(
-            row["receiver_metadata_fields"] for row in scan_rows
-        ),
+        "per_receiver_model_available": any(row["receiver_metadata_fields"] for row in scan_rows),
+        "missing_receiver_metadata": not any(row["receiver_metadata_fields"] for row in scan_rows),
         "confounding": (
             "slope includes receiver drift, orbit/identity error, timing error, and "
             "track curvature; "

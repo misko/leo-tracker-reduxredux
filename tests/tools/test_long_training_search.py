@@ -6,10 +6,7 @@ import numpy as np
 
 
 def subject():
-    path = (
-        Path(__file__).parents[2]
-        / "reports/2026_09_23_long_training_search/search.py"
-    )
+    path = Path(__file__).parents[2] / "reports/2026_09_23_long_training_search/search.py"
     spec = importlib.util.spec_from_file_location("long_training_search", path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -47,9 +44,7 @@ def test_every_declared_prior_trial_stays_inside_conservative_normal_cap():
         centre = (latitude, longitude)
         centre_normal = module.receiver_ecef(latitude, longitude)[1]
         for angle in np.linspace(0, 2 * np.pi, 97):
-            point = module.offset_coordinate(
-                centre, radius * np.sin(angle), radius * np.cos(angle)
-            )
+            point = module.offset_coordinate(centre, radius * np.sin(angle), radius * np.cos(angle))
             normal = module.receiver_ecef(*point)[1]
             separation = np.arccos(np.clip(np.dot(centre_normal, normal), -1.0, 1.0))
             assert separation <= radius / 6335.0 + 1e-12
@@ -65,8 +60,11 @@ def test_candidate_and_offset_ignore_reserved_frequency_values():
     velocity[1, :, 0] = [0.0, 3.0, 1.0, 2.0]
     measured = -module.REFERENCE_RF_HZ / module.LIGHT_KM_S * velocity[0, :, 0] + 123.0
     track = {
-        "track_id": "synthetic", "position": position, "velocity": velocity,
-        "measured_hz": measured.copy(), "training_mask": np.array([True, True, False, False]),
+        "track_id": "synthetic",
+        "position": position,
+        "velocity": velocity,
+        "measured_hz": measured.copy(),
+        "training_mask": np.array([True, True, False, False]),
         "weight_s": 4,
     }
     initial, rows = module.score_point([track], ["correct", "wrong"], 0.0, 0.0, True)
@@ -86,8 +84,11 @@ def test_invisible_candidates_receive_capped_unmatched_penalty():
     receiver, _ = module.receiver_ecef(0.0, 0.0)
     position = np.tile(-receiver, (1, 4, 1))
     track = {
-        "track_id": "invisible", "position": position, "velocity": np.zeros_like(position),
-        "measured_hz": np.zeros(4), "training_mask": np.array([True, True, False, False]),
+        "track_id": "invisible",
+        "position": position,
+        "velocity": np.zeros_like(position),
+        "measured_hz": np.zeros(4),
+        "training_mask": np.array([True, True, False, False]),
         "weight_s": 4,
     }
     objective, rows = module.score_point([track], ["below-horizon"], 0.0, 0.0, True)

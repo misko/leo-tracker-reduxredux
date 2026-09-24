@@ -86,8 +86,10 @@ def analyze(iq, nominees, frequencies, train_groups):
         train = np.isin(groups, train_groups)
         time = (groups * GROUP + GROUP / 2) / FS
         affine = circular_fit(time[train], phase[train])
-        constant = circular_fit(np.zeros(train.sum()), phase[train]) if False else (
-            float(np.angle(np.mean(np.exp(1j * phase[train])))), 0.0
+        constant = (
+            circular_fit(np.zeros(train.sum()), phase[train])
+            if False
+            else (float(np.angle(np.mean(np.exp(1j * phase[train])))), 0.0)
         )
         results[name] = {
             "affine_fit": {"intercept_rad": affine[0], "slope_rad_s": affine[1]},
@@ -132,7 +134,9 @@ def main():
         if args.seal.exists():
             raise ValueError("seal exists")
         args.seal.parent.mkdir(parents=True, exist_ok=True)
-        args.seal.write_text(json.dumps({str(p.relative_to(ROOT)): digest(p) for p in sources}, indent=2)+"\n")
+        args.seal.write_text(
+            json.dumps({str(p.relative_to(ROOT)): digest(p) for p in sources}, indent=2) + "\n"
+        )
         return
     if args.output is None:
         raise ValueError("output required")
@@ -154,7 +158,9 @@ def main():
             raise ValueError("seeded split does not match frozen replay")
     store = RecordingStore.open_read_only(Path("/srv/bulk/leo"))
     try:
-        reader = store.reader(store.inspect("cap-20260825T010019-89c2889553e0"), "stream-1", verify=True)
+        reader = store.reader(
+            store.inspect("cap-20260825T010019-89c2889553e0"), "stream-1", verify=True
+        )
         raw = reader.read(original["sample_start"], COUNT, receiver_ids=(0, 1))
     finally:
         store.close()
@@ -162,7 +168,9 @@ def main():
         raise ValueError("saved snippet changed")
     iq = (raw[:, :, 0].astype(float) + 1j * raw[:, :, 1].astype(float)) / 32768
     groups, results = analyze(iq, original["nominees"], frequencies, train_groups)
-    nominal = np.asarray([[p["tracking_cfo_hz"] for p in original["nominees"][str(rx)]] for rx in (0, 1)])
+    nominal = np.asarray(
+        [[p["tracking_cfo_hz"] for p in original["nominees"][str(rx)]] for rx in (0, 1)]
+    )
     closure_hz = float(np.diff((nominal + frequencies)[1] - (nominal + frequencies)[0])[0] * -1)
     results["exact"]["template_double_difference_rate_rad_s"] = 2 * np.pi * closure_hz
     results["exact"]["restored_double_difference_rate_rad_s"] = (
@@ -177,10 +185,12 @@ def main():
         "held_group_ids": [int(g) for g in groups if g not in set(train_groups)],
         "independent_residual_cfo_hz": frequencies.tolist(),
         "results": results,
-        "limitations": "reused development IQ; conditional on frozen nominees, epochs, aliases, and CFOs",
+        "limitations": (
+            "reused development IQ; conditional on frozen nominees, epochs, aliases, and CFOs"
+        ),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(output, indent=2, allow_nan=False)+"\n")
+    args.output.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")
 
 
 if __name__ == "__main__":

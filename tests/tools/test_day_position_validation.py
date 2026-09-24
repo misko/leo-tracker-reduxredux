@@ -7,7 +7,6 @@ import pytest
 
 from leo.analysis.adaptive_tle_position import AdaptiveTrackPrediction
 
-
 ROOT = Path(__file__).parents[2]
 
 
@@ -73,9 +72,7 @@ def test_evaluation_frequency_perturbation_cannot_change_training_choice():
 def test_chunked_merge_matches_one_batch_global_ranking_with_deterministic_ties():
     measured = np.arange(8, dtype=float)
     # 10 and 20 deliberately tie; candidate ID is the documented merge tie-break.
-    predicted = np.stack(
-        [np.stack((measured, measured + 5, measured + 9)) for _ in range(4)]
-    )
+    predicted = np.stack([np.stack((measured, measured + 5, measured + 9)) for _ in range(4)])
     candidates = ("10", "20", "30", "40")
     whole = HOLDOUT.training_rows(_prediction(measured, predicted, candidates=candidates), 6)
     merged = []
@@ -89,22 +86,31 @@ def test_chunked_merge_matches_one_batch_global_ranking_with_deterministic_ties(
     )[:6]
     assert merged == expected
     assert [(row["candidate_id"], row["tau_s"]) for row in merged[:3]] == [
-        ("10", -1.0), ("10", 0.0), ("10", 1.0)
+        ("10", -1.0),
+        ("10", 0.0),
+        ("10", 1.0),
     ]
 
 
 def test_all_invisible_candidates_produce_no_fabricated_match():
     measured = np.arange(8, dtype=float)
     predicted = np.zeros((2, 3, 8))
-    assert HOLDOUT.training_rows(
-        _prediction(measured, predicted, visible=np.zeros((2, 3), dtype=bool)), 8
-    ) == []
+    assert (
+        HOLDOUT.training_rows(
+            _prediction(measured, predicted, visible=np.zeros((2, 3), dtype=bool)), 8
+        )
+        == []
+    )
 
 
 def test_replication_groups_accept_disjoint_groups_and_reject_duplicates():
     assert REPLICATION._groups(
-        {"groups": [{"group_id": "a", "session_ids": ["s1", "s2"]},
-                    {"group_id": "b", "session_ids": ["s3"]}]}
+        {
+            "groups": [
+                {"group_id": "a", "session_ids": ["s1", "s2"]},
+                {"group_id": "b", "session_ids": ["s3"]},
+            ]
+        }
     ) == [
         {"group_id": "a", "session_ids": ["s1", "s2"]},
         {"group_id": "b", "session_ids": ["s3"]},
@@ -112,6 +118,4 @@ def test_replication_groups_accept_disjoint_groups_and_reject_duplicates():
     with pytest.raises(ValueError, match="unique and disjoint"):
         REPLICATION._groups({"groups": [{"session_ids": ["s1", "s1"]}]})
     with pytest.raises(ValueError, match="unique and disjoint"):
-        REPLICATION._groups(
-            {"groups": [{"session_ids": ["s1"]}, {"session_ids": ["s1"]}]}
-        )
+        REPLICATION._groups({"groups": [{"session_ids": ["s1"]}, {"session_ids": ["s1"]}]})

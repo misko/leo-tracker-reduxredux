@@ -54,8 +54,7 @@ def even_summary(frames: list[dict]) -> dict:
         group_frames = [frame for frame in frames if frame["group_id"] == group]
         margins = [
             frame["frame"]["even"]["coherence_margin"]
-            if frame["frame"]["even"] is not None
-            and not frame["frame"]["even"]["search_boundary"]
+            if frame["frame"]["even"] is not None and not frame["frame"]["even"]["search_boundary"]
             else 0.0
             for frame in group_frames
         ]
@@ -112,9 +111,9 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
             if source.input_manifest_sha256 != binding["input_manifest_sha256"]:
                 raise ValueError("capture manifest changed")
             geometry = source.receipt.plan.geometry
-            if (
-                geometry.sample_rate_hz != binding["sample_rate_hz"]
-                or geometry.receiver_ids != (0, 1)
+            if geometry.sample_rate_hz != binding["sample_rate_hz"] or geometry.receiver_ids != (
+                0,
+                1,
             ):
                 raise ValueError("capture geometry changed")
             rate = geometry.sample_rate_hz
@@ -127,13 +126,13 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
                 if iq.ndim != 2 or iq.shape[1] != 2:
                     raise ValueError("receiver-column contract changed")
                 receiver = geometry.receiver_ids.index(observation["receiver_id"])
-                epoch = round(observation["probe_start_ms"] * rate / 1000) + observation[
-                    "integer_epoch_sample"
-                ]
+                epoch = (
+                    round(observation["probe_start_ms"] * rate / 1000)
+                    + observation["integer_epoch_sample"]
+                )
                 opportunities = frame_opportunities(len(iq), rate, epoch)
-                if (
-                    len(opportunities) != 24
-                    or {group for group, _ in opportunities} != set(range(6))
+                if len(opportunities) != 24 or {group for group, _ in opportunities} != set(
+                    range(6)
                 ):
                     raise ValueError("expected fixed 24-frame opportunity set")
                 branches = []
@@ -148,9 +147,7 @@ def run(binding_path: Path, output_path: Path, bulk_root: Path) -> None:
                             acquisition_absolute_cfo_hz=seed,
                             edge=observation["edge"],
                         )
-                        frames.append(
-                            {"group_id": group, "frame": serial(asdict(measured))}
-                        )
+                        frames.append({"group_id": group, "frame": serial(asdict(measured))})
                     branches.append(
                         {
                             "shift_fold_periods": shift,
