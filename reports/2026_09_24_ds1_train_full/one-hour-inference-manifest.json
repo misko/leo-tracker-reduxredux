@@ -1,0 +1,5195 @@
+{
+  "case_count": 4,
+  "cases": [
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "group_id": "20260921_00",
+      "mode": "single",
+      "scan_count": 1,
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ]
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "group_id": "20260921_00",
+      "mode": "multi",
+      "scan_count": 6,
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ]
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "group_id": "20260921_16",
+      "mode": "single",
+      "scan_count": 1,
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ]
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "group_id": "20260921_16",
+      "mode": "multi",
+      "scan_count": 6,
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ]
+    }
+  ],
+  "methods": {
+    "baseline": {
+      "cost_per_scan": 1.0,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "core"
+      ]
+    },
+    "causal_per_norad_orbit_rate": {
+      "cost_per_scan": 2.4,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track",
+        "norad_orbit_phase_rate"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "extended",
+        "expansion"
+      ]
+    },
+    "global_time": {
+      "cost_per_scan": 1.25,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track",
+        "global_time_offset"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "core"
+      ]
+    },
+    "global_time_plus_per_norad_orbit_rate": {
+      "cost_per_scan": 2.8,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track",
+        "global_time_offset",
+        "norad_orbit_phase_rate"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "extended",
+        "expansion"
+      ]
+    },
+    "independent_per_track_time": {
+      "cost_per_scan": 2.0,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track",
+        "independent_track_time_offset"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "extended",
+        "expansion"
+      ]
+    },
+    "per_scan_time": {
+      "cost_per_scan": 1.8,
+      "fitted_parameters": [
+        "receiver_position",
+        "satellite_identity_per_track",
+        "constant_cfo_per_track",
+        "global_time_offset",
+        "scan_time_residual"
+      ],
+      "modes": [
+        "multi"
+      ],
+      "tiers": [
+        "extended"
+      ]
+    },
+    "soft_association": {
+      "cost_per_scan": 2.0,
+      "fitted_parameters": [
+        "receiver_position",
+        "candidate_probability_per_track",
+        "constant_cfo_per_track"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "extended",
+        "expansion"
+      ]
+    },
+    "soft_association_plus_global_time": {
+      "cost_per_scan": 2.5,
+      "fitted_parameters": [
+        "receiver_position",
+        "candidate_probability_per_track",
+        "constant_cfo_per_track",
+        "global_time_offset"
+      ],
+      "modes": [
+        "single",
+        "multi"
+      ],
+      "tiers": [
+        "extended",
+        "expansion"
+      ]
+    }
+  },
+  "name": "DS1 TRAIN one-hour full-observation method comparison",
+  "observation_policy": "all_qualified_observations",
+  "partitions_permitted": [
+    "train"
+  ],
+  "position_evaluation": "post_seal_external_only",
+  "priors": {
+    "reno": {
+      "latitude_deg": 39.5296,
+      "longitude_deg": -119.8138,
+      "radius_km": 500.0
+    },
+    "sacramento": {
+      "latitude_deg": 38.5816,
+      "longitude_deg": -121.4944,
+      "radius_km": 250.0
+    }
+  },
+  "reference_coordinate_in_manifest": false,
+  "schema": "ds1-train-one-hour-benchmark-manifest/v1",
+  "source_dataset_sha256": "sha256:9ca01caa544babf0c427871daeb08fb2b5a06598bae58e84002980c6742f715d",
+  "stages": {
+    "core": "48 timing and association tasks; complete and seal before orbit stage",
+    "extended": "16 predeclared orbit tasks; no truth- or score-based promotion"
+  },
+  "task_count": 64,
+  "tasks": [
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 1.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--first-singleton--reno--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 2.4
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--reno--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 2.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--reno--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--first-singleton--reno--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--first-singleton--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--first-singleton--reno--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 2.5
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--first-singleton--reno--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 1.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--first-singleton--sacramento--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 2.4
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--sacramento--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 2.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--first-singleton--sacramento--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--first-singleton--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--first-singleton--sacramento--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 2.5
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--first-singleton--sacramento--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 6.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--prefix-6--reno--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 14.4
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--reno--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 16.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--reno--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--prefix-6--reno--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--prefix-6--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--prefix-6--reno--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 15.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--prefix-6--reno--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 6.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--prefix-6--sacramento--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 14.4
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--sacramento--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 16.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--prefix-6--sacramento--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--prefix-6--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--prefix-6--sacramento--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 15.0
+      },
+      "group_id": "20260921_00",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-85afa91453f8847b"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-f749f13b64256b8d"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-24ad6788936de72f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-30ff691861c6bb53"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-79cca97e97a1541c"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-full8h",
+          "group_id": "20260921_00",
+          "session_id": "scan-hop-75ec9d92534c0293"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--prefix-6--sacramento--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-85afa91453f8847b",
+        "scan-hop-f749f13b64256b8d",
+        "scan-hop-24ad6788936de72f",
+        "scan-hop-30ff691861c6bb53",
+        "scan-hop-79cca97e97a1541c",
+        "scan-hop-75ec9d92534c0293"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 1.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--first-singleton--reno--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 2.4
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--reno--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 2.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--reno--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--first-singleton--reno--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--first-singleton--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--first-singleton--reno--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 2.5
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--first-singleton--reno--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 1.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--first-singleton--sacramento--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 2.4
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--sacramento--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 1.25
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 2.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--first-singleton--sacramento--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 1.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--first-singleton--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 2.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--first-singleton--sacramento--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 2.5
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--first-singleton--sacramento--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 1,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_singleton"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 6.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--prefix-6--reno--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 14.4
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--reno--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--reno--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 16.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--reno--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--prefix-6--reno--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--prefix-6--reno--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--prefix-6--reno--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 15.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--prefix-6--reno--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 39.5296,
+        "longitude_deg": -119.8138,
+        "name": "reno",
+        "radius_km": 500.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--soft_association_plus_global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.0,
+        "work_units": 6.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "baseline",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--prefix-6--sacramento--baseline.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--baseline",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.4,
+        "work_units": 14.4
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "causal_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--sacramento--causal_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.25,
+        "work_units": 7.5
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--sacramento--global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.8,
+        "work_units": 16.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "exact_rate_finalists": 1,
+        "exact_rate_workers": 1,
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_grid_s": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "exact_orbit",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "independent_per_track_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--prefix-6--sacramento--independent_per_track_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--independent_per_track_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 1.8,
+        "work_units": 10.8
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "per_scan_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "tau_limit_s": 2.0,
+        "tau_step_s": 0.5,
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--prefix-6--sacramento--per_scan_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--per_scan_time",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.0,
+        "work_units": 12.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "soft_association",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--prefix-6--sacramento--soft_association.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--soft_association",
+      "tier": "core"
+    },
+    {
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_cost": {
+        "relative_per_scan": 2.5,
+        "work_units": 15.0
+      },
+      "group_id": "20260921_16",
+      "input_scans": [
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-f354f1c88a654681"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-d026d3a5a705523e"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-e1422297a1ff6598"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-5f69c606f9bb3a8f"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-2ea5bcf9b18778cc"
+        },
+        {
+          "causal_state_cache_root": "/tmp/leo-long-training-cache-second8h",
+          "group_id": "20260921_16",
+          "session_id": "scan-hop-0dcc48743f9f5487"
+        }
+      ],
+      "method": "soft_association_plus_global_time",
+      "options": {
+        "altitude_m": 0.0,
+        "beam_width": 2,
+        "causal_cache_validation": {
+          "require_cache_receipt": true,
+          "require_receipt_cache_digest_match": true,
+          "require_session_id_match": true
+        },
+        "frequency_loss_cap_hz": 800.0,
+        "geographic_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "minimum_track_duration_s": 3.0,
+        "observation_policy": "all_qualified_observations",
+        "search_levels_km": [
+          100.0,
+          50.0,
+          25.0,
+          12.5
+        ],
+        "within_track_holdout": "forbidden"
+      },
+      "output_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--prefix-6--sacramento--soft_association_plus_global_time.json",
+      "partition": "train",
+      "prior": {
+        "latitude_deg": 38.5816,
+        "longitude_deg": -121.4944,
+        "name": "sacramento",
+        "radius_km": 250.0
+      },
+      "scan_count": 6,
+      "schema": "ds1-train-full-inference-task/v1",
+      "selection_kinds": [
+        "representative_multi_prefix"
+      ],
+      "session_ids": [
+        "scan-hop-f354f1c88a654681",
+        "scan-hop-d026d3a5a705523e",
+        "scan-hop-e1422297a1ff6598",
+        "scan-hop-5f69c606f9bb3a8f",
+        "scan-hop-2ea5bcf9b18778cc",
+        "scan-hop-0dcc48743f9f5487"
+      ],
+      "stage": "screening_comparison",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--soft_association_plus_global_time",
+      "tier": "core"
+    }
+  ],
+  "version": 1,
+  "within_track_holdout": "forbidden"
+}
