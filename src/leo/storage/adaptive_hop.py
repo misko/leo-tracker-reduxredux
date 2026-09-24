@@ -157,7 +157,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                     visit.valid_sample_count
                     for visit in visits[next_visit : next_visit + chunk.visit_count]
                 )
-                if self.schema_version == 11
+                if self.schema_version in (11, 12)
                 else chunk.visit_count * g.valid_visit_samples
             )
             if (
@@ -318,6 +318,26 @@ class VariableDualRxAdaptiveHopIqManifestV11(GeometryBoundAdaptiveHopIqManifestV
     chunks: Annotated[tuple[VariableDualRxAdaptiveHopIqChunkV11, ...], Field(max_length=625)]
 
 
+class VariableDualRxAdaptiveHopIqChunkV12(AdaptiveHopIqChunkV1):
+    """One variable-duration dual-RX visit, bounded below the decompression cap."""
+
+    schema_version: Literal[12] = 12  # type: ignore[assignment]
+    chunk_index: Annotated[int, Field(strict=True, ge=0, lt=2500)]
+    visit_count: Annotated[int, Field(strict=True, ge=1, le=1)]
+    sample_count: Annotated[int, Field(strict=True, gt=0, le=3_600_000)]
+
+
+class VariableDualRxAdaptiveHopIqManifestV12(GeometryBoundAdaptiveHopIqManifestV6):
+    """Protocol-three dual-RX IQ with one independently bounded visit per chunk."""
+
+    schema_version: Literal[12] = 12  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 1
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = Feature103DualRxTimingV3
+    receipt: AdaptiveHopReceiptV6  # type: ignore[assignment]
+    timing: Feature103DualRxTimingV3 | None  # type: ignore[assignment]
+    chunks: Annotated[tuple[VariableDualRxAdaptiveHopIqChunkV12, ...], Field(max_length=2500)]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -330,7 +350,8 @@ class _ManifestSeal(AdaptiveModel):
         | DualRx10mEdgeAdaptiveHopIqManifestV8
         | Feature103DualRxAdaptiveHopIqManifestV9
         | Feature104DualRxAdaptiveHopIqManifestV10
-        | VariableDualRxAdaptiveHopIqManifestV11,
+        | VariableDualRxAdaptiveHopIqManifestV11
+        | VariableDualRxAdaptiveHopIqManifestV12,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -355,6 +376,7 @@ class PublishedAdaptiveHopIqSession:
         | Feature103DualRxAdaptiveHopIqManifestV9
         | Feature104DualRxAdaptiveHopIqManifestV10
         | VariableDualRxAdaptiveHopIqManifestV11
+        | VariableDualRxAdaptiveHopIqManifestV12
     )
     manifest_sha256: str
 
@@ -1114,7 +1136,13 @@ class AdaptiveHopSessionWriter:
         self._feature103 = isinstance(
             plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6)
         )
-        self._visits_per_chunk = 4 if self._host_adaptive_version == 3 or self._feature103 else 8
+        self._visits_per_chunk = (
+            1
+            if isinstance(plan, AdaptiveHopPlanV6)
+            else 4
+            if self._host_adaptive_version == 3 or self._feature103
+            else 8
+        )
         self._created_ns = time.time_ns()
         self._closed = False
         self._failed = False
@@ -1201,7 +1229,7 @@ class AdaptiveHopSessionWriter:
         )
         index = len(self._chunks)
         chunk_model = (
-            VariableDualRxAdaptiveHopIqChunkV11
+            VariableDualRxAdaptiveHopIqChunkV12
             if isinstance(self._plan, AdaptiveHopPlanV6)
             else Feature104AdaptiveHopIqChunkV10
             if isinstance(self._plan, AdaptiveHopPlanV5)
@@ -1283,7 +1311,7 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                VariableDualRxAdaptiveHopIqManifestV11
+                VariableDualRxAdaptiveHopIqManifestV12
                 if isinstance(receipt, AdaptiveHopReceiptV6)
                 else Feature104DualRxAdaptiveHopIqManifestV10
                 if isinstance(receipt, AdaptiveHopReceiptV5)
@@ -1318,13 +1346,19 @@ class AdaptiveHopSessionWriter:
                 uncompressed_sha256=f"sha256:{self._digest.hexdigest()}",
                 compression=CompressionSettingsV1(
                     policy_id=(
-                        "adaptive-four-visit-chunks-v1"
+                        "adaptive-one-visit-chunks-v1"
+                        if self._visits_per_chunk == 1
+                        else "adaptive-four-visit-chunks-v1"
                         if self._visits_per_chunk == 4
                         else "adaptive-eight-visit-chunks-v1"
                     ),
                     level=3,
                     target_uncompressed_bytes=(
-                        self._plan.geometry.valid_visit_samples
+                        (
+                            self._plan.geometry.active_valid_visit_samples
+                            if isinstance(self._plan, AdaptiveHopPlanV6)
+                            else self._plan.geometry.valid_visit_samples
+                        )
                         * self._visits_per_chunk
                         * self._bytes_per_sample
                     ),

@@ -221,6 +221,47 @@ def test_protocol_three_receipt_preserves_actual_interval_and_gain(
     assert receipt.plan.geometry.gain_db == (None if slow_attack else 50.0)
 
 
+def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
+    rate = 10_000_000
+    dwell_ms = 360
+    archive = tmp_path / "scan-fw-variable-long"
+    archive.mkdir()
+    value = variable_dual_document(rate, dwell_ms)
+    value["evidence"]["utc_timing"] = {
+        "begin_before_realtime_ns": 1_790_000_000_000_000_000,
+        "begin_before_monotonic_ns": 1_000_000_000,
+        "begin_after_realtime_ns": 1_790_000_000_000_100_000,
+        "begin_after_monotonic_ns": 1_000_050_000,
+        "terminal_realtime_ns": 1_790_000_300_000_000_000,
+        "terminal_monotonic_ns": 301_000_000_000,
+    }
+    samples = rate * dwell_ms // 1_000
+    raw = np.zeros((samples, 2, 2), dtype="<i2").tobytes()
+    compressed = zstd.ZstdCompressor(level=1).compress(raw)
+    (archive / "visit-000000.ci16.zst").write_bytes(compressed)
+    value["visits"][0]["iq"].update(
+        uncompressed_bytes=len(raw),
+        compressed_sha256=importer.sha256_digest(compressed),
+        uncompressed_sha256=importer.sha256_digest(raw),
+    )
+    (archive / "manifest.json").write_text(json.dumps(value))
+    bulk = tmp_path / "bulk"
+    bulk.mkdir()
+
+    session_id = importer.import_archive(archive, bulk)
+    store = AdaptiveHopIqStore(bulk, read_only=True)
+    try:
+        manifest = store.inspect(session_id).manifest
+        assert manifest.schema_version == 12
+        assert len(manifest.chunks) == 1
+        assert manifest.chunks[0].uncompressed_bytes == len(raw)
+        assert manifest.chunks[0].uncompressed_bytes < 64 * 1024 * 1024
+        assert manifest.compression.policy_id == "adaptive-one-visit-chunks-v1"
+        assert manifest.compression.target_uncompressed_bytes == len(raw)
+    finally:
+        store.close()
+
+
 @pytest.mark.parametrize(
     ("rate", "receipt_type"),
     [
