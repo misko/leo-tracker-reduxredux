@@ -1,0 +1,4356 @@
+{
+  "schema": "org.leo.research.late-track-candidate-phase/v1",
+  "scope": "conditional candidate comparison; no satellite identity claim",
+  "selection_sha256": "sha256:985c6eda41d92a9aacb142a9ee7acc66544eea79c43fcde4e718246c54dc90cd",
+  "protocol": {
+    "split_seed_base": 2026092420,
+    "sensitivity_seed_base": 2026092500,
+    "sensitivity_split_count": 32,
+    "outer_split": "seeded random whole visits, shared by both receivers",
+    "training_response": "even-symbol adjacent-frame phase advances on training visits",
+    "held_response": "odd-symbol adjacent-frame phase advances on held visits",
+    "frame_policy": "four IQ-blind adjacent frames nearest each 20 ms group center",
+    "candidate_bank": "top five causal-TLE candidates from exact phase-blind track review",
+    "candidate_tau": "frozen phase-blind TLE-review tau per candidate",
+    "nuisance": "one candidate/track/receiver frequency bias fitted on even training only",
+    "phase_period_rad": 3.141592653589793,
+    "bias_period_hz": 375.0,
+    "minimum_identifiable_contrast_rad": 0.1,
+    "fractional_epoch_corrected": false,
+    "phase_continuity_across_visits": false,
+    "baseline_orientation": "8 cm horizontal RX0-to-RX1 azimuth and one receiver CFO offset fitted per candidate/scan on random training visits; held visits only evaluate"
+  },
+  "track_count": 5,
+  "receiver_evaluation_count": 10,
+  "interval_count": 793,
+  "aggregate": {
+    "glrt_leader_selected_on_training_receivers": 7,
+    "glrt_leader_best_on_held_diagnostic_receivers": 6,
+    "identifiable_after_nuisance_receivers": 10,
+    "median_selected_odd_held_r": 0.42855650588464406,
+    "median_selected_odd_held_rms_rad": 0.6743702720891636,
+    "selected_beats_constant_control_receivers": 9,
+    "selected_beats_wrong_time_control_receivers": 10,
+    "joint_glrt_leader_selected_on_training_tracks": 4,
+    "joint_glrt_leader_best_on_held_diagnostic_tracks": 4,
+    "joint_selected_beats_constant_control_tracks": 4,
+    "joint_selected_beats_wrong_time_control_tracks": 5,
+    "orientation_glrt_leader_selected_on_training_tracks": 0,
+    "orientation_glrt_leader_best_on_held_diagnostic_tracks": 2,
+    "orientation_selected_beats_constant_tracks": 1
+  },
+  "tracks": [
+    {
+      "rank": 1,
+      "session_id": "scan-fw-62f406d45bb93b70",
+      "channel": 4,
+      "edge": "lower",
+      "actual_rf_hz": 11459687500.0,
+      "glrt_group_leading_catalog_number": 58679,
+      "training_visit_indices": [
+        1425,
+        1438,
+        1444,
+        1445
+      ],
+      "held_visit_indices": [
+        1443,
+        1446,
+        1458,
+        1466
+      ],
+      "tle_snapshot": {
+        "collected_utc_ns": 1790269403631833815,
+        "digest": "sha256:4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132",
+        "object_count": 11097,
+        "provider": "space-track",
+        "schema_version": 1
+      },
+      "tle_snapshot_path": "/var/lib/leo/tle/archive/space-track/1790269403631833815-4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132.tle",
+      "receivers": [
+        {
+          "candidate_ids": [
+            "NORAD-58679-tau-+1s",
+            "NORAD-62451-tau-+5s",
+            "NORAD-47981-tau-+2s",
+            "NORAD-65759-tau--5s",
+            "NORAD-63196-tau-+5s"
+          ],
+          "assigned_training_visit_indices": [
+            1425,
+            1438,
+            1444,
+            1445
+          ],
+          "assigned_held_visit_indices": [
+            1443,
+            1446,
+            1458,
+            1466
+          ],
+          "available_training_visit_indices": [
+            1425,
+            1438,
+            1444,
+            1445
+          ],
+          "available_held_visit_indices": [
+            1443,
+            1446,
+            1458,
+            1466
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 96,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-58679-tau-+1s",
+          "held_diagnostic_best_candidate_index": 1,
+          "held_diagnostic_best_candidate": "NORAD-62451-tau-+5s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": false,
+          "maximum_candidate_contrast_rad": 1.0944844666838862,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.5578111140439509,
+              0.4887078081372426,
+              0.9165202556223792,
+              1.0944844666838862
+            ],
+            [
+              0.5578111140439509,
+              0.0,
+              0.7684165776401743,
+              0.7684794484020788,
+              0.6172639628838834
+            ],
+            [
+              0.4887078081372426,
+              0.7684165776401743,
+              0.0,
+              0.5629910645775781,
+              1.0837087308404396
+            ],
+            [
+              0.9165202556223792,
+              0.7684794484020788,
+              0.5629910645775781,
+              0.0,
+              0.8493509684838032
+            ],
+            [
+              1.0944844666838862,
+              0.6172639628838834,
+              1.0837087308404396,
+              0.8493509684838032,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-58679-tau-+1s",
+              "model_kind": "candidate",
+              "catalog_number": 58679,
+              "selected_tau_s": 1.0,
+              "fitted_bias_hz_from_even_training": 182.25174941686106,
+              "even_training_composite_score": 2.799115571880805,
+              "even_held_diagnostic_score": 0.8255035542056366,
+              "odd_held_response": {
+                "composite_score": 1.0201799792060127,
+                "circular_r_modulo_pi": 0.5769574810407931,
+                "rms_rad": 0.7349869000924514
+              }
+            },
+            {
+              "model_id": "NORAD-62451-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 62451,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": 64.29106964345218,
+              "even_training_composite_score": 2.0086964713487596,
+              "even_held_diagnostic_score": 2.1764104655864465,
+              "odd_held_response": {
+                "composite_score": 2.3440813791414152,
+                "circular_r_modulo_pi": 0.5973499941676681,
+                "rms_rad": 0.505317435881615
+              }
+            },
+            {
+              "model_id": "NORAD-47981-tau-+2s",
+              "model_kind": "candidate",
+              "catalog_number": 47981,
+              "selected_tau_s": 2.0,
+              "fitted_bias_hz_from_even_training": -140.390703098967,
+              "even_training_composite_score": 2.57260366800434,
+              "even_held_diagnostic_score": 0.5761949604226302,
+              "odd_held_response": {
+                "composite_score": 0.7606285372362287,
+                "circular_r_modulo_pi": 0.6264737859380844,
+                "rms_rad": 0.7792848368666061
+              }
+            },
+            {
+              "model_id": "NORAD-65759-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 65759,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 11.308730423192259,
+              "even_training_composite_score": 1.6181818308003,
+              "even_held_diagnostic_score": 0.5300218618912549,
+              "odd_held_response": {
+                "composite_score": 0.5942323411384007,
+                "circular_r_modulo_pi": 0.20928875913639017,
+                "rms_rad": 0.8325191477789112
+              }
+            },
+            {
+              "model_id": "NORAD-63196-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 63196,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -106.40203265578141,
+              "even_training_composite_score": 1.8052573875276463,
+              "even_held_diagnostic_score": 1.272313276615996,
+              "odd_held_response": {
+                "composite_score": 1.085594364827362,
+                "circular_r_modulo_pi": 0.48312887665921633,
+                "rms_rad": 0.7333193606595819
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": 164.25774741752747,
+              "even_training_composite_score": 0.6483724469996973,
+              "even_held_diagnostic_score": 0.17995613665229232,
+              "odd_held_response": {
+                "composite_score": 0.24641493125986574,
+                "circular_r_modulo_pi": 0.1057066244847266,
+                "rms_rad": 0.8681022829012808
+              }
+            },
+            {
+              "model_id": "NORAD-58679-tau-+1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -145.014161946018,
+              "even_training_composite_score": 0.37639903513502687,
+              "even_held_diagnostic_score": -0.06887307683725968,
+              "odd_held_response": {
+                "composite_score": -0.02042340741936058,
+                "circular_r_modulo_pi": 0.16907117366325247,
+                "rms_rad": 0.8830263351771627
+              }
+            }
+          ],
+          "receiver_id": 0,
+          "tracklet_id": "sha256:4e4d7aef0c7e72dc5a442b7b02f5639df7e8127a3e7b0877b02931bd898a18ef",
+          "review_artifact": "tle-review-01"
+        },
+        {
+          "candidate_ids": [
+            "NORAD-58679-tau-+1s",
+            "NORAD-62451-tau-+5s",
+            "NORAD-47981-tau-+5s",
+            "NORAD-65759-tau--5s",
+            "NORAD-61628-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1425,
+            1438,
+            1444,
+            1445
+          ],
+          "assigned_held_visit_indices": [
+            1443,
+            1446,
+            1458,
+            1466
+          ],
+          "available_training_visit_indices": [
+            1425,
+            1438,
+            1444,
+            1445
+          ],
+          "available_held_visit_indices": [
+            1443,
+            1446,
+            1458,
+            1466
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 96,
+          "training_selected_candidate_index": 2,
+          "training_selected_candidate": "NORAD-47981-tau-+5s",
+          "held_diagnostic_best_candidate_index": 1,
+          "held_diagnostic_best_candidate": "NORAD-62451-tau-+5s",
+          "glrt_leader_selected_on_training": false,
+          "glrt_leader_best_on_held_diagnostic": false,
+          "maximum_candidate_contrast_rad": 1.0709347719527684,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.6126620302833473,
+              0.8803023927782035,
+              0.891617436623054,
+              1.0040650380799343
+            ],
+            [
+              0.6126620302833473,
+              0.0,
+              0.509475258915433,
+              0.7851149732797963,
+              1.0709347719527684
+            ],
+            [
+              0.8803023927782035,
+              0.509475258915433,
+              0.0,
+              0.8276054699667664,
+              0.8282216843452047
+            ],
+            [
+              0.891617436623054,
+              0.7851149732797963,
+              0.8276054699667664,
+              0.0,
+              0.9656850976288666
+            ],
+            [
+              1.0040650380799343,
+              1.0709347719527684,
+              0.8282216843452047,
+              0.9656850976288666,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-58679-tau-+1s",
+              "model_kind": "candidate",
+              "catalog_number": 58679,
+              "selected_tau_s": 1.0,
+              "fitted_bias_hz_from_even_training": -36.550316561146275,
+              "even_training_composite_score": 2.502317552637246,
+              "even_held_diagnostic_score": 0.9836695095941734,
+              "odd_held_response": {
+                "composite_score": 1.043366675071246,
+                "circular_r_modulo_pi": 0.5394192763508019,
+                "rms_rad": 0.7600209136880581
+              }
+            },
+            {
+              "model_id": "NORAD-62451-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 62451,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -146.01382872375876,
+              "even_training_composite_score": 1.7877108379191626,
+              "even_held_diagnostic_score": 2.655444781131447,
+              "odd_held_response": {
+                "composite_score": 2.5246274018370385,
+                "circular_r_modulo_pi": 0.6415833738468774,
+                "rms_rad": 0.45951965818654716
+              }
+            },
+            {
+              "model_id": "NORAD-47981-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 47981,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": 45.422359213595456,
+              "even_training_composite_score": 2.6383455904437216,
+              "even_held_diagnostic_score": 1.0553348667618674,
+              "odd_held_response": {
+                "composite_score": 0.9697051587669054,
+                "circular_r_modulo_pi": 0.2469418241278145,
+                "rms_rad": 0.7389906520375791
+              }
+            },
+            {
+              "model_id": "NORAD-65759-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 65759,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 185.12579140286573,
+              "even_training_composite_score": 1.000165696274267,
+              "even_held_diagnostic_score": 0.08541154315152671,
+              "odd_held_response": {
+                "composite_score": 0.2543321654299878,
+                "circular_r_modulo_pi": 0.08166449315026322,
+                "rms_rad": 0.8645880209823733
+              }
+            },
+            {
+              "model_id": "NORAD-61628-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 61628,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 15.432355881372871,
+              "even_training_composite_score": 1.2342752797833243,
+              "even_held_diagnostic_score": -0.647890778451377,
+              "odd_held_response": {
+                "composite_score": -0.6917648786576027,
+                "circular_r_modulo_pi": 0.19025934096216898,
+                "rms_rad": 0.9788313860909702
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -95.28073975341553,
+              "even_training_composite_score": 0.446966989213488,
+              "even_held_diagnostic_score": -0.18357579102905053,
+              "odd_held_response": {
+                "composite_score": -0.08516475269837213,
+                "circular_r_modulo_pi": 0.05095786017078114,
+                "rms_rad": 0.9567525613798434
+              }
+            },
+            {
+              "model_id": "NORAD-58679-tau-+1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": 56.54365211596135,
+              "even_training_composite_score": 0.3668632811298994,
+              "even_held_diagnostic_score": 0.054267908521504996,
+              "odd_held_response": {
+                "composite_score": -0.143131339661726,
+                "circular_r_modulo_pi": 0.12708166232365928,
+                "rms_rad": 0.9197052255152148
+              }
+            }
+          ],
+          "receiver_id": 1,
+          "tracklet_id": "sha256:7c92e4b97942be7d205376ee70a553aff5380b8a27e45381d4a5917913a1ffa9",
+          "review_artifact": "tle-review-03"
+        }
+      ],
+      "joint_receivers": {
+        "combination": "equal receiver mean after separate train-only frequency biases",
+        "candidate_catalog_numbers": [
+          58679,
+          62451,
+          47981,
+          65759
+        ],
+        "training_selected_catalog_number": 58679,
+        "held_diagnostic_best_catalog_number": 62451,
+        "glrt_leader_selected_on_training": true,
+        "glrt_leader_best_on_held_diagnostic": false,
+        "training_selected_odd_held_score": 1.0317733271386293,
+        "constant_control_odd_held_score": 0.0806250892807468,
+        "wrong_time_control_odd_held_score": -0.08177737354054329,
+        "training_selected_beats_constant": true,
+        "training_selected_beats_wrong_time": true,
+        "candidates": [
+          {
+            "catalog_number": 58679,
+            "receiver_tau_s": [
+              1.0,
+              1.0
+            ],
+            "even_training_composite_score": 2.650716562259025,
+            "odd_held_composite_score": 1.0317733271386293,
+            "odd_held_receiver_r": [
+              0.5769574810407931,
+              0.5394192763508019
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.7349869000924514,
+              0.7600209136880581
+            ]
+          },
+          {
+            "catalog_number": 62451,
+            "receiver_tau_s": [
+              5.0,
+              5.0
+            ],
+            "even_training_composite_score": 1.8982036546339611,
+            "odd_held_composite_score": 2.4343543904892266,
+            "odd_held_receiver_r": [
+              0.5973499941676681,
+              0.6415833738468774
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.505317435881615,
+              0.45951965818654716
+            ]
+          },
+          {
+            "catalog_number": 47981,
+            "receiver_tau_s": [
+              2.0,
+              5.0
+            ],
+            "even_training_composite_score": 2.6054746292240307,
+            "odd_held_composite_score": 0.8651668480015671,
+            "odd_held_receiver_r": [
+              0.6264737859380844,
+              0.2469418241278145
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.7792848368666061,
+              0.7389906520375791
+            ]
+          },
+          {
+            "catalog_number": 65759,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.3091737635372835,
+            "odd_held_composite_score": 0.4242822532841943,
+            "odd_held_receiver_r": [
+              0.20928875913639017,
+              0.08166449315026322
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.8325191477789112,
+              0.8645880209823733
+            ]
+          }
+        ]
+      },
+      "baseline_orientation": {
+        "claim_status": "feasibility-only; electrical baseline orientation not identified",
+        "orientation_grid_deg": [
+          0,
+          359,
+          1
+        ],
+        "nominal_axis_hypotheses_deg": [
+          79,
+          259
+        ],
+        "training_selected_catalog_number": 65759,
+        "held_diagnostic_best_catalog_number": 58679,
+        "training_selected_held_rms_hz": 29.11036350339369,
+        "training_selected_beats_constant": false,
+        "constant_control_held_rms_hz": 29.110122210568445,
+        "maximum_candidate_geometry_span_hz": 0.08856988734610859,
+        "observed_relative_cfo_standard_deviation_hz": 23.04977340091277,
+        "geometry_span_to_observed_standard_deviation_ratio": 0.003842549156800007,
+        "models": [
+          {
+            "catalog_number": 58679,
+            "training_fitted_azimuth_deg": 317,
+            "training_fitted_receiver_cfo_hz": 656764.5039040467,
+            "training_rms_hz": 16.073097953075624,
+            "held_rms_hz": 29.110333404046465,
+            "held_pearson_r": -0.06528292525495914
+          },
+          {
+            "catalog_number": 62451,
+            "training_fitted_azimuth_deg": 104,
+            "training_fitted_receiver_cfo_hz": 656764.4404270797,
+            "training_rms_hz": 16.07304655430246,
+            "held_rms_hz": 29.11033612907939,
+            "held_pearson_r": -0.06894716225845005
+          },
+          {
+            "catalog_number": 47981,
+            "training_fitted_azimuth_deg": 161,
+            "training_fitted_receiver_cfo_hz": 656764.4751325244,
+            "training_rms_hz": 16.073070353794357,
+            "held_rms_hz": 29.110333943490748,
+            "held_pearson_r": -0.06727764640874508
+          },
+          {
+            "catalog_number": 65759,
+            "training_fitted_azimuth_deg": 179,
+            "training_fitted_receiver_cfo_hz": 656764.4834675468,
+            "training_rms_hz": 16.073037381869604,
+            "held_rms_hz": 29.11036350339369,
+            "held_pearson_r": -0.06717104874210136
+          }
+        ],
+        "measured_relative_cfo_hz": [
+          656738.1393676562,
+          656780.047814226,
+          656789.0105799993,
+          656765.3669900608,
+          656774.3001209047,
+          656714.5250171936,
+          656769.1558937157,
+          656747.9965130816
+        ]
+      },
+      "random_split_sensitivity": {
+        "requested_split_count": 32,
+        "valid_split_count": 32,
+        "glrt_leader_training_selection_fraction": 0.21875,
+        "glrt_leader_held_best_fraction": 0.40625,
+        "selected_beats_constant_fraction": 1.0,
+        "selected_beats_wrong_time_fraction": 1.0,
+        "splits": [
+          {
+            "seed": 2026092532,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092533,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092534,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092535,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092536,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092537,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092538,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092539,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092540,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092541,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092542,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092543,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092544,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092545,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092546,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092547,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 47981,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092548,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 47981,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092549,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092550,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092551,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092552,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092553,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092554,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092555,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092556,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092557,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092558,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092559,
+            "training_selected_catalog_number": 58679,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092560,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092561,
+            "training_selected_catalog_number": 47981,
+            "held_diagnostic_best_catalog_number": 62451,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092562,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092563,
+            "training_selected_catalog_number": 62451,
+            "held_diagnostic_best_catalog_number": 58679,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          }
+        ]
+      }
+    },
+    {
+      "rank": 2,
+      "session_id": "scan-fw-d3a96ccfa98a2ac5",
+      "channel": 4,
+      "edge": "lower",
+      "actual_rf_hz": 11459687500.0,
+      "glrt_group_leading_catalog_number": 68269,
+      "training_visit_indices": [
+        1176,
+        1183,
+        1184
+      ],
+      "held_visit_indices": [
+        1177,
+        1190,
+        1195
+      ],
+      "tle_snapshot": {
+        "collected_utc_ns": 1790269403631833815,
+        "digest": "sha256:4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132",
+        "object_count": 11097,
+        "provider": "space-track",
+        "schema_version": 1
+      },
+      "tle_snapshot_path": "/var/lib/leo/tle/archive/space-track/1790269403631833815-4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132.tle",
+      "receivers": [
+        {
+          "candidate_ids": [
+            "NORAD-68269-tau-+0s",
+            "NORAD-58488-tau-+5s",
+            "NORAD-65280-tau--5s",
+            "NORAD-61942-tau--5s",
+            "NORAD-55986-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1176,
+            1183,
+            1184
+          ],
+          "assigned_held_visit_indices": [
+            1177,
+            1190,
+            1195
+          ],
+          "available_training_visit_indices": [
+            1176,
+            1183,
+            1184
+          ],
+          "available_held_visit_indices": [
+            1177,
+            1190
+          ],
+          "abstained_visit_indices": [
+            1195
+          ],
+          "interval_count": 51,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-68269-tau-+0s",
+          "held_diagnostic_best_candidate_index": 1,
+          "held_diagnostic_best_candidate": "NORAD-58488-tau-+5s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": false,
+          "maximum_candidate_contrast_rad": 1.0090138115735057,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.4100955098358847,
+              0.5398346432946779,
+              0.937323310336586,
+              0.4404428024395889
+            ],
+            [
+              0.4100955098358847,
+              0.0,
+              0.8983036687607038,
+              1.0090138115735057,
+              0.2697376849927006
+            ],
+            [
+              0.5398346432946779,
+              0.8983036687607038,
+              0.0,
+              0.8689774134660769,
+              0.795893022111867
+            ],
+            [
+              0.937323310336586,
+              1.0090138115735057,
+              0.8689774134660769,
+              0.0,
+              0.9661755745535084
+            ],
+            [
+              0.4404428024395889,
+              0.2697376849927006,
+              0.795893022111867,
+              0.9661755745535084,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-68269-tau-+0s",
+              "model_kind": "candidate",
+              "catalog_number": 68269,
+              "selected_tau_s": 0.0,
+              "fitted_bias_hz_from_even_training": -168.1314561812729,
+              "even_training_composite_score": 2.9233916723255553,
+              "even_held_diagnostic_score": 1.7150302004805589,
+              "odd_held_response": {
+                "composite_score": 1.482236596474678,
+                "circular_r_modulo_pi": 0.419068351709193,
+                "rms_rad": 0.6804677024757151
+              }
+            },
+            {
+              "model_id": "NORAD-58488-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 58488,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -41.04881706097967,
+              "even_training_composite_score": 2.454825144629435,
+              "even_held_diagnostic_score": 2.138225548081464,
+              "odd_held_response": {
+                "composite_score": 2.0530411906882473,
+                "circular_r_modulo_pi": 0.5490531070234294,
+                "rms_rad": 0.5843561686321229
+              }
+            },
+            {
+              "model_id": "NORAD-65280-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 65280,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 76.5369876707764,
+              "even_training_composite_score": 2.7519374319163643,
+              "even_held_diagnostic_score": 0.29727093887437317,
+              "odd_held_response": {
+                "composite_score": 0.07310966747735964,
+                "circular_r_modulo_pi": 0.20064346672349057,
+                "rms_rad": 0.8590020695766806
+              }
+            },
+            {
+              "model_id": "NORAD-61942-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 61942,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 109.0261579473509,
+              "even_training_composite_score": 1.4285824170856112,
+              "even_held_diagnostic_score": -0.5127161721990018,
+              "odd_held_response": {
+                "composite_score": -0.5043937974993318,
+                "circular_r_modulo_pi": 0.21654991288614758,
+                "rms_rad": 0.9602980632692917
+              }
+            },
+            {
+              "model_id": "NORAD-55986-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 55986,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 174.12945684771745,
+              "even_training_composite_score": 1.0691213429341497,
+              "even_held_diagnostic_score": 2.0267817652983298,
+              "odd_held_response": {
+                "composite_score": 1.9490091174817004,
+                "circular_r_modulo_pi": 0.4995749891096296,
+                "rms_rad": 0.5924591205883915
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -63.916194601799404,
+              "even_training_composite_score": 0.6330591065069514,
+              "even_held_diagnostic_score": 0.3069606859059558,
+              "odd_held_response": {
+                "composite_score": 0.33521361846621833,
+                "circular_r_modulo_pi": 0.11766481625566706,
+                "rms_rad": 0.8684851336701542
+              }
+            },
+            {
+              "model_id": "NORAD-68269-tau-+0s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -102.52832389203598,
+              "even_training_composite_score": 0.3886915547713829,
+              "even_held_diagnostic_score": -0.3132689393146424,
+              "odd_held_response": {
+                "composite_score": -0.22726884049468682,
+                "circular_r_modulo_pi": 0.06460849856075378,
+                "rms_rad": 0.9571408054711247
+              }
+            }
+          ],
+          "receiver_id": 0,
+          "tracklet_id": "sha256:cfe8fe1f9cafce40dd477a9728ae716472ecf44d2223f99ae36556634ef21950",
+          "review_artifact": "tle-review-02"
+        },
+        {
+          "candidate_ids": [
+            "NORAD-68269-tau-+0s",
+            "NORAD-58488-tau-+5s",
+            "NORAD-65280-tau--5s",
+            "NORAD-61942-tau--5s",
+            "NORAD-55986-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1176,
+            1183,
+            1184
+          ],
+          "assigned_held_visit_indices": [
+            1177,
+            1190,
+            1195
+          ],
+          "available_training_visit_indices": [
+            1176,
+            1183,
+            1184
+          ],
+          "available_held_visit_indices": [
+            1177,
+            1190,
+            1195
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 72,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-68269-tau-+0s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-68269-tau-+0s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 1.0634329608572468,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.5229247233067822,
+              0.7313189942548666,
+              0.9807471881147,
+              0.656110877190364
+            ],
+            [
+              0.5229247233067822,
+              0.0,
+              0.7643888652186284,
+              0.9012043057946125,
+              0.7509682456403162
+            ],
+            [
+              0.7313189942548666,
+              0.7643888652186284,
+              0.0,
+              0.7965396886197506,
+              1.0634329608572468
+            ],
+            [
+              0.9807471881147,
+              0.9012043057946125,
+              0.7965396886197506,
+              0.0,
+              1.02063335013125
+            ],
+            [
+              0.656110877190364,
+              0.7509682456403162,
+              1.0634329608572468,
+              1.02063335013125,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-68269-tau-+0s",
+              "model_kind": "candidate",
+              "catalog_number": 68269,
+              "selected_tau_s": 0.0,
+              "fitted_bias_hz_from_even_training": -100.2790736421193,
+              "even_training_composite_score": 2.2786115733385484,
+              "even_held_diagnostic_score": 2.502817969301739,
+              "odd_held_response": {
+                "composite_score": 2.339134281967737,
+                "circular_r_modulo_pi": 0.5848414690579306,
+                "rms_rad": 0.4936008089217029
+              }
+            },
+            {
+              "model_id": "NORAD-58488-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 58488,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": 27.803232255914708,
+              "even_training_composite_score": 2.272176701161063,
+              "even_held_diagnostic_score": 1.1846623636486553,
+              "odd_held_response": {
+                "composite_score": 1.207625335083194,
+                "circular_r_modulo_pi": 0.45590377683548483,
+                "rms_rad": 0.7069709794340643
+              }
+            },
+            {
+              "model_id": "NORAD-65280-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 65280,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 147.88820393202263,
+              "even_training_composite_score": 1.158965028789112,
+              "even_held_diagnostic_score": 0.45944109280036666,
+              "odd_held_response": {
+                "composite_score": 0.3543139845150132,
+                "circular_r_modulo_pi": 0.18390707070372958,
+                "rms_rad": 0.8424978443940244
+              }
+            },
+            {
+              "model_id": "NORAD-61942-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 61942,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 170.5056647784072,
+              "even_training_composite_score": 0.8598353327217723,
+              "even_held_diagnostic_score": -0.11305384628728284,
+              "odd_held_response": {
+                "composite_score": 0.001190559740487503,
+                "circular_r_modulo_pi": 0.13708092443507147,
+                "rms_rad": 0.9011294915871456
+              }
+            },
+            {
+              "model_id": "NORAD-55986-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 55986,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -76.7869043652116,
+              "even_training_composite_score": 0.36145129135337833,
+              "even_held_diagnostic_score": 0.9133284970597998,
+              "odd_held_response": {
+                "composite_score": 0.9061196885205837,
+                "circular_r_modulo_pi": 0.2582530459311349,
+                "rms_rad": 0.7519040224356551
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -44.422692435854714,
+              "even_training_composite_score": 0.26356382301799125,
+              "even_held_diagnostic_score": 0.04892163313255384,
+              "odd_held_response": {
+                "composite_score": -0.10721370946355795,
+                "circular_r_modulo_pi": 0.058088868513805285,
+                "rms_rad": 0.931615900153357
+              }
+            },
+            {
+              "model_id": "NORAD-68269-tau-+0s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -107.15178273908697,
+              "even_training_composite_score": 0.5321009707120379,
+              "even_held_diagnostic_score": -0.10567089930122296,
+              "odd_held_response": {
+                "composite_score": -0.09703211420798329,
+                "circular_r_modulo_pi": 0.04868004281137179,
+                "rms_rad": 0.9062504048910128
+              }
+            }
+          ],
+          "receiver_id": 1,
+          "tracklet_id": "sha256:2ff4fc91122ca499db5b76191362d59c673338b28378c3b29145bc922041bec8",
+          "review_artifact": "tle-review-04"
+        }
+      ],
+      "joint_receivers": {
+        "combination": "equal receiver mean after separate train-only frequency biases",
+        "candidate_catalog_numbers": [
+          68269,
+          58488,
+          65280,
+          61942,
+          55986
+        ],
+        "training_selected_catalog_number": 68269,
+        "held_diagnostic_best_catalog_number": 68269,
+        "glrt_leader_selected_on_training": true,
+        "glrt_leader_best_on_held_diagnostic": true,
+        "training_selected_odd_held_score": 1.9106854392212076,
+        "constant_control_odd_held_score": 0.11399995450133019,
+        "wrong_time_control_odd_held_score": -0.16215047735133506,
+        "training_selected_beats_constant": true,
+        "training_selected_beats_wrong_time": true,
+        "candidates": [
+          {
+            "catalog_number": 68269,
+            "receiver_tau_s": [
+              0.0,
+              0.0
+            ],
+            "even_training_composite_score": 2.601001622832052,
+            "odd_held_composite_score": 1.9106854392212076,
+            "odd_held_receiver_r": [
+              0.419068351709193,
+              0.5848414690579306
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.6804677024757151,
+              0.4936008089217029
+            ]
+          },
+          {
+            "catalog_number": 58488,
+            "receiver_tau_s": [
+              5.0,
+              5.0
+            ],
+            "even_training_composite_score": 2.3635009228952493,
+            "odd_held_composite_score": 1.6303332628857206,
+            "odd_held_receiver_r": [
+              0.5490531070234294,
+              0.45590377683548483
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.5843561686321229,
+              0.7069709794340643
+            ]
+          },
+          {
+            "catalog_number": 65280,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.9554512303527383,
+            "odd_held_composite_score": 0.21371182599618643,
+            "odd_held_receiver_r": [
+              0.20064346672349057,
+              0.18390707070372958
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.8590020695766806,
+              0.8424978443940244
+            ]
+          },
+          {
+            "catalog_number": 61942,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.1442088749036916,
+            "odd_held_composite_score": -0.2516016188794221,
+            "odd_held_receiver_r": [
+              0.21654991288614758,
+              0.13708092443507147
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9602980632692917,
+              0.9011294915871456
+            ]
+          },
+          {
+            "catalog_number": 55986,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 0.715286317143764,
+            "odd_held_composite_score": 1.427564403001142,
+            "odd_held_receiver_r": [
+              0.4995749891096296,
+              0.2582530459311349
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.5924591205883915,
+              0.7519040224356551
+            ]
+          }
+        ]
+      },
+      "baseline_orientation": {
+        "claim_status": "feasibility-only; electrical baseline orientation not identified",
+        "orientation_grid_deg": [
+          0,
+          359,
+          1
+        ],
+        "nominal_axis_hypotheses_deg": [
+          79,
+          259
+        ],
+        "training_selected_catalog_number": 65280,
+        "held_diagnostic_best_catalog_number": 58488,
+        "training_selected_held_rms_hz": 49.13492404973106,
+        "training_selected_beats_constant": false,
+        "constant_control_held_rms_hz": 49.13452827395952,
+        "maximum_candidate_geometry_span_hz": 0.12069950866409385,
+        "observed_relative_cfo_standard_deviation_hz": 33.49600304701318,
+        "geometry_span_to_observed_standard_deviation_ratio": 0.00360340033689054,
+        "models": [
+          {
+            "catalog_number": 68269,
+            "training_fitted_azimuth_deg": 237,
+            "training_fitted_receiver_cfo_hz": 651408.5058000026,
+            "training_rms_hz": 8.796120425914243,
+            "held_rms_hz": 49.13484041176441,
+            "held_pearson_r": -0.39559662941911483
+          },
+          {
+            "catalog_number": 58488,
+            "training_fitted_azimuth_deg": 302,
+            "training_fitted_receiver_cfo_hz": 651408.506194286,
+            "training_rms_hz": 8.79615353695533,
+            "held_rms_hz": 49.13467907622839,
+            "held_pearson_r": -0.378243030303331
+          },
+          {
+            "catalog_number": 65280,
+            "training_fitted_azimuth_deg": 27,
+            "training_fitted_receiver_cfo_hz": 651408.4932569059,
+            "training_rms_hz": 8.796100997933351,
+            "held_rms_hz": 49.13492404973106,
+            "held_pearson_r": -0.4074639308210591
+          },
+          {
+            "catalog_number": 61942,
+            "training_fitted_azimuth_deg": 10,
+            "training_fitted_receiver_cfo_hz": 651408.414334881,
+            "training_rms_hz": 8.796111910725656,
+            "held_rms_hz": 49.13484136160166,
+            "held_pearson_r": -0.43627366491412706
+          },
+          {
+            "catalog_number": 55986,
+            "training_fitted_azimuth_deg": 307,
+            "training_fitted_receiver_cfo_hz": 651408.4952712829,
+            "training_rms_hz": 8.796105845291523,
+            "held_rms_hz": 49.13490174861526,
+            "held_pearson_r": -0.40613515792337757
+          }
+        ],
+        "measured_relative_cfo_hz": [
+          651403.3024924502,
+          651425.6273440552,
+          651420.8440997887,
+          651401.2383241634,
+          651325.1092861505,
+          651407.8876380171
+        ]
+      },
+      "random_split_sensitivity": {
+        "requested_split_count": 32,
+        "valid_split_count": 32,
+        "glrt_leader_training_selection_fraction": 0.75,
+        "glrt_leader_held_best_fraction": 0.875,
+        "selected_beats_constant_fraction": 1.0,
+        "selected_beats_wrong_time_fraction": 1.0,
+        "splits": [
+          {
+            "seed": 2026092564,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092565,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092566,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092567,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092568,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092569,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092570,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092571,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092572,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092573,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092574,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092575,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 58488,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092576,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092577,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092578,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092579,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092580,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092581,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092582,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092583,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092584,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092585,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 58488,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092586,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092587,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 58488,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092588,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092589,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092590,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092591,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092592,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092593,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092594,
+            "training_selected_catalog_number": 58488,
+            "held_diagnostic_best_catalog_number": 68269,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092595,
+            "training_selected_catalog_number": 68269,
+            "held_diagnostic_best_catalog_number": 58488,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          }
+        ]
+      }
+    },
+    {
+      "rank": 3,
+      "session_id": "scan-fw-feb2e6451d0727b3",
+      "channel": 2,
+      "edge": "upper",
+      "actual_rf_hz": 11190312500.0,
+      "glrt_group_leading_catalog_number": 64165,
+      "training_visit_indices": [
+        1008,
+        1010,
+        1013
+      ],
+      "held_visit_indices": [
+        963,
+        984,
+        1007,
+        1021
+      ],
+      "tle_snapshot": {
+        "collected_utc_ns": 1790269403631833815,
+        "digest": "sha256:4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132",
+        "object_count": 11097,
+        "provider": "space-track",
+        "schema_version": 1
+      },
+      "tle_snapshot_path": "/var/lib/leo/tle/archive/space-track/1790269403631833815-4296250baef0ef2a4beba14e6e3206cde612b436e3760b4b612bbac21f624132.tle",
+      "receivers": [
+        {
+          "candidate_ids": [
+            "NORAD-64165-tau--1s",
+            "NORAD-58939-tau-+2s",
+            "NORAD-58134-tau-+5s",
+            "NORAD-67732-tau--5s",
+            "NORAD-64244-tau-+5s"
+          ],
+          "assigned_training_visit_indices": [
+            1008,
+            1010,
+            1013
+          ],
+          "assigned_held_visit_indices": [
+            963,
+            984,
+            1007,
+            1021
+          ],
+          "available_training_visit_indices": [
+            1008,
+            1010,
+            1013
+          ],
+          "available_held_visit_indices": [
+            963,
+            984,
+            1007,
+            1021
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 72,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-64165-tau--1s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-64165-tau--1s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 1.100100639308805,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.7832542584454207,
+              0.9659388428351378,
+              0.7048067544739985,
+              0.7837599413933127
+            ],
+            [
+              0.7832542584454207,
+              0.0,
+              0.920015647816657,
+              1.0128680645040735,
+              0.9766279308225605
+            ],
+            [
+              0.9659388428351378,
+              0.920015647816657,
+              0.0,
+              0.9208498462859691,
+              1.100100639308805
+            ],
+            [
+              0.7048067544739985,
+              1.0128680645040735,
+              0.9208498462859691,
+              0.0,
+              0.964125907873078
+            ],
+            [
+              0.7837599413933127,
+              0.9766279308225605,
+              1.100100639308805,
+              0.964125907873078,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-64165-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 64165,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": -18.931189603465526,
+              "even_training_composite_score": 2.7945881592920823,
+              "even_held_diagnostic_score": 1.7042978981086732,
+              "odd_held_response": {
+                "composite_score": 2.9113041544923863,
+                "circular_r_modulo_pi": 0.7283469965420675,
+                "rms_rad": 0.3974627087766974
+              }
+            },
+            {
+              "model_id": "NORAD-58939-tau-+2s",
+              "model_kind": "candidate",
+              "catalog_number": 58939,
+              "selected_tau_s": 2.0,
+              "fitted_bias_hz_from_even_training": 169.88087304231925,
+              "even_training_composite_score": 0.8533504734601217,
+              "even_held_diagnostic_score": -0.008964866337793809,
+              "odd_held_response": {
+                "composite_score": -0.11939703627164688,
+                "circular_r_modulo_pi": 0.27127521751727257,
+                "rms_rad": 0.8990231811619005
+              }
+            },
+            {
+              "model_id": "NORAD-58134-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 58134,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -101.77857380873043,
+              "even_training_composite_score": 0.9575154518554628,
+              "even_held_diagnostic_score": 0.797396266468638,
+              "odd_held_response": {
+                "composite_score": -0.3943648770708331,
+                "circular_r_modulo_pi": 0.620527380774571,
+                "rms_rad": 0.9549987383609202
+              }
+            },
+            {
+              "model_id": "NORAD-67732-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 67732,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -23.05481506164611,
+              "even_training_composite_score": 0.564106418227993,
+              "even_held_diagnostic_score": 0.06390569254962142,
+              "odd_held_response": {
+                "composite_score": -0.043011011483886974,
+                "circular_r_modulo_pi": 0.22747245928604995,
+                "rms_rad": 0.9020071983868466
+              }
+            },
+            {
+              "model_id": "NORAD-64244-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 64244,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -155.7605798067311,
+              "even_training_composite_score": 1.960015426343477,
+              "even_held_diagnostic_score": 0.9725191401421621,
+              "odd_held_response": {
+                "composite_score": 1.553640687198044,
+                "circular_r_modulo_pi": 0.44229669396994764,
+                "rms_rad": 0.7008083643326397
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": 78.28640453182271,
+              "even_training_composite_score": 0.3378000233563203,
+              "even_held_diagnostic_score": 0.30823868372253393,
+              "odd_held_response": {
+                "composite_score": -1.1060738341511558,
+                "circular_r_modulo_pi": 0.31281720458460366,
+                "rms_rad": 1.0409607344229244
+              }
+            },
+            {
+              "model_id": "NORAD-64165-tau--1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -141.39036987670778,
+              "even_training_composite_score": 0.40640477152212373,
+              "even_held_diagnostic_score": -0.7567662969159775,
+              "odd_held_response": {
+                "composite_score": -0.29241836723318276,
+                "circular_r_modulo_pi": 0.20709868238753257,
+                "rms_rad": 0.920161671646777
+              }
+            }
+          ],
+          "receiver_id": 0,
+          "tracklet_id": "sha256:9d764e23be40c208f65b8f340941def58903384dd9508c36615ce8393d4426f9",
+          "review_artifact": "tle-review-09"
+        },
+        {
+          "candidate_ids": [
+            "NORAD-64165-tau--1s",
+            "NORAD-58939-tau--1s",
+            "NORAD-58134-tau-+3s",
+            "NORAD-67732-tau--5s",
+            "NORAD-64244-tau-+5s"
+          ],
+          "assigned_training_visit_indices": [
+            1008,
+            1010,
+            1013
+          ],
+          "assigned_held_visit_indices": [
+            963,
+            984,
+            1007,
+            1021
+          ],
+          "available_training_visit_indices": [
+            1008,
+            1010,
+            1013
+          ],
+          "available_held_visit_indices": [
+            963,
+            984,
+            1007,
+            1021
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 62,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-64165-tau--1s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-64165-tau--1s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 0.9619827464533207,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.6338827394041759,
+              0.8627956546283084,
+              0.5429110625926458,
+              0.69178149672877
+            ],
+            [
+              0.6338827394041759,
+              0.0,
+              0.5456516369110567,
+              0.6842099059088536,
+              0.7570439078556129
+            ],
+            [
+              0.8627956546283084,
+              0.5456516369110567,
+              0.0,
+              0.7639510865407397,
+              0.9011629424011303
+            ],
+            [
+              0.5429110625926458,
+              0.6842099059088536,
+              0.7639510865407397,
+              0.0,
+              0.9619827464533207
+            ],
+            [
+              0.69178149672877,
+              0.7570439078556129,
+              0.9011629424011303,
+              0.9619827464533207,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-64165-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 64165,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": -103.65294901699434,
+              "even_training_composite_score": 2.2705691339691785,
+              "even_held_diagnostic_score": 1.5404794380608726,
+              "odd_held_response": {
+                "composite_score": 1.2945287218956572,
+                "circular_r_modulo_pi": 0.3861024351121755,
+                "rms_rad": 0.7019089639708285
+              }
+            },
+            {
+              "model_id": "NORAD-58939-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 58939,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": -50.29573475508164,
+              "even_training_composite_score": 0.6595014261659397,
+              "even_held_diagnostic_score": -0.6371309846103104,
+              "odd_held_response": {
+                "composite_score": -0.43774190675866165,
+                "circular_r_modulo_pi": 0.4492526486168923,
+                "rms_rad": 0.9773011782246918
+              }
+            },
+            {
+              "model_id": "NORAD-58134-tau-+3s",
+              "model_kind": "candidate",
+              "catalog_number": 58134,
+              "selected_tau_s": 3.0,
+              "fitted_bias_hz_from_even_training": -58.043152282572464,
+              "even_training_composite_score": 1.085627516211782,
+              "even_held_diagnostic_score": -0.1023961217221449,
+              "odd_held_response": {
+                "composite_score": -0.2725398740253553,
+                "circular_r_modulo_pi": 0.16507147579753237,
+                "rms_rad": 0.9195051380279139
+              }
+            },
+            {
+              "model_id": "NORAD-67732-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 67732,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -158.13478840386537,
+              "even_training_composite_score": 0.9448390267074824,
+              "even_held_diagnostic_score": 1.0955822552216783,
+              "odd_held_response": {
+                "composite_score": 1.080810918803463,
+                "circular_r_modulo_pi": 0.33139998522145564,
+                "rms_rad": 0.7283043759189598
+              }
+            },
+            {
+              "model_id": "NORAD-64244-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 64244,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": 61.666944351882705,
+              "even_training_composite_score": 0.7960982888074923,
+              "even_held_diagnostic_score": -0.48299949202209,
+              "odd_held_response": {
+                "composite_score": -0.3970058644161303,
+                "circular_r_modulo_pi": 0.19477883603464624,
+                "rms_rad": 0.9778174789641612
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -47.296734421859384,
+              "even_training_composite_score": 0.4367130992277046,
+              "even_held_diagnostic_score": 0.05154300317522628,
+              "odd_held_response": {
+                "composite_score": 0.4235113067664455,
+                "circular_r_modulo_pi": 0.11276268757710148,
+                "rms_rad": 0.8512234559209939
+              }
+            },
+            {
+              "model_id": "NORAD-64165-tau--1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -19.93085638120627,
+              "even_training_composite_score": 0.4201197185557431,
+              "even_held_diagnostic_score": 0.37202063851376926,
+              "odd_held_response": {
+                "composite_score": 0.7439105585694671,
+                "circular_r_modulo_pi": 0.19157936241989018,
+                "rms_rad": 0.7915367455634764
+              }
+            }
+          ],
+          "receiver_id": 1,
+          "tracklet_id": "sha256:46e47fbe022b273e7f7ccbf44e2aedc79c8a31ce4f92e1fa593a08515af9bfbe",
+          "review_artifact": "tle-review-05"
+        }
+      ],
+      "joint_receivers": {
+        "combination": "equal receiver mean after separate train-only frequency biases",
+        "candidate_catalog_numbers": [
+          64165,
+          58939,
+          58134,
+          67732,
+          64244
+        ],
+        "training_selected_catalog_number": 64165,
+        "held_diagnostic_best_catalog_number": 64165,
+        "glrt_leader_selected_on_training": true,
+        "glrt_leader_best_on_held_diagnostic": true,
+        "training_selected_odd_held_score": 2.102916438194022,
+        "constant_control_odd_held_score": -0.3412812636923551,
+        "wrong_time_control_odd_held_score": 0.22574609566814216,
+        "training_selected_beats_constant": true,
+        "training_selected_beats_wrong_time": true,
+        "candidates": [
+          {
+            "catalog_number": 64165,
+            "receiver_tau_s": [
+              -1.0,
+              -1.0
+            ],
+            "even_training_composite_score": 2.5325786466306304,
+            "odd_held_composite_score": 2.102916438194022,
+            "odd_held_receiver_r": [
+              0.7283469965420675,
+              0.3861024351121755
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.3974627087766974,
+              0.7019089639708285
+            ]
+          },
+          {
+            "catalog_number": 58939,
+            "receiver_tau_s": [
+              2.0,
+              -1.0
+            ],
+            "even_training_composite_score": 0.7564259498130307,
+            "odd_held_composite_score": -0.27856947151515427,
+            "odd_held_receiver_r": [
+              0.27127521751727257,
+              0.4492526486168923
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.8990231811619005,
+              0.9773011782246918
+            ]
+          },
+          {
+            "catalog_number": 58134,
+            "receiver_tau_s": [
+              5.0,
+              3.0
+            ],
+            "even_training_composite_score": 1.0215714840336225,
+            "odd_held_composite_score": -0.3334523755480942,
+            "odd_held_receiver_r": [
+              0.620527380774571,
+              0.16507147579753237
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9549987383609202,
+              0.9195051380279139
+            ]
+          },
+          {
+            "catalog_number": 67732,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 0.7544727224677377,
+            "odd_held_composite_score": 0.518899953659788,
+            "odd_held_receiver_r": [
+              0.22747245928604995,
+              0.33139998522145564
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9020071983868466,
+              0.7283043759189598
+            ]
+          },
+          {
+            "catalog_number": 64244,
+            "receiver_tau_s": [
+              5.0,
+              5.0
+            ],
+            "even_training_composite_score": 1.3780568575754848,
+            "odd_held_composite_score": 0.5783174113909568,
+            "odd_held_receiver_r": [
+              0.44229669396994764,
+              0.19477883603464624
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.7008083643326397,
+              0.9778174789641612
+            ]
+          }
+        ]
+      },
+      "baseline_orientation": {
+        "claim_status": "feasibility-only; electrical baseline orientation not identified",
+        "orientation_grid_deg": [
+          0,
+          359,
+          1
+        ],
+        "nominal_axis_hypotheses_deg": [
+          79,
+          259
+        ],
+        "training_selected_catalog_number": 64244,
+        "held_diagnostic_best_catalog_number": 64165,
+        "training_selected_held_rms_hz": 74.92073503650828,
+        "training_selected_beats_constant": false,
+        "constant_control_held_rms_hz": 74.91944847341615,
+        "maximum_candidate_geometry_span_hz": 0.11346129115785986,
+        "observed_relative_cfo_standard_deviation_hz": 53.88571136747844,
+        "geometry_span_to_observed_standard_deviation_ratio": 0.002105591413354468,
+        "models": [
+          {
+            "catalog_number": 64165,
+            "training_fitted_azimuth_deg": 66,
+            "training_fitted_receiver_cfo_hz": 653140.9582760724,
+            "training_rms_hz": 19.256196316867104,
+            "held_rms_hz": 74.91999883777106,
+            "held_pearson_r": -0.8999827971320907
+          },
+          {
+            "catalog_number": 58939,
+            "training_fitted_azimuth_deg": 107,
+            "training_fitted_receiver_cfo_hz": 653140.9070726366,
+            "training_rms_hz": 19.256196012043905,
+            "held_rms_hz": 74.92027460011506,
+            "held_pearson_r": -0.9267256544632613
+          },
+          {
+            "catalog_number": 58134,
+            "training_fitted_azimuth_deg": 22,
+            "training_fitted_receiver_cfo_hz": 653140.8988071565,
+            "training_rms_hz": 19.256196992673594,
+            "held_rms_hz": 74.92021266467067,
+            "held_pearson_r": -0.927716926996771
+          },
+          {
+            "catalog_number": 67732,
+            "training_fitted_azimuth_deg": 294,
+            "training_fitted_receiver_cfo_hz": 653140.9389580116,
+            "training_rms_hz": 19.25619211401351,
+            "held_rms_hz": 74.9204994102717,
+            "held_pearson_r": -0.9198994639141153
+          },
+          {
+            "catalog_number": 64244,
+            "training_fitted_azimuth_deg": 322,
+            "training_fitted_receiver_cfo_hz": 653140.9413484695,
+            "training_rms_hz": 19.25618884466555,
+            "held_rms_hz": 74.92073503650828,
+            "held_pearson_r": -0.9175078965108568
+          }
+        ],
+        "measured_relative_cfo_hz": [
+          653258.7509418644,
+          653224.2630105111,
+          653102.4826825366,
+          653122.1240608672,
+          653167.3906341015,
+          653133.2765254924,
+          653128.7868398114
+        ]
+      },
+      "random_split_sensitivity": {
+        "requested_split_count": 32,
+        "valid_split_count": 32,
+        "glrt_leader_training_selection_fraction": 0.6875,
+        "glrt_leader_held_best_fraction": 1.0,
+        "selected_beats_constant_fraction": 0.90625,
+        "selected_beats_wrong_time_fraction": 0.84375,
+        "splits": [
+          {
+            "seed": 2026092596,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092597,
+            "training_selected_catalog_number": 58134,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092598,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092599,
+            "training_selected_catalog_number": 64244,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092600,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092601,
+            "training_selected_catalog_number": 64244,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092602,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092603,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092604,
+            "training_selected_catalog_number": 58134,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092605,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092606,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092607,
+            "training_selected_catalog_number": 64244,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092608,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092609,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092610,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092611,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092612,
+            "training_selected_catalog_number": 58134,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092613,
+            "training_selected_catalog_number": 64244,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092614,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092615,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092616,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092617,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092618,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092619,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092620,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092621,
+            "training_selected_catalog_number": 58134,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092622,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092623,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092624,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092625,
+            "training_selected_catalog_number": 67732,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092626,
+            "training_selected_catalog_number": 64165,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092627,
+            "training_selected_catalog_number": 64244,
+            "held_diagnostic_best_catalog_number": 64165,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          }
+        ]
+      }
+    },
+    {
+      "rank": 4,
+      "session_id": "scan-fw-2485843ba12d930c",
+      "channel": 1,
+      "edge": "lower",
+      "actual_rf_hz": 10709687498.0,
+      "glrt_group_leading_catalog_number": 69263,
+      "training_visit_indices": [
+        1643,
+        1648,
+        1654
+      ],
+      "held_visit_indices": [
+        1621,
+        1634,
+        1656,
+        1657
+      ],
+      "tle_snapshot": {
+        "collected_utc_ns": 1790276434356296725,
+        "digest": "sha256:1c7e0a6430a25eabab1f76d9365c3ed2796127bda6b3e957d44fc860be3d37a8",
+        "object_count": 11124,
+        "provider": "space-track",
+        "schema_version": 1
+      },
+      "tle_snapshot_path": "/var/lib/leo/tle/archive/space-track/1790276434356296725-1c7e0a6430a25eabab1f76d9365c3ed2796127bda6b3e957d44fc860be3d37a8.tle",
+      "receivers": [
+        {
+          "candidate_ids": [
+            "NORAD-69263-tau--1s",
+            "NORAD-59191-tau--5s",
+            "NORAD-56103-tau--5s",
+            "NORAD-59196-tau-+5s",
+            "NORAD-64615-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1643,
+            1648,
+            1654
+          ],
+          "assigned_held_visit_indices": [
+            1621,
+            1634,
+            1656,
+            1657
+          ],
+          "available_training_visit_indices": [
+            1643,
+            1648,
+            1654
+          ],
+          "available_held_visit_indices": [
+            1621,
+            1634,
+            1656,
+            1657
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 81,
+          "training_selected_candidate_index": 2,
+          "training_selected_candidate": "NORAD-56103-tau--5s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-69263-tau--1s",
+          "glrt_leader_selected_on_training": false,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 1.3358054608191006,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.8905554366950955,
+              0.8727523527591613,
+              1.3358054608191006,
+              0.9253656708824837
+            ],
+            [
+              0.8905554366950955,
+              0.0,
+              0.3018496887737559,
+              1.1231199101302058,
+              0.5048024057406877
+            ],
+            [
+              0.8727523527591613,
+              0.3018496887737559,
+              0.0,
+              0.9779431084170936,
+              0.7140145808362905
+            ],
+            [
+              1.3358054608191006,
+              1.1231199101302058,
+              0.9779431084170936,
+              0.0,
+              1.012272616960831
+            ],
+            [
+              0.9253656708824837,
+              0.5048024057406877,
+              0.7140145808362905,
+              1.012272616960831,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-69263-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 69263,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": -25.054148617127623,
+              "even_training_composite_score": 1.6560987530657345,
+              "even_held_diagnostic_score": 2.8195586090261373,
+              "odd_held_response": {
+                "composite_score": 2.7914782427064972,
+                "circular_r_modulo_pi": 0.7007769155469535,
+                "rms_rad": 0.4404640303011479
+              }
+            },
+            {
+              "model_id": "NORAD-59191-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 59191,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -71.28873708763746,
+              "even_training_composite_score": 2.9103014616296723,
+              "even_held_diagnostic_score": -0.21293991265629614,
+              "odd_held_response": {
+                "composite_score": -0.4188873720337727,
+                "circular_r_modulo_pi": 0.1499831626050324,
+                "rms_rad": 0.9628452629144267
+              }
+            },
+            {
+              "model_id": "NORAD-56103-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 56103,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 143.38970343218926,
+              "even_training_composite_score": 2.9797836139366876,
+              "even_held_diagnostic_score": 0.3235871673593754,
+              "odd_held_response": {
+                "composite_score": 0.12830639094259422,
+                "circular_r_modulo_pi": 0.1737798822566595,
+                "rms_rad": 0.8910442089329903
+              }
+            },
+            {
+              "model_id": "NORAD-59196-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 59196,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -81.41036321226258,
+              "even_training_composite_score": 1.177349625129929,
+              "even_held_diagnostic_score": -2.1288428285390353,
+              "odd_held_response": {
+                "composite_score": -2.073143875638322,
+                "circular_r_modulo_pi": 0.5306969865892902,
+                "rms_rad": 1.1668810328325279
+              }
+            },
+            {
+              "model_id": "NORAD-64615-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 64615,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 66.04048650449849,
+              "even_training_composite_score": 0.7022057765945965,
+              "even_held_diagnostic_score": -0.751033687000582,
+              "odd_held_response": {
+                "composite_score": -0.9075436644902914,
+                "circular_r_modulo_pi": 0.2357123755316784,
+                "rms_rad": 1.0236567673902928
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -84.78423858713762,
+              "even_training_composite_score": 0.29859160530515855,
+              "even_held_diagnostic_score": 0.15288054973865475,
+              "odd_held_response": {
+                "composite_score": 0.14862732000298853,
+                "circular_r_modulo_pi": 0.09746502458902796,
+                "rms_rad": 0.8812791277876528
+              }
+            },
+            {
+              "model_id": "NORAD-69263-tau--1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -187.5,
+              "even_training_composite_score": 0.026343062169735355,
+              "even_held_diagnostic_score": 0.06300065498137657,
+              "odd_held_response": {
+                "composite_score": -0.0488615599414519,
+                "circular_r_modulo_pi": 0.013288194508306792,
+                "rms_rad": 0.8980210257616835
+              }
+            }
+          ],
+          "receiver_id": 0,
+          "tracklet_id": "sha256:16115e1cb9a92ae9d6e334f1ed4304b059b840e6d2263c3968e9f896039dd752",
+          "review_artifact": "tle-review-03"
+        },
+        {
+          "candidate_ids": [
+            "NORAD-69263-tau--1s",
+            "NORAD-59191-tau--5s",
+            "NORAD-56103-tau--5s",
+            "NORAD-59196-tau-+5s",
+            "NORAD-64615-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1643,
+            1648,
+            1654
+          ],
+          "assigned_held_visit_indices": [
+            1621,
+            1634,
+            1656,
+            1657
+          ],
+          "available_training_visit_indices": [
+            1643,
+            1648,
+            1654
+          ],
+          "available_held_visit_indices": [
+            1621,
+            1634,
+            1656,
+            1657
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 81,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-69263-tau--1s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-69263-tau--1s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 1.0851027203386867,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.895165545258156,
+              0.8754030263984777,
+              0.6391898584858023,
+              0.9841825721682307
+            ],
+            [
+              0.895165545258156,
+              0.0,
+              0.29709670134278876,
+              0.9896341015521559,
+              0.2994754871667932
+            ],
+            [
+              0.8754030263984777,
+              0.29709670134278876,
+              0.0,
+              1.0851027203386867,
+              0.5118755533214343
+            ],
+            [
+              0.6391898584858023,
+              0.9896341015521559,
+              1.0851027203386867,
+              0.0,
+              0.8853555326875763
+            ],
+            [
+              0.9841825721682307,
+              0.2994754871667932,
+              0.5118755533214343,
+              0.8853555326875763,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-69263-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 69263,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": 135.76724425191605,
+              "even_training_composite_score": 2.491924665578089,
+              "even_held_diagnostic_score": 1.475642075529668,
+              "odd_held_response": {
+                "composite_score": 1.3568989612621933,
+                "circular_r_modulo_pi": 0.34218910654537826,
+                "rms_rad": 0.668272841702612
+              }
+            },
+            {
+              "model_id": "NORAD-59191-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 59191,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 87.90819726757746,
+              "even_training_composite_score": 2.2776760104140448,
+              "even_held_diagnostic_score": -1.150277180812672,
+              "odd_held_response": {
+                "composite_score": -1.0598021355139022,
+                "circular_r_modulo_pi": 0.31584269234633777,
+                "rms_rad": 1.0282701293372838
+              }
+            },
+            {
+              "model_id": "NORAD-56103-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 56103,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -71.28873708763746,
+              "even_training_composite_score": 2.2633032430940307,
+              "even_held_diagnostic_score": -0.5609373949658485,
+              "odd_held_response": {
+                "composite_score": -0.5773511645060786,
+                "circular_r_modulo_pi": 0.1487943081715734,
+                "rms_rad": 0.9784355540054697
+              }
+            },
+            {
+              "model_id": "NORAD-59196-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 59196,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -62.291736087970676,
+              "even_training_composite_score": 0.1391351086548048,
+              "even_held_diagnostic_score": 0.49396576084717714,
+              "odd_held_response": {
+                "composite_score": 0.5133575960677196,
+                "circular_r_modulo_pi": 0.16302731744108445,
+                "rms_rad": 0.8369872961984158
+              }
+            },
+            {
+              "model_id": "NORAD-64615-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 64615,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -178.37804065311562,
+              "even_training_composite_score": 1.3240151017647823,
+              "even_held_diagnostic_score": -1.150443321011644,
+              "odd_held_response": {
+                "composite_score": -1.005096908050706,
+                "circular_r_modulo_pi": 0.2531761142426727,
+                "rms_rad": 1.027855499192098
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": 20.68060646451184,
+              "even_training_composite_score": 0.2698270464787232,
+              "even_held_diagnostic_score": 0.10395911001919167,
+              "odd_held_response": {
+                "composite_score": 0.09504111579472996,
+                "circular_r_modulo_pi": 0.11413352161512708,
+                "rms_rad": 0.9039455606819179
+              }
+            },
+            {
+              "model_id": "NORAD-69263-tau--1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -73.41302899033656,
+              "even_training_composite_score": 0.14775138068009372,
+              "even_held_diagnostic_score": -0.3240805989589639,
+              "odd_held_response": {
+                "composite_score": -0.44264608159322216,
+                "circular_r_modulo_pi": 0.11833201573742454,
+                "rms_rad": 0.9384901907764304
+              }
+            }
+          ],
+          "receiver_id": 1,
+          "tracklet_id": "sha256:1374dc3de72a7d9971d3eba0be3a2e9b1cd8c294b04d2eacc91342313ee40845",
+          "review_artifact": "tle-review-07"
+        }
+      ],
+      "joint_receivers": {
+        "combination": "equal receiver mean after separate train-only frequency biases",
+        "candidate_catalog_numbers": [
+          69263,
+          59191,
+          56103,
+          59196,
+          64615
+        ],
+        "training_selected_catalog_number": 56103,
+        "held_diagnostic_best_catalog_number": 69263,
+        "glrt_leader_selected_on_training": false,
+        "glrt_leader_best_on_held_diagnostic": true,
+        "training_selected_odd_held_score": -0.2245223867817422,
+        "constant_control_odd_held_score": 0.12183421789885925,
+        "wrong_time_control_odd_held_score": -0.24575382076733704,
+        "training_selected_beats_constant": false,
+        "training_selected_beats_wrong_time": true,
+        "candidates": [
+          {
+            "catalog_number": 69263,
+            "receiver_tau_s": [
+              -1.0,
+              -1.0
+            ],
+            "even_training_composite_score": 2.074011709321912,
+            "odd_held_composite_score": 2.0741886019843454,
+            "odd_held_receiver_r": [
+              0.7007769155469535,
+              0.34218910654537826
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.4404640303011479,
+              0.668272841702612
+            ]
+          },
+          {
+            "catalog_number": 59191,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 2.5939887360218585,
+            "odd_held_composite_score": -0.7393447537738375,
+            "odd_held_receiver_r": [
+              0.1499831626050324,
+              0.31584269234633777
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9628452629144267,
+              1.0282701293372838
+            ]
+          },
+          {
+            "catalog_number": 56103,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 2.621543428515359,
+            "odd_held_composite_score": -0.2245223867817422,
+            "odd_held_receiver_r": [
+              0.1737798822566595,
+              0.1487943081715734
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.8910442089329903,
+              0.9784355540054697
+            ]
+          },
+          {
+            "catalog_number": 59196,
+            "receiver_tau_s": [
+              5.0,
+              5.0
+            ],
+            "even_training_composite_score": 0.6582423668923668,
+            "odd_held_composite_score": -0.7798931397853011,
+            "odd_held_receiver_r": [
+              0.5306969865892902,
+              0.16302731744108445
+            ],
+            "odd_held_receiver_rms_rad": [
+              1.1668810328325279,
+              0.8369872961984158
+            ]
+          },
+          {
+            "catalog_number": 64615,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.0131104391796895,
+            "odd_held_composite_score": -0.9563202862704987,
+            "odd_held_receiver_r": [
+              0.2357123755316784,
+              0.2531761142426727
+            ],
+            "odd_held_receiver_rms_rad": [
+              1.0236567673902928,
+              1.027855499192098
+            ]
+          }
+        ]
+      },
+      "baseline_orientation": {
+        "claim_status": "feasibility-only; electrical baseline orientation not identified",
+        "orientation_grid_deg": [
+          0,
+          359,
+          1
+        ],
+        "nominal_axis_hypotheses_deg": [
+          79,
+          259
+        ],
+        "training_selected_catalog_number": 59191,
+        "held_diagnostic_best_catalog_number": 59196,
+        "training_selected_held_rms_hz": 47.12203185914131,
+        "training_selected_beats_constant": false,
+        "constant_control_held_rms_hz": 47.12127006413473,
+        "maximum_candidate_geometry_span_hz": 0.08920113460349477,
+        "observed_relative_cfo_standard_deviation_hz": 39.22024710551833,
+        "geometry_span_to_observed_standard_deviation_ratio": 0.0022743644210988173,
+        "models": [
+          {
+            "catalog_number": 69263,
+            "training_fitted_azimuth_deg": 41,
+            "training_fitted_receiver_cfo_hz": 653773.5939911227,
+            "training_rms_hz": 35.26251309978067,
+            "held_rms_hz": 47.1217053997045,
+            "held_pearson_r": -0.8634085029436225
+          },
+          {
+            "catalog_number": 59191,
+            "training_fitted_azimuth_deg": 119,
+            "training_fitted_receiver_cfo_hz": 653773.5997751248,
+            "training_rms_hz": 35.26241659902281,
+            "held_rms_hz": 47.12203185914131,
+            "held_pearson_r": -0.8412554010714084
+          },
+          {
+            "catalog_number": 56103,
+            "training_fitted_azimuth_deg": 80,
+            "training_fitted_receiver_cfo_hz": 653773.6017569952,
+            "training_rms_hz": 35.26244114628324,
+            "held_rms_hz": 47.121958391204174,
+            "held_pearson_r": -0.8419143855798956
+          },
+          {
+            "catalog_number": 59196,
+            "training_fitted_azimuth_deg": 352,
+            "training_fitted_receiver_cfo_hz": 653773.6584989192,
+            "training_rms_hz": 35.26261431204855,
+            "held_rms_hz": 47.12149627519869,
+            "held_pearson_r": -0.8002411271359259
+          },
+          {
+            "catalog_number": 64615,
+            "training_fitted_azimuth_deg": 21,
+            "training_fitted_receiver_cfo_hz": 653773.6094372674,
+            "training_rms_hz": 35.262441234905864,
+            "held_rms_hz": 47.12197461418454,
+            "held_pearson_r": -0.8366420610194613
+          }
+        ],
+        "measured_relative_cfo_hz": [
+          653724.4566728561,
+          653694.0389951548,
+          653810.167691578,
+          653784.7720830934,
+          653725.9726734787,
+          653778.7455978041,
+          653783.6819961143
+        ]
+      },
+      "random_split_sensitivity": {
+        "requested_split_count": 32,
+        "valid_split_count": 32,
+        "glrt_leader_training_selection_fraction": 0.59375,
+        "glrt_leader_held_best_fraction": 1.0,
+        "selected_beats_constant_fraction": 0.6875,
+        "selected_beats_wrong_time_fraction": 0.75,
+        "splits": [
+          {
+            "seed": 2026092628,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092629,
+            "training_selected_catalog_number": 59196,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092630,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092631,
+            "training_selected_catalog_number": 59196,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092632,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092633,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092634,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092635,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092636,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092637,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092638,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092639,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092640,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092641,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092642,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092643,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092644,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092645,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092646,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092647,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092648,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092649,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092650,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092651,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092652,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092653,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092654,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092655,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092656,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092657,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092658,
+            "training_selected_catalog_number": 69263,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092659,
+            "training_selected_catalog_number": 56103,
+            "held_diagnostic_best_catalog_number": 69263,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          }
+        ]
+      }
+    },
+    {
+      "rank": 5,
+      "session_id": "scan-fw-ed4502816d42c1d9",
+      "channel": 1,
+      "edge": "upper",
+      "actual_rf_hz": 10940312500.0,
+      "glrt_group_leading_catalog_number": 69339,
+      "training_visit_indices": [
+        1431,
+        1442,
+        1446,
+        1485
+      ],
+      "held_visit_indices": [
+        1440,
+        1445,
+        1455,
+        1459
+      ],
+      "tle_snapshot": {
+        "collected_utc_ns": 1790262254831610985,
+        "digest": "sha256:a3afd77ca145f27ac04be0ab4ca938a048a4ee6302f35807a788a2ec2db1bac6",
+        "object_count": 11097,
+        "provider": "space-track",
+        "schema_version": 1
+      },
+      "tle_snapshot_path": "/var/lib/leo/tle/archive/space-track/1790262254831610985-a3afd77ca145f27ac04be0ab4ca938a048a4ee6302f35807a788a2ec2db1bac6.tle",
+      "receivers": [
+        {
+          "candidate_ids": [
+            "NORAD-69339-tau-+0s",
+            "NORAD-62885-tau--5s",
+            "NORAD-64932-tau-+4s",
+            "NORAD-69429-tau--5s",
+            "NORAD-56019-tau-+5s"
+          ],
+          "assigned_training_visit_indices": [
+            1431,
+            1442,
+            1446,
+            1485
+          ],
+          "assigned_held_visit_indices": [
+            1440,
+            1445,
+            1455,
+            1459
+          ],
+          "available_training_visit_indices": [
+            1431,
+            1442,
+            1446,
+            1485
+          ],
+          "available_held_visit_indices": [
+            1440,
+            1445,
+            1455,
+            1459
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 96,
+          "training_selected_candidate_index": 3,
+          "training_selected_candidate": "NORAD-69429-tau--5s",
+          "held_diagnostic_best_candidate_index": 3,
+          "held_diagnostic_best_candidate": "NORAD-69429-tau--5s",
+          "glrt_leader_selected_on_training": false,
+          "glrt_leader_best_on_held_diagnostic": false,
+          "maximum_candidate_contrast_rad": 1.2231756972383714,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.7761647152727649,
+              0.9990352519918408,
+              0.8398071740970414,
+              0.813285966500916
+            ],
+            [
+              0.7761647152727649,
+              0.0,
+              0.7289330632115427,
+              0.7205138055255651,
+              0.9599493632584604
+            ],
+            [
+              0.9990352519918408,
+              0.7289330632115427,
+              0.0,
+              0.9714464306220694,
+              1.1412196530743757
+            ],
+            [
+              0.8398071740970414,
+              0.7205138055255651,
+              0.9714464306220694,
+              0.0,
+              1.2231756972383714
+            ],
+            [
+              0.813285966500916,
+              0.9599493632584604,
+              1.1412196530743757,
+              1.2231756972383714,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-69339-tau-+0s",
+              "model_kind": "candidate",
+              "catalog_number": 69339,
+              "selected_tau_s": 0.0,
+              "fitted_bias_hz_from_even_training": 1.9368543818727062,
+              "even_training_composite_score": 1.6239397044898565,
+              "even_held_diagnostic_score": 0.7668059093970889,
+              "odd_held_response": {
+                "composite_score": 0.8750069794220043,
+                "circular_r_modulo_pi": 0.23862142731315128,
+                "rms_rad": 0.7567419280849469
+              }
+            },
+            {
+              "model_id": "NORAD-62885-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 62885,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 65.6656114628457,
+              "even_training_composite_score": 1.50043967609964,
+              "even_held_diagnostic_score": 0.49006305266116845,
+              "odd_held_response": {
+                "composite_score": 0.48850229351142427,
+                "circular_r_modulo_pi": 0.17777672436729125,
+                "rms_rad": 0.8584327546432372
+              }
+            },
+            {
+              "model_id": "NORAD-64932-tau-+4s",
+              "model_kind": "candidate",
+              "catalog_number": 64932,
+              "selected_tau_s": 4.0,
+              "fitted_bias_hz_from_even_training": 137.89153615461515,
+              "even_training_composite_score": 1.625136305618155,
+              "even_held_diagnostic_score": -0.08995049938220276,
+              "odd_held_response": {
+                "composite_score": 0.024492143251026333,
+                "circular_r_modulo_pi": 0.2196779544910174,
+                "rms_rad": 0.9193900261201577
+              }
+            },
+            {
+              "model_id": "NORAD-69429-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 69429,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": 37.17510829723426,
+              "even_training_composite_score": 1.7368178852571328,
+              "even_held_diagnostic_score": 1.6944920903446565,
+              "odd_held_response": {
+                "composite_score": 1.6925651120379595,
+                "circular_r_modulo_pi": 0.4380446600600951,
+                "rms_rad": 0.6592429665434063
+              }
+            },
+            {
+              "model_id": "NORAD-56019-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 56019,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": -187.5,
+              "even_training_composite_score": 1.3001828955892838,
+              "even_held_diagnostic_score": -0.571053807291325,
+              "odd_held_response": {
+                "composite_score": -0.561753650145395,
+                "circular_r_modulo_pi": 0.1686011463711753,
+                "rms_rad": 0.9996600339478455
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": 88.40803065644786,
+              "even_training_composite_score": 0.6377502025253577,
+              "even_held_diagnostic_score": -0.25811178088685666,
+              "odd_held_response": {
+                "composite_score": -0.23746747658939557,
+                "circular_r_modulo_pi": 0.16839489114514708,
+                "rms_rad": 0.9421039870721597
+              }
+            },
+            {
+              "model_id": "NORAD-69339-tau-+0s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -43.17310896367877,
+              "even_training_composite_score": 0.28069852490679337,
+              "even_held_diagnostic_score": -0.026390627564296262,
+              "odd_held_response": {
+                "composite_score": -0.10555264693651015,
+                "circular_r_modulo_pi": 0.027640881174484343,
+                "rms_rad": 0.9211130006881678
+              }
+            }
+          ],
+          "receiver_id": 0,
+          "tracklet_id": "sha256:a25083027b4ee3d3219d4097c2ece8eb6707f23aa9ffc941dab4908db1edaafb",
+          "review_artifact": "tle-review-13"
+        },
+        {
+          "candidate_ids": [
+            "NORAD-69339-tau--1s",
+            "NORAD-64932-tau-+1s",
+            "NORAD-62885-tau--5s",
+            "NORAD-56019-tau-+5s",
+            "NORAD-69429-tau--5s"
+          ],
+          "assigned_training_visit_indices": [
+            1431,
+            1442,
+            1446,
+            1485
+          ],
+          "assigned_held_visit_indices": [
+            1440,
+            1445,
+            1455,
+            1459
+          ],
+          "available_training_visit_indices": [
+            1431,
+            1442,
+            1446,
+            1485
+          ],
+          "available_held_visit_indices": [
+            1440,
+            1445,
+            1455,
+            1459
+          ],
+          "abstained_visit_indices": [],
+          "interval_count": 86,
+          "training_selected_candidate_index": 0,
+          "training_selected_candidate": "NORAD-69339-tau--1s",
+          "held_diagnostic_best_candidate_index": 0,
+          "held_diagnostic_best_candidate": "NORAD-69339-tau--1s",
+          "glrt_leader_selected_on_training": true,
+          "glrt_leader_best_on_held_diagnostic": true,
+          "maximum_candidate_contrast_rad": 1.2092225079378771,
+          "identifiable_after_nuisance": true,
+          "candidate_contrast_rms_rad": [
+            [
+              0.0,
+              0.8218464767802744,
+              0.7101821704470542,
+              0.6962590472186465,
+              0.7880053833485332
+            ],
+            [
+              0.8218464767802744,
+              0.0,
+              1.2092225079378771,
+              0.8990108227047896,
+              0.8284662634976819
+            ],
+            [
+              0.7101821704470542,
+              1.2092225079378771,
+              0.0,
+              0.6998821608459259,
+              0.996635303306472
+            ],
+            [
+              0.6962590472186465,
+              0.8990108227047896,
+              0.6998821608459259,
+              0.0,
+              1.1913666914882943
+            ],
+            [
+              0.7880053833485332,
+              0.8284662634976819,
+              0.996635303306472,
+              1.1913666914882943,
+              0.0
+            ]
+          ],
+          "models": [
+            {
+              "model_id": "NORAD-69339-tau--1s",
+              "model_kind": "candidate",
+              "catalog_number": 69339,
+              "selected_tau_s": -1.0,
+              "fitted_bias_hz_from_even_training": 110.15078307230925,
+              "even_training_composite_score": 2.5026233491018544,
+              "even_held_diagnostic_score": 2.4729993267099193,
+              "odd_held_response": {
+                "composite_score": 2.468507918561894,
+                "circular_r_modulo_pi": 0.6534095867575271,
+                "rms_rad": 0.4687093370803426
+              }
+            },
+            {
+              "model_id": "NORAD-64932-tau-+1s",
+              "model_kind": "candidate",
+              "catalog_number": 64932,
+              "selected_tau_s": 1.0,
+              "fitted_bias_hz_from_even_training": -16.8068977007664,
+              "even_training_composite_score": 2.044275838580793,
+              "even_held_diagnostic_score": 0.0879261109328402,
+              "odd_held_response": {
+                "composite_score": 0.1253133394515581,
+                "circular_r_modulo_pi": 0.22031157554518954,
+                "rms_rad": 0.8935155450196319
+              }
+            },
+            {
+              "model_id": "NORAD-62885-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 62885,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -89.4076974341886,
+              "even_training_composite_score": 1.9595344718056795,
+              "even_held_diagnostic_score": 0.4479449307966516,
+              "odd_held_response": {
+                "composite_score": 0.38360818023771814,
+                "circular_r_modulo_pi": 0.1280104034825344,
+                "rms_rad": 0.8808439335030777
+              }
+            },
+            {
+              "model_id": "NORAD-56019-tau-+5s",
+              "model_kind": "candidate",
+              "catalog_number": 56019,
+              "selected_tau_s": 5.0,
+              "fitted_bias_hz_from_even_training": 85.28407197600802,
+              "even_training_composite_score": 1.6007627944894072,
+              "even_held_diagnostic_score": 0.36016629349277834,
+              "odd_held_response": {
+                "composite_score": 0.29426857592067646,
+                "circular_r_modulo_pi": 0.29665381805169316,
+                "rms_rad": 0.8705223226472555
+              }
+            },
+            {
+              "model_id": "NORAD-69429-tau--5s",
+              "model_kind": "candidate",
+              "catalog_number": 69429,
+              "selected_tau_s": -5.0,
+              "fitted_bias_hz_from_even_training": -50.04581806064644,
+              "even_training_composite_score": 0.27576699846107167,
+              "even_held_diagnostic_score": 0.010062452207188322,
+              "odd_held_response": {
+                "composite_score": 0.06951155951524474,
+                "circular_r_modulo_pi": 0.021178674422287335,
+                "rms_rad": 0.8977103209079282
+              }
+            },
+            {
+              "model_id": "constant-frequency",
+              "model_kind": "constant_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -8.559646784405203,
+              "even_training_composite_score": 0.5172630015062247,
+              "even_held_diagnostic_score": 0.07191742622488326,
+              "odd_held_response": {
+                "composite_score": 0.20857810343866612,
+                "circular_r_modulo_pi": 0.09052533813537508,
+                "rms_rad": 0.8830953810293646
+              }
+            },
+            {
+              "model_id": "NORAD-69339-tau--1s-wrong-time",
+              "model_kind": "wrong_time_control",
+              "catalog_number": null,
+              "selected_tau_s": null,
+              "fitted_bias_hz_from_even_training": -122.52165944685105,
+              "even_training_composite_score": 1.082613650399282,
+              "even_held_diagnostic_score": -0.07975132046984608,
+              "odd_held_response": {
+                "composite_score": -0.062439157293464186,
+                "circular_r_modulo_pi": 0.08723817971642175,
+                "rms_rad": 0.9174942399632015
+              }
+            }
+          ],
+          "receiver_id": 1,
+          "tracklet_id": "sha256:656ceb26bbcfcb33f8a33720666c4d3376b6cb866e91cb8edd2525afc39dc1d1",
+          "review_artifact": "tle-review-05"
+        }
+      ],
+      "joint_receivers": {
+        "combination": "equal receiver mean after separate train-only frequency biases",
+        "candidate_catalog_numbers": [
+          69339,
+          62885,
+          64932,
+          69429,
+          56019
+        ],
+        "training_selected_catalog_number": 69339,
+        "held_diagnostic_best_catalog_number": 69339,
+        "glrt_leader_selected_on_training": true,
+        "glrt_leader_best_on_held_diagnostic": true,
+        "training_selected_odd_held_score": 1.6717574489919491,
+        "constant_control_odd_held_score": -0.014444686575364726,
+        "wrong_time_control_odd_held_score": -0.08399590211498717,
+        "training_selected_beats_constant": true,
+        "training_selected_beats_wrong_time": true,
+        "candidates": [
+          {
+            "catalog_number": 69339,
+            "receiver_tau_s": [
+              0.0,
+              -1.0
+            ],
+            "even_training_composite_score": 2.0632815267958553,
+            "odd_held_composite_score": 1.6717574489919491,
+            "odd_held_receiver_r": [
+              0.23862142731315128,
+              0.6534095867575271
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.7567419280849469,
+              0.4687093370803426
+            ]
+          },
+          {
+            "catalog_number": 62885,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.7299870739526597,
+            "odd_held_composite_score": 0.4360552368745712,
+            "odd_held_receiver_r": [
+              0.17777672436729125,
+              0.1280104034825344
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.8584327546432372,
+              0.8808439335030777
+            ]
+          },
+          {
+            "catalog_number": 64932,
+            "receiver_tau_s": [
+              4.0,
+              1.0
+            ],
+            "even_training_composite_score": 1.8347060720994741,
+            "odd_held_composite_score": 0.07490274135129221,
+            "odd_held_receiver_r": [
+              0.2196779544910174,
+              0.22031157554518954
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9193900261201577,
+              0.8935155450196319
+            ]
+          },
+          {
+            "catalog_number": 69429,
+            "receiver_tau_s": [
+              -5.0,
+              -5.0
+            ],
+            "even_training_composite_score": 1.0062924418591022,
+            "odd_held_composite_score": 0.8810383357766021,
+            "odd_held_receiver_r": [
+              0.4380446600600951,
+              0.021178674422287335
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.6592429665434063,
+              0.8977103209079282
+            ]
+          },
+          {
+            "catalog_number": 56019,
+            "receiver_tau_s": [
+              5.0,
+              5.0
+            ],
+            "even_training_composite_score": 1.4504728450393456,
+            "odd_held_composite_score": -0.13374253711235928,
+            "odd_held_receiver_r": [
+              0.1686011463711753,
+              0.29665381805169316
+            ],
+            "odd_held_receiver_rms_rad": [
+              0.9996600339478455,
+              0.8705223226472555
+            ]
+          }
+        ]
+      },
+      "baseline_orientation": {
+        "claim_status": "feasibility-only; electrical baseline orientation not identified",
+        "orientation_grid_deg": [
+          0,
+          359,
+          1
+        ],
+        "nominal_axis_hypotheses_deg": [
+          79,
+          259
+        ],
+        "training_selected_catalog_number": 62885,
+        "held_diagnostic_best_catalog_number": 62885,
+        "training_selected_held_rms_hz": 86.94125870924631,
+        "training_selected_beats_constant": true,
+        "constant_control_held_rms_hz": 86.94163264503493,
+        "maximum_candidate_geometry_span_hz": 0.10359465463114856,
+        "observed_relative_cfo_standard_deviation_hz": 61.82888328496395,
+        "geometry_span_to_observed_standard_deviation_ratio": 0.001675505833635872,
+        "models": [
+          {
+            "catalog_number": 69339,
+            "training_fitted_azimuth_deg": 79,
+            "training_fitted_receiver_cfo_hz": 654611.5677951267,
+            "training_rms_hz": 19.724488354579535,
+            "held_rms_hz": 86.94159199060388,
+            "held_pearson_r": 0.6292015202527232
+          },
+          {
+            "catalog_number": 62885,
+            "training_fitted_azimuth_deg": 226,
+            "training_fitted_receiver_cfo_hz": 654611.5925422912,
+            "training_rms_hz": 19.72347789274009,
+            "held_rms_hz": 86.94125870924631,
+            "held_pearson_r": 0.6021193972091364
+          },
+          {
+            "catalog_number": 64932,
+            "training_fitted_azimuth_deg": 56,
+            "training_fitted_receiver_cfo_hz": 654611.5331345866,
+            "training_rms_hz": 19.72420085479204,
+            "held_rms_hz": 86.94146579769381,
+            "held_pearson_r": 0.5873327298198819
+          },
+          {
+            "catalog_number": 69429,
+            "training_fitted_azimuth_deg": 176,
+            "training_fitted_receiver_cfo_hz": 654611.5925021492,
+            "training_rms_hz": 19.723925366011102,
+            "held_rms_hz": 86.9414114116319,
+            "held_pearson_r": 0.6067573029677549
+          },
+          {
+            "catalog_number": 56019,
+            "training_fitted_azimuth_deg": 134,
+            "training_fitted_receiver_cfo_hz": 654611.511601562,
+            "training_rms_hz": 19.72419166037625,
+            "held_rms_hz": 86.94144921809519,
+            "held_pearson_r": 0.5799034019714302
+          }
+        ],
+        "measured_relative_cfo_hz": [
+          654587.8394379404,
+          654638.5214730253,
+          654633.4730669673,
+          654532.0987839726,
+          654596.4439494604,
+          654610.0851782783,
+          654763.8427233292,
+          654628.4391820306
+        ]
+      },
+      "random_split_sensitivity": {
+        "requested_split_count": 32,
+        "valid_split_count": 32,
+        "glrt_leader_training_selection_fraction": 0.84375,
+        "glrt_leader_held_best_fraction": 0.96875,
+        "selected_beats_constant_fraction": 0.9375,
+        "selected_beats_wrong_time_fraction": 0.9375,
+        "splits": [
+          {
+            "seed": 2026092660,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092661,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092662,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092663,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092664,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092665,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 64932,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": false,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092666,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092667,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092668,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092669,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092670,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092671,
+            "training_selected_catalog_number": 62885,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092672,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092673,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092674,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092675,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092676,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092677,
+            "training_selected_catalog_number": 62885,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092678,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092679,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092680,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092681,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092682,
+            "training_selected_catalog_number": 62885,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092683,
+            "training_selected_catalog_number": 62885,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092684,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092685,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092686,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092687,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092688,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092689,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          },
+          {
+            "seed": 2026092690,
+            "training_selected_catalog_number": 62885,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": false,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": false,
+            "training_selected_beats_wrong_time": false
+          },
+          {
+            "seed": 2026092691,
+            "training_selected_catalog_number": 69339,
+            "held_diagnostic_best_catalog_number": 69339,
+            "glrt_leader_selected_on_training": true,
+            "glrt_leader_best_on_held_diagnostic": true,
+            "training_selected_beats_constant": true,
+            "training_selected_beats_wrong_time": true
+          }
+        ]
+      }
+    }
+  ],
+  "source_sha256": "sha256:5986de3560e042f8182fdcc7b1cd42538f5746cc47dc71a6af60c8445658addf"
+}
