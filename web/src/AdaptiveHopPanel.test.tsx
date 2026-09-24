@@ -135,6 +135,47 @@ describe("adaptive actual-visit presentation", () => {
     expect(screen.getByLabelText("Selected host decision")).toHaveTextContent("queue_overflow · forwarded verdict unknown · delivery source_ended");
   });
 
+  it.each([
+    ["manual", 40, "Manual · 40 dB"],
+    ["slow_attack", null, "Slow attack"],
+    [null, null, "Unknown"],
+  ] as const)("shows persisted %s gain evidence", async (mode, gain, label) => {
+    const legacy = adaptiveDetailFixture();
+    const visits = legacy.visits.map(visit => ({
+      ...visit,
+      target_index: visit.target_index % 4,
+      proposed_target_index: visit.target_index % 4,
+      active_mask: visit.active_mask & 15,
+      quiet_mask: visit.quiet_mask & 15,
+    }));
+    const coverage = legacy.capture.target_coverage.map(row => {
+      const retained = row.target_index < 4
+        ? visits.filter(visit => visit.retained && visit.target_index === row.target_index).length
+        : 0;
+      return { ...row, retained_visits: retained, valid_seconds: retained * 0.12, allocation_ppm: retained ? row.allocation_ppm : 0 };
+    });
+    const detail = { ...legacy, schema_version: 8, visits, capture: {
+      ...legacy.capture,
+      schema_version: 8,
+      mode: "adaptive",
+      nominal_duration_seconds: 20,
+      sample_rate_hz: 2500000,
+      bandwidth_hz: 2500000,
+      analysis_state: "separate_product",
+      radio_serial: "synthetic",
+      selected_edge: "lower",
+      allowed_target_mask: 15,
+      active_dwell_ms: 120,
+      recorded_gain_mode: mode,
+      recorded_manual_gain_db: gain,
+      retained_visits: coverage.reduce((total, row) => total + row.retained_visits, 0),
+      target_coverage: coverage,
+    } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
+    render(<AdaptiveHopDetail sessionId="adaptive-test" />);
+    expect(await screen.findByText(label)).toBeInTheDocument();
+  });
+
   it.each(["receiver", "rate", "inventory", "missing-decision", "rounded-counter"])("rejects invalid native %s", async fault => {
     const detail = hostAdaptiveDetailFixture();
     if (fault === "receiver") Object.assign(detail.capture, { physical_receiver: 2 });

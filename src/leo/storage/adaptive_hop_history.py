@@ -12,6 +12,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
 )
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
@@ -27,6 +28,8 @@ from leo.scanner.adaptive_hop_history import (
     Feature103SessionDetailV6,
     Feature104HistoryItemV7,
     Feature104SessionDetailV7,
+    VariableDwellHistoryItemV8,
+    VariableDwellSessionDetailV8,
 )
 from leo.scanner.glrt_publication import validate_glrt_adaptive_binding
 from leo.scanner.host_adaptive import (
@@ -40,6 +43,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV4,
     AdaptiveHistoryPageV5,
     AdaptiveHistoryPageV6,
+    AdaptiveHistoryPageV7,
     HostAdaptiveHistoryItemV2,
     HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
@@ -130,7 +134,9 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
         )
     elif isinstance(receipt, AdaptiveHopReceiptV2):
         model = (
-            Feature104HistoryItemV7
+            VariableDwellHistoryItemV8
+            if isinstance(receipt, AdaptiveHopReceiptV6)
+            else Feature104HistoryItemV7
             if isinstance(receipt, AdaptiveHopReceiptV5)
             else Feature103HistoryItemV6
             if isinstance(receipt, AdaptiveHopReceiptV4)
@@ -143,6 +149,16 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
             radio_serial=receipt.radio_serial,
             selected_edge="lower" if mask == 0x0F else "upper",
             allowed_target_mask=mask,
+            **(
+                {
+                    "nominal_duration_seconds": receipt.plan.geometry.nominal_duration_seconds,
+                    "active_dwell_ms": receipt.plan.geometry.active_valid_visit_ms,
+                    "recorded_gain_mode": receipt.plan.geometry.gain_mode.value,
+                    "recorded_manual_gain_db": receipt.plan.geometry.gain_db,
+                }
+                if isinstance(receipt, AdaptiveHopReceiptV6)
+                else {}
+            ),
         )
     return model(
         **fields,
@@ -191,6 +207,7 @@ class AdaptiveHopPresentationStore:
         | AdaptiveHistoryPageV4
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
+        | AdaptiveHistoryPageV7
     ):
         result = self._page(cursor=cursor, limit=limit, include_host=True)
         assert isinstance(
@@ -201,6 +218,7 @@ class AdaptiveHopPresentationStore:
                 AdaptiveHistoryPageV4,
                 AdaptiveHistoryPageV5,
                 AdaptiveHistoryPageV6,
+                AdaptiveHistoryPageV7,
             ),
         )
         return result
@@ -229,7 +247,9 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV6
+            AdaptiveHistoryPageV7
+            if include_host and any(isinstance(item, VariableDwellHistoryItemV8) for item in items)
+            else AdaptiveHistoryPageV6
             if include_host and any(isinstance(item, Feature104HistoryItemV7) for item in items)
             else AdaptiveHistoryPageV5
             if include_host
@@ -273,6 +293,7 @@ class AdaptiveHopPresentationStore:
         | HostAdaptiveSessionDetailV2
         | HostAdaptiveSessionDetailV3
         | EdgeAdaptiveSessionDetailV4
+        | VariableDwellSessionDetailV8
         | None
     ):
         return self._detail(session_id, include_host=True)
@@ -380,7 +401,9 @@ class AdaptiveHopPresentationStore:
             fields = dict(host_decisions=tuple(decision_views))
         elif isinstance(receipt, AdaptiveHopReceiptV2):
             model = (
-                Feature104SessionDetailV7
+                VariableDwellSessionDetailV8
+                if isinstance(receipt, AdaptiveHopReceiptV6)
+                else Feature104SessionDetailV7
                 if isinstance(receipt, AdaptiveHopReceiptV5)
                 else Feature103SessionDetailV6
                 if isinstance(receipt, AdaptiveHopReceiptV4)
