@@ -12,6 +12,13 @@ const seconds = (value: number | null) => value === null ? "Unavailable" : `${va
 const duty = (value: number | null) => value === null ? "Unavailable" : `${(value / 10000).toFixed(2)}%`;
 const stateAtChoice = (v: AdaptiveVisit, target: number) => v.active_mask & (1 << target)
   ? "active" : v.quiet_mask & (1 << target) ? "quiet" : "unobserved";
+const recordedGain = (capture: AdaptiveDetail["capture"]): string => {
+  if (capture.schema_version !== 8 || capture.recorded_gain_mode === null) return "Unknown";
+  if (capture.recorded_gain_mode === "slow_attack") return "Slow attack";
+  return capture.recorded_manual_gain_db === null
+    ? "Manual · gain unavailable"
+    : `Manual · ${capture.recorded_manual_gain_db} dB`;
+};
 
 export function AdaptiveHopBrowser({ selectedId, onSelect }: {
   selectedId: string | null; onSelect: (id: string) => void;
@@ -124,6 +131,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       <div><dt>Capture qualification</dt><dd>{c.capture_qualified ? "Passed recording health gates" : "Not qualified"}</dd></div>
       <div><dt>Fallback choices</dt><dd>{c.fallback_choices}</dd></div>
       <div><dt>Radio / bandwidth</dt><dd>{c.radio_id} / {c.bandwidth_hz / 1e6} MHz</dd></div>
+      <div><dt>Recorded gain</dt><dd>{recordedGain(c)}</dd></div>
       <div><dt>RF UTC estimate</dt><dd>{c.captured_at === null ? "Unavailable" : new Date(c.captured_at).toLocaleString()} · {c.utc_qualified ? "host-bracket qualified" : "unqualified"}</dd></div>
       <div><dt>UTC bracket width</dt><dd>{c.utc_bracket_width_ms === null ? "Unavailable" : `${c.utc_bracket_width_ms.toFixed(3)} ms`}</dd></div>
     </dl>

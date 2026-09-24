@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import (
     AdaptiveHopGlrtPresentationStore,
     AdaptiveHopPresentationStore,
+    _summary,
 )
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.scanner_glrt import ScannerGlrtStore
 from tests.scanner.adaptive_glrt_publication_fixtures import publication_fixture
 from tests.scanner.adaptive_hop_fixtures import block_fixture, receipt_fixture, timing_fixture
+from tests.scanner.test_variable_dual_rx_contracts import _receipt as variable_dwell_receipt
 
 
 def publish_capture(root, **kwargs):
@@ -19,6 +23,27 @@ def publish_capture(root, **kwargs):
 
 
 _DEFAULT_TIMING = object()
+
+
+def test_variable_dwell_history_exposes_persisted_gain() -> None:
+    receipt = variable_dwell_receipt()
+    manifest = SimpleNamespace(
+        receipt=receipt,
+        created_utc_ns=1_800_000_000_000_000_000,
+        finalized_utc_ns=1_800_000_001_000_000_000,
+        timing=None,
+    )
+    item = _summary(
+        SimpleNamespace(
+            manifest=manifest,
+            session_id=receipt.session_id,
+            manifest_sha256=f"sha256:{'a' * 64}",
+        )
+    )
+
+    assert item.schema_version == 8
+    assert item.recorded_gain_mode == "manual"
+    assert item.recorded_manual_gain_db == 50.0
 
 
 def publish_receipt(root, receipt, *, timing=_DEFAULT_TIMING):

@@ -1,7 +1,7 @@
-import type { AdaptiveDetail, AdaptivePage, HostAdaptiveCapture, HostAdaptiveCaptureV3 } from "./adaptive-api";
+import type { AdaptiveDetail, AdaptivePage, HostAdaptiveCapture, HostAdaptiveCaptureV3, LegacyAdaptiveCapture } from "./adaptive-api";
 
 // Synthetic metadata only; not RF evidence or a quality/performance fixture.
-export function adaptiveDetailFixture(sessionId = "adaptive-test", count = 54): AdaptiveDetail {
+export function adaptiveDetailFixture(sessionId = "adaptive-test", count = 54): AdaptiveDetail & { capture: LegacyAdaptiveCapture } {
   const origin = 9007199254741011n;
   const rate = 2500000;
   const visits: AdaptiveDetail["visits"] = Array.from({ length: count }, (_, i) => {

@@ -64,7 +64,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             or self.sample_rate_hz != self.bandwidth_hz
             or self.retained_visits > self.started_visits
             or (
-                self.schema_version not in (3, 7)
+                self.schema_version not in (3, 7, 8)
                 and self.retained_visits
                 != max(0, self.started_visits - (self.terminal_state == "cancelled"))
             )
@@ -275,6 +275,31 @@ class Feature104HistoryItemV7(EdgeAdaptiveHistoryItemV4):
 class Feature104SessionDetailV7(AdaptiveHopSessionDetailV1):
     schema_version: Literal[7] = 7  # type: ignore[assignment]
     capture: Feature104HistoryItemV7  # type: ignore[assignment]
+
+
+class VariableDwellHistoryItemV8(EdgeAdaptiveHistoryItemV4):
+    """Protocol-three capture exposing only persisted applied gain evidence."""
+
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    nominal_duration_seconds: Annotated[int, Field(strict=True, ge=1, le=300)]  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 10_000_000]  # type: ignore[assignment]
+    active_dwell_ms: Literal[120, 240, 360]
+    recorded_gain_mode: Literal["manual", "slow_attack"] | None
+    recorded_manual_gain_db: Annotated[float, Field(ge=-10, le=100)] | None
+
+    @model_validator(mode="after")
+    def _gain_evidence_is_consistent(self) -> Self:
+        if (self.recorded_gain_mode == "manual") != (
+            self.recorded_manual_gain_db is not None
+        ):
+            raise ValueError("adaptive recorded gain mode and manual value disagree")
+        return self
+
+
+class VariableDwellSessionDetailV8(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    capture: VariableDwellHistoryItemV8  # type: ignore[assignment]
 
 
 class AdaptiveHopPresentationReader(Protocol):
