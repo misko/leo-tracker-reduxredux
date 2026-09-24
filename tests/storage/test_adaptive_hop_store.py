@@ -42,6 +42,39 @@ def session_path(tmp_path, session_id="adaptive-storage-test"):
     return tmp_path / "scanner-adaptive-recordings" / session_id
 
 
+def test_history_indexes_timestamp_beyond_small_prefix_without_full_decode(tmp_path, monkeypatch):
+    store, published = publish(tmp_path, count=0)
+    path = session_path(tmp_path) / "manifest.json"
+    # Legal JSON whitespace moves the sealed fields beyond the old 512 KiB
+    # window, reproducing the offset caused by a full V12 chunk inventory.
+    path.write_bytes(b" " * (600 * 1024) + path.read_bytes())
+    assert store.inspect(published.session_id) == published
+
+    def no_full_decode(*args, **kwargs):
+        raise AssertionError("history indexing must not decode the full receipt")
+
+    monkeypatch.setattr(store, "inspect", no_full_decode)
+    assert store.history_index() == ((published.manifest.created_utc_ns, published.session_id),)
+    assert store.tracking_metadata_index() == (
+        (
+            published.manifest.created_utc_ns,
+            published.manifest.created_utc_ns,
+            published.manifest.receipt.radio_id,
+            published.session_id,
+        ),
+    )
+    store.close()
+
+
+def test_history_index_expansion_remains_bounded(tmp_path):
+    store, _ = publish(tmp_path, count=0)
+    path = session_path(tmp_path) / "manifest.json"
+    path.write_bytes(b" " * (2 * 1024 * 1024) + path.read_bytes())
+    with pytest.raises(BundleCorruptionError, match="bounded history index"):
+        store.history_index()
+    store.close()
+
+
 def test_adaptive_manifest_seals_dual_receiver_fixture_geometry(tmp_path):
     geometry_path = Path(__file__).parents[2] / (
         "deploy/station/gauss-r21-lt3d-001a-20260920-v1.json"
