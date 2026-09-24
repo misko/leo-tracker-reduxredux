@@ -1,0 +1,65 @@
+{
+  "schema": "ds1-iterative-subkm-synthesis/v1",
+  "status": "development_summary_not_generalization_claim",
+  "scope": {
+    "iterations": [2, 3, 4, 5, 6, "6B", 7, 8, 9, 10, 11],
+    "supplementary_diagnostic": "joint_weighting",
+    "inference_rerun": false,
+    "source_artifacts_only": true
+  },
+  "headline_outcomes": {
+    "best_single_group": {
+      "iteration": 4,
+      "group": "20260921_16",
+      "postseal_error_km": 0.42292831048175894,
+      "interpretation": "best single TRAIN-group development result; not a joint or independent validation result"
+    },
+    "best_robust_joint": {
+      "iteration": 10,
+      "groups": ["20260921_00", "20260921_16"],
+      "weighting": "equal-group, independently profiled nuisances",
+      "postseal_error_km": 1.179285838445297,
+      "balanced_exact_capped_loss": 0.05812765917125823,
+      "coordinate_deg": [37.85822833461974, -122.47896245860316],
+      "interpretation": "retained two-group in-sample solution; it is not interchangeable with the 0.423 km single-group result"
+    }
+  },
+  "joint_trend": [
+    {"iteration": 8, "postseal_error_km": 1.3593049799259802, "balanced_exact_capped_loss": 0.05825068675390102},
+    {"iteration": 9, "postseal_error_km": 1.2428905441714038, "balanced_exact_capped_loss": 0.0581348587203451},
+    {"iteration": 10, "postseal_error_km": 1.179285838445297, "balanced_exact_capped_loss": 0.05812765917125823},
+    {"iteration": 11, "postseal_error_km": 1.212613753039161, "balanced_exact_capped_loss": 0.05813939206926787}
+  ],
+  "rejected_iteration_6b": {
+    "candidate_count": 17,
+    "converged_candidate_count": 0,
+    "per_candidate_elapsed_seconds_range": [41.60108245105948, 50.917923223925754],
+    "portability_accepted": false,
+    "reason": "every candidate reached the optimizer evaluation limit; provisional losses and descriptive post-seal values are not accepted results"
+  },
+  "joint_weighting": {
+    "weights": {"20260921_00": 0.2742, "20260921_16": 0.7258},
+    "result": "reranked the eight existing iteration-10 exact finalists and retained the equal-group winner",
+    "new_coordinate_search": false
+  },
+  "source_artifacts": {
+    "iteration2_evaluation": "reports/2026_09_24_ds1_iteration2/post-seal-evaluation/iteration2-post-seal-evaluation.json",
+    "iteration3_to_7_reports": "reports/2026_09_24_ds1_joint_rate_search/ITERATION{3,4,5,6,7}_REPORT.md",
+    "iteration3_to_7_evaluations": "reports/2026_09_24_ds1_joint_rate_search/iteration{3,4,5,6,7}-postseal/iteration{3,4,5,6,7}-postseal.json",
+    "iteration6b_result": "reports/2026_09_24_ds1_iteration6b_session_scale/iteration6b-results.json",
+    "iteration6b_evaluation": "reports/2026_09_24_ds1_iteration6b_session_scale/postseal/iteration6b-postseal.json",
+    "joint_inference": {
+      "iteration8": {"path": "reports/2026_09_24_ds1_iteration8_joint_groups/inference.json", "sha256": "b65030f2f22be11aedccb63818914d5e1e6146fb722ceb2f00fca452c64b2796"},
+      "iteration9": {"path": "reports/2026_09_24_ds1_iteration9_joint_refinement/inference.json", "sha256": "47b435990df601a97fe510ff95e0eba58d72626d5044025c99f964142e60ec3c"},
+      "iteration10": {"path": "reports/2026_09_24_ds1_iteration10_refinement/inference.json", "sha256": "b5fcdec1423ac4b2f4938a446ab6585cdfd48a2be2c2e8aad299e8c7e4744496"}
+    },
+    "joint_evaluations": {
+      "iteration8": "reports/2026_09_24_ds1_iteration8_joint_groups/evaluation/iteration8-postseal.json",
+      "iteration9": "reports/2026_09_24_ds1_iteration9_joint_refinement/evaluation/iteration9-postseal.json",
+      "iteration10": "reports/2026_09_24_ds1_iteration10_refinement/evaluation/iteration10-postseal.json",
+      "iteration11": "reports/2026_09_24_ds1_iteration11_fine_confirmation/evaluation/iteration11-postseal.json"
+    },
+    "joint_weighting": "reports/2026_09_24_ds1_joint_weighting/joint-weighting.json"
+  },
+  "trend_plot": "reports/2026_09_24_ds1_iterative_subkm/postseal-trend.png"
+}

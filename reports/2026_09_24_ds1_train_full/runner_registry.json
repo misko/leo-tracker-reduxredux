@@ -1,0 +1,31 @@
+{
+  "schema": "ds1-train-full-runner-registry/v1",
+  "methods": {
+    "baseline": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_timing/run.py", "--task", "{task}"]
+    },
+    "global_time": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_timing/run.py", "--task", "{task}"]
+    },
+    "per_scan_time": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_timing/run.py", "--task", "{task}"]
+    },
+    "independent_per_track_time": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_timing/run.py", "--task", "{task}"]
+    },
+    "causal_per_norad_orbit_rate": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_orbit_soft/run.py", "--task", "{task}"],
+      "max_concurrency": 8
+    },
+    "global_time_plus_per_norad_orbit_rate": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_orbit_soft/run.py", "--task", "{task}"],
+      "max_concurrency": 8
+    },
+    "soft_association": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_orbit_soft/run.py", "--task", "{task}"]
+    },
+    "soft_association_plus_global_time": {
+      "command": ["../../.venv/bin/python", "../2026_09_24_ds1_train_full_orbit_soft/run.py", "--task", "{task}"]
+    }
+  }
+}
