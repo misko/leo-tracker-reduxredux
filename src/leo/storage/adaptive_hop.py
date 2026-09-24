@@ -79,6 +79,9 @@ _SPOOL_NAMESPACE = "scanner-adaptive-spool"
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 _MANIFEST_INDEX_PREFIX_BYTES = 512 * 1024
+# Variable-dwell captures can place timestamps after roughly 925 KiB of
+# one-visit chunk inventory; use this larger window only as a bounded fallback.
+_MANIFEST_LARGE_INDEX_PREFIX_BYTES = 2 * 1024 * 1024
 _MANIFEST_INDEX_SUFFIX_BYTES = 64 * 1024
 _MAX_CHUNK_BYTES = 64 * 1024 * 1024
 _CREATED_UTC_NS = re.compile(rb'"created_utc_ns":([0-9]{1,20})')
@@ -440,6 +443,25 @@ def _read_regular_prefix(
         return payload
     finally:
         os.close(descriptor)
+
+
+def _read_manifest_index_prefix(directory: PinnedLocalRoot) -> bytes:
+    prefix = _read_regular_prefix(
+        directory,
+        "manifest.json",
+        maximum=_MAX_MANIFEST_BYTES,
+        prefix_bytes=_MANIFEST_INDEX_PREFIX_BYTES,
+    )
+    # V12 permits 2,500 one-visit chunks before the sorted timestamp fields.
+    # Keep the smaller read for older manifests; expand only when necessary.
+    if not _CREATED_UTC_NS.search(prefix) or not _FINALIZED_UTC_NS.search(prefix):
+        prefix = _read_regular_prefix(
+            directory,
+            "manifest.json",
+            maximum=_MAX_MANIFEST_BYTES,
+            prefix_bytes=_MANIFEST_LARGE_INDEX_PREFIX_BYTES,
+        )
+    return prefix
 
 
 def _read_regular_suffix(
@@ -907,12 +929,7 @@ class AdaptiveHopIqStore:
                 directory = namespace.child(name)
                 try:
                     try:
-                        prefix = _read_regular_prefix(
-                            directory,
-                            "manifest.json",
-                            maximum=_MAX_MANIFEST_BYTES,
-                            prefix_bytes=_MANIFEST_INDEX_PREFIX_BYTES,
-                        )
+                        prefix = _read_manifest_index_prefix(directory)
                         suffix = _read_regular_suffix(
                             directory,
                             "manifest.json",
@@ -946,12 +963,7 @@ class AdaptiveHopIqStore:
             for name, captured in history.items():
                 directory = namespace.child(name)
                 try:
-                    prefix = _read_regular_prefix(
-                        directory,
-                        "manifest.json",
-                        maximum=_MAX_MANIFEST_BYTES,
-                        prefix_bytes=_MANIFEST_INDEX_PREFIX_BYTES,
-                    )
+                    prefix = _read_manifest_index_prefix(directory)
                     suffix = _read_regular_suffix(
                         directory,
                         "manifest.json",

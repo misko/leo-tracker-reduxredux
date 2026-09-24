@@ -1,14 +1,23 @@
+from pathlib import Path
+
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from leo.api.app import create_app
 from leo.presentation.fixtures import build_fixture_repository
+from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
+from leo.scanner.persistent_hop import Feature103DualRxTimingV3
+from leo.station.geometry import AdaptiveReceiverGeometryBindingV1, StationReceiverGeometryV1
+from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import (
     AdaptiveHopGlrtPresentationStore,
     AdaptiveHopPresentationStore,
 )
 from leo.storage.scanner_glrt import ScannerGlrtStore
 from tests.scanner.adaptive_glrt_publication_fixtures import publication_fixture
+from tests.scanner.adaptive_hop_fixtures import timing_fixture
+from tests.scanner.test_variable_dual_rx_contracts import _receipt as variable_dwell_receipt
 from tests.storage.test_adaptive_hop_history import publish_capture
 
 
@@ -43,6 +52,61 @@ def test_additive_history_detail_glrt_and_head_without_legacy_aliasing(tmp_path)
         client.get(url.replace("adaptive-sessions", "persistent-sessions") + "/glrt").status_code
         == 404
     )
+
+
+def test_v3_history_and_detail_publish_variable_dwell_contract(tmp_path):
+    receipt = variable_dwell_receipt()
+    geometry_path = Path(__file__).parents[2] / (
+        "deploy/station/gauss-r21-lt3d-001a-20260920-v1.json"
+    )
+    geometry = StationReceiverGeometryV1.model_validate_json(geometry_path.read_bytes())
+    radio = geometry.radios[0]
+    valid_samples = sum(
+        event.valid_end_counter_exclusive - event.valid_start_counter for event in receipt.events
+    )
+    receipt = type(receipt).model_validate(
+        receipt.model_dump()
+        | {
+            "radio_id": radio.radio_id,
+            "radio_serial": radio.radio_serial,
+            "retained_visit_indices": (0, 1, 2),
+            "transport_missing_sample_count": 0,
+            "complete_visit_count": 3,
+            "valid_sample_count": valid_samples,
+            "unclassified_sample_count": 0,
+            "valid_duty_ppm": valid_samples
+            * 1_000_000
+            // receipt.duty_denominator_sample_count,
+            "duty_target_met": True,
+        }
+    )
+    binding = AdaptiveReceiverGeometryBindingV1.create(
+        geometry, radio_id=receipt.radio_id, radio_serial=receipt.radio_serial
+    )
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan, receiver_geometry=binding)
+    for visit in receipt.visits:
+        samples = np.ones((visit.valid_sample_count, 2), np.complex64)
+        writer.append(AdaptiveHopVisitBlock(samples, (0, 1), visit))
+    capture = writer.finish(
+        receipt, timing=timing_fixture(receipt, Feature103DualRxTimingV3)
+    )
+    store.close()
+    history = AdaptiveHopPresentationStore(tmp_path)
+    assert history.page_v2(cursor=0, limit=20).schema_version == 7
+    assert history.detail_v2(capture.session_id).schema_version == 8
+    client = client_for(tmp_path, adaptive_hop_sessions_v2=history)
+    base = "/api/v3/scanner/adaptive-sessions"
+
+    page = client.get(base)
+    assert page.status_code == 200
+    assert page.json()["schema_version"] == 7
+    assert page.json()["items"][0]["schema_version"] == 8
+    detail = client.get(f"{base}/{capture.session_id}")
+    assert detail.status_code == 200
+    assert detail.json()["schema_version"] == 8
+    assert detail.json()["capture"]["active_dwell_ms"] == 360
+    assert detail.json()["capture"]["recorded_gain_mode"] == "manual"
 
 
 @pytest.mark.parametrize("suffix", ["", "/test", "/test/glrt"])

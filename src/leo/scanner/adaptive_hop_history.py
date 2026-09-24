@@ -83,11 +83,31 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
         ):
             raise ValueError("adaptive history summary disagrees with capture evidence")
         for row in self.target_coverage:
+            valid_ms = round(row.valid_seconds * 1000)
+            active_ms = getattr(self, "active_dwell_ms", 120)
+            minimum_ms = row.retained_visits * 120
+            variable_duration_invalid = self.schema_version == 8 and (
+                abs(row.valid_seconds * 1000 - valid_ms) > 1e-6
+                or valid_ms < minimum_ms
+                or valid_ms > row.retained_visits * active_ms
+                or (
+                    active_ms == 120
+                    and valid_ms != minimum_ms
+                    or active_ms != 120
+                    and (valid_ms - minimum_ms) % (active_ms - 120) != 0
+                )
+            )
             if (
                 row.target.channel != row.target_index % 4 + 1
                 or row.target.edge != ("lower" if row.target_index < 4 else "upper")
-                or row.valid_seconds
-                != row.retained_visits * (self.sample_rate_hz * 120 // 1000) / self.sample_rate_hz
+                or (
+                    self.schema_version != 8
+                    and row.valid_seconds
+                    != row.retained_visits
+                    * (self.sample_rate_hz * 120 // 1000)
+                    / self.sample_rate_hz
+                )
+                or variable_duration_invalid
                 or row.allocation_ppm
                 != (
                     row.retained_visits * 1_000_000 // self.retained_visits
@@ -177,12 +197,12 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
             or len(self.visits) != self.capture.started_visits
             or tuple(v.visit_index for v in self.visits) != tuple(range(len(self.visits)))
             or (
-                self.capture.schema_version not in (3, 7)
+                self.capture.schema_version not in (3, 7, 8)
                 and tuple(v.retained for v in self.visits)
                 != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
             )
             or (
-                self.capture.schema_version in (3, 7)
+                self.capture.schema_version in (3, 7, 8)
                 and sum(v.retained for v in self.visits) != self.capture.retained_visits
             )
         ):
@@ -190,6 +210,16 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
         if self.source_origin_counter is not None:
             rate = self.capture.sample_rate_hz
             for visit in self.visits:
+                duration_samples = (
+                    visit.valid_end_counter - visit.valid_start_counter
+                    if visit.valid_end_counter is not None
+                    else None
+                )
+                allowed_duration_samples = (
+                    {rate * 120 // 1000, rate * self.capture.active_dwell_ms // 1000}
+                    if self.capture.schema_version == 8
+                    else {rate * 120 // 1000}
+                )
                 if (
                     visit.valid_start_seconds
                     != (visit.valid_start_counter - self.source_origin_counter) / rate
@@ -204,8 +234,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
                     or (
                         visit.valid_end_counter is not None
                         and (
-                            visit.valid_end_counter - visit.valid_start_counter
-                            != rate * 120 // 1000
+                            duration_samples not in allowed_duration_samples
                             or visit.valid_end_seconds
                             != (visit.valid_end_counter - self.source_origin_counter) / rate
                         )
