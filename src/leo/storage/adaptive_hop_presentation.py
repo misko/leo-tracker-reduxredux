@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from leo.scanner.adaptive_dual_rx_phase_product import AdaptiveDualRxPhaseStatusV1
+from leo.scanner.adaptive_dual_rx_phase_product_v2 import AdaptiveDualRxPhaseStatusV2
 from leo.scanner.adaptive_hop_presentation import (
     AdaptiveHopAnalysisStatusV1,
     AdaptiveOverviewArtifact,
@@ -23,6 +24,7 @@ from leo.scanner.host_adaptive_products import (
     bind_actual_visit_analysis,
 )
 from leo.storage.adaptive_dual_rx_phase import AdaptiveDualRxPhaseStore
+from leo.storage.adaptive_dual_rx_phase_v2 import AdaptiveDualRxPhaseStoreV2
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.errors import BundleNotFoundError
@@ -184,6 +186,75 @@ class AdaptiveHopAnalysisPresentationStore:
         if status.manifest.glrt_binding_sha256 != glrt_binding_sha256:
             raise ValueError("adaptive phase artifact changed the GLRT binding")
         store = AdaptiveDualRxPhaseStore(self._root, read_only=True)
+        try:
+            return store.artifact(status.manifest, expected_sha256=artifact_sha256)
+        finally:
+            store.close()
+
+    def phase_status_v2(
+        self, session_id: str, *, probe_stride_ms: int = 120
+    ) -> AdaptiveDualRxPhaseStatusV2 | None:
+        """Return V2 checkpoint/final metadata without reading IQ or GLRT visits."""
+        binding = self._binding(session_id, probe_stride_ms)
+        if binding is None:
+            return None
+        receiver_ids = cast(tuple[Literal[0, 1], ...], tuple(binding.configuration.receiver_ids))
+        total = binding.receipt.complete_visit_count
+        if receiver_ids != (0, 1):
+            return AdaptiveDualRxPhaseStatusV2(
+                session_id=session_id,
+                input_manifest_sha256=binding.input_manifest_sha256,
+                receiver_ids=receiver_ids,
+                state="not_applicable",
+                reason="requires_simultaneous_rx0_rx1",
+                checkpoint_visit_count=0,
+                total_visit_count=total,
+                manifest=None,
+            )
+        store = AdaptiveDualRxPhaseStoreV2(self._root, read_only=True)
+        try:
+            completed = store.completed_visits(
+                session_id, binding.input_manifest_sha256, binding.sha256
+            )
+            manifest = store.manifest(session_id, binding.input_manifest_sha256, binding.sha256)
+        finally:
+            store.close()
+        if manifest is None:
+            return AdaptiveDualRxPhaseStatusV2(
+                session_id=session_id,
+                input_manifest_sha256=binding.input_manifest_sha256,
+                receiver_ids=receiver_ids,
+                state="pending",
+                reason="awaiting_phase_analysis",
+                checkpoint_visit_count=len(completed),
+                total_visit_count=total,
+                manifest=None,
+            )
+        return AdaptiveDualRxPhaseStatusV2(
+            session_id=session_id,
+            input_manifest_sha256=binding.input_manifest_sha256,
+            receiver_ids=receiver_ids,
+            state=manifest.state,
+            reason=manifest.reason,
+            checkpoint_visit_count=manifest.checkpoint_visit_count,
+            total_visit_count=manifest.total_visit_count,
+            manifest=manifest,
+        )
+
+    def phase_artifact_v2(
+        self,
+        session_id: str,
+        *,
+        glrt_binding_sha256: str,
+        artifact_sha256: str,
+        probe_stride_ms: int = 120,
+    ) -> bytes | None:
+        status = self.phase_status_v2(session_id, probe_stride_ms=probe_stride_ms)
+        if status is None or status.manifest is None:
+            return None
+        if status.manifest.glrt_binding_sha256 != glrt_binding_sha256:
+            raise ValueError("adaptive phase V2 artifact changed the GLRT binding")
+        store = AdaptiveDualRxPhaseStoreV2(self._root, read_only=True)
         try:
             return store.artifact(status.manifest, expected_sha256=artifact_sha256)
         finally:

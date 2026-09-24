@@ -1,0 +1,620 @@
+{
+  "implementation_sha256": {
+    "tools/report_glrt_guided_broadband_phase.py": "ab1a03657cae97be2b2a3177c28a6df74ec8793ad37356a50bb7782326ace724",
+    "src/leo/analysis/starlink/glrt_guided_broadband_phase.py": "1f34227b9e9c92773488ee8cfbe10db0f836676014bf895398272f9e6389ae6f",
+    "src/leo/analysis/starlink/broadband_alignment.py": "7ec3545e2cde0266071182cec71ae5b83a9eea8ea2568dc26e6201c71e088830",
+    "src/leo/analysis/starlink/pilot_methods.py": "c33de1f8ed7b3d8f1f1b7de659d6aa2b110f658338eb2753ae2c5161757a2857"
+  },
+  "cases": [
+    {
+      "case": "clean",
+      "truth": {
+        "sample_rate_hz": 2500000.0,
+        "sample_count": 300000,
+        "rx1_delay_samples": 2.375,
+        "phase_at_visit_start_rad": 0.73,
+        "cfo_at_visit_start_hz": -675123.4,
+        "cfo_rate_hz_s": 480.0,
+        "nonlinear_channel_response": false,
+        "independent_interference": false,
+        "noise_only": false,
+        "seed": 7331,
+        "source_band_hz": [
+          -450000,
+          950000
+        ],
+        "delay_definition": "RX1 envelope is RX0 delayed +2.375 samples before modulation"
+      },
+      "guide_bias_hz": 0,
+      "result": {
+        "data_only": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250966.389832274,
+          "relative_cfo_hz": -675108.9833775158,
+          "relative_cfo_rate_hz_s": 479.11537627766404,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.464262220823505,
+          "parameter_covariance": [
+            [
+              0.010000000000000002,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              3.5728427033337877,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5441372876145036e-06
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.0012426332071912868,
+          "guide_residual_hz": [
+            -176.46501322020777,
+            -23.67353205254767,
+            -74.44608793617226
+          ],
+          "inference_kind": "broadband_data_only",
+          "effective_spectral_group_count": 74.23043650230926,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "map_model": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250966.389832274,
+          "relative_cfo_hz": -675108.9838065522,
+          "relative_cfo_rate_hz_s": 479.11651533207026,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.4642597285308767,
+          "parameter_covariance": [
+            [
+              0.009999953125219728,
+              0.0,
+              0.0
+            ],
+            [
+              7.02101587873775e-25,
+              3.5728411076838773,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5368643337088473e-06
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.001239703324876096,
+          "guide_residual_hz": [
+            -176.46456140268128,
+            -23.673103016102687,
+            -74.44568168080878
+          ],
+          "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+          "effective_spectral_group_count": 74.23043737186705,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "training": {
+          "coherence": 0.9475945652770189,
+          "phase_rad": -3.0306195673346964e-06,
+          "real_coherence": 0.9475945652726673,
+          "wrong_time_coherence": 0.004929111601522582,
+          "normalized_complex_error": 0.31947559374009465,
+          "block_count": 36
+        },
+        "held_out": {
+          "coherence": 0.9475977868648462,
+          "phase_rad": 0.0020952343571698094,
+          "real_coherence": 0.9475957068851428,
+          "wrong_time_coherence": 0.010019258021783412,
+          "normalized_complex_error": 0.3194723588839089,
+          "block_count": 36
+        },
+        "data_only_training": {
+          "coherence": 0.9475945643063572,
+          "phase_rad": -3.0293641146393513e-06,
+          "real_coherence": 0.9475945643020091,
+          "wrong_time_coherence": 0.00492933262743429,
+          "normalized_complex_error": 0.31947559662213704,
+          "block_count": 36
+        },
+        "data_only_held_out": {
+          "coherence": 0.9475979636649937,
+          "phase_rad": 0.0019460851915499755,
+          "real_coherence": 0.947596169271516,
+          "wrong_time_coherence": 0.010019237054814823,
+          "normalized_complex_error": 0.3194709867065157,
+          "block_count": 36
+        },
+        "selected_guide_count": 3,
+        "rejected_guide_count": 0,
+        "guide_symbol_branch_hz": [
+          -675295.0306982616,
+          -675132.6569095684,
+          -675173.8471579264
+        ]
+      },
+      "phase_error_deg": 0.15626834649901444,
+      "delay_error_samples": -0.004999999999999005,
+      "frequency_error_hz": 0.016193447750993073
+    },
+    {
+      "case": "colored",
+      "truth": {
+        "sample_rate_hz": 2500000.0,
+        "sample_count": 300000,
+        "rx1_delay_samples": 2.375,
+        "phase_at_visit_start_rad": 0.73,
+        "cfo_at_visit_start_hz": -675123.4,
+        "cfo_rate_hz_s": 480.0,
+        "nonlinear_channel_response": true,
+        "independent_interference": false,
+        "noise_only": false,
+        "seed": 7331,
+        "source_band_hz": [
+          -450000,
+          950000
+        ],
+        "delay_definition": "RX1 envelope is RX0 delayed +2.375 samples before modulation"
+      },
+      "guide_bias_hz": 0,
+      "result": {
+        "data_only": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250283.4689413783,
+          "relative_cfo_hz": -675108.9779607751,
+          "relative_cfo_rate_hz_s": 478.99690596691954,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.467800169033235,
+          "parameter_covariance": [
+            [
+              0.010000000000000002,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              20.504835638318166,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.00045961683680651507
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.021438676190626022,
+          "guide_residual_hz": [
+            -176.47279936703853,
+            -23.67894879321102,
+            -74.4491352706682
+          ],
+          "inference_kind": "broadband_data_only",
+          "effective_spectral_group_count": 73.51859866083875,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "map_model": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250283.4689413783,
+          "relative_cfo_hz": -675108.9783898371,
+          "relative_cfo_rate_hz_s": 479.00344338286203,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.467792757850556,
+          "parameter_covariance": [
+            [
+              0.009999953125219728,
+              0.0,
+              0.0
+            ],
+            [
+              4.029409740671372e-24,
+              20.504783082417305,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.00045961708689942077
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.021438682023375896,
+          "guide_residual_hz": [
+            -176.47223955683876,
+            -23.67851973127108,
+            -74.44883695698809
+          ],
+          "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+          "effective_spectral_group_count": 73.51859930595059,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "training": {
+          "coherence": 0.9478332172295721,
+          "phase_rad": -3.2524096324188114e-06,
+          "real_coherence": 0.9478332172245589,
+          "wrong_time_coherence": 0.004014323449612795,
+          "normalized_complex_error": 0.31876682539732437,
+          "block_count": 36
+        },
+        "held_out": {
+          "coherence": 0.9477286940102722,
+          "phase_rad": 0.001004908954123615,
+          "real_coherence": 0.9477282154821897,
+          "wrong_time_coherence": 0.009035195678064446,
+          "normalized_complex_error": 0.31907925262002274,
+          "block_count": 36
+        },
+        "data_only_training": {
+          "coherence": 0.9478331862363203,
+          "phase_rad": -3.252117738769673e-06,
+          "real_coherence": 0.947833186231308,
+          "wrong_time_coherence": 0.004014526144008673,
+          "normalized_complex_error": 0.31876691755689573,
+          "block_count": 36
+        },
+        "data_only_held_out": {
+          "coherence": 0.947728708277286,
+          "phase_rad": 0.0009157495704843706,
+          "real_coherence": 0.9477283108959572,
+          "wrong_time_coherence": 0.009035178178527172,
+          "normalized_complex_error": 0.31907896897958254,
+          "block_count": 36
+        },
+        "selected_guide_count": 3,
+        "rejected_guide_count": 0,
+        "guide_symbol_branch_hz": [
+          -675295.0306982616,
+          -675132.6569095684,
+          -675173.8471579264
+        ]
+      },
+      "phase_error_deg": 0.12513707130371696,
+      "delay_error_samples": -0.004999999999999005,
+      "frequency_error_hz": 0.02161016291938722
+    },
+    {
+      "case": "interference",
+      "truth": {
+        "sample_rate_hz": 2500000.0,
+        "sample_count": 300000,
+        "rx1_delay_samples": 2.375,
+        "phase_at_visit_start_rad": 0.73,
+        "cfo_at_visit_start_hz": -675123.4,
+        "cfo_rate_hz_s": 480.0,
+        "nonlinear_channel_response": false,
+        "independent_interference": true,
+        "noise_only": false,
+        "seed": 7331,
+        "source_band_hz": [
+          -450000,
+          950000
+        ],
+        "delay_definition": "RX1 envelope is RX0 delayed +2.375 samples before modulation"
+      },
+      "guide_bias_hz": 0,
+      "result": {
+        "data_only": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 245038.16079227545,
+          "relative_cfo_hz": -675109.0448523405,
+          "relative_cfo_rate_hz_s": 471.01716376430943,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.5068695381209443,
+          "parameter_covariance": [
+            [
+              0.010000000000000002,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              141.86475877394122,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              2.7592689335555725e-05
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.005252874387947586,
+          "guide_residual_hz": [
+            -176.5655026457971,
+            -23.612057227874175,
+            -74.22264886123594
+          ],
+          "inference_kind": "broadband_data_only",
+          "effective_spectral_group_count": 72.23381945962508,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "map_model": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 245038.16079227545,
+          "relative_cfo_hz": -675109.0452810888,
+          "relative_cfo_rate_hz_s": 471.0625343480748,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.50682679855581,
+          "parameter_covariance": [
+            [
+              0.009999953125219728,
+              0.0,
+              0.0
+            ],
+            [
+              2.7877451907336486e-23,
+              141.86224311732886,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              2.7632731749663656e-05
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.005256684482605329,
+          "guide_residual_hz": [
+            -176.5641664857976,
+            -23.611628479557112,
+            -74.2231275246013
+          ],
+          "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+          "effective_spectral_group_count": 72.23382036557051,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "training": {
+          "coherence": 0.9470767267151866,
+          "phase_rad": -0.00025106761695590737,
+          "real_coherence": 0.9470766968657205,
+          "wrong_time_coherence": 0.0048405030143624985,
+          "normalized_complex_error": 0.3210076716669535,
+          "block_count": 36
+        },
+        "held_out": {
+          "coherence": 0.9452921415574372,
+          "phase_rad": 0.11463661098625108,
+          "real_coherence": 0.9390876375689315,
+          "wrong_time_coherence": 0.010019391822968403,
+          "normalized_complex_error": 0.3437732434784573,
+          "block_count": 36
+        },
+        "data_only_training": {
+          "coherence": 0.9470767367770897,
+          "phase_rad": -0.000251055530389517,
+          "real_coherence": 0.9470767069304972,
+          "wrong_time_coherence": 0.004840585562656135,
+          "normalized_complex_error": 0.32100764197350956,
+          "block_count": 36
+        },
+        "data_only_held_out": {
+          "coherence": 0.9452774351472217,
+          "phase_rad": 0.11497914361411594,
+          "real_coherence": 0.9390359358400383,
+          "wrong_time_coherence": 0.010019272107034578,
+          "normalized_complex_error": 0.34391566655117367,
+          "block_count": 36
+        },
+        "selected_guide_count": 3,
+        "rejected_guide_count": 0,
+        "guide_symbol_branch_hz": [
+          -675295.0306982616,
+          -675132.6569095684,
+          -675173.8471579264
+        ]
+      },
+      "phase_error_deg": 0.5677274748344651,
+      "delay_error_samples": -0.004999999999999005,
+      "frequency_error_hz": -0.04528108879458159
+    },
+    {
+      "case": "biased_guide",
+      "truth": {
+        "sample_rate_hz": 2500000.0,
+        "sample_count": 300000,
+        "rx1_delay_samples": 2.375,
+        "phase_at_visit_start_rad": 0.73,
+        "cfo_at_visit_start_hz": -675123.4,
+        "cfo_rate_hz_s": 480.0,
+        "nonlinear_channel_response": false,
+        "independent_interference": false,
+        "noise_only": false,
+        "seed": 7331,
+        "source_band_hz": [
+          -450000,
+          950000
+        ],
+        "delay_definition": "RX1 envelope is RX0 delayed +2.375 samples before modulation"
+      },
+      "guide_bias_hz": 1000,
+      "result": {
+        "data_only": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250966.389832274,
+          "relative_cfo_hz": -675108.9833775158,
+          "relative_cfo_rate_hz_s": 479.11537627766404,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.464262220823505,
+          "parameter_covariance": [
+            [
+              0.010000000000000002,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              3.5728427033337877,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5441372876145036e-06
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.0012426332071912868,
+          "guide_residual_hz": [
+            823.5349867797922,
+            976.3264679474523,
+            925.5539120638277
+          ],
+          "inference_kind": "broadband_data_only",
+          "effective_spectral_group_count": 74.23043650230926,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "map_model": {
+          "reference_sample": 75000.0,
+          "frequency_reference_hz": 250966.389832274,
+          "relative_cfo_hz": -675108.9833775158,
+          "relative_cfo_rate_hz_s": 479.11537627766404,
+          "effective_delay_samples": 2.370000000000001,
+          "observed_phase_rad": 2.464262220823505,
+          "parameter_covariance": [
+            [
+              0.010000000000000002,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              3.5728427033337877,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5441372876145036e-06
+            ]
+          ],
+          "parameter_covariance_order": [
+            "relative_cfo_hz",
+            "relative_cfo_rate_hz_s",
+            "observed_phase_rad"
+          ],
+          "conditional_phase_standard_error_rad": 0.0012426332071912868,
+          "guide_residual_hz": [
+            823.5349867797922,
+            976.3264679474523,
+            925.5539120638277
+          ],
+          "inference_kind": "conditional_composite_guide_penalized_map_same_iq_not_independent_posterior",
+          "effective_spectral_group_count": 74.23043650230926,
+          "training_block_count": 36,
+          "guide_bias_hz": 0.0,
+          "phase_uncertainty_kind": "max_frozen_spectral_scatter_and_four_contiguous_group_delete_jackknife_not_total_ci"
+        },
+        "training": {
+          "coherence": 0.9475945643063572,
+          "phase_rad": -3.0293641146393513e-06,
+          "real_coherence": 0.9475945643020091,
+          "wrong_time_coherence": 0.00492933262743429,
+          "normalized_complex_error": 0.31947559662213704,
+          "block_count": 36
+        },
+        "held_out": {
+          "coherence": 0.9475979636649937,
+          "phase_rad": 0.0019460851915499755,
+          "real_coherence": 0.947596169271516,
+          "wrong_time_coherence": 0.010019237054814823,
+          "normalized_complex_error": 0.3194709867065157,
+          "block_count": 36
+        },
+        "data_only_training": {
+          "coherence": 0.9475945643063572,
+          "phase_rad": -3.0293641146393513e-06,
+          "real_coherence": 0.9475945643020091,
+          "wrong_time_coherence": 0.00492933262743429,
+          "normalized_complex_error": 0.31947559662213704,
+          "block_count": 36
+        },
+        "data_only_held_out": {
+          "coherence": 0.9475979636649937,
+          "phase_rad": 0.0019460851915499755,
+          "real_coherence": 0.947596169271516,
+          "wrong_time_coherence": 0.010019237054814823,
+          "normalized_complex_error": 0.3194709867065157,
+          "block_count": 36
+        },
+        "selected_guide_count": 0,
+        "rejected_guide_count": 3,
+        "guide_symbol_branch_hz": [
+          -674295.0306982616,
+          -674132.6569095684,
+          -674173.8471579264
+        ]
+      },
+      "phase_error_deg": 0.15641114431016664,
+      "delay_error_samples": -0.004999999999999005,
+      "frequency_error_hz": 0.01662248419597745
+    },
+    {
+      "case": "noise",
+      "truth": {
+        "sample_rate_hz": 2500000.0,
+        "sample_count": 300000,
+        "rx1_delay_samples": 2.375,
+        "phase_at_visit_start_rad": 0.73,
+        "cfo_at_visit_start_hz": -675123.4,
+        "cfo_rate_hz_s": 480.0,
+        "nonlinear_channel_response": false,
+        "independent_interference": false,
+        "noise_only": true,
+        "seed": 7331,
+        "source_band_hz": [
+          -450000,
+          950000
+        ],
+        "delay_definition": "RX1 envelope is RX0 delayed +2.375 samples before modulation"
+      },
+      "guide_bias_hz": 0,
+      "error": "fewer than eight coherent physical-overlap bins"
+    }
+  ]
+}
