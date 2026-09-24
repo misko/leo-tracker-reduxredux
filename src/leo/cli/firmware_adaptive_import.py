@@ -400,10 +400,7 @@ def _dual_receipt(document: dict):
     final = _event_end(events[-1], plan)
     invalid = sum(event.valid_start_counter - event.invalid_start_counter for event in events)
     valid = sum(
-        (
-            _event_end(events[index], plan) - events[index].valid_start_counter
-        )
-        for index in retained
+        (_event_end(events[index], plan) - events[index].valid_start_counter) for index in retained
     )
     denominator = final - first
     original = _settings(document["evidence"]["preparation"]["original"], (0, 1))

@@ -191,9 +191,9 @@ class _PlutoAdaptiveHopSession:
         self._cancel = threading.Event()
         self._done = threading.Event()
         self._error: BaseException | None = None
-        self._receipt: (
-            AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | None
-        ) = None
+        self._receipt: AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | None = (
+            None
+        )
         self._produced: list[AdaptiveHopVisitV1] = []
         self._evidence: ScannerGlrtSessionEvidenceV1 | None = None
         self._classification_error: str | None = None

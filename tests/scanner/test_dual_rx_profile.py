@@ -74,15 +74,14 @@ def test_dual_rx_10m_profile_is_new_closed_contract() -> None:
     upstream = _load_plan(plan)
     assert upstream.sample_rate_hz == 10_000_000
     assert len(upstream.profiles) == 8
-    assert DualRxAdaptive10mScheduledScannerIntentV10.model_validate_json(
-        intent.model_dump_json()
-    ) == intent
+    assert (
+        DualRxAdaptive10mScheduledScannerIntentV10.model_validate_json(intent.model_dump_json())
+        == intent
+    )
 
     adaptive_plan = AdaptiveHopPlanV3(
         geometry=plan,
-        policy=AdaptiveHopPolicyV2(
-            mode="adaptive", generation=71, allowed_target_mask=0x0F
-        ),
+        policy=AdaptiveHopPolicyV2(mode="adaptive", generation=71, allowed_target_mask=0x0F),
     )
     receipt = receipt_fixture(
         rate=10_000_000,

@@ -186,9 +186,7 @@ def test_variable_dual_rx_rejects_fixed_dwell_accounting(field: str, value: int)
 
 def test_variable_dual_rx_rejects_duration_outside_selected_plan() -> None:
     payload = _receipt().model_dump(mode="json")
-    replacement_end = (
-        payload["events"][1]["valid_start_counter"] + 2_500_000 * 240 // 1_000
-    )
+    replacement_end = payload["events"][1]["valid_start_counter"] + 2_500_000 * 240 // 1_000
     payload["events"][1]["valid_end_counter_exclusive"] = replacement_end
     payload["events"][2]["invalid_start_counter"] = replacement_end
     payload["transition_invalid_sample_count"] += 300_000

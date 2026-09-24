@@ -451,10 +451,7 @@ class AdaptiveHopReceiptV1(AdaptiveModel):
         ):
             raise ValueError("adaptive receipt claims valid IQ beyond delivered counters")
         if terminal.state == "completed":
-            if (
-                not self.events
-                or terminal.final_counter != event_end(self.events[-1])
-            ):
+            if not self.events or terminal.final_counter != event_end(self.events[-1]):
                 raise ValueError("adaptive completed receipt lacks its final full dwell")
             overshoot = event_end(self.events[-1]) - self.events[-1].invalid_start_counter
             transport_missing = getattr(self, "transport_missing_sample_count", 0)
@@ -647,15 +644,12 @@ class AdaptiveHopReceiptV6(AdaptiveHopReceiptV2):
         quiet = geometry.quiet_valid_visit_samples
         allowed = {active, quiet}
         durations = tuple(
-            event.valid_end_counter_exclusive - event.valid_start_counter
-            for event in self.events
+            event.valid_end_counter_exclusive - event.valid_start_counter for event in self.events
         )
         if any(duration not in allowed for duration in durations):
             raise ValueError("adaptive variable dwell is outside its plan")
         retained = set(self.retained_visit_indices)
-        missing = sum(
-            duration for index, duration in enumerate(durations) if index not in retained
-        )
+        missing = sum(duration for index, duration in enumerate(durations) if index not in retained)
         if (
             self.transport_missing_sample_count != missing
             or self.unclassified_sample_count < missing

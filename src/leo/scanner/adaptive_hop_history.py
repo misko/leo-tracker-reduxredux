@@ -290,9 +290,7 @@ class VariableDwellHistoryItemV8(EdgeAdaptiveHistoryItemV4):
 
     @model_validator(mode="after")
     def _gain_evidence_is_consistent(self) -> Self:
-        if (self.recorded_gain_mode == "manual") != (
-            self.recorded_manual_gain_db is not None
-        ):
+        if (self.recorded_gain_mode == "manual") != (self.recorded_manual_gain_db is not None):
             raise ValueError("adaptive recorded gain mode and manual value disagree")
         return self
 
