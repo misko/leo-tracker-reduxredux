@@ -165,7 +165,7 @@ describe("adaptive actual-visit presentation", () => {
       radio_serial: "synthetic",
       selected_edge: "lower",
       allowed_target_mask: 15,
-      active_dwell_ms: 120,
+      active_dwell_ms: 360,
       recorded_gain_mode: mode,
       recorded_manual_gain_db: gain,
       retained_visits: coverage.reduce((total, row) => total + row.retained_visits, 0),
@@ -174,6 +174,7 @@ describe("adaptive actual-visit presentation", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(detail)));
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     expect(await screen.findByText(label)).toBeInTheDocument();
+    expect(screen.getByText("120 ms quiet / 360 ms active dwell · both receivers retained")).toBeInTheDocument();
   });
 
   it.each(["receiver", "rate", "inventory", "missing-decision", "rounded-counter"])("rejects invalid native %s", async fault => {

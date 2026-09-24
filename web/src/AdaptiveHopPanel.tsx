@@ -148,7 +148,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       <p>Radio <code>{c.radio_serial}</code> · allowed target mask <code>0x{c.allowed_target_mask.toString(16).padStart(2, "0")}</code>. Every actual and proposed hop in this receipt is confined to CH1–CH4 on this edge.</p>
     </section> : null}
     <section className="scanner-results-panel" aria-label="Actual adaptive visit timeline">
-      <header><h3>Where the radio actually looked</h3><small>120 ms valid dwell · {hostAdaptive ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
+      <header><h3>Where the radio actually looked</h3><small>{c.schema_version === 8 ? `120 ms quiet / ${c.active_dwell_ms} ms active dwell` : "120 ms valid dwell"} · {hostAdaptive ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
       <Timeline detail={detail} />
       <p>Green: active · grey: quiet · blue: unobserved at the decision. These are scheduling states, not per-dwell detection verdicts. Outlined marks show the beginning of incomplete hops, not retained IQ.</p>
       {c.mode === "shadow" ? <p>Shadow mode: the radio kept fixed order. Proposals did not change its actual tuning.</p> : null}
