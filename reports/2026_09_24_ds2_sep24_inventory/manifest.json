@@ -71,7 +71,9 @@
   ],
   "variable_dwell_backfill": {
     "state": "blocked_on_missing_contract_and_runner_support",
-    "required_contract": "immutable AdaptiveHopReceiptV6 metrics binding and product family",
+    "required_contract": "new immutable metrics product version bound to AdaptiveHopReceiptV6",
+    "numerical_policy_blocker": "current analysis requires fixed 120-ms visits and probe indices 0..10; receipt V6 makes each event's 120/240/360-ms counter span authoritative",
+    "required_policy_decision": "analyze each whole retained event or explicitly bind a declared 120-ms subset",
     "required_runner_change": "separate read-only capture root from report-local metrics and V14 output roots",
     "current_cli_limitation": "adaptive_hop_analysis and scanner_tracking use one bulk root for both inputs and outputs",
     "bounds_after_implementation": {
