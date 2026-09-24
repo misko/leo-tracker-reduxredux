@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import gzip
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -92,8 +93,10 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
         if row["channel"] is not None:
             by_channel_edge[f"ch{row['channel']}-{row['edge']}"].append(row)
     session_states = defaultdict(int)
+    inventory_sources = defaultdict(int)
     for session in document["sessions"]:
         session_states[session["state"]] += 1
+        inventory_sources[session.get("analysis_inventory_source", "unavailable")] += 1
     prior_summary = json.loads((PRIOR / "summary.json").read_text())
     prior_2p5 = next(row for row in prior_summary["rates"] if row["sample_rate_msps"] == 2.5)
     inventory = json.loads(INVENTORY.read_text())
@@ -104,14 +107,15 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
     }:
         raise ValueError("inventory summary sessions differ from the frozen replay cohort")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "inventory_cutoff_utc": document["cohort"]["inventory_cutoff_utc"],
         "session_count": len(document["sessions"]),
         "session_states": dict(sorted(session_states.items())),
         "frozen_cohort_complete_visit_count": int(inventory["complete_visit_count"]),
-        "reader_compatible_complete_visit_count": sum(
+        "analyzed_complete_visit_count": sum(
             int(session.get("complete_visit_count", 0)) for session in document["sessions"]
         ),
+        "analysis_inventory_sources": dict(sorted(inventory_sources.items())),
         "chronological_holdout_used": False,
         "validation_kind": "random whole 20ms groups; held B conditioned on same-block A",
         "overall": _aggregate(rows),
@@ -126,6 +130,42 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
         ),
         "geometric_phase_claimed": False,
         "satellite_identity_claimed": False,
+    }
+
+
+def build_v6_screen_summary(document: dict[str, Any]) -> dict[str, Any]:
+    """Retain compact proof that each report-local V6 inventory was exhausted."""
+    sessions = []
+    for session in document["sessions"]:
+        if session.get("analysis_inventory_source") != "exact_v6_120ms_report_local_glrt":
+            continue
+        checkpoint = _load(ROOT / "rows" / f"{session['session_id']}-phase-blind-screen.json.gz")
+        if (
+            checkpoint["protocol_sha256"] != document["protocol"]["sha256"]
+            or checkpoint["input_manifest_sha256"] != session["input_manifest_sha256"]
+        ):
+            raise ValueError("V6 screening checkpoint differs from final replay protocol")
+        screening_rows = checkpoint["rows"]
+        if len(screening_rows) != session["complete_visit_count"]:
+            raise ValueError("V6 screening checkpoint does not cover every complete visit")
+        canonical_rows = json.dumps(screening_rows, sort_keys=True, separators=(",", ":")).encode()
+        sessions.append(
+            {
+                "session_id": session["session_id"],
+                "input_manifest_sha256": session["input_manifest_sha256"],
+                "screened_visit_count": len(screening_rows),
+                "phase_blind_candidate_visit_count": sum(
+                    row["phase_blind_priority"] is not None for row in screening_rows
+                ),
+                "screening_error_count": sum("reason" in row for row in screening_rows),
+                "screening_rows_sha256": hashlib.sha256(canonical_rows).hexdigest(),
+                "configuration": checkpoint["configuration"],
+            }
+        )
+    return {
+        "schema_version": 1,
+        "protocol_sha256": document["protocol"]["sha256"],
+        "sessions": sessions,
     }
 
 
@@ -161,15 +201,16 @@ def plot_coverage(document: dict[str, Any], output: Path) -> None:
         color="#d95f59",
         label="Abstained",
     )
-    axis.scatter(
-        np.full(np.sum(unavailable), 0.15),
-        positions[unavailable],
-        marker="x",
-        s=55,
-        color="#7b2d43",
-        label="Analysis unavailable",
-        zorder=4,
-    )
+    if np.any(unavailable):
+        axis.scatter(
+            np.full(np.sum(unavailable), 0.15),
+            positions[unavailable],
+            marker="x",
+            s=55,
+            color="#7b2d43",
+            label="Analysis unavailable",
+            zorder=4,
+        )
     axis.set(
         xlabel="Phase-blind selected visits (maximum 8 per capture)",
         ylabel="Capture suffix in UTC order",
@@ -179,7 +220,7 @@ def plot_coverage(document: dict[str, Any], output: Path) -> None:
     )
     axis.invert_yaxis()
     axis.grid(axis="x", alpha=0.2)
-    axis.legend(ncol=2, loc="lower right")
+    axis.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.1))
     figure.savefig(output, dpi=190)
     plt.close(figure)
 
@@ -293,7 +334,11 @@ def main() -> None:
     document = _load(ROOT / "comparison.json.gz")
     rows = dwell_rows(document)
     summary = build_summary(document, rows)
+    v6_screen_summary = build_v6_screen_summary(document)
     (ROOT / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    (ROOT / "v6-screen-summary.json").write_text(
+        json.dumps(v6_screen_summary, indent=2, sort_keys=True) + "\n"
+    )
     write_csv(rows, ROOT / "per-dwell.csv")
     plot_coverage(document, ROOT / "coverage-by-session.png")
     plot_resultants(rows, ROOT / "r-by-radio-channel.png")

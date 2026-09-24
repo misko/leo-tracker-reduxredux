@@ -93,6 +93,51 @@ def test_carrier_seed_abstains_without_training_evidence(
         )
 
 
+def test_v6_numerical_view_preserves_complete_phase_blind_pairs() -> None:
+    tool = _tool()
+    configuration = tool.Feature103AnalysisConfigurationV3(
+        sample_rate_hz=2_500_000,
+        probe_stride_ms=120,
+    )
+
+    def candidate(cfo: float, margin: float, *, status: str = "complete") -> SimpleNamespace:
+        return SimpleNamespace(
+            epoch_sample=1234,
+            fractional_epoch_status=status,
+            fractional_epoch_offset_samples=0.25 if status == "complete" else None,
+            acquired_cfo_hz=cfo,
+            fractional_tracking_cfo_hz=cfo + 10.0 if status == "complete" else None,
+            fractional_margin=margin if status == "complete" else None,
+        )
+
+    analysis = SimpleNamespace(
+        probes=(
+            SimpleNamespace(
+                receiver_id=0,
+                probe_index=0,
+                candidates=(candidate(100.0, 0.4), candidate(500.0, 0.9, status="failed")),
+            ),
+            SimpleNamespace(
+                receiver_id=1,
+                probe_index=0,
+                candidates=(candidate(130.0, 0.5),),
+            ),
+        )
+    )
+    target = SimpleNamespace(edge="lower")
+
+    view = tool._phase_blind_view(
+        analysis,
+        configuration,
+        target_index=0,
+        target=target,
+    )
+
+    assert tool.relative_phase_priority(view) == pytest.approx(0.4)
+    assert len(tool.relative_phase_probes(view)) == 1
+    assert [len(probe.candidates) for probe in view.probes] == [1, 1]
+
+
 def test_summary_rows_retain_abstentions_in_the_selected_denominator() -> None:
     tool = _summary_tool()
     document = {

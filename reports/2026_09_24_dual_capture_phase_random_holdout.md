@@ -1,11 +1,11 @@
 # September 24 dual-capture phase with random holdouts
 
 The September 24 saved-IQ cohort has substantially stronger shared-waveform
-phase evidence than the earlier 2.5 MS/s random-group sample. Across the 19
-captures that the current analysis contracts can read, 122 of 152 phase-blind
-selected dwells pass the held-waveform gate. Among the 132 successful
-extractions, median residual phase concentration is **R = 0.9721**, median
-tracked coherence is **0.1733**, and median wrong-pair coherence is **0.00654**.
+phase evidence than the earlier 2.5 MS/s random-group sample. Across all 21
+captures, 131 of 168 phase-blind selected dwells pass the held-waveform gate.
+Among the 146 successful extractions, median residual phase concentration is
+**R = 0.9713**, median tracked coherence is **0.1713**, and median wrong-pair
+coherence is **0.00659**.
 This is useful capture-level signal, with the strongest coverage on radio
 `5d4d`. It does not establish satellite identity, geometric phase, or improved
 position accuracy.
@@ -19,26 +19,32 @@ stored visits. The incomplete 15 MS/s session
 started for this study, and every read of saved IQ and production analysis was
 read-only.
 
-Nineteen captures have sealed, complete GLRT inventories readable by the
-current `main` contracts. The remaining two, both from radio `19f2`, use receipt
-schema 6. The current binding dispatches that receipt to a schema-2 analysis
-model and rejects it. They remain in the cohort as explicit analysis-level
-abstentions; no receipt conversion or substitute capture was introduced.
+Nineteen captures use sealed, complete production GLRT inventories. The other
+two, both from radio `19f2`, use receipt schema 6 and are intentionally omitted
+by the production metrics queue because that contract permits variable
+120/240/360 ms visits. Every retained event in these two immutable manifests is
+exactly 120 ms. A report-local adapter therefore validates the V6 receipt,
+event endpoint, stored-IQ shape, and manifest digest before applying the same
+pure GLRT numerics. It screens all 4,436 V6 visits and writes only report
+evidence. It does not downcast or persist them as an older analysis product.
+The compact screen audit closes at 2,217 and 2,219 visits with zero numerical
+errors and finds 132 and 101 phase-blind paired candidates, respectively.
 
 ![Replay coverage by capture](figures/2026_09_24_dual_capture_phase_random/coverage-by-session.png)
 
-For each readable capture, selection takes the eight visits with the strongest
-phase-blind paired-GLRT fractional-margin floor. Phase outcomes never affect
-selection, and failed extractions are never replaced. This yields 152 selected
-dwells, 132 completed phase extractions, and 20 dwell-level abstentions:
+For every capture, selection takes the eight visits with the strongest
+phase-blind paired-GLRT fractional-margin floor after screening its complete
+stored-visit inventory. Phase outcomes never affect selection, and failed
+extractions are never replaced. This yields 168 selected dwells, 146 completed
+phase extractions, and 22 dwell-level abstentions:
 
 | Abstention reason | Count |
 | --- | ---: |
 | Local phase increment near pi | 6 |
-| Fewer than eight coherent physical-overlap bins | 6 |
+| Fewer than eight coherent physical-overlap bins | 7 |
 | No A-band response-normalization support | 4 |
 | No paired training-group carrier seed | 2 |
-| No qualified shared response | 1 |
+| No qualified shared response | 2 |
 | Insufficient disjoint frequency support | 1 |
 
 All 21 captures have valid-duty fractions between 0.8848 and 0.8884. That
@@ -79,14 +85,16 @@ coherence above `max(0.05, 3 × wrong-pair coherence)` and `R > 0.8`.
 
 | Radio | Supported / selected | Replayed | Median R | Median tracked / wrong coherence |
 | --- | ---: | ---: | ---: | ---: |
-| `19f2` | 8 / 16 | 10 | 0.8824 | 0.1146 / 0.00979 |
+| `19f2` | 17 / 32 | 24 | 0.9201 | 0.1202 / 0.00852 |
 | `5d4d` | 114 / 136 | 122 | 0.9743 | 0.1764 / 0.00647 |
-| **Combined** | **122 / 152** | **132** | **0.9721** | **0.1733 / 0.00654** |
+| **Combined** | **131 / 168** | **146** | **0.9713** | **0.1713 / 0.00659** |
 
-The combined pass fraction is 80.3% of phase-blind selections and 92.4% of
-successful extractions. The radio split matters: two of four `19f2` captures
-are contract-incompatible, and six of the 16 selections in the readable pair
-abstain. The broad conclusion is therefore driven mainly by `5d4d`.
+The combined pass fraction is 78.0% of phase-blind selections and 89.7% of
+successful extractions. The radio split matters: `19f2` passes 53.1% of its
+selected dwells, compared with 83.8% for `5d4d`. One recovered V6 capture passes
+all seven successful extractions; the other passes two of seven. The broad
+conclusion is therefore still driven mainly by `5d4d`, while the complete
+coverage exposes real variation within `19f2`.
 
 ![Held R by radio, channel, and edge](figures/2026_09_24_dual_capture_phase_random/r-by-radio-channel.png)
 
@@ -137,13 +145,15 @@ The [artifact README](figures/2026_09_24_dual_capture_phase_random/README.md)
 contains the replay commands. The
 [summary](figures/2026_09_24_dual_capture_phase_random/summary.json),
 [per-dwell table](figures/2026_09_24_dual_capture_phase_random/per-dwell.csv),
-[frozen cohort](figures/2026_09_24_dual_capture_phase_random/cohort.json), and
+[frozen cohort](figures/2026_09_24_dual_capture_phase_random/cohort.json),
+[V6 screen audit](figures/2026_09_24_dual_capture_phase_random/v6-screen-summary.json), and
 [compressed evidence](figures/2026_09_24_dual_capture_phase_random/comparison.json.gz)
 retain the capture-manifest digests, IQ digests, deterministic splits,
-training-only carrier probes, source hashes, outcomes, and abstentions.
+analysis-inventory source, training-only carrier probes, source hashes,
+outcomes, and abstentions.
 
 The focused random-phase, broadband-alignment, and September 24 replay tests
-pass 18 tests. Ruff checks pass for the replay, summarizer, and component-owned
-tests. The four generated PNGs were inspected after the final late-session
-analysis products sealed. This change adds research tooling and evidence only;
-it changes no production analyzer or persisted contract.
+pass 20 tests. Ruff checks pass for the replay, summarizer, and component-owned
+tests. The four generated PNGs were inspected after the complete 21-capture
+replay. This change adds research tooling and evidence only; it changes no
+production analyzer or persisted contract.
