@@ -7,6 +7,7 @@ import gzip
 import hashlib
 import json
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 ROOT = Path(__file__).resolve().parent
 PRIOR = ROOT.parent / "2026_09_23_random_phase_links"
 INVENTORY = ROOT / "inventory-summary.json"
+PRIOR_CUTOFF_NS = int(datetime(2026, 9, 24, 15, 39, 44, tzinfo=UTC).timestamp() * 1_000_000_000)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -34,6 +36,12 @@ def dwell_rows(document: dict[str, Any]) -> list[dict[str, Any]]:
             row = {
                 "session_id": session["session_id"],
                 "radio_id": session["radio_id"],
+                "sample_rate_hz": session.get("sample_rate_hz"),
+                "inventory_segment": (
+                    "added_after_prior_cutoff"
+                    if int(session.get("created_utc_ns", 0)) > PRIOR_CUTOFF_NS
+                    else "original_published_cohort"
+                ),
                 "visit_index": visit["visit_index"],
                 "phase_blind_priority": visit["phase_blind_priority"],
                 "state": visit["state"],
@@ -87,9 +95,14 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_radio: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_radio_sample_rate: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_inventory_segment: dict[str, list[dict[str, Any]]] = defaultdict(list)
     by_channel_edge: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         by_radio[row["radio_id"]].append(row)
+        rate_msps = float(row["sample_rate_hz"]) / 1_000_000
+        by_radio_sample_rate[f"{row['radio_id']}@{rate_msps:g}Msps"].append(row)
+        by_inventory_segment[row["inventory_segment"]].append(row)
         if row["channel"] is not None:
             by_channel_edge[f"ch{row['channel']}-{row['edge']}"].append(row)
     session_states = defaultdict(int)
@@ -107,7 +120,7 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
     }:
         raise ValueError("inventory summary sessions differ from the frozen replay cohort")
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "inventory_cutoff_utc": document["cohort"]["inventory_cutoff_utc"],
         "session_count": len(document["sessions"]),
         "session_states": dict(sorted(session_states.items())),
@@ -120,6 +133,12 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
         "validation_kind": "random whole 20ms groups; held B conditioned on same-block A",
         "overall": _aggregate(rows),
         "by_radio": {key: _aggregate(value) for key, value in sorted(by_radio.items())},
+        "by_radio_sample_rate": {
+            key: _aggregate(value) for key, value in sorted(by_radio_sample_rate.items())
+        },
+        "by_inventory_segment": {
+            key: _aggregate(value) for key, value in sorted(by_inventory_segment.items())
+        },
         "by_channel_edge": {
             key: _aggregate(value) for key, value in sorted(by_channel_edge.items())
         },
@@ -133,25 +152,26 @@ def build_summary(document: dict[str, Any], rows: list[dict[str, Any]]) -> dict[
     }
 
 
-def build_v6_screen_summary(document: dict[str, Any]) -> dict[str, Any]:
-    """Retain compact proof that each report-local V6 inventory was exhausted."""
+def build_report_local_screen_summary(document: dict[str, Any]) -> dict[str, Any]:
+    """Retain compact proof that each report-local inventory was exhausted."""
     sessions = []
     for session in document["sessions"]:
-        if session.get("analysis_inventory_source") != "exact_v6_120ms_report_local_glrt":
+        if "report_local_glrt" not in session.get("analysis_inventory_source", ""):
             continue
         checkpoint = _load(ROOT / "rows" / f"{session['session_id']}-phase-blind-screen.json.gz")
         if (
             checkpoint["protocol_sha256"] != document["protocol"]["sha256"]
             or checkpoint["input_manifest_sha256"] != session["input_manifest_sha256"]
         ):
-            raise ValueError("V6 screening checkpoint differs from final replay protocol")
+            raise ValueError("screening checkpoint differs from final replay protocol")
         screening_rows = checkpoint["rows"]
         if len(screening_rows) != session["complete_visit_count"]:
-            raise ValueError("V6 screening checkpoint does not cover every complete visit")
+            raise ValueError("screening checkpoint does not cover every complete visit")
         canonical_rows = json.dumps(screening_rows, sort_keys=True, separators=(",", ":")).encode()
         sessions.append(
             {
                 "session_id": session["session_id"],
+                "analysis_inventory_source": session["analysis_inventory_source"],
                 "input_manifest_sha256": session["input_manifest_sha256"],
                 "screened_visit_count": len(screening_rows),
                 "phase_blind_candidate_visit_count": sum(
@@ -178,7 +198,7 @@ def write_csv(rows: list[dict[str, Any]], path: Path) -> None:
 
 
 def plot_coverage(document: dict[str, Any], output: Path) -> None:
-    sessions = document["sessions"]
+    sessions = sorted(document["sessions"], key=lambda row: int(row["created_utc_ns"]))
     labels = [row["session_id"][-4:] for row in sessions]
     selected = np.asarray([row["selected_visit_count"] for row in sessions])
     supported = np.asarray([row["supported_visit_count"] for row in sessions])
@@ -228,23 +248,30 @@ def plot_coverage(document: dict[str, Any], output: Path) -> None:
 def plot_resultants(rows: list[dict[str, Any]], output: Path) -> None:
     replayed = [row for row in rows if row["state"] == "replayed"]
     figure, axis = plt.subplots(figsize=(11, 5.8), layout="constrained")
-    radio_colors = {"radio_pluto_19f2": "#4c78a8", "radio_pluto_5d4d": "#f28e2b"}
+    cohort_styles = {
+        ("radio_pluto_19f2", 2_500_000): ("#4c78a8", "o", "19f2 / 2.5 MS/s"),
+        ("radio_pluto_19f2", 15_000_000): ("#7a5195", "s", "19f2 / 15 MS/s"),
+        ("radio_pluto_5d4d", 2_500_000): ("#f28e2b", "o", "5d4d / 2.5 MS/s"),
+    }
     categories = sorted({f"ch{row['channel']}-{row['edge'][0]}" for row in replayed})
     positions = {category: index for index, category in enumerate(categories)}
     for index, row in enumerate(replayed):
         category = f"ch{row['channel']}-{row['edge'][0]}"
         jitter = ((index * 37) % 23 - 11) / 75
+        color, marker, _ = cohort_styles[(row["radio_id"], row["sample_rate_hz"])]
         axis.scatter(
             positions[category] + jitter,
             row["band_phase_resultant"],
-            color=radio_colors[row["radio_id"]],
-            marker="o" if row["supported"] else "x",
+            color=color,
+            marker=marker if row["supported"] else "x",
             alpha=0.8,
             s=32,
         )
     axis.axhline(0.8, color="#333333", linestyle="--", linewidth=1, label="R gate = 0.8")
-    for radio, color in radio_colors.items():
-        axis.scatter([], [], color=color, marker="o", label=radio.removeprefix("radio_pluto_"))
+    present_styles = {(row["radio_id"], row["sample_rate_hz"]) for row in replayed}
+    for key in sorted(present_styles):
+        color, marker, label = cohort_styles[key]
+        axis.scatter([], [], color=color, marker=marker, label=label)
     axis.scatter([], [], color="0.25", marker="x", label="Below composite gate")
     axis.set(
         xticks=np.arange(len(categories)),
@@ -334,10 +361,10 @@ def main() -> None:
     document = _load(ROOT / "comparison.json.gz")
     rows = dwell_rows(document)
     summary = build_summary(document, rows)
-    v6_screen_summary = build_v6_screen_summary(document)
+    local_screen_summary = build_report_local_screen_summary(document)
     (ROOT / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    (ROOT / "v6-screen-summary.json").write_text(
-        json.dumps(v6_screen_summary, indent=2, sort_keys=True) + "\n"
+    (ROOT / "report-local-screen-summary.json").write_text(
+        json.dumps(local_screen_summary, indent=2, sort_keys=True) + "\n"
     )
     write_csv(rows, ROOT / "per-dwell.csv")
     plot_coverage(document, ROOT / "coverage-by-session.png")

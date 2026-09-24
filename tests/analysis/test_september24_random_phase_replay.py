@@ -51,6 +51,22 @@ def test_dwell_seed_is_reproducible_and_visit_specific() -> None:
     assert 0 <= first < 2**32
 
 
+def test_replay_geometry_validator_accepts_supported_rates() -> None:
+    tool = _tool()
+
+    for sample_rate_hz in (2_500_000, 15_000_000):
+        tool.validate_capture_geometry(
+            SimpleNamespace(sample_rate_hz=sample_rate_hz, receiver_ids=(0, 1)),
+            "scan-fw-example",
+        )
+
+    with pytest.raises(ValueError, match="outside the frozen dual-RX rate cohorts"):
+        tool.validate_capture_geometry(
+            SimpleNamespace(sample_rate_hz=10_000_000, receiver_ids=(0, 1)),
+            "scan-fw-example",
+        )
+
+
 def test_carrier_seed_uses_only_whole_training_group_probes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
