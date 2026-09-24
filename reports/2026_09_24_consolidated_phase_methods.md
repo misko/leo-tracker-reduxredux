@@ -214,7 +214,10 @@ candidate-specific success criterion.
 ![Full-dwell R>0.8 threshold view](figures/2026_09_24_long_dwell_threshold/phase-R08-full-dwell.png)
 
 The last figure is a retained threshold visualization; it is not a new fit or
-a population validation endpoint.
+a population validation endpoint. It requires both **per-source** R values to
+exceed 0.8; this is not the adaptive two-source DD R. Its 650/704 accepted
+overlapping windows cover only 23.60–30.65 seconds of the 60-second recording.
+The rest of that full-time-axis plot is unmeasured, not failed coherence.
 
 ## Adaptive dwells, retunes, and the high-R regions
 
@@ -283,7 +286,7 @@ source identity are unresolved.
 
 ## Geometry, position, and the valid next gate
 
-The nominal mechanical 8 cm fixture separation is not an electrical
+The historical nominal mechanical 8 cm fixture separation is not an electrical
 phase-center baseline, has no verified world orientation, and has provisional
 RX mapping. A forward calculation at 11.2096875 GHz over 24 actual frame times
 finds maximum geometric RMS over any 8 cm orientation of 0.009464 rad after a
@@ -311,6 +314,11 @@ templates. This can establish conditional candidate compatibility without a
 surveyed orientation. Direction, speed, position, and identity still require
 separate phase-center, receiver/channel, branch, timing, and source authority.
 
+The user's later exploratory geometry is a fixed separation of 10–30 cm,
+generally upward-facing, with a reported pre-rotation axis bearing of 79° east.
+The 8 cm calculation above is retained as its original sensitivity experiment,
+not imposed as the current baseline or a prerequisite for exploratory work.
+
 ## Supersession ledger
 
 | Item | Current treatment |
@@ -326,3 +334,24 @@ separate phase-center, receiver/channel, branch, timing, and source authority.
 Every linked JSON/PNG is retained beside its source report. This consolidation
 does not alter a phase extractor, candidate scorer, capture configuration, or
 production association path.
+
+## Additional illustration inventory
+
+These retained panels complete the gallery for the phase-method comparison,
+full-scan coverage, GLRT inventory, and random-30 replay discussed above.
+Early method panels retain their historical validation limitations.
+
+![Initial relative-phase overview](figures/2026_09_23_scan_1aa_phase_methods/relative-phase-overview.png)
+![Initial relative-phase dwells](figures/2026_09_23_scan_1aa_phase_methods/relative-phase-dwells.png)
+![Initial scan phase coverage](figures/2026_09_23_scan_1aa_phase_methods/scan-phase-coverage.png)
+![Per-sample phase comparison](figures/2026_09_23_scan_1aa_phase_methods/per-sample-phase-comparison.png)
+![Phase fit comparison](figures/2026_09_23_scan_1aa_phase_methods/phase-fit-comparison.png)
+![Phase-method validation](figures/2026_09_23_scan_1aa_phase_methods/phase-method-validation.png)
+![Scalar phase likelihood](figures/2026_09_23_scan_1aa_phase_methods/scalar-phase-likelihood.png)
+![Initial two-source differences](figures/2026_09_23_scan_1aa_phase_methods/two-source-double-differences.png)
+![Visit 544 method detail](figures/2026_09_23_scan_1aa_phase_methods/visit-544-method-detail.png)
+![Full-scan single-source phase coverage](figures/2026_09_23_adaptive_phase_300s/phase-vs-time-300s.png)
+![GLRT detections and multiplicity through the scan](figures/2026_09_23_scan_glrt_multiplicity/glrt-vs-time.png)
+![Random-30 coherence versus the five references](figures/2026_09_23_relaxed_adaptive_coherence/random30-coherence.png)
+![All random-30 candidate-pair phase traces](figures/2026_09_23_relaxed_adaptive_coherence/random30-double-difference.png)
+![All 30 single-source phase panels](figures/2026_09_23_relaxed_adaptive_coherence/random30-phase-gallery.png)
