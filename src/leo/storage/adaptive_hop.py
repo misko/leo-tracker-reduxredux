@@ -647,6 +647,8 @@ class AdaptiveHopIqStore:
             else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
+        if isinstance(plan, (AdaptiveHopPlanV5, AdaptiveHopPlanV6)) and receiver_geometry is None:
+            raise ValueError("this dual-RX manifest version requires receiver geometry")
         if self.contains_session(session_id):
             raise FileExistsError(session_id)
         write_root = self._spool_root or self._root
