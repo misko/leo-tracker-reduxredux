@@ -16,6 +16,7 @@ from leo.scanner.persistent_hop import (
     DualRxPersistentHopPlanV2,
     Feature103DualRxPlanV3,
     Feature104DualRxPlanV4,
+    FixedDualRxPlanV6,
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
@@ -146,6 +147,18 @@ class AdaptiveHopPlanV6(AdaptiveHopPlanV2):
     @model_validator(mode="after")
     def _geometry_is_revalidated(self) -> Self:
         VariableDualRxPlanV5.model_validate(self.geometry.model_dump())
+        return self
+
+
+class AdaptiveHopPlanV7(AdaptiveHopPlanV2):
+    """Protocol-four dual-RX plan with one source-attested dwell."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    geometry: FixedDualRxPlanV6  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        FixedDualRxPlanV6.model_validate(self.geometry.model_dump())
         return self
 
 
@@ -323,6 +336,14 @@ class AdaptiveHopTerminalV2(AdaptiveHopTerminalV1):
 
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     wire_protocol_version: Literal[3] = 3  # type: ignore[assignment]
+    wire_feature_flags: Literal[255] = 255  # type: ignore[assignment]
+
+
+class AdaptiveHopTerminalV3(AdaptiveHopTerminalV1):
+    """Terminal identity for fixed-dwell wire protocol four."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    wire_protocol_version: Literal[4] = 4  # type: ignore[assignment]
     wire_feature_flags: Literal[255] = 255  # type: ignore[assignment]
 
 
@@ -668,6 +689,14 @@ class AdaptiveHopReceiptV6(AdaptiveHopReceiptV2):
         )
 
 
+class AdaptiveHopReceiptV7(AdaptiveHopReceiptV6):
+    """Protocol-four receipt whose complete visits all use the scan dwell."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV7  # type: ignore[assignment]
+    terminal: AdaptiveHopTerminalV3  # type: ignore[assignment]
+
+
 AdaptiveHopPlan = (
     AdaptiveHopPlanV1
     | AdaptiveHopPlanV2
@@ -675,6 +704,7 @@ AdaptiveHopPlan = (
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
     | AdaptiveHopPlanV6
+    | AdaptiveHopPlanV7
 )
 AdaptiveHopReceipt = (
     AdaptiveHopReceiptV1
@@ -683,6 +713,7 @@ AdaptiveHopReceipt = (
     | AdaptiveHopReceiptV4
     | AdaptiveHopReceiptV5
     | AdaptiveHopReceiptV6
+    | AdaptiveHopReceiptV7
 )
 
 
@@ -695,7 +726,9 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopPlanV6
+        AdaptiveHopPlanV7
+        if version == 7
+        else AdaptiveHopPlanV6
         if version == 6
         else AdaptiveHopPlanV5
         if version == 5
@@ -719,7 +752,9 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopReceiptV6
+        AdaptiveHopReceiptV7
+        if version == 7
+        else AdaptiveHopReceiptV6
         if version == 6
         else AdaptiveHopReceiptV5
         if version == 5
