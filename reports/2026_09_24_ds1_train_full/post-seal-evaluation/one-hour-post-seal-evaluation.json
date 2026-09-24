@@ -1,0 +1,5141 @@
+{
+  "completed_task_count": 64,
+  "grid_screen_label": "12.5 km final geographic grid screen; post-seal errors are not sub-grid accuracy claims.",
+  "manifest": {
+    "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/one-hour-inference-manifest.json",
+    "sha256": "293d49c39ef1acb84854c3f557ab34df2663a3b80273bcc7c9ba1fba4d2a8d5d",
+    "task_count": 64
+  },
+  "missing_or_failed_task_count": 0,
+  "reference_coordinate": {
+    "latitude_deg": 37.84903264307456,
+    "longitude_deg": -122.4856541910174
+  },
+  "reference_role": "introduced only after sealed inference validation; evaluation only",
+  "rows": [
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--first-singleton--reno--baseline.json",
+      "artifact_sha256": "7e8fa4e69a81d89dd0d6d469747b7248a6c21efe949f4ca084e3e275bb238836",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70853669960254,
+      "estimated_longitude_deg": -122.08715120029468,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 38.34935025241945,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.15418756759948962,
+        "selection_value": 0.15418756759948962
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.15418756759948962,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--reno--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "89031ac5b3ac5f763dfac10a31da35f7c366400fbc314a88f99a1046b340e42c",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70853669960254,
+      "estimated_longitude_deg": -122.08715120029468,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.08286155454864583,
+          "full_observation_capped_rms_hz": 230.28546395969792,
+          "global_tau_s": 0.0,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.42008249760839,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.1541834355751639,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.03163445510622796,
+            "minimum": -0.0916853549543963,
+            "value_count": 22
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 198447.46931985315,
+            "median": -517942.83455360506,
+            "minimum": -987614.5644957214,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.08286155454864583,
+        "full_observation_capped_rms_hz": 230.28546395969792,
+        "global_tau_s": 0.0,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.42008249760839,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.1541834355751639,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.03163445510622796,
+          "minimum": -0.0916853549543963,
+          "value_count": 22
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 198447.46931985315,
+          "median": -517942.83455360506,
+          "minimum": -987614.5644957214,
+          "value_count": 93
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 38.34935025241945,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.08286155454864583
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.08286155454864583,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--reno--global_time.json",
+      "artifact_sha256": "098e5872443729e2b070825bd6f220d5a9009e92fadb9dfc5c15ede934234bbb",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70564705280287,
+      "estimated_longitude_deg": -122.22917199541568,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.5,
+            "median": -1.5,
+            "minimum": -1.5,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.5,
+          "median": -1.5,
+          "minimum": -1.5,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 27.610411231571263,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.1474684976051646,
+        "selection_value": 0.1474684976051646
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1474684976051646,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--reno--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "6eba3b0fd1d21d3359d4a410d1e06900a953a79552a9de1f77e8cb45a96e5839",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70564705280287,
+      "estimated_longitude_deg": -122.22917199541568,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.03967931917838392,
+          "full_observation_capped_rms_hz": 159.3573477256876,
+          "global_tau_s": -1.5,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.4660593438669585,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.14746507918692348,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.02741063111294603,
+            "minimum": -0.05325419715831808,
+            "value_count": 22
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 197066.44371454814,
+            "median": -516557.901346987,
+            "minimum": -990141.8027401244,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.03967931917838392,
+        "full_observation_capped_rms_hz": 159.3573477256876,
+        "global_tau_s": -1.5,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.4660593438669585,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.14746507918692348,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.02741063111294603,
+          "minimum": -0.05325419715831808,
+          "value_count": 22
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 197066.44371454814,
+          "median": -516557.901346987,
+          "minimum": -990141.8027401244,
+          "value_count": 93
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 27.610411231571263,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.03967931917838392
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.03967931917838392,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--first-singleton--reno--independent_per_track_time.json",
+      "artifact_sha256": "741101704bede8390088d607078d665bab9655141f3c087ea65a8aee8f3caaa2",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70258246620074,
+      "estimated_longitude_deg": -122.37118122760191,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": 1.0,
+            "minimum": -2.0,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": 1.0,
+          "minimum": -2.0,
+          "value_count": 93
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 19.141855231227527,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.04730867075733181,
+        "selection_value": 0.04730867075733181
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.04730867075733181,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 93,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": 1.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": 1.0,
+          "minimum": -2.0,
+          "value_count": 93
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--first-singleton--reno--per_scan_time.json",
+      "artifact_sha256": "5a6f4d64a8b8de856ad7a40ae20da02348c4f332f3f7aeaea166f907c8a7f9f2",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.70564705280287,
+      "estimated_longitude_deg": -122.22917199541568,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": -1.5,
+            "value_count": 3
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -1.5,
+          "value_count": 3
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 27.610411231571263,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.1474684976051646,
+        "selection_value": 0.1474684976051646
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1474684976051646,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--first-singleton--reno--soft_association.json",
+      "artifact_sha256": "841d3459aa1aca66377bf2b3110612badacfd7c602571732e68ffcba872b3cfc",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.92727918367501,
+      "estimated_longitude_deg": -122.37908082471127,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 191369.6673461832,
+            "median": -509147.77729727863,
+            "minimum": -992749.1709122253,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 191369.6673461832,
+          "median": -509147.77729727863,
+          "minimum": -992749.1709122253,
+          "value_count": 93
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 12.773803485018046,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.474429781989485
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.474429781989485,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--first-singleton--reno--soft_association_plus_global_time.json",
+      "artifact_sha256": "7c632e7aa8b9ffe036c804b1b75a8453fcca0ca3679308012de2cbd017a55102",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.6959286096817,
+      "estimated_longitude_deg": -122.65516229557144,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -5.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 191986.01249115323,
+            "median": -514055.9486949773,
+            "minimum": -1005388.1454310043,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -5.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 191986.01249115323,
+          "median": -514055.9486949773,
+          "minimum": -1005388.1454310043,
+          "value_count": 93
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 22.623069408402543,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.448308417375544
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.448308417375544,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--reno--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -5.0,
+      "timing_nuisance_median_s": -5.0,
+      "timing_nuisance_min_s": -5.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -5.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--first-singleton--sacramento--baseline.json",
+      "artifact_sha256": "44eb0049307e888ecb472d8f8391ae1f002e83497fe764bf0c331229c7bc5ae6",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.680898433412196,
+      "estimated_longitude_deg": -122.06254370125367,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 41.62715094699451,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.15228353411656767,
+        "selection_value": 0.15228353411656767
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.15228353411656767,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--sacramento--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "74f547ead49da78dbbb9f39e473f4495f6b824b6a04dafd69caa9b5811e0d3b1",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.680898433412196,
+      "estimated_longitude_deg": -122.06254370125367,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.09008012278974861,
+          "full_observation_capped_rms_hz": 240.1068066203853,
+          "global_tau_s": 0.0,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.7429607279491615,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.1522799058424906,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.03982118604175459,
+            "minimum": -0.10777343359928458,
+            "value_count": 21
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 198988.22998598302,
+            "median": -517651.9180781647,
+            "minimum": -986743.6741733382,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.09008012278974861,
+        "full_observation_capped_rms_hz": 240.1068066203853,
+        "global_tau_s": 0.0,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.7429607279491615,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.1522799058424906,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.03982118604175459,
+          "minimum": -0.10777343359928458,
+          "value_count": 21
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 198988.22998598302,
+          "median": -517651.9180781647,
+          "minimum": -986743.6741733382,
+          "value_count": 93
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 41.62715094699451,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.09008012278974861
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.09008012278974861,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--first-singleton--sacramento--global_time.json",
+      "artifact_sha256": "9ca89b6b6d2fa12e8e06ae873e0067fa00ecee459d4317e47c01b0050dd8b6d6",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.68012152434989,
+      "estimated_longitude_deg": -122.20457463457035,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.5,
+            "median": -1.5,
+            "minimum": -1.5,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.5,
+          "median": -1.5,
+          "minimum": -1.5,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 31.036168688596494,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14493712418084626,
+        "selection_value": 0.14493712418084626
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14493712418084626,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "da5e9dc5ae026ad568e442aead9dfcc1f4ee1a5ecb8c828c5265a598e727f697",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.68012152434989,
+      "estimated_longitude_deg": -122.20457463457035,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.04172201978964627,
+          "full_observation_capped_rms_hz": 163.40774971026806,
+          "global_tau_s": -1.5,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.926082633941391,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.14493409018634373,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.03707284577427916,
+            "minimum": -0.06862585351899061,
+            "value_count": 22
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 197695.53240435795,
+            "median": -516546.32021989377,
+            "minimum": -989438.4509230234,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.04172201978964627,
+        "full_observation_capped_rms_hz": 163.40774971026806,
+        "global_tau_s": -1.5,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.926082633941391,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.14493409018634373,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.03707284577427916,
+          "minimum": -0.06862585351899061,
+          "value_count": 22
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 197695.53240435795,
+          "median": -516546.32021989377,
+          "minimum": -989438.4509230234,
+          "value_count": 93
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 31.036168688596494,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.04172201978964627
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.04172201978964627,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--first-singleton--sacramento--independent_per_track_time.json",
+      "artifact_sha256": "33bd32a36d5aca7eb5f58b42f1facb73ca421a47d3554304408558666ceba86e",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.79157971078969,
+      "estimated_longitude_deg": -122.3479053923874,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": 1.0,
+            "minimum": -2.0,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": 1.0,
+          "minimum": -2.0,
+          "value_count": 93
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.68246223873388,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.04295600667806412,
+        "selection_value": 0.04295600667806412
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.04295600667806412,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 93,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": 1.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": 1.0,
+          "minimum": -2.0,
+          "value_count": 93
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--first-singleton--sacramento--per_scan_time.json",
+      "artifact_sha256": "1da8647960292edf148fca0d8064148f7cfd43d853efc6af6c3dca0b815dd41a",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.68012152434989,
+      "estimated_longitude_deg": -122.20457463457035,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": -1.5,
+            "value_count": 3
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -1.5,
+          "value_count": 3
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 31.036168688596494,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14493712418084626,
+        "selection_value": 0.14493712418084626
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14493712418084626,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--first-singleton--sacramento--soft_association.json",
+      "artifact_sha256": "cd5e5d2c82c3d6f2ed025bbd046b3942fe169f4be31e70faf22b04354ef850ef",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.90398740525912,
+      "estimated_longitude_deg": -122.34921470922835,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 191317.06683167588,
+            "median": -509915.77304453735,
+            "minimum": -994561.2426739362,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 191317.06683167588,
+          "median": -509915.77304453735,
+          "minimum": -994561.2426739362,
+          "value_count": 93
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.444296274688039,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.4831691656567
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.4831691656567,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--first-singleton--sacramento--soft_association_plus_global_time.json",
+      "artifact_sha256": "cfe18506b2121d072ca0d69323877bc4d78c5bd0921cfca74cca5c43ebc682f7",
+      "case_id": "train-20260921_00--first-singleton",
+      "estimated_latitude_deg": 37.90155907417445,
+      "estimated_longitude_deg": -122.63412774564152,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -3.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 189949.22347390497,
+            "median": -509226.33333338704,
+            "minimum": -993641.7063579839,
+            "value_count": 93
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -3.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 189949.22347390497,
+          "median": -509226.33333338704,
+          "minimum": -993641.7063579839,
+          "value_count": 93
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 14.280781439304036,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.446194166914446
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.446194166914446,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--first-singleton--sacramento--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -3.0,
+      "timing_nuisance_median_s": -3.0,
+      "timing_nuisance_min_s": -3.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -3.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--prefix-6--reno--baseline.json",
+      "artifact_sha256": "41a59f42bb7b10a026f5e276ee6032458337c67efd866a25f4f99d5911b8e0d7",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92727918367501,
+      "estimated_longitude_deg": -122.37908082471127,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 12.773803485018046,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.1348226998038414,
+        "selection_value": 0.1348226998038414
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.1348226998038414,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--reno--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "84cc523627d09cafedf3610eb622e76e006857a775bea6d594197dac43a032be",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92727918367501,
+      "estimated_longitude_deg": -122.37908082471127,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.04903558438493191,
+          "full_observation_capped_rms_hz": 177.1518388455407,
+          "global_tau_s": 0.0,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.556812212188737,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.13482709158474887,
+          "rate_boundary_count": 1.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.01564184340161504,
+            "minimum": -0.232481661169506,
+            "value_count": 111
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 244794.39331022513,
+            "median": -445930.2087153273,
+            "minimum": -1141237.219705364,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.04903558438493191,
+        "full_observation_capped_rms_hz": 177.1518388455407,
+        "global_tau_s": 0.0,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.556812212188737,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.13482709158474887,
+        "rate_boundary_count": 1.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.01564184340161504,
+          "minimum": -0.232481661169506,
+          "value_count": 111
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 244794.39331022513,
+          "median": -445930.2087153273,
+          "minimum": -1141237.219705364,
+          "value_count": 476
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 12.773803485018046,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.04903558438493191
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.04903558438493191,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--reno--global_time.json",
+      "artifact_sha256": "b5389eae621619fd12840096782a650e3cc71c71fe11baebeb4d690be1055c1f",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.5,
+            "median": -1.5,
+            "minimum": -1.5,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.5,
+          "median": -1.5,
+          "minimum": -1.5,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.13118362212728063,
+        "selection_value": 0.13118362212728063
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.13118362212728063,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--reno--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "c7a6b6d7a79797f17e4fa6f8a0f3a55f08b352578119b7c196e4f1fb38b8987f",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.04785852187539013,
+          "full_observation_capped_rms_hz": 175.0127252523361,
+          "global_tau_s": -1.5,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.774920713571681,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.13118679178297593,
+          "rate_boundary_count": 1.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.009835041567849066,
+            "minimum": -0.15988637503705713,
+            "value_count": 110
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 244930.65365219425,
+            "median": -446305.3974428287,
+            "minimum": -1139174.8787815396,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.04785852187539013,
+        "full_observation_capped_rms_hz": 175.0127252523361,
+        "global_tau_s": -1.5,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.774920713571681,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.13118679178297593,
+        "rate_boundary_count": 1.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.009835041567849066,
+          "minimum": -0.15988637503705713,
+          "value_count": 110
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 244930.65365219425,
+          "median": -446305.3974428287,
+          "minimum": -1139174.8787815396,
+          "value_count": 476
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.04785852187539013
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.04785852187539013,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--prefix-6--reno--independent_per_track_time.json",
+      "artifact_sha256": "1052518144e4e9c373b87cf9df36df105b6a0f29c1e9aae6e5395431208548c4",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92727918367501,
+      "estimated_longitude_deg": -122.37908082471127,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": 0.5,
+            "minimum": -2.0,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": 0.5,
+          "minimum": -2.0,
+          "value_count": 476
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 12.773803485018046,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.06175047238341143,
+        "selection_value": 0.06175047238341143
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.06175047238341143,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 476,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": 0.5,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": 0.5,
+          "minimum": -2.0,
+          "value_count": 476
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--prefix-6--reno--per_scan_time.json",
+      "artifact_sha256": "c84e691001a291527872b01bcc3ab6e2ebdcb50224feff1ee23655542ed84782",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0025,
+            "median": 0.0,
+            "minimum": -1.5,
+            "value_count": 8
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0025,
+          "median": 0.0,
+          "minimum": -1.5,
+          "value_count": 8
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.12801496677969465,
+        "selection_value": 0.13051496677969465
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.13051496677969465,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.0025,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -0.5,
+          "value_count": 6
+        },
+        "per_scan_penalty": 0.0025
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--prefix-6--reno--soft_association.json",
+      "artifact_sha256": "b5c638d1a796e040ea0e6ab254d37712c301d98a369d76471ec44c2091ebc9e7",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.92727918367501,
+      "estimated_longitude_deg": -122.37908082471127,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 244796.0379955314,
+            "median": -445589.358092783,
+            "minimum": -1152034.301393389,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 244796.0379955314,
+          "median": -445589.358092783,
+          "minimum": -1152034.301393389,
+          "value_count": 476
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 12.773803485018046,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.362994126677434
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.362994126677434,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--prefix-6--reno--soft_association_plus_global_time.json",
+      "artifact_sha256": "eea71fcbb6fa4371f0fb2cd376aba56d6525e77d804817ed21b6ef848235dbae",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.920594073212584,
+      "estimated_longitude_deg": -122.66393717585592,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -3.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 245961.84932274965,
+            "median": -444397.4638831428,
+            "minimum": -1153203.0223131122,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -3.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 245961.84932274965,
+          "median": -444397.4638831428,
+          "minimum": -1153203.0223131122,
+          "value_count": 476
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 17.553378442091248,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.361956403443723
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.361956403443723,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--reno--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -3.0,
+      "timing_nuisance_median_s": -3.0,
+      "timing_nuisance_min_s": -3.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -3.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_00--prefix-6--sacramento--baseline.json",
+      "artifact_sha256": "3f93db1df2eb52a817e25a45375b80dbde2fb815b15b738c81813ec2563c07d3",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90398740525912,
+      "estimated_longitude_deg": -122.34921470922835,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.444296274688039,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14215917800516792,
+        "selection_value": 0.14215917800516792
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14215917800516792,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--sacramento--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "fbc502dab02433526fcdc62d4a3fa3afb471e226a127f008ad9ca6240a736c1d",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90398740525912,
+      "estimated_longitude_deg": -122.34921470922835,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.048494770657285954,
+          "full_observation_capped_rms_hz": 176.1722260194921,
+          "global_tau_s": 0.0,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.086407346003437,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.14216400579892988,
+          "rate_boundary_count": 1.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.019837635861109933,
+            "minimum": -0.21452567581900203,
+            "value_count": 112
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 244830.84769249088,
+            "median": -445442.4156196482,
+            "minimum": -1142158.6227204993,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.048494770657285954,
+        "full_observation_capped_rms_hz": 176.1722260194921,
+        "global_tau_s": 0.0,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.086407346003437,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.14216400579892988,
+        "rate_boundary_count": 1.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.019837635861109933,
+          "minimum": -0.21452567581900203,
+          "value_count": 112
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 244830.84769249088,
+          "median": -445442.4156196482,
+          "minimum": -1142158.6227204993,
+          "value_count": 476
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.444296274688039,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.048494770657285954
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.048494770657285954,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_00--prefix-6--sacramento--global_time.json",
+      "artifact_sha256": "0b1badac7b238415cf6bb8373c0f674b5da192e95d081e0978cfb687407cb4e4",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.0,
+            "median": -1.0,
+            "minimum": -1.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.0,
+          "median": -1.0,
+          "minimum": -1.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.13165795082825718,
+        "selection_value": 0.13165795082825718
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.13165795082825718,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_00--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "4ba5276ad62960e71e6a21526df3e605748605a57c356e966b4cfb0ff59fdeee",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.042177627210581076,
+          "full_observation_capped_rms_hz": 164.29753928398284,
+          "global_tau_s": -1.0,
+          "iterations": 120.0,
+          "maximum_phase_s": 5.789015061877349,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.13166077412652308,
+          "rate_boundary_count": 1.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.0037369283316470415,
+            "minimum": -0.16000710761653927,
+            "value_count": 108
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 244956.17706248528,
+            "median": -446377.69920566765,
+            "minimum": -1139941.5871591654,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.042177627210581076,
+        "full_observation_capped_rms_hz": 164.29753928398284,
+        "global_tau_s": -1.0,
+        "iterations": 120.0,
+        "maximum_phase_s": 5.789015061877349,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.13166077412652308,
+        "rate_boundary_count": 1.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.0037369283316470415,
+          "minimum": -0.16000710761653927,
+          "value_count": 108
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 244956.17706248528,
+          "median": -446377.69920566765,
+          "minimum": -1139941.5871591654,
+          "value_count": 476
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.042177627210581076
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.042177627210581076,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_00--prefix-6--sacramento--independent_per_track_time.json",
+      "artifact_sha256": "b3cb8789b64ad3c4e6bd4f5fc19397c7b52a45f28dca46231010c129a0cc3bb0",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90398740525912,
+      "estimated_longitude_deg": -122.34921470922835,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": 0.5,
+            "minimum": -2.0,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": 0.5,
+          "minimum": -2.0,
+          "value_count": 476
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.444296274688039,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.060835550993661246,
+        "selection_value": 0.060835550993661246
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.060835550993661246,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 476,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": 0.5,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": 0.5,
+          "minimum": -2.0,
+          "value_count": 476
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_00--prefix-6--sacramento--per_scan_time.json",
+      "artifact_sha256": "cb0e3417bcee2a4ef64e79e8c61bf96bf5f6da8f33aa6fca710b4391a7764fa8",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0025,
+            "median": 0.0,
+            "minimum": -1.0,
+            "value_count": 8
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0025,
+          "median": 0.0,
+          "minimum": -1.0,
+          "value_count": 8
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.12846819707089777,
+        "selection_value": 0.13096819707089777
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.13096819707089777,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.0025,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -0.5,
+          "value_count": 6
+        },
+        "per_scan_penalty": 0.0025
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_00--prefix-6--sacramento--soft_association.json",
+      "artifact_sha256": "bcf40a01226ef4d7dd855dc1ef9f631cb0bd0ef8e1d556b5436526280528c802",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90398740525912,
+      "estimated_longitude_deg": -122.34921470922835,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 243180.26932373655,
+            "median": -442938.871996442,
+            "minimum": -1152093.0821219485,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 243180.26932373655,
+          "median": -442938.871996442,
+          "minimum": -1152093.0821219485,
+          "value_count": 476
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.444296274688039,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.387377986300732
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.387377986300732,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_00--prefix-6--sacramento--soft_association_plus_global_time.json",
+      "artifact_sha256": "c758952e0aae23c715f943b9cdc633ed41300ef43d86a3099389c7405bc09b2c",
+      "case_id": "train-20260921_00--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -1.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 245402.84218096553,
+            "median": -443948.14810934325,
+            "minimum": -1150786.7600499808,
+            "value_count": 476
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_00",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 245402.84218096553,
+          "median": -443948.14810934325,
+          "minimum": -1150786.7600499808,
+          "value_count": 476
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.349253524995405
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.349253524995405,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_00--prefix-6--sacramento--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--first-singleton--reno--baseline.json",
+      "artifact_sha256": "f3589f6c33cfdb213bf018547838931cf31899343e40d8767ee1f9ad7dac13c7",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14388944693446692,
+        "selection_value": 0.14388944693446692
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14388944693446692,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--reno--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "a1ecdb3a1b0e876d154741fb8db2d910c71d23bedab25948b192a5fcf4a4beb5",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.0798894018915731,
+          "full_observation_capped_rms_hz": 226.1177065393305,
+          "global_tau_s": 0.0,
+          "iterations": 94.0,
+          "maximum_phase_s": 5.728793629837561,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.1438908029706944,
+          "rate_boundary_count": 0.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.08956424119777269,
+            "median": -0.012618654157193102,
+            "minimum": -0.21426951285348195,
+            "value_count": 22
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 251921.69306485774,
+            "median": -404033.49216253357,
+            "minimum": -1087213.7588213661,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.0798894018915731,
+        "full_observation_capped_rms_hz": 226.1177065393305,
+        "global_tau_s": 0.0,
+        "iterations": 94.0,
+        "maximum_phase_s": 5.728793629837561,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.1438908029706944,
+        "rate_boundary_count": 0.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.08956424119777269,
+          "median": -0.012618654157193102,
+          "minimum": -0.21426951285348195,
+          "value_count": 22
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 251921.69306485774,
+          "median": -404033.49216253357,
+          "minimum": -1087213.7588213661,
+          "value_count": 50
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.0798894018915731
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.0798894018915731,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--reno--global_time.json",
+      "artifact_sha256": "7e69f5a206c54e59ba731afc7fa353637082ae58f76eac8d5a63a0cfe66ce4ef",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -2.0,
+            "median": -2.0,
+            "minimum": -2.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -2.0,
+          "median": -2.0,
+          "minimum": -2.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.10534944500906479,
+        "selection_value": 0.10534944500906479
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10534944500906479,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -2.0,
+      "timing_nuisance_median_s": -2.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -2.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--reno--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "24a25cc22f9652ba5b92d3ad84b0a0147e0799d8fd38c154aa5311ef8f43506d",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.06516947933601079,
+          "full_observation_capped_rms_hz": 204.2265085023169,
+          "global_tau_s": -2.0,
+          "iterations": 77.0,
+          "maximum_phase_s": 3.3646649747877855,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.10534961610216426,
+          "rate_boundary_count": 0.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.17768987658488325,
+            "median": -0.002108926859507453,
+            "minimum": -0.07955983698009626,
+            "value_count": 19
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 255666.54638911327,
+            "median": -407491.0748426324,
+            "minimum": -1086740.353279751,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.06516947933601079,
+        "full_observation_capped_rms_hz": 204.2265085023169,
+        "global_tau_s": -2.0,
+        "iterations": 77.0,
+        "maximum_phase_s": 3.3646649747877855,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.10534961610216426,
+        "rate_boundary_count": 0.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.17768987658488325,
+          "median": -0.002108926859507453,
+          "minimum": -0.07955983698009626,
+          "value_count": 19
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 255666.54638911327,
+          "median": -407491.0748426324,
+          "minimum": -1086740.353279751,
+          "value_count": 50
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.06516947933601079
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.06516947933601079,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -2.0,
+      "timing_nuisance_median_s": -2.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -2.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--first-singleton--reno--independent_per_track_time.json",
+      "artifact_sha256": "501d3db0cf55fb62a5e71789a1b42dd1935b60f9c398fb9951d830d1c7e904b8",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": 0.0,
+            "minimum": -2.0,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": 0.0,
+          "minimum": -2.0,
+          "value_count": 50
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.06707471654779923,
+        "selection_value": 0.06707471654779923
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.06707471654779923,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 50,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": 0.0,
+          "minimum": -2.0,
+          "value_count": 50
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--first-singleton--reno--per_scan_time.json",
+      "artifact_sha256": "1d6eac62c62a5814bee93e8cccea91cc4fca1baef9c9bd1a1374eed9cfd18b5e",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.92402447360248,
+      "estimated_longitude_deg": -122.52151555023477,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": -2.0,
+            "value_count": 3
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -2.0,
+          "value_count": 3
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 8.9128410645468,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.10534944500906479,
+        "selection_value": 0.10534944500906479
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10534944500906479,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -2.0,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--first-singleton--reno--soft_association.json",
+      "artifact_sha256": "035ada87a8d548e55598810bd28bebde42fbf75d2f4a0748c06b30c667c78764",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 257371.90664767334,
+            "median": -402553.8050424511,
+            "minimum": -1088682.999821728,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 257371.90664767334,
+          "median": -402553.8050424511,
+          "minimum": -1088682.999821728,
+          "value_count": 50
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.215557540604924
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.215557540604924,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--first-singleton--reno--soft_association_plus_global_time.json",
+      "artifact_sha256": "d10ed8feb255a927f0de9030aa30aaf463e274daef75dde2070688c0ebf6df4f",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.81168387740501,
+      "estimated_longitude_deg": -122.51733707593512,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -1.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 265461.59234980313,
+            "median": -426524.3021781166,
+            "minimum": -1087670.3574448994,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 265461.59234980313,
+          "median": -426524.3021781166,
+          "minimum": -1087670.3574448994,
+          "value_count": 50
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 4.999001983889371,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.181460438363245
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.181460438363245,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--reno--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--first-singleton--sacramento--baseline.json",
+      "artifact_sha256": "711dcebb238a9eced347c53fc40e03961c81bb7fc2592980229f3a119849ee5e",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.15187663261325476,
+        "selection_value": 0.15187663261325476
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.15187663261325476,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--sacramento--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "6ff5f694e90306fd16134cd6c3b1bde738f26588f4babb3575fa11a7d231c6b7",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.10139668347135787,
+          "full_observation_capped_rms_hz": 254.74276716262042,
+          "global_tau_s": 0.0,
+          "iterations": 83.0,
+          "maximum_phase_s": 4.895075057488048,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.15187515505028573,
+          "rate_boundary_count": 0.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.03729330316363115,
+            "median": -0.020529700929146244,
+            "minimum": -0.18308660002802973,
+            "value_count": 22
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 261624.4646349794,
+            "median": -424529.02329670894,
+            "minimum": -1086785.1847740102,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.10139668347135787,
+        "full_observation_capped_rms_hz": 254.74276716262042,
+        "global_tau_s": 0.0,
+        "iterations": 83.0,
+        "maximum_phase_s": 4.895075057488048,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.15187515505028573,
+        "rate_boundary_count": 0.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.03729330316363115,
+          "median": -0.020529700929146244,
+          "minimum": -0.18308660002802973,
+          "value_count": 22
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 261624.4646349794,
+          "median": -424529.02329670894,
+          "minimum": -1086785.1847740102,
+          "value_count": 50
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.10139668347135787
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.10139668347135787,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--first-singleton--sacramento--global_time.json",
+      "artifact_sha256": "0d834dbeffdffcf13c9a65934e77569e1acdb1a304b2bcb2dae326e327ca7a6d",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.5,
+            "median": -1.5,
+            "minimum": -1.5,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.5,
+          "median": -1.5,
+          "minimum": -1.5,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.10410487698049962,
+        "selection_value": 0.10410487698049962
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10410487698049962,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "1f80d8650079de9a823e3ed75b80a98db9f3f5e5e173b8ecd2428e63334a18eb",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.06607592594055958,
+          "full_observation_capped_rms_hz": 205.64190380843624,
+          "global_tau_s": -1.5,
+          "iterations": 86.0,
+          "maximum_phase_s": 2.358472729487464,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.10410566889600135,
+          "rate_boundary_count": 0.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.11810484030581404,
+            "median": -0.010983496682179428,
+            "minimum": -0.07963742977009224,
+            "value_count": 19
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 256786.91585613706,
+            "median": -406841.5956874231,
+            "minimum": -1086752.0769704545,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.06607592594055958,
+        "full_observation_capped_rms_hz": 205.64190380843624,
+        "global_tau_s": -1.5,
+        "iterations": 86.0,
+        "maximum_phase_s": 2.358472729487464,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.10410566889600135,
+        "rate_boundary_count": 0.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.11810484030581404,
+          "median": -0.010983496682179428,
+          "minimum": -0.07963742977009224,
+          "value_count": 19
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 256786.91585613706,
+          "median": -406841.5956874231,
+          "minimum": -1086752.0769704545,
+          "value_count": 50
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.06607592594055958
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.06607592594055958,
+      "scan_count": 1,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--first-singleton--sacramento--independent_per_track_time.json",
+      "artifact_sha256": "e8e7ccaf4437e81ca2d2f34642f9b104e7a1faee51910091ded1426ca902e57f",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": -0.5,
+            "minimum": -2.0,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": -0.5,
+          "minimum": -2.0,
+          "value_count": 50
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.06993037566778386,
+        "selection_value": 0.06993037566778386
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.06993037566778386,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 50,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": -0.5,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": -0.5,
+          "minimum": -2.0,
+          "value_count": 50
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--first-singleton--sacramento--per_scan_time.json",
+      "artifact_sha256": "9e58a60d5a7891382e5e5369d184f9241f042a9cce50e61a166ac12921226073",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": -1.5,
+            "value_count": 3
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": -1.5,
+          "value_count": 3
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.10410487698049962,
+        "selection_value": 0.10410487698049962
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.10410487698049962,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 3,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        },
+        "per_scan_penalty": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--first-singleton--sacramento--soft_association.json",
+      "artifact_sha256": "13dafe16d05331a21fe0983b9355d5304f22d12f25811c62ad3fab001d1d2f1c",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 270988.4905606056,
+            "median": -424345.26939228526,
+            "minimum": -1085845.1176862642,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 270988.4905606056,
+          "median": -424345.26939228526,
+          "minimum": -1085845.1176862642,
+          "value_count": 50
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.208308333590224
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.208308333590224,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--first-singleton--sacramento--soft_association_plus_global_time.json",
+      "artifact_sha256": "e256cb0d44bf812c885c09524ecbe43d2fe5a7425e6a54e8312111e46cb325b2",
+      "case_id": "train-20260921_16--first-singleton",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -1.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 260029.58890430204,
+            "median": -416934.57609851984,
+            "minimum": -1084856.2243237703,
+            "value_count": 50
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 260029.58890430204,
+          "median": -416934.57609851984,
+          "minimum": -1084856.2243237703,
+          "value_count": 50
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.155804867572722
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.155804867572722,
+      "scan_count": 1,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--first-singleton--sacramento--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--prefix-6--reno--baseline.json",
+      "artifact_sha256": "1b6f867a3af9081855d0f7450d13107ad54863fb504c7b1459ee63e23efdf751",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.16786453275501134,
+        "selection_value": 0.16786453275501134
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.16786453275501134,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--reno--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "a05256bedbf55ca8054dcdf17db80eda0ac0aeec57e81ec7435605b1eaee45ab",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.09252707835037574,
+          "full_observation_capped_rms_hz": 243.34611183300314,
+          "global_tau_s": 0.0,
+          "iterations": 103.0,
+          "maximum_phase_s": 5.881138420263304,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.1678681745047486,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": -0.004891462715082613,
+            "minimum": -0.2380456958706156,
+            "value_count": 136
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 251918.96588714616,
+            "median": -440135.8170398236,
+            "minimum": -1226778.8430252261,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.09252707835037574,
+        "full_observation_capped_rms_hz": 243.34611183300314,
+        "global_tau_s": 0.0,
+        "iterations": 103.0,
+        "maximum_phase_s": 5.881138420263304,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.1678681745047486,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": -0.004891462715082613,
+          "minimum": -0.2380456958706156,
+          "value_count": 136
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 251918.96588714616,
+          "median": -440135.8170398236,
+          "minimum": -1226778.8430252261,
+          "value_count": 298
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.09252707835037574
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.09252707835037574,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--reno--global_time.json",
+      "artifact_sha256": "870668247aa940ffeb18f9e5cfb4078d28bcd14be771408228beb46df9cc9cba",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.81168387740501,
+      "estimated_longitude_deg": -122.51733707593512,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.0,
+            "median": -1.0,
+            "minimum": -1.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.0,
+          "median": -1.0,
+          "minimum": -1.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 4.999001983889371,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.15867346668817506,
+        "selection_value": 0.15867346668817506
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.15867346668817506,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--reno--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "75871e83094ce50e801d8bfdcea1b9682c04bc148c630b324b571067176bb9a0",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.81168387740501,
+      "estimated_longitude_deg": -122.51733707593512,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.09097704149321956,
+          "full_observation_capped_rms_hz": 241.29920546006883,
+          "global_tau_s": -1.0,
+          "iterations": 110.0,
+          "maximum_phase_s": 6.67629790481125,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.15866976594149276,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": -0.001084484577105015,
+            "minimum": -0.25,
+            "value_count": 128
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 259847.89302229992,
+            "median": -440020.7700157696,
+            "minimum": -1228915.8707935319,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.09097704149321956,
+        "full_observation_capped_rms_hz": 241.29920546006883,
+        "global_tau_s": -1.0,
+        "iterations": 110.0,
+        "maximum_phase_s": 6.67629790481125,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.15866976594149276,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": -0.001084484577105015,
+          "minimum": -0.25,
+          "value_count": 128
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 259847.89302229992,
+          "median": -440020.7700157696,
+          "minimum": -1228915.8707935319,
+          "value_count": 298
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 4.999001983889371,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.09097704149321956
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.09097704149321956,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--prefix-6--reno--independent_per_track_time.json",
+      "artifact_sha256": "702829c7eda116cdc73cbebad78be8d7abb42ff62587107f6131d504cc163178",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": -0.5,
+            "minimum": -2.0,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": -0.5,
+          "minimum": -2.0,
+          "value_count": 298
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.08649863817380965,
+        "selection_value": 0.08649863817380965
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.08649863817380965,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 298,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": -0.5,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": -0.5,
+          "minimum": -2.0,
+          "value_count": 298
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--prefix-6--reno--per_scan_time.json",
+      "artifact_sha256": "351957a93f4fe0bace5507162997c3af3da0285954b90d82ec94f4f2c17c0316",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.81168387740501,
+      "estimated_longitude_deg": -122.51733707593512,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.5,
+            "median": 0.0,
+            "minimum": -1.0,
+            "value_count": 8
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.5,
+          "median": 0.0,
+          "minimum": -1.0,
+          "value_count": 8
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 4.999001983889371,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14869224618429613,
+        "selection_value": 0.15619224618429614
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.15619224618429614,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.5,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "per_scan_delta_s": {
+          "maximum": 0.5,
+          "median": 0.0,
+          "minimum": -0.5,
+          "value_count": 6
+        },
+        "per_scan_penalty": 0.0075
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--prefix-6--reno--soft_association.json",
+      "artifact_sha256": "a9b5532cacf6c06fed93b8b2141ea38aa569f0d82737c7bb2aa89eb36cec2194",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.8149309631201,
+      "estimated_longitude_deg": -122.37512173102238,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 257371.90664767334,
+            "median": -441894.20229639474,
+            "minimum": -1251268.5402167714,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 257371.90664767334,
+          "median": -441894.20229639474,
+          "minimum": -1251268.5402167714,
+          "value_count": 298
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 10.421657137634137,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.262906539521343
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.262906539521343,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--prefix-6--reno--soft_association_plus_global_time.json",
+      "artifact_sha256": "b47fe8f346cfe6c9c552d3c573def55791ebd4c74af5145f218765528e5aa2c7",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.81168387740501,
+      "estimated_longitude_deg": -122.51733707593512,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -1.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 265461.59234980313,
+            "median": -443046.7297864558,
+            "minimum": -1256836.1954054905,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 265461.59234980313,
+          "median": -443046.7297864558,
+          "minimum": -1256836.1954054905,
+          "value_count": 298
+        }
+      },
+      "prior_name": "reno",
+      "reference_error_km": 4.999001983889371,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.243960207824592
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.243960207824592,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--reno--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/baseline/one-hour--train-20260921_16--prefix-6--sacramento--baseline.json",
+      "artifact_sha256": "ee34897b30ffdc0f5f972b07e8da271b1b0c3665e45713d7553c62f175750261",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.79157971078969,
+      "estimated_longitude_deg": -122.3479053923874,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "baseline",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.0,
+          "median": 0.0,
+          "minimum": 0.0,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.68246223873388,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.17821411806882662,
+        "selection_value": 0.17821411806882662
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.17821411806882662,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--baseline",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/causal_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--sacramento--causal_per_norad_orbit_rate.json",
+      "artifact_sha256": "89e731dcca1fc39a58dff57426724f8202f032de8ab9a335a9d8b628c62ca781",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.79157971078969,
+      "estimated_longitude_deg": -122.3479053923874,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.09628221876475351,
+          "full_observation_capped_rms_hz": 248.23500963692098,
+          "global_tau_s": 0.0,
+          "iterations": 104.0,
+          "maximum_phase_s": 6.261486302990729,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.17821778097248203,
+          "rate_boundary_count": 4.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": -0.010390532212402036,
+            "minimum": -0.25,
+            "value_count": 135
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 252108.60338221776,
+            "median": -440318.466177415,
+            "minimum": -1226672.6937163693,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "causal_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.09628221876475351,
+        "full_observation_capped_rms_hz": 248.23500963692098,
+        "global_tau_s": 0.0,
+        "iterations": 104.0,
+        "maximum_phase_s": 6.261486302990729,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.17821778097248203,
+        "rate_boundary_count": 4.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": -0.010390532212402036,
+          "minimum": -0.25,
+          "value_count": 135
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 252108.60338221776,
+          "median": -440318.466177415,
+          "minimum": -1226672.6937163693,
+          "value_count": 298
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 13.68246223873388,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.09628221876475351
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.09628221876475351,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--causal_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time/one-hour--train-20260921_16--prefix-6--sacramento--global_time.json",
+      "artifact_sha256": "2c7b99b653951e2b62df7d952d7fc47b120a91785494a588e56a3357e27265a9",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": -1.5,
+            "median": -1.5,
+            "minimum": -1.5,
+            "value_count": 1
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": -1.5,
+          "median": -1.5,
+          "minimum": -1.5,
+          "value_count": 1
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14925502019925585,
+        "selection_value": 0.14925502019925585
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14925502019925585,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/global_time_plus_per_norad_orbit_rate/one-hour--train-20260921_16--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate.json",
+      "artifact_sha256": "727cd7d174bd48b04490abc20df87cdb44cb71c0014aa1825e5d07f14fb6f77c",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "converged",
+        "full_observation_capped_loss",
+        "full_observation_capped_rms_hz",
+        "global_tau_s",
+        "iterations",
+        "maximum_phase_s",
+        "message",
+        "null_rate_full_observation_capped_loss",
+        "rate_boundary_count",
+        "rate_corrections_s_h",
+        "rate_fit_rejected_by_full_observation_loss",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "converged",
+          "full_observation_capped_loss",
+          "full_observation_capped_rms_hz",
+          "global_tau_s",
+          "iterations",
+          "maximum_phase_s",
+          "message",
+          "null_rate_full_observation_capped_loss",
+          "rate_boundary_count",
+          "rate_corrections_s_h",
+          "rate_fit_rejected_by_full_observation_loss",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "converged": {
+            "value_count": 0
+          },
+          "full_observation_capped_loss": 0.08383755916792508,
+          "full_observation_capped_rms_hz": 231.63772980123954,
+          "global_tau_s": -1.5,
+          "iterations": 104.0,
+          "maximum_phase_s": 6.67629790481125,
+          "message": {
+            "value_count": 0
+          },
+          "null_rate_full_observation_capped_loss": 0.149258180612104,
+          "rate_boundary_count": 2.0,
+          "rate_corrections_s_h": {
+            "maximum": 0.25,
+            "median": 0.007691908795956749,
+            "minimum": -0.1806957214255127,
+            "value_count": 132
+          },
+          "rate_fit_rejected_by_full_observation_loss": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 256789.31025631377,
+            "median": -439543.1439350345,
+            "minimum": -1236638.7379004562,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "global_time_plus_per_norad_orbit_rate",
+      "nuisance_parameters": {
+        "converged": {
+          "value_count": 0
+        },
+        "full_observation_capped_loss": 0.08383755916792508,
+        "full_observation_capped_rms_hz": 231.63772980123954,
+        "global_tau_s": -1.5,
+        "iterations": 104.0,
+        "maximum_phase_s": 6.67629790481125,
+        "message": {
+          "value_count": 0
+        },
+        "null_rate_full_observation_capped_loss": 0.149258180612104,
+        "rate_boundary_count": 2.0,
+        "rate_corrections_s_h": {
+          "maximum": 0.25,
+          "median": 0.007691908795956749,
+          "minimum": -0.1806957214255127,
+          "value_count": 132
+        },
+        "rate_fit_rejected_by_full_observation_loss": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 256789.31025631377,
+          "median": -439543.1439350345,
+          "minimum": -1236638.7379004562,
+          "value_count": 298
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 0.08383755916792508
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 0.08383755916792508,
+      "scan_count": 6,
+      "stage": "exact_orbit",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--global_time_plus_per_norad_orbit_rate",
+      "tier": "extended",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.5,
+      "timing_nuisance_median_s": -1.5,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/independent_per_track_time/one-hour--train-20260921_16--prefix-6--sacramento--independent_per_track_time.json",
+      "artifact_sha256": "c7532b3b276f4f35b8a893c3c9be11db2d708e32b60c79efc635775a71593fc9",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 2.0,
+            "median": -1.0,
+            "minimum": -2.0,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "independent_per_track_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 2.0,
+          "median": -1.0,
+          "minimum": -2.0,
+          "value_count": 298
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.08697965621636185,
+        "selection_value": 0.08697965621636185
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.08697965621636185,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--independent_per_track_time",
+      "tier": "core",
+      "timing_nuisance_count": 298,
+      "timing_nuisance_max_s": 2.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -2.0,
+      "timing_nuisance_parameters": {
+        "per_track_tau_s": {
+          "maximum": 2.0,
+          "median": -1.0,
+          "minimum": -2.0,
+          "value_count": 298
+        }
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/per_scan_time/one-hour--train-20260921_16--prefix-6--sacramento--per_scan_time.json",
+      "artifact_sha256": "26b03516618e2292fe4f9e5be723596e807a79a15d16333ff894944148faf0c6",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "receiver_position",
+        "timing",
+        "track_associations"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "receiver_position",
+          "timing",
+          "track_associations"
+        ],
+        "nuisance_parameter_summary": {
+          "timing": {
+            "maximum": 0.5,
+            "median": 0.0,
+            "minimum": -1.5,
+            "value_count": 8
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "per_scan_time",
+      "nuisance_parameters": {
+        "timing": {
+          "maximum": 0.5,
+          "median": 0.0,
+          "minimum": -1.5,
+          "value_count": 8
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "frequency_loss_cap_hz": 800.0,
+        "full_observation_capped_loss": 0.14243477735715884,
+        "selection_value": 0.14743477735715885
+      },
+      "rf_objective_name": "selection_value",
+      "rf_objective_value": 0.14743477735715885,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--per_scan_time",
+      "tier": "core",
+      "timing_nuisance_count": 8,
+      "timing_nuisance_max_s": 0.5,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": -1.5,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.5,
+        "per_scan_delta_s": {
+          "maximum": 0.5,
+          "median": 0.0,
+          "minimum": -0.5,
+          "value_count": 6
+        },
+        "per_scan_penalty": 0.005
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association/one-hour--train-20260921_16--prefix-6--sacramento--soft_association.json",
+      "artifact_sha256": "c91a5ee1b04139f5d478ec49e6884f630a78745484c33a0f65292f4bd09c1a9e",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.790454910163106,
+      "estimated_longitude_deg": -122.49014612553002,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": 0.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 270988.4905606056,
+            "median": -442146.57347082964,
+            "minimum": -1250991.8818355787,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association",
+      "nuisance_parameters": {
+        "global_tau_s": 0.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 270988.4905606056,
+          "median": -442146.57347082964,
+          "minimum": -1250991.8818355787,
+          "value_count": 298
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.525495158717486,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.287604086649981
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.287604086649981,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--soft_association",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": 0.0,
+      "timing_nuisance_median_s": 0.0,
+      "timing_nuisance_min_s": 0.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": 0.0
+      }
+    },
+    {
+      "artifact_path": "artifacts/one-hour/soft_association_plus_global_time/one-hour--train-20260921_16--prefix-6--sacramento--soft_association_plus_global_time.json",
+      "artifact_sha256": "bade30a11f317dfceebeebc76240e68e1f4dc709a662b8a7d6611d1a7a81527b",
+      "case_id": "train-20260921_16--prefix-6",
+      "estimated_latitude_deg": 37.90285995042612,
+      "estimated_longitude_deg": -122.49167358959859,
+      "fitted_parameter_keys": [
+        "global_tau_s",
+        "rate_corrections_s_h",
+        "track_cfo_hz"
+      ],
+      "fitted_parameters": {
+        "available_keys": [
+          "global_tau_s",
+          "rate_corrections_s_h",
+          "track_cfo_hz"
+        ],
+        "nuisance_parameter_summary": {
+          "global_tau_s": -1.0,
+          "rate_corrections_s_h": {
+            "value_count": 0
+          },
+          "track_cfo_hz": {
+            "maximum": 260029.58890430204,
+            "median": -443643.79247921694,
+            "minimum": -1262280.0859958644,
+            "value_count": 298
+          }
+        },
+        "omitted_detail": "per-track associations and CFO values"
+      },
+      "grid_screen_km": 12.5,
+      "group_id": "20260921_16",
+      "method": "soft_association_plus_global_time",
+      "nuisance_parameters": {
+        "global_tau_s": -1.0,
+        "rate_corrections_s_h": {
+          "value_count": 0
+        },
+        "track_cfo_hz": {
+          "maximum": 260029.58890430204,
+          "median": -443643.79247921694,
+          "minimum": -1262280.0859958644,
+          "value_count": 298
+        }
+      },
+      "prior_name": "sacramento",
+      "reference_error_km": 6.008604409855493,
+      "rf_objective_detail": {
+        "name": "full_observation_rf_objective",
+        "selection_uses_reference": false,
+        "value": 6.238265887782805
+      },
+      "rf_objective_name": "full_observation_rf_objective",
+      "rf_objective_value": 6.238265887782805,
+      "scan_count": 6,
+      "stage": "screening_comparison",
+      "status": "completed",
+      "status_reason": "",
+      "task_id": "one-hour--train-20260921_16--prefix-6--sacramento--soft_association_plus_global_time",
+      "tier": "core",
+      "timing_nuisance_count": 1,
+      "timing_nuisance_max_s": -1.0,
+      "timing_nuisance_median_s": -1.0,
+      "timing_nuisance_min_s": -1.0,
+      "timing_nuisance_parameters": {
+        "global_tau_s": -1.0
+      }
+    }
+  ],
+  "schema": "ds1-train-one-hour-post-seal-evaluation/v1",
+  "status_counts": {
+    "completed": 64
+  }
+}

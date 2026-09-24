@@ -1,0 +1,16 @@
+{
+  "schema": "ds1-train-full-runner-registry/v1",
+  "methods": {
+    "baseline": {
+      "command": ["python3", "/absolute/path/to/baseline_runner.py", "--task", "{task}"]
+    },
+    "global_time": {
+      "command": ["python3", "/absolute/path/to/global_time_runner.py", "--task", "{task}"]
+    },
+    "causal_per_norad_orbit_rate": {
+      "command": ["python3", "/absolute/path/to/orbit_rate_runner.py", "--task", "{task}"],
+      "max_concurrency": 8,
+      "geographic_shards": 4
+    }
+  }
+}
