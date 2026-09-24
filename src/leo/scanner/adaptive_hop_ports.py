@@ -13,12 +13,15 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV2,
     AdaptiveHopPlanV3,
     AdaptiveHopPlanV4,
+    AdaptiveHopPlanV6,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV6,
     AdaptiveHopVisitV1,
     AdaptiveHopVisitV2,
+    AdaptiveHopVisitV3,
 )
 from leo.scanner.persistent_hop_ports import PersistentHopStartClockBracketV1
 from leo.scanner.ports import ScanRadioIdentity
@@ -38,7 +41,9 @@ class AdaptiveHopVisitBlock:
 
     def __post_init__(self) -> None:
         evidence_model = (
-            AdaptiveHopVisitV2
+            AdaptiveHopVisitV3
+            if getattr(self.evidence, "schema_version", None) == 3
+            else AdaptiveHopVisitV2
             if getattr(self.evidence, "schema_version", None) == 2
             else AdaptiveHopVisitV1
         )
@@ -61,7 +66,13 @@ class AdaptiveHopSession(Protocol):
     @property
     def plan(
         self,
-    ) -> AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4: ...
+    ) -> (
+        AdaptiveHopPlanV1
+        | AdaptiveHopPlanV2
+        | AdaptiveHopPlanV3
+        | AdaptiveHopPlanV4
+        | AdaptiveHopPlanV6
+    ): ...
 
     @property
     def complete(self) -> bool: ...
@@ -77,6 +88,7 @@ class AdaptiveHopSession(Protocol):
         self,
     ) -> (
         AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | AdaptiveHopReceiptV4
+        | AdaptiveHopReceiptV6
     ): ...
 
 
@@ -88,7 +100,11 @@ class AdaptiveHopRadio(Protocol):
 
     def begin_session(
         self,
-        plan: AdaptiveHopPlanV1 | AdaptiveHopPlanV2 | AdaptiveHopPlanV3 | AdaptiveHopPlanV4,
+        plan: AdaptiveHopPlanV1
+        | AdaptiveHopPlanV2
+        | AdaptiveHopPlanV3
+        | AdaptiveHopPlanV4
+        | AdaptiveHopPlanV6,
         *,
         session_id: str,
     ) -> AdaptiveHopSession: ...

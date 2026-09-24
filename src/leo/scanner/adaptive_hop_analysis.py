@@ -559,7 +559,11 @@ def _compare_source_fields(
         or product.invalid_start_counter != event.invalid_start_counter
         or product.valid_start_counter != event.valid_start_counter
         or product.valid_end_counter
-        != event.valid_start_counter + receipt.plan.geometry.valid_visit_samples
+        != getattr(
+            event,
+            "valid_end_counter_exclusive",
+            event.valid_start_counter + receipt.plan.geometry.valid_visit_samples,
+        )
         or product.actual_if_center_hz != event.actual_lo_frequency_hz + event.actual_if_offset_hz
     ):
         raise ValueError("adaptive analysis product differs from source manifest")

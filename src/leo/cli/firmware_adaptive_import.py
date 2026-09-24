@@ -19,15 +19,19 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopDecisionV1,
     AdaptiveHopEventV1,
     AdaptiveHopEventV2,
+    AdaptiveHopEventV3,
     AdaptiveHopPlanV2,
     AdaptiveHopPlanV3,
     AdaptiveHopPlanV4,
     AdaptiveHopPlanV5,
+    AdaptiveHopPlanV6,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
     AdaptiveHopTerminalV1,
+    AdaptiveHopTerminalV2,
 )
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
 from leo.scanner.host_adaptive import (
@@ -51,6 +55,7 @@ from leo.scanner.persistent_hop import (
     Feature104DualRxTimingV4,
     PersistentHopProfileV1,
     PersistentHopRestorationReceiptV1,
+    VariableDualRxPlanV5,
     persistent_hop_wire_session_id,
 )
 from leo.scanner.single_rx import (
@@ -93,11 +98,23 @@ def _load(path: Path) -> tuple[dict, bytes]:
     )
     if not (legacy or dual):
         raise ValueError("firmware archive is not the pinned radio RX0 source")
+    if document.get("setup", {}).get("protocol_version") == 3 and (
+        not dual
+        or any(
+            entry.get("record", {}).get("protocol_version") != 3
+            for entry in document.get("visits", [])
+        )
+    ):
+        raise ValueError("protocol-three archive lacks protocol-three visit records")
     return document, payload
 
 
 def _is_dual(document: dict) -> bool:
     return document.get("physical_receivers") == [0, 1]
+
+
+def _is_protocol_three(document: dict) -> bool:
+    return _is_dual(document) and document.get("setup", {}).get("protocol_version") == 3
 
 
 def _dual_geometry_binding() -> AdaptiveReceiverGeometryBindingV1:
@@ -161,6 +178,7 @@ def _plan(
     | AdaptiveHopPlanV3
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
+    | AdaptiveHopPlanV6
     | HostAdaptiveHopPlanV2
     | HostAdaptiveHopPlanV3
 ):
@@ -197,6 +215,37 @@ def _plan(
             samples_per_block=1_000_000,
             profiles=profiles,
         )
+        if _is_protocol_three(document):
+            if rate not in (2_500_000, 10_000_000):
+                raise UnsupportedFirmwareArchiveError(
+                    "protocol-three dual firmware rate is unsupported"
+                )
+            dwell_ms = int(setup["dwell_ms"])
+            duration_ms = int(setup["duration_ms"])
+            if duration_ms % 1_000:
+                raise UnsupportedFirmwareArchiveError(
+                    "protocol-three duration must be an integer number of seconds"
+                )
+            preparation = document["evidence"]["preparation"]["configured"]
+            mode = (
+                GainMode.MANUAL
+                if preparation["gain_modes"][0] == "manual"
+                else GainMode.SLOW_ATTACK
+            )
+            gain_db = float(preparation["gain_db"][0]) if mode is GainMode.MANUAL else None
+            return AdaptiveHopPlanV6(
+                geometry=VariableDualRxPlanV5.model_validate(
+                    {
+                        **geometry_fields,
+                        "gain_mode": mode,
+                        "gain_db": gain_db,
+                        "active_valid_visit_ms": dwell_ms,
+                        "nominal_duration_seconds": duration_ms // 1_000,
+                    }
+                ),
+                policy=dual_policy,
+                classification_receiver=1,
+            )
         if rate == 15_000_000:
             return AdaptiveHopPlanV5(
                 geometry=Feature104DualRxPlanV4.model_validate(geometry_fields),
@@ -249,16 +298,20 @@ def _events(
     plan: AdaptiveHopPlanV2
     | AdaptiveHopPlanV3
     | AdaptiveHopPlanV4
+    | AdaptiveHopPlanV5
+    | AdaptiveHopPlanV6
     | HostAdaptiveHopPlanV2
     | HostAdaptiveHopPlanV3,
-) -> tuple[AdaptiveHopEventV1, ...]:
+) -> tuple[AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3, ...]:
     by_frequency = {
         target.if_center_hz: index
         for index, target in enumerate(profile.target for profile in plan.geometry.profiles)
     }
-    events: list[AdaptiveHopEventV1] = []
+    events: list[AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3] = []
     event_model = (
-        AdaptiveHopEventV2
+        AdaptiveHopEventV3
+        if isinstance(plan, AdaptiveHopPlanV6)
+        else AdaptiveHopEventV2
         if isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5))
         else AdaptiveHopEventV1
     )
@@ -283,7 +336,7 @@ def _events(
         transition_before = max(
             invalid_start, min(int(record["transition_before"]), transition_after)
         )
-        event = event_model(
+        event_payload = dict(
             visit_index=ordinal,
             event_sequence=ordinal,
             device_event_id=ordinal + 1,
@@ -297,6 +350,11 @@ def _events(
             transition_before_counter=transition_before,
             transition_after_counter=transition_after,
             valid_start_counter=valid_start,
+            **(
+                {"valid_end_counter_exclusive": int(record["valid_end"])}
+                if isinstance(plan, AdaptiveHopPlanV6)
+                else {}
+            ),
             decision=AdaptiveHopDecisionV1(
                 mode="adaptive",
                 generation=plan.policy.generation,
@@ -310,14 +368,24 @@ def _events(
                 cooldown_remaining_samples=0,
             ),
         )
+        event = event_model.model_validate(event_payload)
         events.append(event)
-        previous_end = valid_start + plan.geometry.valid_visit_samples
+        previous_end = int(record["valid_end"])
     return tuple(events)
+
+
+def _event_end(
+    event: AdaptiveHopEventV1 | AdaptiveHopEventV2 | AdaptiveHopEventV3,
+    plan: AdaptiveHopPlanV4 | AdaptiveHopPlanV5 | AdaptiveHopPlanV6,
+) -> int:
+    if isinstance(event, AdaptiveHopEventV3):
+        return event.valid_end_counter_exclusive
+    return event.valid_start_counter + plan.geometry.valid_visit_samples
 
 
 def _dual_receipt(document: dict):
     plan = _plan(document)
-    if not isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5)):
+    if not isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6)):
         raise TypeError("dual firmware archive produced a single-RX plan")
     events = _events(document, plan)
     if not events:
@@ -329,13 +397,21 @@ def _dual_receipt(document: dict):
         )
     session_id = document["session_id"]
     first = events[0].invalid_start_counter
-    final = events[-1].valid_start_counter + plan.geometry.valid_visit_samples
+    final = _event_end(events[-1], plan)
     invalid = sum(event.valid_start_counter - event.invalid_start_counter for event in events)
-    valid = len(retained) * plan.geometry.valid_visit_samples
+    valid = sum(
+        (
+            _event_end(events[index], plan) - events[index].valid_start_counter
+        )
+        for index in retained
+    )
     denominator = final - first
     original = _settings(document["evidence"]["preparation"]["original"], (0, 1))
     restored = _settings(document["evidence"]["restoration"]["observed"], (0, 1))
-    terminal = AdaptiveHopTerminalV1(
+    terminal_model = (
+        AdaptiveHopTerminalV2 if isinstance(plan, AdaptiveHopPlanV6) else AdaptiveHopTerminalV1
+    )
+    terminal = terminal_model(
         state="completed",
         reason="complete",
         session_id=persistent_hop_wire_session_id(session_id),
@@ -382,6 +458,17 @@ def _dual_receipt(document: dict):
             fastlock_inactive=True,
         ),
     )
+    if isinstance(plan, AdaptiveHopPlanV6):
+        missing = sum(
+            _event_end(event, plan) - event.valid_start_counter
+            for index, event in enumerate(events)
+            if index not in retained
+        )
+        return AdaptiveHopReceiptV6(
+            **common,
+            retained_visit_indices=retained,
+            transport_missing_sample_count=missing,
+        )
     if isinstance(plan, AdaptiveHopPlanV5):
         return AdaptiveHopReceiptV5(
             **common,
@@ -517,7 +604,7 @@ def _timing(document: dict, receipt):
     value = document["evidence"].get("utc_timing")
     if not value:
         return None
-    if isinstance(receipt, (AdaptiveHopReceiptV4, AdaptiveHopReceiptV5)):
+    if isinstance(receipt, (AdaptiveHopReceiptV4, AdaptiveHopReceiptV5, AdaptiveHopReceiptV6)):
         if isinstance(receipt, AdaptiveHopReceiptV5):
             return Feature104DualRxTimingV4.from_host_bracket(
                 session_id=receipt.session_id,

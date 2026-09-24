@@ -6,7 +6,11 @@ import pytest
 import zstandard as zstd
 
 import leo.cli.firmware_adaptive_import as importer
-from leo.scanner.adaptive_hop import AdaptiveHopReceiptV4, AdaptiveHopReceiptV5
+from leo.scanner.adaptive_hop import (
+    AdaptiveHopReceiptV4,
+    AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV6,
+)
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import AdaptiveHopPresentationStore
@@ -177,6 +181,44 @@ def dual_document(rate: int, *, complete: bool = True) -> dict:
             "restoration": {"observed": settings},
         },
     }
+
+
+def variable_dual_document(rate: int, dwell_ms: int, *, slow_attack: bool = False) -> dict:
+    value = dual_document(rate)
+    value["setup"].update(protocol_version=3, dwell_ms=dwell_ms)
+    value["visits"][0]["record"]["protocol_version"] = 3
+    settings = value["evidence"]["preparation"]["original"]
+    configured = json.loads(json.dumps(settings))
+    configured["gain_modes"] = ["slow_attack", "slow_attack"] if slow_attack else ["manual"] * 2
+    configured["gain_db"] = [0.0, 0.0] if slow_attack else [50.0, 50.0]
+    value["evidence"]["preparation"]["configured"] = configured
+    dwell = rate * dwell_ms // 1_000
+    end = value["visits"][0]["record"]["valid_end"]
+    value["visits"][0]["record"]["valid_start"] = end - dwell
+    return value
+
+
+@pytest.mark.parametrize("dwell_ms", [120, 240, 360])
+@pytest.mark.parametrize("slow_attack", [False, True])
+def test_protocol_three_receipt_preserves_actual_interval_and_gain(
+    dwell_ms: int, slow_attack: bool
+) -> None:
+    rate = 2_500_000
+    receipt = importer._receipt(
+        variable_dual_document(rate, dwell_ms, slow_attack=slow_attack),
+        "sha256:" + "b" * 64,
+    )
+
+    assert isinstance(receipt, AdaptiveHopReceiptV6)
+    duration = (
+        receipt.events[0].valid_end_counter_exclusive
+        - receipt.events[0].valid_start_counter
+    )
+    assert duration == rate * dwell_ms // 1_000
+    assert receipt.valid_sample_count == rate * dwell_ms // 1_000
+    assert receipt.plan.geometry.active_valid_visit_ms == dwell_ms
+    assert receipt.plan.geometry.gain_mode.value == ("slow_attack" if slow_attack else "manual")
+    assert receipt.plan.geometry.gain_db == (None if slow_attack else 50.0)
 
 
 @pytest.mark.parametrize(
