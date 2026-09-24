@@ -74,9 +74,7 @@ def test_v3_history_and_detail_publish_variable_dwell_contract(tmp_path):
             "complete_visit_count": 3,
             "valid_sample_count": valid_samples,
             "unclassified_sample_count": 0,
-            "valid_duty_ppm": valid_samples
-            * 1_000_000
-            // receipt.duty_denominator_sample_count,
+            "valid_duty_ppm": valid_samples * 1_000_000 // receipt.duty_denominator_sample_count,
             "duty_target_met": True,
         }
     )
@@ -88,9 +86,7 @@ def test_v3_history_and_detail_publish_variable_dwell_contract(tmp_path):
     for visit in receipt.visits:
         samples = np.ones((visit.valid_sample_count, 2), np.complex64)
         writer.append(AdaptiveHopVisitBlock(samples, (0, 1), visit))
-    capture = writer.finish(
-        receipt, timing=timing_fixture(receipt, Feature103DualRxTimingV3)
-    )
+    capture = writer.finish(receipt, timing=timing_fixture(receipt, Feature103DualRxTimingV3))
     store.close()
     history = AdaptiveHopPresentationStore(tmp_path)
     assert history.page_v2(cursor=0, limit=20).schema_version == 7
