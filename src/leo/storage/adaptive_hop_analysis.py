@@ -44,6 +44,8 @@ from leo.scanner.adaptive_hop_presentation import (
     Feature103OverviewManifestV6,
     Feature104AnalysisStatusV7,
     Feature104OverviewManifestV7,
+    FixedDwellAnalysisStatusV8,
+    FixedDwellOverviewManifestV8,
     RenderedAdaptiveOverview,
 )
 from leo.scanner.adaptive_hop_products import (
@@ -62,6 +64,9 @@ from leo.scanner.adaptive_hop_products import (
     Feature104AnalysisBindingV7,
     Feature104MetricsManifestV7,
     Feature104VisitReferenceV7,
+    FixedDwellAnalysisBindingV8,
+    FixedDwellMetricsManifestV8,
+    FixedDwellVisitReferenceV8,
 )
 from leo.scanner.host_adaptive_analysis import (
     HostAdaptiveVisitAnalysisV2,
@@ -89,7 +94,7 @@ _NAMESPACE = "scanner-adaptive-analysis"
 _MAX_BINDING = 32 * 1024 * 1024
 _MAX_VISIT = 2 * 1024 * 1024
 _MAX_MANIFEST = 4 * 1024 * 1024
-_VISIT = re.compile(r"visit-([0-9]{6})\.v[1234567]\.json\.zst")
+_VISIT = re.compile(r"visit-([0-9]{6})\.v[12345678]\.json\.zst")
 
 
 def _read(directory: PinnedLocalRoot, name: str, maximum: int) -> bytes:
@@ -177,7 +182,9 @@ class AdaptiveHopAnalysisStore:
         self, binding: AdaptiveHopAnalysisBindingV1, *, writable: bool = False
     ) -> Iterator[AdaptiveHopAnalysisJob]:
         binding_model = (
-            Feature104AnalysisBindingV7
+            FixedDwellAnalysisBindingV8
+            if isinstance(binding, FixedDwellAnalysisBindingV8)
+            else Feature104AnalysisBindingV7
             if isinstance(binding, Feature104AnalysisBindingV7)
             else Feature103AnalysisBindingV6
             if isinstance(binding, Feature103AnalysisBindingV6)
@@ -267,8 +274,11 @@ class AdaptiveHopAnalysisJob:
         dual_10m = isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5)
         feature103 = isinstance(binding, Feature103AnalysisBindingV6)
         feature104 = isinstance(binding, Feature104AnalysisBindingV7)
+        fixed_dwell = isinstance(binding, FixedDwellAnalysisBindingV8)
         self._visit_model: type[AdaptiveHopVisitAnalysisV1] = (
-            Feature104VisitAnalysisV4
+            Feature103VisitAnalysisV3
+            if fixed_dwell
+            else Feature104VisitAnalysisV4
             if feature104
             else Feature103VisitAnalysisV3
             if feature103
@@ -281,7 +291,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitAnalysisV1
         )
         self._reference_model: type[AdaptiveHopVisitReferenceV1] = (
-            Feature104VisitReferenceV7
+            FixedDwellVisitReferenceV8
+            if fixed_dwell
+            else Feature104VisitReferenceV7
             if feature104
             else Feature103VisitReferenceV6
             if feature103
@@ -296,7 +308,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopVisitReferenceV1
         )
         self._metrics_model: type[AdaptiveHopMetricsManifestV1] = (
-            Feature104MetricsManifestV7
+            FixedDwellMetricsManifestV8
+            if fixed_dwell
+            else Feature104MetricsManifestV7
             if feature104
             else Feature103MetricsManifestV6
             if feature103
@@ -311,7 +325,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopMetricsManifestV1
         )
         self._overview_model: type[AdaptiveHopOverviewManifestV1] = (
-            Feature104OverviewManifestV7
+            FixedDwellOverviewManifestV8
+            if fixed_dwell
+            else Feature104OverviewManifestV7
             if feature104
             else Feature103OverviewManifestV6
             if feature103
@@ -326,7 +342,9 @@ class AdaptiveHopAnalysisJob:
             else AdaptiveHopOverviewManifestV1
         )
         self._status_model: type[AdaptiveHopAnalysisStatusV1] = (
-            Feature104AnalysisStatusV7
+            FixedDwellAnalysisStatusV8
+            if fixed_dwell
+            else Feature104AnalysisStatusV7
             if feature104
             else Feature103AnalysisStatusV6
             if feature103

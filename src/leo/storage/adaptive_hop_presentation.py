@@ -12,6 +12,7 @@ from leo.scanner.adaptive_hop_presentation import (
     EdgeAdaptiveAnalysisStatusV4,
     Feature103AnalysisStatusV6,
     Feature104AnalysisStatusV7,
+    FixedDwellAnalysisStatusV8,
 )
 from leo.scanner.adaptive_hop_products import (
     AdaptiveHopAnalysisBindingV1,
@@ -19,6 +20,7 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
     Feature104AnalysisBindingV7,
+    FixedDwellAnalysisBindingV8,
 )
 from leo.scanner.host_adaptive_presentation import (
     HostAdaptiveAnalysisStatusV2,
@@ -131,7 +133,9 @@ class AdaptiveHopAnalysisPresentationStore:
                     return job.status()
             except BundleNotFoundError:
                 status_model: type[AdaptiveHopAnalysisStatusV1] = (
-                    Feature104AnalysisStatusV7
+                    FixedDwellAnalysisStatusV8
+                    if isinstance(binding, FixedDwellAnalysisBindingV8)
+                    else Feature104AnalysisStatusV7
                     if isinstance(binding, Feature104AnalysisBindingV7)
                     else Feature103AnalysisStatusV6
                     if isinstance(binding, Feature103AnalysisBindingV6)

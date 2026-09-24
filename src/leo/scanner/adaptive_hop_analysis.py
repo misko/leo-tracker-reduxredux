@@ -20,6 +20,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
+    AdaptiveHopReceiptV7,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
@@ -331,7 +332,14 @@ class Feature104AnalysisSourceV5(AdaptiveHopAnalysisSource):
     receipt: AdaptiveHopReceiptV5 = field(init=False)
 
 
+class FixedDwellAnalysisSourceV7(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV7]] = AdaptiveHopReceiptV7
+    receipt: AdaptiveHopReceiptV7 = field(init=False)
+
+
 def _analysis_models(source):
+    if isinstance(source, FixedDwellAnalysisSourceV7):
+        return Feature103AnalysisConfigurationV3, Feature103VisitAnalysisV3
     if isinstance(source, Feature104AnalysisSourceV5):
         return Feature104AnalysisConfigurationV4, Feature104VisitAnalysisV4
     if isinstance(source, Feature103AnalysisSourceV4):

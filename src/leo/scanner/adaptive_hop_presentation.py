@@ -147,6 +147,16 @@ class Feature104AnalysisStatusV7(AdaptiveHopAnalysisStatusV1):
     overview: Feature104OverviewManifestV7 | None
 
 
+class FixedDwellOverviewManifestV8(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+
+
+class FixedDwellAnalysisStatusV8(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    configuration: Feature103AnalysisConfigurationV3  # type: ignore[assignment]
+    overview: FixedDwellOverviewManifestV8 | None
+
+
 @dataclass(frozen=True, slots=True)
 class RenderedAdaptiveOverview:
     artifacts: dict[str, bytes]
