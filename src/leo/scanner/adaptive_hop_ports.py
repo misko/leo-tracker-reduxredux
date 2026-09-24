@@ -87,7 +87,10 @@ class AdaptiveHopSession(Protocol):
     def finish(
         self,
     ) -> (
-        AdaptiveHopReceiptV1 | AdaptiveHopReceiptV2 | AdaptiveHopReceiptV3 | AdaptiveHopReceiptV4
+        AdaptiveHopReceiptV1
+        | AdaptiveHopReceiptV2
+        | AdaptiveHopReceiptV3
+        | AdaptiveHopReceiptV4
         | AdaptiveHopReceiptV6
     ): ...
 

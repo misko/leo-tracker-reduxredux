@@ -210,10 +210,7 @@ def test_protocol_three_receipt_preserves_actual_interval_and_gain(
     )
 
     assert isinstance(receipt, AdaptiveHopReceiptV6)
-    duration = (
-        receipt.events[0].valid_end_counter_exclusive
-        - receipt.events[0].valid_start_counter
-    )
+    duration = receipt.events[0].valid_end_counter_exclusive - receipt.events[0].valid_start_counter
     assert duration == rate * dwell_ms // 1_000
     assert receipt.valid_sample_count == rate * dwell_ms // 1_000
     assert receipt.plan.geometry.active_valid_visit_ms == dwell_ms

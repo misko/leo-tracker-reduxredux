@@ -1221,12 +1221,8 @@ class AdaptiveHopSessionWriter:
         count = self._chunk_visits
         first = len(self._visits) - count
         dwell = self._plan.geometry.valid_visit_samples
-        chunk_sample_count = sum(
-            visit.valid_sample_count for visit in self._visits[first:]
-        )
-        chunk_sample_start = sum(
-            visit.valid_sample_count for visit in self._visits[:first]
-        )
+        chunk_sample_count = sum(visit.valid_sample_count for visit in self._visits[first:])
+        chunk_sample_start = sum(visit.valid_sample_count for visit in self._visits[:first])
         index = len(self._chunks)
         chunk_model = (
             VariableDualRxAdaptiveHopIqChunkV12
