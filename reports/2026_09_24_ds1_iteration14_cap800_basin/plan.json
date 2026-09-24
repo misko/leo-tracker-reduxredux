@@ -1,0 +1,15 @@
+{
+  "schema": "ds1-iteration14-cap800-basin-plan/v1",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration12_session_scale/refinement.json",
+  "association_policy": "fixed sealed iteration-10 identities",
+  "nuisance_model": "exact causal per-NORAD rates with Gaussian fitting prior and profiled per-track CFO",
+  "geographic_objective": "equal-group mean exact cap-800 data loss; nuisance prior excluded",
+  "full_spacing_km": 0.09765625,
+  "maximum_full_edge_steps": 8,
+  "half_spacing_km": 0.048828125,
+  "maximum_half_edge_steps": 4,
+  "transition_rule": "recenter at unchanged spacing only when the raw cap-800 winner is on the symmetric 3x3 edge; halve after the full-spacing basin closes",
+  "qualification_rule": "both group fits converge, both 0.2 Hz exact-SGP4 gates pass, and the final half-step winner is interior",
+  "postseal_policy": "the geographic reference may be read only after inference.json is sealed"
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "ds1-iteration17-reacquire-then-freeze-plan/v1",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration15_information_weighted/inference.json",
+  "association_update": "full-catalogue hard reassociation once at the sealed parent coordinate, then frozen for every geographic cell",
+  "group_weights": {"20260921_00": 0.2742, "20260921_16": 0.7258},
+  "timing_policy": "fixed sealed group offsets of -0.75 and -0.50 seconds",
+  "model": "exact causal per-NORAD rate with Gaussian fitting prior and profiled per-track CFO",
+  "geographic_objective": "information-weighted regularized exact rate selection objective",
+  "stages": [
+    {"spacing_km": 0.048828125, "maximum_translations": 4},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4},
+    {"spacing_km": 0.01220703125, "maximum_translations": 4}
+  ],
+  "transition_rule": "translate at unchanged spacing while the winner is on the edge; halve only after an interior winner",
+  "postseal_policy": "the geographic reference may be read only after inference.json and qualification.json are sealed"
+}

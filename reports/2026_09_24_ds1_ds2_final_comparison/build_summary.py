@@ -33,7 +33,10 @@ def main() -> None:
         "reports/2026_09_24_ds2_geometry_cone_evaluation/blind-postseal-evaluation.json"
     )
     quality_path = "reports/2026_09_24_ds2_quality/summary.json"
-    ds1_path = "reports/2026_09_24_ds1_iteration12_comparison/summary.json"
+    ds1_path = (
+        "reports/2026_09_24_ds1_iteration15_information_weighted/"
+        "evaluation/postseal-evaluation.json"
+    )
     portable = load(portable_path)
     closure = load(closure_path)
     missing = load(missing_path)
@@ -51,14 +54,12 @@ def main() -> None:
         and item["method"]
         == "blind re-associated local fitted cone, 50° full FOV"
     )
-    ds1_error = min(
-        item["postseal_error_km"]
-        for item in ds1["results"]
-        if item["postseal_error_km"] is not None
-    )
+    if ds1.get("qualified") is not True:
+        raise ValueError("DS1 best result must be qualified")
+    ds1_error = float(ds1["postseal_error_km"])
 
     methods = [
-        ("DS1 expanded exact", ds1_error, "development"),
+        ("DS1 information-weighted exact", ds1_error, "development"),
         ("DS2 baseline", fine["baseline"]["postseal_error_km"], "portable"),
         (
             "DS2 causal rate",
@@ -88,7 +89,7 @@ def main() -> None:
         ("DS2 blind LT3D cone", geometry_joint["horizontal_error_km"], "3 captures"),
     ]
     output = {
-        "schema": "ds1-ds2-final-comparison/v1",
+        "schema": "ds1-ds2-final-comparison/v2",
         "development_evaluation": True,
         "reference_coordinate": portable["reference_coordinate"],
         "sources": {
