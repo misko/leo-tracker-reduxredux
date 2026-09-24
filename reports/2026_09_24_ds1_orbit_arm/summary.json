@@ -1,0 +1,79 @@
+{
+  "schema": "ds1-causal-per-norad-rate-bounded-summary/v1",
+  "status": "bounded-feasibility-only",
+  "method": "frozen DS1 shared-time pair union; ordinary TRAIN-only catalogue assignment; fixed-point causal per-NORAD phase-rate and TRAIN-only CFO",
+  "rate_definition": {
+    "phase_seconds": "causal_tle_age_hours * per_norad_rate_seconds_per_hour",
+    "prior_sigma_seconds_per_hour": 0.09176615913014215,
+    "bound_seconds_per_hour": 0.25,
+    "not_a_global_or_per_scan_epoch_shift": true
+  },
+  "exact_gate": {
+    "orbit_phase_changes_sgp4_time_only": true,
+    "earth_rotation_time": "receive_time_plus_selected_global_tau",
+    "maximum_doppler_error_hz_required": 0.2
+  },
+  "rows": [
+    {
+      "artifact": "train_20260921_00_1__sacramento__top4_exact.json",
+      "case_id": "train_20260921_00_1",
+      "partition": "train",
+      "prior": "sacramento",
+      "frozen_pairs_evaluated": 4,
+      "reference_error_km": 40.40708803686373,
+      "ordinary_train_capped_loss": 0.14356006040530225,
+      "rate_train_capped_loss": 0.0843377088443726,
+      "rate_held_capped_rms_hz": 286.32105662145045,
+      "converged": true,
+      "exact_gate_passed": true,
+      "exact_gate_maximum_hz": 7.774069672450423e-06
+    },
+    {
+      "artifact": "train_20260921_00_1__reno__top1_exact.json",
+      "case_id": "train_20260921_00_1",
+      "partition": "train",
+      "prior": "reno",
+      "frozen_pairs_evaluated": 1,
+      "reference_error_km": 39.999334054127,
+      "ordinary_train_capped_loss": 0.14331355726957376,
+      "rate_train_capped_loss": 0.08396635396868421,
+      "rate_held_capped_rms_hz": 285.67929088834387,
+      "converged": true,
+      "exact_gate_passed": true,
+      "exact_gate_maximum_hz": 7.858017852413468e-06
+    },
+    {
+      "artifact": "validation_20260922_08_1__sacramento__top4_exact.json",
+      "case_id": "validation_20260922_08_1",
+      "partition": "validation",
+      "prior": "sacramento",
+      "frozen_pairs_evaluated": 4,
+      "reference_error_km": 0.9608505422132747,
+      "ordinary_train_capped_loss": 0.03370194726909882,
+      "rate_train_capped_loss": 0.02164430666685968,
+      "rate_held_capped_rms_hz": 129.1832281033854,
+      "converged": true,
+      "exact_gate_passed": true,
+      "exact_gate_maximum_hz": 1.8289047716280038e-06
+    },
+    {
+      "artifact": "validation_20260922_08_1__reno__top1_exact.json",
+      "case_id": "validation_20260922_08_1",
+      "partition": "validation",
+      "prior": "reno",
+      "frozen_pairs_evaluated": 1,
+      "reference_error_km": 1.4120363074746591,
+      "ordinary_train_capped_loss": 0.03370422811530285,
+      "rate_train_capped_loss": 0.021927481497067063,
+      "rate_held_capped_rms_hz": 129.67783005795715,
+      "converged": true,
+      "exact_gate_passed": true,
+      "exact_gate_maximum_hz": 2.1002440462325467e-06
+    }
+  ],
+  "limitations": [
+    "Each arm is a deterministic TRAIN-ranked subset of an already sealed DS1 pair union, rather than a full union evaluation.",
+    "Reference position enters only after inference, but results do not establish a sub-kilometre DS1 method.",
+    "Held rows share tracklets and identities with their TRAIN rows, so held frequency is not independent future-satellite validation."
+  ]
+}
