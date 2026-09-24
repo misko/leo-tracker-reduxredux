@@ -341,6 +341,17 @@ class VariableDualRxAdaptiveHopIqManifestV12(GeometryBoundAdaptiveHopIqManifestV
     chunks: Annotated[tuple[VariableDualRxAdaptiveHopIqChunkV12, ...], Field(max_length=2500)]
 
 
+class UnboundFeature103DualRxAdaptiveHopIqManifestV13(AdaptiveHopIqManifestV1):
+    """Feature-103 dual-RX IQ whose physical fixture geometry is not established."""
+
+    schema_version: Literal[13] = 13  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 4
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = Feature103DualRxTimingV3
+    receipt: AdaptiveHopReceiptV4  # type: ignore[assignment]
+    timing: Feature103DualRxTimingV3 | None  # type: ignore[assignment]
+    chunks: Annotated[tuple[Feature103AdaptiveHopIqChunkV9, ...], Field(max_length=625)]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -354,7 +365,8 @@ class _ManifestSeal(AdaptiveModel):
         | Feature103DualRxAdaptiveHopIqManifestV9
         | Feature104DualRxAdaptiveHopIqManifestV10
         | VariableDualRxAdaptiveHopIqManifestV11
-        | VariableDualRxAdaptiveHopIqManifestV12,
+        | VariableDualRxAdaptiveHopIqManifestV12
+        | UnboundFeature103DualRxAdaptiveHopIqManifestV13,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -380,6 +392,7 @@ class PublishedAdaptiveHopIqSession:
         | Feature104DualRxAdaptiveHopIqManifestV10
         | VariableDualRxAdaptiveHopIqManifestV11
         | VariableDualRxAdaptiveHopIqManifestV12
+        | UnboundFeature103DualRxAdaptiveHopIqManifestV13
     )
     manifest_sha256: str
 
@@ -634,11 +647,6 @@ class AdaptiveHopIqStore:
             else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
-        if (
-            isinstance(plan, (AdaptiveHopPlanV4, AdaptiveHopPlanV5, AdaptiveHopPlanV6))
-            and receiver_geometry is None
-        ):
-            raise ValueError("feature-103 dual-RX publication requires receiver geometry")
         if self.contains_session(session_id):
             raise FileExistsError(session_id)
         write_root = self._spool_root or self._root
@@ -1323,6 +1331,8 @@ class AdaptiveHopSessionWriter:
                 if isinstance(receipt, AdaptiveHopReceiptV6)
                 else Feature104DualRxAdaptiveHopIqManifestV10
                 if isinstance(receipt, AdaptiveHopReceiptV5)
+                else UnboundFeature103DualRxAdaptiveHopIqManifestV13
+                if isinstance(receipt, AdaptiveHopReceiptV4) and self._receiver_geometry is None
                 else Feature103DualRxAdaptiveHopIqManifestV9
                 if isinstance(receipt, AdaptiveHopReceiptV4)
                 else HostAdaptiveHopIqManifestV5
