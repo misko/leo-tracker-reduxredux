@@ -1,0 +1,415 @@
+{
+  "schema": "ds1-iteration-progress/v1",
+  "generated_from_existing_artifacts_only": true,
+  "interpretation": {
+    "qualified_sub_km_current": false,
+    "historical_best_claim_km": 0.575577,
+    "historical_best_claim_disposition": "invalidated by iteration 19 rate-bound audit",
+    "closest_selected_unqualified_diagnostic_km": 0.26745,
+    "closest_visited_postseal_only_km": 0.172805,
+    "current_geographic_conclusion": "No current qualified sub-km DS1 estimate.",
+    "progress_conclusion": "Yes in model validity: iteration 27 fixed the iteration-26 numerical blocker and exposed a stable southwest objective slope, but its geographic search remained open and produced no qualified improvement."
+  },
+  "cross_cutting_provenance": [
+    {
+      "path": "reports/2026_09_25_ds1_iteration19_rate_bound_audit/REPORT.md",
+      "sha256": "14d52961cab87aa9ad423eb842f7dd8f72e4b581c7e3bdde4d1cadf815bd0733"
+    },
+    {
+      "path": "reports/2026_09_24_ds1_iteration17_reacquire_then_freeze/inference.json",
+      "sha256": "62190e480ad44b061880e5edfcf7ff0ca4b02e8ac53b9de0db301a639397bdc9"
+    },
+    {
+      "path": "reports/2026_09_25_ds1_iteration27_phase_cache/smoke.json",
+      "sha256": "d6792f8607a11c39e5d14a9373c781814ae55efc486118756ab1024fff391202"
+    },
+    {
+      "path": "reports/2026_09_25_ds1_iteration27_phase_cache/stencil.json",
+      "sha256": "f21d1473597cca0d944c128e2e63428ad6ca373afa27cc8fab1af10149503d36"
+    },
+    {
+      "path": "reports/2026_09_25_ds1_iteration27_phase_cache/REPORT.md",
+      "sha256": "eb5f2d9fd17554706e7403c8bac23ad5167ecb65354ba48b661df74957ae5a4c"
+    }
+  ],
+  "rows": [
+    {
+      "iteration": 1,
+      "name": "Shared-time DS1 benchmark",
+      "postseal_geographic_error_km": 3.364,
+      "aggregate_min_km": 1.996,
+      "aggregate_max_km": 4.134,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "benchmark",
+      "note": "Median of eight completed full-block/start results; not one sequential estimate.",
+      "source": {
+        "path": "reports/2026_09_24_ds1/REPORT.md",
+        "sha256": "da9c427916e2ad6e5d407e1fdb793df807302c0764e009ce2df8268d05b1ef0c"
+      }
+    },
+    {
+      "iteration": 2,
+      "name": "Local geographic refinement",
+      "postseal_geographic_error_km": 3.912,
+      "aggregate_min_km": 1.689,
+      "aggregate_max_km": 6.055,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "development",
+      "note": "Median and range of four prefix-6 global-time arms; one-scan arms excluded from this summary.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration2/REPORT.md",
+        "sha256": "a5c68d401e83860a5f51091c2f8073ad0bf6c8e154692d790fa09fed2eadfa8f"
+      }
+    },
+    {
+      "iteration": 3,
+      "name": "Joint tau/rate screening",
+      "postseal_geographic_error_km": 3.01179,
+      "aggregate_min_km": 0.634774,
+      "aggregate_max_km": 4.260024,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "invalid",
+      "note": "Mean/range of four overlapping development views; later convergence audit found all four selected fits nonconverged.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_joint_rate_search/iteration3-postseal/iteration3-postseal.json",
+        "sha256": "4a47a550da2fadfdd21b03d95c8319f36527f7117594220a9620e93cebf97498"
+      }
+    },
+    {
+      "iteration": 4,
+      "name": "Seed-union exact selection",
+      "postseal_geographic_error_km": 2.313292,
+      "aggregate_min_km": 0.422928,
+      "aggregate_max_km": 4.203656,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "development",
+      "note": "Mean/range of two group-specific estimates; not a shared-coordinate estimate.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_joint_rate_search/iteration4-postseal/iteration4-postseal.json",
+        "sha256": "ca83582ec8cd4450ea1437436f72dd6283d8d5cc8e3aae719ade49698cb706bf"
+      }
+    },
+    {
+      "iteration": 5,
+      "name": "Timing refinement",
+      "postseal_geographic_error_km": 2.725182,
+      "aggregate_min_km": 1.730384,
+      "aggregate_max_km": 3.719981,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "development",
+      "note": "Mean/range of two group-specific estimates; one group improved and one regressed.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_joint_rate_search/iteration5-postseal/iteration5-postseal.json",
+        "sha256": "d82cef452938c8c0d3b5e75c22b8e13d98c06ba4d680eb2c06e3be6e648a7252"
+      }
+    },
+    {
+      "iteration": 6,
+      "name": "Expanded exact shortlist",
+      "postseal_geographic_error_km": 1.789851,
+      "aggregate_min_km": 0.422928,
+      "aggregate_max_km": 3.156774,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "development",
+      "note": "Mean/range of two group-specific estimates; still not one shared coordinate.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_joint_rate_search/iteration6-postseal/iteration6-postseal.json",
+        "sha256": "ea7900cbc721f1be6a059fc6a4bd396e44a7bac661e0aa08919b3f97f1f24dc6"
+      }
+    },
+    {
+      "iteration": 7,
+      "name": "Residual likelihood ablation",
+      "postseal_geographic_error_km": 1.789851,
+      "aggregate_min_km": 0.422928,
+      "aggregate_max_km": 3.156774,
+      "geographic_metric_kind": "aggregate",
+      "current_disposition": "no_gain",
+      "note": "Gaussian arm retained iteration-6 geography; robust arm was worse in one group.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_joint_rate_search/iteration7-postseal/iteration7-postseal.json",
+        "sha256": "0e5bebe6831cc6e49b567789276c122fd6776d0524d23c5409e7ea7203fa2aa2"
+      }
+    },
+    {
+      "iteration": 8,
+      "name": "Joint shared coordinate",
+      "postseal_geographic_error_km": 1.359305,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "development",
+      "note": "First result in the directly comparable shared-coordinate sequence.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration8_joint_groups/REPORT.md",
+        "sha256": "c6a6fb7e085361c3f3d83f5af0878ea1a47022a036b7e3c50f6826bcd0367a5b"
+      }
+    },
+    {
+      "iteration": 9,
+      "name": "Joint local refinement",
+      "postseal_geographic_error_km": 1.242891,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "development",
+      "note": "Reference-free selected shared coordinate; development corpus.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration9_joint_refinement/REPORT.md",
+        "sha256": "ae5c11b28d8f694a3f2a1fdf330ca0b3e7ce5d575ad5b664179839105f1046c2"
+      }
+    },
+    {
+      "iteration": 10,
+      "name": "Finer joint refinement",
+      "postseal_geographic_error_km": 1.179286,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "development",
+      "note": "Reference-free selected shared coordinate; development corpus.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration10_refinement/REPORT.md",
+        "sha256": "e14ace69bdf7eeff179f879ebd6b4ce1ad7683034da922b1f80c2764e7cb104e"
+      }
+    },
+    {
+      "iteration": 11,
+      "name": "Fine confirmation",
+      "postseal_geographic_error_km": 1.212614,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "no_gain",
+      "note": "Fine-grid selected result was slightly worse than iteration 10.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration11_fine_confirmation/REPORT.md",
+        "sha256": "077e6d6233ced5e527b687ddc56e56299b506d0ba7ae719a4b078b1fb8d31bf9"
+      }
+    },
+    {
+      "iteration": 12,
+      "name": "Expanded/session-scale basin",
+      "postseal_geographic_error_km": 0.787188,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "invalidated",
+      "note": "Historical sub-km development result; later rate-bound audit invalidated its qualification.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration12_session_scale/REPORT.md",
+        "sha256": "30aabc0010ffa1f6c6523235dfc38f52e3d1cef25c4b1bb26fb3f2a8f0dd0c48"
+      }
+    },
+    {
+      "iteration": 13,
+      "name": "Basin closure",
+      "postseal_geographic_error_km": 0.5999,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "invalidated",
+      "note": "Historically qualified; iteration 19 found the inherited rate-bound detector defective.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration13_basin_closure/REPORT.md",
+        "sha256": "784680f364bedb19b96d50d5886153df14a848c15728a0bdf1014c105f32c5d7"
+      }
+    },
+    {
+      "iteration": 14,
+      "name": "Raw cap-800 basin",
+      "postseal_geographic_error_km": 0.488151,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "diagnostic",
+      "note": "Terminal boundary point only; explicitly not a position estimate.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration14_cap800_basin/REPORT.md",
+        "sha256": "b4143e81a546beed2a00e1c11e13558617031cce634c965d97eb6bd84a015bd4"
+      }
+    },
+    {
+      "iteration": 15,
+      "name": "Information-weighted basin",
+      "postseal_geographic_error_km": 0.575577,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "invalidated",
+      "note": "Historical best qualified claim; explicitly rejected by iteration 19.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration19_rate_bound_audit/REPORT.md",
+        "sha256": "14d52961cab87aa9ad423eb842f7dd8f72e4b581c7e3bdde4d1cadf815bd0733"
+      }
+    },
+    {
+      "iteration": 16,
+      "name": "Dynamic association",
+      "postseal_geographic_error_km": 0.85963,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "diagnostic",
+      "note": "Unqualified terminal boundary point.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration16_dynamic_association/REPORT.md",
+        "sha256": "9c894a1868cd56e5bd76e74131b665cd073f532fd99dfbeb2e453c004abd37f6"
+      }
+    },
+    {
+      "iteration": 17,
+      "name": "Reacquire then freeze",
+      "postseal_geographic_error_km": 0.662549,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "invalidated",
+      "note": "Originally qualified, but its persisted rates include values within optimizer tolerance of the old \u00b10.25 guard; it has not passed the corrected gate.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration17_reacquire_then_freeze/inference.json",
+        "sha256": "62190e480ad44b061880e5edfcf7ff0ca4b02e8ac53b9de0db301a639397bdc9"
+      }
+    },
+    {
+      "iteration": 18,
+      "name": "Timing refresh",
+      "postseal_geographic_error_km": 0.884064,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "diagnostic",
+      "note": "Unqualified terminal boundary point.",
+      "source": {
+        "path": "reports/2026_09_24_ds1_iteration18_timing_refresh/REPORT.md",
+        "sha256": "3c4a984b95815790b0dc75d8fe46978e676fe04d3286f222d63eb07108a8d6dc"
+      }
+    },
+    {
+      "iteration": 19,
+      "name": "Rate-bound audit",
+      "postseal_geographic_error_km": 0.910457,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "audit",
+      "note": "Correctly invalidated iteration 15; widened-rate basin remained open and this value is diagnostic only.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration19_rate_bound_audit/REPORT.md",
+        "sha256": "14d52961cab87aa9ad423eb842f7dd8f72e4b581c7e3bdde4d1cadf815bd0733"
+      }
+    },
+    {
+      "iteration": 20,
+      "name": "Session-balanced zero-rate",
+      "postseal_geographic_error_km": 0.26745,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "diagnostic",
+      "note": "Very close terminal boundary point, but the objective was still descending; not a position estimate.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration20_session_predictive/REPORT.md",
+        "sha256": "2a93acbf0e781c69b9e872fc3ae64f187114461aec58ba4fe4d64c74b3f522ed"
+      }
+    },
+    {
+      "iteration": 21,
+      "name": "Closure extension",
+      "postseal_geographic_error_km": 0.713795,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "diagnostic",
+      "note": "Selected terminal boundary error; closest visited point was 0.172805 km but was not RF-selected and is not plotted as an estimate.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration21_session_balanced_closure/REPORT.md",
+        "sha256": "0e23745cfd68522553f0631a984ef565c7727986ecddd406ddd1bd2cc6b77ae8"
+      }
+    },
+    {
+      "iteration": 22,
+      "name": "Randomized-time predictive scorer",
+      "postseal_geographic_error_km": null,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "none",
+      "current_disposition": "model_progress",
+      "note": "No geographic search. Rates improved randomized HELD loss in all 12 sessions, but four sources hit the old rate guard.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration22_randomized_time_predictive/smoke.json",
+        "sha256": "818a2236432f13afd98cc32623214e3619858dd95519869d89459142ad8c425a"
+      }
+    },
+    {
+      "iteration": 23,
+      "name": "Widened-rate audit",
+      "postseal_geographic_error_km": null,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "none",
+      "current_disposition": "no_go",
+      "note": "No geographic search. \u00b10.50 s/h failed its prospective gate; \u00b11 was diagnostic only.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration23_widened_rate/smoke.json",
+        "sha256": "b58540c5fcf4ab342b3c50329600354c276e9533275f6c7821bc18a61bcefa8f"
+      }
+    },
+    {
+      "iteration": 24,
+      "name": "Cross-fitted rate identifiability",
+      "postseal_geographic_error_km": null,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "none",
+      "current_disposition": "no_go",
+      "note": "No geographic search. 65/80 eligible sources passed, but the universal prospective gate failed.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration24_crossfit_rate/audit.json",
+        "sha256": "126146526fe7d82a05ede40fc637a98fa63386730e390466a041c8b22ab83b95"
+      }
+    },
+    {
+      "iteration": 25,
+      "name": "Source admission",
+      "postseal_geographic_error_km": null,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "none",
+      "current_disposition": "no_go",
+      "note": "No geographic search. HELD improved versus zero but regressed versus both all-source rate controls.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration25_source_admission/evaluation.json",
+        "sha256": "52251cf714b98057e1922e4bf85c2f8ec029f8855788cb962fb0b5c5f6eb2551"
+      }
+    },
+    {
+      "iteration": 26,
+      "name": "Rate marginalization",
+      "postseal_geographic_error_km": null,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "none",
+      "current_disposition": "numerical_no_go",
+      "note": "No geographic search. Statistical smoke passed; a remote-mode quartic extrapolation failed the exact 0.2 Hz gate.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration26_rate_marginal/smoke.json",
+        "sha256": "db2977e1138ebea868f8e707b5e075c9dd6b31d63d3b892a342db2e617dc0e62"
+      }
+    },
+    {
+      "iteration": 27,
+      "name": "Exact phase-state cache and sealed stencil",
+      "postseal_geographic_error_km": 1.112841731176525,
+      "aggregate_min_km": null,
+      "aggregate_max_km": null,
+      "geographic_metric_kind": "point",
+      "current_disposition": "search_open",
+      "note": "Exact-cache smoke passed, but the southwest stencil boundary won and all 12 leave-one-session reranks agreed; unqualified diagnostic.",
+      "source": {
+        "path": "reports/2026_09_25_ds1_iteration27_phase_cache/evaluation/postseal-evaluation.json",
+        "sha256": "22cd8e65721d13d1c4755caee402bd33875cf814d33ee8e7b70d4628de53cba9"
+      }
+    }
+  ]
+}
