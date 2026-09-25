@@ -1,0 +1,388 @@
+commit 7e75555502a3f25b72fa08f83809fda3dc7b8742
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 22:04:17 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 22:04:17 2026 +0000
+
+    Add bounded live 64-candidate profile with short ranking FFT
+
+diff --git a/scripts/qualify_glrt_cpu_live20.py b/scripts/qualify_glrt_cpu_live20.py
+index 8ce6d983d..b4971e21e 100644
+--- a/scripts/qualify_glrt_cpu_live20.py
++++ b/scripts/qualify_glrt_cpu_live20.py
+@@ -37,10 +37,13 @@ def retention_budget_kib(blocks):
+     return 256*1024 if blocks == 45000 else 16384*blocks*4//1024
+ 
+ 
+-def observer_profile(blocks, spacing):
++def observer_profile(blocks, spacing, candidate_budget=8):
+     retention_budget_kib(blocks)
+     if spacing not in (3,9) or (spacing==3 and blocks!=1536):
+         raise ValueError('three-frame observer requires the bounded 1536-block profile')
++    if candidate_budget not in (8,64) or (candidate_budget==64 and (blocks!=1536 or spacing!=3)):
++        raise ValueError('64 candidates require the bounded three-frame observer profile')
++    if candidate_budget==64: return '1536-selected-observer3-scan64'
+     return '1536-selected-observer3' if spacing==3 else str(blocks)
+ 
+ 
+@@ -131,6 +134,7 @@ def main():
+     parser.add_argument('--rate', type=int, choices=(30000000, 60000000), required=True)
+     parser.add_argument('--binary', type=Path, required=True)
+     parser.add_argument('--observer-spacing',type=int,choices=(3,9),default=9)
++    parser.add_argument('--candidate-budget',type=int,choices=(8,64),default=8)
+     parser.add_argument('--blocks', type=int, choices=(1536, 4096, 45000), default=1536,
+                         help='1536/4096 retain full IQ for 10.066/26.844 s; '
+                              '45000 retains searched windows for at most 294.912 s or 200 attempts')
+@@ -138,7 +142,7 @@ def main():
+                         help='Receive LO for this one bounded dwell; default is the historical .20 upper edge')
+     parser.add_argument('--output', type=Path, required=True)
+     args = parser.parse_args()
+-    selected_profile=observer_profile(args.blocks,args.observer_spacing)
++    selected_profile=observer_profile(args.blocks,args.observer_spacing,args.candidate_budget)
+     artifacts = capture_artifacts(args.blocks,args.observer_spacing)
+     if not 70000000 <= args.lo_hz <= 6000000000:
+         raise ValueError('receive LO is outside the AD9361 range')
+@@ -156,6 +160,8 @@ def main():
+                 'rf_sample_limit': 16384*args.blocks,
+                 'rf_duration_limit_s': 16384*args.blocks/2500000, 'payload_sha256': hashes,
+                 'profile': selected_profile,
++                'candidate_budget': args.candidate_budget,
++                'ranking_fft': 4096 if args.candidate_budget==64 else 16384,
+                 'retention_mode': 'selected_windows' if args.blocks == 45000 or args.observer_spacing==3 else 'full',
+                 'passive_observer': {'rate': 2500000, 'feedback_authority': False,
+                                      'frame_spacing': args.observer_spacing,
+diff --git a/tests/starlink_glrt/test_cpu_live_operator_admission.py b/tests/starlink_glrt/test_cpu_live_operator_admission.py
+index 851820154..c309675e1 100644
+--- a/tests/starlink_glrt/test_cpu_live_operator_admission.py
++++ b/tests/starlink_glrt/test_cpu_live_operator_admission.py
+@@ -222,6 +222,19 @@ def test_selected_capture_budget_and_artifacts_are_explicit(storage_operator):
+         with pytest.raises(ValueError): storage_operator.capture_artifacts(blocks)
+ 
+ 
++@pytest.mark.parametrize('blocks,spacing,budget,valid',[
++    (1536,3,64,True),(1536,9,64,False),(4096,3,64,False),(45000,9,64,False),
++    (1536,3,65,False),(1536,3,0,False)])
++def test_expanded_scan_is_admitted_only_in_short_selected_profile(storage_operator,blocks,spacing,budget,valid):
++    if valid:
++        assert storage_operator.observer_profile(blocks,spacing,budget)=='1536-selected-observer3-scan64'
++        artifacts=storage_operator.capture_artifacts(blocks,spacing)
++        assert 'scan.iq.ci16' in artifacts and 'iq.ci16' not in artifacts
++        assert not any(n.startswith('native-') for n in artifacts)
++    else:
++        with pytest.raises(ValueError):storage_operator.observer_profile(blocks,spacing,budget)
++
++
+ @pytest.mark.parametrize('missing',[None,'observer.jsonl','observer.iq.ci16'])
+ def test_observer_artifacts_are_required_even_without_handoff(storage_operator,missing):
+     evidence={'artifacts':{name:{'bytes':0} for name in ('observer.jsonl','observer.iq.ci16')}}
+diff --git a/tests/starlink_glrt/test_cpu_live_probe.py b/tests/starlink_glrt/test_cpu_live_probe.py
+index 6efd2a9bf..50d8a9167 100644
+--- a/tests/starlink_glrt/test_cpu_live_probe.py
++++ b/tests/starlink_glrt/test_cpu_live_probe.py
+@@ -77,7 +77,11 @@ int live_set_dwell(struct test_live *t,const char *blocks,uint64_t out[4])
+     struct dwell_limits limits;
+     if(dwell_limits(blocks,&limits)) return -1;
+     if(t) { t->live.attempt_limit=limits.attempts;t->live.selected_iq=limits.selected_iq;
+-        t->live.observer_spacing=limits.observer_spacing; }
++        t->live.observer_spacing=limits.observer_spacing;t->live.rank_budget=limits.rank_budget;
++        if(limits.rank_budget==64 && !t->live.ranking_fft) {
++            t->live.ranking_fft=fftw_plan_dft_1d(4096,t->fft,t->fft,FFTW_FORWARD,FFTW_ESTIMATE|FFTW_UNALIGNED);
++            if(!t->live.ranking_fft) abort();
++        } }
+     out[0]=limits.blocks;out[1]=limits.attempts;
+     out[2]=limits.alarm_seconds;out[3]=limits.worker_ns;
+     return 0;
+@@ -185,6 +189,8 @@ int live_rank(struct test_live *t,const int16_t *iq,const unsigned *epochs,unsig
+     struct live *s=&t->live;
+     memcpy(s->scan_iq,iq,sizeof(s->scan_iq));s->coarse.count=count;
+     for(unsigned k=0;k<count && k<8;k++) s->coarse.peaks[k].epoch=epochs[k];
++    s->wide_count=count;
++    for(unsigned k=0;k<count && k<64;k++) s->wide_peaks[k].epoch=epochs[k];
+     s->deadline_ns=clock_ns(NULL)+UINT64_C(3000000000);
+     return rank_candidates(s,scores,selected);
+ }
+@@ -197,7 +203,7 @@ void live_free_unstarted(struct test_live *t)
+     fclose(s->native_coarse_iq);fclose(t->capture);
+     fclose(s->observer_journal);fclose(s->observer_iq);
+     if(s->scan_samples) fclose(s->scan_samples);
+-    fftw_destroy_plan(s->fft);fftw_free(t->fft);free(t->ring);
++    fftw_destroy_plan(s->fft);if(s->ranking_fft) fftw_destroy_plan(s->ranking_fft);fftw_free(t->fft);free(t->ring);
+     if(pthread_mutex_destroy(&s->mutex)) abort();
+     free(t);
+ }
+@@ -213,7 +219,7 @@ void live_finish(struct test_live *t,uint64_t out[5])
+     fclose(s->native_coarse_iq);fclose(t->capture);
+     fclose(s->observer_journal);fclose(s->observer_iq);
+     if(s->scan_samples) fclose(s->scan_samples);
+-    fftw_destroy_plan(s->fft);fftw_free(t->fft);free(t->ring);
++    fftw_destroy_plan(s->fft);if(s->ranking_fft) fftw_destroy_plan(s->ranking_fft);fftw_free(t->fft);free(t->ring);
+     if(pthread_mutex_destroy(&s->mutex)) abort();
+     free(t);
+ }
+@@ -275,6 +281,7 @@ def live_api(tmp_path_factory):
+     (b'45000', [45000,200,325,300000000000]),
+     (b'1536-selected', [1536,6,25,12000000000]),
+     (b'1536-selected-observer3', [1536,6,25,12000000000]),
++    (b'1536-selected-observer3-scan64', [1536,6,25,12000000000]),
+ ])
+ def test_dwell_profiles_have_finite_capture_and_worker_limits(live_api, blocks, expected):
+     lib, _ = live_api
+@@ -348,13 +355,17 @@ def test_paired_iq_waits_for_real_publication_and_rejects_lost_inputs(live_api,
+ 
+ 
+ @pytest.mark.parametrize('mode', ['secondary_pilot', 'noise', 'zero', 'cancel', 'invalid_epoch'])
+-def test_original_pilot_order_matches_independent_fft(live_api, tmp_path, mode):
++@pytest.mark.parametrize('wide',[False,True])
++def test_original_pilot_order_matches_independent_fft(live_api, tmp_path, mode,wide):
+     lib, refs = live_api
+     coefficients = bank()
+     ports = Ports()
+     handle = lib.live_new(refs.ctypes.data, coefficients.ctypes.data, os.fsencode(tmp_path), c.byref(ports), 60000000)
+     iq = np.random.default_rng(982).integers(-100,101,(14000,2),dtype=np.int16)
+     epochs = np.array([500,1023,1800,2200,2600,3000,50,3250],dtype=np.uint32)
++    if wide:
++        assert lib.live_set_dwell(handle,b'1536-selected-observer3-scan64',(c.c_uint64*4)())==0
++        epochs=np.concatenate([epochs,np.arange(56,dtype=np.uint32)*53])
+     if mode == 'secondary_pilot':
+         ref = refs[0,:,0].astype(float)+1j*refs[0,:,1]
+         pilot = ref*np.exp(2j*np.pi*464356*np.arange(3300)/2500000)
+@@ -362,9 +373,9 @@ def test_original_pilot_order_matches_independent_fft(live_api, tmp_path, mode):
+     if mode == 'zero': iq[:]=0
+     if mode == 'cancel': lib.live_stop(handle)
+     if mode == 'invalid_epoch': epochs[7]=3333
+-    scores = np.full(8,999.,dtype=np.float64);selected=c.c_uint(999)
++    scores = np.full(len(epochs),999.,dtype=np.float64);selected=c.c_uint(999)
+     try:
+-        rc = lib.live_rank(handle,iq.ctypes.data,epochs.ctypes.data,8,scores.ctypes.data,c.byref(selected))
++        rc = lib.live_rank(handle,iq.ctypes.data,epochs.ctypes.data,len(epochs),scores.ctypes.data,c.byref(selected))
+     finally:
+         lib.live_free_unstarted(handle)
+     if mode in ('cancel','invalid_epoch'):
+@@ -375,7 +386,7 @@ def test_original_pilot_order_matches_independent_fft(live_api, tmp_path, mode):
+     for epoch in epochs:
+         cut=iq[int(epoch)+22:int(epoch)+3322].astype(float)
+         z=cut[:,0]+1j*cut[:,1]
+-        expected.append(max(abs(np.fft.fft(z*np.conj(ref),16384))**2)/
++        expected.append(max(abs(np.fft.fft(z*np.conj(ref),4096 if wide else 16384))**2)/
+                         max(float(np.vdot(z,z).real*np.vdot(ref,ref).real),1))
+     assert rc == 0 and selected.value == np.argmax(expected)
+     np.testing.assert_allclose(scores,expected,rtol=2e-12,atol=2e-15)
+@@ -607,7 +618,7 @@ def test_advancing_capture_worker_and_native_feedback(live_api, controller, pilo
+ 
+ @pytest.mark.parametrize('rate', [30000000,60000000])
+ @pytest.mark.parametrize('mode', [
+-    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','visit_selected_profile','short_observer3','worker_error',
++    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','visit_selected_profile','short_observer3','short_scan64','worker_error',
+     'retention_error','restart_budget','cancel','deadline','uncleared','source_gap',
+     'wrong_epoch','wrong_rate','unread_head','read_failure','rebase_same_epoch',
+     'rebase_short_write',
+@@ -651,6 +662,8 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+         lib.live_visit_mode(handle)
+     if mode=='short_observer3':
+         assert lib.live_set_dwell(handle,b'1536-selected-observer3',(c.c_uint64*4)())==0
++    if mode=='short_scan64':
++        assert lib.live_set_dwell(handle,b'1536-selected-observer3-scan64',(c.c_uint64*4)())==0
+     iq=np.zeros((10_000_000,2),dtype=np.int16)
+     for frame in range(3000):
+         start=22+(frame*10000+1)//3
+@@ -735,7 +748,7 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             if fault or mode=='attempt_budget' or episode==3:
+                 assert admitted==0
+                 break
+-            if mode in ('visit_selected_profile','short_observer3'):
++            if mode in ('visit_selected_profile','short_observer3','short_scan64'):
+                 assert admitted==0  # Return clean loss to the LO owner, without same-LO REBASE.
+                 break
+             if mode in ('uncleared','source_gap','wrong_epoch','wrong_rate','unread_head','read_failure'):
+@@ -767,7 +780,14 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+         out=(c.c_uint64*5)();lib.live_finish(handle,out)
+     assert not radio.errors,radio.errors
+     rows=[json.loads(line) for line in (tmp_path/'worker.jsonl').read_text().splitlines()]
+-    check_observer_evidence(tmp_path,iq,1000000,rows,rate,3 if mode=='short_observer3' else 9)
++    check_observer_evidence(tmp_path,iq,1000000,rows,rate,3 if mode in ('short_observer3','short_scan64') else 9)
++    if mode=='short_scan64':
++        scans=[r for r in rows if r['kind']=='scan']
++        ranks=[r for r in rows if r['kind']=='candidate_order']
++        assert scans and ranks and len(scans)==len(ranks)
++        assert all(len(r['peaks'])==64 for r in scans)
++        assert all(r['ranking_fft']==4096 and r['candidate_budget']==64 and len(r['single_pilot_power'])==64 for r in ranks)
++        assert any(r['kind']==4 for r in rows)
+     if mode in ('loss_then_supported','four_losses'):
+         assert len(episodes)==(2 if mode=='loss_then_supported' else 4)
+         scans=[r for r in rows if r['kind']=='scan']
+diff --git a/tools/glrt_cpu_live_probe.c b/tools/glrt_cpu_live_probe.c
+index 596b84021..669d2f71c 100644
+--- a/tools/glrt_cpu_live_probe.c
++++ b/tools/glrt_cpu_live_probe.c
+@@ -28,19 +28,21 @@
+ #define PAIR_SAMPLES 3333U
+ #define RESTART_LIMIT 3U
+ struct paired_head { uint32_t words[32]; };
+-struct dwell_limits { unsigned blocks,attempts,alarm_seconds; uint64_t worker_ns; int selected_iq; unsigned observer_spacing; };
++struct dwell_limits { unsigned blocks,attempts,alarm_seconds; uint64_t worker_ns; int selected_iq; unsigned observer_spacing,rank_budget; };
+ static int dwell_limits(const char *blocks,struct dwell_limits *out)
+ {
+     if(!blocks || !strcmp(blocks,"1536"))
+-        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),0,9};
++        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),0,9,8};
+     else if(!strcmp(blocks,"4096"))
+-        *out=(struct dwell_limits){4096,16,45,UINT64_C(30000000000),0,9};
++        *out=(struct dwell_limits){4096,16,45,UINT64_C(30000000000),0,9,8};
+     else if(!strcmp(blocks,"45000"))
+-        *out=(struct dwell_limits){45000,200,325,UINT64_C(300000000000),1,9};
++        *out=(struct dwell_limits){45000,200,325,UINT64_C(300000000000),1,9,8};
+     else if(!strcmp(blocks,"1536-selected"))
+-        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1,9};
++        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1,9,8};
+     else if(!strcmp(blocks,"1536-selected-observer3"))
+-        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1,3};
++        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1,3,8};
++    else if(!strcmp(blocks,"1536-selected-observer3-scan64"))
++        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1,3,64};
+     else return -1;
+     return 0;
+ }
+@@ -67,6 +69,10 @@ struct live {
+     struct glrt_native_ports native;
+     int16_t bank[12][11][11][2],refs[52800],scan_iq[28000];
+     fftw_plan fft;
++    fftw_plan ranking_fft;
++    unsigned rank_budget;
++    uint32_t wide_count;
++    struct glrt_cpu_coarse_peak wide_peaks[64];
+     FILE *journal,*worker_iq,*grids,*scan_samples,*native_coarse_iq;
+     uint64_t iq_samples,deadline_ns,scan_iq_samples;
+     struct paired_head paired[PAIR_LIMIT];
+@@ -293,35 +299,45 @@ static int scan(struct live *s)
+     if(pthread_join(child,NULL)) _exit(2);
+     if(p[0].result || p[1].result) return -1;
+     s->coarse.completed_epochs=p[0].completed+p[1].completed;
++    if(s->rank_budget==64)
++        return glrt_cpu_coarse_select_bounded(&s->coarse,s->wide_peaks,64,&s->wide_count,cancelled,s);
+     return glrt_cpu_coarse_select(&s->coarse,cancelled,s);
+ }
++static unsigned proposal_count(const struct live *s)
++{ return s->rank_budget==64 ? s->wide_count : s->coarse.count; }
++static const struct glrt_cpu_coarse_peak *proposal_peaks(const struct live *s)
++{ return s->rank_budget==64 ? s->wide_peaks : s->coarse.peaks; }
+ /* Cheap ordering only: one original full pilot per coarse basin, with CFO
+  * searched by FFT. The selected proposal must still pass the unchanged
+  * four-pilot resolver, retained-history gates and live source deadlines. */
+-static int rank_candidates(struct live *s,double scores[8],unsigned *selected)
++static int rank_candidates(struct live *s,double *scores,unsigned *selected)
+ {
+-    double pending[8]={0},energy=0;
++    double pending[64]={0},energy=0;
+     double (*bins)[2]=s->worker.fft_workspace.bins;
+-    unsigned best=0,n,k;
+-    memset(scores,0,8*sizeof(*scores));*selected=0;
+-    if(!s->coarse.count || s->coarse.count>8 || cancelled(s)) return -1;
++    unsigned best=0,n,k,count=proposal_count(s),budget=s->rank_budget==64 ? 64 : 8;
++    unsigned fft_count=budget==64 ? 4096 : GLRT_RESOLVER_FFT;
++    const struct glrt_cpu_coarse_peak *peaks=proposal_peaks(s);
++    memset(scores,0,budget*sizeof(*scores));*selected=0;
++    if(!count || count>budget || cancelled(s) || (budget==64 && !s->ranking_fft)) return -1;
+     for(n=0;n<3300;n++) {
+         double i=s->refs[4*n],q=s->refs[4*n+1];energy+=i*i+q*q;
+     }
+     if(!energy) return -1;
+-    for(k=0;k<s->coarse.count;k++) {
+-        unsigned start=s->coarse.peaks[k].epoch+22;
++    for(k=0;k<count;k++) {
++        unsigned start=peaks[k].epoch+22;
+         double observed=0,peak=0,denominator;
+-        if(s->coarse.peaks[k].epoch>=3333 || cancelled(s)) return -1;
++        if(peaks[k].epoch>=3333 || cancelled(s)) return -1;
+         memset(bins,0,sizeof(s->worker.fft_workspace.bins));
+         for(n=0;n<3300;n++) {
+             double i=s->scan_iq[2*(start+n)],q=s->scan_iq[2*(start+n)+1];
+             double ri=s->refs[4*n],rq=s->refs[4*n+1];
+             bins[n][0]=i*ri+q*rq;bins[n][1]=q*ri-i*rq;observed+=i*i+q*q;
+         }
+-        if(fft(s,bins,GLRT_RESOLVER_FFT) || cancelled(s)) return -1;
++        if(budget==64) fftw_execute_dft(s->ranking_fft,bins,bins);
++        else if(fft(s,bins,GLRT_RESOLVER_FFT)) return -1;
++        if(cancelled(s)) return -1;
+         denominator=fmax(observed*energy,1);
+-        for(n=0;n<GLRT_RESOLVER_FFT;n++) {
++        for(n=0;n<fft_count;n++) {
+             double power=(bins[n][0]*bins[n][0]+bins[n][1]*bins[n][1])/denominator;
+             if(!isfinite(power)) return -1;
+             if(power>peak) peak=power;
+@@ -330,7 +346,7 @@ static int rank_candidates(struct live *s,double scores[8],unsigned *selected)
+         if(peak>pending[best]) best=k;
+     }
+     if(cancelled(s)) return -1;
+-    memcpy(scores,pending,sizeof(pending));*selected=best;return 0;
++    memcpy(scores,pending,budget*sizeof(*scores));*selected=best;return 0;
+ }
+ /* Observe the first 64 retained native heads without changing their authority.
+  * Forward exact evidence before remembering metadata; the controller still
+@@ -489,23 +505,25 @@ static void *worker_thread(void *pointer)
+             s->attempts,candidate.window_start,s->epoch,started,scan_done);view(s->journal,&v);
+         if(s->selected_iq) fprintf(s->journal,",\"scan_iq_offset\":%" PRIu64 ",\"scan_iq_samples\":14000",s->scan_iq_samples-14000);
+         fputs(",\"peaks\":[",s->journal);
+-        for(unsigned n=0;n<s->coarse.count;n++) fprintf(s->journal,"%s[%u,%u,%u]",n ? "," : "",
+-            s->coarse.peaks[n].epoch,s->coarse.peaks[n].frequency,s->coarse.peaks[n].score);
++        for(unsigned n=0;n<proposal_count(s);n++) fprintf(s->journal,"%s[%u,%u,%u]",n ? "," : "",
++            proposal_peaks(s)[n].epoch,proposal_peaks(s)[n].frequency,proposal_peaks(s)[n].score);
+         fputs("]}\n",s->journal);
+         if(ferror(s->journal) || fflush(s->journal) ||
+            fwrite(s->coarse.grid,sizeof(s->coarse.grid),1,s->grids)!=1 || fflush(s->grids)) { result=-1;break; }
+-        if(!s->coarse.count) continue;
++        if(!proposal_count(s)) continue;
+         {
+-            double scores[8];unsigned selected;
++            double scores[64];unsigned selected;
+             uint64_t rank_started=clock_ns(NULL);
+             if(rank_candidates(s,scores,&selected)) { result=cancelled(s) ? GLRT_WORKER_CANCELLED : -1;break; }
+             fprintf(s->journal,"{\"kind\":\"candidate_order\",\"attempt\":%u,\"selected_rank\":%u,"
+                 "\"started_ns\":%" PRIu64 ",\"completed_ns\":%" PRIu64 ",\"single_pilot_power\":[",
+                 s->attempts,selected,rank_started,clock_ns(NULL));
+-            for(unsigned n=0;n<s->coarse.count;n++) fprintf(s->journal,"%s%.17g",n ? "," : "",scores[n]);
+-            fputs("]}\n",s->journal);
++            for(unsigned n=0;n<proposal_count(s);n++) fprintf(s->journal,"%s%.17g",n ? "," : "",scores[n]);
++            fputs("]",s->journal);
++            if(s->rank_budget==64) fputs(",\"ranking_fft\":4096,\"candidate_budget\":64",s->journal);
++            fputs("}\n",s->journal);
+             if(ferror(s->journal) || fflush(s->journal)) { result=-1;break; }
+-            candidate.peak=s->coarse.peaks[selected];
++            candidate.peak=proposal_peaks(s)[selected];
+         }
+         if(candidate.window_start>UINT64_MAX-5000000) { result=-1;break; }
+         cfg.source_deadline=candidate.window_start+5000000;
+@@ -642,7 +660,7 @@ static int live_probe_run(int argc,char **argv,int visit_mode)
+ #define NEED(x,name) do { stage=name; if(!(x)) goto done; } while(0)
+     if((argc!=6 && argc!=7) || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
+        dwell_limits(argc==7 ? argv[6] : NULL,&limits)) {
+-        fprintf(stderr,"usage: %s 30000000|60000000 SERIAL BANK REFERENCES NEW_OUTPUT_DIRECTORY [1536|4096|45000|1536-selected|1536-selected-observer3]\n",argv[0]);return 2;
++        fprintf(stderr,"usage: %s 30000000|60000000 SERIAL BANK REFERENCES NEW_OUTPUT_DIRECTORY [1536|4096|45000|1536-selected|1536-selected-observer3|1536-selected-observer3-scan64]\n",argv[0]);return 2;
+     }
+     rate=(uint32_t)strtoul(argv[1],NULL,10);
+     action.sa_handler=signal_stop;sigemptyset(&action.sa_mask);
+@@ -650,12 +668,16 @@ static int live_probe_run(int argc,char **argv,int visit_mode)
+     alarm(limits.alarm_seconds);
+     NEED((s=calloc(1,sizeof(*s))) && (ring=malloc(RING*4U)),"storage");
+     s->rate=rate;s->attempt_limit=limits.attempts;s->selected_iq=limits.selected_iq;s->visit_mode=visit_mode;
+-    s->observer_spacing=limits.observer_spacing;
++    s->observer_spacing=limits.observer_spacing;s->rank_budget=limits.rank_budget;
+     NEED(!pthread_mutex_init(&s->mutex,NULL),"mutex");mutex=1;
+     NEED(!load(argv[3],s->bank,sizeof(s->bank)) && !load(argv[4],s->refs,sizeof(s->refs)),"reference_files");
+     NEED((fft_storage=fftw_malloc(GLRT_RESOLVER_FFT*sizeof(*fft_storage)))!=NULL,"fft_storage");
+     s->fft=fftw_plan_dft_1d(GLRT_RESOLVER_FFT,fft_storage,fft_storage,FFTW_FORWARD,FFTW_ESTIMATE|FFTW_UNALIGNED);
+     NEED(s->fft!=NULL,"fft_plan");
++    if(s->rank_budget==64) {
++        s->ranking_fft=fftw_plan_dft_1d(4096,fft_storage,fft_storage,FFTW_FORWARD,FFTW_ESTIMATE|FFTW_UNALIGNED);
++        NEED(s->ranking_fft!=NULL,"ranking_fft_plan");
++    }
+     /* Directory is created by the operator; every evidence file is new. */
+ #define FILE_NEW(field,name,mode) do { NEED(snprintf(path,sizeof(path),"%s/%s",argv[5],name)>0,"path"); NEED((field=fopen(path,mode))!=NULL,"new_evidence"); } while(0)
+     FILE_NEW(journal,"capture.txt","wx");
+@@ -782,6 +804,7 @@ done:
+         if(s->observer_journal && fclose(s->observer_journal)) rc=1;
+         if(s->observer_iq && fclose(s->observer_iq)) rc=1;
+         if(s->fft) fftw_destroy_plan(s->fft);
++        if(s->ranking_fft) fftw_destroy_plan(s->ranking_fft);
+         if(mutex && pthread_mutex_destroy(&s->mutex)) rc=1;
+     }
+     fftw_free(fft_storage);free(ring);alarm(0);

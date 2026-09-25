@@ -1,0 +1,49 @@
+{
+  "algorithm": "470384-boundary-only-full-band-global-cfo-v1",
+  "blind_global_fit": {
+    "frequency_at_reference_hz": 428028.695788,
+    "reference_time_s": 35.9737761398,
+    "slope_hz_s": -6876.79692878,
+    "train_score": 0.0618892852318,
+    "validation_control_score": 0.000585024613934,
+    "validation_exact_control_db": 20.253973326,
+    "validation_exact_score": 0.0620256710096
+  },
+  "configuration": {
+    "control": "odd symbols from rolled Qin control",
+    "fft_size": 32768,
+    "frequency_search_hz": [
+      -1250000.0,
+      1249923.70605
+    ],
+    "optimizer_inputs": "raw IQ plus absolute frame-start samples only",
+    "slope_search_hz_s": [
+      -50000.0,
+      50000.0
+    ],
+    "train_symbols": "even Qin symbols",
+    "validation_symbols": "odd Qin symbols"
+  },
+  "external_comparison": {
+    "frequency_difference_hz": -1.30421235063,
+    "prior_loaded_after_optimization": true,
+    "slope_difference_hz_s": 3.20307122193
+  },
+  "figure": "reports/figures/2026_08_23_470384_boundary_only_global_cfo/boundary-only-global-cfo.png",
+  "independent_frame_maximum": {
+    "median_score": 0.0901625236893,
+    "p10_score": 0.036998294979,
+    "p90_score": 0.117230584709
+  },
+  "input": {
+    "boundary_manifest": "reports/figures/2026_08_23_470384_boundary_only_global_cfo/frame-boundaries-only.json",
+    "receiver_id": 0,
+    "session_id": "cap-20260821T140820-470384cc9284",
+    "stream_id": "stream-0"
+  },
+  "inventory": {
+    "boundary_manifest_field_count": 6,
+    "frame_count": 1860
+  },
+  "schema_version": 1
+}

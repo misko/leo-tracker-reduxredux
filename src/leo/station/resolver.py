@@ -11,6 +11,10 @@ from leo.station.authority import (
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
+from leo.station.geometry import (
+    CaptureReceiverGeometryBindingV1,
+    StationReceiverGeometryV1,
+)
 from leo.station.pinned_loader import StationAuthorityReader
 
 
@@ -31,6 +35,8 @@ class FixtureAuthorityFileReference:
 class ResolvedCaptureAuthority:
     topology: StationReceiverTopologyV1 | None
     path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1
+    geometry: StationReceiverGeometryV1 | None = None
+    geometry_binding: CaptureReceiverGeometryBindingV1 | None = None
 
 
 class UnreviewedTestFixtureAuthorityError(ValueError):
@@ -45,6 +51,7 @@ class PinnedCaptureAuthorityResolver:
         reader: StationAuthorityReader,
         *,
         topology: AuthorityFileReference,
+        geometry: AuthorityFileReference | None = None,
         fixtures: tuple[FixtureAuthorityFileReference, ...] = (),
     ) -> None:
         manifests = tuple(item.manifest_digest for item in fixtures)
@@ -52,6 +59,7 @@ class PinnedCaptureAuthorityResolver:
             raise ValueError("fixture authority manifest digests must be unique")
         self._reader = reader
         self._topology = topology
+        self._geometry = geometry
         self._fixtures = {item.manifest_digest: item for item in fixtures}
 
     def resolve(
@@ -81,11 +89,25 @@ class PinnedCaptureAuthorityResolver:
             self._topology.relative_path,
             expected_file_digest=self._topology.file_digest,
         )
+        path_authority = CaptureHardwareBindingV1.create(
+            manifest,
+            observed_manifest_file_digest=observed_manifest_file_digest,
+            topology=topology,
+        )
+        geometry = None
+        geometry_binding = None
+        if self._geometry is not None:
+            geometry = self._reader.read_geometry(
+                self._geometry.relative_path,
+                expected_file_digest=self._geometry.file_digest,
+            )
+            geometry_binding = CaptureReceiverGeometryBindingV1.create(
+                path_authority,
+                geometry=geometry,
+            )
         return ResolvedCaptureAuthority(
             topology=topology,
-            path_authority=CaptureHardwareBindingV1.create(
-                manifest,
-                observed_manifest_file_digest=observed_manifest_file_digest,
-                topology=topology,
-            ),
+            path_authority=path_authority,
+            geometry=geometry,
+            geometry_binding=geometry_binding,
         )

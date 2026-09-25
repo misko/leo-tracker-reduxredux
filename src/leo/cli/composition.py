@@ -198,6 +198,8 @@ class CliSettings:
     station_authority_root: Path | None = None
     station_topology_relative_path: str | None = None
     station_topology_file_digest: str | None = None
+    station_geometry_relative_path: str | None = None
+    station_geometry_file_digest: str | None = None
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
     scanner_enabled: bool = False
     scanner_radio_id: str | None = None
@@ -304,6 +306,8 @@ class CliSettings:
                 ),
                 station_topology_relative_path=values.get("LEO_STATION_TOPOLOGY_RELATIVE_PATH"),
                 station_topology_file_digest=values.get("LEO_STATION_TOPOLOGY_FILE_DIGEST"),
+                station_geometry_relative_path=values.get("LEO_STATION_GEOMETRY_RELATIVE_PATH"),
+                station_geometry_file_digest=values.get("LEO_STATION_GEOMETRY_FILE_DIGEST"),
                 fixture_authorities=fixture_authorities,
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
@@ -1382,6 +1386,12 @@ class LocalAcquisitionBackend:
                             self.settings.station_topology_relative_path
                         ),
                         station_topology_file_digest=(self.settings.station_topology_file_digest),
+                        station_geometry_relative_path=(
+                            self.settings.station_geometry_relative_path
+                        ),
+                        station_geometry_file_digest=(
+                            self.settings.station_geometry_file_digest
+                        ),
                         fixture_authorities=self.settings.fixture_authorities,
                     )
                 )

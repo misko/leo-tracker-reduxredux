@@ -1,0 +1,133 @@
+{
+  "schema": "ds1-association-stability-diagnostic/v1",
+  "title": "DS1 iteration-2 six-scan global-time association stability",
+  "analysis_kind": "read_only_comparison_of_sealed_artifacts",
+  "selection_or_inference_performed": false,
+  "reference_coordinate_used_for_selection_or_inference": false,
+  "scope": {
+    "method": "global_time",
+    "view": "prefix-6",
+    "scan_count": 6,
+    "final_geographic_grid_step_km": 0.390625,
+    "comparison_unit": "matched Sacramento/Reno-prior final results for the same six scans"
+  },
+  "sealed_inputs": {
+    "iteration2_manifest": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_iteration2/iteration2-inference-manifest.json",
+      "sha256": "082fa1140ee0a5ebc0ddecb3554fe005904ae9d0bce50b341f28bf818677997e"
+    },
+    "post_seal_evaluation": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_iteration2/post-seal-evaluation/iteration2-post-seal-evaluation.json",
+      "sha256": "9dff0ecc4c2cacc082e0fe9c67be09d642495f9404509871dd7058deadfd68de",
+      "role": "post-seal descriptive error only"
+    },
+    "result_artifact_root": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full/artifacts/iteration2/global_time"
+  },
+  "identity_definition": "(session_id, track_id, candidate_id); candidate_id is also compared separately as a catalogue-identity set",
+  "six_scan_prior_pairs": [
+    {
+      "group_id": "20260921_00",
+      "nearby_final_point_separation_km": 0.116451124538,
+      "within_final_grid_step": true,
+      "shared_global_tau_s": -1.25,
+      "reno": {
+        "artifact_sha256": "8e712856fa11e0e29983ff268da508c362bc07da93aca0b28dd4a8164a513662",
+        "final_position": {"latitude_deg": 37.902943633124, "longitude_deg": -122.494802726702},
+        "rf_selection_value": 0.130330250379,
+        "post_seal_reference_error_km": 6.048176583445,
+        "assignment_count": 476,
+        "observation_count": 8285,
+        "unique_candidate_count": 109
+      },
+      "sacramento": {
+        "artifact_sha256": "15ec0a302c368694b0c6d7c9486479f23757e045a7bb832701bf8e8d1ed2f3f6",
+        "final_position": {"latitude_deg": 37.902859866579, "longitude_deg": -122.496125721828},
+        "rf_selection_value": 0.130331298209,
+        "post_seal_reference_error_km": 6.055478681617,
+        "assignment_count": 476,
+        "observation_count": 8285,
+        "unique_candidate_count": 109
+      },
+      "association_overlap": {
+        "exact_track_candidate_matches": 475,
+        "assignment_jaccard": 0.995807127883,
+        "matched_observations": 8271,
+        "matched_observation_fraction_per_arm": 0.998309595655,
+        "common_tracks": 476,
+        "tracks_with_changed_candidate": 1,
+        "candidate_set_intersection": 109,
+        "candidate_set_jaccard": 1.0,
+        "changed_track": {
+          "session_id": "scan-hop-85afa91453f8847b",
+          "track_id": "sha256:ef120a41e59c11412c4edd264118b45ec43cd2b61ed1c1de4fc6ef112dd17be5",
+          "reno_candidate_id": "66257",
+          "sacramento_candidate_id": "59797",
+          "observation_count": 14
+        }
+      },
+      "finding": "The approximately 6.05 km post-seal error remains at two final points 116 m apart with the same candidate set and 99.831% common observation weight."
+    },
+    {
+      "group_id": "20260921_16",
+      "nearby_final_point_separation_km": 0.092261810639,
+      "within_final_grid_step": true,
+      "shared_global_tau_s": -1.25,
+      "reno": {
+        "artifact_sha256": "ea5ee9da64bed06dea1e7325119ed8e6394845ae91d9933500bc79e35e3c972f",
+        "final_position": {"latitude_deg": 37.857342367674, "longitude_deg": -122.468393880821},
+        "rf_selection_value": 0.140465227147,
+        "post_seal_reference_error_km": 1.774902610011,
+        "assignment_count": 298,
+        "observation_count": 9686,
+        "unique_candidate_count": 131
+      },
+      "sacramento": {
+        "artifact_sha256": "29cc4fe0147b82de5a064edec084c71985b2548ed987fbe28d511fe9b6ed5040",
+        "final_position": {"latitude_deg": 37.857189244044, "longitude_deg": -122.46942672975},
+        "rf_selection_value": 0.140461546845,
+        "post_seal_reference_error_km": 1.688931086607,
+        "assignment_count": 298,
+        "observation_count": 9686,
+        "unique_candidate_count": 131
+      },
+      "association_overlap": {
+        "exact_track_candidate_matches": 298,
+        "assignment_jaccard": 1.0,
+        "matched_observations": 9686,
+        "matched_observation_fraction_per_arm": 1.0,
+        "common_tracks": 298,
+        "tracks_with_changed_candidate": 0,
+        "candidate_set_intersection": 131,
+        "candidate_set_jaccard": 1.0
+      },
+      "finding": "The 1.69–1.77 km post-seal error remains at two final points 92 m apart with an identical selected association map."
+    }
+  ],
+  "controls_one_scan": [
+    {
+      "group_id": "20260921_00",
+      "nearby_final_point_separation_km": 0.206893095774,
+      "assignment_jaccard": 1.0,
+      "exact_track_candidate_matches": 93,
+      "matched_observation_fraction_per_arm": 1.0
+    },
+    {
+      "group_id": "20260921_16",
+      "nearby_final_point_separation_km": 0.274450333071,
+      "assignment_jaccard": 1.0,
+      "exact_track_candidate_matches": 50,
+      "matched_observation_fraction_per_arm": 1.0
+    }
+  ],
+  "limits": {
+    "same_group_neighbour_definition": "The compared final coordinates come from independently seeded local grids, so they are geographically nearby finalists rather than guaranteed nodes of one common lattice.",
+    "within_run_neighbour_associations_persisted": false,
+    "reason": "Each artifact's geographic_trace contains 121 position/objective records but no selected association map for non-winning grid points.",
+    "cross_group_identity_comparison": "Not applicable: the two six-scan groups contain different scan sessions and have no shared track identities."
+  },
+  "conclusion": {
+    "identity_switching_is_primary_explanation_for_remaining_bias": false,
+    "evidence": "Both six-scan prior pairs converge inside one final grid step with a common global tau. The roughly 6 km pair is 99.831% identical by selected-observation count and has the same 109-candidate set; the roughly 1.7 km pair is exactly identical. The residual is therefore association-conditional for these paired prior perturbations.",
+    "recommended_next_iteration": "Run a bounded, RF-only association-frozen profile at global_tau_s=-1.25: use the 475 unanimous mappings for group 20260921_00 and the 298 unanimous mappings for group 20260921_16, score a 3-by-3 grid centered on each paired-prior consensus at plus/minus one 0.390625 km cell in north/east, and persist the association map and objective at every point. Record the one excluded/reconciled 20260921_00 track explicitly. Do not use the reference coordinate to select any point."
+  }
+}

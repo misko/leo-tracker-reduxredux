@@ -550,6 +550,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--minimum-glrt64-margin", type=float, default=0.05)
     parser.add_argument("--maximum-model-error-hz", type=float, default=2_500.0)
     parser.add_argument("--accepted-stride", type=int, default=8)
+    parser.add_argument(
+        "--dense-only",
+        action="store_true",
+        help="emit only wide dense-frame evidence and its zoomed-out probe view",
+    )
     return parser.parse_args()
 
 
@@ -4534,6 +4539,191 @@ def _serializable_dense_tracking(detail: DenseTrackingDetail) -> dict[str, Any]:
     }
 
 
+def _plot_wide_dense_probe_view(
+    *,
+    scan: dict[str, Any],
+    trajectory: FrozenTrajectory,
+    locked_windows: tuple[SelectedWindow, ...],
+    dense_tracking: DenseTrackingDetail,
+    target_limits_s: tuple[float, float],
+    destination: Path,
+) -> None:
+    """Render the full recording, target trajectory, frame CFOs, and probe support."""
+
+    detections = scan["detections"]
+    capture_limits = (
+        float(detections[0]["time_s"]),
+        float(detections[-1]["time_s"]),
+    )
+    candidate_times = []
+    candidate_cfo = []
+    for detection in detections:
+        for candidate in detection["candidates"]:
+            score = _glrt64_score(candidate)
+            if float(score["margin"]) < 0.0:
+                continue
+            candidate_times.append(float(detection["time_s"]))
+            candidate_cfo.append(float(score["tracking_cfo_hz"]) / 1_000)
+
+    selected_times = np.asarray([item.detection_time_s for item in locked_windows])
+    selected_cfo = np.asarray([item.glrt64_cfo_hz for item in locked_windows])
+    selected_residual = selected_cfo - np.asarray(trajectory.frequency_hz(selected_times))
+    frames = dense_tracking.frames
+    frame_times = np.asarray([item.reference_time_s for item in frames])
+    frame_residual = np.asarray(
+        [item.absolute_cfo_measurement_hz - item.model_cfo_hz for item in frames]
+    )
+    frame_direct_quality = np.asarray(
+        [item.exact_coherence >= 0.02 and item.coherence_margin >= 0.0 for item in frames]
+    )
+    frame_updates = np.asarray([item.frequency_update_applied for item in frames])
+
+    probe_times = []
+    probe_quality_fraction = []
+    probe_frame_count = []
+    for window in locked_windows:
+        members = [item for item in frames if item.source_window_index == window.index]
+        if not members:
+            continue
+        probe_times.append(float(np.mean([item.reference_time_s for item in members])))
+        probe_quality_fraction.append(
+            float(
+                np.mean(
+                    [
+                        item.exact_coherence >= 0.02 and item.coherence_margin >= 0.0
+                        for item in members
+                    ]
+                )
+            )
+        )
+        probe_frame_count.append(len(members))
+
+    figure, axes = plt.subplots(4, 1, figsize=(16, 13.5), constrained_layout=True)
+    figure.suptitle(
+        "Zoomed-out frame-probe inventory · cap-20260821T140820-470384cc9284",
+        fontsize=20,
+        fontweight="bold",
+        color=INK,
+    )
+    axes[0].scatter(
+        candidate_times,
+        candidate_cfo,
+        s=5,
+        color=GRAY,
+        alpha=0.15,
+        edgecolors="none",
+        label="non-negative-margin GLRT64 candidates",
+    )
+    trajectory_times = np.linspace(*target_limits_s, 500)
+    axes[0].plot(
+        trajectory_times,
+        np.asarray(trajectory.frequency_hz(trajectory_times)) / 1_000,
+        color=AMBER,
+        linewidth=2.5,
+        label="target frozen trajectory",
+    )
+    axes[0].scatter(
+        selected_times,
+        selected_cfo / 1_000,
+        s=12,
+        color=BLUE,
+        alpha=0.8,
+        label=f"eligible source probes ({len(locked_windows)})",
+    )
+    axes[0].set_xlim(*capture_limits)
+    axes[0].set_ylabel("baseband GLRT64 CFO (kHz)")
+    axes[0].set_title("A · Complete 60 s recording and the selected 9.575 s trajectory", loc="left")
+    axes[0].legend(loc="lower left", ncol=3, frameon=True, fontsize=9)
+
+    current_limits = (33.7010104, 37.7196772)
+    axes[1].axvspan(
+        *current_limits,
+        color=GREEN,
+        alpha=0.10,
+        label="previous 4.019 s dense analysis",
+    )
+    axes[1].scatter(
+        selected_times,
+        selected_residual,
+        s=16,
+        color=BLUE,
+        alpha=0.75,
+        edgecolors="none",
+        label="selected source-probe GLRT64 CFO",
+    )
+    axes[1].axhline(0.0, color=INK, linewidth=1.0)
+    axes[1].set_xlim(*target_limits_s)
+    axes[1].set_ylabel("GLRT64 CFO − trajectory (Hz)")
+    axes[1].set_title("B · Source probes across the complete target trajectory", loc="left")
+    axes[1].legend(loc="upper left", ncol=2, frameon=True, fontsize=9)
+
+    axes[2].scatter(
+        frame_times[~frame_direct_quality],
+        frame_residual[~frame_direct_quality],
+        s=7,
+        color="#cbd3d8",
+        alpha=0.18,
+        edgecolors="none",
+        label="fails direct frame-quality gate",
+    )
+    gray = frame_direct_quality & ~frame_updates
+    blue = frame_direct_quality & frame_updates
+    axes[2].scatter(
+        frame_times[gray],
+        frame_residual[gray],
+        s=8,
+        color=GRAY,
+        alpha=0.35,
+        edgecolors="none",
+        label="direct-quality; online CFO gate rejected",
+    )
+    axes[2].scatter(
+        frame_times[blue],
+        frame_residual[blue],
+        s=9,
+        color=BLUE,
+        alpha=0.72,
+        edgecolors="none",
+        label="direct-quality; online CFO update accepted",
+    )
+    axes[2].axhline(0.0, color=INK, linewidth=1.0)
+    axes[2].set_xlim(*target_limits_s)
+    axes[2].set_ylabel("1.333 ms frame CFO − trajectory (Hz)")
+    axes[2].set_title(
+        f"C · Full dense extraction: {len(frames)} frames from {len(locked_windows)} probes",
+        loc="left",
+    )
+    axes[2].legend(loc="upper left", ncol=3, frameon=True, fontsize=9)
+
+    sizes = 12 + 1.5 * np.asarray(probe_frame_count)
+    scatter = axes[3].scatter(
+        probe_times,
+        probe_quality_fraction,
+        s=sizes,
+        c=probe_quality_fraction,
+        cmap="viridis",
+        vmin=0.0,
+        vmax=1.0,
+        alpha=0.85,
+        edgecolors="none",
+    )
+    axes[3].set_xlim(*target_limits_s)
+    axes[3].set_ylim(-0.04, 1.04)
+    axes[3].set_ylabel("direct-quality frame fraction")
+    axes[3].set_xlabel("capture time (s)")
+    axes[3].set_title(
+        "D · One marker per original probe; marker area follows exposed frame count",
+        loc="left",
+    )
+    figure.colorbar(scatter, ax=axes[3], label="quality fraction", pad=0.01)
+    for axis in axes:
+        axis.grid(True, alpha=0.18, linewidth=0.8)
+        axis.spines[["top", "right"]].set_visible(False)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(destination, dpi=180)
+    plt.close(figure)
+
+
 def _serializable_phase_lock_intervals(
     intervals: tuple[PhaseLockInterval, ...],
 ) -> dict[str, Any]:
@@ -4856,14 +5046,18 @@ def main() -> int:
     finally:
         if store is not None:
             store.close()
-    details = _analyze_windows(
-        iq,
-        raw_sample_start=raw_start,
-        sample_rate_hz=sample_rate_hz,
-        probe_samples=probe_samples,
-        edge=StarlinkEdge(args.edge),
-        selected=selected,
-        trajectory=trajectory,
+    details = (
+        ()
+        if args.dense_only
+        else _analyze_windows(
+            iq,
+            raw_sample_start=raw_start,
+            sample_rate_hz=sample_rate_hz,
+            probe_samples=probe_samples,
+            edge=StarlinkEdge(args.edge),
+            selected=selected,
+            trajectory=trajectory,
+        )
     )
     dense_tracking = _analyze_dense_locked_frames(
         iq,
@@ -4879,6 +5073,51 @@ def main() -> int:
             propagate_frequency_uncertainty_to_phase=False,
         ),
     )
+    if args.dense_only:
+        args.output_root.mkdir(parents=True, exist_ok=True)
+        figure_path = args.output_root / "wide-frame-probe-view.png"
+        result_path = args.output_root / "wide-dense-results.json"
+        _plot_wide_dense_probe_view(
+            scan=scan,
+            trajectory=trajectory,
+            locked_windows=all_accepted,
+            dense_tracking=dense_tracking,
+            target_limits_s=(args.start_s, args.end_s),
+            destination=figure_path,
+        )
+        dense_document = {
+            "schema_version": 1,
+            "algorithm": "wide-dense-frame-probe-extraction-v1",
+            "input": {
+                "session_id": args.session_id,
+                "analysis_scope": ANALYSIS_SCOPE,
+                "stream_id": args.stream,
+                "receiver_id": args.receiver,
+                "edge": args.edge,
+                "trajectory_id": trajectory.trajectory_id,
+                "trajectory_branch_id": trajectory.branch_id,
+            },
+            "selection": {
+                "start_s": args.start_s,
+                "end_s": args.end_s,
+                "minimum_glrt64_margin": args.minimum_glrt64_margin,
+                "maximum_model_error_hz": args.maximum_model_error_hz,
+                "source_window_count": len(all_accepted),
+            },
+            "source_windows": [asdict(item) for item in all_accepted],
+            "dense_tracking": _serializable_dense_tracking(dense_tracking),
+            "figures": {"wide_frame_probe_view": str(figure_path)},
+        }
+        result_path.write_text(
+            json.dumps(dense_document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            json.dumps(
+                {"results": str(result_path), "figure": str(figure_path)}, indent=2
+            )
+        )
+        return 0
     strict_config = PilotPhaseDopplerTrackingConfig(
         minimum_channel_similarity=0.80,
         phase_innovation_gate_rad=0.60,

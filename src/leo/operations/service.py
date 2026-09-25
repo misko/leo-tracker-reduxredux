@@ -434,6 +434,16 @@ class CatalogReconciliationService:
                 allocated_bytes=allocated_bytes(bundle.path),
                 attributes={
                     "reconciled": True,
+                    **(
+                        {}
+                        if resolved_authority is None
+                        or resolved_authority.geometry_binding is None
+                        else {
+                            "receiver_geometry": resolved_authority.geometry_binding.model_dump(
+                                mode="json"
+                            )
+                        }
+                    ),
                     "presentation": {
                         "title": (
                             manifest.capture_plan.profile_revision.profile.description

@@ -1,0 +1,350 @@
+{
+  "scope": "saved_proposals_actual_C_resolve_and_past_support",
+  "rf_samples": 0,
+  "receiver_time": "frozen",
+  "native_tracking_qualified": false,
+  "compile_command": [
+    "cc",
+    "-std=c99",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "-I",
+    "/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/include",
+    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/missed_candidate_bench.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_cpu_coarse.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_cpu_seed.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_worker.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_live_bootstrap.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_iq.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_seed.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_resolver.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_iq_owner.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_recent_iq.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_bootstrap.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_trend.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_schedule.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_tracking_schedule.c",
+    "/home/mouse9911/gits/plutosdr-fw-radio20-tracking/tools/glrt_native_solver.c",
+    "-L",
+    "/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/lib",
+    "-Wl,-rpath,/srv/bulk/leo/glrt-deployment-20260909/fftw-host-v1/install/lib",
+    "-lfftw3",
+    "-lm",
+    "-o",
+    "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/missed-candidate-replay-v1/bench"
+  ],
+  "source_sha256": {
+    "glrt_cpu_coarse.c": "432cba4c40b03e4fdd42b7612c4be9e659fba4b72b59a0e2dbd83ba2e8cf3c8a",
+    "glrt_cpu_seed.c": "b05e6e7f7d511024724815972c10ac5dd9abbf1382d4dc01b9c84bd8f9a76dd9",
+    "glrt_tracking_worker.c": "d6e1443e650302ea2daff80883de41bff335c1efbd2bd6fac5f0e6e66e39a762",
+    "glrt_tracking_live_bootstrap.c": "4ae0f5dcfc9a1c8af38c98936f96b2d5e4063311ad9b6e765a348815a6d7d1f2",
+    "glrt_tracking_iq.c": "ba13333be6c82f779e85c49fb2e8807f2fd96859221db69fb16399e621c50373",
+    "glrt_tracking_seed.c": "1ccb7c5bafcbbb0beea0c425b6d271d607c5f0ed5f04ed3a134b794aa58f4bd1",
+    "glrt_tracking_resolver.c": "346a40bc7888227c3d5d20f7a0f21f6b20ec4673050c9925628f4642fc325f24",
+    "glrt_tracking_iq_owner.c": "70adae706ab0cdc0e0e0aa6d2d952b6c6233a6973a7bf803f76044bef1e73378",
+    "glrt_tracking_recent_iq.c": "10469858350d20e428858909c5d2831f52f85b37565f225dfd1384a0037e4cce",
+    "glrt_tracking_bootstrap.c": "bb81141a388e4ca5e3401cb8d375b3615ddb9cfa27478add19be7fef020acbc8",
+    "glrt_native_trend.c": "e25ba2452f5a06d98238e985b6140c7628ee2e48b0ff1e8f130da78aa4fa8c60",
+    "glrt_native_schedule.c": "19fb8397898053345c637352ce1381aad93176a2ec6b8c7c6656401b25cb7b1d",
+    "glrt_tracking_schedule.c": "8745c2cf249e21c0af7cc4827a0277c468555f84d339cf154ccde87b8e02aaca",
+    "glrt_native_solver.c": "85e7601311dc5293617940701c5ea015bc6d9490d6941530b8a58534b89a967e",
+    "glrt_cpu_tracking_bench.c": "623866fe5aefe09ced8227465244c4302cb43fbe2801a48e62def75c6fd4e256"
+  },
+  "bench_source_sha256": "afbbc1e67e0bb8f0b418062b66acf514356022625638821f2d14e475335aecf4",
+  "runner_sha256": "dc78958b45616ad7237138028a1fc171fc6dc4a1c5ed9cac8c1cc17315f74694",
+  "binary_sha256": "152eb1ba9d840f21daa06a87cf8d80b294222a198f5714a1dcf7358c1b57654c",
+  "coverage_sha256": "e9ac4a1e2051533b87a8045799d392f0c14c996aecc1e9cd2bf782e126b4ab66",
+  "cases": [
+    {
+      "label": "candidate-0",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 16086000,
+      "input_sha256": "c746767cede46b8ba59d4c5b0653297a963a60c35bb0a711ad31091564c38d5f",
+      "journal_sha256": "ad1fd22f200c6103bb0130f2bdb6eaa75fbc6bbb93a6ff4c29044ffcb7b79323",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 2,
+        "rank_power": 0.03986942254218823,
+        "epoch": 1386
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.04039304646525245
+    },
+    {
+      "label": "candidate-1",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 22414000,
+      "input_sha256": "d1e614340c04aa3957619ad71525a4986f7baf06fc82610f5f78b5b828590b3b",
+      "journal_sha256": "0047b6db95e5433dbfea42a052102c1459574440bf8c3706d1bb76c2089b6555",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 1,
+        "rank_power": 0.03842345211739141,
+        "epoch": 51
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.04008451386315555
+    },
+    {
+      "label": "candidate-2",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 12432000,
+      "input_sha256": "7b5d4f3f3000de91a63179f6528e27f9799ae15a11ce4bda68500194c161399f",
+      "journal_sha256": "92e100b80cd551b7788b81d954c0434111ec0adea0fe853566a1e61f82ee56a2",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 7,
+        "rank_power": 0.03716582668387941,
+        "epoch": 2051
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.03913032790542468
+    },
+    {
+      "label": "candidate-3",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 23282000,
+      "input_sha256": "69cb3f23f5dda134cf68eb09c01e8a507888c09ed5bce3ea0cb1d4e1217ffa2e",
+      "journal_sha256": "7b9a235f0c33c6006b0c46e6593e600ac70c439e0e4049830a9db1d636113092",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 0,
+        "rank_power": 0.03681875573377187,
+        "epoch": 2050
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.038777786537008675
+    },
+    {
+      "label": "candidate-4",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 4984000,
+      "input_sha256": "abb58fad5d17b07714c16b2c617d6a1703db6210d057687be69e2323d7fcb365",
+      "journal_sha256": "16a49576478bd47cf74e63a8b0bd4cbd06b941ce367001a98013ccfaa05556de",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 6,
+        "rank_power": 0.03277763019340449,
+        "epoch": 43
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.037862410402219666
+    },
+    {
+      "label": "candidate-5",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 24332000,
+      "input_sha256": "23373b850efb3e98a9109a32f222b4e07adb11709dbb21ed62bd201f7eb5f412",
+      "journal_sha256": "1ec870f0ad36590ed403c1b4146d8c2e02e1477e8be26557dd94f941592e5ebf",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 6,
+        "rank_power": 0.030752018744961272,
+        "epoch": 1704
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.03076446495867548
+    },
+    {
+      "label": "candidate-6",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 19068000,
+      "input_sha256": "588a6c9ad779638ddea772262d56c72faadfc6a38fdc59000f57cfc390d7b516",
+      "journal_sha256": "b38841db11d5db81058e47a22e89485ae72b60d854feaf5d53e128d3e84a32b8",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 5,
+        "rank_power": 0.02909182324712819,
+        "epoch": 2719
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.03156411413957871
+    },
+    {
+      "label": "candidate-7",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 9758000,
+      "input_sha256": "e787a624b78b22245b03edd29bd61ff2e7d779c09dea2d04abd442accaf7e2d4",
+      "journal_sha256": "5d4bce1618feb83152c97ad8ad56bceb1c66f476254a0758c60e78087e689ef2",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 5,
+        "rank_power": 0.02901128527548089,
+        "epoch": 2716
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.03016116429149214
+    },
+    {
+      "label": "candidate-8",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 11648000,
+      "input_sha256": "a90e0cafeed76d6a74369eb3ae0696052daaadbccbde5a80f3aee1012f4ad091",
+      "journal_sha256": "fb9982187cb0225c1651a336821667a3f17670fe046106ac15f78afa23430dc7",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 0,
+        "rank_power": 0.027803477097304144,
+        "epoch": 2717
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.035810962874409456
+    },
+    {
+      "label": "candidate-9",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/two-frequency-visits60-v3/visit-0/iq.ci16",
+      "source_sha256": "dd4fe4596908272a27070f87c324d5c9db7c30f72b90e6c16b7be5336276e21f",
+      "source_offset": 6202000,
+      "input_sha256": "dae8133af932f1c3c4e144d508a03316ebaa28435893d791c45eaa6ef376c689",
+      "journal_sha256": "c65ae1cf9a433ad0a9d9b7d8f43776dd11833ea56ee0defc9c70b5c2e7ea215c",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 1,
+        "rank_power": 0.027346449468071157,
+        "epoch": 1731
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.027169005124279867
+    },
+    {
+      "label": "positive",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/paced-original-seed-input-v1/positive.ci16",
+      "source_sha256": "af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4",
+      "source_offset": 0,
+      "input_sha256": "616c8e659421a14905b00bf9ce3fca53f7f9b54098e062de79276e755c134b12",
+      "journal_sha256": "006642165a2cd824f2f3ddd64a8cb811d7fae8b214c587a5dd887ce1666f2ad0",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 4,
+        "rank_power": 0.08502534433725949,
+        "epoch": 1218
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": 1,
+        "retained_past": 15,
+        "supported_history": 15,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 15,
+      "max_past_coherence": 0.08722026695038292
+    },
+    {
+      "label": "control",
+      "source_path": "/srv/bulk/leo/glrt-deployment-20260909/radio20-iq-tracking-20260912/paced-original-seed-input-v1/control.ci16",
+      "source_sha256": "5b945b575fbff519de733ded2418b2f82110458ff52237e2a3126d8d7a53d5b9",
+      "source_offset": 1857531,
+      "input_sha256": "6ffef9f64df138af4904586c3cc27d443c9499cfb4897fcaad28577baa34a144",
+      "journal_sha256": "02ff23b566ea36b99192a781d1d352cd105e936d1d5f963d96dd4d0afd90992c",
+      "proposal": {
+        "kind": "proposal",
+        "selected": 5,
+        "rank_power": 0.004752979431059526,
+        "epoch": 2433
+      },
+      "terminal": {
+        "kind": "terminal",
+        "worker_result": -6,
+        "retained_past": 8,
+        "supported_history": 0,
+        "waits": 0,
+        "receiver_time": "frozen"
+      },
+      "accepted": 0,
+      "max_past_coherence": 0.004871821163715293
+    }
+  ]
+}

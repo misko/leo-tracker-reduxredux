@@ -1,0 +1,1540 @@
+# Radio .20: saved-IQ repetition and acquisition coverage
+
+Offline analysis finds intermittent stronger proposals in the saved 60-MS/s
+CH3 capture that its six live scans missed. It does not establish a missed
+valid acquisition. Recent 30-MS/s visits have much weaker frame-period
+repetition, close to the saved control. No new RF was collected, and no
+runtime gate or firmware changed.
+
+Follow-up through the actual C worker now rejects all ten strongest
+time-separated missed proposals: **0 of 80 past measurements accepted**.
+Independent refinement/moment review passes. Thus wider scan coverage alone
+does not produce a valid handoff from these tested proposals.
+
+## Spectral and repetition comparison
+
+All inputs are the exported 2.5-MS/s complex IQ, independently hash-checked
+against the capture receipts or frozen replay input. The analysis uses
+4,096-sample Hann-windowed spectra (610.3515625-Hz bins), averaged in
+131,072-sample blocks. Each incomplete final analysis block is explicitly
+excluded. Parseval energy checks pass; a generated tone has unit normalized
+lag correlation and zero input gives zero.
+
+The repetition statistic is squared normalized complex correlation at a
+10,000-sample lag: 4 ms, or three nominal 750-Hz frames. Nearby 9,000- and
+11,000-sample lags provide descriptive comparisons. It is not a calibrated
+detector, false-alarm test or RF identity measurement.
+
+| Saved input | Median 4-ms lag power | Ratio to mean of nearby-lag medians |
+| --- | ---: | ---: |
+| 30-MS/s CH1–CH4 visits | 0.0000072–0.0000079 | 1.16–1.22 |
+| 60-MS/s CH3 visit | 0.0000550 | 8.77 |
+| 60-MS/s CH4 visit | 0.0000092 | 1.42 |
+| Saved positive replay input | 0.0001491 | 18.95 |
+| Saved control replay input | 0.0000082 | 1.90 |
+
+The normalized spectral shapes are broadly similar; spectral flatness ranges
+from 0.792 to 0.819. These are different recordings, not a controlled 30-versus-
+60-MS/s experiment. The result cannot attribute the difference to sample rate,
+antenna pointing, LNB power or a particular transmitter. The control is a
+development input, not independently established ground-truth noise.
+
+The [spectral/repetition figure](figures/2026_09_13_radio20_saved_iq_coverage/saved-visit-spectra-v2.svg)
+and [numeric results](figures/2026_09_13_radio20_saved_iq_coverage/saved-visit-spectra-v2.json)
+retain the per-input quantities and excluded tails.
+
+## Replaying acquisition windows
+
+The unchanged C coarse scanner was compiled for host replay. Its eight
+proposals were ranked with the same full-pilot FFT power calculation, using
+an independent NumPy FFT. All 18 original windows across the three replayed
+physical visits reproduce their complete integer grids exactly and reproduce
+their retained ranking scores within numerical tolerance.
+
+| Input | Replayed windows | Maximum full-pilot rank power |
+| --- | ---: | ---: |
+| 60-MS/s CH3, six original live windows | 6 | 0.00389 |
+| 60-MS/s CH3, spaced coverage plus originals | 54 | 0.02590 |
+| 60-MS/s CH3, consecutive 14,000-sample windows plus originals | 1,803 | 0.03987 |
+| 30-MS/s CH3, spaced coverage plus originals | 54 | 0.00550 |
+| 30-MS/s CH4, spaced coverage plus originals | 54 | 0.00518 |
+| Saved positive, spaced windows | 48 | 0.08503 |
+| Saved control, spaced windows | 48 | 0.00475 |
+
+The denser 60-MS/s replay takes 44.1 seconds on the host, including its two
+controls. Its strongest proposal is at capture offset 6.4344 seconds, in a
+window the live scanner did not examine. Stronger proposals also occur in
+other seconds; this is not solely an event after the live worker finished.
+Consecutive input windows do not enumerate every possible full-pilot start:
+the unchanged scanner still selects only eight coarse proposals per window.
+
+Rank power alone does not prove the repeated-pilot support, fresh handoff or
+native feedback required for tracking. The replay therefore qualifies no new
+acquisition. It shows that sparse scan timing can hide stronger proposals and
+motivates evaluating temporal coverage and proposal selection on this retained
+capture before changing the ARM scan policy. It supplies no justification for
+lowering native or startup acceptance gates. The newer 30-MS/s CH3/CH4 windows
+remain much closer to the control even with wider temporal coverage.
+
+The [spaced replay](figures/2026_09_13_radio20_saved_iq_coverage/saved-visit-coverage-v1.json)
+and [dense replay](figures/2026_09_13_radio20_saved_iq_coverage/saved-visit-dense-coverage-v1.json)
+include all window offsets, scores, source/input/reference hashes and runtime.
+Analysis sources accompany them. The physical state remains the
+[last verified 30-MS/s CH4-upper visit](2026_09_13_radio20_clean_loss_visits.md),
+TX disabled, serial `1040005e0b100007100010000bf33a5d4d`. Sustained tracking and
+physical clean-loss continuation remain unfinished.
+
+## Do the stronger missed proposals support acquisition?
+
+The follow-up selects the ten highest-ranked proposals separated by at least
+500,000 samples (200 ms), each with enough retained data for a 447,851-sample
+replay. Each exact source cut is hash-checked. The unchanged C coarse scanner,
+full-pilot ranking, resolver, startup carrier prediction and catch-up worker
+run against that cut. The replay reproduces the previously computed ranking
+scores, then evaluates the actual repeated-pilot acceptance conditions.
+
+| Replay group | Accepted past measurements | Maximum past coherence | C worker outcome |
+| --- | ---: | ---: | --- |
+| Ten strongest spaced 60-MS/s CH3 proposals | 0 / 80 | 0.0403930 | Insufficient supported history in every case |
+| Saved positive input | 15 / 15 | 0.0872203 | Ready proposal with 15 supported observations |
+| Saved control input | 0 / 8 | 0.0048718 | Insufficient supported history |
+
+All 80 candidate measurements fail the existing 0.05 coherence requirement:
+57 fail coherence alone and 23 additionally fail local correction bounds.
+Independent NumPy resolver and dense-fit calculations verify 204 timing/CFO
+hypotheses and 103 moment/fit records across the twelve cases. The reviewer
+checks exact original-IQ cuts, moment words, coherence, CFO, rejection bits
+and causal startup forecasts; six deliberate coherence/CFO mutations are
+rejected.
+
+Receiver time is a frozen retained snapshot. The positive's ready proposal
+therefore demonstrates the offline software path, not a fresh ARM handoff or
+physical native tracking. The source window is deliberately rebased to zero
+for replay, with its original file offset retained separately. No RF or native
+measurement is submitted.
+
+This narrows the next step: improving proposal coverage remains useful, but
+these tested missed proposals also lack per-pilot support under the current
+policy. They cannot qualify clean-loss continuation or sustained tracking.
+Any proposed integration across multiple pilots would need separate evidence
+for its acceptance rule and resulting timing/carrier accuracy; this replay
+does not authorize weakening the existing gates.
+
+The [C replay result](figures/2026_09_13_radio20_saved_iq_coverage/missed-candidates/result.json),
+[independent review](figures/2026_09_13_radio20_saved_iq_coverage/missed-candidates/independent-review.json)
+and twelve retained worker journals are accompanied by the benchmark, runner
+and review source. Original IQ cuts remain in the local evidence directory.
+
+## Can sparse pilots support coherent integration?
+
+Two offline diagnostics fit the first four retained pilot measurements and
+predict the next four without fitting to their phase or frequency. These are
+frames 0, 9, 18, 27, 36, 45, 54 and 63: measurements are approximately 12 ms
+apart, spanning 84 ms, rather than adjacent 1.333-ms frames. All IQ is the
+existing 2.5-MS/s coarse stream; no new RF is collected.
+
+The first model removes the resolver CFO, fits a linear residual phase to the
+training pilots and extrapolates it. The second fits a linear CFO drift from
+the first four independently checked C estimates, integrates that predicted
+frequency across the IQ samples, then fits the remaining training phase.
+The second model uses estimates even when the C worker rejects them; this is
+an exploratory diagnostic, not an authorized feedback or acceptance path.
+
+| Saved input | Constant-CFO phase RMS / gain | Drift-model phase RMS / gain |
+| --- | ---: | ---: |
+| Strongest missed proposal | 2.076 rad / 0.063 | 1.374 rad / 1.146 |
+| Positive | 2.299 rad / 1.236 | 1.553 rad / 1.978 |
+| Control | 2.073 rad / 0.456 | 1.870 rad / 0.731 |
+
+Phase RMS is the circular prediction error on the four held-out measurements.
+Gain is `abs(sum(corrected amplitudes))**2 / sum(abs(amplitudes)**2)`, with a
+maximum of four. Gain alone can hide a common phase prediction error and is
+not a calibrated detection statistic. These twelve selected cuts do not
+establish a false-alarm distribution or general sensitivity improvement.
+
+The positive's first four local CFO estimates decline from 471,921 to 471,780
+Hz; their fitted drift is about -3,824 Hz/s. The drift model improves its phase
+prediction, but its held-out error remains substantial. Consequently neither
+model establishes reliable phase prediction even for the saved positive.
+This result cannot rule out coherent integration: sparse phase sampling has
+frequency ambiguity in approximately 83.33-Hz increments, the linear drift
+forecast can be inaccurate, and fractional reference timing and inter-frame
+phase behavior still need examination. No specific cause is established here.
+
+Before changing the tracker, the next bounded offline experiment should
+inspect adjacent pilots on the positive and control, retaining exact timing
+and reference-phase conventions. Any combined-pilot detector would then need
+held-out timing/CFO checks and false-alarm calibration that includes its search
+and selection process. Existing acquisition and native gates remain unchanged;
+sustained FPGA tracking is still unqualified.
+
+The [constant-CFO result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heldout-pilot-phase-v1.json)
+and [drift result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heldout-pilot-drift-v1.json)
+retain all complex correlations, per-pilot powers, source coordinates, phase
+errors and provenance hashes. Both diagnostic sources accompany the results.
+The first checks ideal phase prediction and cancellation; the second checks
+an ideal chirp at the actual 12-ms cadence and verifies that changing held-out
+CFO values cannot change the trained frequency model. These synthetic checks
+do not constitute an independent numerical review of the physical phase model.
+
+## Adjacent pilots expose a timing-model limitation
+
+A follow-up examines frames 0 through 63 in three existing 2.5-MS/s input
+cuts. The first 32 frames train a linear carrier model and residual phase;
+the next 32 are held out. The initial timing schedule uses the resolved first
+start, the C scheduler's Q16 period and quarter-sample rounding. Per-pilot
+frequency searches cover resolver CFO ±1,000 Hz on a 5-Hz grid. These searched
+peak powers are diagnostic statistics, not the C worker's acceptance results.
+
+The fixed timing schedule gives median searched power 0.02764 on the positive,
+versus 0.03719 on the strongest weak candidate and 0.00076 on the control.
+That unexpected positive result motivates a separate ±2-sample timing search,
+in quarter-sample steps, for each pilot.
+
+| Input | Median power after local timing search | Timing-search boundary hits / 64 | Held-out power using training-only timing/carrier forecasts |
+| --- | ---: | ---: | ---: |
+| Strongest missed proposal | 0.03737 | 0 | 0.03586 |
+| Positive | 0.07743 | 4 | 0.03459 |
+| Control | 0.00148 | 10 | 0.00020 |
+
+The local timing search is fitted separately on every frame and therefore is
+an in-sample diagnostic, including on the held-out half. Its results on that
+half never train the forecast: only the first 32 local positions and CFO
+estimates fit the timing and carrier models used for the final column.
+The rise in the positive's local power shows that fixed timing alignment
+explains much of its apparent correlation loss. Unweighted forecasts still
+perform poorly, with several training measurements weak or at the timing
+search boundary. This experiment does not establish the cause of those weak
+frames, nor prove that a robust fit will fix them.
+
+Held-out phase RMS with the timing/carrier forecast remains 1.280 radians for
+the weak proposal, 1.784 for the positive and 1.944 for the control. Coherent
+gain is respectively 5.479, 0.074 and 5.439 out of a maximum of 32. A gain
+number alone clearly supplies no defensible acquisition rule here.
+
+The next implementation question is how actual C timing/CFO validity checks
+behave at adjacent cadence, and whether excluding invalid measurements gives
+a useful causal forecast. Coherent integration remains an unqualified research
+option. No gate, ARM runtime or FPGA image changes in this experiment, and no
+RF collection occurs. The previous 30/60-MS/s scan/revisit verification stands;
+sustained native tracking remains incomplete.
+
+The [fixed-timing result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-phase-v1.json)
+and [localization/forecast result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-timing-v1.json)
+include source hashes, all selected jobs, frequencies, powers and complex
+correlations, with their diagnostic sources alongside. Six synthetic checks
+cover chirp fitting, exclusion of held-out CFO, phase prediction, scheduler
+examples and a known frequency peak. An additional
+[18 direct-DFT spot checks](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-pilot-timing-spot-checks-v1.json)
+reproduce selected local peak powers across all three inputs. These checks do
+not independently validate the entire search, the physical model or a
+false-alarm rate.
+
+## Existing C gates recover a useful adjacent-pilot forecast
+
+The next replay runs the unchanged C 2.5-MS/s IQ moment collector and tracking
+solver on the previous diagnostic's 64 localized pilots per input. All
+integer moment words, dense-fit timing/CFO corrections, coherence and rejection
+bits are checked against the independent NumPy calculations. The existing
+0.05 coherence threshold and local correction bounds remain unchanged.
+
+Only measurements accepted by C in frames 0–31 train a linear timing and
+carrier forecast. That forecast is frozen before frames 32–63, which receive
+new C measurements at the predicted quarter-sample positions and CFOs.
+Held-out localization results do not enter the forecast, and held-out
+measurements do not feed back into it.
+
+| Input | Accepted localized measurements | Accepted training measurements | Accepted forecast measurements |
+| --- | ---: | ---: | ---: |
+| Strongest missed proposal | 0 / 64 | 0 / 32 | No forecast authorized by this diagnostic |
+| Positive | 53 / 64 | 26 / 32 | 27 / 32 |
+| Control | 0 / 64 | 0 / 32 | No forecast authorized by this diagnostic |
+
+The positive timing fit advances by 0.01782 coarse samples per frame relative
+to the nominal frame period, about 5.35 ppm. Its fitted CFO changes by
+-4.865 Hz per frame, about -3,649 Hz/s. The five rejected held-out measurements
+are frames 35, 41, 47, 53 and 59: each fails both coherence and local bounds.
+Their periodic spacing is an observation, not an established explanation of
+the transmitted waveform or RF path.
+
+This is materially better than the preceding unweighted fit of every local
+estimate. It provides a reason to pursue validity-filtered adjacent-pilot
+startup before introducing coherent integration or weakening gates. It does
+not yet establish an acquisition algorithm: training positions/CFOs came from
+a relatively broad diagnostic search, the forecast is a Python fit rather
+than the production C trend controller, and neither ARM runtime cost nor a
+fresh native handoff has been measured for this path. The next implementation
+step is to exercise the production trend/catch-up path with these accepted
+adjacent observations and measure its bounded ARM cost.
+
+The [C validity result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-validity-v1.json)
+retains all 224 independently checked moment/fit records and provenance.
+Its [replay source](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/check_adjacent_c_validity.py)
+builds the unchanged collector and solver into a host library. No RF,
+firmware, acceptance gate or production runtime changes occur. Sustained
+30/60-MS/s native tracking remains unqualified.
+
+## Production C feedback sustains the saved positive replay
+
+The production C trend predictor and scheduler now replace the diagnostic
+Python fit. Training still comes from the preceding offline localized
+measurements: all first-32 outcomes, including rejections, enter the C history
+port, which retains 26 accepted positive observations. There is no change to
+production source or acceptance gates.
+
+Both frozen history and causal feedback accept 27/32 measurements in frames
+32–63. Extending the test uses the exact original positive input, SHA-256
+`af991e03e69271c253d2fe6b5aeff110c9da5d5bd6ddda8c6850584f9e97b1c4`,
+with enough retained IQ to test through frame 1799.
+
+| C predictor mode | Measured frames | Accepted measurements | Outcome |
+| --- | --- | ---: | --- |
+| Frozen first-32 history | 32–63 | 27 / 32 | Refuses frame 64 because history is stale |
+| Feedback after each measurement | 32–1799 | 1,367 / 1,768 | Still supported at frame 1799 |
+| Weak candidate or control, either mode | None | 0 | Refuses initial forecast with no supported training history |
+
+The feedback run covers 2.357 seconds of frame intervals. Its longest sequence
+of rejected measurements is four frames; the final measurement passes with
+coherence 0.07728. Each prediction precedes its IQ measurement, and rejected
+estimates enter the existing history API with their rejection bits intact.
+They do not become supported observations. The frozen-history result also
+shows that a predictor cannot continue indefinitely on its training data.
+
+All 1,800 measured records in the extended comparison have exact C integer
+moments and dense-fit corrections/coherence/rejection checked independently.
+C job quantization matches the rational scheduler oracle, and batch prediction
+leaves its input history unchanged. This is coarse 2.5-MS/s saved-IQ feedback,
+not native 30/60-MS/s FPGA feedback, receiver-paced catch-up or a live handoff.
+The diagnostic training search remains outside the production acquisition
+path. ARM execution cost and source-time freshness still require measurement.
+
+The [short C trend replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-trend-v1.json)
+and [extended replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/adjacent-c-trend-long-v1.json)
+retain every measured job, moment word, fit and terminal refusal, with their
+sources alongside. This establishes a useful production-C feedback baseline
+for a bounded ARM replay; it does not yet complete the FPGA tracking goal.
+No RF is collected or firmware changed.
+
+## Actual ARM replay rules out every-frame software measurements
+
+A bounded saved-IQ replay ran on radio `192.168.1.20`, serial
+`1040005e0b100007100010000bf33a5d4d`, with the resident 60-MS/s image.
+The operator acquired both radio leases, attested identity and TX-safe idle
+state, verified staged input/binary hashes, ran the alarm-bounded executable
+and removed its temporary files. Before/after identity, boot, image hashes,
+buffer state and TX-safe state match. No RX buffer or native job is opened.
+
+The executable uses the unchanged C collector, solver, trend and scheduler,
+with the same 32 diagnostic training records and original positive IQ.
+All 1,768 ARM scheduled jobs, rejection decisions and fitted values match the
+independently checked host replay within the review's numerical tolerances.
+Both platforms accept 1,367 measurements.
+
+| Compute metric | Host | Radio ARM |
+| --- | ---: | ---: |
+| Total for 1,768 measurements | 0.386 s | 3.723 s |
+| Mean per measurement | 0.218 ms | 2.106 ms |
+| 99th percentile | 0.274 ms | 2.239 ms |
+| Maximum | 0.440 ms | 2.442 ms |
+| Measurements exceeding the 1.333-ms frame period | 0 | 1,768 |
+
+Timing includes prediction, IQ moment calculation, solve and history update.
+It excludes input loading, output serialization and live capture/DMA costs.
+ARM computation alone consumes 1.579 times the represented source duration.
+This is an unpaced compute benchmark, not a receiver-freshness qualification.
+
+Therefore the current software collector cannot sustain measurements on every
+750-Hz frame on this ARM in the tested build. The result changes the next
+experiment: test less frequent ARM observations for maintained support and
+headroom, while preserving the FPGA path for native per-frame measurements.
+Neither a two-frame cadence nor any broader system throughput is qualified by
+the table alone. Startup localization cost also remains outside this benchmark.
+
+The [ARM operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-bench/operator.json),
+[host/ARM comparison](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-bench/review.json),
+both measurement journals, benchmark, operator, reviewer, training records and
+build hashes accompany this report. ARM binary SHA-256 is
+`991750d4a82262694bcdfa085a4a71fcfee1aef954495a15a6cb028b3f85ae4f`.
+No RF or firmware changes occurred; sustained native tracking remains unfinished.
+
+## Lower-cadence feedback survives every tested two/three-frame alignment
+
+The unchanged C feedback loop was replayed at spacings of 2, 3, 6 and 9 frames,
+testing every starting offset for each spacing. All runs use the same saved
+positive and diagnostic first-32 training history. Testing every offset avoids
+selecting only a favorable alignment with the observed weak frames.
+
+| Spacing | Observation interval | Offsets reaching frame-1800 bound | Accepted / measured, by offset |
+| --- | ---: | ---: | --- |
+| 2 frames | 2.667 ms | 2 / 2 | 680/884; 683/884 |
+| 3 frames | 4.000 ms | 3 / 3 | 272/590; 545/589; 546/589 |
+| 6 frames | 8.000 ms | 3 / 6 | 7/12; 278/295; 274/295; 0/5; 202/228; 270/294 |
+| 9 frames | 12.000 ms | 1 / 9 | 7/13; 121/132; 186/197; 5/11; 138/151; 110/119; 6/13; 115/121; 113/123 |
+
+Rows that do not reach the bound terminate when the C predictor refuses a
+batch. The accepted/measured counts stop at that point. All 5,545 measured
+jobs across 20 runs pass independent dense-fit coherence, timing/CFO and
+rejection-bit checks. The replay uses existing validity gates and retains
+chronological frame numbers when measurements are skipped.
+
+Two- and three-frame spacing therefore merit ARM timing tests. Three-frame
+spacing allows a 4-ms interval, compared with the earlier measured 2.106-ms
+mean software cost, but that comparison is only a planning estimate. The new
+cadences have not yet been timed on ARM, and capture, logging, startup and
+freshness costs remain unqualified. Six- and nine-frame spacing are sensitive
+to starting alignment on this input.
+
+The ARM test attempt was refused by the global radio authority before radio
+contact. At the refusal, PID 879612 was verified live holding the lease for
+another acquisition run on radio `003a`. No lease was bypassed, no RF was
+collected and no firmware or production source changed. The refusal is
+retained separately from the host results.
+
+The [host review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/cadence/host-review.json),
+all 20 host journals, benchmark/reviewer/operator sources, build hashes and
+[admission refusal](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/cadence/arm-admission-refusal.json)
+are retained. This narrows the next hardware benchmark to the two- and
+three-frame schedules; it does not qualify native FPGA tracking.
+
+## Passive observer gains an explicit three-frame option
+
+Firmware worktree commit `8ae289d73` adds the internal
+`glrt_tracking_observer_init_cadence` initializer, accepting three or nine
+frames. The legacy initializer selects nine, so existing live probe callers
+retain their behavior. The cadence is validated at initialization and before
+stepping; source-horizon validation and chronological advancement use the
+selected spacing.
+
+This is the actual passive observer component, including copied-IQ ownership,
+retention before history update, terminal cancellation/deadline/source checks
+and the unchanged solver gates. It still has no native submission or radio
+configuration port. The 200-measurement cap remains: three-frame spacing
+covers about 0.8 seconds, rather than the approximately 2.4 seconds available
+with nine-frame spacing. This option does not silently extend a run's budget.
+
+Validation passes 78 component cases across the legacy nine-frame path and
+explicit three-frame path, including supported measurements, rejected-history
+termination, all reference phases, source failures, deadlines, cancellation
+and retention failures. Unsupported spacings 0, 1, 2, 6 and 10 are rejected.
+All 91 live-probe integration tests pass, and the observer compiles with the
+Cortex-A9 ARM toolchain under warnings-as-errors.
+
+The [implementation patch](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/observer-cadence/implementation.patch)
+and component/integration JUnit results accompany this report. The option is
+not enabled in the live probe and is not deployed. ARM cadence benchmarking
+remains pending: a second admission attempt was refused before radio contact,
+with the new global lease owner PID 913908 verified live. No radio or firmware
+changes were made by these attempts. Native tracking remains incomplete.
+
+## Actual observer replay matches the three-frame feedback baseline
+
+The new cadence option is exercised through the actual passive observer,
+including IQ-owner publication/copy, source/deadline guards, retention callback,
+solver and history update. The same diagnostic training history and saved
+positive are used. Each of the three starting offsets runs to the unchanged
+200-measurement cap and returns DONE.
+
+| Starting offset | Retained measurements | Accepted measurements |
+| --- | ---: | ---: |
+| 0 | 200 | 95 |
+| 1 | 200 | 200 |
+| 2 | 200 | 200 |
+
+All 600 emitted jobs, fit values and rejection decisions exactly match the
+corresponding prefix of the independently reviewed cadence baseline. The
+retention callback completes before history commit. This extends validation
+from a direct trend loop to the actual observer component, but all IQ is
+already retained: it does not test receiver pacing, producer contention or
+native FPGA feedback.
+
+Both host and Cortex-A9 benchmark executables build successfully. The
+[build/replay manifest](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/observer-replay/build.json),
+benchmark source and three journals accompany the report. The first output
+setup attempt encountered a binary/directory name collision before any replay;
+the results use a separate directory. No source IQ was changed.
+
+ARM execution is still pending. Previous lease owner PID 913908 exited, but
+PID 933850 was verified live holding the global lease for another canary run.
+No additional admission was attempted while that owner was confirmed live.
+No radio, live-probe configuration or firmware changes occurred.
+
+## ARM verifies cadence margin and the actual observer
+
+After the global lease became available, the combined operator acquired the
+normal leases and ran five cadence cases plus three actual-observer cases on
+`192.168.1.20`, serial `1040005e0b100007100010000bf33a5d4d`.
+It verified payload hashes, unchanged before/after identity and TX-safe idle
+state, retrieved all results and removed the temporary files. The resident
+60-MS/s image was unchanged; no RX buffer or native job was opened.
+
+| ARM path | Mean computation / observation interval | Maximum measured computation | Result |
+| --- | --- | --- | --- |
+| Two-frame direct trend, both offsets | 2.126 ms / 2.667 ms, about 80% | 2.319 ms | All 1,768 jobs match host |
+| Three-frame direct trend, all offsets | 2.125–2.126 ms / 4 ms, about 53% | 2.350 ms | All 1,768 jobs match host |
+| Actual three-frame observer, all offsets | 0.438–0.439 s / 0.8 s represented time, about 55% | Per-job maximum not retained | All 600 jobs match host; each run reaches DONE |
+
+All 4,136 ARM jobs, rejection decisions and fitted values match the reviewed
+host baselines within numerical tolerances. The actual observer accepts
+95, 200 and 200 measurements for its three offsets, matching the host.
+No direct-trend computation exceeds its observation interval in these runs.
+
+Three-frame spacing has substantially more measured margin than two-frame
+spacing. This supports proceeding to receiver-paced observer testing before
+enabling it in the live probe. The direct timing excludes input loading and
+output serialization; observer timing includes its copy/guards and retention
+callback with buffered output, but neither path includes live capture/DMA
+contention or full production logging. A 53–55% compute ratio does not itself
+prove system throughput or source freshness.
+
+The first review rejected nonempty SSH stderr. Inspection found only the
+same exact OpenSSH key-exchange advisory in each result; the reviewer now
+allows that literal advisory or empty stderr and rejects additional content.
+The original stderr remains in the operator receipt. Numerical and
+acceptance checks were not relaxed.
+
+The [combined operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-cadences/operator.json),
+[comparison and timing review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/arm-cadences/review.json),
+eight journals and operator/reviewer sources accompany this report. The
+three-frame live setting is still disabled. Sustained native FPGA tracking,
+receiver-paced freshness and physical clean-loss continuation remain unfinished.
+
+## Paced ARM observer keeps up with a rolling producer
+
+The next ARM replay publishes saved IQ in 16,384-sample chunks at 2.5 MS/s
+using absolute monotonic deadlines. It preloads 114,688 samples, then feeds
+a 131,072-sample (512-KiB, 52.43-ms) rolling owner buffer. The observer consumes
+three-frame measurements concurrently. The initial diagnostic training is
+already supplied; this is not an acquisition-latency test.
+
+Each retention callback writes and flushes the exact 3,300-sample IQ window
+before returning to the observer's history commit. The producer is joined
+before owner shutdown. The benchmark caps each observer at 200 measurements,
+uses a two-second observer deadline and a 15-second process alarm, and keeps
+the existing source and acceptance guards.
+
+| ARM starting offset | Accepted / retained | Observer elapsed | WAIT calls | Maximum copied source age |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 95 / 200 | 0.802012 s | 1,092 | 19,636 samples / 7.8544 ms |
+| 1 | 200 / 200 | 0.802047 s | 1,133 | 19,652 samples / 7.8608 ms |
+| 2 | 200 / 200 | 0.804474 s | 1,107 | 19,577 samples / 7.8308 ms |
+
+All 600 jobs, fitted values and rejection decisions match the paced host
+baseline. Every byte of the 7,920,000 retained IQ bytes matches the original
+recording at the retained job positions. All three observers reach DONE at
+their cap. The recorded age is published source position minus pilot start
+at IQ copy; it is not a native scheduling deadline or a post-commit latency.
+
+The operator ran on .20, serial `1040005e0b100007100010000bf33a5d4d`,
+under both leases after the other acquisition released ownership. Identity,
+resident 60-MS/s image and TX-safe idle state match before/after; temporary
+files are removed. No RF samples or native jobs were collected.
+
+This validates the actual observer with a paced producer, rolling-buffer
+overwrite and IQ retention on ARM. It still excludes live IIO/DMA behavior,
+simultaneous native-controller load and production storage durability.
+The retention flush is a userspace file flush, not an fsync guarantee.
+A bounded live test needs explicit cadence selection and corresponding
+journal review before the three-frame setting is enabled.
+
+The [paced ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-observer/review.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-observer/operator.json),
+host/ARM journals, build manifest and benchmark/operator/reviewer sources
+accompany this report. Retained IQ stays in the local evidence directory
+with hashes in the receipt. Native FPGA tracking remains unfinished.
+
+## Bounded live profile explicitly selects three-frame observation
+
+Firmware worktree commit `7f6153b85` adds the opt-in
+`1536-selected-observer3` live profile. It retains the existing 1,536-block
+capture cap (10.0663296 seconds at 2.5 MS/s), six acquisition attempts,
+25-second process alarm and 12-second worker budget. Existing profiles still
+select nine-frame observation. The new profile changes only the passive
+observer cadence; it does not authorize native submissions or alter gates.
+
+The observer starts three frames after the imported history's last-seen frame,
+records `frame_spacing` in its internal start journal and advances at that
+spacing. The 200-measurement, source, deadline and join/cleanup limits remain.
+The cadence-aware independent reviewer takes the expected spacing from its
+caller; it does not silently trust a journal's declaration. Missing spacing
+means legacy nine-frame evidence.
+
+Validation passes 114 live-probe tests, including three-frame observer
+operation alongside the simulated native controller at both 30 and 60 MS/s.
+Independent review verifies 1,850 observer moment/dense-fit records across
+22 nonempty fixture cases and rejects 22 deliberate cadence mutations. All
+fixture worker journals, observer journals and retained IQ are copied from
+temporary test directories into durable local evidence with hashes.
+
+The Cortex-A9 executable builds under warnings-as-errors. Binary SHA-256:
+`5a5a44c93d87b04d1613d336da17c40530f054c1e52d06ca74b914a2c4cf59b9`.
+It has not been staged or run on the radio. A serial-bound live operator and
+complete capture/native review still need to bind this exact profile and
+binary before physical validation.
+
+The [implementation patch](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/implementation.patch),
+[test results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/tests.xml),
+[independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3/independent-review.json)
+and reviewer/retention manifest accompany the report. No RF or firmware
+changes occurred. Sustained native FPGA tracking remains unfinished.
+
+## First bounded live observer3 capture: insufficient acquisition support
+
+Firmware worktree commit `eb54683bf` binds operator admission to the explicit
+short profile and disables automatic clean-loss restarts for that profile.
+This closes an inherited selected-IQ behavior that otherwise could open
+additional native episodes despite the short operator's single-episode
+evidence contract. Longer three-frame requests are rejected before radio
+contact; legacy profiles retain their behavior.
+
+The exact Cortex-A9 binary, SHA-256
+`ecc236de41dac2b85c7ed44916bff679ffdda318e680345e907df44720954f29`,
+was staged and executed on .20 / serial
+`1040005e0b100007100010000bf33a5d4d` under both leases. The resident
+60-MS/s image was unchanged. Requested LO was 1,690,312,500 Hz; verified RX LO
+was 1,690,312,498 Hz, with 2.5-MHz bandwidth, manual gain 30 and TX disabled.
+
+| Physical result | Value |
+| --- | ---: |
+| Exported coarse samples / RF duration | 16,878,324 / 6.7513296 s |
+| Returned samples | 16,875,520 |
+| Acquisition attempts | 6 |
+| Accepted historical pilot measurements | 1 / 48 |
+| Maximum historical coherence | 0.0526653 |
+| Native handoffs / measurements | 0 / 0 |
+| Passive observer measurements | 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill interval | 6.667 ms |
+| Retrieved artifact bytes | 2,884,726 |
+
+Independent review passes 219,978 coarse-grid values, 48 proposal ranks,
+102 resolver hypotheses, 48 moment/dense-fit records, startup causality,
+selected-IQ overlap consistency and epoch/source checks. Only selected
+windows are retained; 2,804 exported tail samples were not returned.
+All six workers reject insufficient history. Consequently the observer never
+starts, and this capture does not test simultaneous live native/observer
+processing or establish tracking.
+
+Identity and TX-safe state match before/after; RX settings match the configured
+values and temporary files are removed. The staged executable is not left as
+a running service. This adds one short RF capture, not a firmware deployment.
+
+The first combined host test run had 201 passes and one native-controller
+deadline failure during the 60-MS/s observer-retention fault case. All six
+related cases passed on focused rerun, followed by a complete 202-test pass.
+Both runs are retained; no numerical or deadline gate was loosened to obtain
+the rerun. This remains a host timing sensitivity to watch.
+
+The [physical review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3-physical/review.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-observer3-physical/operator.json),
+capture/worker journals, exact-profile wrapper, reviewer, implementation patch
+and test results accompany the report. The measured limitation is acquisition
+support; sustained 30/60-MS/s FPGA tracking and physical clean-loss continuation
+remain unqualified.
+
+## Latest live failures include predictable alignment drift
+
+An offline diagnostic searches the retained pilot cuts from the first live
+observer3 capture. Since each cut contains only 3,300 IQ samples, every
+hypothesis uses the same central 3,236 observed samples and an in-bounds slice
+of a pinned reference. No missing endpoint IQ is synthesized. The search
+covers ±16 samples in quarter-sample steps and resolver CFO ±1,000 Hz on a
+5-Hz grid. These are searched interior powers, not production C coherence or
+acceptance decisions.
+
+The first two attempts contain substantially more aligned pilot evidence than
+their later original measurements suggest. Frequency search alone does not
+recover it; timing adjustment also matters.
+
+| Attempt | Frame-63 power with fixed timing and frequency search | Frame-63 power with local timing/CFO search | First-four-fit held-out powers, frames 36–63 |
+| --- | ---: | ---: | --- |
+| 1 | 0.0011 | 0.0412 | 0.0422, 0.0381, 0.0384, 0.0341 |
+| 2 | 0.0005 | 0.0479 | 0.0478, 0.0447, 0.0444, 0.0472 |
+
+The held-out experiment fits only the first four diagnostic positions and
+frequencies, then freezes both models. Timing advances approximately 0.01667
+and 0.01944 coarse samples per frame relative to the nominal period
+(approximately 5.0 and 5.83 ppm). Changing the held-out localization values
+does not change either trained model. These fits use measurements rejected
+by the production worker and have no feedback authority.
+
+Attempts 3–6 remain near zero on held-out prediction. Three extrapolated
+reference positions exceed the available reference extent and are reported
+as unavailable rather than filled or scored. All 48 selected search peak
+powers reproduce with direct complex-dot calculations independent of the
+zoom-FFT evaluation.
+
+This establishes a timing/carrier prediction limitation in the first two
+attempts, rather than a simple disappearance of all matched evidence. However,
+most re-aligned diagnostic powers remain below 0.05, and their cropped/searched
+statistic is not the production gate. No additional acquisition is qualified,
+no acceptance threshold changes, and no new RF is collected. Another identical
+capture is not justified by this result alone. Any approach that combines
+evidence across weak pilots needs separate detection and false-alarm
+calibration before it can authorize a live handoff or native feedback.
+
+The [alignment search](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-alignment/alignment.json),
+[frozen held-out forecast](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-alignment/forecast.json)
+and both diagnostic sources retain all scores, source hashes, timing offsets
+and frequency estimates. Sustained native FPGA tracking remains unfinished.
+
+## Combined-pilot control replay exposes proposal-recall losses
+
+An exploratory score averages four normalized interior pilot powers, each
+measured using timing/CFO models fitted only to the preceding four pilots.
+It requires no inter-pilot phase alignment. Thirteen non-overlapping
+447,851-sample cuts are taken from each saved positive and control recording.
+Every cut first runs the actual C coarse selection, full-pilot ranking and
+resolver. Diagnostic training searches then use frames 0, 9, 18 and 27;
+scoring uses frames 36, 45, 54 and 63 without a held-out search.
+
+| Saved input | Evaluated scores | Reference-extent abstentions | Observed mean-power scores |
+| --- | ---: | ---: | --- |
+| Positive recording | 11 / 13 | 2 | First cut 0.076835; other evaluated cuts 0.000127–0.000502 |
+| Control recording | 12 / 13 | 1 | 0.000114–0.000430 |
+
+These few nearby cuts do not establish independent RF trials, absence of real
+signals in the control, or a rare-false-alarm rate. No threshold is selected
+or deployed. An extrapolation outside the retained reference extent abstains;
+it is not silently counted as a zero-power measurement.
+
+The positive result exposes an earlier limitation: the actual selector often
+chooses an unrelated weak hypothesis even though the previously reviewed C
+tracking trajectory contains supported pilots in that cut. Seven cuts have a
+supported pilot in the scanner's first timing interval. Recomputing their
+complete integer coarse grids and extending the same local-maximum,
+tie-breaking and suppression policy yields:
+
+| Positive cut | Reviewed supported frame | First retained coarse candidate within ±8 timing samples |
+| --- | ---: | ---: |
+| 1 | 134 | 165 |
+| 3 | 403 | 29 |
+| 4 | 538 | 10 |
+| 5 | 672 | 79 |
+| 8 | 1075 | 94 |
+| 9 | 1209 | 144 |
+| 12 | 1612 | 35 |
+
+The first eight candidates reproduce the actual C selector exactly. These
+oracle-assisted ranks accept any coarse frequency bin, since subsequent
+full-pilot ranking searches frequency separately. They establish missed timing
+coverage, not successful refinement or acquisition at the larger budgets.
+Only cuts with a reviewed supported position in that interval enter this
+table; the other cuts are not classified as lacking a signal.
+
+The next implementation question is proposal recall and ranking cost.
+Increasing candidate coverage or ranking evidence across repeated pilots must
+be tested against ARM latency and source freshness before deployment.
+Changing only the acceptance score would leave these top-eight misses intact.
+
+The [combined-score replay](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/combined-controls/result.json),
+[proposal-rank diagnosis](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/combined-controls/coverage.json)
+and both analysis sources retain hashes and detailed results. Original cuts
+and C worker journals remain in local evidence. No RF, production source or
+gate changes occur; sustained native FPGA tracking remains unfinished.
+
+## Expanded candidates improve offline handoffs
+
+The same 26 saved cuts now evaluate budgets of 8, 32, 64, 128 and 256
+coarse candidates. Independent integer grids and extended selection reproduce
+the production selector's first eight candidates exactly. Single-pilot FFT
+ranking at that budget also reproduces the original C scores and winner.
+A diagnostic alternative averages four normalized pilot spectra at a common
+frequency bin, using nominal repeat offsets 0, 3333, 6667 and 10000 at
+2.5 MS/s. No reviewed trajectory positions enter either ranking.
+
+Every distinct winning candidate then enters the unchanged production C seed,
+resolver and historical measurement worker. IQ is already retained and receiver
+time is frozen, so these handoffs establish offline numerical support only.
+
+| Candidate budget | Positive cuts with worker handoff, single-pilot ranking | Positive cuts with worker handoff, four-pilot ranking | Control handoffs, either ranking |
+| --- | ---: | ---: | ---: |
+| 8 | 1 / 13 | 1 / 13 | 0 / 13 |
+| 32 | 3 / 13 | 3 / 13 | 0 / 13 |
+| 64 | 4 / 13 | 4 / 13 | 0 / 13 |
+| 128 | 4 / 13 | 4 / 13 | 0 / 13 |
+| 256 | 4 / 13 | 4 / 13 | 0 / 13 |
+
+Successful positive cuts are 0, 3, 4 and 12, each with 15 accepted historical
+measurements. Larger budgets recover additional pilot power, but those
+candidates do not accumulate enough accepted support. Four-pilot ranking
+recovers partial support in cuts 2 and 11 without producing extra handoffs.
+The small, adjacent control set does not establish a rare-false-alarm rate.
+
+Independent review passes all 138 distinct worker runs: 2,346 resolver
+hypotheses and 1,132 exact moment/dense-fit comparisons, including rejection
+bits and startup carrier checks. Four altered coherence/CFO records are rejected.
+The host harness builds with warnings treated as errors. No production source,
+acceptance gate, RF collection or radio deployment changes in this experiment.
+
+These results favor evaluating a bounded 64-candidate single-pilot scanner
+before paying for larger budgets or repeated-pilot ranking. The next required
+check is actual ARM selection/ranking latency and retained-source freshness;
+host replay cannot establish those budgets or live handoff behavior. Sustained
+30/60-MS/s native tracking, loss/reacquisition and refinement remain unfinished.
+
+The [ranking evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/ranking.json),
+[worker results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/worker.json)
+and [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/expanded-proposals/review.json)
+retain per-cut outcomes and hashes. Sources and worker journals are archived
+alongside them; original IQ remains in local evidence.
+
+## ARM 64-candidate cost exceeds current freshness
+
+Firmware worktree commit `d8ce01365` adds an internal, opt-in selector accepting
+1–64 candidates, with caller-owned outputs and cancellation before each
+selection and publication. The legacy workspace layout and eight-candidate
+interface remain intact. Failure clears valid-sized outputs and publishes
+zero count. The live scanner still uses eight candidates.
+
+All 215 coarse, seed, tracking-benchmark and live-probe tests pass. Additional
+bounded-selector tests compare independent sorted maxima, including ties,
+circular suppression, empty grids, cancellation and malformed admission.
+Host and Cortex-A9 benchmark builds treat warnings as errors. Across all
+26 saved cuts and budgets 8/64, 52 host runs reproduce 1,872 independently
+computed coarse peaks and full-pilot FFT scores.
+
+After the external acquisition releases the global lease, the serial-bound
+operator runs six saved-IQ benchmarks on .20: three repeats per budget, using
+positive cut 12. It collects no RF and changes no image. Each run uses the
+existing two-thread coarse grid, then the bounded selector and single-pilot
+16,384-bin FFT ranking at the 2.5-MS/s analysis rate.
+
+| Budget | Grid plus legacy eight selection | Additional bounded selection | Full-pilot ranking | Total |
+| --- | ---: | ---: | ---: | ---: |
+| 8 | 439.785–440.108 ms | 14.303–14.572 ms | 60.163–63.230 ms | 514.574–517.342 ms |
+| 64 | 439.565–446.021 ms | 399.163–400.162 ms | 476.686–481.420 ms | 1317.561–1324.144 ms |
+
+The harness deliberately reports an extra legacy eight-selection pass inside
+the grid/search time, as well as the requested bounded selection. Removing
+that approximately 14-ms duplication cannot close the 64-candidate deficit.
+Input loading, FFT plan creation, resolver work, catch-up, capture DMA and
+concurrent native tracking are excluded. These are three measurements on one
+cut, not worst-case execution bounds.
+
+The live worker allows a maximum seed age of 2,500,000 coarse samples, or one
+second. The measured 64-candidate computation alone exceeds that limit.
+Frozen-IQ handoffs therefore do not justify activating this implementation
+live. Repeated full-grid selection consumes about 400 ms and is a measured
+optimization target; ranking also needs sufficient margin for refinement and
+capture contention. No age limit or acceptance gate is relaxed.
+
+Independent review verifies all 216 ARM candidate tuples and FFT scores,
+including the expected winners 8 and 35, payload/journal hashes, six successful
+exits, and identical before/after identity and TX-safe attestation. Temporary
+remote files are removed. The first local build attempt had an output
+file/directory naming collision; distinct result-directory naming resolved it
+before any host comparison or radio execution.
+
+The [build and host checks](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/build.json),
+[ARM operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/operator.json)
+and [independent ARM review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/bounded-scan/review.json)
+include source hashes and timings. Sources, component patch, test report and
+ARM journals are retained alongside them. Sustained live 30/60-MS/s FPGA
+tracking and physical loss/reacquisition remain unfinished.
+
+## Heap selection preserves proposal order
+
+Firmware worktree commit `505f6697a` replaces the repeated full-grid selection
+passes with a heap containing the eligible local maxima. Heap extraction uses
+the existing score, center-frequency preference, epoch and frequency tie order.
+Circular timing/frequency suppression still follows each previously selected
+candidate. This preserves the complete selection policy, including candidates
+outside the original top eight; it does not truncate a preliminary top-score
+list before suppression.
+
+Temporary allocation is bounded to 439,956 bytes and is released on success
+or failure. Cancellation is polled during collection, heap construction,
+each extraction and before publication. Allocation failure or cancellation
+clears outputs and leaves count zero. The legacy workspace layout remains
+unchanged. The heap also serves the existing eight-candidate interface, but
+the updated executable has not been activated on the radio.
+
+Across the same 26 saved cuts, budgets 8 and 64 reproduce all 1,872 candidate
+tuples and single-pilot FFT scores against independent evidence. Mean host
+64-candidate selection falls from 29.076 ms in the previous benchmark to
+0.225 ms, with total mean scanner computation falling from 53.971 to
+24.823 ms. These host measurements are subject to host scheduling and do not
+establish an ARM speedup or a live deadline bound.
+
+The existing 215-test coarse/seed/tracking-benchmark/live-probe suite passes.
+The final coarse suite passes 34 tests, adding allocation failure and
+cancellation immediately before publication to the already covered ordering,
+suppression, malformed-input and earlier-cancellation cases. Four saved-IQ
+benchmark runs under AddressSanitizer and UndefinedBehaviorSanitizer pass
+without diagnostics: positive cut 12 and control cut 10, each at budgets
+8 and 64. Both host and Cortex-A9 builds succeed with warnings treated as errors.
+
+The serial-bound ARM operator refuses admission before radio contact because
+the global acquisition lease is held. Process 1594587 is independently
+confirmed live, running the CH4-lower scanner on radio 003a; a later process
+and lease check confirms the same owner. This is not permission to bypass
+the global lease. No RF, remote files, image changes or ARM timing runs occur
+for this optimization. The prepared operator can run once normal admission
+succeeds, after which the full scanner still needs retained-source freshness,
+refinement and live capture-contention checks.
+
+The [build and host results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/build.json),
+[admission refusal](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/operator.json)
+and [sanitizer results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/heap-scan/sanitizers.json)
+retain the evidence. Component patch, sources and both test reports are
+archived alongside them. Sustained 30/60-MS/s FPGA tracking remains unfinished.
+
+## Smaller ranking FFT restores ARM compute margin
+
+The global lease owner is polled until its process exits and the lease is
+unowned. Normal admission then succeeds for serial
+1040005e0b100007100010000bf33a5d4d at 192.168.1.20. The leased operator runs
+nine saved-IQ benchmarks, three per FFT size, with 64 heap-selected candidates
+and positive cut 12. No RF is collected, and the resident image is unchanged.
+
+Proposal ranking uses the same 3,300-sample pilot at 2.5 MS/s and tests FFT
+lengths 4,096, 8,192 and 16,384. Their frequency-bin spacings are respectively
+610.352, 305.176 and 152.588 Hz. This experiment changes only the ranking
+spectrum: the winning candidate enters the existing 16,384-bin, four-pilot
+resolver and unchanged historical acceptance gates. Ranking CFO bins are
+not substituted for refined carrier estimates.
+
+All 26 saved cuts are tested at every size. Independent NumPy spectra match
+4,992 host candidate scores. Each size produces handoffs on positive cuts
+0, 3, 4 and 12, with 15 accepted historical measurements per successful run;
+all 13 control cuts remain rejected. Some weak winners change, so smaller
+FFTs are not numerically equivalent to the old ranking and can have different
+recall on other inputs. These few controls do not calibrate rare false alarms.
+Independent review of all 78 worker runs verifies 1,326 resolver hypotheses
+and 708 exact moment/dense-fit records.
+
+| Ranking FFT | ARM bounded selection | ARM ranking | ARM full scan |
+| --- | ---: | ---: | ---: |
+| 4,096 | 2.823–3.721 ms | 137.831–144.398 ms | 575.512–580.168 ms |
+| 8,192 | 2.819–2.981 ms | 215.552–229.786 ms | 653.383–661.379 ms |
+| 16,384 | 2.834–2.991 ms | 480.697–510.284 ms | 922.569–941.586 ms |
+
+The approximately 3-ms heap selection replaces the earlier roughly 400-ms
+repeated-grid selection. Full scan includes the two-thread grid and an extra
+legacy eight-selection pass, as in the previous benchmark. It excludes input
+loading, FFT plan creation, full-resolution refinement, retained-IQ catch-up,
+capture DMA and concurrent native tracking. Three timings on one cut do not
+establish a worst-case deadline.
+
+The 4,096-bin ranking has materially more margin below the one-second seed-age
+limit than the 16,384-bin ranking, while preserving the observed offline
+handoffs. The next implementation is an explicitly bounded live profile using
+64 candidates and this ranking FFT, followed by end-to-end freshness and
+capture-contention checks. No seed-age limit or acceptance threshold changes
+are justified by these measurements alone.
+
+Independent ARM review passes all 576 candidate tuples and FFT scores against
+the independently checked host spectra. All nine runs select candidate 35.
+Payload and journal hashes, zero exit codes, serial/host, identical before/after
+identity and TX-safe state, and remote cleanup are verified. Host and Cortex-A9
+benchmark builds use warnings as errors. No persistent tracker is started.
+
+The [host ranking and worker results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/host.json),
+[independent worker review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/worker-review.json),
+[ARM operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/operator.json)
+and [ARM score/timing review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/short-fft-scan/arm-review.json)
+retain the measurements and hashes. Sources and ARM journals accompany them;
+full host journals remain in local evidence. Sustained live 30/60-MS/s FPGA
+tracking, physical loss/reacquisition and refinement remain unfinished.
+
+## Live 64-candidate profile passes execution and freshness checks
+
+Firmware worktree commit `7e7555550` adds the explicit
+`1536-selected-observer3-scan64` profile. It uses the bounded heap selector,
+separate 4,096-bin ranking plan, existing 16,384-bin resolver, and three-frame
+observer cadence. The operator accepts 64 candidates only with this short,
+selected-IQ profile. Its limits remain six attempts, 1,536 capture blocks
+(10.0663296 seconds maximum), one native episode, and the existing freshness
+and acceptance gates. Both FFT plans are destroyed after threads are joined.
+Candidate journals retain all 64 scores and explicit FFT/budget metadata.
+
+The Cortex-A9 executable SHA-256 is
+`ede7d9bd6e60fb692c916d9f0707595d02d6f0a39066174c1aaf827616cfd456`.
+The full final suite passes 250 tests. An earlier run has 249 passes and one
+legacy 60-MS/s native-deadline failure after 199 results; its test report is
+retained. The unchanged full rerun passes without relaxed deadlines or gates.
+New focused cases cover both native rates, observer cleanup, short-profile
+no-restart behavior, ranking failure and operator admission bounds. The actual
+live ranking function also matches all 1,664 independently checked scores on
+the 26 saved cuts.
+
+After process 1627338 releases the global lease, the exact-profile operator
+attests serial 1040005e0b100007100010000bf33a5d4d at 192.168.1.20 and runs one
+bounded CH3-upper capture using the resident 60-MS/s image.
+
+| Physical result | Measurement |
+| --- | --- |
+| RF duration / exported coarse samples | 7.1314052 s / 17,828,513 |
+| Returned coarse samples | 17,825,792; 2,721 exported tail samples unreturned |
+| Completed scans / ranked candidates | 6 / 384 |
+| Scan and ranking time | 585.278–634.364 ms |
+| Resolver and historical-worker time | 579.803–581.586 ms |
+| Accepted historical measurements | 0 / 48 |
+| Handoffs / native results / observer episodes | 0 / 0 / 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 6.679 ms |
+
+All six selected seed copies satisfy the existing one-second source-age
+limit. The selected candidate ranks are 56, 30, 7, 44, 11 and 58, demonstrating
+that the live expanded path actually considers candidates outside the old
+eight-entry budget. Their ranking powers are only 0.003506–0.004286; the
+maximum historical coherence is 0.003825. No measurement passes, so this
+capture cannot qualify observer/native concurrency or sustained tracking.
+
+Independent review verifies every selected local maximum and its exact
+suppression/tie order against a sorted oracle, all 219,978 integer grid
+values, 384 reduced-FFT ranking scores, 102 full-resolution resolver
+hypotheses, 48 exact moments/dense fits, 48 startup jobs, 30,192 scalar
+rotation checks and 112,741 overlapping retained samples. Source counters,
+epoch binding and cleanup pass. The capture succeeds, while acquisition
+correctly refuses unsupported histories.
+
+Before/after identity and TX-safe state match, configured RF state is
+preserved, evidence is retrieved and temporary remote files are removed.
+The resident firmware image is unchanged and no persistent tracker remains.
+Further progress must address signal acquisition/support and verify native
+feedback after a supported live handoff; scanner execution alone is insufficient.
+
+The [build manifest](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/build.json),
+[live-ranking comparisons](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/ranking.json),
+[physical operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/operator.json)
+and [independent physical review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/live-scan64/review.json)
+retain measurements and hashes. Sources, component patch, worker journal and
+both full-suite reports accompany them; original retained IQ remains in local
+evidence. Sustained live 30/60-MS/s FPGA tracking remains unfinished.
+
+## Acquired histories feed the scheduled observer on ARM
+
+A standalone harness calls the actual live probe's scanner, 64-candidate
+4,096-bin ranking, production acquisition worker, retained-IQ callbacks and
+three-frame observer. It provides no reviewed trajectory or externally trained
+history. The observer starts only after the acquisition worker returns a
+supported handoff. This closes a gap in earlier observer tests that supplied
+their starting history separately.
+
+The harness preloads 14,000 original samples, then a producer publishes
+16,384-sample chunks at absolute CLOCK_MONOTONIC deadlines corresponding to
+2.5 MS/s. The owner retains at most 5,000,000 samples. Positive cuts start
+at original offsets 0 and 1,343,553; the control starts at zero. The producer
+uses only the existing saved IQ, with no synthetic injection, wrapping,
+duplication or interpolation. Native-controller and IIO calls are excluded
+from the executable by section garbage collection; undefined-symbol inspection
+confirms no IIO dependency. This is paced software replay, not RF DMA or
+FPGA measurement execution.
+
+On the host, both positives acquire from eight accepted historical
+measurements and complete 200 observer measurements, accepting 200 and 182.
+The control's eight measurements are rejected. Host numerical and original-IQ
+review passes. On the leased, serial-attested .20 ARM, the slower computation
+requires substantially more retained-IQ catch-up:
+
+| ARM input | Scan | Acquisition worker | Accepted catch-up | Observer outcome |
+| --- | ---: | ---: | ---: | --- |
+| Positive cut 0 | 592.116 ms | 827.891 ms | 113 / 119 | 200 measured, 173 accepted; completed |
+| Positive cut 3 | 590.552 ms | 822.978 ms | 106 / 118 | 139 measured, all accepted; deadline after finite input |
+| Control cut 0 | 597.110 ms | 539.830 ms | 0 / 8 | No handoff or observer |
+
+Both positive worker runs return ready with their acquired history; no
+freshness or support gate is relaxed. The first observer takes 798.048 ms
+for its 200 measurements. It runs from frame 1065 through 1662 on the acquired
+frame numbering, with its final retained window starting at coarse sample
+5,541,269. Independent prediction review checks the rolling feedback history.
+
+The second cut contains only 4,906,447 remaining samples. Its last accepted
+observer window starts at 4,901,053, frame 1470. The next three-frame window
+would lie beyond that input. The harness deliberately leaves the owner open
+until observer completion; after publication ends, the observer therefore
+waits and exits with its existing three-second deadline. This is not a
+successful 200-measurement completion or physical loss/reacquisition test.
+It also must not be interpreted as rejection of those 139 supported pilots.
+
+Independent ARM review checks 51 resolver hypotheses, all 245 historical
+moment/dense-fit records including CFO and rejection bits, and all 339
+observer fits and causal feedback predictions. Every retained worker and
+observer IQ window equals the original saved input at its recorded coordinate.
+Seed copies meet the one-second age bound. Source views, recorded timestamps,
+natural observer joins, payload/journal hashes and zero process exits pass.
+Host and ARM sequences differ because acquisition latency changes how far
+catch-up must advance; their outputs are checked independently against IQ.
+
+Serial 1040005e0b100007100010000bf33a5d4d at 192.168.1.20 retains identical
+before/after identity and TX-safe state. All remote payloads and result files
+are retrieved and removed. No RF samples, native jobs, image changes or
+persistent tracker are introduced. The full goal still requires supported
+live handoff, native FPGA feedback, sustained operation and loss/reacquisition
+at both 30 and 60 MS/s.
+
+The [host build/results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/host.json),
+[host review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/host-review.json),
+[ARM operator](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/operator.json)
+and [ARM independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/paced-acquisition/arm-review.json)
+retain the evidence. Harness, build/operator/reviewer sources and ARM journals
+are archived alongside them. Retained IQ remains local. Initial local
+file/directory naming and versioned-input path errors were corrected before
+this final harness was executed on ARM; earlier outputs remain separate.
+
+## 30-MS/s expanded scan completes supported native feedback
+
+The frozen 60→30-MS/s transition succeeds under the normal global and
+serial-bound deployment controls. Local image and rollback hashes pass,
+the updater reports completion, the written FIT is verified, the radio reboots
+and returns with the expected serial/image, and TX-safe checks pass. The
+deployment receipt is `f5ff7f99-d8f7-468f-a2f0-13152e4f81d5`.
+
+Radio 192.168.1.20 / serial 1040005e0b100007100010000bf33a5d4d then executes
+the same pinned expanded-scan binary and short profile used in the 60-MS/s
+test. Receive settings are 30,000,000 samples/s, 2.5-MHz RF bandwidth,
+manual gain 30 dB, A_BALANCED and actual LO 1,690,312,498 Hz. The configured
+receive path is calibrated before capture and a fresh epoch excludes boot
+drop counters.
+
+The first three attempts reject weak candidates. The fourth has ranking
+power 0.089748 and accepts all 126 catch-up measurements, then hands off to
+the native controller. The observer and native FPGA processing run together.
+
+| Physical result | Verified measurement |
+| --- | --- |
+| RF duration | 7.1904052 s |
+| Exported / returned coarse samples | 17,976,013 / 17,973,248 |
+| Completed scans / ranking scores | 4 / 256 |
+| Scan and ranking | 634.899–643.809 ms |
+| Successful resolution/catch-up | 865.354 ms; 126/126 accepted |
+| Native FPGA results | 1,500, representing a two-second frame budget |
+| Supported native results | 972/1,500 |
+| Native frame range / final supported frame | 1137–2636 / 2636 |
+| Longest consecutive native rejection run | 3 frames |
+| Controller termination | Complete; prediction horizon not exhausted |
+| Simultaneous coarse observer | 200/200 supported; completed |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 7.169 ms |
+
+This is a supported, bounded live native feedback result at 30 MS/s.
+It is not yet evidence of indefinite lock, native physical estimation
+accuracy, autonomous loss/reacquisition or the equivalent supported 60-MS/s
+run. No support gate or freshness limit changes.
+
+![Native and observer support during the bounded 30-MS/s run](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/support.png)
+
+The native support pattern is uneven across frame classes: frame ordinal
+modulo three classes 0, 1 and 2 support 499/500, 236/500 and 237/500 results,
+with median coherences 0.076511, 0.003201 and 0.000693 respectively. This is a
+description of the retained estimates, not a diagnosis of the physical cause.
+The three-frame observer's 200 measurements all exceed the gate. No policy
+change is inferred from this post-hoc grouping.
+
+Independent acquisition/source review checks 146,652 grid values, all
+64-candidate selection orders, 256 ranking scores, 68 resolver hypotheses,
+150 historical moment/dense fits, 200 observer fits, 30,192 scalar rotation
+checks and 71,211 overlapping retained samples. All seed copies satisfy the
+one-second source-age bound. Epoch/ownership review confirms the one native
+episode, 1,500 results, orderly completion and 64 retained native/coarse pairs.
+
+A separate dense numerical review verifies all 1,500 native estimates from
+the retained native moments and the pinned native reference basis. Two
+corrupted-estimate checks are rejected. Native raw IQ is unavailable, so
+this independently verifies estimates, rejection bits and journal ownership,
+not the FPGA's individual moment accumulations or physical timing accuracy.
+The 64 paired-window review also passes: 42 coarse and 40 native estimates
+are supported within that paired subset.
+
+All capture evidence totals 8,205,027 bytes. Before/after identity and TX-safe
+state match, configured RF settings are preserved, and temporary executable
+and evidence files are removed from the radio. It remains on
+`glrt-iq-tracking-r30000000-v1`, boot
+`f3d715f6-e2ae-4ead-bbfa-6d2da4389cb7`, with TX disabled and buffers idle.
+FIT SHA-256 is
+`c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703`;
+QSPI SHA-256 is
+`e06ffb4127717944a5b6829ad2f2a43eac1ee5dba1002da163030cbdbbd7a6f5`.
+No persistent tracker is installed.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/deployment.json),
+[operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/operator.json),
+[acquisition/observer review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/acquisition-review.json),
+[native estimate review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/native-review.json)
+and [paired-window review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/native30-scan64/paired-review.json)
+retain the evidence. Journals, support summary, plot source and exact operator
+wrapper accompany them. The next physical target is supported 60-MS/s native
+feedback; another verified live acquisition currently owns the global lease.
+
+## Supported 30-MS/s result does not repeat at 60 MS/s
+
+After the verified lease owner exits, the frozen 30→60-MS/s transition
+succeeds on the same serial. Image/rollback hashes, written FIT, reboot
+return, serial, firmware and TX-safe state pass. Deployment receipt:
+`1efd0bf3-d049-45bd-9fde-6c8f88aff8b2`. The exact same expanded-scan
+executable then runs one bounded CH3-upper capture. No algorithm, support
+gate or freshness limit changes.
+
+| Physical 60-MS/s follow-up | Result |
+| --- | --- |
+| RF duration | 7.118266 s |
+| Exported / returned coarse samples | 17,795,665 / 17,793,024 |
+| Scans / ranking scores | 6 / 384 |
+| Scan and ranking time | 590.209–618.164 ms |
+| Worker time | 584.498–590.001 ms |
+| Accepted historical measurements | 0 / 48 |
+| Handoffs / native results / observer episodes | 0 / 0 / 0 |
+| Active CDC / pacer drops | 0 / 0 |
+| Maximum refill gap | 6.730 ms |
+
+Ranking powers range from 0.003548 to 0.004084, and the highest historical
+coherence is 0.003572. Independent review passes all 219,978 grid values,
+candidate suppression/order checks, 384 ranking scores, 102 resolver
+hypotheses, 48 moment/dense fits, 48 startup jobs, 30,192 scalar rotation
+checks and 113,722 overlapping retained samples. All seed copies meet the
+existing source-age limit. This verifies loaded execution and rejection at
+60 MS/s, but provides no new native feedback measurement.
+
+The successful 30-MS/s capture and this weak 60-MS/s capture occur at
+different times. They do not establish that sample rate caused the difference
+or invalidate the earlier supported native run. The antenna/LNB power and
+pointing question remains unanswered; no receive-path change is assumed.
+
+A small offline diagnostic evaluates normalized lagged complex cross-power
+on 42 retained 14,000-sample windows: 13 positive and 13 control cuts, the four
+latest 30-MS/s searches, and the twelve searches from the two expanded
+60-MS/s captures. It checks lags 3333, 6667 and 10000 samples. The last
+corresponds to exactly three nominal frames and has 4000 overlapping pairs.
+Integer cross sums and energies agree with independent complex dot products
+for all 126 comparisons.
+
+At lag 10000, the saved control ranges from 0.000036 to 0.001137.
+The two recent 60-MS/s runs range from 0.000034 to 0.000833. The successful
+30-MS/s search scores 0.003436, but the three rejected 30-MS/s searches score
+0.005064, 0.004467 and 0.013171. Repetition therefore cannot substitute for
+reference-specific candidate resolution and accepted history. Its possible
+role is inexpensive temporal preselection before the full scan, subject to
+separate cost/recall tests; no trigger threshold is selected or deployed.
+These few inspected windows do not calibrate independent false alarms.
+
+All operator identity/TX-safe checks and cleanup pass; artifacts total
+2,932,455 bytes. Radio .20 now remains on
+`glrt-iq-tracking-r60000000-v1`, boot
+`cec63f8e-b9d8-49e9-b7a7-4fec44bae66b`, with receive LO 1,690,312,498 Hz,
+manual gain 30 dB, 2.5-MHz RF bandwidth, TX disabled and buffers idle.
+FIT SHA-256 is
+`19c1504e8cbf442f4fd2ee995a0ceaf3780a9a4559026a653f8fdaae53932f1b`;
+QSPI SHA-256 is
+`6d40ab1638b82b2e8877e1be8b9063a3e30c182c4293c5c11f75543d2614f58f`.
+Temporary executable/evidence files are removed; no persistent tracker is
+installed.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/deployment.json),
+[operator evidence](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/operator.json),
+[independent capture review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/review.json)
+and [repetition diagnostic](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-60-followup/repetition.json)
+retain the evidence. Worker journal and operator/diagnostic sources accompany
+them. Supported 60-MS/s native feedback, longer operation and autonomous
+loss/reacquisition remain unfinished.
+
+## Timing and repeat selection do not increase standalone acquisition coverage
+
+Two further diagnostics use the same 13 positive and 13 control cuts at
+2.5 MS/s, with the frozen C resolver, historical acceptance gates and worker
+unchanged. They collect no RF and make no firmware or deployment changes.
+
+| Ranking policy | Positive handoffs | Positive cut numbers | Control handoffs |
+| --- | ---: | --- | ---: |
+| Existing 64-candidate, first-repeat ranking | 4/13 | 0, 3, 4, 12 | 0/13 |
+| Timing-tolerant ranking, 64 or 256 candidates | 4/13 | 0, 3, 4, 12 | 0/13 |
+| Strongest of three repeats, 64 candidates | 4/13 | 0, 4, 11, 12 | 0/13 |
+
+Timing-tolerant ranking evaluates the 4096-bin pilot spectrum at offsets
+−8 through +8 samples (±3.2 microseconds), then selects using radii 0, 1, 2,
+4 and 8. The winning original coarse proposal enters the existing resolver;
+the ranking offset is not injected as a new seed. All ten budget/radius
+combinations preserve the same four handoffs. Some larger searches recover
+isolated accepted measurements, but no additional supported history. These
+results do not justify the extra ranking work.
+
+The repeat diagnostic jointly selects a candidate and one of offsets 0,
+3333 or 6667 samples. It replays a 447,851-sample cut starting at that repeat,
+and keeps the original proposal epoch within this rebased cut. Cut 11 gains
+a handoff with 15 accepted measurements, but cut 3 falls from a handoff to
+only one accepted measurement. Stronger initial pilot power therefore does
+not guarantee a better startup history. All control measurements remain
+rejected. The union with the existing policy covers five positive cuts,
+but this is a retrospective union, not a tested causal fallback policy.
+
+Independent review verifies source hashes and exact repeat-offset slices,
+all 286 selected ranking decisions and direct-DFT winning powers, and 122
+distinct frozen worker runs: 2074 resolver hypotheses and 1032 moment/dense
+fits. Four deliberate coherence/CFO corruptions are rejected. The repeat
+generation script additionally checks all 4992 candidate/repeat FFT maxima
+against explicit direct DFTs. The timing diagnostic's zero-offset scores
+match the existing C ranking benchmark. Neither diagnostic measures ARM
+cost or qualifies live tracking; repeat selection also needs explicit
+original-scan/repeat provenance before production use.
+
+Keep the current live ranking policy. A possible next acquisition experiment
+is a bounded alternate hypothesis after rejected startup, preserving the
+original scan coordinates and source-age checks. Its useful coverage must
+be demonstrated under paced ARM execution: the current roughly 0.6-second
+scan plus rejected-worker processing can already consume the one-second
+seed-age allowance, so frozen replay cannot justify a serial retry.
+
+The [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/review.json),
+[timing results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/timing-aware/result.json)
+and [repeat results](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/ranking-diagnostics/repeat-phase/result.json)
+retain the measurements; worker journals and diagnostic/review sources
+accompany them. IQ remains in the pinned local corpus. The previous bounded
+30-MS/s native success stands; supported 60-MS/s native feedback, sustained
+operation and autonomous loss/reacquisition remain unfinished.
+
+## Expanded scanning executes autonomous ARM frequency revisits at 60 MS/s
+
+Firmware worktree commit `20e605d1c` adds an opt-in trailing
+`1536-selected-observer3-scan64` argument to the existing ARM visit probe.
+The parent selects and journals this exact child profile for two to four
+visits. It validates the entire frequency/profile plan before IIO contact;
+existing invocations retain their existing profiles. The parent still joins
+each child, verifies drained hardware and retained epoch state, and permits
+another LO change only after successful bounded execution or the explicit
+clean-native-loss disposition. Arbitrary failures stop the sequence.
+
+The component suites pass 196 visit/child tests plus two combined live
+scan64/native-loss tests, one at each native rate. The latter verify
+three-frame observer evidence, native loss, observer join, no same-LO
+restart, and clean-loss evidence including deliberate corruptions. Ten
+operator admission tests pass. The Cortex-A9 build has SHA-256
+`5eff9cacccf945414c2f1ce2637142c85829b9484feecd12fd5b296063757a84`.
+
+A single physical run on `192.168.1.20`, serial
+`1040005e0b100007100010000bf33a5d4d`, runs CH3 → CH4 → CH3 on ARM, with
+the existing 60-MS/s native image and 2.5-MS/s exported IQ. Each visit uses
+64 coarse candidates, a 4096-bin ranking FFT, and unchanged refinement and
+acceptance gates. The global plan allows at most 60 seconds of wall time
+and 30.1989888 seconds of received data across these three visits.
+
+| Visit | Requested LO (Hz) | Acquisition epoch | RF seconds | Scans | Accepted startup measurements |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| CH3 | 1,690,312,500 | 2 | 7.4857032 | 6 | 0/48 |
+| CH4 | 1,940,312,500 | 3 | 7.4263632 | 6 | 0/48 |
+| CH3 revisit | 1,690,312,500 | 4 | 7.5182228 | 6 | 0/48 |
+
+The run completes after 22.4302892 seconds of received data. Independent
+review passes 659,934 coarse-grid values, 1152 ranking scores, 306 resolver
+hypotheses and 144 moment/dense fits. Each seed meets the original one-second
+source-age limit. Scan plus ranking takes 642.024–660.820 ms; rejected-worker
+processing takes 580.656–597.718 ms. Maximum refill gap is 7.204 ms, with
+zero active CDC/pacer drops. All parent transitions match their retained
+snapshots, fresh epochs and child evidence. Four deliberately corrupted
+profile/disposition/binary/epoch associations are rejected.
+
+There are no handoffs, native results or observer measurements. This proves
+physical autonomous frequency revisits after unsuccessful expanded scans;
+it does not prove supported 60-MS/s tracking or physical tracking-loss to
+reacquisition. The combined loss path has host test evidence at both rates.
+No gate or freshness allowance is relaxed to turn weak RF into a pass.
+
+Identity/image/TX-safe state agrees before and after the run. Final LO is
+1,690,312,498 Hz, manual gain 30 dB, RF bandwidth 2.5 MHz, buffers idle and
+TX disabled. All 8,912,999 evidence bytes are retrieved and temporary radio
+files removed. No persistent tracker is installed.
+
+The subsequent 30-MS/s transition passes local frozen-image validation but
+is refused before radio contact by the acquisition lease. The verified
+holder is PID 1814683, an active scanner-only acquisition on radio `003a`.
+No updater is dispatched; .20 stays on the 60-MS/s image and previously
+attested boot `cec63f8e-b9d8-49e9-b7a7-4fec44bae66b`. Physical execution of
+this expanded revisit profile at 30 MS/s remains pending.
+
+The [result summary](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/result-summary.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/operator.json)
+and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits/independent-sequence-review.json)
+accompany child reviews/journals, build provenance, source patch and test
+results. Supported 60-MS/s native feedback, longer supported operation,
+physical loss/reacquisition and persistent ARM operation remain unfinished.
+
+## Expanded ARM revisits also pass at 30 MS/s
+
+After the verified external lease holder exits, the normal deployment
+operator successfully transitions .20 from the frozen 60-MS/s image to
+`glrt-iq-tracking-r30000000-v1`. Receipt
+`30e87244-3c44-49e7-8b00-39492dc5ba32` records updater completion, flash hash
+verification, reboot, returned serial/image attestation and TX-safe checks.
+The earlier refused attempt dispatched no updater; this is a new admitted
+attempt, not a retry of an unresolved deployment.
+
+The exact ARM visit executable used at 60 MS/s then runs CH3 → CH4 → CH3 at
+30 MS/s, with the same exported 2.5-MS/s IQ, scan64/observer3 profile and
+unchanged scientific gates. All scheduling and LO transitions run on ARM.
+The host operator stages inputs, retrieves evidence and verifies cleanup.
+
+| Visit | Acquisition epoch | RF seconds | Scans | Accepted startup measurements |
+| --- | ---: | ---: | ---: | ---: |
+| CH3 | 1 | 7.3935652 | 6 | 0/48 |
+| CH4 | 2 | 7.4001608 | 6 | 0/48 |
+| CH3 revisit | 3 | 7.4591948 | 6 | 0/48 |
+
+The sequence completes with 22.2529208 seconds of received data and zero
+active CDC/pacer drops. Independent review checks 659,934 coarse-grid
+values, 1152 ranking scores, 306 resolver hypotheses and 144 moment/dense
+fits. All retained source/epoch associations and original seed-age checks
+pass. Scan plus ranking takes 635.822–652.684 ms; worker processing takes
+584.505–595.601 ms. Maximum refill gap is 7.820 ms. Four deliberately
+corrupted transition associations are rejected.
+
+There is no handoff or native execution in this run. The highest selected
+pilot ranking power is 0.004713 and the highest historical coherence is
+0.004178. The earlier supported two-second 30-MS/s native run remains valid,
+but these recent weak captures at both rates do not reproduce it. Sequential
+measurements do not establish a causal sample-rate comparison, and successful
+revisit execution does not establish physical tracking-loss/reacquisition.
+
+Before/after identity and TX-safe state agree, and all 8,893,716 artifact
+bytes are retrieved before temporary files are removed. Radio .20 now
+remains on the 30-MS/s image, boot
+`7c103cbd-d589-4ed2-aeea-da2fce8f5a80`, with LO 1,690,312,498 Hz, RF bandwidth
+2.5 MHz, manual gain 30 dB, buffers idle and TX disabled. FIT SHA-256 is
+`c7245f4e8f5f0045c780dae46402375c143ea31ad2d08014a1670af9dac37703`.
+No persistent tracker is installed. Supported 60-MS/s native feedback,
+repeatable longer supported tracking and physical loss/reacquisition remain
+unfinished; this result closes the pending physical expanded-revisit check
+at 30 MS/s.
+
+The [deployment result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/deployment.json),
+[operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/operator.json),
+[result summary](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/result-summary.json)
+and [sequence review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/scan64-revisits30/independent-sequence-review.json)
+retain the evidence. Child reviews and journals accompany them; executable
+build, source patch and component tests are retained with the preceding
+60-MS/s result.
+
+## Early startup persistence does not add acquisition handoffs
+
+A further frozen-IQ diagnostic ranks the same 64 coarse proposals using
+three nominal pilot windows at startup frames 0, 9 and 18: offsets 0,
+30,000 and 60,000 samples at 2.5 MS/s. These match the first three frame
+ordinals used by the actual C bootstrap. Each window uses the unchanged
+3300-sample phase-zero reference and a 4096-bin spectrum. The original
+coarse epoch enters the unchanged resolver and worker; neither timing
+correction nor accepted history is supplied by the diagnostic.
+
+The diagnostic tests minimum, arithmetic-mean and geometric-mean power,
+using either the strongest eight first-window candidates or all 64. Here
+eight means a shortlist **after** the 64-candidate first-pilot ranking,
+not the legacy eight-coarse-candidate scanner. Every policy still acquires
+on positive cuts 0, 3, 4 and 12 only: 4/13 positive handoffs and 0/13 control
+handoffs. Cut 11 gains three accepted measurements under two all-candidate
+aggregations, but cannot establish a handoff.
+
+All 4992 candidate/window FFT maxima match explicit direct DFTs. Independent
+review verifies source hashes, original proposal association, all 156
+ranking decisions and 57 distinct frozen worker runs: 969 resolver
+hypotheses and 484 moment/dense fits. Two corrupted measurements are
+rejected. The finite positive/control cuts are not independent false-alarm
+calibration. ARM cost, live freshness with the additional ranking, and
+native tracking are not measured by this experiment.
+
+The [result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/startup-persistence/result.json)
+and [independent review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/startup-persistence/independent-review.json)
+accompany diagnostic/reviewer sources and worker journals. No RF, runtime
+code, acceptance gate or radio configuration changes. This result does not
+justify extra ARM ranking work. Keep the current live policy. Recent weak
+physical captures at both rates still require a detectable reference signal
+before supported native feedback and physical loss/reacquisition can be
+qualified; the antenna/LNB connection, power and pointing question remains
+unanswered. The earlier bounded supported 30-MS/s result is not withdrawn.
+
+## Confirmed receive path exposes weak peaks missed by the shortlist
+
+On September 14 the user confirms the antenna/LNB connection, LNB power and
+pointing. This resolves the previously unanswered receive-path question.
+After a verified external lease holder exits, one bounded CH3 capture runs
+on .20 at 30 MS/s with the existing scan64 executable and unchanged gates.
+No new firmware is built or deployed.
+
+The capture returns 1083 blocks and exports 7.098626 seconds of IQ at
+2.5 MS/s. Six searches yield 0/48 accepted historical measurements, no
+handoff and no native or observer measurements. Independent review passes
+219,978 coarse-grid values, 384 ranking scores, 102 resolver hypotheses and
+48 moment/dense fits, including source freshness and overlapping retained
+IQ. There are zero active CDC/pacer drops; maximum refill gap is 6.983 ms.
+Scan plus ranking takes 585.254–636.295 ms and worker processing takes
+575.935–579.349 ms.
+
+An offline diagnostic bypasses shortlist pruning: it evaluates all integer
+epoch offsets 0 through 9998, each with a 4096-bin full-pilot ranking FFT,
+in each of these six retained scan windows. The same calculation includes
+the earlier successful 30-MS/s scan as a positive comparison. All 448
+original shortlisted powers match this calculation. Three contiguous
+3333-offset groups retain their maxima; each of these 21 maxima agrees
+with an explicit direct DFT. The saved arrays retain maximum power and
+winning FFT bin per delay, not the entire delay/frequency surface.
+
+The new windows contain repeating pilot-like peaks separated by 3333 or
+3334 samples. Their strongest powers per window range from 0.011990 to
+0.020259, while the original shortlist peaks range from 0.003736 to
+0.004834. Thus the shortlist misses stronger reference responses. The
+successful comparison window reaches 0.102873 under the same exhaustive
+calculation. These measurements do not establish RF identity or calibrated
+false-alarm rates.
+
+A subsequent 16,384-bin frequency search within ±2 integer samples of each
+group winner checks all 105 evaluations against direct DFTs. The largest
+recent peak rises to 0.023191, compared with 0.121226 in the successful
+window. Recent peak CFO estimates decrease consistently from approximately
+529.3 kHz to 509.8 kHz across the six searches. These are single-pilot
+ranking quantities, not worker/dense-fit acceptance decisions or measured
+tracking accuracy. No handoff is inferred from them.
+
+This result changes the diagnosis: absence of a supported acquisition does
+not mean absence of a pilot-like response. The confirmed receive path has
+weak, repeating responses that the current shortlist misses. The next
+acquisition question is whether they can be recovered within the ARM
+budget and yield accepted history with unchanged gates. Exhaustive host
+ranking is diagnostic only; ARM cost, causal startup and native feedback
+are not qualified by it.
+
+Identity/image and TX-safe state agree before and after; all 2,931,897
+artifact bytes are retrieved and temporary radio files removed. Radio .20
+remains idle on the 30-MS/s image, boot
+`7c103cbd-d589-4ed2-aeea-da2fce8f5a80`, CH3 LO 1,690,312,498 Hz, gain 30 dB,
+2.5-MHz RF bandwidth and TX disabled. Supported 60-MS/s tracking, repeatable
+longer supported operation and physical loss/reacquisition remain open.
+
+The [operator receipt](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/operator.json),
+[capture review](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/capture-review.json),
+[exhaustive ranking result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/full-delay/result.json)
+and [finer ranking result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx/full-delay/refined.json)
+retain the evidence. Worker/capture journals, per-delay maxima and
+diagnostic sources accompany them; no production acceptance gates change.
+
+## Weak confirmed-path peaks rank far below the coarse shortlist
+
+The exhaustive first-period winners are associated with the original
+retained coarse grids using the independently tested score ordering and
+nonmaximum suppression. All first 64 proposals exactly match the deployed
+scanner's journals. The search continues through every remaining proposal,
+then locates the earliest one within the existing ±8-sample resolver radius
+of the exhaustive winner. Frequency is left unrestricted here because the
+subsequent resolver searches the full frequency range.
+
+| Recent scan | Exhaustive pilot epoch | First nearby proposal rank | Proposal timing offset (samples) |
+| --- | ---: | ---: | ---: |
+| 1 | 2500 | 408 | −4 |
+| 2 | 1485 | 114 | −8 |
+| 3 | 1823 | 253 | +5 |
+| 4 | 2160 | 98 | −1 |
+| 5 | 2214 | 149 | +8 |
+| 6 | 2549 | 408 | +1 |
+| Earlier successful scan | 3228 | 1 | 0 |
+
+There are 621–645 surviving coarse proposals per recent grid. In the
+successful comparison, the exact pilot epoch also has the highest coarse
+score in the entire grid. In the recent scans, 568–12,377 grid cells score
+above the largest score at the exact pilot epoch. This is evidence of poor
+coarse-score ordering for these weaker reference responses, not merely a
+single off-by-one cutoff. Some nearby proposals also require appreciable
+timing refinement, so expanding the candidate budget alone does not prove
+the exact-epoch ranking will select them.
+
+The [association result](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx-coarse-recall/result.json)
+and [diagnostic source](figures/2026_09_13_radio20_saved_iq_coverage/pilot-phase/confirmed-rx-coarse-recall/check_confirmed_rx_coarse_recall.py)
+retain source-grid hashes and all nearby proposals. No new RF, worker
+handoff, ARM timing or native feedback is measured. The evidence directs
+further work toward improving coarse scoring within the measured ARM
+budget; simply deploying a much larger shortlist is not justified. The
+unchanged acceptance and source-age gates remain requirements.

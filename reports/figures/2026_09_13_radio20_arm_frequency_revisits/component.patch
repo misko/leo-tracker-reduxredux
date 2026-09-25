@@ -1,0 +1,396 @@
+commit 3db06b7adf5e366b653485d642942585708127df
+Author:     misko <misko@cs.toronto.edu>
+AuthorDate: Sun Sep 13 19:50:36 2026 +0000
+Commit:     misko <misko@cs.toronto.edu>
+CommitDate: Sun Sep 13 19:50:36 2026 +0000
+
+    Add bounded ARM scan plans with frequency revisits
+
+diff --git a/tests/starlink_glrt/test_cpu_live_probe.py b/tests/starlink_glrt/test_cpu_live_probe.py
+index 18879edba..d7865ca4f 100644
+--- a/tests/starlink_glrt/test_cpu_live_probe.py
++++ b/tests/starlink_glrt/test_cpu_live_probe.py
+@@ -268,6 +268,7 @@ def live_api(tmp_path_factory):
+     (None, [1536,6,25,12000000000]), (b'1536', [1536,6,25,12000000000]),
+     (b'4096', [4096,16,45,30000000000]),
+     (b'45000', [45000,200,325,300000000000]),
++    (b'1536-selected', [1536,6,25,12000000000]),
+ ])
+ def test_dwell_profiles_have_finite_capture_and_worker_limits(live_api, blocks, expected):
+     lib, _ = live_api
+@@ -592,7 +593,7 @@ def test_advancing_capture_worker_and_native_feedback(live_api, controller, pilo
+ 
+ @pytest.mark.parametrize('rate', [30000000,60000000])
+ @pytest.mark.parametrize('mode', [
+-    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','worker_error',
++    'loss_then_supported','four_losses','attempt_budget','full_profile','visit_full_profile','visit_selected_profile','worker_error',
+     'retention_error','restart_budget','cancel','deadline','uncleared','source_gap',
+     'wrong_epoch','wrong_rate','unread_head','read_failure','rebase_same_epoch',
+     'rebase_short_write',
+@@ -631,6 +632,9 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+     if mode=='visit_full_profile':
+         lib.live_restart_fault(handle,1)  # Full IQ, not the selected-window profile.
+         lib.live_visit_mode(handle)
++    if mode=='visit_selected_profile':
++        assert lib.live_set_dwell(handle,b'1536-selected',(c.c_uint64*4)())==0
++        lib.live_visit_mode(handle)
+     iq=np.zeros((10_000_000,2),dtype=np.int16)
+     for frame in range(3000):
+         start=22+(frame*10000+1)//3
+@@ -652,7 +656,7 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+                 else: time.sleep(.001)
+             # This is the same capture-thread ordering as the executable:
+             # finished worker -> join -> retained/drained source check -> release owner.
+-            if mode=='visit_full_profile': assert lib.live_capture_done(handle)==1
++            if mode in ('visit_full_profile','visit_selected_profile'): assert lib.live_capture_done(handle)==1
+             lib.live_join(handle)
+             assert lib.live_visit_loss(handle)==int(not (mode=='loss_then_supported' and episode==1))
+             totals=(c.c_uint64*8)();lib.live_totals(handle,totals)
+@@ -715,6 +719,9 @@ def test_clean_native_loss_reacquires_in_new_epoch_with_global_budgets(
+             if fault or mode=='attempt_budget' or episode==3:
+                 assert admitted==0
+                 break
++            if mode=='visit_selected_profile':
++                assert admitted==0  # Return clean loss to the LO owner, without same-LO REBASE.
++                break
+             if mode in ('uncleared','source_gap','wrong_epoch','wrong_rate','unread_head','read_failure'):
+                 assert admitted==(-1 if mode=='read_failure' else -3)
+                 break
+diff --git a/tests/starlink_glrt/test_cpu_visit_probe.py b/tests/starlink_glrt/test_cpu_visit_probe.py
+index cc7446200..033a88a1f 100644
+--- a/tests/starlink_glrt/test_cpu_visit_probe.py
++++ b/tests/starlink_glrt/test_cpu_visit_probe.py
+@@ -30,7 +30,9 @@ int iio_channel_attr_read_longlong(const struct iio_channel *c,const char *n,lon
+ int iio_channel_attr_write_longlong(const struct iio_channel *c,const char *n,long long out)
+ { (void)c;(void)n;(void)out;return -1; }
+ static int simulated_child(int argc,char **argv) {
+-    if(argc!=6) return 9;
++    if(!strcmp(argv[1],"selected")) {
++        if(argc!=7 || strcmp(argv[6],"1536-selected")) return 9;
++    } else if(argc!=6) return 9;
+     printf("retained child output\n");fprintf(stderr,"retained child diagnostics\n");
+     if(!strcmp(argv[1],"fail")) return 1;
+     if(!strcmp(argv[1],"clean_loss")) return LIVE_VISIT_CLEAN_LOSS_EXIT;
+@@ -45,12 +47,26 @@ static int simulated_child(int argc,char **argv) {
+ int exercise_child(const char *directory,const char *mode) {
+     char *args[]={"probe",(char *)mode,"serial","bank","refs",(char *)directory};
+     struct visit_context context={.args=args,.probe_main=simulated_child};
++    context.visit_count=!strcmp(mode,"selected") ? 4 : 2;
+     uint64_t budget=!strcmp(mode,"hang") ? UINT64_C(100000000) : UINT64_C(2000000000);
+     interrupted=0;
+     int rc=visit_child(&context,0,clock_ns(NULL)+budget),status;
+     if(waitpid(-1,&status,WNOHANG)!=-1 || errno!=ECHILD) return 99;
+     return rc;
+ }
++int invalid_plan(const char *directory,unsigned count,int adjacent) {
++    char *args[]={"probe","30000000","1040005e0b100007100010000bf33a5d4d","bank","refs",
++        (char *)directory,"1190312500","1440312500","1690312500","1940312500",NULL};
++    args[5+count]=adjacent ? args[4+count] : "123";
++    return main((int)count+6,args);
++}
++int exercise_four_children(const char *directory) {
++    char *args[]={"probe","selected","serial","bank","refs",(char *)directory};
++    struct visit_context context={.args=args,.probe_main=simulated_child,.visit_count=4};
++    interrupted=0;
++    for(unsigned n=0;n<4;n++) if(visit_child(&context,n,clock_ns(NULL)+UINT64_C(2000000000))) return -1;
++    int status;return waitpid(-1,&status,WNOHANG)==-1 && errno==ECHILD ? 0 : -1;
++}
+ '''
+ 
+ 
+@@ -75,14 +91,16 @@ def probe(tmp_path_factory):
+         *(str(root/'tools'/name) for name in names),*libraries,'-lfftw3','-lm','-o',str(out/'visit.so')],check=True)
+     lib=c.CDLL(str(out/'visit.so'));lib.exercise_child.argtypes=[c.c_char_p,c.c_char_p]
+     lib.inspect_idle_words.argtypes=[c.POINTER(c.c_uint32),c.c_uint32]
++    lib.invalid_plan.argtypes=[c.c_char_p,c.c_uint,c.c_int]
++    lib.exercise_four_children.argtypes=[c.c_char_p]
+     return lib
+ 
+ 
+-@pytest.mark.parametrize('mode',['pass','fail','hang','existing','clean_loss','unknown','signal'])
++@pytest.mark.parametrize('mode',['pass','fail','hang','existing','clean_loss','unknown','signal','selected'])
+ def test_child_is_reaped_before_return_and_evidence_is_never_overwritten(probe,tmp_path,mode):
+     if mode=='existing':
+         (tmp_path/'visit-0').mkdir();(tmp_path/'visit-0/stdout.json').write_text('preserved')
+-    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==({'pass':0,'clean_loss':1}.get(mode,-1))
++    assert probe.exercise_child(os.fsencode(tmp_path),mode.encode())==({'pass':0,'selected':0,'clean_loss':1}.get(mode,-1))
+     if mode=='existing': assert (tmp_path/'visit-0/stdout.json').read_text()=='preserved'
+     elif mode not in ('hang','signal'):
+         assert (tmp_path/'visit-0/stdout.json').read_text()=='retained child output\n'
+@@ -94,6 +112,20 @@ def test_clean_loss_requires_terminal_joined_native_provenance(probe,fault):
+     assert probe.loss_disposition(fault)==int(fault==0)
+ 
+ 
++@pytest.mark.parametrize('count',[2,3,4])
++@pytest.mark.parametrize('adjacent',[0,1])
++def test_entire_plan_is_checked_before_creating_evidence(probe,tmp_path,count,adjacent):
++    assert probe.invalid_plan(os.fsencode(tmp_path),count,adjacent)==2
++    assert not list(tmp_path.iterdir())
++
++
++def test_four_selected_children_have_separate_evidence_and_are_all_reaped(probe,tmp_path):
++    assert probe.exercise_four_children(os.fsencode(tmp_path))==0
++    assert sorted(p.name for p in tmp_path.iterdir())==[f'visit-{n}' for n in range(4)]
++    for n in range(4):
++        assert (tmp_path/f'visit-{n}/stdout.json').read_text()=='retained child output\n'
++
++
+ @pytest.mark.parametrize('rate',[30000000,60000000])
+ @pytest.mark.parametrize('epoch',[0,1,7])
+ @pytest.mark.parametrize('mode',['idle','boot_drops','active','fault','configured','wrong_rate','unread'])
+diff --git a/tests/starlink_glrt/test_tracking_visit.py b/tests/starlink_glrt/test_tracking_visit.py
+index 991573f4e..148c73fc3 100644
+--- a/tests/starlink_glrt/test_tracking_visit.py
++++ b/tests/starlink_glrt/test_tracking_visit.py
+@@ -48,21 +48,22 @@ static int run(void *p,unsigned n,uint64_t deadline) {
+     if(strcmp(t->mode,"no_samples")) t->state.native_latest+=UINT64_C(300000000);
+     t->now+=UINT64_C(10000000000);
+     if(!strcmp(t->mode,"run_rf")) t->state.lo_hz++;
+-    if(!strcmp(t->mode,"deadline")) t->now=deadline;
++    if(!strcmp(t->mode,"deadline") || (!strcmp(t->mode,"late_deadline") && t->runs==3)) t->now=deadline;
+     if(!strcmp(t->mode,"clock_regress")) t->now=999;
+-    return !strcmp(t->mode,"child_fail") ? -1 :
++    return (!strcmp(t->mode,"child_fail") || (!strcmp(t->mode,"late_failure") && t->runs==3)) ? -1 :
+         t->loss ? GLRT_VISIT_CLEAN_LOSS :
+         !strcmp(t->mode,"unknown_result") ? 2 : 0;
+ }
+ static int retain(void *p,const char *kind,unsigned n,int result,const struct glrt_visit_state *s) {
+     struct test *t=p;(void)s;assert(n==t->retained/3);
+     const char *names[]={"before_tune","tuned","after_run"};assert(!strcmp(kind,names[t->retained%3]));
+-    if(!strcmp(kind,"after_run")) assert(result==(!strcmp(t->mode,"child_fail") ? -1 :
++    if(!strcmp(kind,"after_run")) assert(result==((!strcmp(t->mode,"child_fail") || (!strcmp(t->mode,"late_failure") && t->runs==3)) ? -1 :
+         t->loss ? GLRT_VISIT_CLEAN_LOSS : !strcmp(t->mode,"unknown_result") ? 2 : 0));
+     t->retained++;
+     return (!strcmp(t->mode,"retention_before") && t->retained==1) ||
+         (!strcmp(t->mode,"retention_tuned") && t->retained==2) ||
+-        (!strcmp(t->mode,"retention_after") && t->retained==3) ? -1 : 0;
++        (!strcmp(t->mode,"retention_after") && t->retained==3) ||
++        (!strcmp(t->mode,"late_retention") && t->retained==9) ? -1 : 0;
+ }
+ int main(int argc,char **argv) {
+     assert(argc==3);struct test t={0};t.mode=argv[1];t.now=1000;
+@@ -71,12 +72,19 @@ int main(int argc,char **argv) {
+     unsigned rate=(unsigned)strtoul(argv[2],NULL,10);
+     t.state=(struct glrt_visit_state){1690312496,1000000,rate,3,1,1};
+     struct glrt_visit_ports p={&t,clock_ns,cancelled,inspect,tune,run,retain};
+-    uint64_t frequencies[]={1690312500,1940312500};
++    uint64_t frequencies[]={1690312500,1940312500,1690312500,1940312500};unsigned count=2;
++    if(!strcmp(t.mode,"revisit")) count=3;
++    if(!strcmp(t.mode,"four") || !strncmp(t.mode,"late_",5)) count=4;
++    if(!strcmp(t.mode,"sweep")) { count=4;frequencies[0]=1190312500;frequencies[1]=1440312500; }
++    if(!strcmp(t.mode,"bad_last")) { count=4;frequencies[3]=123; }
++    if(!strcmp(t.mode,"adjacent_repeat")) { count=4;frequencies[3]=frequencies[2]; }
++    if(!strcmp(t.mode,"too_many")) count=5;
++    if(!strcmp(t.mode,"too_few")) count=1;
+     if(!strcmp(t.mode,"lower_edge")) frequencies[1]=1709687500;
+     if(!strcmp(t.mode,"duplicate")) frequencies[1]=frequencies[0];
+     if(!strcmp(t.mode,"invalid_rate")) rate=2500000;
+     if(!strcmp(t.mode,"missing_port")) p.inspect=NULL;
+-    int rc=glrt_tracking_visit_run(&p,rate,frequencies);
++    int rc=count==2 ? glrt_tracking_visit_run(&p,rate,frequencies) : glrt_tracking_visit_plan_run(&p,rate,frequencies,count);
+     printf("%d %u %u %u %u\n",rc,t.inspections,t.tunes,t.runs,t.retained);
+ }
+ '''
+@@ -106,6 +114,9 @@ def probe(tmp_path_factory):
+     ('loss_no_samples',-2,1,1),('loss_run_rf',-2,1,1),
+     ('loss_retention_after',-5,1,1),('loss_deadline',-6,1,1),
+     ('loss_clock_regress',-6,1,1),('loss_between_epoch',-2,1,1),
++    ('revisit',0,3,3),('four',0,4,4),('sweep',0,4,4),('loss_four',0,4,4),
++    ('bad_last',-1,0,0),('adjacent_repeat',-1,0,0),('too_many',-1,0,0),('too_few',-1,0,0),
++    ('late_deadline',-6,3,3),('late_failure',-4,3,3),('late_retention',-5,3,3),
+ ])
+ def test_two_visits_preserve_fixed_rate_and_require_idle_retained_boundaries(probe,rate,mode,result,tunes,runs):
+     row=list(map(int,subprocess.check_output([str(probe),mode,str(rate)],text=True).split()))
+diff --git a/tools/glrt_cpu_live_probe.c b/tools/glrt_cpu_live_probe.c
+index e4e2e51f6..bda6c8b77 100644
+--- a/tools/glrt_cpu_live_probe.c
++++ b/tools/glrt_cpu_live_probe.c
+@@ -37,6 +37,8 @@ static int dwell_limits(const char *blocks,struct dwell_limits *out)
+         *out=(struct dwell_limits){4096,16,45,UINT64_C(30000000000),0};
+     else if(!strcmp(blocks,"45000"))
+         *out=(struct dwell_limits){45000,200,325,UINT64_C(300000000000),1};
++    else if(!strcmp(blocks,"1536-selected"))
++        *out=(struct dwell_limits){BLOCKS,ATTEMPTS,25,UINT64_C(12000000000),1};
+     else return -1;
+     return 0;
+ }
+@@ -533,7 +535,7 @@ static void *worker_thread(void *pointer)
+ static int restart_owner(struct live *s,FILE *capture_journal)
+ {
+     char raw[4096];uint32_t w[24];int n;
+-    if(s->started || s->observer_started || !s->done || !s->selected_iq || !s->native_clean_loss ||
++    if(s->visit_mode || s->started || s->observer_started || !s->done || !s->selected_iq || !s->native_clean_loss ||
+        s->result!=GLRT_NATIVE_ACQUISITION_LOST || s->restarts>=RESTART_LIMIT ||
+        s->attempts>=s->attempt_limit || cancelled(s)) return 0;
+     n=s->native.read(s->native.context,"tracking_snapshot",raw,sizeof(raw));
+@@ -636,7 +638,7 @@ static int live_probe_run(int argc,char **argv,int visit_mode)
+ #define NEED(x,name) do { stage=name; if(!(x)) goto done; } while(0)
+     if((argc!=6 && argc!=7) || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
+        dwell_limits(argc==7 ? argv[6] : NULL,&limits)) {
+-        fprintf(stderr,"usage: %s 30000000|60000000 SERIAL BANK REFERENCES NEW_OUTPUT_DIRECTORY [1536|4096|45000]\n",argv[0]);return 2;
++        fprintf(stderr,"usage: %s 30000000|60000000 SERIAL BANK REFERENCES NEW_OUTPUT_DIRECTORY [1536|4096|45000|1536-selected]\n",argv[0]);return 2;
+     }
+     rate=(uint32_t)strtoul(argv[1],NULL,10);
+     action.sa_handler=signal_stop;sigemptyset(&action.sa_mask);
+diff --git a/tools/glrt_cpu_visit_probe.c b/tools/glrt_cpu_visit_probe.c
+index 924f5a68c..0d2144284 100644
+--- a/tools/glrt_cpu_visit_probe.c
++++ b/tools/glrt_cpu_visit_probe.c
+@@ -13,6 +13,7 @@ struct visit_context {
+     char **args;
+     FILE *journal;
+     uint32_t rate;
++    unsigned visit_count;
+     int (*probe_main)(int,char **);
+ };
+ static int visit_cancelled(void *unused) { (void)unused;return interrupted!=0; }
+@@ -95,7 +96,8 @@ static int visit_retain(void *pointer,const char *kind,unsigned number,int resul
+ static int visit_child(void *pointer,unsigned number,uint64_t deadline)
+ {
+     struct visit_context *v=pointer;char directory[PATH_MAX],out[PATH_MAX],err[PATH_MAX];
+-    char *args[]={v->args[0],v->args[1],v->args[2],v->args[3],v->args[4],directory,NULL};
++    char *args[]={v->args[0],v->args[1],v->args[2],v->args[3],v->args[4],directory,
++        v->visit_count>2 ? "1536-selected" : NULL,NULL};
+     int stdout_fd=-1,stderr_fd=-1,status=0,stopping=0;pid_t pid,waited;uint64_t stop_at=0,now=clock_ns(NULL);
+     if(snprintf(directory,sizeof(directory),"%s/visit-%u",v->args[5],number)<=0 || mkdir(directory,0700) ||
+        snprintf(out,sizeof(out),"%s/stdout.json",directory)<=0 || snprintf(err,sizeof(err),"%s/stderr.txt",directory)<=0) return -1;
+@@ -107,7 +109,7 @@ static int visit_child(void *pointer,unsigned number,uint64_t deadline)
+         int rc;
+         if(dup2(stdout_fd,STDOUT_FILENO)<0 || dup2(stderr_fd,STDERR_FILENO)<0) _exit(2);
+         close(stdout_fd);close(stderr_fd);
+-        rc=v->probe_main(6,args);
++        rc=v->probe_main(v->visit_count>2 ? 7 : 6,args);
+         if(fflush(stdout) || fflush(stderr)) rc=2;
+         _exit(rc);
+     }
+@@ -135,12 +137,15 @@ fail:
+ int main(int argc,char **argv)
+ {
+     struct visit_context context={0};struct glrt_visit_ports ports;
+-    char path[PATH_MAX],*end;uint64_t lo[2];struct sigaction action={0};int rc;
+-    if(argc!=8 || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
++    char path[PATH_MAX],*end;uint64_t lo[4];struct sigaction action={0};int rc;
++    if(argc<8 || argc>10 || (strcmp(argv[1],"30000000") && strcmp(argv[1],"60000000")) ||
+        strcmp(argv[2],"1040005e0b100007100010000bf33a5d4d")) return 2;
+-    for(unsigned n=0;n<2;n++) {
++    context.visit_count=(unsigned)argc-6;
++    for(unsigned n=0;n<context.visit_count;n++) {
+         errno=0;lo[n]=strtoull(argv[6+n],&end,10);
+         if(errno || *end || !*argv[6+n]) return 2;
++        if((lo[n]!=1190312500 && lo[n]!=1440312500 && lo[n]!=1690312500 && lo[n]!=1940312500) ||
++           (n && lo[n]==lo[n-1])) return 2;
+     }
+     context.args=argv;context.rate=(uint32_t)strtoul(argv[1],NULL,10);context.probe_main=visit_probe_main;
+     if(snprintf(path,sizeof(path),"%s/visits.txt",argv[5])<=0 || !(context.journal=fopen(path,"wx"))) return 2;
+@@ -148,11 +153,16 @@ int main(int argc,char **argv)
+     if(sigaction(SIGALRM,&action,NULL) || sigaction(SIGTERM,&action,NULL) || sigaction(SIGINT,&action,NULL)) return 2;
+     alarm(60);
+     ports=(struct glrt_visit_ports){&context,clock_ns,visit_cancelled,visit_inspect,visit_tune,visit_child,visit_retain};
+-    if(fprintf(context.journal,"plan %u %s %" PRIu64 " %" PRIu64 " 1536 2 60000000000\n",context.rate,argv[2],lo[0],lo[1])<0 ||
++    rc=fprintf(context.journal,"plan %u %s",context.rate,argv[2])<0 ? GLRT_VISIT_RETENTION : 0;
++    for(unsigned n=0;n<context.visit_count;n++)
++        if(fprintf(context.journal," %" PRIu64,lo[n])<0) rc=GLRT_VISIT_RETENTION;
++    if(fprintf(context.journal," %s %u 60000000000\n",context.visit_count>2 ? "1536-selected" : "1536",context.visit_count)<0 ||
+        fflush(context.journal)) rc=GLRT_VISIT_RETENTION;
+-    else rc=glrt_tracking_visit_run(&ports,context.rate,lo);
++    if(!rc) rc=glrt_tracking_visit_plan_run(&ports,context.rate,lo,context.visit_count);
+     if(fprintf(context.journal,"terminal %d\n",rc)<0 || fclose(context.journal)) rc=GLRT_VISIT_RETENTION;
+     alarm(0);
+-    printf("{\"scope\":\"bounded_arm_two_frequency_visits\",\"rate\":%u,\"result\":%d,\"rf_sample_limit\":50331648}\n",context.rate,rc);
++    printf("{\"scope\":\"%s\",\"rate\":%u,\"result\":%d,\"rf_sample_limit\":%u}\n",
++        context.visit_count==2 ? "bounded_arm_two_frequency_visits" : "bounded_arm_frequency_revisits",
++        context.rate,rc,context.visit_count*25165824U);
+     return rc ? 1 : 0;
+ }
+diff --git a/tools/glrt_native_radio.md b/tools/glrt_native_radio.md
+index 206f063fa..831a9cf7c 100644
+--- a/tools/glrt_native_radio.md
++++ b/tools/glrt_native_radio.md
+@@ -376,3 +376,28 @@ the real visit profile. The corrected path has a full-IQ worker-completion
+ test at both rates. `review_glrt_cpu_visit_loss.py` independently checks the
+ retained drain/clear, exhausted support horizon and observer join. It must be
+ combined with final source/IQ, numerical and parent-transition reviews.
++
++### Bounded frequency revisits
++
++The ARM visit executable accepts two, three or four nominal upper-edge LO
++centers. Nonadjacent repeats are intentional revisits; adjacent duplicates and
++unknown centers are rejected before creating evidence or calling radio ports.
++The legacy two-center controller entry point and two-visit wire output remain
++compatible. Every plan shares one 60-second wall deadline; it is not reset at
++a revisit. Four visits admit at most 100,663,296 coarse samples (40.2653184 s).
++
++Two visits retain full returned IQ. Three/four visits pass `1536-selected` to
++each child: six acquisition attempts, 1,536 capture blocks, a 12-second worker
++budget and a 25-second child alarm, retaining scan windows, worker windows,
++native/observer evidence and source counters. This reduces evidence storage
++but does not retain an independent complete IQ stream. The longer selected
++profile keeps its existing limits. Native loss in visit mode returns to the
++parent after cleanup, instead of initiating an unplanned same-LO REBASE.
++
++Tests cover sweep/revisit ordering at both rates, full-plan preflight, late
++deadline/run/retention failure, selected-profile loss ownership and actual
++four-child fork/wait/evidence isolation. These are host tests with simulated
++radio ports, plus an ARM build. Before physical qualification, the operator
++and evidence reviewer must support the selected-IQ multi-visit plan and its
++resource budget. No sustained tracking or adaptive frequency ranking is
++established by this extension.
+diff --git a/tools/glrt_tracking_visit.c b/tools/glrt_tracking_visit.c
+index 56325664d..4d6832a2f 100644
+--- a/tools/glrt_tracking_visit.c
++++ b/tools/glrt_tracking_visit.c
+@@ -23,17 +23,19 @@ static int inspect(const struct glrt_visit_ports *p,uint32_t rate,struct glrt_vi
+ }
+ static int close_lo(uint64_t a,uint64_t b) { return a>=b ? a-b<=16 : b-a<=16; }
+ 
+-int glrt_tracking_visit_run(const struct glrt_visit_ports *p,uint32_t rate,const uint64_t lo[2])
++int glrt_tracking_visit_plan_run(const struct glrt_visit_ports *p,uint32_t rate,const uint64_t *lo,unsigned count)
+ {
+     struct glrt_visit_state before,tuned,after;
+     uint64_t last,deadline;int rc;
+     if(!p || !p->clock_ns || !p->cancelled || !p->inspect || !p->tune || !p->run || !p->retain ||
+-       !lo || !upper(lo[0]) || !upper(lo[1]) || lo[0]==lo[1] ||
++       !lo || count<2 || count>4 ||
+        (rate!=30000000 && rate!=60000000)) return GLRT_VISIT_INVALID;
++    for(unsigned n=0;n<count;n++)
++        if(!upper(lo[n]) || (n && lo[n]==lo[n-1])) return GLRT_VISIT_INVALID;
+     last=p->clock_ns(p->context);
+     if(!last || last>UINT64_MAX-UINT64_C(60000000000)) return GLRT_VISIT_DEADLINE;
+     deadline=last+UINT64_C(60000000000);
+-    for(unsigned n=0;n<2;n++) {
++    for(unsigned n=0;n<count;n++) {
+         if((rc=guard(p,deadline,&last)) || (rc=inspect(p,rate,&before))) return rc;
+         if(n && (before.epoch!=after.epoch || before.native_latest<after.native_latest || before.lo_hz!=after.lo_hz))
+             return GLRT_VISIT_SOURCE;
+@@ -59,3 +61,5 @@ int glrt_tracking_visit_run(const struct glrt_visit_ports *p,uint32_t rate,const
+     }
+     return GLRT_VISIT_DONE;
+ }
++int glrt_tracking_visit_run(const struct glrt_visit_ports *p,uint32_t rate,const uint64_t lo[2])
++{ return glrt_tracking_visit_plan_run(p,rate,lo,2); }
+diff --git a/tools/glrt_tracking_visit.h b/tools/glrt_tracking_visit.h
+index 98486251b..02b26aeed 100644
+--- a/tools/glrt_tracking_visit.h
++++ b/tools/glrt_tracking_visit.h
+@@ -3,9 +3,9 @@
+ #define GLRT_TRACKING_VISIT_H
+ #include <stdint.h>
+ 
+-/* Internal two-visit supervisor. References are upper-edge only; the caller
++/* Internal bounded visit supervisor. References are upper-edge only; the caller
+  * attests the fixed native image, reference banks and RX calibration. Each
+- * run is the existing finite 1536-block probe (10.0663296 s of coarse IQ).
++ * run is a finite 1536-block probe (at most 10.0663296 s of coarse IQ).
+  * This controller never changes clocks, bandwidth, gain, TX or tracking gates.
+  */
+ struct glrt_visit_state {
+@@ -37,4 +37,9 @@ enum glrt_visit_result {
+  * time regression, cancellation, failed run, or undrained source. */
+ int glrt_tracking_visit_run(const struct glrt_visit_ports *,uint32_t,
+     const uint64_t lo_hz[2]);
++/* Bounded scan/revisit plan: 2..4 centers, adjacent visits must differ.
++ * Repeated nonadjacent centers are intentional revisits. All validation is
++ * performed before the first port call; the shared deadline remains 60 s. */
++int glrt_tracking_visit_plan_run(const struct glrt_visit_ports *,uint32_t,
++    const uint64_t *lo_hz,unsigned count);
+ #endif

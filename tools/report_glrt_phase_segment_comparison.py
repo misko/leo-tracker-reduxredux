@@ -28,11 +28,12 @@ from leo.analysis.starlink.kalman_tracking import (  # noqa: E402
     PolynomialFrequencyModel,
     raw_candidate_sources,
 )
+from leo.analysis.starlink.local_doppler import frequency_line  # noqa: E402
 from leo.analysis.starlink.pilot_doppler_segments import (  # noqa: E402
     _segment_document,
     _WindowRequest,
 )
-from leo.analysis.starlink.templates import StarlinkEdge  # noqa: E402
+from leo.analysis.starlink.templates import FRAME_RATE_HZ, StarlinkEdge  # noqa: E402
 from leo.contracts.cfo_dealias import (  # noqa: E402
     DealiasedTrajectoryBankV4,
     FinalTrajectoryBankV3,
@@ -56,6 +57,9 @@ REQUIRED_KINDS = (
 )
 MINIMUM_PHASE_SPAN_S = 0.020
 MAXIMUM_PHASE_SPAN_S = 0.070
+ZOOM_DURATION_S = 0.500
+ROLLING_BASELINES_S = (0.016, 0.020, 0.050, 0.070)
+MAXIMUM_ROLLING_FRAME_GAP_S = 0.0041
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +122,29 @@ class WindowAnalysis:
     phase_segment_failures: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class TrackingInterval:
+    """One raw-IQ interval with frame-cadence pilot tracking."""
+
+    track: GlrtTrack
+    binding: PathBinding
+    start_time_s: float
+    end_time_s: float
+    result: PilotPntKalmanResult
+    source: str
+
+
+@dataclass(frozen=True, slots=True)
+class RollingFrequencyEstimate:
+    """One causal local frequency-line evaluation."""
+
+    time_s: float
+    fitted_cfo_hz: float
+    doppler_rate_hz_s: float
+    support_span_s: float
+    supported_frame_count: int
+
+
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
@@ -134,6 +161,7 @@ def _arguments() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--top-track-count", type=int, default=2)
+    parser.add_argument("--zoom-duration-s", type=float, default=ZOOM_DURATION_S)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--report-path", type=Path, required=True)
     return parser.parse_args()
@@ -472,6 +500,164 @@ def analyze_track_windows(
     return tuple(analyses)
 
 
+def rolling_frequency_estimates(
+    interval: TrackingInterval,
+    baseline_s: float,
+) -> tuple[RollingFrequencyEstimate, ...]:
+    """Fit a causal local CFO line without bridging unsupported frame gaps."""
+
+    if not math.isfinite(baseline_s) or baseline_s <= 0:
+        raise ValueError("rolling CFO baseline must be finite and positive")
+    supported = [
+        frame
+        for frame in interval.result.frames
+        if frame.measurement_supported
+        and math.isfinite(frame.time_s)
+        and math.isfinite(frame.absolute_cfo_measurement_hz)
+    ]
+    minimum_count = max(3, math.ceil(0.75 * baseline_s * FRAME_RATE_HZ))
+    minimum_span_s = max(2 / FRAME_RATE_HZ, 0.70 * baseline_s)
+    output: list[RollingFrequencyEstimate] = []
+    for right, frame in enumerate(supported):
+        left = right
+        while (
+            left > 0
+            and supported[left - 1].time_s >= frame.time_s - baseline_s - 1e-12
+        ):
+            left -= 1
+        selected = supported[left : right + 1]
+        if len(selected) < minimum_count:
+            continue
+        times = np.asarray([item.time_s for item in selected], dtype=float)
+        if times[-1] - times[0] < minimum_span_s:
+            continue
+        if np.max(np.diff(times)) > MAXIMUM_ROLLING_FRAME_GAP_S:
+            continue
+        frequencies = np.asarray(
+            [item.absolute_cfo_measurement_hz for item in selected], dtype=float
+        )
+        fit = frequency_line(times, frequencies)
+        if fit is None:
+            continue
+        fitted = fit.intercept_at_reference_hz + fit.slope_hz_per_s * (
+            frame.time_s - fit.reference_time_s
+        )
+        output.append(
+            RollingFrequencyEstimate(
+                time_s=interval.start_time_s + frame.time_s,
+                fitted_cfo_hz=float(fitted),
+                doppler_rate_hz_s=float(fit.slope_hz_per_s),
+                support_span_s=float(times[-1] - times[0]),
+                supported_frame_count=len(selected),
+            )
+        )
+    return tuple(output)
+
+
+def select_strongest_shared_zoom(
+    analyses_by_track: tuple[tuple[WindowAnalysis, ...], ...],
+    *,
+    duration_s: float,
+    recording_duration_s: float,
+) -> tuple[float, float, float]:
+    """Choose the 0.5 s interval with the densest audited cross-path support."""
+
+    if not math.isfinite(duration_s) or duration_s <= 0:
+        raise ValueError("zoom duration must be finite and positive")
+    if duration_s > recording_duration_s:
+        raise ValueError("zoom duration exceeds the recording")
+    audited: list[WindowAnalysis] = []
+    for group in analyses_by_track:
+        for item in group:
+            if int(item.document["supported_frame_count"]) > 0:
+                audited.append(item)
+    if not audited:
+        raise ValueError("no supported pilot interval is available for zoom selection")
+    selected_tracks = [group[0].track for group in analyses_by_track if group]
+    common_start_s = max(0.0, *(track.start_s for track in selected_tracks))
+    common_end_s = min(recording_duration_s, *(track.end_s for track in selected_tracks))
+    if common_end_s - common_start_s < duration_s:
+        raise ValueError("selected tracks do not share a complete zoom interval")
+
+    candidates = {
+        common_start_s,
+        common_end_s - duration_s,
+        *(float(item.document["start_time_s"]) for item in audited),
+        *(float(item.document["end_time_s"]) - duration_s for item in audited),
+    }
+
+    def contained(start_s: float) -> list[WindowAnalysis]:
+        end_s = start_s + duration_s
+        return [
+            item
+            for item in audited
+            if float(item.document["start_time_s"]) >= start_s - 1e-12
+            and float(item.document["end_time_s"]) <= end_s + 1e-12
+        ]
+
+    def score(start_s: float) -> tuple[float, ...]:
+        rows = contained(start_s)
+        return (
+            float(sum(int(item.document["supported_frame_count"]) for item in rows)),
+            float(sum(int(item.document["phase_update_count"]) for item in rows)),
+            float(sum(item.phase_segment_qualified for item in rows)),
+            float(len({item.binding.label for item in rows})),
+            float(len(rows)),
+            -float(start_s),
+        )
+
+    coarse_start_s = max(
+        (value for value in candidates if common_start_s <= value <= common_end_s - duration_s),
+        key=score,
+    )
+    best_rows = contained(coarse_start_s)
+    coverage_start_s = min(float(item.document["start_time_s"]) for item in best_rows)
+    coverage_end_s = max(float(item.document["end_time_s"]) for item in best_rows)
+    centered_start_s = 0.05 * round(
+        ((coverage_start_s + coverage_end_s - duration_s) / 2) / 0.05
+    )
+    start_s = min(
+        max(centered_start_s, common_start_s, coverage_end_s - duration_s),
+        common_end_s - duration_s,
+        coverage_start_s,
+    )
+    selected_rows = contained(start_s)
+    by_epoch: dict[int, list[WindowAnalysis]] = {}
+    anchor_candidates = [item for item in selected_rows if item.phase_segment_qualified]
+    for item in anchor_candidates or selected_rows:
+        by_epoch.setdefault(round(float(item.document["start_time_s"]) * 1_000_000), []).append(
+            item
+        )
+    anchor_us, _anchor_rows = max(
+        by_epoch.items(),
+        key=lambda entry: (
+            len({item.binding.label for item in entry[1]}),
+            sum(int(item.document["supported_frame_count"]) for item in entry[1]),
+            -entry[0],
+        ),
+    )
+    return float(start_s), float(start_s + duration_s), float(anchor_us / 1_000_000)
+
+
+def _window_tracking_intervals(
+    analyses_by_track: tuple[tuple[WindowAnalysis, ...], ...],
+) -> tuple[tuple[TrackingInterval, ...], ...]:
+    return tuple(
+        tuple(
+            TrackingInterval(
+                track=item.track,
+                binding=item.binding,
+                start_time_s=float(item.document["start_time_s"]),
+                end_time_s=float(item.document["end_time_s"]),
+                result=item.result,
+                source="audited-70ms-window",
+            )
+            for item in group
+        )
+        for group in analyses_by_track
+    )
+
+
 def _short(digest: str, length: int = 8) -> str:
     return digest.removeprefix("sha256:")[:length]
 
@@ -740,6 +926,225 @@ def render_rate_comparison(
     plt.close(figure)
 
 
+def _interval_frame_arrays(
+    interval: TrackingInterval,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    model = PolynomialFrequencyModel(
+        interval.track.track.reference_time_s,
+        tuple(interval.track.track.absolute_coefficients_hz),
+    )
+    frames = interval.result.frames
+    times = np.asarray([interval.start_time_s + frame.time_s for frame in frames], dtype=float)
+    measured = np.asarray([frame.absolute_cfo_measurement_hz for frame in frames], dtype=float)
+    tracked = np.asarray([frame.tracked_absolute_cfo_hz for frame in frames], dtype=float)
+    frozen = np.asarray([model.frequency_hz(time_s) for time_s in times], dtype=float)
+    supported = np.asarray([frame.measurement_supported for frame in frames], dtype=bool)
+    return times, measured - frozen, tracked - frozen, frozen, supported
+
+
+def render_multiscale_cfo(
+    path: Path,
+    intervals_by_track: tuple[tuple[TrackingInterval, ...], ...],
+    *,
+    x_limits_s: tuple[float, float],
+    title: str,
+    highlighted_zoom_s: tuple[float, float] | None = None,
+) -> None:
+    """Render frame cadence, short-memory fits, and multi-second GLRT on one time axis."""
+
+    colors = ("#2f83b7", "#d9881f", "#4e9a68", "#8a6bb8")
+    line_styles = {0.020: ":", 0.050: "--", 0.070: "-"}
+    figure, axes = plt.subplots(4, 1, figsize=(15, 13.0), sharex=True)
+    frame_axis, bootstrap_axis, local_axis, rate_axis = axes
+    supported_residuals: list[float] = []
+    for group_index, intervals in enumerate(intervals_by_track):
+        if not intervals:
+            continue
+        color = colors[group_index % len(colors)]
+        path_label = intervals[0].binding.label
+        frame_label_used = False
+        rejected_label_used = False
+        bootstrap_label_used = False
+        kalman_label_used = False
+        baseline_labels_used: set[float] = set()
+        rate_labels_used: set[float] = set()
+        for interval in intervals:
+            times, measured_residual, tracked_residual, _frozen, supported = (
+                _interval_frame_arrays(interval)
+            )
+            rejected = ~supported
+            supported_residuals.extend(
+                float(value) for value in measured_residual[supported] if math.isfinite(value)
+            )
+            if np.any(rejected):
+                frame_axis.scatter(
+                    times[rejected],
+                    measured_residual[rejected],
+                    s=7,
+                    color="#aab4bd",
+                    alpha=0.18,
+                    linewidths=0,
+                    label=(
+                        "rejected/coasted frame"
+                        if group_index == 0 and not rejected_label_used
+                        else None
+                    ),
+                    zorder=1,
+                )
+                rejected_label_used = True
+            if np.any(supported):
+                frame_axis.scatter(
+                    times[supported],
+                    measured_residual[supported],
+                    s=10,
+                    color=color,
+                    alpha=0.70,
+                    linewidths=0,
+                    label=path_label if not frame_label_used else None,
+                    zorder=2,
+                )
+                frame_label_used = True
+
+            bootstrap = rolling_frequency_estimates(interval, 0.016)
+            if bootstrap:
+                bootstrap_times = np.asarray([item.time_s for item in bootstrap])
+                model = PolynomialFrequencyModel(
+                    interval.track.track.reference_time_s,
+                    tuple(interval.track.track.absolute_coefficients_hz),
+                )
+                bootstrap_residual = np.asarray(
+                    [item.fitted_cfo_hz - model.frequency_hz(item.time_s) for item in bootstrap]
+                )
+                bootstrap_axis.plot(
+                    bootstrap_times,
+                    bootstrap_residual,
+                    color=color,
+                    linewidth=1.5,
+                    alpha=0.92,
+                    label=(
+                        f"{path_label} · 16 ms local line"
+                        if not bootstrap_label_used
+                        else None
+                    ),
+                    zorder=3,
+                )
+                bootstrap_label_used = True
+            if times.size:
+                tracked_supported = np.where(supported, tracked_residual, np.nan)
+                bootstrap_axis.plot(
+                    times,
+                    tracked_supported,
+                    color=color,
+                    linewidth=0.9,
+                    linestyle="--",
+                    alpha=0.52,
+                    label=(f"{path_label} · five-state KF" if not kalman_label_used else None),
+                    zorder=2,
+                )
+                kalman_label_used = True
+
+            for baseline_s in (0.020, 0.050, 0.070):
+                estimates = rolling_frequency_estimates(interval, baseline_s)
+                if not estimates:
+                    continue
+                estimate_times = np.asarray([item.time_s for item in estimates])
+                model = PolynomialFrequencyModel(
+                    interval.track.track.reference_time_s,
+                    tuple(interval.track.track.absolute_coefficients_hz),
+                )
+                estimate_residual = np.asarray(
+                    [item.fitted_cfo_hz - model.frequency_hz(item.time_s) for item in estimates]
+                )
+                label = None
+                if baseline_s not in baseline_labels_used:
+                    label = f"{path_label} · {baseline_s * 1_000:.0f} ms"
+                    baseline_labels_used.add(baseline_s)
+                local_axis.plot(
+                    estimate_times,
+                    estimate_residual,
+                    color=color,
+                    linestyle=line_styles[baseline_s],
+                    linewidth=1.65 if baseline_s == 0.070 else 1.15,
+                    alpha=0.90 if baseline_s == 0.070 else 0.68,
+                    label=label,
+                    zorder=2 + int(baseline_s == 0.070),
+                )
+
+            for baseline_s in (0.016, 0.020, 0.050, 0.070):
+                estimates = rolling_frequency_estimates(interval, baseline_s)
+                displayed = [
+                    item
+                    for item in estimates
+                    if math.isfinite(item.doppler_rate_hz_s)
+                    and abs(item.doppler_rate_hz_s) <= 15_000
+                ]
+                if not displayed:
+                    continue
+                label = None
+                if baseline_s not in rate_labels_used:
+                    label = f"{path_label} · {baseline_s * 1_000:.0f} ms"
+                    rate_labels_used.add(baseline_s)
+                rate_axis.plot(
+                    [item.time_s for item in displayed],
+                    [item.doppler_rate_hz_s / 1_000 for item in displayed],
+                    color=color,
+                    linestyle=("-." if baseline_s == 0.016 else line_styles[baseline_s]),
+                    linewidth=1.45 if baseline_s == 0.070 else 0.95,
+                    alpha=0.88 if baseline_s == 0.070 else 0.58,
+                    label=label,
+                )
+        track = intervals[0].track
+        rate_axis.hlines(
+            track.glrt_rate_hz_s / 1_000,
+            max(x_limits_s[0], track.start_s),
+            min(x_limits_s[1], track.end_s),
+            color=color,
+            linewidth=2.2,
+            alpha=0.95,
+            label=f"{path_label} · GLRT {track.glrt_rate_hz_s / 1_000:+.3f} kHz/s",
+            zorder=5,
+        )
+
+    panel_titles = (
+        "A · One independent known-pilot CFO per 1.333 ms frame",
+        "B · ≈16 ms local line and causal phase+frequency Kalman state",
+        "C · Rolling fitted CFO at 20, 50, and 70 ms support",
+        "D · Slope of the fitted CFO; short baselines versus multi-second GLRT",
+    )
+    for axis, panel_title in zip(axes, panel_titles, strict=True):
+        axis.axhline(0, color="#263746", linewidth=0.9, alpha=0.75, zorder=0)
+        axis.grid(alpha=0.17)
+        axis.set_title(panel_title, loc="left", fontsize=11)
+        axis.set_xlim(*x_limits_s)
+        if highlighted_zoom_s is not None:
+            axis.axvspan(
+                highlighted_zoom_s[0],
+                highlighted_zoom_s[1],
+                color="#e6b85c",
+                alpha=0.11,
+                linewidth=0,
+                zorder=0,
+            )
+    for axis in axes[:3]:
+        axis.set_ylabel("CFO − frozen GLRT fit (Hz)")
+    if supported_residuals:
+        lower, upper = np.percentile(np.asarray(supported_residuals), (0.5, 99.5))
+        padding = max(40.0, 0.12 * max(upper - lower, 1.0))
+        for axis in axes[:3]:
+            axis.set_ylim(lower - padding, upper + padding)
+    rate_axis.set_ylabel("fitted CFO slope (kHz/s)")
+    rate_axis.set_ylim(-15, 15)
+    rate_axis.set_xlabel("capture time (s)")
+    frame_axis.legend(loc="best", fontsize=8, ncols=3)
+    bootstrap_axis.legend(loc="best", fontsize=8, ncols=2)
+    local_axis.legend(loc="best", fontsize=8, ncols=3)
+    rate_axis.legend(loc="best", fontsize=7.5, ncols=3)
+    figure.suptitle(title, fontsize=16)
+    figure.tight_layout(rect=(0, 0, 1, 0.97))
+    figure.savefig(path, dpi=190, metadata={"Software": "leo-tracker"})
+    plt.close(figure)
+
+
 def _markdown_table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> list[str]:
     result = [
         "| " + " | ".join(headers) + " |",
@@ -760,6 +1165,12 @@ def write_report(
     selected_tracks: tuple[GlrtTrack, ...],
     closeup_figure_relative_path: str,
     rate_figure_relative_path: str,
+    multiscale_full_figure_relative_path: str,
+    multiscale_zoom_figure_relative_path: str,
+    zoom_start_s: float,
+    zoom_end_s: float,
+    zoom_anchor_s: float,
+    zoom_supported_frame_counts: tuple[int, ...],
     results_relative_path: str,
     glrt_csv_relative_path: str,
     phase_csv_relative_path: str,
@@ -907,6 +1318,37 @@ def write_report(
             '"teeth"—against the frozen GLRT model. Gray frames fail or coast through '
             "the declared gates; orange lines are the qualified local fits.*",
             "",
+            "## Tracking resolution ladder",
+            "",
+            f"![Full-recording multiscale CFO]({multiscale_full_figure_relative_path})",
+            "",
+            "*Figure 3. The complete recording time axis puts every audited scale in its "
+            "proper temporal context. Panel A contains one independent CFO measurement "
+            "per complete 1.333 ms pilot frame, but only inside the explicitly re-read "
+            "70 ms source windows; gaps are not interpolated. Panels B and C apply "
+            "increasing local-linear support to those same measurements. Panel D is the "
+            "slope of each fitted CFO, with the sealed multi-second GLRT rates shown as "
+            "heavy references. The pale vertical band marks the zoom below.*",
+            "",
+            f"![Strongest 500 ms multiscale CFO zoom]({multiscale_zoom_figure_relative_path})",
+            "",
+            (
+                f"*Figure 4. The strongest audited 0.5 s region runs from "
+                f"{zoom_start_s:.3f} to {zoom_end_s:.3f} s and contains the shared "
+                f"qualified epoch at {zoom_anchor_s:.3f} s. The two paths contribute "
+                f"{' and '.join(str(value) for value in zoom_supported_frame_counts)} "
+                "supported frame-CFO measurements from the contained 70 ms raw-IQ "
+                "audits; unsampled gaps remain blank. A 1.333 ms point is a frequency "
+                "measurement, while the 16, 20, 50, and 70 ms curves fit frequency "
+                "over time.*"
+            ),
+            "",
+            "The resolution ladder is deliberately plotted as CFO residual relative to "
+            "each path's own frozen GLRT fit. This removes the arbitrary constant receiver/"
+            "LNB offset without removing a difference in slope. The zoom is a "
+            "descriptive scale comparison, not four additional independently qualified "
+            "Doppler products.",
+            "",
             "## Every qualified 20–70 ms segment",
             "",
         ]
@@ -976,6 +1418,10 @@ def write_report(
             "coherence, line-fit, held-out prediction, and local/Kalman agreement gates pass. "
             "Measure the reported span from the first to last applied phase update and reject "
             "spans below 20 ms.",
+            "6. Select the 0.5 s zoom by maximizing supported-frame coverage across both "
+            "paths, retaining only the contained bounded raw-IQ audits. Rolling 16, 20, 50, "
+            "and 70 ms lines are evaluated causally and never bridge a supported-frame gap "
+            "above 4.1 ms.",
             "",
             "No new RF was collected and no sealed Standard product was modified.",
             "",
@@ -1023,6 +1469,12 @@ def write_report(
             "- `Phase+frequency KF rate` is the terminal five-state modulo-pi pilot Kalman "
             "estimate. It is not a phase-only derivative, so agreement between it and the "
             "local CFO fit is a consistency check, not a fully independent estimator.",
+            "- `1.333 ms frame CFO` combines all 300 known symbols and eight edge "
+            "subcarriers in one frame. It is frame-cadence frequency evidence, not a "
+            "standalone 1.333 ms Doppler-rate estimate.",
+            "- `16/20/50/70 ms rolling fits` are descriptive causal lines over supported "
+            "frame CFO measurements. Their samples overlap heavily; apparent point density "
+            "must not be interpreted as independent rate evidence.",
             "- The large local-versus-GLRT difference is consistent with a ramp-plus-jump "
             "receiver-relative carrier process: the multi-second line averages local ramps "
             "and discrete carrier-bias changes. Unknown LNB/receiver and transmitter states "
@@ -1062,10 +1514,30 @@ def main() -> int:
         analyses_by_track = tuple(
             analyze_track_windows(store, bundle, track, bindings[track.scope]) for track in selected
         )
+        recording_duration_s = max(
+            store.reader(bundle, bindings[track.scope].stream_id, verify=True).sample_count
+            / store.reader(bundle, bindings[track.scope].stream_id, verify=True).sample_rate_hz
+            for track in selected
+        )
+        zoom_start_s, zoom_end_s, zoom_anchor_s = select_strongest_shared_zoom(
+            analyses_by_track,
+            duration_s=args.zoom_duration_s,
+            recording_duration_s=recording_duration_s,
+        )
     finally:
         store.close()
 
     analyses = tuple(item for group in analyses_by_track for item in group)
+    window_intervals_by_track = _window_tracking_intervals(analyses_by_track)
+    zoom_intervals_by_track = tuple(
+        tuple(
+            interval
+            for interval in group
+            if interval.start_time_s >= zoom_start_s - 1e-12
+            and interval.end_time_s <= zoom_end_s + 1e-12
+        )
+        for group in window_intervals_by_track
+    )
     glrt_rows = _glrt_rows(tracks, bindings)
     phase_rows = _phase_rows(analyses)
     glrt_csv = args.output_dir / "glrt-rates.csv"
@@ -1073,6 +1545,8 @@ def main() -> int:
     all_windows_csv = args.output_dir / "all-window-diagnostics.csv"
     figure_path = args.output_dir / "two-strongest-track-closeups.png"
     rate_figure_path = args.output_dir / "segment-rate-comparison.png"
+    multiscale_full_figure_path = args.output_dir / "multiscale-cfo-full-recording.png"
+    multiscale_zoom_figure_path = args.output_dir / "multiscale-cfo-500ms-zoom.png"
     results_path = args.output_dir / "glrt-phase-segment-results.json"
     _write_csv(glrt_csv, glrt_rows)
     _write_csv(all_windows_csv, phase_rows)
@@ -1080,6 +1554,29 @@ def main() -> int:
     _write_csv(phase_csv, qualified_phase_rows)
     render_closeup(figure_path, analyses_by_track)
     render_rate_comparison(rate_figure_path, analyses_by_track)
+    render_multiscale_cfo(
+        multiscale_full_figure_path,
+        window_intervals_by_track,
+        x_limits_s=(0.0, recording_duration_s),
+        highlighted_zoom_s=(zoom_start_s, zoom_end_s),
+        title=(
+            "Pilot-CFO tracking resolution ladder · full recording\n"
+            "Frame evidence is shown only where raw 70 ms windows were explicitly audited"
+        ),
+    )
+    render_multiscale_cfo(
+        multiscale_zoom_figure_path,
+        zoom_intervals_by_track,
+        x_limits_s=(zoom_start_s, zoom_end_s),
+        title=(
+            f"Pilot-CFO tracking resolution ladder · {args.zoom_duration_s:.3f} s "
+            "strongest audited-signal zoom"
+        ),
+    )
+    zoom_supported_frame_counts = tuple(
+        sum(interval.result.supported_frame_count for interval in group)
+        for group in zoom_intervals_by_track
+    )
     result_document = {
         "schema_version": 1,
         "algorithm": "sealed-glrt-vs-20-70ms-modulo-pi-pilot-segments-v1",
@@ -1094,6 +1591,19 @@ def main() -> int:
         "phase_segment_bounds_s": {
             "minimum_supported_span_s": MINIMUM_PHASE_SPAN_S,
             "maximum_raw_window_s": MAXIMUM_PHASE_SPAN_S,
+        },
+        "multiscale_cfo_visualization": {
+            "frame_measurement_cadence_hz": FRAME_RATE_HZ,
+            "rolling_fit_baselines_s": list(ROLLING_BASELINES_S),
+            "rolling_fits_are_overlapping_descriptive_estimates": True,
+            "full_recording_duration_s": recording_duration_s,
+            "full_recording_frame_evidence_is_sparse_70ms_audits": True,
+            "zoom_start_s": zoom_start_s,
+            "zoom_end_s": zoom_end_s,
+            "zoom_anchor_s": zoom_anchor_s,
+            "zoom_supported_frame_counts": list(zoom_supported_frame_counts),
+            "zoom_frame_evidence_is_sparse_70ms_audits": True,
+            "cfo_ordinate": "measured-or-fitted CFO minus matched frozen GLRT CFO",
         },
         "candidate_only": True,
         "known_pilots_only": True,
@@ -1126,6 +1636,16 @@ def main() -> int:
         selected_tracks=selected,
         closeup_figure_relative_path=str(figure_path.relative_to(report_parent)),
         rate_figure_relative_path=str(rate_figure_path.relative_to(report_parent)),
+        multiscale_full_figure_relative_path=str(
+            multiscale_full_figure_path.relative_to(report_parent)
+        ),
+        multiscale_zoom_figure_relative_path=str(
+            multiscale_zoom_figure_path.relative_to(report_parent)
+        ),
+        zoom_start_s=zoom_start_s,
+        zoom_end_s=zoom_end_s,
+        zoom_anchor_s=zoom_anchor_s,
+        zoom_supported_frame_counts=zoom_supported_frame_counts,
         results_relative_path=str(results_path.relative_to(report_parent)),
         glrt_csv_relative_path=str(glrt_csv.relative_to(report_parent)),
         phase_csv_relative_path=str(phase_csv.relative_to(report_parent)),
@@ -1140,6 +1660,10 @@ def main() -> int:
                 "report": str(args.report_path),
                 "figure": str(figure_path),
                 "rate_figure": str(rate_figure_path),
+                "multiscale_full_figure": str(multiscale_full_figure_path),
+                "multiscale_zoom_figure": str(multiscale_zoom_figure_path),
+                "zoom_interval_s": [zoom_start_s, zoom_end_s],
+                "zoom_supported_frame_counts": zoom_supported_frame_counts,
                 "results": str(results_path),
             },
             sort_keys=True,
