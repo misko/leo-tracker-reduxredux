@@ -52,13 +52,23 @@ means of \(4\cos(2r)\); they are not probabilities or p-values.
 The phase timeline places all 793 random-held odd-symbol adjacent-frame
 measurements on each capture's qualified device-counter clock. Colour denotes
 RF channel using the established scan palette; circles are RX0 and crosses are
-RX1. Phase is wrapped modulo π to ±90°. The plotted support is limited to the
-five frozen tracks and lies between 129.9 and 224.4 seconds depending on the
-scan. Blank intervals mean that the selected track has no retained phase
-measurement. They are not zero phase, and points are never connected or
-unwrapped across visits.
+RX1. Phase is wrapped modulo π to ±90° on the left axis. The right axis overlays
+the reconstructed, de-aliased fractional-GLRT CFO for the exact RX0 and RX1
+tracklets, after subtracting each receiver track's median CFO so their shapes
+share a readable scale. Diamonds/solid lines denote RX0 and triangles/dashed
+lines denote RX1. Each CFO marker is one visit. Connecting lines only identify
+membership and order within the selected track; they do not represent
+measurements during retune gaps.
 
-![Random-held phase over each 300-second scan](figures/2026_09_24_phase_satellite_association/phase-vs-time-300s.png)
+The plotted phase support is limited to the five frozen tracks and lies between
+129.9 and 224.4 seconds depending on the scan. Blank intervals mean that the
+selected track has no retained phase measurement. They are not zero phase, and
+phase points are never connected or unwrapped across visits. The phase and CFO
+axes have different units and scales; their vertical proximity has no meaning.
+The right-axis curves are measured acquisition tracks, not satellite Doppler
+predictions or phase-derived frequencies.
+
+![Random-held phase and selected GLRT tracks over each 300-second scan](figures/2026_09_24_phase_satellite_association/phase-vs-time-300s.png)
 
 The companion GLRT plot uses the complete published fractional-GLRT inventory
 for the same five captures: 110,879 candidate records, of which 10,572 pass the

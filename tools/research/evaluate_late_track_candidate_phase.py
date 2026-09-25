@@ -206,6 +206,42 @@ def glrt_timeline_rows(source: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def selected_track_points(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse interval evidence to one measured GLRT track point per visit/RX."""
+    grouped: dict[tuple[str, int, int], list[dict[str, Any]]] = {}
+    for row in rows:
+        key = (row["session_id"], row["visit_index"], row["receiver_id"])
+        grouped.setdefault(key, []).append(row)
+    points = []
+    for (session_id, visit_index, receiver_id), members in grouped.items():
+        cfo = {
+            float(row["source_tracking_dealiased_cfo_hz"]) for row in members
+        }
+        channels = {int(row["channel"]) for row in members}
+        if len(cfo) != 1 or len(channels) != 1:
+            raise ValueError("one visit/RX track point has inconsistent source evidence")
+        points.append(
+            {
+                "session_id": session_id,
+                "visit_index": visit_index,
+                "receiver_id": receiver_id,
+                "channel": channels.pop(),
+                "scan_elapsed_s": float(
+                    np.mean([row["scan_elapsed_s"] for row in members])
+                ),
+                "tracking_cfo_hz": cfo.pop(),
+            }
+        )
+    return sorted(
+        points,
+        key=lambda row: (
+            row["session_id"],
+            row["receiver_id"],
+            row["scan_elapsed_s"],
+        ),
+    )
+
+
 def frame_opportunities(sample_count: int, rate: int, epoch: int) -> list[tuple[int, int]]:
     """Four adjacent complete frames nearest each phase-blind 20 ms group center."""
     content = round(302 * rate * OFDM_SYMBOL_DURATION_S)
@@ -665,6 +701,7 @@ def run(
             )
             tracklets = {row.tracklet_id: row for row in trajectory.tracklets}
             track_points = []
+            track_dealiased_cfo = []
             reviews = []
             for _receiver_id, key in ((0, "rx0_tracklet_id"), (1, "rx1_tracklet_id")):
                 tracklet_id = str(chosen[key])
@@ -674,6 +711,14 @@ def run(
                     for point in tracklet.points
                 }
                 track_points.append(points)
+                track_dealiased_cfo.append(
+                    {
+                        by_candidate[point.candidate_id].visit_index: (
+                            point.normalized_dealiased_cfo_hz
+                        )
+                        for point in tracklet.points
+                    }
+                )
                 reviews.append(_review(manifest, tracklet_id))
             visit_indices = tuple(map(int, chosen["phase_selected_visit_indices"]))
             training_visits, held_visits = seeded_group_split(
@@ -743,6 +788,9 @@ def run(
                                     "source_probe_index": point.probe_index,
                                     "source_candidate_rank": point.candidate_rank,
                                     "source_tracking_cfo_hz": point.measured_cfo_hz,
+                                    "source_tracking_dealiased_cfo_hz": (
+                                        track_dealiased_cfo[receiver_id][visit_index]
+                                    ),
                                 }
                             )
                         receiver_rows[receiver_id].extend(rows)
@@ -1217,7 +1265,13 @@ def render(
 
     fig, axes = plt.subplots(5, 1, figsize=(14, 14), sharex=True, constrained_layout=True)
     receiver_markers = {0: "o", 1: "x"}
+    track_markers = {0: "D", 1: "^"}
+    track_styles = {0: "-", 1: "--"}
+    track_points = selected_track_points(evidence_rows)
+    right_axes = []
     for track, axis in zip(document["tracks"], axes, strict=True):
+        track_axis = axis.twinx()
+        right_axes.append(track_axis)
         rows = [
             row for row in evidence_rows if row["session_id"] == track["session_id"]
         ]
@@ -1237,6 +1291,31 @@ def render(
                 rasterized=True,
                 label=f"RX{receiver_id}" if track["rank"] == 1 else None,
             )
+            selected_track = [
+                row
+                for row in track_points
+                if row["session_id"] == track["session_id"]
+                and row["receiver_id"] == receiver_id
+            ]
+            cfo_center_hz = float(
+                np.median([row["tracking_cfo_hz"] for row in selected_track])
+            )
+            track_axis.plot(
+                [row["scan_elapsed_s"] for row in selected_track],
+                [
+                    (row["tracking_cfo_hz"] - cfo_center_hz) / 1000
+                    for row in selected_track
+                ],
+                marker=track_markers[receiver_id],
+                linestyle=track_styles[receiver_id],
+                color="#30343b" if receiver_id == 0 else "#70757d",
+                linewidth=1.15,
+                markersize=4.5,
+                alpha=0.9,
+                label=(
+                    f"RX{receiver_id} GLRT track" if track["rank"] == 1 else None
+                ),
+            )
         axis.set_ylim(-90, 90)
         axis.set_yticks([-90, -45, 0, 45, 90])
         axis.set_ylabel("Phase advance (°)")
@@ -1247,6 +1326,12 @@ def render(
         )
         axis.grid(alpha=0.2)
         axis.spines[["top", "right"]].set_visible(False)
+        if track["rank"] == 3:
+            track_axis.set_ylabel(
+                "De-aliased track CFO − RX median (kHz)", color="#4f5660"
+            )
+        track_axis.tick_params(axis="y", colors="#4f5660")
+        track_axis.spines["top"].set_visible(False)
     for channel in sorted({track["channel"] for track in document["tracks"]}):
         axes[0].scatter(
             [],
@@ -1255,12 +1340,20 @@ def render(
             color=CHANNEL_COLOURS[channel],
             label=f"CH{channel}",
         )
-    axes[0].legend(loc="upper right", ncol=5)
+    left_handles, left_labels = axes[0].get_legend_handles_labels()
+    right_handles, right_labels = right_axes[0].get_legend_handles_labels()
+    axes[0].legend(
+        left_handles + right_handles,
+        left_labels + right_labels,
+        loc="upper right",
+        ncol=4,
+        fontsize=8,
+    )
     axes[-1].set_xlim(0, 300)
     axes[-1].set_xlabel("Elapsed scan time from qualified device-counter timing (seconds)")
     fig.suptitle(
-        "Random-held odd-symbol adjacent-frame phase over each 300-second scan\n"
-        "Colours identify RF channel · modulo π · no connection across visits"
+        "Random-held phase and selected GLRT tracks over each 300-second scan\n"
+        "Left: modulo-π phase · right: de-aliased track CFO relative to RX median"
     )
     fig.savefig(output / "phase-vs-time-300s.png", dpi=170)
     plt.close(fig)

@@ -5,8 +5,10 @@
 - `phase-advance-evidence.json.gz`: extracted adjacent-frame pilot phase rows.
 - `glrt-timeline.json.gz`: full fractional-GLRT candidate inventory for the five
   300-second scans.
-- `phase-vs-time-300s.png`: selected-track random-held phase over the scan
-  clock, coloured by RF channel.
+- `phase-vs-time-300s.png`: selected-track random-held phase on the left axis
+  and the exact RX0/RX1 reconstructed de-aliased GLRT tracking CFO relative to
+  each receiver median on the right axis, overlaid on the 300-second scan clock
+  and coloured by RF channel.
 - `glrt-vs-time-300s.png`: complete per-receiver GLRT margins over the scan
   clock, with passing candidates coloured by RF channel.
 - `candidate-score-by-track-receiver.png`: receiver-level train and held scores.
