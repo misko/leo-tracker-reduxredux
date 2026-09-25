@@ -1,0 +1,36 @@
+{
+  "schema": "ds1-iteration23-widened-rate-plan/v1",
+  "status": "fixed-widening-audit-no-geographic-search",
+  "reference_used_for_inference": false,
+  "cohort": {
+    "dataset": "reports/2026_09_24_ds1/dataset.json",
+    "case_ids": [
+      "train_20260921_00_6",
+      "train_20260921_16_6"
+    ],
+    "prior": "reno"
+  },
+  "coordinate_and_tau_policy": "reuse each case's sealed original DS1 shared_time winner, selected using randomized TRAIN rows before held evaluation",
+  "identity_policy": "select each track's hard candidate using randomized TRAIN rows only at the fixed coordinate and tau",
+  "rate_schedule_s_h": [
+    0.25,
+    0.5,
+    1.0
+  ],
+  "rate_schedule_policy": "run every predeclared symmetric bound unconditionally; no earlier result and no HELD result may stop, widen, narrow, or otherwise alter the schedule",
+  "global_profile": {
+    "maximum_coarse_phase_step_s": 0.05,
+    "grid_policy": "for each TRAIN source and bound, choose enough equal intervals that max(abs(TRAIN age_h))*delta_rate <= 0.05 seconds; evaluate an additional half-step scan before refinement",
+    "selection": "evaluate the source-specific coarse and half-step grids, both endpoints, and zero; bounded-refine every half-grid local minimum; select the lowest TRAIN objective with deterministic absolute-rate then signed-rate tie breaks",
+    "ambiguity_policy": "flag a profile when the best-versus-second distinct candidate objective gap is <= 1e-6*max(1,abs(best objective)); an ambiguous +/-0.50 profile blocks the prospective basin",
+    "legacy_comparator": "also record one historical whole-interval bounded minimize_scalar result, never use it for selection"
+  },
+  "mask_authority": "receipt-bound prepared_evidence.tracks[].training_mask loaded by reports/2026_09_24_ds1/run.py::make_engine and preserved by reports/2026_09_24_ds1_orbit_arm/run.py::prepare",
+  "scoring": "cap-800 squared RMS per track, occupied-second weighting within session, equal mean across the six sessions in each case; unsupported TRAIN identities remain at the cap",
+  "held_policy": "all fits at all bounds complete before HELD scoring; HELD rows may only score frozen arms and cannot determine source membership, coordinate, tau, identity, CFO, rate, optimizer calls, bounds, fallback, stopping, or the basin go/no",
+  "boundary_policy": "active when bound-minus-absolute-rate is no greater than max(5*xatol, 32*machine_epsilon*max(1,bound))",
+  "exact_gate": "direct SGP4 replay maximum absolute surrogate error <= 0.2 Hz for zero and every widened-rate arm",
+  "prospective_basin_gate": "the +/-0.50 arm alone is eligible to authorize a prospective basin: go only if both groups have converged TRAIN profiles, zero active fits, zero ambiguous best/second profiles, complete half-step verification, and a passing exact-replay gate; +/-1.0 is diagnostic only and randomized HELD is reported but neither is a decision input",
+  "launch_policy": "write one fixed-point widening audit only; do not launch a geographic basin",
+  "interpretation": "randomized within-track predictive regression evidence at two previously sealed points, not a geographic estimate, new-session transfer, or untouched validation"
+}
