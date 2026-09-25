@@ -1,0 +1,61 @@
+{
+  "bindings": {
+    "candidates": "sha256:6aeb614daa3404534cb599f139dd34f792096ede4d065f469b8b54f3a8220aa6",
+    "influence": "sha256:fc8c92be7a8f9bdf8feb61ebc8efa910dada837d52810a402f1694fc2d13b1e5",
+    "plan": "sha256:c8833ed5ed50136fdfc1a60670bf840c720ff721f7f753db6c1c8d1d0fe4d4f6",
+    "preflight": "sha256:a416c1214b9ac23a69d7c9caca2790eadd12e8bb9832f017c3d3e6c88d591999"
+  },
+  "complete": true,
+  "dataset_statuses": {
+    "DS1": {
+      "failed_criteria": [
+        "single_source_score_shift"
+      ],
+      "full_geographic_search_run": false,
+      "terminal_status": "unqualified_preflight"
+    },
+    "DS3": {
+      "failed_criteria": [
+        "single_source_score_shift"
+      ],
+      "full_geographic_search_run": false,
+      "terminal_status": "unqualified_preflight"
+    }
+  },
+  "elapsed_s": 7.394604166969657,
+  "failed": [
+    "both datasets exceeded the prospectively sealed absolute source-influence shift gate",
+    "temperature selection reached the 400 Hz upper grid edge on both datasets",
+    "DS1 fixed soft association reversed the iteration-27 east-west local direction"
+  ],
+  "full_geographic_search_run": false,
+  "held_used": false,
+  "learned": [
+    "soft association is computationally cheap on the bounded preflight",
+    "winner rank is stable although raw score scale is source-sensitive",
+    "NORAD 66961 contains one genuinely ambiguous retained case but is not the influence failure"
+  ],
+  "next": [
+    "prospectively expand the TRAIN-fold temperature grid until an interior choice is obtained",
+    "replace raw absolute score-shift acceptance with a predeclared scale-aware influence diagnostic",
+    "repeat the same paired bounded preflight before any DS3 all56 or broad geographic search"
+  ],
+  "norad_66961": {
+    "actual_destabilizing_source": "65351",
+    "ambiguous_retained_runner": 1,
+    "candidate_rows": 6,
+    "destabilizing_source": false,
+    "leader_and_retained": 1,
+    "rejected_candidate_rows": 4
+  },
+  "paired_terminal_status": "unqualified_preflight",
+  "plan_method": "fixed_top_k_soft_association_influence_stable_aggregate",
+  "schema": "paired-ds1-ds3-iteration30-findings/v1",
+  "truth_used": false,
+  "worked": [
+    "dataset-local all-sky candidate generation completed for both datasets",
+    "all coordinate scores were finite and exactly repeatable",
+    "DS1 leave-one-session winner agreement was 11/12",
+    "DS1 and DS3 leave-one-source winner agreement exceeded 99 percent"
+  ]
+}
