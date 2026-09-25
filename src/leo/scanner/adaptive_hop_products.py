@@ -15,6 +15,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
     AdaptiveModel,
     Count,
     Index,
@@ -29,6 +30,8 @@ from leo.scanner.adaptive_hop_analysis import (
     Feature103VisitAnalysisV3,
     Feature104AnalysisConfigurationV4,
     Feature104VisitAnalysisV4,
+    FourRateVariableDwellAnalysisConfigurationV6,
+    FourRateVariableDwellVisitAnalysisV6,
     VariableDwellAnalysisConfigurationV5,
     VariableDwellVisitAnalysisV5,
     _compare_source_fields,
@@ -219,3 +222,24 @@ class VariableDwellMetricsManifestV8(AdaptiveHopMetricsManifestV1):
     schema_version: Literal[8] = 8  # type: ignore[assignment]
     configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
     visits: Annotated[tuple[VariableDwellVisitReferenceV8, ...], Field(max_length=2500)]
+
+
+class FourRateVariableDwellAnalysisBindingV9(AdaptiveHopAnalysisBindingV1):
+    """Receipt-V7 analysis for the immutable four-rate capture contract."""
+
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    _visit_model: ClassVar[type[AdaptiveHopVisitAnalysisV1]] = FourRateVariableDwellVisitAnalysisV6
+    receipt: AdaptiveHopReceiptV7  # type: ignore[assignment]
+    configuration: FourRateVariableDwellAnalysisConfigurationV6  # type: ignore[assignment]
+
+
+class FourRateVariableDwellVisitReferenceV9(VariableDwellVisitReferenceV8):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    _filename_version: ClassVar[int] = 9
+    relative_path: Annotated[str, Field(pattern=r"^visit-[0-9]{6}\.v9\.json\.zst$")]  # type: ignore[assignment]
+
+
+class FourRateVariableDwellMetricsManifestV9(AdaptiveHopMetricsManifestV1):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    configuration: FourRateVariableDwellAnalysisConfigurationV6  # type: ignore[assignment]
+    visits: Annotated[tuple[FourRateVariableDwellVisitReferenceV9, ...], Field(max_length=2500)]

@@ -21,6 +21,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
     AdaptiveHopVisitV1,
     AdaptiveModel,
     SessionId,
@@ -330,6 +331,13 @@ class VariableDwellAnalysisConfigurationV5(AdaptiveModel):
         )
 
 
+class FourRateVariableDwellAnalysisConfigurationV6(VariableDwellAnalysisConfigurationV5):
+    """Variable-dwell analysis for every qualified v0.58 source rate."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+
+
 class Feature104VisitAnalysisV4(AdaptiveHopVisitAnalysisV1):
     schema_version: Literal[4] = 4  # type: ignore[assignment]
     _allow_zero_gap: ClassVar[bool] = True
@@ -351,6 +359,11 @@ class VariableDwellVisitAnalysisV5(AdaptiveHopVisitAnalysisV1):
     _allow_zero_gap: ClassVar[bool] = True
     configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
     probes: Annotated[tuple[AdaptiveHopProbeAnalysisV2, ...], Field(min_length=2, max_length=70)]  # type: ignore[assignment]
+
+
+class FourRateVariableDwellVisitAnalysisV6(VariableDwellVisitAnalysisV5):
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    configuration: FourRateVariableDwellAnalysisConfigurationV6  # type: ignore[assignment]
 
 
 class AdaptiveHopAnalysisReader(Protocol):
@@ -438,9 +451,14 @@ class VariableDwellAnalysisSourceV6(AdaptiveHopAnalysisSource):
     receipt: AdaptiveHopReceiptV6 = field(init=False)
 
 
+class FourRateVariableDwellAnalysisSourceV7(AdaptiveHopAnalysisSource):
+    _receipt_model: ClassVar[type[AdaptiveHopReceiptV7]] = AdaptiveHopReceiptV7
+    receipt: AdaptiveHopReceiptV7 = field(init=False)
+
+
 @dataclass(frozen=True, slots=True)
 class _VariableDwellDetectorConfiguration:
-    persisted: VariableDwellAnalysisConfigurationV5
+    persisted: VariableDwellAnalysisConfigurationV5 | FourRateVariableDwellAnalysisConfigurationV6
     dwell_samples: int
     scheduled_probe_count: int
 
@@ -449,6 +467,8 @@ class _VariableDwellDetectorConfiguration:
 
 
 def _analysis_models(source):
+    if isinstance(source, FourRateVariableDwellAnalysisSourceV7):
+        return FourRateVariableDwellAnalysisConfigurationV6, FourRateVariableDwellVisitAnalysisV6
     if isinstance(source, VariableDwellAnalysisSourceV6):
         return VariableDwellAnalysisConfigurationV5, VariableDwellVisitAnalysisV5
     if isinstance(source, Feature104AnalysisSourceV5):
@@ -530,6 +550,7 @@ def analyze_adaptive_hop_visit(
     *,
     configuration: AdaptiveHopAnalysisConfigurationV1
     | VariableDwellAnalysisConfigurationV5
+    | FourRateVariableDwellAnalysisConfigurationV6
     | None = None,
 ) -> AdaptiveHopVisitAnalysisV1:
     """Reuse the existing detector, keeping only complete fractional decisions."""
@@ -548,7 +569,9 @@ def analyze_adaptive_hop_visit_batch(
     source: AdaptiveHopAnalysisSource,
     visit_indexes: tuple[int, ...],
     *,
-    configuration: AdaptiveHopAnalysisConfigurationV1 | VariableDwellAnalysisConfigurationV5,
+    configuration: AdaptiveHopAnalysisConfigurationV1
+    | VariableDwellAnalysisConfigurationV5
+    | FourRateVariableDwellAnalysisConfigurationV6,
 ) -> Iterator[AdaptiveHopVisitAnalysisV1]:
     """At most two independent visits; only the owning thread reads stored IQ.
 
@@ -582,12 +605,16 @@ def _analyze_loaded_visit(
     source: AdaptiveHopAnalysisSource,
     visit_index: int,
     samples: npt.NDArray[np.complex64],
-    cfg: AdaptiveHopAnalysisConfigurationV1 | VariableDwellAnalysisConfigurationV5,
+    cfg: AdaptiveHopAnalysisConfigurationV1
+    | VariableDwellAnalysisConfigurationV5
+    | FourRateVariableDwellAnalysisConfigurationV6,
     product_model: type[AdaptiveHopVisitAnalysisV1] = AdaptiveHopVisitAnalysisV1,
 ) -> AdaptiveHopVisitAnalysisV1:
     visit = source.visits[visit_index]
     event = visit.event
-    if isinstance(cfg, VariableDwellAnalysisConfigurationV5):
+    if isinstance(
+        cfg, (VariableDwellAnalysisConfigurationV5, FourRateVariableDwellAnalysisConfigurationV6)
+    ):
         detector_cfg: Glrt64DwellConfiguration = _VariableDwellDetectorConfiguration(
             persisted=cfg,
             dwell_samples=visit.valid_sample_count,
@@ -618,7 +645,13 @@ def _analyze_loaded_visit(
         rows.append(
             (
                 AdaptiveHopProbeAnalysisV2
-                if isinstance(cfg, VariableDwellAnalysisConfigurationV5)
+                if isinstance(
+                    cfg,
+                    (
+                        VariableDwellAnalysisConfigurationV5,
+                        FourRateVariableDwellAnalysisConfigurationV6,
+                    ),
+                )
                 else AdaptiveHopProbeAnalysisV1
             )(
                 receiver_id=probe.receiver_id,

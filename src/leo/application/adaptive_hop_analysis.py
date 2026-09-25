@@ -20,6 +20,8 @@ from leo.scanner.adaptive_hop_analysis import (
     Feature103AnalysisSourceV4,
     Feature104AnalysisConfigurationV4,
     Feature104AnalysisSourceV5,
+    FourRateVariableDwellAnalysisConfigurationV6,
+    FourRateVariableDwellAnalysisSourceV7,
     VariableDwellAnalysisConfigurationV5,
     VariableDwellAnalysisSourceV6,
     analyze_adaptive_hop_visit,
@@ -33,6 +35,7 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
     Feature104AnalysisBindingV7,
+    FourRateVariableDwellAnalysisBindingV9,
     VariableDwellAnalysisBindingV8,
 )
 from leo.scanner.host_adaptive_analysis import (
@@ -137,7 +140,9 @@ class AdaptiveHopAnalysisService:
                 raise ValueError("adaptive analysis input changed requested identity")
             wide = isinstance(source, HostAdaptiveAnalysisSourceV3)
             configuration_model: Any = (
-                VariableDwellAnalysisConfigurationV5
+                FourRateVariableDwellAnalysisConfigurationV6
+                if isinstance(source, FourRateVariableDwellAnalysisSourceV7)
+                else VariableDwellAnalysisConfigurationV5
                 if isinstance(source, VariableDwellAnalysisSourceV6)
                 else Feature104AnalysisConfigurationV4
                 if isinstance(source, Feature104AnalysisSourceV5)
@@ -157,7 +162,9 @@ class AdaptiveHopAnalysisService:
                 probe_stride_ms=probe_stride_ms,
             )
             binding_model: Any = (
-                VariableDwellAnalysisBindingV8
+                FourRateVariableDwellAnalysisBindingV9
+                if isinstance(source, FourRateVariableDwellAnalysisSourceV7)
+                else VariableDwellAnalysisBindingV8
                 if isinstance(source, VariableDwellAnalysisSourceV6)
                 else Feature104AnalysisBindingV7
                 if isinstance(source, Feature104AnalysisSourceV5)
