@@ -306,6 +306,13 @@ class Feature103DualRxTimingV3(PersistentHopUtcTimingAuthorityV1):
         )
 
 
+class FourRateDualRxTimingV5(PersistentHopUtcTimingAuthorityV1):
+    """UTC authority for all four qualified v0.58 dual-RX rates."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+
+
 class Feature103DualRxPlanV3(PersistentHopPlanV1):
     """Feature-103 geometry where repeated targets can have no retune guard."""
 
@@ -460,6 +467,35 @@ class VariableDualRxPlanV5(PersistentHopPlanV1):
     @property
     def quiet_valid_visit_samples(self) -> int:
         return self.sample_rate_hz * self.quiet_valid_visit_ms // 1_000
+
+
+class FourRateVariableDualRxPlanV6(VariableDualRxPlanV5):
+    """Protocol-three geometry for the four qualified v0.58 source rates."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if self.bandwidth_hz != self.sample_rate_hz:
+            raise ValueError("four-rate variable dual-RX bandwidth must equal sample rate")
+        if self.gain_mode is GainMode.MANUAL:
+            if self.gain_db is None or not math.isfinite(self.gain_db):
+                raise ValueError("four-rate variable dual-RX manual gain must be finite")
+        elif self.gain_db is not None:
+            raise ValueError("four-rate variable dual-RX automatic gain cannot declare manual gain")
+        expected = tuple(
+            PersistentHopProfileV1(
+                target_index=index,
+                fastlock_profile_index=index,
+                target=target,
+            )
+            for index, target in enumerate(scheduled_low_band_targets(bandwidth_hz=10_000_000))
+        )
+        if self.profiles != expected:
+            raise ValueError("four-rate variable dual-RX targets must remain canonical")
+        return self
 
 
 def compile_persistent_hop_plan_v1(

@@ -10,6 +10,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
 )
 from leo.scanner.host_adaptive import HostAdaptiveHopReceiptV4, HostAdaptiveHopReceiptV5
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
@@ -187,6 +188,10 @@ def dual_document(
 
 def variable_dual_document(rate: int, dwell_ms: int, *, slow_attack: bool = False) -> dict:
     value = dual_document(rate)
+    if rate in (5_000_000, 7_500_000):
+        value["visits"][0]["record"]["frequency_hz"] = importer.scheduled_low_band_targets(
+            bandwidth_hz=10_000_000
+        )[4].if_center_hz
     value["setup"].update(protocol_version=3, dwell_ms=dwell_ms)
     value["visits"][0]["record"]["protocol_version"] = 3
     settings = value["evidence"]["preparation"]["original"]
@@ -218,6 +223,25 @@ def test_protocol_three_receipt_preserves_actual_interval_and_gain(
     assert receipt.plan.geometry.active_valid_visit_ms == dwell_ms
     assert receipt.plan.geometry.gain_mode.value == ("slow_attack" if slow_attack else "manual")
     assert receipt.plan.geometry.gain_db == (None if slow_attack else 50.0)
+
+
+@pytest.mark.parametrize("rate", [5_000_000, 7_500_000])
+def test_radio20_four_rate_protocol_three_receipt_is_versioned_without_relaxing_v6(
+    tmp_path: Path, rate: int
+) -> None:
+    value = variable_dual_document(rate, 120)
+    value["evidence"]["radio_serial"] = importer.RADIO20_SERIAL
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(value))
+
+    loaded, _ = importer._load(manifest)
+    receipt = importer._receipt(loaded, "sha256:" + "b" * 64)
+
+    assert isinstance(receipt, AdaptiveHopReceiptV7)
+    assert receipt.radio_serial == importer.RADIO20_SERIAL
+    assert receipt.plan.geometry.schema_version == 6
+    assert receipt.plan.geometry.sample_rate_hz == rate
+    assert receipt.plan.geometry.gain_mode.value == "manual"
 
 
 def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
@@ -423,6 +447,8 @@ def test_dual_firmware_receipt_preserves_zero_gap_repeated_target() -> None:
     [
         (2_500_000, importer.DUAL_SERIAL, 9, 6, True),
         (2_500_000, importer.RADIO20_SERIAL, 13, 6, False),
+        (5_000_000, importer.RADIO20_SERIAL, 15, 9, False),
+        (7_500_000, importer.RADIO20_SERIAL, 15, 9, False),
         (10_000_000, importer.RADIO20_SERIAL, 13, 6, False),
         (15_000_000, importer.DUAL_SERIAL, 10, 7, True),
     ],
@@ -438,7 +464,12 @@ def test_dual_firmware_archive_publishes_geometry_manifest(
 ) -> None:
     archive = tmp_path / f"scan-fw-dual-{rate}"
     archive.mkdir()
-    value = dual_document(rate, radio_serial=radio_serial)
+    value = (
+        variable_dual_document(rate, 120)
+        if rate in (5_000_000, 7_500_000)
+        else dual_document(rate, radio_serial=radio_serial)
+    )
+    value["evidence"]["radio_serial"] = radio_serial
     samples = rate * 120 // 1000
     if rate == 15_000_000:
         first = value["visits"][0]

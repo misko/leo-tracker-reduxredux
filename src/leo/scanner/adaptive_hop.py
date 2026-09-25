@@ -16,6 +16,7 @@ from leo.scanner.persistent_hop import (
     DualRxPersistentHopPlanV2,
     Feature103DualRxPlanV3,
     Feature104DualRxPlanV4,
+    FourRateVariableDualRxPlanV6,
     PersistentHopPlanV1,
     PersistentHopRestorationReceiptV1,
     PersistentHopTargetCoverageV1,
@@ -146,6 +147,18 @@ class AdaptiveHopPlanV6(AdaptiveHopPlanV2):
     @model_validator(mode="after")
     def _geometry_is_revalidated(self) -> Self:
         VariableDualRxPlanV5.model_validate(self.geometry.model_dump())
+        return self
+
+
+class AdaptiveHopPlanV7(AdaptiveHopPlanV2):
+    """Protocol-three dual-RX plan covering all qualified v0.58 rates."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    geometry: FourRateVariableDualRxPlanV6  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _geometry_is_revalidated(self) -> Self:
+        FourRateVariableDualRxPlanV6.model_validate(self.geometry.model_dump())
         return self
 
 
@@ -668,6 +681,13 @@ class AdaptiveHopReceiptV6(AdaptiveHopReceiptV2):
         )
 
 
+class AdaptiveHopReceiptV7(AdaptiveHopReceiptV6):
+    """Four-rate protocol-three receipt with exact source intervals."""
+
+    schema_version: Literal[7] = 7  # type: ignore[assignment]
+    plan: AdaptiveHopPlanV7  # type: ignore[assignment]
+
+
 AdaptiveHopPlan = (
     AdaptiveHopPlanV1
     | AdaptiveHopPlanV2
@@ -675,6 +695,7 @@ AdaptiveHopPlan = (
     | AdaptiveHopPlanV4
     | AdaptiveHopPlanV5
     | AdaptiveHopPlanV6
+    | AdaptiveHopPlanV7
 )
 AdaptiveHopReceipt = (
     AdaptiveHopReceiptV1
@@ -683,6 +704,7 @@ AdaptiveHopReceipt = (
     | AdaptiveHopReceiptV4
     | AdaptiveHopReceiptV5
     | AdaptiveHopReceiptV6
+    | AdaptiveHopReceiptV7
 )
 
 
@@ -695,7 +717,9 @@ def validate_adaptive_hop_plan(value: Any) -> AdaptiveHopPlan:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopPlanV6
+        AdaptiveHopPlanV7
+        if version == 7
+        else AdaptiveHopPlanV6
         if version == 6
         else AdaptiveHopPlanV5
         if version == 5
@@ -719,7 +743,9 @@ def validate_adaptive_hop_receipt(value: Any) -> AdaptiveHopReceipt:
         else value.get("schema_version")
     )
     model = (
-        AdaptiveHopReceiptV6
+        AdaptiveHopReceiptV7
+        if version == 7
+        else AdaptiveHopReceiptV6
         if version == 6
         else AdaptiveHopReceiptV5
         if version == 5
