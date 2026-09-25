@@ -1,0 +1,22 @@
+{
+  "schema": "ds1-iteration20-session-predictive-plan/v1",
+  "reference_used_for_inference": false,
+  "parent": "reports/2026_09_24_ds1_iteration15_information_weighted/inference.json",
+  "association_policy": "fixed iteration-10 hard associations",
+  "group_taus_s": {"20260921_00": -0.75, "20260921_16": -0.5},
+  "group_weights": {"20260921_00": 0.2742, "20260921_16": 0.7258},
+  "geographic_model": "exact nominal Doppler, per-track CFO, per-NORAD rates fixed at zero",
+  "geographic_objective": "cap-800 loss per session; equal session mean within group; frozen information weights across groups",
+  "stages": [
+    {"spacing_km": 0.048828125, "maximum_translations": 4},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4},
+    {"spacing_km": 0.01220703125, "maximum_translations": 4}
+  ],
+  "transition_rule": "translate at unchanged spacing while the winner is on the edge; proceed only after an interior winner",
+  "final_rate_audit": {
+    "rate_bound_s_h": 0.5,
+    "effective_boundary_margin_s_h": "max(5 * scalar optimizer xatol, 1e-6)",
+    "acceptance_rule": "every selected-group rate fit converges, has zero effective-boundary rates, and passes direct exact SGP4 replay at 0.2 Hz"
+  },
+  "postseal_policy": "the surveyed reference is introduced only after inference and qualification are sealed"
+}
