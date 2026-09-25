@@ -188,6 +188,10 @@ def dual_document(
 
 def variable_dual_document(rate: int, dwell_ms: int, *, slow_attack: bool = False) -> dict:
     value = dual_document(rate)
+    if rate in (5_000_000, 7_500_000):
+        value["visits"][0]["record"]["frequency_hz"] = importer.scheduled_low_band_targets(
+            bandwidth_hz=10_000_000
+        )[4].if_center_hz
     value["setup"].update(protocol_version=3, dwell_ms=dwell_ms)
     value["visits"][0]["record"]["protocol_version"] = 3
     settings = value["evidence"]["preparation"]["original"]

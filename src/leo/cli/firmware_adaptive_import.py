@@ -211,7 +211,9 @@ def _plan(
     setup = document["setup"]
     rate = int(setup["source_rate_hz"])
     target_bandwidth_hz = (
-        (10_000_000 if rate == 15_000_000 else rate) if _is_dual(document) else 5_000_000
+        (10_000_000 if rate in (5_000_000, 7_500_000, 15_000_000) else rate)
+        if _is_dual(document)
+        else 5_000_000
     )
     profiles = tuple(
         PersistentHopProfileV1(target_index=index, fastlock_profile_index=index, target=target)
