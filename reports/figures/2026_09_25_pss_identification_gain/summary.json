@@ -1,0 +1,674 @@
+{
+  "schema_version": "org.leo.research.pss-identification-gain/v1",
+  "source": {
+    "session_id": "scan-fw-d6704a759a9ec176",
+    "first_sample_estimate_utc": "2026-09-25T13:30:02.110006009Z",
+    "first_sample_bracket_width_ms": 363.719394,
+    "glrt_points_sha256": "sha256:41f5b728445c5a79bf3c35a14ef448eab957630f62bbd2f6f3474f2198baa796",
+    "precision_points_sha256": "sha256:962b0049861ec9f1d7c735b4b1036e8eaccbee8931db0ca286744a840dc7d5df",
+    "tle_provider": "space-track",
+    "tle_collected_utc": "2026-09-25T12:05:00.389100001Z",
+    "tle_age_at_first_sample_s": 5101.720906008,
+    "tle_sha256": "sha256:a96938544b511b6d4772cd00371e5a4acdfbd73565352e966b8c82781bb6f132",
+    "conditional_site": "spinnaker-sausalito"
+  },
+  "method": {
+    "arms": {
+      "glrt_all": "all frozen GLRT track points",
+      "glrt_pss_gated": "GLRT CFO only where the independently formed PSS timing track exists",
+      "pss_precise": "inter-frame-phase refined PSS CFO on the same PSS support"
+    },
+    "catalogue": "same causal Space-Track snapshot; elements causal to measurement; geometrically visible above 0 degrees during each GLRT arc",
+    "fit": "bidirectional chronological 60/40; one constant CFO offset fit on training; candidate selected on training only",
+    "claim_boundary": "conditional candidate-ranking ablation; no verified satellite labels and no identity claim"
+  },
+  "summary_recovered_tracks_2_to_5": {
+    "glrt_all": {
+      "track_count": 4,
+      "stable_winner_count": 3,
+      "median_selected_holdout_rms_hz": 139.76029141714935,
+      "median_runner_margin_hz": 103.41790740851299,
+      "median_candidates_within_100_hz": 1.75
+    },
+    "glrt_pss_gated": {
+      "track_count": 4,
+      "stable_winner_count": 4,
+      "median_selected_holdout_rms_hz": 124.06852809756363,
+      "median_runner_margin_hz": 105.01053436847133,
+      "median_candidates_within_100_hz": 2.0,
+      "holdout_rms_change_vs_glrt_all_fraction": 0.11227626359728848,
+      "runner_margin_ratio_vs_glrt_all": 1.0153999147716968
+    },
+    "pss_precise": {
+      "track_count": 4,
+      "stable_winner_count": 1,
+      "median_selected_holdout_rms_hz": 1322.5609515118324,
+      "median_runner_margin_hz": 95.3638394977678,
+      "median_candidates_within_100_hz": 2.0,
+      "holdout_rms_change_vs_glrt_all_fraction": -8.463066641470576,
+      "runner_margin_ratio_vs_glrt_all": 0.9221211479465479
+    }
+  },
+  "results": [
+    {
+      "track_rank": 1,
+      "target_index": 7,
+      "visible_candidate_count": 527,
+      "arms": [
+        {
+          "arm": "glrt_all",
+          "point_count": 84,
+          "span_s": 42.424055013374414,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 51,
+              "holdout_count": 33,
+              "winner_norad": 58089,
+              "winner_name": "STARLINK-30584",
+              "winner_train_rms_hz": 96.33279123366017,
+              "winner_holdout_rms_hz": 112.21019901663139,
+              "runner_norad": 59404,
+              "runner_name": "STARLINK-31374",
+              "runner_train_rms_hz": 1233.3302580760626,
+              "runner_margin_hz": 1136.9974668424024,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 1,
+              "constant_cfo_null_holdout_rms_hz": 84610.53633443429,
+              "holdout_mse_gain_over_constant": 0.9999982412027849
+            },
+            {
+              "fold": "reverse",
+              "train_count": 51,
+              "holdout_count": 33,
+              "winner_norad": 58089,
+              "winner_name": "STARLINK-30584",
+              "winner_train_rms_hz": 61.99766202049952,
+              "winner_holdout_rms_hz": 165.8507210177673,
+              "runner_norad": 52536,
+              "runner_name": "STARLINK-3964",
+              "runner_train_rms_hz": 883.7204754301589,
+              "runner_margin_hz": 821.7228134096594,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 1,
+              "constant_cfo_null_holdout_rms_hz": 77917.83741861137,
+              "holdout_mse_gain_over_constant": 0.9999954693454768
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 141.5937682694145,
+          "median_runner_margin_hz": 979.360140126031,
+          "median_candidates_within_100_hz": 1.0
+        }
+      ]
+    },
+    {
+      "track_rank": 2,
+      "target_index": 4,
+      "visible_candidate_count": 512,
+      "arms": [
+        {
+          "arm": "glrt_all",
+          "point_count": 52,
+          "span_s": 28.593329213901313,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 32,
+              "holdout_count": 20,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 73.35683971221385,
+              "winner_holdout_rms_hz": 153.45842265228333,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 124.93159711919796,
+              "runner_margin_hz": 51.574757406984105,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 54184.988391652274,
+              "holdout_mse_gain_over_constant": 0.9999919790928216
+            },
+            {
+              "fold": "reverse",
+              "train_count": 32,
+              "holdout_count": 20,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 108.49835023254,
+              "winner_holdout_rms_hz": 100.0664958739462,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 110.6202652709471,
+              "runner_margin_hz": 2.1219150384070957,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 2,
+              "constant_cfo_null_holdout_rms_hz": 55220.818431361055,
+              "holdout_mse_gain_over_constant": 0.9999967162377512
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 129.54302582427454,
+          "median_runner_margin_hz": 26.8483362226956,
+          "median_candidates_within_100_hz": 2.0
+        },
+        {
+          "arm": "glrt_pss_gated",
+          "point_count": 34,
+          "span_s": 19.045559800000007,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 21,
+              "holdout_count": 13,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 63.641566811768165,
+              "winner_holdout_rms_hz": 99.22594099313609,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 98.490127450033,
+              "runner_margin_hz": 34.848560638264836,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 37058.92201946329,
+              "holdout_mse_gain_over_constant": 0.9999928308958821
+            },
+            {
+              "fold": "reverse",
+              "train_count": 21,
+              "holdout_count": 13,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 81.8763580125607,
+              "winner_holdout_rms_hz": 74.19968609832638,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 105.42552017900388,
+              "runner_margin_hz": 23.549162166443182,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 37076.05694380003,
+              "holdout_mse_gain_over_constant": 0.999995994865962
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 87.61101752366392,
+          "median_runner_margin_hz": 29.19886140235401,
+          "median_candidates_within_100_hz": 2.0
+        },
+        {
+          "arm": "pss_precise",
+          "point_count": 34,
+          "span_s": 19.045559800000007,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 21,
+              "holdout_count": 13,
+              "winner_norad": 58089,
+              "winner_name": "STARLINK-30584",
+              "winner_train_rms_hz": 310.69453348478197,
+              "winner_holdout_rms_hz": 1787.147112461372,
+              "runner_norad": 52536,
+              "runner_name": "STARLINK-3964",
+              "runner_train_rms_hz": 329.9604188179806,
+              "runner_margin_hz": 19.26588533319864,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 35042.64810453532,
+              "holdout_mse_gain_over_constant": 0.9973990813279421
+            },
+            {
+              "fold": "reverse",
+              "train_count": 21,
+              "holdout_count": 13,
+              "winner_norad": 52536,
+              "winner_name": "STARLINK-3964",
+              "winner_train_rms_hz": 251.90605353755382,
+              "winner_holdout_rms_hz": 717.3347182418844,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 517.8947256280446,
+              "runner_margin_hz": 265.9886720904908,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 35027.80151890104,
+              "holdout_mse_gain_over_constant": 0.9995806101252641
+            }
+          ],
+          "same_winner_both_directions": false,
+          "quadratic_mean_selected_holdout_rms_hz": 1361.7018578922084,
+          "median_runner_margin_hz": 142.62727871184472,
+          "median_candidates_within_100_hz": 1.5
+        }
+      ]
+    },
+    {
+      "track_rank": 3,
+      "target_index": 5,
+      "visible_candidate_count": 506,
+      "arms": [
+        {
+          "arm": "glrt_all",
+          "point_count": 52,
+          "span_s": 25.32259784802619,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 32,
+              "holdout_count": 20,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 65.06028840386243,
+              "winner_holdout_rms_hz": 181.48562628059412,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 123.43252830887695,
+              "runner_margin_hz": 58.372239905014524,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 2,
+              "constant_cfo_null_holdout_rms_hz": 49018.57907352526,
+              "holdout_mse_gain_over_constant": 0.9999862923491794
+            },
+            {
+              "fold": "reverse",
+              "train_count": 32,
+              "holdout_count": 20,
+              "winner_norad": 48583,
+              "winner_name": "STARLINK-2237",
+              "winner_train_rms_hz": 75.18983251798102,
+              "winner_holdout_rms_hz": 266.72161863771754,
+              "runner_norad": 68972,
+              "runner_name": "STARLINK-37259",
+              "runner_train_rms_hz": 88.6630051278608,
+              "runner_margin_hz": 13.473172609879782,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 51823.793732112594,
+              "holdout_mse_gain_over_constant": 0.9999735114593595
+            }
+          ],
+          "same_winner_both_directions": false,
+          "quadratic_mean_selected_holdout_rms_hz": 228.11998421355318,
+          "median_runner_margin_hz": 35.92270625744715,
+          "median_candidates_within_100_hz": 2.0
+        },
+        {
+          "arm": "glrt_pss_gated",
+          "point_count": 42,
+          "span_s": 21.973485900000014,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 26,
+              "holdout_count": 16,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 66.52046003926095,
+              "winner_holdout_rms_hz": 146.977723081375,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 117.45678779008152,
+              "runner_margin_hz": 50.93632775082057,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 43508.36185035211,
+              "holdout_mse_gain_over_constant": 0.9999885881102647
+            },
+            {
+              "fold": "reverse",
+              "train_count": 26,
+              "holdout_count": 16,
+              "winner_norad": 68972,
+              "winner_name": "STARLINK-37259",
+              "winner_train_rms_hz": 91.10042632833441,
+              "winner_holdout_rms_hz": 114.46359217725437,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 95.87279778503645,
+              "runner_margin_hz": 4.7723714567020465,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 44091.814613198694,
+              "holdout_mse_gain_over_constant": 0.9999932606378141
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 131.72768315032752,
+          "median_runner_margin_hz": 27.854349603761307,
+          "median_candidates_within_100_hz": 2.0
+        },
+        {
+          "arm": "pss_precise",
+          "point_count": 42,
+          "span_s": 21.973485900000014,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 26,
+              "holdout_count": 16,
+              "winner_norad": 57991,
+              "winner_name": "STARLINK-30537",
+              "winner_train_rms_hz": 311.1430026157119,
+              "winner_holdout_rms_hz": 1421.5197836209622,
+              "runner_norad": 68171,
+              "runner_name": "STARLINK-37034",
+              "runner_train_rms_hz": 396.2005583142173,
+              "runner_margin_hz": 85.05755569850538,
+              "candidates_within_100_hz": 3,
+              "candidates_within_500_hz": 7,
+              "constant_cfo_null_holdout_rms_hz": 33286.860299165986,
+              "holdout_mse_gain_over_constant": 0.9981762716478013
+            },
+            {
+              "fold": "reverse",
+              "train_count": 26,
+              "holdout_count": 16,
+              "winner_norad": 57527,
+              "winner_name": "STARLINK-30250",
+              "winner_train_rms_hz": 291.46022123513933,
+              "winner_holdout_rms_hz": 1128.545758604706,
+              "runner_norad": 66967,
+              "runner_name": "STARLINK-36136",
+              "runner_train_rms_hz": 302.6034661040157,
+              "runner_margin_hz": 11.143244868876366,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 8,
+              "constant_cfo_null_holdout_rms_hz": 33490.774145604424,
+              "holdout_mse_gain_over_constant": 0.9988644978185548
+            }
+          ],
+          "same_winner_both_directions": false,
+          "quadratic_mean_selected_holdout_rms_hz": 1283.4200451314564,
+          "median_runner_margin_hz": 48.100400283690874,
+          "median_candidates_within_100_hz": 2.5
+        }
+      ]
+    },
+    {
+      "track_rank": 4,
+      "target_index": 4,
+      "visible_candidate_count": 498,
+      "arms": [
+        {
+          "arm": "glrt_all",
+          "point_count": 36,
+          "span_s": 16.185316342577607,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 22,
+              "holdout_count": 14,
+              "winner_norad": 63118,
+              "winner_name": "STARLINK-32945",
+              "winner_train_rms_hz": 70.88169049582523,
+              "winner_holdout_rms_hz": 94.57989126887995,
+              "runner_norad": 56332,
+              "runner_name": "STARLINK-5093",
+              "runner_train_rms_hz": 348.2753654230246,
+              "runner_margin_hz": 277.39367492719936,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 31127.836685210517,
+              "holdout_mse_gain_over_constant": 0.9999907679161066
+            },
+            {
+              "fold": "reverse",
+              "train_count": 22,
+              "holdout_count": 14,
+              "winner_norad": 63118,
+              "winner_name": "STARLINK-32945",
+              "winner_train_rms_hz": 47.69904104229271,
+              "winner_holdout_rms_hz": 129.04064151189414,
+              "runner_norad": 62564,
+              "runner_name": "STARLINK-11540",
+              "runner_train_rms_hz": 112.13158323425101,
+              "runner_margin_hz": 64.4325421919583,
+              "candidates_within_100_hz": 2,
+              "candidates_within_500_hz": 5,
+              "constant_cfo_null_holdout_rms_hz": 31835.03389787287,
+              "holdout_mse_gain_over_constant": 0.9999835698172668
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 113.13010871168278,
+          "median_runner_margin_hz": 170.91310855957883,
+          "median_candidates_within_100_hz": 1.5
+        },
+        {
+          "arm": "glrt_pss_gated",
+          "point_count": 33,
+          "span_s": 14.942655200000004,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 20,
+              "holdout_count": 13,
+              "winner_norad": 63118,
+              "winner_name": "STARLINK-32945",
+              "winner_train_rms_hz": 65.0351619981219,
+              "winner_holdout_rms_hz": 104.98797579557043,
+              "runner_norad": 56332,
+              "runner_name": "STARLINK-5093",
+              "runner_train_rms_hz": 338.5132994238616,
+              "runner_margin_hz": 273.4781374257397,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 29597.820290277614,
+              "holdout_mse_gain_over_constant": 0.9999874177106858
+            },
+            {
+              "fold": "reverse",
+              "train_count": 20,
+              "holdout_count": 13,
+              "winner_norad": 63118,
+              "winner_name": "STARLINK-32945",
+              "winner_train_rms_hz": 50.462901982612024,
+              "winner_holdout_rms_hz": 126.80618756084188,
+              "runner_norad": 56332,
+              "runner_name": "STARLINK-5093",
+              "runner_train_rms_hz": 138.62917922604962,
+              "runner_margin_hz": 88.16627724343759,
+              "candidates_within_100_hz": 3,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 29351.550919616704,
+              "holdout_mse_gain_over_constant": 0.9999813353958688
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 116.40937304479974,
+          "median_runner_margin_hz": 180.82220733458865,
+          "median_candidates_within_100_hz": 2.0
+        },
+        {
+          "arm": "pss_precise",
+          "point_count": 33,
+          "span_s": 14.942655200000004,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 20,
+              "holdout_count": 13,
+              "winner_norad": 63118,
+              "winner_name": "STARLINK-32945",
+              "winner_train_rms_hz": 1819.3309037898384,
+              "winner_holdout_rms_hz": 5859.8562423123585,
+              "runner_norad": 56332,
+              "runner_name": "STARLINK-5093",
+              "runner_train_rms_hz": 2095.2830699576402,
+              "runner_margin_hz": 275.9521661678018,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 35052.67133134189,
+              "holdout_mse_gain_over_constant": 0.9720532260543963
+            },
+            {
+              "fold": "reverse",
+              "train_count": 20,
+              "holdout_count": 13,
+              "winner_norad": 56332,
+              "winner_name": "STARLINK-5093",
+              "winner_train_rms_hz": 2023.8797647458464,
+              "winner_holdout_rms_hz": 5950.9983754611385,
+              "runner_norad": 63118,
+              "runner_name": "STARLINK-32945",
+              "runner_train_rms_hz": 2131.338449357604,
+              "runner_margin_hz": 107.45868461175769,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 34504.26253942098,
+              "holdout_mse_gain_over_constant": 0.9702536170885812
+            }
+          ],
+          "same_winner_both_directions": false,
+          "quadratic_mean_selected_holdout_rms_hz": 5905.603137923687,
+          "median_runner_margin_hz": 191.70542538977975,
+          "median_candidates_within_100_hz": 1.0
+        }
+      ]
+    },
+    {
+      "track_rank": 5,
+      "target_index": 7,
+      "visible_candidate_count": 497,
+      "arms": [
+        {
+          "arm": "glrt_all",
+          "point_count": 28,
+          "span_s": 14.585395364045155,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 17,
+              "holdout_count": 11,
+              "winner_norad": 65204,
+              "winner_name": "STARLINK-34787",
+              "winner_train_rms_hz": 124.2263151298718,
+              "winner_holdout_rms_hz": 111.16159239155785,
+              "runner_norad": 55574,
+              "runner_name": "STARLINK-5747",
+              "runner_train_rms_hz": 316.10225977895345,
+              "runner_margin_hz": 191.87594464908165,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 2,
+              "constant_cfo_null_holdout_rms_hz": 27843.037369898855,
+              "holdout_mse_gain_over_constant": 0.9999840604411218
+            },
+            {
+              "fold": "reverse",
+              "train_count": 17,
+              "holdout_count": 11,
+              "winner_norad": 65204,
+              "winner_name": "STARLINK-34787",
+              "winner_train_rms_hz": 79.35245595300594,
+              "winner_holdout_rms_hz": 180.63675038696647,
+              "runner_norad": 64370,
+              "runner_name": "STARLINK-11732",
+              "runner_train_rms_hz": 379.108236757426,
+              "runner_margin_hz": 299.75578080442006,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 2,
+              "constant_cfo_null_holdout_rms_hz": 29738.341060630773,
+              "holdout_mse_gain_over_constant": 0.9999631040456998
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 149.97755701002413,
+          "median_runner_margin_hz": 245.81586272675085,
+          "median_candidates_within_100_hz": 1.0
+        },
+        {
+          "arm": "glrt_pss_gated",
+          "point_count": 25,
+          "span_s": 11.939570599999996,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 15,
+              "holdout_count": 10,
+              "winner_norad": 65204,
+              "winner_name": "STARLINK-34787",
+              "winner_train_rms_hz": 120.50675700818665,
+              "winner_holdout_rms_hz": 106.67608456130478,
+              "runner_norad": 55574,
+              "runner_name": "STARLINK-5747",
+              "runner_train_rms_hz": 322.7989860657329,
+              "runner_margin_hz": 202.29222905754625,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 2,
+              "constant_cfo_null_holdout_rms_hz": 24532.648030318007,
+              "holdout_mse_gain_over_constant": 0.9999810920137501
+            },
+            {
+              "fold": "reverse",
+              "train_count": 15,
+              "holdout_count": 10,
+              "winner_norad": 65204,
+              "winner_name": "STARLINK-34787",
+              "winner_train_rms_hz": 79.07104635554755,
+              "winner_holdout_rms_hz": 161.40056655910658,
+              "runner_norad": 64370,
+              "runner_name": "STARLINK-11732",
+              "runner_train_rms_hz": 241.99980632752744,
+              "runner_margin_hz": 162.9287599719799,
+              "candidates_within_100_hz": 1,
+              "candidates_within_500_hz": 3,
+              "constant_cfo_null_holdout_rms_hz": 25990.8061387001,
+              "holdout_mse_gain_over_constant": 0.9999614370179781
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 136.80264965074917,
+          "median_runner_margin_hz": 182.61049451476308,
+          "median_candidates_within_100_hz": 1.0
+        },
+        {
+          "arm": "pss_precise",
+          "point_count": 25,
+          "span_s": 11.939570599999996,
+          "folds": [
+            {
+              "fold": "forward",
+              "train_count": 15,
+              "holdout_count": 10,
+              "winner_norad": 68171,
+              "winner_name": "STARLINK-37034",
+              "winner_train_rms_hz": 283.79233689995294,
+              "winner_holdout_rms_hz": 601.3152948291483,
+              "runner_norad": 48583,
+              "runner_name": "STARLINK-2237",
+              "runner_train_rms_hz": 302.8394230863705,
+              "runner_margin_hz": 19.047086186417573,
+              "candidates_within_100_hz": 3,
+              "candidates_within_500_hz": 6,
+              "constant_cfo_null_holdout_rms_hz": 22073.16375719206,
+              "holdout_mse_gain_over_constant": 0.9992578779585889
+            },
+            {
+              "fold": "reverse",
+              "train_count": 15,
+              "holdout_count": 10,
+              "winner_norad": 68171,
+              "winner_name": "STARLINK-37034",
+              "winner_train_rms_hz": 236.4794051969873,
+              "winner_holdout_rms_hz": 633.4891122752991,
+              "runner_norad": 48142,
+              "runner_name": "STARLINK-2485",
+              "runner_train_rms_hz": 282.17421205922255,
+              "runner_margin_hz": 45.694806862235254,
+              "candidates_within_100_hz": 3,
+              "candidates_within_500_hz": 4,
+              "constant_cfo_null_holdout_rms_hz": 23460.456493900267,
+              "holdout_mse_gain_over_constant": 0.9992708692850578
+            }
+          ],
+          "same_winner_both_directions": true,
+          "quadratic_mean_selected_holdout_rms_hz": 617.6117466365143,
+          "median_runner_margin_hz": 32.37094652432641,
+          "median_candidates_within_100_hz": 3.0
+        }
+      ]
+    }
+  ]
+}
