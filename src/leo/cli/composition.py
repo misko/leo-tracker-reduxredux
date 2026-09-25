@@ -3052,6 +3052,12 @@ class LocalAcquisitionBackend:
                             self.settings.station_topology_relative_path
                         ),
                         station_topology_file_digest=(self.settings.station_topology_file_digest),
+                        station_geometry_relative_path=(
+                            self.settings.station_geometry_relative_path
+                        ),
+                        station_geometry_file_digest=(
+                            self.settings.station_geometry_file_digest
+                        ),
                         fixture_authorities=self.settings.fixture_authorities,
                     )
                 )

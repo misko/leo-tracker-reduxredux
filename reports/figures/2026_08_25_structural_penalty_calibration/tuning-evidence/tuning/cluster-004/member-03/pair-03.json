@@ -1,0 +1,303 @@
+{
+  "association": {
+    "objective": {
+      "delta_from_null": 0.0,
+      "null_cost": 90.9671630443872,
+      "total_cost": 90.9671630443872
+    },
+    "selected_catalog_numbers": [],
+    "selected_satellite_count": 0
+  },
+  "candidate_only": true,
+  "catalogue": {
+    "name_prefix": "STARLINK",
+    "object_count": 10972,
+    "unique_catalog_number_count": 10972
+  },
+  "catalogue_screen_configuration": {
+    "coarse_delay_step_s": 0.5,
+    "coarse_modes_per_delay": 1,
+    "final_catalog_count": 3,
+    "geometry_spacing_s": 0.5,
+    "maximum_refinement_catalog_count": 64,
+    "name_prefix": "STARLINK",
+    "refinement_catalog_count": 32,
+    "refinement_guard_cost": 0.0
+  },
+  "catalogue_search_avoided_by_global_null_certificate": true,
+  "catalogue_search_exact": false,
+  "catalogue_search_performed": false,
+  "caveats": [
+    "the null certificate is conditional on the retained bounded raw peak inventory",
+    "structural costs have not yet been calibrated on a locked dwell-level null corpus",
+    "an analyzer no-result dwell is an empirical control, not ground-truth satellite absence",
+    "TLE bytes are digest-bound but snapshot acquisition causality is not verified here",
+    "no payload was decoded"
+  ],
+  "conditional_on_data_proposed_cfo_modes": false,
+  "conditional_on_full_window_visibility_screen": false,
+  "conditional_on_pruned_joint_shortlist": false,
+  "conditional_on_pruned_nuisance_state_bank": false,
+  "conditional_on_raw_glrt64_inventory": true,
+  "configuration": {
+    "allow_left_censored": false,
+    "allow_right_censored": false,
+    "cell_duration_s": 0.1,
+    "cfo_sigma_hz": 100.0,
+    "delay_max_s": 2.0,
+    "delay_min_s": -2.0,
+    "delay_prior_mean_s": 0.0,
+    "delay_prior_sigma_s": 0.5,
+    "delay_step_s": 0.1,
+    "duplicate_cfo_tolerance_hz": 0.0,
+    "episode_cost": 10.75,
+    "horizon_mask_deg": 0.0,
+    "huber_threshold": 1.345,
+    "maximum_state_combinations": 256,
+    "minimum_active_duration_s": 0.5,
+    "mode_bin_hz": 100.0,
+    "mode_half_width_hz": 300.0,
+    "modes_per_delay": 2,
+    "resolution_epoch_tolerance_samples": 1,
+    "resolution_tracking_cfo_tolerance_hz": 500.0,
+    "retained_states_per_catalog": 4,
+    "satellite_cost": 10.25
+  },
+  "conservative_rank_mark_bounds_applied": true,
+  "costs_calibrated": false,
+  "decision": {
+    "full_persisted_inventory_objective": {
+      "constant_elided_from_exact_decision_problem": 0.0,
+      "delta_from_null": 0.0,
+      "null_cost": 90.9671630443872,
+      "total_cost": 90.9671630443872
+    },
+    "result_kind": "certified_null",
+    "selected_catalog_numbers": [],
+    "selected_satellite_count": 0
+  },
+  "detector_score_costs_empirically_calibrated": false,
+  "global_optimum_claimed": false,
+  "input": {
+    "duration_dataset_digest": "sha256:413c1888728cc34c67d2defab8debabf78b5de4480d0373e3f3b421ebf7682a7",
+    "duration_dataset_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/figures/2026_08_25_structural_penalty_calibration/duration-inputs/duration-input-062228-19f2-rx1-b79d95346744.json",
+    "pilot_scan_digest": "sha256:e6265c4284fb3f96433fbef2b81a7f9d52cf5fd5f280f43548941ce7730252a0",
+    "pilot_scan_path": "/srv/bulk/leo/analysis/cap-20260825T062228-886fe2dd9cde/capture-7f4cf1ae6c7746d1904e579c32b78290/scientific/path-standard/sha256:b79d953467449c2640350ecc8c94dc71d115f852c87ac8e5b1aea4740224e179/standard.pilot-scan.v3.json",
+    "score_calibration_digest": "sha256:86e9e6bee34ccc178ae83788ae1a8dbda36fdf7646f1c28a1984a2c7408000d1",
+    "score_calibration_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/figures/2026_08_25_raw_satellite_activity_calibration/score-calibration-v3.json",
+    "tle_digest": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+    "tle_path": "/home/mouse9911/.codex/visualizations/2026/08/22/01a02af8-cec4-7703-a883-75760f132c40/radio1-rx1-catalog-search-agent/causal-space-track-ac36512e.tle"
+  },
+  "null_certificate": {
+    "active_cell_count": 0,
+    "algorithm": "optimistic-zero-residual-semi-markov-lower-bound-v1",
+    "assignment_count": 0,
+    "candidate_group_reuse_between_hypothetical_satellites_allowed": true,
+    "certified": true,
+    "episode_count": 0,
+    "modeled_null_cost": 90.9671630443872,
+    "optimistic_delta_from_null": 0.0,
+    "optimistic_selected": false,
+    "proof_scope": "current additive satellite/episode/delay-prior objective over the retained raw candidate inventory",
+    "residual_loss_lower_bound": 0.0
+  },
+  "null_vs_any_activation_solved": true,
+  "observer": {
+    "altitude_m": -29.0,
+    "capture_bound": false,
+    "label": "spinnaker-sausalito",
+    "latitude_deg": 37.858988,
+    "longitude_deg": -122.478103,
+    "schema_version": 1
+  },
+  "payload_decoded": false,
+  "raw_inventory": {
+    "declared_post_acquisition_inventory_complete": true,
+    "exclusion_group_count": 23015,
+    "modeled_exclusion_group_count": 19,
+    "omitted_clutter_objective_constant": 0.0,
+    "positive_exclusion_group_count": 19,
+    "pre_acquisition_cap_inventory_complete": false,
+    "probe_count_at_retained_candidate_cap": 2400,
+    "returned_candidate_count": 24000,
+    "source_candidate_count": 24000,
+    "truncated_candidate_count": 0
+  },
+  "resolution_group_score_frequency_estimated": true,
+  "schema": "org.leo.research.raw-catalogue-satellite-activity-replay/v1",
+  "search_configuration": {
+    "algorithm": "starlink-full-window-coarse-to-fine-v1",
+    "catalogue_scope": {
+      "data_proposed_cfo_modes": true,
+      "full_probe_by_delay_visibility_required": true,
+      "rise_set_objects_supported": false
+    },
+    "catalogue_screen": {
+      "coarse_delay_step_s": 0.5,
+      "coarse_modes_per_delay": 1,
+      "final_catalog_count": 3,
+      "geometry_spacing_s": 0.5,
+      "maximum_refinement_catalog_count": 64,
+      "name_prefix": "STARLINK",
+      "refinement_catalog_count": 32,
+      "refinement_guard_cost": 0.0
+    },
+    "grouped_replay_algorithm": "bounded-exhaustive-grouped-nuisance-semimarkov-v1",
+    "input_schema": "org.leo.research.duration-constrained-satellite-assignment-input/v1",
+    "member_evaluation_scope_digest": "sha256:4d700ae6105750db482e678e440d5f554be6f49a82603e63de7d46c4c417ab84",
+    "null_certificate_algorithm": "optimistic-zero-residual-semi-markov-lower-bound-v1",
+    "observer": {
+      "altitude_m": -29.0,
+      "label": "spinnaker-sausalito",
+      "latitude_deg": 37.858988,
+      "longitude_deg": -122.478103,
+      "schema_version": 1
+    },
+    "output_schema": "org.leo.research.raw-catalogue-satellite-activity-replay/v1",
+    "pilot_scan": {
+      "algorithm_version": "standard-pilot-scan-v3",
+      "coarse_window_samples": 2500000,
+      "frequency_coordinate": "baseband_cfo_hz",
+      "frequency_reference": "uncalibrated_prior",
+      "maximum_scored_candidates_per_probe": 10,
+      "methods": [
+        "anchor8",
+        "glrt64",
+        "symbolwise"
+      ],
+      "probe_samples": 50000,
+      "schema_version": 3,
+      "subwindow_samples": 125000
+    },
+    "producer_implementation": {
+      "algorithm": "raw-catalogue-producer-file-manifest-v1",
+      "files": [
+        {
+          "digest": "sha256:575a4ed2e8a56e34761be16c1e8f7c6d1179375b8c3f11e8840373a6f00bac81",
+          "path": "tools/screen_raw_satellite_activity_catalog.py"
+        },
+        {
+          "digest": "sha256:b3bd2d4e9f75c7951b5179ba99689aabacba29f5cf5552b16e04af3147d46194",
+          "path": "tools/raw_satellite_activity_search_configuration.py"
+        },
+        {
+          "digest": "sha256:a5e08d6f99e15f7a5a1af5b1adfbb3753f1948cecb89088d7307172a7303cce8",
+          "path": "tools/replay_raw_grouped_satellite_activity.py"
+        },
+        {
+          "digest": "sha256:6aaf02f0fcc24cfb63e37d9a126a4caa1c2337fd85ad718da5c99ab96af58efe",
+          "path": "tools/replay_joint_fixed_satellite_activity.py"
+        },
+        {
+          "digest": "sha256:0bc9d84fa669bdc4e7efefa07d5495d49b8048aa840d45ebb352918cdeda0d7d",
+          "path": "src/leo/analysis/research/satellite_activity.py"
+        },
+        {
+          "digest": "sha256:bc57b3bb29c226c281877380d167cd605ba8e68b64bd8ab55884decb5faccf3d",
+          "path": "src/leo/analysis/research/multi_satellite_activity.py"
+        },
+        {
+          "digest": "sha256:ad9f5ce63851574fc62a7c00aa3e44a05ec9a5e25fd0bed839d55cf19533ec7d",
+          "path": "src/leo/analysis/research/grouped_satellite_activity.py"
+        },
+        {
+          "digest": "sha256:bdb807c2148e766483f3dd1aee627b008d1e551796fffbfd16d2a1f4f9549f8c",
+          "path": "src/leo/analysis/research/satellite_activity_scores.py"
+        },
+        {
+          "digest": "sha256:c0a2858d512cd4a06e33c603f24daa965f99a00bcbcf3beade8f1106c3907aa4",
+          "path": "src/leo/sky/doppler.py"
+        },
+        {
+          "digest": "sha256:b6c98c11d25957c8f535d09a4f4cc47f3f82745b63ca57c61f9e8d5949fbb8e0",
+          "path": "src/leo/sky/frames.py"
+        },
+        {
+          "digest": "sha256:32292e02fe8275aa95a08f6ddfc5ea550d1db54d7bdbe31aea1a9ae641c38204",
+          "path": "src/leo/sky/propagation.py"
+        },
+        {
+          "digest": "sha256:a9a61817e80a4c010c0618f6310904aaaa6c04ba84a302062350463118982aa9",
+          "path": "src/leo/sky/sampling.py"
+        },
+        {
+          "digest": "sha256:a7b0eee9f1219d227375a3edfd6c7f9513d66fa32880f8bca2351254122b551e",
+          "path": "src/leo/sky/screening.py"
+        },
+        {
+          "digest": "sha256:07e1dfd1a8c1102e8b2e69de4fe11e5899de4d4ae63f7c413a49485f78c02abc",
+          "path": "src/leo/contracts/base.py"
+        },
+        {
+          "digest": "sha256:9cf74423dd2eb0e2b66d5b3b955e438d28260d6b22e53281ae2e1481da9dd9b9",
+          "path": "src/leo/contracts/digests.py"
+        },
+        {
+          "digest": "sha256:3ece9325660308c87528d9982cccc837b0985f16a3f2c61214fdcd63e1e5f66d",
+          "path": "src/leo/contracts/sky.py"
+        },
+        {
+          "digest": "sha256:ab170a91884935d0f5fea60f8f30116280104dd199742894667ddf658e22ac6c",
+          "path": "pyproject.toml"
+        },
+        {
+          "digest": "sha256:4a0c4f1e500d104cda07dbd882f080c79fb060765e12afe33a321bac583de579",
+          "path": "uv.lock"
+        }
+      ],
+      "runtime_versions": {
+        "numpy": "2.5.2",
+        "python": "3.12.14",
+        "sgp4": "2.27"
+      }
+    },
+    "raw_replay": {
+      "allow_left_censored": false,
+      "allow_right_censored": false,
+      "cell_duration_s": 0.1,
+      "cfo_sigma_hz": 100.0,
+      "delay_max_s": 2.0,
+      "delay_min_s": -2.0,
+      "delay_prior_mean_s": 0.0,
+      "delay_prior_sigma_s": 0.5,
+      "delay_step_s": 0.1,
+      "duplicate_cfo_tolerance_hz": 0.0,
+      "episode_cost": 10.75,
+      "horizon_mask_deg": 0.0,
+      "huber_threshold": 1.345,
+      "maximum_state_combinations": 256,
+      "minimum_active_duration_s": 0.5,
+      "mode_bin_hz": 100.0,
+      "mode_half_width_hz": 300.0,
+      "modes_per_delay": 2,
+      "resolution_epoch_tolerance_samples": 1,
+      "resolution_tracking_cfo_tolerance_hz": 500.0,
+      "retained_states_per_catalog": 4,
+      "satellite_cost": 10.25
+    },
+    "score_calibration_digest": "sha256:86e9e6bee34ccc178ae83788ae1a8dbda36fdf7646f1c28a1984a2c7408000d1",
+    "score_calibration_schema": "org.leo.research.raw-pilot-activity-score-calibration/v3",
+    "sky_frequency_hz": 10959687498.0,
+    "tle_digest": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+    "window": {
+      "cell_count": 600,
+      "duration_s": 60.0,
+      "end_s": 60.0,
+      "scheduled_probe_count": 2400,
+      "start_s": 0.0
+    }
+  },
+  "search_configuration_digest": "sha256:0053f12fd66497b36dd6259ee65eef9c0ce6b6474e399887b5496eb97ed62dd9",
+  "specificity_claimed": false,
+  "structural_costs_calibrated": false,
+  "unknown_satellite_count_solved": false,
+  "window": {
+    "cell_count": 600,
+    "cell_duration_s": 0.1,
+    "end_s": 60.0,
+    "minimum_active_cells": 5,
+    "minimum_active_duration_s": 0.5,
+    "scheduled_probe_count": 2400,
+    "start_s": 0.0
+  }
+}

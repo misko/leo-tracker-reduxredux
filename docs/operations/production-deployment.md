@@ -597,6 +597,27 @@ committed station-topology documents. Set `LEO_PIPELINE_RELEASE_ID` to the exact
 on `/srv/bulk/leo` and `/opt/leo-tracker/current`. Do not create retention,
 qualification, soak, or release-qualification marker files yet.
 
+Receiver geometry is a separate, optional authority so the published recording
+manifest and hardware-lineage contracts remain unchanged. For radio `.21`-only
+reconciliation, install and pin the released `LT3D-001A` record:
+
+```text
+sudo install -o root -g leo -m 0440 \
+  /opt/leo-tracker/releases/$release_revision/deploy/station/gauss-r21-lt3d-001a-20260920-v1.json \
+  /etc/leo/station-authority/gauss-r21-lt3d-001a-20260920-v1.json
+echo '758262ecc67044065e2e2facc46f2cc77997883eabf0f7f1a4c5fa761fba65f7  /etc/leo/station-authority/gauss-r21-lt3d-001a-20260920-v1.json' \
+  | sha256sum --check --strict
+```
+
+Set `LEO_STATION_GEOMETRY_RELATIVE_PATH` and
+`LEO_STATION_GEOMETRY_FILE_DIGEST` together. Reconciliation then stores the
+content-addressed geometry binding in the capture session's
+`receiver_geometry` attributes. The current slot mapping is explicitly
+`provisional`; do not use baseline direction until a cable trace supports a new
+verified authority revision. Do not enable this partial `.21` authority for a
+capture containing another radio, because geometry resolution correctly fails
+closed when any recorded receiver path is absent.
+
 Back up the production catalog before ownership or migration changes. Never
 put the backup on QNAP:
 

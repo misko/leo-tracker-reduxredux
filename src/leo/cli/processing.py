@@ -172,6 +172,8 @@ class ProcessingBackendSettings:
     station_authority_root: Path | None = None
     station_topology_relative_path: str | None = None
     station_topology_file_digest: str | None = None
+    station_geometry_relative_path: str | None = None
+    station_geometry_file_digest: str | None = None
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
 
 
@@ -1140,6 +1142,19 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
         value is not None for value in station_values
     ):
         raise ValueError("station authority root, topology path and file digest are atomic")
+    geometry_values = (
+        settings.station_geometry_relative_path,
+        settings.station_geometry_file_digest,
+    )
+    if any(value is not None for value in geometry_values) and not all(
+        value is not None for value in geometry_values
+    ):
+        raise ValueError("station geometry path and file digest are atomic")
+    if (
+        any(value is not None for value in geometry_values)
+        and settings.station_authority_root is None
+    ):
+        raise ValueError("station geometry requires the station authority root")
     authority_resolver = None
     if settings.station_authority_root is not None:
         assert settings.station_topology_relative_path is not None
@@ -1150,6 +1165,14 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             topology=AuthorityFileReference(
                 relative_path=settings.station_topology_relative_path,
                 file_digest=settings.station_topology_file_digest,
+            ),
+            geometry=(
+                None
+                if settings.station_geometry_relative_path is None
+                else AuthorityFileReference(
+                    relative_path=settings.station_geometry_relative_path,
+                    file_digest=settings.station_geometry_file_digest or "",
+                )
             ),
             fixtures=settings.fixture_authorities,
         )

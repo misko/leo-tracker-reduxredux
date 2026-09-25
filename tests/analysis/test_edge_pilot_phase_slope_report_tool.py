@@ -75,6 +75,59 @@ def test_selection_applies_margin_and_model_gates_before_stride() -> None:
     assert selected[1].aligned_sample_start == 406
 
 
+def test_wide_dense_probe_view_renders_full_scan_and_frame_support(tmp_path: Path) -> None:
+    tool = _tool()
+    trajectory = tool.FrozenTrajectory((-3_800.0, 100_000.0), 0.0, "branch", "track")
+    scan = {
+        "detections": [
+            {
+                "time_s": time_s,
+                "sample_start": round(time_s * 2_500_000),
+                "candidates": [_candidate(100_000.0 - 3_800.0 * time_s, 0.2, rank=0)],
+            }
+            for time_s in (0.0, 0.5, 1.0)
+        ]
+    }
+    windows = tool._select_windows(
+        scan,
+        trajectory,
+        start_s=0.0,
+        end_s=1.0,
+        minimum_margin=0.05,
+        maximum_model_error_hz=10.0,
+        accepted_stride=1,
+    )
+    frames = []
+    for window in windows:
+        for frame in range(6):
+            time_s = window.detection_time_s + frame / 750
+            model_hz = float(trajectory.frequency_hz(time_s))
+            frames.append(
+                SimpleNamespace(
+                    reference_time_s=time_s,
+                    source_window_index=window.index,
+                    absolute_cfo_measurement_hz=model_hz + frame,
+                    model_cfo_hz=model_hz,
+                    exact_coherence=0.12,
+                    coherence_margin=0.10,
+                    frequency_update_applied=frame % 2 == 0,
+                )
+            )
+    destination = tmp_path / "wide-probes.png"
+
+    tool._plot_wide_dense_probe_view(
+        scan=scan,
+        trajectory=trajectory,
+        locked_windows=windows,
+        dense_tracking=SimpleNamespace(frames=tuple(frames)),
+        target_limits_s=(0.0, 1.0),
+        destination=destination,
+    )
+
+    assert destination.is_file()
+    assert destination.stat().st_size > 0
+
+
 def test_additional_kalman_dwell_selection_is_frozen_and_disjoint() -> None:
     tool = _tool()
     specs = tool.ADDITIONAL_PILOT_KALMAN_SPECS

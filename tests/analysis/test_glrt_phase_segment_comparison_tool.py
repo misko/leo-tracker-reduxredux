@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import numpy as np
 import pytest
 
 
@@ -190,3 +191,104 @@ def test_rate_comparison_figure_renders_segment_uncertainty(tmp_path: Path) -> N
 
     assert destination.is_file()
     assert destination.stat().st_size > 0
+
+
+def _pilot_frames(count: int, *, rate_hz_s: float = -3_800.0):
+    return tuple(
+        SimpleNamespace(
+            time_s=index / 750.0,
+            absolute_cfo_measurement_hz=10_000.0 + rate_hz_s * index / 750.0,
+            tracked_absolute_cfo_hz=10_000.0 + rate_hz_s * index / 750.0,
+            measurement_supported=True,
+        )
+        for index in range(count)
+    )
+
+
+def test_rolling_frequency_estimates_recover_frame_cadence_line() -> None:
+    tool = _tool()
+    interval = SimpleNamespace(
+        start_time_s=5.0,
+        result=SimpleNamespace(frames=_pilot_frames(60)),
+    )
+
+    estimates = tool.rolling_frequency_estimates(interval, 0.020)
+
+    assert estimates
+    assert estimates[-1].doppler_rate_hz_s == pytest.approx(-3_800.0, abs=1e-6)
+    assert estimates[-1].fitted_cfo_hz == pytest.approx(
+        10_000.0 - 3_800.0 * 59 / 750.0,
+        abs=1e-6,
+    )
+    assert estimates[-1].support_span_s <= 0.020 + 1 / 750
+
+
+def test_zoom_selection_prefers_shared_qualified_epoch() -> None:
+    tool = _tool()
+    track = SimpleNamespace(start_s=47.0, end_s=54.0)
+    path_a = SimpleNamespace(label="stream-0/RX0 upper")
+    path_b = SimpleNamespace(label="stream-0/RX1 upper")
+
+    def analysis(path, start, updates, *, qualified=True):
+        return SimpleNamespace(
+            phase_segment_qualified=qualified,
+            binding=path,
+            track=track,
+            document={
+                "start_time_s": start,
+                "end_time_s": start + 0.070,
+                "phase_update_count": updates,
+                "supported_frame_count": updates,
+                "median_coherence_margin": 0.1,
+                "held_out_frequency_rms_hz": 20.0,
+            },
+        )
+
+    groups = (
+        (analysis(path_a, 48.0, 52), analysis(path_a, 49.85, 47)),
+        (analysis(path_b, 49.85, 47), analysis(path_b, 50.15, 52)),
+    )
+
+    start_s, end_s, anchor_s = tool.select_strongest_shared_zoom(
+        groups,
+        duration_s=0.5,
+        recording_duration_s=60.0,
+    )
+
+    assert anchor_s == pytest.approx(49.85)
+    assert start_s == pytest.approx(49.80)
+    assert end_s == pytest.approx(50.30)
+
+
+def test_multiscale_figure_renders_shared_time_panels(tmp_path: Path) -> None:
+    tool = _tool()
+    model_track = SimpleNamespace(
+        reference_time_s=0.0,
+        absolute_coefficients_hz=(-5_700.0, 10_000.0),
+    )
+    track = SimpleNamespace(
+        track=model_track,
+        glrt_rate_hz_s=-5_700.0,
+        start_s=0.0,
+        end_s=0.1,
+    )
+    interval = tool.TrackingInterval(
+        track=track,
+        binding=SimpleNamespace(label="stream-0/RX0 upper"),
+        start_time_s=0.0,
+        end_time_s=0.1,
+        result=SimpleNamespace(frames=_pilot_frames(60), supported_frame_count=60),
+        source="test",
+    )
+    destination = tmp_path / "multiscale.png"
+
+    tool.render_multiscale_cfo(
+        destination,
+        ((interval,),),
+        x_limits_s=(0.0, 0.1),
+        title="Test multiscale CFO",
+    )
+
+    assert destination.is_file()
+    assert destination.stat().st_size > 0
+    assert np.isfinite(destination.stat().st_size)

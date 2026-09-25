@@ -1,0 +1,260 @@
+{
+  "huber_formula": "q_total=q*min(1,1.345*MAD_scale/abs(residual)); iterated to convergence",
+  "method_summaries": {
+    "equal": {
+      "cross_resolution_rate_range_hz_per_s": 2.242010772179448,
+      "rates_khz_per_s": [
+        2.554584498300872,
+        2.5564868745767617,
+        2.5568265090730513
+      ]
+    },
+    "quality_huber": {
+      "cross_resolution_rate_range_hz_per_s": 4.093271088650319,
+      "rates_khz_per_s": [
+        2.561081718797096,
+        2.563352808733705,
+        2.565174989885746
+      ]
+    },
+    "quality_wls": {
+      "cross_resolution_rate_range_hz_per_s": 2.7076305239357445,
+      "rates_khz_per_s": [
+        2.558426542203787,
+        2.560975980931301,
+        2.561134172727723
+      ]
+    }
+  },
+  "quality_weight_formula": "q=clip(robust_z/median(robust_z),0.5,2), normalized to mean 1",
+  "rf_reference_hz": 11217500000.0,
+  "rows": [
+    {
+      "effective_sample_count": 270.0,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.10398879138426992,
+      "maximum_fit_shift_ns": 0.0,
+      "maximum_weight": 1.0,
+      "median_weight": 1.0,
+      "method": "equal",
+      "method_label": "Equal weight",
+      "minimum_weight": 1.0,
+      "nonoverlap_parity_rate_spread_hz_per_s": 0.07169461481071338,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.5546387076356707,
+        2.55456701302086
+      ],
+      "point_count": 270,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 0.0,
+      "rate_khz_per_s": 2.554584498300872,
+      "resolution": "half",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.11713267467213707,
+      "unweighted_rms_us": 0.0378233873311984,
+      "weighted_rms_us": 0.0378233873311984,
+      "window_stride": "62.5/31.25 ms"
+    },
+    {
+      "effective_sample_count": 264.8009769331629,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.10559488606101154,
+      "maximum_fit_shift_ns": 4.218128230655972,
+      "maximum_weight": 1.3723602884937416,
+      "median_weight": 0.9858993210921644,
+      "method": "quality_wls",
+      "method_label": "Robust-z WLS",
+      "minimum_weight": 0.7536621949756103,
+      "nonoverlap_parity_rate_spread_hz_per_s": 0.6841068207288359,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.5587565933373266,
+        2.558072486516598
+      ],
+      "point_count": 270,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 3.8420439029152043,
+      "rate_khz_per_s": 2.558426542203787,
+      "resolution": "half",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.11713267467213707,
+      "unweighted_rms_us": 0.03788969185642794,
+      "weighted_rms_us": 0.03715531206732898,
+      "window_stride": "62.5/31.25 ms"
+    },
+    {
+      "effective_sample_count": 260.84328526463264,
+      "iterations": 15,
+      "maximum_absolute_residual_us": 0.10926107013380873,
+      "maximum_fit_shift_ns": 8.03272155866161,
+      "maximum_weight": 1.3723602884937416,
+      "median_weight": 0.9769146635680811,
+      "method": "quality_huber",
+      "method_label": "Robust-z WLS + Huber",
+      "minimum_weight": 0.4116972066809995,
+      "nonoverlap_parity_rate_spread_hz_per_s": 0.545250081671167,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.5609709892629735,
+        2.5615162393446447
+      ],
+      "point_count": 270,
+      "points_below_half_weight": 6,
+      "rate_delta_from_equal_hz_per_s": 6.497220496223921,
+      "rate_khz_per_s": 2.561081718797096,
+      "resolution": "half",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.11713267467213707,
+      "unweighted_rms_us": 0.03801643764360407,
+      "weighted_rms_us": 0.03485613999477289,
+      "window_stride": "62.5/31.25 ms"
+    },
+    {
+      "effective_sample_count": 134.0,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.09897649381866452,
+      "maximum_fit_shift_ns": 0.0,
+      "maximum_weight": 1.0,
+      "median_weight": 1.0,
+      "method": "equal",
+      "method_label": "Equal weight",
+      "minimum_weight": 1.0,
+      "nonoverlap_parity_rate_spread_hz_per_s": 0.2526479944053861,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.5563324683040514,
+        2.5565851162984568
+      ],
+      "point_count": 134,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 0.0,
+      "rate_khz_per_s": 2.5564868745767617,
+      "resolution": "baseline",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.14829836607573235,
+      "unweighted_rms_us": 0.039550478920718495,
+      "weighted_rms_us": 0.039550478920718495,
+      "window_stride": "125/62.5 ms"
+    },
+    {
+      "effective_sample_count": 131.05960352289372,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.09937762999269245,
+      "maximum_fit_shift_ns": 4.472899535728613,
+      "maximum_weight": 1.3136197769782927,
+      "median_weight": 0.9880991216135195,
+      "method": "quality_wls",
+      "method_label": "Robust-z WLS",
+      "minimum_weight": 0.725260046888598,
+      "nonoverlap_parity_rate_spread_hz_per_s": 1.7419786029901907,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.560075582030243,
+        2.561817560633233
+      ],
+      "point_count": 134,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 4.489106354539363,
+      "rate_khz_per_s": 2.560975980931301,
+      "resolution": "baseline",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.14829836607573235,
+      "unweighted_rms_us": 0.03963614394471246,
+      "weighted_rms_us": 0.038775092648123906,
+      "window_stride": "125/62.5 ms"
+    },
+    {
+      "effective_sample_count": 129.444337542949,
+      "iterations": 19,
+      "maximum_absolute_residual_us": 0.09794670451714364,
+      "maximum_fit_shift_ns": 9.219713496615936,
+      "maximum_weight": 1.3136197769782927,
+      "median_weight": 0.9812075109938685,
+      "method": "quality_huber",
+      "method_label": "Robust-z WLS + Huber",
+      "minimum_weight": 0.46726160233618724,
+      "nonoverlap_parity_rate_spread_hz_per_s": 2.7061164608537247,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.561983886559494,
+        2.5646900030203477
+      ],
+      "point_count": 134,
+      "points_below_half_weight": 3,
+      "rate_delta_from_equal_hz_per_s": 6.865934156943254,
+      "rate_khz_per_s": 2.563352808733705,
+      "resolution": "baseline",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.14829836607573235,
+      "unweighted_rms_us": 0.0397768692895754,
+      "weighted_rms_us": 0.03680252691015354,
+      "window_stride": "125/62.5 ms"
+    },
+    {
+      "effective_sample_count": 66.0,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.08483639365899735,
+      "maximum_fit_shift_ns": 0.0,
+      "maximum_weight": 1.0,
+      "median_weight": 1.0,
+      "method": "equal",
+      "method_label": "Equal weight",
+      "minimum_weight": 1.0,
+      "nonoverlap_parity_rate_spread_hz_per_s": 9.757521363739308,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.552326769832464,
+        2.562084291196203
+      ],
+      "point_count": 66,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 0.0,
+      "rate_khz_per_s": 2.5568265090730513,
+      "resolution": "double",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.15945724977884806,
+      "unweighted_rms_us": 0.038223233974277,
+      "weighted_rms_us": 0.038223233974277,
+      "window_stride": "250/125 ms"
+    },
+    {
+      "effective_sample_count": 64.5463949664713,
+      "iterations": 1,
+      "maximum_absolute_residual_us": 0.08943071209965847,
+      "maximum_fit_shift_ns": 4.594318440661119,
+      "maximum_weight": 1.278721209700714,
+      "median_weight": 0.9919291689090526,
+      "method": "quality_wls",
+      "method_label": "Robust-z WLS",
+      "minimum_weight": 0.7744274758471286,
+      "nonoverlap_parity_rate_spread_hz_per_s": 9.381018245751438,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.5568472972287615,
+        2.566228315474513
+      ],
+      "point_count": 66,
+      "points_below_half_weight": 0,
+      "rate_delta_from_equal_hz_per_s": 4.307663654671501,
+      "rate_khz_per_s": 2.561134172727723,
+      "resolution": "double",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.15945724977884806,
+      "unweighted_rms_us": 0.03830727291321674,
+      "weighted_rms_us": 0.03740871321235619,
+      "window_stride": "250/125 ms"
+    },
+    {
+      "effective_sample_count": 63.55697540582801,
+      "iterations": 19,
+      "maximum_absolute_residual_us": 0.0985198159854741,
+      "maximum_fit_shift_ns": 13.683422326476753,
+      "maximum_weight": 1.278721209700714,
+      "median_weight": 0.9615688371184221,
+      "method": "quality_huber",
+      "method_label": "Robust-z WLS + Huber",
+      "minimum_weight": 0.4419805271719016,
+      "nonoverlap_parity_rate_spread_hz_per_s": 12.125798926073461,
+      "nonoverlap_parity_rates_khz_per_s": [
+        2.560196265559019,
+        2.5723220644850926
+      ],
+      "point_count": 66,
+      "points_below_half_weight": 1,
+      "rate_delta_from_equal_hz_per_s": 8.348480812694792,
+      "rate_khz_per_s": 2.565174989885746,
+      "resolution": "double",
+      "robust_z_vs_absolute_equal_residual_correlation": -0.15945724977884806,
+      "unweighted_rms_us": 0.03865433165330592,
+      "weighted_rms_us": 0.035418168206155246,
+      "window_stride": "250/125 ms"
+    }
+  ],
+  "session_id": "cap-20260903T004006-9120aba2922e",
+  "wls_objective": "sum(q_i * residual_i**2); numpy.polyfit receives sqrt(q_i)"
+}
