@@ -183,7 +183,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       </tr></thead><tbody>{detail.visits.slice(start, start + 50).map(v => <tr key={v.visit_index}>
         <td><button type="button" aria-pressed={selected === v.visit_index} onClick={() => setSelected(v.visit_index)}>Inspect visit {v.visit_index}</button></td>
         <td>{targetLabel(v.target_index)} / {targetLabel(v.proposed_target_index)}</td><td>{seconds(v.valid_start_seconds)}</td>
-        <td>{v.retained ? "120 ms retained" : "Incomplete; not retained"}</td><td>{v.reason.replaceAll("_", " ")}</td>
+        <td>{v.retained ? `${Math.round((v.valid_end_seconds! - v.valid_start_seconds) * 1000)} ms retained` : "Incomplete; not retained"}</td><td>{v.reason.replaceAll("_", " ")}</td>
       </tr>)}</tbody></table></div>
       <p>For an incomplete hop, the valid boundary may not have been reached before cancellation.</p>
       {detail.visits.length > 50 ? <div className="candidate-pagination scanner-pagination">

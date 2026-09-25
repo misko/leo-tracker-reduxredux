@@ -260,6 +260,20 @@ def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
     finally:
         store.close()
 
+    from tests.api.test_adaptive_hop_history_api import client_for
+
+    history = AdaptiveHopPresentationStore(bulk)
+    client = client_for(bulk, adaptive_hop_sessions_v2=history)
+    for api_version in ("v2", "v3"):
+        base = f"/api/{api_version}/scanner/adaptive-sessions"
+        page = client.get(base)
+        detail = client.get(f"{base}/{session_id}")
+        assert page.status_code == 200
+        assert page.json()["items"][0]["schema_version"] == 8
+        assert detail.status_code == 200
+        assert detail.json()["schema_version"] == 8
+        assert detail.json()["capture"]["recorded_gain_mode"] == "manual"
+
 
 @pytest.mark.parametrize(
     ("rate", "receipt_type"),
