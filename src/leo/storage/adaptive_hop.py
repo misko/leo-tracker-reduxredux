@@ -160,7 +160,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                     visit.valid_sample_count
                     for visit in visits[next_visit : next_visit + chunk.visit_count]
                 )
-                if self.schema_version in (11, 12)
+                if self.schema_version in (11, 12, 14)
                 else chunk.visit_count * g.valid_visit_samples
             )
             if (
@@ -352,6 +352,17 @@ class UnboundFeature103DualRxAdaptiveHopIqManifestV13(AdaptiveHopIqManifestV1):
     chunks: Annotated[tuple[Feature103AdaptiveHopIqChunkV9, ...], Field(max_length=625)]
 
 
+class UnboundVariableDualRxAdaptiveHopIqManifestV14(AdaptiveHopIqManifestV1):
+    """Protocol-three dual-RX IQ without established fixture geometry."""
+
+    schema_version: Literal[14] = 14  # type: ignore[assignment]
+    _visits_per_chunk: ClassVar[int] = 1
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = Feature103DualRxTimingV3
+    receipt: AdaptiveHopReceiptV6  # type: ignore[assignment]
+    timing: Feature103DualRxTimingV3 | None  # type: ignore[assignment]
+    chunks: Annotated[tuple[VariableDualRxAdaptiveHopIqChunkV12, ...], Field(max_length=2500)]
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -366,7 +377,8 @@ class _ManifestSeal(AdaptiveModel):
         | Feature104DualRxAdaptiveHopIqManifestV10
         | VariableDualRxAdaptiveHopIqManifestV11
         | VariableDualRxAdaptiveHopIqManifestV12
-        | UnboundFeature103DualRxAdaptiveHopIqManifestV13,
+        | UnboundFeature103DualRxAdaptiveHopIqManifestV13
+        | UnboundVariableDualRxAdaptiveHopIqManifestV14,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -393,6 +405,7 @@ class PublishedAdaptiveHopIqSession:
         | VariableDualRxAdaptiveHopIqManifestV11
         | VariableDualRxAdaptiveHopIqManifestV12
         | UnboundFeature103DualRxAdaptiveHopIqManifestV13
+        | UnboundVariableDualRxAdaptiveHopIqManifestV14
     )
     manifest_sha256: str
 
@@ -647,7 +660,7 @@ class AdaptiveHopIqStore:
             else AdaptiveHopPlanV1
         )
         plan = plan_model.model_validate(plan.model_dump())
-        if isinstance(plan, (AdaptiveHopPlanV5, AdaptiveHopPlanV6)) and receiver_geometry is None:
+        if isinstance(plan, AdaptiveHopPlanV5) and receiver_geometry is None:
             raise ValueError("this dual-RX manifest version requires receiver geometry")
         if self.contains_session(session_id):
             raise FileExistsError(session_id)
@@ -1329,7 +1342,9 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                VariableDualRxAdaptiveHopIqManifestV12
+                UnboundVariableDualRxAdaptiveHopIqManifestV14
+                if isinstance(receipt, AdaptiveHopReceiptV6) and self._receiver_geometry is None
+                else VariableDualRxAdaptiveHopIqManifestV12
                 if isinstance(receipt, AdaptiveHopReceiptV6)
                 else Feature104DualRxAdaptiveHopIqManifestV10
                 if isinstance(receipt, AdaptiveHopReceiptV5)
