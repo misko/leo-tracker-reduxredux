@@ -23,6 +23,10 @@ from leo.station.authority import (
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
+from leo.station.geometry import (
+    CaptureReceiverGeometryBindingV1,
+    StationReceiverGeometryV1,
+)
 from leo.station.pinned_loader import StationAuthorityReader
 
 
@@ -51,6 +55,8 @@ class ResolvedCaptureAuthority:
         | CaptureHardwareBindingV6
         | FixturePathAuthorityV1
     )
+    geometry: StationReceiverGeometryV1 | None = None
+    geometry_binding: CaptureReceiverGeometryBindingV1 | None = None
 
 
 class UnreviewedTestFixtureAuthorityError(ValueError):
@@ -65,6 +71,7 @@ class PinnedCaptureAuthorityResolver:
         reader: StationAuthorityReader,
         *,
         topology: AuthorityFileReference,
+        geometry: AuthorityFileReference | None = None,
         fixtures: tuple[FixtureAuthorityFileReference, ...] = (),
     ) -> None:
         manifests = tuple(item.manifest_digest for item in fixtures)
@@ -72,6 +79,7 @@ class PinnedCaptureAuthorityResolver:
             raise ValueError("fixture authority manifest digests must be unique")
         self._reader = reader
         self._topology = topology
+        self._geometry = geometry
         self._fixtures = {item.manifest_digest: item for item in fixtures}
 
     def resolve(
@@ -152,7 +160,22 @@ class PinnedCaptureAuthorityResolver:
                 observed_manifest_file_digest=observed_manifest_file_digest,
                 topology=topology,
             )
+        geometry = (
+            None
+            if self._geometry is None
+            else self._reader.read_geometry(
+                self._geometry.relative_path,
+                expected_file_digest=self._geometry.file_digest,
+            )
+        )
+        geometry_binding = (
+            None
+            if geometry is None
+            else CaptureReceiverGeometryBindingV1.create(binding, geometry=geometry)
+        )
         return ResolvedCaptureAuthority(
             topology=topology,
             path_authority=binding,
+            geometry=geometry,
+            geometry_binding=geometry_binding,
         )
