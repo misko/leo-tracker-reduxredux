@@ -444,13 +444,17 @@ describe("Observation Console", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("selects adaptive recordings independently from fixed scanner analysis", async () => {
+  it("opens adaptive scans by default and keeps fixed scans on the legacy page", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
-    fireEvent.click(await screen.findByRole("button", { name: /adaptive-test/ }));
+    expect(screen.getByRole("button", { name: "Adaptive scans" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("table", { name: "Adaptive capture history" })).toBeInTheDocument();
     await screen.findByRole("heading", { name: "Actual channel visits" });
     expect(screen.getByText("53 / 54")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Starlink channel scans" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Persistent hop history" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Scanner history" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
+    expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Adaptive capture history" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: new RegExp(persistentHopCapture.session_id) }));
     await screen.findByRole("heading", { name: "300-second channel scan" });
     expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
@@ -474,7 +478,7 @@ describe("Observation Console", () => {
       return normalFetch(input, init);
     }));
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
     fireEvent.click(await screen.findByRole("button", { name: new RegExp(capture.session_id) }));
     expect(await screen.findByText("RX1 · held for this scan")).toBeInTheDocument();
     expect(screen.getByLabelText("Persistent hop summary")).toHaveTextContent("10.0 MS/s · 10.0 MHz");
@@ -511,6 +515,7 @@ describe("Observation Console", () => {
 
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
     const navigationLabels = [
       ...screen.getByRole("navigation", { name: "Primary views" }).querySelectorAll("button"),
@@ -560,6 +565,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     expect(await screen.findByRole("table", { name: "Radio 0 captured setup" })).toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Radio 1 captured setup" })).not.toBeInTheDocument();
   });
@@ -598,6 +604,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     const alert = await screen.findByRole("alert", { name: "" });
     expect(alert).toHaveTextContent("Capture integrity degraded");
     expect(alert).toHaveTextContent("2 continuity gaps recorded on radio-test");
@@ -608,6 +615,7 @@ describe("Observation Console", () => {
 
   it("does not claim legacy host-indexed IQ is counter-contiguous", async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     expect(await screen.findAllByText("Unknown · no FPGA counter")).toHaveLength(2);
   });
 
@@ -640,6 +648,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     const alert = await screen.findByRole("alert", { name: "" });
     expect(alert).toHaveTextContent("1 storage-queue refill was rejected on radio-test");
     expect(alert).toHaveTextContent("4 additional missing device samples and 1 overflow flag");
@@ -649,6 +658,7 @@ describe("Observation Console", () => {
 
   it("sends filters through the read query", async () => {
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     const search = screen.getByRole("searchbox", { name: "Search recordings" });
     fireEvent.change(search, { target: { value: "pilot" } });
     await waitFor(() => {
@@ -676,7 +686,7 @@ describe("Observation Console", () => {
 
   it("shows scanner history and selects an exact report", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
     expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
     expect(screen.getByText("2 scans")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "300-second sessions" })).toBeInTheDocument();
@@ -841,7 +851,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
     fireEvent.click(await screen.findByRole("button", { name: /scan-hop-2d0e49b94b3e4cdf/ }));
 
     expect(await screen.findByRole("img", { name: /Persistent-hop capture coverage/ })).toHaveAttribute(
@@ -910,7 +920,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Scanner capture failure · scan-all-targets-failed");
@@ -990,7 +1000,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
 
     expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
     expect(screen.queryByText(/Scanner capture failure/)).not.toBeInTheDocument();
@@ -1052,6 +1062,7 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
     expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
     const stageMatrix = screen.getByLabelText("Standard stage completion matrix");
     expect(stageMatrix).not.toHaveAttribute("open");
