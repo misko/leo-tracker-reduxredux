@@ -1,0 +1,26 @@
+{
+  "admission": {
+    "capture_start_lower_bound": "exclusive",
+    "capture_start_upper_bound": "inclusive",
+    "requires_finalized_by_audit_cutoff": true,
+    "requires_qualified_utc_timing": true,
+    "requires_terminal_completed": true
+  },
+  "audit_observed_utc": "2026-09-25T14:57:19.173054Z",
+  "capture_start_lower_bound_utc": "2026-09-24T22:20:02.797011Z",
+  "capture_start_upper_bound_utc": "2026-09-25T14:57:19.173054Z",
+  "dataset_name": "DS4",
+  "evaluation_units": {
+    "full_dataset": "one unit containing every admitted session",
+    "groups_of_8": "chronological, non-overlapping complete chunks of exactly eight sessions; any final remainder is recorded but is not an 8-scan unit",
+    "single_scans": "one unit for every admitted session"
+  },
+  "lower_bound_source": {
+    "dataset": "DS3",
+    "manifest": "reports/2026_09_24_ds3_all_captures/manifest.json",
+    "meaning": "maximum capture_start_utc admitted by DS3"
+  },
+  "reference_coordinate_present": false,
+  "schema": "ds4-freeze-policy/v1",
+  "source_root": "/srv/bulk/leo/scanner-adaptive-recordings"
+}
