@@ -1,9 +1,12 @@
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
 from tools.research.evaluate_late_track_candidate_phase import (
     equal_group_metrics,
     fit_baseline_orientation,
+    glrt_timeline_rows,
     joint_receiver_result,
     response_metrics,
     wrap_pi,
@@ -106,3 +109,44 @@ def test_fit_baseline_orientation_uses_training_only() -> None:
     assert selected["training_fitted_azimuth_deg"] == 79
     assert selected["training_fitted_receiver_cfo_hz"] == pytest.approx(10.0)
     assert selected["held_rms_hz"] == pytest.approx(0.0)
+
+
+def test_glrt_timeline_uses_device_counter_scan_clock() -> None:
+    candidate = SimpleNamespace(
+        candidate_rank=3,
+        fractional_margin=0.12,
+        fractional_tracking_cfo_hz=1250.0,
+        passed_fractional_margin_gate=True,
+    )
+    probe = SimpleNamespace(
+        valid_start_counter=1500,
+        probe_start_ms=20,
+        candidates=(candidate,),
+        visit_index=7,
+        receiver_id=1,
+        channel=4,
+        edge="lower",
+    )
+    source = SimpleNamespace(
+        timing=SimpleNamespace(session_start_device_sample_counter=1000),
+        sample_rate_hz=1000,
+        probes=(probe,),
+        session_id="scan-test",
+    )
+
+    rows = glrt_timeline_rows(source)
+
+    assert rows == [
+        {
+            "session_id": "scan-test",
+            "visit_index": 7,
+            "receiver_id": 1,
+            "channel": 4,
+            "edge": "lower",
+            "time_s": pytest.approx(0.52),
+            "candidate_rank": 3,
+            "fractional_margin": 0.12,
+            "fractional_tracking_cfo_hz": 1250.0,
+            "passed_fractional_margin_gate": True,
+        }
+    ]

@@ -3,6 +3,12 @@
 - `summary.json`: frozen protocol, primary results, 32 random-split sensitivity
   runs per track, orientation feasibility results, and provenance.
 - `phase-advance-evidence.json.gz`: extracted adjacent-frame pilot phase rows.
+- `glrt-timeline.json.gz`: full fractional-GLRT candidate inventory for the five
+  300-second scans.
+- `phase-vs-time-300s.png`: selected-track random-held phase over the scan
+  clock, coloured by RF channel.
+- `glrt-vs-time-300s.png`: complete per-receiver GLRT margins over the scan
+  clock, with passing candidates coloured by RF channel.
 - `candidate-score-by-track-receiver.png`: receiver-level train and held scores.
 - `joint-receiver-candidate-score.png`: equal-weight RX0/RX1 candidate scores.
 - `held-phase-association-summary.png`: held modulo-π R, controls, and contrast.

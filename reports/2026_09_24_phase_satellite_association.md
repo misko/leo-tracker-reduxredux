@@ -47,6 +47,27 @@ The reported phase correlation is the equal-visit circular resultant
 correlation nor the earlier broadband 2π `R`. Candidate scores are equal-visit
 means of \(4\cos(2r)\); they are not probabilities or p-values.
 
+## Phase and GLRT over the 300-second scans
+
+The phase timeline places all 793 random-held odd-symbol adjacent-frame
+measurements on each capture's qualified device-counter clock. Colour denotes
+RF channel using the established scan palette; circles are RX0 and crosses are
+RX1. Phase is wrapped modulo π to ±90°. The plotted support is limited to the
+five frozen tracks and lies between 129.9 and 224.4 seconds depending on the
+scan. Blank intervals mean that the selected track has no retained phase
+measurement. They are not zero phase, and points are never connected or
+unwrapped across visits.
+
+![Random-held phase over each 300-second scan](figures/2026_09_24_phase_satellite_association/phase-vs-time-300s.png)
+
+The companion GLRT plot uses the complete published fractional-GLRT inventory
+for the same five captures: 110,879 candidate records, of which 10,572 pass the
+`0.025` fractional-margin gate. Passed candidates are coloured by channel;
+below-gate candidates are gray. Multiple passing peaks can be aliases or
+nearby acquisition basins and must not be read as distinct satellites.
+
+![Full GLRT inventory over each 300-second scan](figures/2026_09_24_phase_satellite_association/glrt-vs-time-300s.png)
+
 ## Candidate results
 
 | Track | Training choice | Held-best diagnostic | Selected held score | Constant | Wrong time | Held R, RX0 / RX1 | GLRT leader train / held-best over 32 splits |
@@ -137,6 +158,8 @@ records every split, candidate, fitted nuisance, score, `R`, orientation
 feasibility result, TLE path, and input digest. The compressed
 [phase evidence](figures/2026_09_24_phase_satellite_association/phase-advance-evidence.json.gz)
 retains the extracted adjacent-frame measurements.
+The compressed [GLRT timeline](figures/2026_09_24_phase_satellite_association/glrt-timeline.json.gz)
+retains the full plotted candidate inventory.
 
 ```bash
 sudo -u leo env HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib \
