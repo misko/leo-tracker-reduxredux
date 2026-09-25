@@ -1,0 +1,25 @@
+{
+  "schema": "ds1-iteration22-randomized-time-predictive-plan/v1",
+  "status": "prototype-only-no-geographic-search",
+  "reference_used_for_inference": false,
+  "cohort": {
+    "dataset": "reports/2026_09_24_ds1/dataset.json",
+    "case_ids": [
+      "train_20260921_00_6",
+      "train_20260921_16_6"
+    ],
+    "prior": "reno"
+  },
+  "coordinate_and_tau_policy": "reuse each case's sealed original DS1 shared_time winner, selected using randomized TRAIN rows before held evaluation",
+  "identity_policy": "select each track's hard candidate using randomized TRAIN rows only at the fixed coordinate and tau",
+  "mask_authority": "receipt-bound prepared_evidence.tracks[].training_mask loaded by reports/2026_09_24_ds1/run.py::make_engine and preserved by reports/2026_09_24_ds1_orbit_arm/run.py::prepare",
+  "arms": {
+    "zero_rate": "per-track CFO fitted on TRAIN; every per-NORAD rate fixed to zero",
+    "train_rate": "iteration-12 conditionally independent regularized per-NORAD scalar rates fitted on TRAIN only within +/-0.25 s/hour; per-track CFO refitted on TRAIN"
+  },
+  "scoring": "cap-800 squared RMS per track, occupied-second weighting within session, equal mean across the six sessions in each case; unsupported TRAIN identities remain at the cap in both arms",
+  "held_policy": "HELD rows may only score the two already-frozen arms; they cannot select coordinate, tau, identity, CFO, rate, fallback, bound, or stopping",
+  "exact_gate": "direct SGP4 replay maximum absolute surrogate error <= 0.2 Hz for both arms",
+  "launch_policy": "write one fixed-point smoke artifact only; do not launch a geographic basin",
+  "interpretation": "randomized within-track predictive regression evidence, not new-session transfer or untouched validation"
+}
