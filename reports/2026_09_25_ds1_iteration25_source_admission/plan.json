@@ -1,0 +1,57 @@
+{
+  "schema": "ds1-iteration25-source-admission-plan/v1",
+  "status": "sealed-fixed-coordinate-source-admission-held-evaluation",
+  "source_artifacts": {
+    "iteration23_artifact": "reports/2026_09_25_ds1_iteration23_widened_rate/smoke.json",
+    "iteration23_code": "reports/2026_09_25_ds1_iteration23_widened_rate/run.py",
+    "iteration24_artifact": "reports/2026_09_25_ds1_iteration24_crossfit_rate/audit.json",
+    "iteration24_code": "reports/2026_09_25_ds1_iteration24_crossfit_rate/run.py"
+  },
+  "required_source_state": {
+    "iteration23_schema": "ds1-iteration23-widened-rate-audit/v1",
+    "iteration24_schema": "ds1-iteration24-crossfit-rate-audit/v1",
+    "iteration24_complete": true,
+    "iteration24_held_used_for_fit_score_gate_or_decision": false,
+    "required_admitted_source_count": 65,
+    "required_zero_source_count": 186,
+    "total_group_source_count": 251
+  },
+  "candidate_policy": "within each DS1 group, enable exactly the iteration24 eligible sources whose complete cross-fit gate passed; use each enabled source's frozen iteration23 full-TRAIN +/-1 s/hour diagnostic rate; set every other group source exactly to zero",
+  "coordinate_policy": "reuse each iteration23 group's fixed latitude, longitude, and tau exactly; do not optimize or search geography or time",
+  "mask_policy": "membership, rates, coordinates, tau, CFO-fitting procedure, controls, diagnostics, gates, and decision are fixed before this run; fit one CFO per track from TRAIN rows only, then score the already-randomized HELD rows once for the admitted candidate; HELD cannot alter any model choice",
+  "comparators": [
+    "iteration23 zero-rate arm at the same fixed coordinate and tau",
+    "iteration23 all-source +/-0.25 s/hour arm at the same fixed coordinate and tau",
+    "iteration23 all-source +/-1 s/hour arm at the same fixed coordinate and tau"
+  ],
+  "loss": {
+    "track_metric": "squared RMS divided by 800 Hz squared and capped at 1",
+    "session_weighting": "occupied-second weights, with unsupported weight fixed at cap",
+    "group_metric": "equal mean of the six session capped losses",
+    "pooled_metric": "equal mean of all twelve session capped losses"
+  },
+  "predeclared_gate": {
+    "exact_replay": "candidate direct causal SGP4 and quartic surrogate differ by at most 0.2 Hz",
+    "per_group_superiority": "in each group, candidate HELD equal-session capped loss is strictly below zero-rate, all-source +/-0.25, and all-source +/-1",
+    "pooled_superiority": "candidate pooled HELD equal-session capped loss is strictly below zero-rate, all-source +/-0.25, and all-source +/-1",
+    "session_breadth": "in each group at least four of six sessions have candidate-minus-zero HELD capped loss strictly below zero",
+    "session_regression_guard": "no session has candidate-minus-zero HELD capped loss greater than 0.05",
+    "decision": "justify designing, but not running, a separately sealed prospective geographic basin only if every gate passes"
+  },
+  "reporting": {
+    "training_scores_are_diagnostic_only": true,
+    "required": [
+      "equal-session TRAIN and HELD capped losses",
+      "per-session HELD changes against every comparator",
+      "enabled-source, enabled-track, TRAIN-observation, HELD-observation, and occupied-second support",
+      "NORAD 68739 support and exact leave-68739-at-zero sensitivity reconstructed from candidate and zero-rate track scores",
+      "candidate exact replay",
+      "worked, failed, learned, and precise next step"
+    ]
+  },
+  "sensitivity_policy": "NORAD 68739 is diagnostic only and cannot change the candidate, gate, or decision; reconstruct its zeroed sensitivity exactly by replacing its candidate track contributions with the sealed iteration23 zero-rate track contributions, without another HELD model score",
+  "reference_used_for_inference_or_evaluation": false,
+  "truth_used": false,
+  "geographic_search_run": false,
+  "compute_limit_s": 300
+}
