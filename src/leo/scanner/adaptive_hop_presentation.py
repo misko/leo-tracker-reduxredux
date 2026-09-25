@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     Feature103AnalysisConfigurationV3,
     Feature104AnalysisConfigurationV4,
+    FourRateVariableDwellAnalysisConfigurationV6,
     VariableDwellAnalysisConfigurationV5,
 )
 
@@ -156,6 +157,16 @@ class VariableDwellAnalysisStatusV8(AdaptiveHopAnalysisStatusV1):
     schema_version: Literal[8] = 8  # type: ignore[assignment]
     configuration: VariableDwellAnalysisConfigurationV5  # type: ignore[assignment]
     overview: VariableDwellOverviewManifestV8 | None
+
+
+class FourRateVariableDwellOverviewManifestV9(AdaptiveHopOverviewManifestV1):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+
+
+class FourRateVariableDwellAnalysisStatusV9(AdaptiveHopAnalysisStatusV1):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    configuration: FourRateVariableDwellAnalysisConfigurationV6  # type: ignore[assignment]
+    overview: FourRateVariableDwellOverviewManifestV9 | None
 
 
 @dataclass(frozen=True, slots=True)
