@@ -1,0 +1,18 @@
+{
+  "schema": "ds1-iteration21-session-balanced-closure-plan/v1",
+  "reference_used_for_inference": false,
+  "parent": "reports/2026_09_25_ds1_iteration20_session_predictive/inference.json",
+  "parent_acceptance": "sealed reference-free terminal boundary only; no postseal artifact may influence this extension",
+  "objective": "same session-balanced profiled nominal-Doppler cap-800 objective as iteration20",
+  "association_policy": "fixed iteration-10 hard associations",
+  "group_taus_s": {"20260921_00": -0.75, "20260921_16": -0.5},
+  "group_weights": {"20260921_00": 0.2742, "20260921_16": 0.7258},
+  "stages": [
+    {"spacing_km": 0.048828125, "maximum_translations": 12},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4},
+    {"spacing_km": 0.01220703125, "maximum_translations": 4}
+  ],
+  "transition_rule": "translate at unchanged spacing while winner is on edge; refine only after an interior winner",
+  "session_deletion_diagnostic": "at a closed final stencil, delete one session at a time from the persisted per-session scores and re-rank the same stencil; diagnostic only",
+  "qualification": "interior geographic closure plus zero-rate direct-SGP4 fidelity gate; no widened-rate diagnostic is a qualification condition"
+}
