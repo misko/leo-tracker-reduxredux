@@ -306,6 +306,13 @@ class Feature103DualRxTimingV3(PersistentHopUtcTimingAuthorityV1):
         )
 
 
+class FourRateDualRxTimingV5(PersistentHopUtcTimingAuthorityV1):
+    """UTC authority for all four qualified v0.58 dual-RX rates."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+
+
 class Feature103DualRxPlanV3(PersistentHopPlanV1):
     """Feature-103 geometry where repeated targets can have no retune guard."""
 
@@ -460,6 +467,14 @@ class VariableDualRxPlanV5(PersistentHopPlanV1):
     @property
     def quiet_valid_visit_samples(self) -> int:
         return self.sample_rate_hz * self.quiet_valid_visit_ms // 1_000
+
+
+class FourRateVariableDualRxPlanV6(VariableDualRxPlanV5):
+    """Protocol-three geometry for the four qualified v0.58 source rates."""
+
+    schema_version: Literal[6] = 6  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
 
 
 def compile_persistent_hop_plan_v1(

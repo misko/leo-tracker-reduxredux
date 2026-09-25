@@ -212,22 +212,20 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
 
     @model_validator(mode="after")
     def _bound(self) -> Self:
-        variable_dwell = type(self).__name__ == "VariableDwellSessionDetailV8"
         if (
             self.capture.source_span_attested != (self.source_origin_counter is not None)
             or len(self.visits) != self.capture.started_visits
             or tuple(v.visit_index for v in self.visits) != tuple(range(len(self.visits)))
             or (
-                self.capture.schema_version not in (3, 7, 8)
+                self.capture.schema_version not in (3, 7, 8, 9)
                 and tuple(v.retained for v in self.visits)
                 != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
             )
             or (
-                self.capture.schema_version in (3, 7, 8)
+                self.capture.schema_version in (3, 7, 8, 9)
                 and sum(v.retained for v in self.visits) != self.capture.retained_visits
             )
         ):
-            print("DBG", type(self), self.schema_version, type(self.capture), self.capture.schema_version, self.capture.source_span_attested, self.source_origin_counter is not None, len(self.visits), self.capture.started_visits, tuple(v.visit_index for v in self.visits), tuple(v.retained for v in self.visits), self.capture.retained_visits, variable_dwell)
             raise ValueError("adaptive detail differs from started/retained inventory")
         if self.source_origin_counter is not None:
             rate = self.capture.sample_rate_hz
@@ -349,6 +347,19 @@ class VariableDwellHistoryItemV8(EdgeAdaptiveHistoryItemV4):
 class VariableDwellSessionDetailV8(AdaptiveHopSessionDetailV1):
     schema_version: Literal[8] = 8  # type: ignore[assignment]
     capture: VariableDwellHistoryItemV8  # type: ignore[assignment]
+
+
+class FourRateVariableDwellHistoryItemV9(VariableDwellHistoryItemV8):
+    """Protocol-three history for all qualified v0.58 source rates."""
+
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+    bandwidth_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
+
+
+class FourRateVariableDwellSessionDetailV9(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[9] = 9  # type: ignore[assignment]
+    capture: FourRateVariableDwellHistoryItemV9  # type: ignore[assignment]
 
 
 class AdaptiveHopPresentationReader(Protocol):

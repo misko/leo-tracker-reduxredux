@@ -14,11 +14,13 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV3,
     AdaptiveHopPlanV4,
     AdaptiveHopPlanV6,
+    AdaptiveHopPlanV7,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
     AdaptiveHopVisitV1,
     AdaptiveHopVisitV2,
     AdaptiveHopVisitV3,
@@ -72,6 +74,7 @@ class AdaptiveHopSession(Protocol):
         | AdaptiveHopPlanV3
         | AdaptiveHopPlanV4
         | AdaptiveHopPlanV6
+        | AdaptiveHopPlanV7
     ): ...
 
     @property
@@ -92,6 +95,7 @@ class AdaptiveHopSession(Protocol):
         | AdaptiveHopReceiptV3
         | AdaptiveHopReceiptV4
         | AdaptiveHopReceiptV6
+        | AdaptiveHopReceiptV7
     ): ...
 
 
@@ -107,7 +111,8 @@ class AdaptiveHopRadio(Protocol):
         | AdaptiveHopPlanV2
         | AdaptiveHopPlanV3
         | AdaptiveHopPlanV4
-        | AdaptiveHopPlanV6,
+        | AdaptiveHopPlanV6
+        | AdaptiveHopPlanV7,
         *,
         session_id: str,
     ) -> AdaptiveHopSession: ...
