@@ -55,6 +55,7 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path
         subject,
         "_catalog",
         lambda: SimpleNamespace(
+            adaptive_job_kinds_by_session=lambda: {},
             enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True
         ),
     )
@@ -62,6 +63,44 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path
     assert subject.enqueue_pending(bulk_root=tmp_path) == ("scan-fw-variable",)
     assert queued[0]["session_id"] == "scan-fw-variable"
     assert queued[0]["input_manifest_digest"] == capture.manifest_sha256
+
+
+def test_enqueue_pending_does_not_reopen_sessions_owned_by_queue(monkeypatch, tmp_path) -> None:
+    class Captures:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def publication_index(self):
+            return ((1, "scan-fw-owned"),)
+
+        def inspect(self, _session_id):
+            raise AssertionError("owned immutable capture must not be reopened")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", Captures)
+    monkeypatch.setattr(
+        subject,
+        "AdaptiveHopAnalysisPresentationStore",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        subject,
+        "_catalog",
+        lambda: SimpleNamespace(
+            adaptive_job_kinds_by_session=lambda: {
+                "scan-fw-owned": frozenset(("adaptive_scan",))
+            }
+        ),
+    )
+
+    assert subject.enqueue_pending(bulk_root=tmp_path) == ()
 
 
 def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):

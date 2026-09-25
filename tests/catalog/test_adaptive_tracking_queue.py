@@ -58,6 +58,30 @@ def test_tracking_enqueue_is_idempotent_for_the_same_policy_binding(catalog_harn
     assert not repository.enqueue_adaptive_tracking_job(**arguments)
 
 
+def test_adaptive_job_inventory_groups_kinds_by_immutable_session(catalog_harness) -> None:
+    repository = catalog_harness.repository
+    assert repository.enqueue_adaptive_analysis_job(
+        session_id="scan-fw-inventory",
+        input_manifest_digest=_digest("1"),
+        configuration_digest=_digest("2"),
+    )
+    assert repository.enqueue_adaptive_tracking_job(
+        session_id="scan-fw-inventory",
+        input_manifest_digest=_digest("1"),
+        configuration_digest=_digest("3"),
+    )
+    assert repository.enqueue_adaptive_analysis_job(
+        session_id="scan-fw-analysis-only",
+        input_manifest_digest=_digest("4"),
+        configuration_digest=_digest("5"),
+    )
+
+    assert repository.adaptive_job_kinds_by_session() == {
+        "scan-fw-analysis-only": frozenset(("adaptive_scan",)),
+        "scan-fw-inventory": frozenset(("adaptive_scan", "adaptive_tracking")),
+    }
+
+
 def test_new_tracking_policy_atomically_cancels_pending_old_policy(catalog_harness) -> None:
     repository = catalog_harness.repository
     common = {
