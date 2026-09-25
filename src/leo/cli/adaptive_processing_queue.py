@@ -124,6 +124,11 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
         queued_sessions = catalog.adaptive_job_kinds_by_session()
         recent_cutoff = time.time_ns() - 2 * 3600 * 10**9
         for indexed_utc_ns, session_id in captures.publication_index():
+            # Cadence owns only the bounded live window. Historical repair is an
+            # explicit backfill operation and must not make every timer tick walk
+            # large legacy analysis trees.
+            if indexed_utc_ns < recent_cutoff:
+                continue
             # A queue job owns retries and enqueues tracking after analysis. Capture
             # publications are immutable, so reopening an already-owned session on
             # every cadence tick cannot discover new work.
@@ -150,8 +155,6 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                 ):
                     queued.append(session_id)
                     queued_sessions[session_id] = frozenset(("adaptive_scan",))
-                continue
-            if indexed_utc_ns < recent_cutoff:
                 continue
             if status.metrics_manifest_sha256 is None:
                 raise ValueError("figures-ready adaptive analysis lacks metrics authority")
