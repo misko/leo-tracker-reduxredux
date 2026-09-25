@@ -1,0 +1,70 @@
+{
+  "bindings": {
+    "candidates": "sha256:4b1d092d98d906d658beca1fab66946427add75fdc7d4e9cf5cfea969c6aa2fd",
+    "exact_phase_atlas": "sha256:e8b912a9617d62da7cb8d7e26bfd6610484239b999d20a8e18cb3a5abff3708e",
+    "influence": "sha256:d88d1e1fa9e100c47e6a6da8ccffbc4fb39511ceecbdc704e2d4beaf88b9d2c1",
+    "plan": "sha256:0d88d50655bd2ab0ef75a36dcbba6d1142fe0161e4d2bea78ae16959cb8c5731",
+    "preflight": "sha256:ed0a404ee066717d5ab91a832fa2c7599f97d6e0c90292279a5860356720016b"
+  },
+  "complete": true,
+  "dataset_statuses": {
+    "DS1": {
+      "failed_criteria": [
+        "leave_one_session_stability",
+        "scale_aware_source_influence"
+      ],
+      "temperature_hz": 400.0,
+      "temperature_interior": true,
+      "terminal_status": "unqualified_preflight",
+      "winner_cell_id": "E+0.048828125_N+0.048828125"
+    },
+    "DS3": {
+      "failed_criteria": [
+        "leave_one_source_stability"
+      ],
+      "temperature_hz": 400.0,
+      "temperature_interior": true,
+      "terminal_status": "unqualified_preflight",
+      "winner_cell_id": "E+0.000000000_N+0.000000000"
+    }
+  },
+  "elapsed_s": 53.74413521401584,
+  "exact_state_coverage": {
+    "DS1": {
+      "candidate_session_observations": 53913,
+      "receipt_bound_state_records": 566
+    },
+    "DS3": {
+      "candidate_session_observations": 3492,
+      "receipt_bound_state_records": 48
+    }
+  },
+  "failed": [
+    "DS1 left five of twelve leave-one-session reruns with a different local winner",
+    "DS1 maximum normalized source-deletion surface deformation was 2.3184, above 1.0",
+    "DS3 had three of twenty-three source deletions change its local winner"
+  ],
+  "full_geographic_search_run": false,
+  "held_used": false,
+  "learned": [
+    "the prior upper-edge temperature failure was model misspecification: exact candidate rate states yield an interior predictive optimum",
+    "exact per-candidate rate treatment does not yet make the DS1 48.8 m local direction stable",
+    "the remaining DS1 instability is distributed across several sources rather than being isolated to NORAD 66961",
+    "a one-session DS3 preflight can test source deletion but cannot define leave-one-session stability"
+  ],
+  "next": [
+    "diagnose source sets by predictive influence before changing the sealed source gate",
+    "use multiple independently selected DS3 sessions for a second paired preflight",
+    "only seal a geographic search after both dataset arms pass their respective stability gates"
+  ],
+  "paired_terminal_status": "unqualified_preflight",
+  "plan_method": "exact_top_k_soft_association_with_causal_crossfit_rates",
+  "schema": "paired-ds1-ds3-iteration31-findings/v1",
+  "truth_used": false,
+  "worked": [
+    "both arms built and used receipt-bound exact SGP4 state nodes for every proposal candidate",
+    "both temperatures selected an interior 400 Hz value on the expanded 25--1600 Hz grid",
+    "both bounded surfaces were finite and bitwise repeatable",
+    "the scale-aware DS3 deformation gate passed"
+  ]
+}

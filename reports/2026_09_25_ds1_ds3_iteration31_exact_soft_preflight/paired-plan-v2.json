@@ -1,0 +1,165 @@
+{
+  "bindings": {
+    "ds3_anchor_parent": "sha256:9a9f135756552eb03a340939cb8f541c083e8065604c477ec96b366418fabe48",
+    "ds3_manifest": "sha256:74988e0e8a8f2cf94519b5b22b56de424469ef38ac1f365d97d4c15c3cf7f2d2",
+    "exact_orbit": "sha256:4257e342d52370a023e9e49285c6ce0c11ebc4d2266613f222e3ba50b3c9fffc",
+    "iteration27_plan": "sha256:237a773ab67f2417d3edfc300bb6462bc862cb7d0053f835378ea8ee9763891f",
+    "iteration27_smoke": "sha256:d6792f8607a11c39e5d14a9373c781814ae55efc486118756ab1024fff391202",
+    "iteration27_stencil": "sha256:f21d1473597cca0d944c128e2e63428ad6ca373afa27cc8fab1af10149503d36",
+    "orbit_runner": "sha256:9d941f25552d87820ed2ca53922ca2d74197e7384993f3c09c6b054fb37c9509",
+    "replay": "sha256:491f5142d8ed3aaf190d6570db542ea500fad075808fa6cc26e5c98e7dd2ab3e",
+    "runner": "sha256:b226333eebdd658abc36b81bef230effda1b82374e99bbe75c02f356fe1fc3e5",
+    "search": "sha256:2ec6ad196d93a745f0b3cf1c787f60cd1783b219ca310e9726a35fd435cb0718"
+  },
+  "datasets": {
+    "DS1": {
+      "anchor": {
+        "group_tau_s": {
+          "20260921_00": -0.75,
+          "20260921_16": -0.5
+        },
+        "group_weights": {
+          "20260921_00": 0.2742,
+          "20260921_16": 0.7258
+        },
+        "latitude_deg": 37.85822833,
+        "longitude_deg": -122.47896246
+      },
+      "cache_roots": {
+        "20260921_00": "/tmp/leo-long-training-cache-full8h",
+        "20260921_16": "/tmp/leo-long-training-cache-second8h"
+      },
+      "coordinate_stencil": {
+        "east_km": [
+          -0.048828125,
+          0.0,
+          0.048828125
+        ],
+        "north_km": [
+          -0.048828125,
+          0.0,
+          0.048828125
+        ]
+      },
+      "required_source_table_entry": "66961",
+      "sessions_by_group": {
+        "20260921_00": [
+          "scan-hop-85afa91453f8847b",
+          "scan-hop-f749f13b64256b8d",
+          "scan-hop-24ad6788936de72f",
+          "scan-hop-30ff691861c6bb53",
+          "scan-hop-79cca97e97a1541c",
+          "scan-hop-75ec9d92534c0293"
+        ],
+        "20260921_16": [
+          "scan-hop-f354f1c88a654681",
+          "scan-hop-d026d3a5a705523e",
+          "scan-hop-e1422297a1ff6598",
+          "scan-hop-5f69c606f9bb3a8f",
+          "scan-hop-2ea5bcf9b18778cc",
+          "scan-hop-0dcc48743f9f5487"
+        ]
+      }
+    },
+    "DS3": {
+      "all56_search": "prohibited until both paired preflights pass",
+      "anchor": {
+        "latitude_deg": 39.25553244886247,
+        "longitude_deg": -121.85733481290794,
+        "tau_s": 0.0
+      },
+      "cache_root": "/var/tmp/leo-ds3-sep24-until-223658-cache",
+      "coordinate_stencil": {
+        "east_km": [
+          -25.0,
+          0.0,
+          25.0
+        ],
+        "north_km": [
+          -25.0,
+          0.0,
+          25.0
+        ]
+      },
+      "manifest": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/inference-manifest.json",
+      "session_count_in_preflight": 1,
+      "session_id": "scan-fw-ed4502816d42c1d9",
+      "session_selection": "maximum eligible >=3-second track count; lexical tie-break"
+    }
+  },
+  "execution": {
+    "external_timeout_required": true,
+    "maximum_workers": 4,
+    "single_thread_math": true,
+    "stage_hard_wall_s": 1800,
+    "workers_used": 1
+  },
+  "full_geographic_search_authorized": false,
+  "gates": {
+    "candidate_table_complete": true,
+    "ds1_leave_one_session_winner_agreement_min": 0.75,
+    "ds1_source_66961_present": true,
+    "finite_coordinate_scores": true,
+    "full_search": "both DS1 and DS3 gates must pass; this runner never launches it",
+    "leave_one_source_winner_agreement_min": 0.9,
+    "repeat_max_abs_score_difference": 1e-12,
+    "source_influence": {
+      "maximum_normalized_surface_deformation": 1.0,
+      "normalization": "full-stencil score range; compare source-deleted relative cell gaps to full relative cell gaps",
+      "reason": "location-relevant deformation is dimensionless and does not conflate raw objective scale across DS1 and DS3",
+      "winner_agreement_min": 0.9
+    },
+    "temperature_must_be_interior": true
+  },
+  "held_used": false,
+  "method": {
+    "aggregate": "occupied-second mean within session; 1.5-MAD Huber location across equal sessions within group; frozen iteration27 DS1 group weights",
+    "bootstrap_replicates": 256,
+    "candidate_generation": "independent dataset-local all-sky causal catalogue at RF anchor",
+    "candidate_policy": {
+      "ambiguous": "retain top two; retain top three only when third also passes",
+      "certification": "randomized TRAIN within-track bootstrap q10 margin <=25 Hz or challenger win probability >=0.10",
+      "stable": "retain leader only"
+    },
+    "cap_hz": 800.0,
+    "causal_rate_posterior": {
+      "evaluation": "fold-local CFO and rate posterior score only the omitted TRAIN fold",
+      "fit": "candidate-specific per-source discrete posterior on each fold's other four folds",
+      "measurement_scale_hz": 250.0,
+      "rate_prior": "N(0,0.09176615913014215 s/h)"
+    },
+    "exact_phase_states": {
+      "earth_rotation": "fixed at receive_time_plus_group_tau while orbit phase changes",
+      "rate_grid_s_h": [
+        -0.25,
+        -0.125,
+        -0.0625,
+        -0.03125,
+        0.0,
+        0.03125,
+        0.0625,
+        0.125,
+        0.25
+      ],
+      "state": "receipt-bound causal SGP4 state at every retained candidate/rate node",
+      "state_interpolation": "none: rate likelihood is discrete over exact nodes"
+    },
+    "fold_assignment": "sha256(dataset session, track, sample index) modulo five",
+    "folds": 5,
+    "name": "exact_top_k_soft_association_with_causal_crossfit_rates",
+    "temperature_hz_grid": [
+      25.0,
+      50.0,
+      100.0,
+      200.0,
+      400.0,
+      800.0,
+      1600.0
+    ],
+    "temperature_selection": "minimum occupied-second weighted five-fold TRAIN predictive mixture NLL; tie chooses lower temperature; endpoints are a no-go",
+    "track_score": "continuous equal-prior log-sum-exp over retained candidates"
+  },
+  "schema": "paired-ds1-ds3-iteration31-exact-soft-preflight-plan/v1",
+  "status": "sealed-before-output",
+  "truth_used": false
+}
