@@ -304,10 +304,12 @@ def test_dual_geometry_is_an_installed_package_resource() -> None:
     assert binding.radio.radio_serial == importer.DUAL_SERIAL
 
 
+@pytest.mark.parametrize("rate", [2_500_000, 10_000_000])
 def test_radio20_dual_receipt_preserves_exact_identity_without_false_geometry(
     tmp_path: Path,
+    rate: int,
 ) -> None:
-    value = dual_document(2_500_000, radio_serial=importer.RADIO20_SERIAL)
+    value = dual_document(rate, radio_serial=importer.RADIO20_SERIAL)
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps(value))
 
@@ -317,11 +319,12 @@ def test_radio20_dual_receipt_preserves_exact_identity_without_false_geometry(
     assert receipt.radio_id == "radio_pluto_5d4d"
     assert receipt.radio_serial == importer.RADIO20_SERIAL
     assert receipt.radio_uri == importer.RADIO20_URI
+    assert receipt.plan.geometry.sample_rate_hz == rate
     assert importer._dual_geometry_binding(value) is None
 
 
 def test_radio20_dual_source_rejects_unqualified_rates(tmp_path: Path) -> None:
-    value = dual_document(10_000_000, radio_serial=importer.RADIO20_SERIAL)
+    value = dual_document(15_000_000, radio_serial=importer.RADIO20_SERIAL)
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps(value))
 
@@ -380,6 +383,7 @@ def test_dual_firmware_receipt_preserves_zero_gap_repeated_target() -> None:
     [
         (2_500_000, importer.DUAL_SERIAL, 9, 6, True),
         (2_500_000, importer.RADIO20_SERIAL, 13, 6, False),
+        (10_000_000, importer.RADIO20_SERIAL, 13, 6, False),
         (15_000_000, importer.DUAL_SERIAL, 10, 7, True),
     ],
 )

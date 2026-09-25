@@ -100,7 +100,7 @@ def _load(path: Path) -> tuple[dict, bytes]:
     rate = document.get("setup", {}).get("source_rate_hz")
     dual = dual_shape and (
         (serial == DUAL_SERIAL and rate in (2_500_000, 10_000_000, 15_000_000))
-        or (serial == RADIO20_SERIAL and rate == 2_500_000)
+        or (serial == RADIO20_SERIAL and rate in (2_500_000, 10_000_000))
     )
     if not (legacy or dual):
         raise ValueError("firmware archive is not the pinned radio RX0 source")
