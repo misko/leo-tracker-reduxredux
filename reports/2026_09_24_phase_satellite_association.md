@@ -49,6 +49,42 @@ means of \(4\cos(2r)\); they are not probabilities or p-values.
 
 ## Phase and GLRT over the 300-second scans
 
+### All standard adaptive-scan tracks
+
+The dual-axis phase figure below overlays only the one frozen phase-association
+track per capture. The standard adaptive analysis reconstructed many more
+phase-blind tracklets. The following are verbatim copies of each capture's
+immutable `trajectory.png`; they show every reconstructed RX0 and RX1 track
+before catalogue comparison. The horizontal axis is the full capture clock,
+and the vertical axis is de-aliased CFO normalized to 11.2 GHz. Each legend
+entry gives channel, edge, receiver, and fitted rate.
+
+| Capture | Session | All tracks | RX0 | RX1 |
+| --- | --- | ---: | ---: | ---: |
+| T1 | `scan-fw-62f406d45bb93b70` | 22 | 15 | 7 |
+| T2 | `scan-fw-d3a96ccfa98a2ac5` | 40 | 23 | 17 |
+| T3 | `scan-fw-feb2e6451d0727b3` | 30 | 19 | 11 |
+| T4 | `scan-fw-2485843ba12d930c` | 21 | 15 | 6 |
+| T5 | `scan-fw-ed4502816d42c1d9` | 45 | 24 | 21 |
+
+![T1 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t1.png)
+
+![T2 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t2.png)
+
+![T3 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t3.png)
+
+![T4 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t4.png)
+
+![T5 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t5.png)
+
+These plots explain where the other tracks are: the phase report selected one
+dual-RX-supported track from each capture for controlled candidate evaluation,
+whereas the standard plot retains the full track bank. Other tracks do not yet
+have the same frozen random-held phase extraction and therefore are not added
+to the phase axis as if phase had been measured for them.
+
+### Selected-track phase and full GLRT inventory
+
 The phase timeline places all 793 random-held odd-symbol adjacent-frame
 measurements on each capture's qualified device-counter clock. Colour denotes
 RF channel using the established scan palette; circles are RX0 and crosses are
@@ -170,6 +206,9 @@ feasibility result, TLE path, and input digest. The compressed
 retains the extracted adjacent-frame measurements.
 The compressed [GLRT timeline](figures/2026_09_24_phase_satellite_association/glrt-timeline.json.gz)
 retains the full plotted candidate inventory.
+The [standard trajectory provenance](figures/2026_09_24_phase_satellite_association/standard-trajectories.json)
+records the source session, track counts, byte counts, and SHA-256 digest for
+each verbatim adaptive-analysis plot.
 
 ```bash
 sudo -u leo env HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib \
