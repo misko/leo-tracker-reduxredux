@@ -207,7 +207,9 @@ def test_fractional_analysis_rejects_unbounded_or_inexact_worker_count(count):
     assert not reader.calls
 
 
-def _fake_fractional_dwell(_samples, configuration, *, edge) -> DwellGlrt64Analysis:
+def _fake_fractional_dwell(
+    _samples, configuration, *, edge, search_geometry=None
+) -> DwellGlrt64Analysis:
     probes = []
     for probe_index in range(configuration.scheduled_probe_count):
         for receiver_id in configuration.receiver_ids:
