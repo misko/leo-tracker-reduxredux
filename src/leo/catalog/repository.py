@@ -2241,6 +2241,22 @@ class CatalogRepository:
             resource_class=resource_class,
         )
 
+    def adaptive_job_kinds_by_session(self) -> dict[str, frozenset[str]]:
+        """Return the compact immutable-session inventory used by the enqueuer."""
+        with self._sessions() as session:
+            rows = session.execute(
+                select(ProcessingJob.adaptive_session_id, ProcessingJob.job_kind).where(
+                    ProcessingJob.job_kind.in_(("adaptive_scan", "adaptive_tracking")),
+                    ProcessingJob.adaptive_session_id.is_not(None),
+                )
+            )
+            inventory: dict[str, set[str]] = {}
+            for session_id, job_kind in rows:
+                if session_id is None:
+                    continue
+                inventory.setdefault(session_id, set()).add(job_kind)
+        return {session_id: frozenset(kinds) for session_id, kinds in inventory.items()}
+
     def enqueue_adaptive_tracking_job(
         self,
         *,
