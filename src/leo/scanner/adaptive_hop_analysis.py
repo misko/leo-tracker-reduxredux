@@ -12,8 +12,11 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import Field, TypeAdapter, field_validator, model_validator
 
+from leo.analysis.starlink.pilot_search_geometry import compile_pilot_search_geometry
+from leo.analysis.starlink.templates import edge_frequencies_hz
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.scanner_glrt_frame import U64
+from leo.contracts.starlink_frequency import starlink_edge_rf_center_frequency_hz
 from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
@@ -29,6 +32,7 @@ from leo.scanner.adaptive_hop import (
 from leo.scanner.detector import (
     Glrt64CandidateResponse,
     Glrt64DwellConfiguration,
+    Glrt64SearchGeometry,
     analyze_glrt64_dwell,
 )
 from leo.scanner.models import ScanTarget
@@ -36,6 +40,9 @@ from leo.scanner.models import ScanTarget
 Finite = Annotated[float, Field(allow_inf_nan=False)]
 Nonnegative = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 Rank = Annotated[int, Field(strict=True, ge=0, le=15)]
+
+_ADAPTIVE_RESIDUAL_CFO_POLICY_HZ = 800_000.0
+_ADAPTIVE_ACQUISITION_ANCHOR_SYMBOLS = tuple(range(2, 302, 14))
 
 
 class AdaptiveHopAnalysisConfigurationV1(AdaptiveModel):
@@ -622,7 +629,46 @@ def _analyze_loaded_visit(
         )
     else:
         detector_cfg = cfg
-    analysis = analyze_glrt64_dwell(samples, detector_cfg, edge=event.target.edge)
+    capture = source.receipt.plan.geometry
+    half_usable_hz = min(capture.sample_rate_hz, capture.bandwidth_hz) / 2.0
+    pilot_if_hz = (
+        starlink_edge_rf_center_frequency_hz(event.target.channel, event.target.edge)
+        - capture.lnb_lo_hz
+    )
+    nominal_baseband_hz = float(pilot_if_hz - event.actual_lo_frequency_hz)
+    template_offsets = edge_frequencies_hz(event.target.edge)
+    observable_residual_hz = min(
+        nominal_baseband_hz + float(template_offsets.min()) + half_usable_hz,
+        half_usable_hz - nominal_baseband_hz - float(template_offsets.max()),
+    )
+    if observable_residual_hz <= 0:
+        raise ValueError("adaptive capture cannot contain the complete selected pilot template")
+    residual_half_width_hz = min(_ADAPTIVE_RESIDUAL_CFO_POLICY_HZ, observable_residual_hz)
+    calibrations = tuple(
+        compile_pilot_search_geometry(
+            receiver_id=receiver_id,
+            starlink_channel=event.target.channel,
+            edge=event.target.edge,
+            tuned_center_frequency_hz=event.actual_lo_frequency_hz,
+            sample_rate_hz=capture.sample_rate_hz,
+            rf_bandwidth_hz=capture.bandwidth_hz,
+            residual_cfo_min_hz=-residual_half_width_hz,
+            residual_cfo_max_hz=residual_half_width_hz,
+            lnb_lo_hz=capture.lnb_lo_hz,
+        ).frequency_reference
+        for receiver_id in detector_cfg.receiver_ids
+    )
+    analysis = analyze_glrt64_dwell(
+        samples,
+        detector_cfg,
+        edge=event.target.edge,
+        search_geometry=Glrt64SearchGeometry(
+            receiver_calibrations=calibrations,
+            residual_cfo_min_hz=-residual_half_width_hz,
+            residual_cfo_max_hz=residual_half_width_hz,
+            fallback_anchor_symbols=_ADAPTIVE_ACQUISITION_ANCHOR_SYMBOLS,
+        ),
+    )
     rows = []
     for probe in analysis.probes:
         converted = tuple(

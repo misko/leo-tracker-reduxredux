@@ -103,6 +103,23 @@ def test_frequency_reference_digest_binds_the_complete_search_geometry() -> None
     )
 
 
+def test_frequency_reference_uses_the_capture_lnb_frequency() -> None:
+    geometry = compile_pilot_search_geometry(
+        receiver_id="rx0",
+        starlink_channel=1,
+        edge=StarlinkEdge.LOWER,
+        tuned_center_frequency_hz=959_000_000,
+        sample_rate_hz=10_000_000,
+        rf_bandwidth_hz=10_000_000,
+        residual_cfo_min_hz=-400_000,
+        residual_cfo_max_hz=400_000,
+        lnb_lo_hz=9_751_000_000,
+    )
+
+    assert geometry.pilot_if_center_frequency_hz == 958_687_500
+    assert geometry.nominal_pilot_baseband_hz == -312_500
+
+
 def test_native_10ms_glrt_recovers_a_pilot_outside_the_old_dc_centered_search() -> None:
     sample_rate_hz = 10_000_000
     sample_count = 50_000

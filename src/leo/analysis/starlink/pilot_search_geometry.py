@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from leo.analysis.starlink.acquisition import ReceiverFrequencyCalibration
 from leo.analysis.starlink.templates import edge_frequencies_hz
 from leo.contracts.digests import canonical_digest
-from leo.contracts.starlink_frequency import starlink_edge_if_center_frequency_hz
+from leo.contracts.starlink_frequency import (
+    STARLINK_LNB_LO_HZ,
+    starlink_edge_rf_center_frequency_hz,
+)
 from leo.contracts.states import StarlinkEdge
 
 
@@ -49,6 +52,7 @@ def compile_pilot_search_geometry(
     rf_bandwidth_hz: int,
     residual_cfo_min_hz: float,
     residual_cfo_max_hz: float,
+    lnb_lo_hz: int = STARLINK_LNB_LO_HZ,
 ) -> PilotSearchGeometry:
     """Bind a residual CFO policy to the planned Qin pilot center.
 
@@ -64,18 +68,19 @@ def compile_pilot_search_geometry(
         tuned_center_frequency_hz,
         sample_rate_hz,
         rf_bandwidth_hz,
+        lnb_lo_hz,
     )
     if (
         not receiver
         or any(isinstance(value, bool) or not isinstance(value, int) for value in integer_values)
-        or min(tuned_center_frequency_hz, sample_rate_hz, rf_bandwidth_hz) <= 0
+        or min(tuned_center_frequency_hz, sample_rate_hz, rf_bandwidth_hz, lnb_lo_hz) <= 0
     ):
         raise ValueError("pilot search requires a receiver and positive integer capture geometry")
     residuals = (float(residual_cfo_min_hz), float(residual_cfo_max_hz))
     if not all(math.isfinite(value) for value in residuals) or residuals[0] >= residuals[1]:
         raise ValueError("pilot residual CFO bounds must be finite and increasing")
 
-    pilot_if_hz = starlink_edge_if_center_frequency_hz(starlink_channel, selected_edge)
+    pilot_if_hz = starlink_edge_rf_center_frequency_hz(starlink_channel, selected_edge) - lnb_lo_hz
     nominal_baseband_hz = float(pilot_if_hz - tuned_center_frequency_hz)
     half_usable_hz = min(sample_rate_hz, rf_bandwidth_hz) / 2.0
     usable_min_hz = -half_usable_hz
@@ -113,6 +118,8 @@ def compile_pilot_search_geometry(
         "search_baseband_min_hz": search_min_hz,
         "search_baseband_max_hz": search_max_hz,
     }
+    if lnb_lo_hz != STARLINK_LNB_LO_HZ:
+        digest_document["lnb_lo_hz"] = lnb_lo_hz
     frequency_reference = ReceiverFrequencyCalibration(
         receiver_id=receiver,
         center_hz=nominal_baseband_hz,
