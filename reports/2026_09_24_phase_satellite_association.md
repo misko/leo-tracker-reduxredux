@@ -52,30 +52,23 @@ means of \(4\cos(2r)\); they are not probabilities or p-values.
 ### All standard adaptive-scan tracks
 
 The dual-axis phase figure below overlays only the one frozen phase-association
-track per capture. The standard adaptive analysis reconstructed many more
-phase-blind tracklets. The following are verbatim copies of each capture's
-immutable `trajectory.png`; they show every reconstructed RX0 and RX1 track
-before catalogue comparison. The horizontal axis is the full capture clock,
-and the vertical axis is de-aliased CFO normalized to 11.2 GHz. Each legend
-entry gives channel, edge, receiver, and fitted rate.
+track per capture. The standard adaptive analysis contains the complete
+fractional-GLRT view. The following are verbatim copies of each capture's
+immutable `overview-v6-cfo-trajectories.png`. Each has four channel panels and
+shows every passed candidate from RX0 (circles) and RX1 (crosses). Blue is the
+lower edge and red is the upper edge. Dashed lines are the standard
+strongest-per-visit fits made independently within channel, edge, and receiver;
+they do not join channels or assert satellite identity.
 
-| Capture | Session | All tracks | RX0 | RX1 |
-| --- | --- | ---: | ---: | ---: |
-| T1 | `scan-fw-62f406d45bb93b70` | 22 | 15 | 7 |
-| T2 | `scan-fw-d3a96ccfa98a2ac5` | 40 | 23 | 17 |
-| T3 | `scan-fw-feb2e6451d0727b3` | 30 | 19 | 11 |
-| T4 | `scan-fw-2485843ba12d930c` | 21 | 15 | 6 |
-| T5 | `scan-fw-ed4502816d42c1d9` | 45 | 24 | 21 |
+![T1 standard adaptive RX0/RX1 tracks](figures/2026_09_24_phase_satellite_association/standard-adaptive-cfo-trajectories-t1.png)
 
-![T1 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t1.png)
+![T2 standard adaptive RX0/RX1 tracks](figures/2026_09_24_phase_satellite_association/standard-adaptive-cfo-trajectories-t2.png)
 
-![T2 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t2.png)
+![T3 standard adaptive RX0/RX1 tracks](figures/2026_09_24_phase_satellite_association/standard-adaptive-cfo-trajectories-t3.png)
 
-![T3 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t3.png)
+![T4 standard adaptive RX0/RX1 tracks](figures/2026_09_24_phase_satellite_association/standard-adaptive-cfo-trajectories-t4.png)
 
-![T4 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t4.png)
-
-![T5 standard RX0/RX1 trajectories](figures/2026_09_24_phase_satellite_association/standard-trajectory-t5.png)
+![T5 standard adaptive RX0/RX1 tracks](figures/2026_09_24_phase_satellite_association/standard-adaptive-cfo-trajectories-t5.png)
 
 These plots explain where the other tracks are: the phase report selected one
 dual-RX-supported track from each capture for controlled candidate evaluation,
@@ -105,6 +98,18 @@ The right-axis curves are measured acquisition tracks, not satellite Doppler
 predictions or phase-derived frequencies.
 
 ![Random-held phase and selected GLRT tracks over each 300-second scan](figures/2026_09_24_phase_satellite_association/phase-vs-time-300s.png)
+
+The phase-difference timeline expands the view to every saved per-block
+RX1−RX0 phase estimate available for these captures, including estimates from
+dwell results that did not pass the final support gate. It contains 1,320
+points from 40 dwell artifacts: 1,287 supported estimates and 33 below-gate
+estimates from T4. Each estimate is one point, coloured by channel and wrapped
+to ±180°. The value is the conditional
+same-block A-band receiver phase after train-only carrier and response
+normalization. It is not a calibrated geometric baseline phase, and no line or
+unwrap bridges retunes.
+
+![Every saved RX1−RX0 phase difference over 300 seconds](figures/2026_09_24_phase_satellite_association/phase-difference-vs-time-300s.png)
 
 The companion GLRT plot uses the complete published fractional-GLRT inventory
 for the same five captures: 110,879 candidate records, of which 10,572 pass the
@@ -206,9 +211,11 @@ feasibility result, TLE path, and input digest. The compressed
 retains the extracted adjacent-frame measurements.
 The compressed [GLRT timeline](figures/2026_09_24_phase_satellite_association/glrt-timeline.json.gz)
 retains the full plotted candidate inventory.
-The [standard trajectory provenance](figures/2026_09_24_phase_satellite_association/standard-trajectories.json)
-records the source session, track counts, byte counts, and SHA-256 digest for
-each verbatim adaptive-analysis plot.
+The [standard adaptive trajectory provenance](figures/2026_09_24_phase_satellite_association/standard-adaptive-trajectories.json)
+records the source session, analysis binding, byte count, and SHA-256 digest
+for each verbatim standard plot. The compressed
+[phase-difference timeline](figures/2026_09_24_phase_satellite_association/phase-difference-timeline.json.gz)
+contains every point in the phase-difference figure.
 
 ```bash
 sudo -u leo env HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib \

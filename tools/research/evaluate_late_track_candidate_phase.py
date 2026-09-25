@@ -499,6 +499,52 @@ def _relative_cfo_rows(
     return np.asarray(values)
 
 
+def phase_difference_timeline_rows(
+    phase_root: Path, session_id: str, source: Any
+) -> list[dict[str, Any]]:
+    """Place every saved RX1−RX0 held-block phase estimate on the scan clock."""
+    if source.timing is None:
+        raise ValueError("phase-difference timeline requires qualified timing")
+    visit_starts: dict[int, int] = {}
+    for probe in source.probes:
+        previous = visit_starts.get(probe.visit_index)
+        visit_starts[probe.visit_index] = (
+            probe.valid_start_counter
+            if previous is None
+            else min(previous, probe.valid_start_counter)
+        )
+    output = []
+    for path in sorted(phase_root.glob(f"{session_id}-visit-*.json.gz")):
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            artifact = json.load(handle)
+        phase = artifact.get("random_phase")
+        if artifact.get("state") != "replayed" or phase is None:
+            continue
+        visit_index = int(artifact["visit_index"])
+        if visit_index not in visit_starts:
+            raise ValueError("phase-difference visit is absent from tracking input")
+        visit_elapsed_s = (
+            visit_starts[visit_index]
+            - source.timing.session_start_device_sample_counter
+        ) / source.sample_rate_hz
+        for row in phase["held_rows"]:
+            output.append(
+                {
+                    "session_id": session_id,
+                    "visit_index": visit_index,
+                    "channel": int(artifact["channel"]),
+                    "edge": str(artifact["edge"]),
+                    "time_s": visit_elapsed_s
+                    + float(row["center_sample"]) / source.sample_rate_hz,
+                    "phase_difference_rad": float(row["a_phase_rad"]),
+                    "supported_dwell": bool(phase["supported"]),
+                    "group_id": int(row["group_id"]),
+                    "block_index": int(row["block_index"]),
+                }
+            )
+    return output
+
+
 def _extract_receiver_pairs(
     iq: np.ndarray,
     receiver_id: int,
@@ -685,6 +731,7 @@ def run(
     tracks = []
     evidence_rows = []
     glrt_rows = []
+    phase_difference_rows = []
     try:
         for chosen in selection["tracks"]:
             session_id = str(chosen["session_id"])
@@ -694,6 +741,9 @@ def run(
             if source.timing is None:
                 raise ValueError("phase transport requires qualified UTC")
             glrt_rows.extend(glrt_timeline_rows(source))
+            phase_difference_rows.extend(
+                phase_difference_timeline_rows(phase_root, session_id, source)
+            )
             projected = project_scanner_candidates(source)
             by_candidate = {row.candidate_id: row for row in projected}
             trajectory = reconstruct_persistent_hop_trajectories(
@@ -1074,10 +1124,20 @@ def run(
         json.dump(serial({"protocol": output_document["protocol"], "rows": evidence_rows}), target)
     with gzip.open(output / "glrt-timeline.json.gz", "wt", encoding="utf-8") as target:
         json.dump(serial({"rows": glrt_rows}), target)
+    with gzip.open(
+        output / "phase-difference-timeline.json.gz", "wt", encoding="utf-8"
+    ) as target:
+        json.dump(serial({"rows": phase_difference_rows}), target)
     (output / "summary.json").write_text(
         json.dumps(serial(output_document), indent=2) + "\n", encoding="utf-8"
     )
-    render(output_document, output, evidence_rows, glrt_rows)
+    render(
+        output_document,
+        output,
+        evidence_rows,
+        glrt_rows,
+        phase_difference_rows,
+    )
     return output_document
 
 
@@ -1086,6 +1146,7 @@ def render(
     output: Path,
     evidence_rows: list[dict[str, Any]],
     glrt_rows: list[dict[str, Any]],
+    phase_difference_rows: list[dict[str, Any]],
 ) -> None:
     colours = plt.cm.tab10(np.arange(5))
     fig, axes = plt.subplots(5, 2, figsize=(15, 16), constrained_layout=True)
@@ -1356,6 +1417,54 @@ def render(
         "Left: modulo-π phase · right: de-aliased track CFO relative to RX median"
     )
     fig.savefig(output / "phase-vs-time-300s.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(5, 1, figsize=(14, 14), sharex=True, constrained_layout=True)
+    for track, axis in zip(document["tracks"], axes, strict=True):
+        session_rows = [
+            row
+            for row in phase_difference_rows
+            if row["session_id"] == track["session_id"]
+        ]
+        for channel, colour in CHANNEL_COLOURS.items():
+            selected = [row for row in session_rows if row["channel"] == channel]
+            if not selected:
+                continue
+            axis.scatter(
+                [row["time_s"] for row in selected],
+                [
+                    math.degrees(
+                        float(
+                            np.angle(np.exp(1j * row["phase_difference_rad"]))
+                        )
+                    )
+                    for row in selected
+                ],
+                s=9,
+                color=colour,
+                alpha=0.55,
+                linewidths=0,
+                rasterized=True,
+                label=f"CH{channel} (n={len(selected)})",
+            )
+        axis.set_ylim(-180, 180)
+        axis.set_yticks([-180, -90, 0, 90, 180])
+        axis.set_ylabel("RX1−RX0 phase (°)")
+        axis.set_title(
+            f"T{track['rank']} · {track['session_id']} · all saved phase estimates",
+            loc="left",
+            fontsize=10,
+        )
+        axis.legend(loc="upper right", ncol=4, fontsize=8)
+        axis.grid(alpha=0.2)
+        axis.spines[["top", "right"]].set_visible(False)
+    axes[-1].set_xlim(0, 300)
+    axes[-1].set_xlabel("Elapsed scan time from device sample counter (seconds)")
+    fig.suptitle(
+        "Every saved conditional RX1−RX0 phase-difference estimate over 300 seconds\n"
+        "Colours identify RF channel · wrapped to ±180° · no cross-visit connection"
+    )
+    fig.savefig(output / "phase-difference-vs-time-300s.png", dpi=170)
     plt.close(fig)
 
     fig, axes = plt.subplots(5, 2, figsize=(15, 16), sharex=True, constrained_layout=True)
