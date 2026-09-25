@@ -9,6 +9,7 @@ from tools.research.evaluate_late_track_candidate_phase import (
     glrt_timeline_rows,
     joint_receiver_result,
     response_metrics,
+    selected_track_points,
     wrap_pi,
 )
 
@@ -148,5 +149,30 @@ def test_glrt_timeline_uses_device_counter_scan_clock() -> None:
             "fractional_margin": 0.12,
             "fractional_tracking_cfo_hz": 1250.0,
             "passed_fractional_margin_gate": True,
+        }
+    ]
+
+
+def test_selected_track_points_collapses_phase_intervals() -> None:
+    rows = [
+        {
+            "session_id": "scan-test",
+            "visit_index": 4,
+            "receiver_id": 0,
+            "channel": 2,
+            "scan_elapsed_s": time,
+            "source_tracking_dealiased_cfo_hz": 12_500.0,
+        }
+        for time in (10.02, 10.08)
+    ]
+
+    assert selected_track_points(rows) == [
+        {
+            "session_id": "scan-test",
+            "visit_index": 4,
+            "receiver_id": 0,
+            "channel": 2,
+            "scan_elapsed_s": pytest.approx(10.05),
+            "tracking_cfo_hz": 12_500.0,
         }
     ]
