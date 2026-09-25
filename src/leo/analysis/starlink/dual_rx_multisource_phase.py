@@ -200,7 +200,7 @@ def estimate_multisource_phase(
                 "leave every transfer and pair difference unchanged"
             )
         ),
-        delay_authority=delay_calibration.authority if calibrated else None,
+        delay_authority=(delay_calibration.authority if delay_calibration is not None else None),
     )
 
 

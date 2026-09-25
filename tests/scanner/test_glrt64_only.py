@@ -5,9 +5,11 @@ from types import SimpleNamespace
 import numpy as np
 
 import leo.scanner.detector as detector_module
+from leo.analysis.starlink.acquisition import ReceiverFrequencyCalibration
 from leo.analysis.starlink.pilot_methods import PilotMethod, conditioned_glrt64_score
 from leo.analysis.starlink.templates import FRAME_RATE_HZ, qin_edge_pilot_frame
 from leo.scanner import ScannerConfiguration, current_low_band_targets
+from leo.scanner.detector import Glrt64SearchGeometry
 
 
 def test_glrt64_only_score_separates_exact_qin_pilot_from_control() -> None:
@@ -85,6 +87,109 @@ def test_scanner_acquisition_uses_standard_basin_retention_policy(monkeypatch) -
     assert all(item.retained_candidate_count == 10 for item in observed)
     assert all(item.candidate_cfo_separation_hz == 10_000.0 for item in observed)
     assert all(item.candidate_epoch_separation_samples == 5 for item in observed)
+
+
+def test_scanner_uses_explicit_capture_search_geometry(monkeypatch) -> None:
+    configuration = ScannerConfiguration(
+        receiver_ids=(0,),
+        maximum_acquisition_candidates=10,
+        targets=current_low_band_targets()[:1],
+    )
+    samples = np.zeros((configuration.dwell_samples, 1), dtype=np.complex128)
+    observed = []
+
+    def acquire(_probe, _rate, calibration, *, config, **_kwargs):
+        observed.append((calibration, config))
+        return SimpleNamespace(candidates=())
+
+    monkeypatch.setattr(detector_module, "acquire_symbolwise", acquire)
+    reference = ReceiverFrequencyCalibration("0", -312_500.0, "1" * 64)
+    geometry = Glrt64SearchGeometry(
+        receiver_calibrations=(reference,),
+        residual_cfo_min_hz=-800_000,
+        residual_cfo_max_hz=800_000,
+        fallback_anchor_symbols=tuple(range(2, 302, 14)),
+    )
+
+    detector_module.analyze_glrt64_dwell(
+        samples, configuration, edge="lower", search_geometry=geometry
+    )
+
+    assert observed
+    assert all(calibration == reference for calibration, _ in observed)
+    assert all(config.residual_cfo_min_hz == -800_000 for _, config in observed)
+    assert all(config.residual_cfo_max_hz == 800_000 for _, config in observed)
+    assert all(config.anchor_symbols != tuple(range(2, 302, 14)) for _, config in observed)
+
+
+def test_scanner_uses_stronger_timing_fallback_only_for_missing_peer(monkeypatch) -> None:
+    configuration = ScannerConfiguration(
+        receiver_ids=(0, 1),
+        maximum_acquisition_candidates=8,
+        targets=current_low_band_targets()[:1],
+    )
+    samples = np.zeros((configuration.dwell_samples, 2), dtype=np.complex128)
+    calls = []
+
+    def acquire(_probe, _rate, calibration, *, config, **_kwargs):
+        fallback = config.anchor_symbols == tuple(range(2, 302, 14))
+        calls.append((calibration.receiver_id, fallback))
+        frequency = 2.0 if fallback else float(calibration.receiver_id)
+        return SimpleNamespace(
+            candidates=(
+                SimpleNamespace(rank=0, refined_epoch_sample=10, absolute_cfo_hz=frequency),
+            )
+        )
+
+    def scores(_probe, _rate, *, acquired_cfo_hz, **_kwargs):
+        frequency = acquired_cfo_hz[0]
+        margin = 0.2 if frequency in (1.0, 2.0) else 0.0
+        return (
+            SimpleNamespace(
+                margin=margin,
+                residual_cfo_hz=0.0,
+                tracking_cfo_hz=frequency,
+                exact_score=0.1 + margin,
+                control_score=0.1,
+            ),
+        )
+
+    def refinements(_probe, _rate, *, acquired_cfo_hz, **_kwargs):
+        margin = 0.2 if acquired_cfo_hz[0] in (1.0, 2.0) else 0.0
+        return (
+            SimpleNamespace(
+                status=SimpleNamespace(value="complete"),
+                fractional_epoch_offset_samples=0.0,
+                fractional_frame_phase_sample=10.0,
+                fractional_exact_score=0.1 + margin,
+                fractional_control_score=0.1,
+                fractional_residual_cfo_hz=0.0,
+                fractional_tracking_cfo_hz=acquired_cfo_hz[0],
+                fractional_margin=margin,
+            ),
+        )
+
+    monkeypatch.setattr(detector_module, "acquire_symbolwise", acquire)
+    monkeypatch.setattr(detector_module, "conditioned_glrt64_scores", scores)
+    monkeypatch.setattr(detector_module, "refine_glrt64_epochs", refinements)
+    references = tuple(
+        ReceiverFrequencyCalibration(str(receiver), 0.0, "1" * 64) for receiver in (0, 1)
+    )
+    result = detector_module.analyze_glrt64_dwell(
+        samples,
+        configuration,
+        edge="lower",
+        search_geometry=Glrt64SearchGeometry(
+            references, -800_000, 800_000, tuple(range(2, 302, 14))
+        ),
+    )
+
+    assert ("0", True) in calls
+    assert ("1", True) not in calls
+    assert all(
+        max(item.fractional_margin or 0 for item in probe.candidates) == 0.2
+        for probe in result.probes
+    )
 
 
 def _detect_with_probe_scores(monkeypatch, margins, frequencies, *, full=False):

@@ -114,3 +114,39 @@ def test_four_rate_visit_checkpoints_under_the_new_contract(monkeypatch, tmp_pat
         assert manifest.schema_version == 9
         assert job.status().schema_version == 9
     store.close()
+
+
+def test_adaptive_analysis_derives_search_from_actual_capture_geometry(monkeypatch) -> None:
+    class Reader:
+        input_manifest_sha256 = "sha256:" + "1" * 64
+
+        def __init__(self):
+            document = variable_dual_document(10_000_000, 120)
+            self.receipt = _receipt(document, "sha256:" + "2" * 64)
+            self.session_id = self.receipt.session_id
+
+        def read_visit_ci16(self, index: int):
+            visit = self.receipt.visits[index]
+            return visit, np.zeros((visit.valid_sample_count, 2, 2), dtype="<i2")
+
+    source = VariableDwellAnalysisSourceV6(Reader())
+    observed = []
+
+    def detector(samples, configuration, *, edge, search_geometry):
+        observed.append(search_geometry)
+        return _fake_fractional_dwell(
+            samples, configuration, edge=edge, search_geometry=search_geometry
+        )
+
+    monkeypatch.setattr(analysis_module, "analyze_glrt64_dwell", detector)
+    analyze_adaptive_hop_visit(source, 0)
+
+    assert len(observed) == 1
+    geometry = observed[0]
+    assert tuple(item.center_hz for item in geometry.receiver_calibrations) == (
+        -312_500,
+        -312_500,
+    )
+    assert geometry.residual_cfo_min_hz == -800_000
+    assert geometry.residual_cfo_max_hz == 800_000
+    assert geometry.fallback_anchor_symbols == tuple(range(2, 302, 14))
