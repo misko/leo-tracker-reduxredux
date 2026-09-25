@@ -13,6 +13,7 @@ from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
 from leo.storage.adaptive_hop_analysis_source import AdaptiveHopAnalysisInputStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
+from tests.api.test_adaptive_hop_history_api import client_for
 from tests.cli.test_firmware_adaptive_import import variable_dual_document
 from tests.scanner.test_persistent_hop_standard_analysis import _fake_fractional_dwell
 
@@ -74,6 +75,22 @@ def test_schema12_input_and_v8_metrics_use_separate_roots(tmp_path, monkeypatch)
     status = presentation.status(session_id, probe_stride_ms=120)
     assert status is not None and status.schema_version == 8
     assert status.state == "metrics_complete"
+    client = client_for(capture_root, adaptive_hop_analysis=presentation)
+    for api_version in ("v2", "v3"):
+        response = client.get(
+            f"/api/{api_version}/scanner/adaptive-sessions/{session_id}/analysis",
+            params={"probe_stride_ms": 120},
+        )
+        assert response.status_code == 200
+        assert response.json()["schema_version"] == 8
+        assert response.json()["state"] == "metrics_complete"
+    assert (
+        client.get(
+            f"/api/v1/scanner/adaptive-sessions/{session_id}/analysis",
+            params={"probe_stride_ms": 120},
+        ).status_code
+        == 404
+    )
     assert isinstance(presentation._binding(session_id, 120), VariableDwellAnalysisBindingV8)
     tracking = ScannerTrackingInputStore(capture_root, adaptive_analysis_root=metrics_root)
     try:
