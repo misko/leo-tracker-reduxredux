@@ -26,7 +26,7 @@ from leo.storage.adaptive_hop import AdaptiveHopIqStore
 _LEDGER_NAME = ".adaptive-spool-transfer.v1.json"
 _LOCK_NAME = ".adaptive-spool-transfer.lock"
 _DIGEST_CHUNK_BYTES = 1024 * 1024
-_IMPORT_TIMEOUT_SECONDS = 15 * 60.0
+_IMPORT_TIMEOUT_SECONDS = 30 * 60.0
 _CHILD_EXIT_GRACE_SECONDS = 5.0
 _RETIRED_PREFIX = ".retired-"
 _MAXIMUM_PARALLEL_IMPORTS = 2
