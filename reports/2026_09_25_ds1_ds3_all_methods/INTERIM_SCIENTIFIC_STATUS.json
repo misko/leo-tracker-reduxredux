@@ -1,0 +1,97 @@
+{
+  "schema": "ds1-ds3-interim-scientific-status/v1",
+  "scope": {
+    "ds1": "historical DS1 method evidence and qualification records",
+    "ds3": "DS3/all56 sealed adaptive-capture manifest",
+    "snapshot_role": "interim audit only; no inference, association, or position selection"
+  },
+  "source_provenance": {
+    "comparison": {
+      "path": "reports/2026_09_25_ds1_ds3_all_methods/comparison.json",
+      "sha256": "sha256:dd94034e5e6006ee2b7f81452b2557681141c50441e266dc733253493b59bd76"
+    },
+    "postseal_evaluation": {
+      "path": "reports/2026_09_25_ds1_ds3_all_methods/postseal-evaluation.json",
+      "sha256": "sha256:53b6e96a0a3fa377be7e92516ecd29120260544d4e262fd3873768eb7d305164"
+    },
+    "paired_completion_matrix": {
+      "path": "reports/2026_09_25_ds3_all_iterations_backfill/paired-completion-matrix-v4.json",
+      "sha256": "sha256:9aeff77e5019fbb1f39a08c1906f4e7d2849f3378c888bf5ba157c735ab7570e"
+    },
+    "method_registry": {
+      "path": "reports/2026_09_25_ds1_ds3_all_methods/method-registry.json",
+      "sha256": "sha256:5386b80833d13735382abcf24a9fb591bcf136e40c3267082c0f8d2bceed5415"
+    }
+  },
+  "method_arm_snapshot": {
+    "total": 49,
+    "terminal": 30,
+    "pending": 19,
+    "publication_ready": false,
+    "pending_method_ids": [
+      "causal-per-norad-orbit-rate",
+      "i03-global-time-plus-orbit-rate-screen",
+      "i04-seed-union-exact-selection",
+      "i05-common-grid-timing-refinement",
+      "i06-matched-cap300-cap800",
+      "i07-ar1-student-t-rerank",
+      "i07-independent-gaussian-rerank",
+      "i18-timing-refresh",
+      "i19-rate-bound-audit",
+      "i20-session-predictive",
+      "i21-session-balanced-closure",
+      "i22-randomized-time-predictive",
+      "i23-widened-rate",
+      "i24-crossfit-rate",
+      "i25-source-admission",
+      "i27-phase-cache",
+      "i28-basin-search",
+      "i29-resolution-safe-search",
+      "soft-association"
+    ]
+  },
+  "qualification_snapshot": {
+    "ds3_qualified_method_ids": [
+      "fixed-hard-cone-orientation",
+      "local-fitted-full-fov-cone-position"
+    ],
+    "paired_ranking_eligible_comparison_count": 0,
+    "qualified_only_csv_has_data_rows": false,
+    "interpretation": "DS3 qualification is preserved separately from DS1 eligibility. Every currently reported nonqualified estimate is diagnostic and excluded from ranking."
+  },
+  "truth_separation": {
+    "inference_reference_coordinate": "absent",
+    "postseal_reference_coordinate": {
+      "latitude_deg": 37.84903264307456,
+      "longitude_deg": -122.4856541910174,
+      "role": "post-seal diagnostic and reporting only"
+    },
+    "audited_comparison_referenced_ds3_artifacts": 38,
+    "reference_or_held_flag_violations": 0,
+    "checked_flags": [
+      "reference_coordinate_present",
+      "reference_used_for_inference",
+      "held_observations_used"
+    ]
+  },
+  "machine_readable_and_visual_outputs": [
+    "comparison.json",
+    "comparison.csv",
+    "comparison.png",
+    "postseal-evaluation.json",
+    "method-registry.json",
+    "qualified-only.csv",
+    "qualified-only.png",
+    "all-estimates.csv",
+    "all-estimates.png",
+    "DS1_COVERAGE_AUDIT.json",
+    "DS1_COVERAGE_AUDIT.md"
+  ],
+  "publication_blockers": [
+    "Nineteen required DS3 method arms are not terminal.",
+    "No paired DS1-versus-DS3 comparison is ranking eligible.",
+    "Twenty-seven method rows still lack an exact sealed DS1 selector or qualification record; see DS1_COVERAGE_AUDIT.json.",
+    "The complete final report cannot be published until the pending arms become terminal and the snapshot is regenerated."
+  ],
+  "reproducibility_note": "The final comparison binds the matrix, registry, and postseal artifact. The postseal artifact records the digest of the preceding base comparison generation; this two-pass source comparison is regenerated before final publication."
+}

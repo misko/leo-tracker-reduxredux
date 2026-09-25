@@ -1,0 +1,728 @@
+{
+  "arms": [
+    {
+      "adapter_state": "implemented",
+      "command": [
+        "reuse-sealed",
+        "iteration-02",
+        "--arm",
+        "shared_global_tau"
+      ],
+      "dependencies": [
+        "sealed DS3 iteration-02 result"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-a/iteration02_adapter.py",
+      "execution_state": "accounted",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i02.shared_global_time",
+      "note": "",
+      "runtime_estimate": "already sealed; no new compute",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration2/iteration2-inference-manifest.json"
+      ],
+      "terminal_gate": "terminal status is qualified only when timing and geographic winner are interior"
+    },
+    {
+      "adapter_state": "implemented",
+      "command": [
+        "reuse-sealed",
+        "iteration-02",
+        "--arm",
+        "regularized_per_scan_tau"
+      ],
+      "dependencies": [
+        "sealed DS3 iteration-02 result"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-a/iteration02_adapter.py",
+      "execution_state": "accounted",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i02.regularized_per_scan_time",
+      "note": "",
+      "runtime_estimate": "already sealed; no new compute",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration2/iteration2-inference-manifest.json"
+      ],
+      "terminal_gate": "terminal status is qualified only when timing and geographic winner are interior"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i03_rate_screen.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 all56 manifest",
+        "fresh DS3 global-time seed plans"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i03_rate_screen.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i03.rate_aware_joint_geographic_screen",
+      "note": "",
+      "runtime_estimate": "40\u201380 CPU-min; four independent seed workers",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration3_prefix6.py",
+        "reports/2026_09_24_ds1_joint_rate_search/iteration3-results.json"
+      ],
+      "terminal_gate": "exact SGP4 finalist replay passes and final tau/rate/geographic winner is interior"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i04_seed_union.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I03 candidate rows"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i04_seed_union.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i04.seed_union_exact_selection",
+      "note": "",
+      "runtime_estimate": "25\u201350 CPU-min after I03",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration4_group_union.py",
+        "reports/2026_09_24_ds1_joint_rate_search/iteration4-results.json"
+      ],
+      "terminal_gate": "exact union replay and group-union selection agree; final point is interior"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i05_common_grid.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I04 selection"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i05_common_grid.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i05.common_grid_timing_refinement",
+      "note": "",
+      "runtime_estimate": "20\u201340 CPU-min after I04",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration5-results.json",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION5_REPORT.md"
+      ],
+      "terminal_gate": "shared timing-grid winner and geographic winner are both interior under exact replay"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i06_matched_ablation.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I05 selection"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i06_matched_ablation.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i06.matched_cap300_cap800_ablation",
+      "note": "",
+      "runtime_estimate": "30\u201360 CPU-min after I05",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration6_matched_exact_ablation.py",
+        "reports/2026_09_24_ds1_joint_rate_search/iteration6-results.json"
+      ],
+      "terminal_gate": "cap-300 proposal and cap-800 exact rank agree under exact SGP4 gate"
+    },
+    {
+      "adapter_state": "none",
+      "command": [
+        "terminal-accounting",
+        "i06b"
+      ],
+      "dependencies": [],
+      "ds3_adapter": "none",
+      "execution_state": "not_portable",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i06b.legacy_joint_session_scale_lbfgsb",
+      "note": "Separate from canonical I06; must never satisfy I06 coverage.",
+      "runtime_estimate": "no compute",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration6b_session_scale/REPORT.md"
+      ],
+      "terminal_gate": "not applicable: historical L-BFGS-B session-scale implementation is rejected/not portable"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i07_likelihood.py",
+        "--arm",
+        "gaussian"
+      ],
+      "dependencies": [
+        "sealed DS3 I06 exact residual sequences"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i07_likelihood.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i07.independent_gaussian_rerank",
+      "note": "",
+      "runtime_estimate": "10\u201320 CPU-min after I06",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration7_residual_likelihood.py",
+        "reports/2026_09_24_ds1_joint_rate_search/iteration7-results.json"
+      ],
+      "terminal_gate": "fixed identities/rates are replayed exactly; no refit is permitted"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i07_likelihood.py",
+        "--arm",
+        "ar1_student_t"
+      ],
+      "dependencies": [
+        "sealed DS3 I06 exact residual sequences"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i07_likelihood.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i07.ar1_student_t_rerank",
+      "note": "",
+      "runtime_estimate": "10\u201320 CPU-min after I06",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_joint_rate_search/iteration7_residual_likelihood.py",
+        "reports/2026_09_24_ds1_joint_rate_search/iteration7-results.json"
+      ],
+      "terminal_gate": "fixed identities/rates are replayed exactly; no refit is permitted"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i12_rate_only.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I10"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i12_rate_only.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i12.expanded_exact_rate_only",
+      "note": "",
+      "runtime_estimate": "45\u201390 CPU-min after I10",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration12_session_scale/run.py"
+      ],
+      "terminal_gate": "all exact-rate fits converge, no active rate boundary, and closure is interior"
+    },
+    {
+      "adapter_state": "implemented",
+      "command": [
+        ".venv/bin/python",
+        "batch-b/iteration12_adapter.py",
+        "--ds3-parent",
+        "I10"
+      ],
+      "dependencies": [
+        "sealed DS3 I10"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/iteration12_adapter.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i12.regularized_common_plus_session_scale",
+      "note": "",
+      "runtime_estimate": "45\u201390 CPU-min after I10",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration12_session_scale/run.py"
+      ],
+      "terminal_gate": "joint scale fit converges with all support and every refinement level interior"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i12_shared_norad.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I10",
+        "fresh DS3 NORAD overlap audit"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i12_shared_norad.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i12.shared_norad_rate_control",
+      "note": "",
+      "runtime_estimate": "30\u201360 CPU-min after I10",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration12_session_scale/run.py"
+      ],
+      "terminal_gate": "overlap support is nonzero; otherwise terminal not_applicable with measured overlap"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/i12_cap800.py",
+        "--ds3-manifest",
+        "reports/2026_09_24_ds3_all_captures/inference-manifest.json"
+      ],
+      "dependencies": [
+        "sealed DS3 I10 support"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i12_cap800.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i12.consistent_cap800_objective",
+      "note": "",
+      "runtime_estimate": "30\u201360 CPU-min after I10",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration12_session_scale/refinement.json"
+      ],
+      "terminal_gate": "proposal and final cap-800 exact objective use identical support and agree on an interior winner"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/timing_arms.py",
+        "--arm",
+        "baseline"
+      ],
+      "dependencies": [
+        "sealed DS3 all56 manifest"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/timing_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "baseline_doppler",
+      "note": "",
+      "runtime_estimate": "20\u201345 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_train_full_timing/run.py",
+        "reports/2026_09_24_ds1_train_full/runner_registry.json"
+      ],
+      "terminal_gate": "fresh DS3 blind association; interior geographic result or explicit unqualified terminal"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/timing_arms.py",
+        "--arm",
+        "independent_per_track"
+      ],
+      "dependencies": [
+        "sealed DS3 all56 manifest"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/timing_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "independent_per_track_time",
+      "note": "",
+      "runtime_estimate": "30\u201375 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_timing_ablations/run.py"
+      ],
+      "terminal_gate": "per-track timing is bounded/interior; report degrees of freedom and held support"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/orbit_soft_arms.py",
+        "--arm",
+        "per_norad_rate"
+      ],
+      "dependencies": [
+        "sealed DS3 all56 manifest"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/orbit_soft_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "causal_per_norad_orbit_rate",
+      "note": "",
+      "runtime_estimate": "60\u2013120 CPU-min; up to eight NORAD workers",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_orbit_arm/run.py"
+      ],
+      "terminal_gate": "causal rate fits pass exact SGP4 and active-bound checks"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/orbit_soft_arms.py",
+        "--arm",
+        "global_time_plus_rate"
+      ],
+      "dependencies": [
+        "sealed DS3 all56 manifest"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/orbit_soft_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "global_time_plus_per_norad_orbit_rate",
+      "note": "",
+      "runtime_estimate": "60\u2013120 CPU-min; up to eight NORAD workers",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_train_full_orbit_soft/run.py",
+        "reports/2026_09_24_ds1_train_full/runner_registry.json"
+      ],
+      "terminal_gate": "global tau and causal rates are interior; exact SGP4 replay passes"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/orbit_soft_arms.py",
+        "--arm",
+        "soft_association"
+      ],
+      "dependencies": [
+        "sealed DS3 candidate-state cache"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/orbit_soft_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "soft_identity_mixture",
+      "note": "",
+      "runtime_estimate": "90\u2013180 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_train_full_orbit_soft/run.py",
+        "reports/2026_09_24_ds1_train_full/runner_registry.json"
+      ],
+      "terminal_gate": "ESS, candidate influence, and temperature stability pass; I30/I31 are not aliases"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/orbit_soft_arms.py",
+        "--arm",
+        "soft_association_global_time"
+      ],
+      "dependencies": [
+        "sealed DS3 candidate-state cache"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/orbit_soft_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "soft_association_plus_global_time",
+      "note": "",
+      "runtime_estimate": "90\u2013180 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_train_full_orbit_soft/run.py",
+        "reports/2026_09_24_ds1_train_full/runner_registry.json"
+      ],
+      "terminal_gate": "ESS, candidate influence, temperature, and global-tau interior gates pass"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/cone_arms.py",
+        "--arm",
+        "learned_quantiles"
+      ],
+      "dependencies": [
+        "sealed DS3 geometry and all56 support"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/cone_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "learned_pointing_cone_quantiles",
+      "note": "",
+      "runtime_estimate": "20\u201350 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_23_train_pointing_cone/run.py"
+      ],
+      "terminal_gate": "learned cone is fitted only on DS3 TRAIN support; report not_applicable if geometry support is absent"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/cone_arms.py",
+        "--arm",
+        "fixed_hard"
+      ],
+      "dependencies": [
+        "sealed DS3 geometry and all56 support"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/cone_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "fixed_hard_cone_orientation",
+      "note": "",
+      "runtime_estimate": "15\u201335 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_23_train_fixed_cone/run.py"
+      ],
+      "terminal_gate": "fixed orientation is declared before scoring; retained support is measured"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/cone_arms.py",
+        "--arm",
+        "staged_fov"
+      ],
+      "dependencies": [
+        "sealed DS3 geometry and all56 support"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/cone_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "staged_full_fov_cone_sweep",
+      "note": "",
+      "runtime_estimate": "30\u201375 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_23_staged_cone_width_sweep/run.py"
+      ],
+      "terminal_gate": "every FOV stage reports support; selected FOV and position must be interior"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/cone_arms.py",
+        "--arm",
+        "local_fitted_position"
+      ],
+      "dependencies": [
+        "sealed DS3 geometry",
+        "sealed DS3 all56 support"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/cone_arms.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "local_fitted_full_fov_cone_position",
+      "note": "",
+      "runtime_estimate": "60\u2013120 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds2_geometry_cone_evaluation/run.py"
+      ],
+      "terminal_gate": "joint cone/position closure and held support gate pass; otherwise unqualified"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/diagnostics.py",
+        "--diagnostic",
+        "i22"
+      ],
+      "dependencies": [
+        "sealed DS3 exact parent"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/diagnostics.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-diagnostic/v1",
+      "method_id": "i22.randomized_time_predictive_diagnostic",
+      "note": "",
+      "runtime_estimate": "10\u201325 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration22_randomized_time_predictive/run.py"
+      ],
+      "terminal_gate": "fresh DS3 folds and randomized-time control complete; always diagnostic"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/diagnostics.py",
+        "--diagnostic",
+        "i23"
+      ],
+      "dependencies": [
+        "sealed DS3 exact parent"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/diagnostics.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-diagnostic/v1",
+      "method_id": "i23.widened_rate_diagnostic",
+      "note": "",
+      "runtime_estimate": "10\u201325 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration23_widened_rate/run.py"
+      ],
+      "terminal_gate": "fresh widened rate audit completes; cannot alter a selected location"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/diagnostics.py",
+        "--diagnostic",
+        "i24"
+      ],
+      "dependencies": [
+        "sealed DS3 exact parent",
+        "fresh DS3 folds"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/diagnostics.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-diagnostic/v1",
+      "method_id": "i24.crossfit_rate_diagnostic",
+      "note": "",
+      "runtime_estimate": "15\u201335 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration24_crossfit_rate/run.py"
+      ],
+      "terminal_gate": "fresh cross-fit folds complete; output is diagnostic only"
+    },
+    {
+      "adapter_state": "needs_implementation",
+      "command": [
+        ".venv/bin/python",
+        "batch-c/diagnostics.py",
+        "--diagnostic",
+        "i25"
+      ],
+      "dependencies": [
+        "sealed DS3 source inventory",
+        "sealed DS3 exact parent"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/diagnostics.py",
+      "execution_state": "planned",
+      "expected_output_schema": "ds3-method-arm-diagnostic/v1",
+      "method_id": "i25.source_admission_diagnostic",
+      "note": "",
+      "runtime_estimate": "10\u201325 CPU-min",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration25_source_admission/run.py"
+      ],
+      "terminal_gate": "fresh source-admission control completes; output is diagnostic only"
+    },
+    {
+      "adapter_state": "none",
+      "command": [
+        "terminal-accounting",
+        "i15"
+      ],
+      "dependencies": [
+        "sealed I19 corrected rate-bound audit"
+      ],
+      "ds3_adapter": "none",
+      "execution_state": "superseded_invalidated",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i15.information_weighted_historical",
+      "note": "Historical output remains diagnostic and must not rank.",
+      "runtime_estimate": "no independent replay; successor is repaired Batch-B I15",
+      "source_ds1_artifacts": [
+        "reports/2026_09_24_ds1_iteration15_information_weighted/qualification.json"
+      ],
+      "terminal_gate": "superseded: I19 invalidates the historical rate-bound qualification"
+    },
+    {
+      "adapter_state": "none",
+      "command": [
+        "terminal-accounting",
+        "i26"
+      ],
+      "dependencies": [
+        "I27 exact phase-atlas successor"
+      ],
+      "ds3_adapter": "none",
+      "execution_state": "not_portable_superseded",
+      "expected_output_schema": "ds3-method-arm-result/v1",
+      "method_id": "i26.legacy_quartic_rate_surrogate",
+      "note": "Do not manufacture a DS3 position for this legacy surrogate.",
+      "runtime_estimate": "no compute",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration26_rate_marginal/REPORT.md"
+      ],
+      "terminal_gate": "not portable: quartic rate surrogate is numerically superseded by the exact phase atlas"
+    },
+    {
+      "adapter_state": "implemented",
+      "command": [
+        ".venv/bin/python",
+        "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+        "run-i27"
+      ],
+      "dependencies": [
+        "sealed DS3 I8 parent",
+        "passing DS3 phase-atlas preflight"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+      "execution_state": "blocked_on_live_parent",
+      "expected_output_schema": "ds3-all-iterations-result/v1",
+      "method_id": "i27.exact_phase_atlas",
+      "note": "",
+      "runtime_estimate": "60\u2013120 CPU-min after I8",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration27_phase_cache/run.py"
+      ],
+      "terminal_gate": "midpoint atlas error \u22640.2 Hz, exact replay, and stencil qualification"
+    },
+    {
+      "adapter_state": "implemented",
+      "command": [
+        ".venv/bin/python",
+        "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+        "run-i28"
+      ],
+      "dependencies": [
+        "sealed terminal DS3 I27"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+      "execution_state": "blocked_on_live_parent",
+      "expected_output_schema": "ds3-all-iterations-result/v1",
+      "method_id": "i28.phase_atlas_basin_search",
+      "note": "",
+      "runtime_estimate": "30\u201390 CPU-min after I27",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration28_basin_search/run.py"
+      ],
+      "terminal_gate": "direction, ray, and transverse brackets pass under truth-blind DS3 cells"
+    },
+    {
+      "adapter_state": "implemented",
+      "command": [
+        ".venv/bin/python",
+        "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+        "run-i29"
+      ],
+      "dependencies": [
+        "sealed terminal DS3 I28",
+        "sealed DS3 phase-atlas cell cache"
+      ],
+      "ds3_adapter": "reports/2026_09_25_ds3_all_iterations_backfill/batch-b/phase_atlas_chain.py",
+      "execution_state": "blocked_on_live_parent",
+      "expected_output_schema": "ds3-all-iterations-result/v1",
+      "method_id": "i29.phase_atlas_final_proposal",
+      "note": "",
+      "runtime_estimate": "20\u201360 CPU-min after I28",
+      "source_ds1_artifacts": [
+        "reports/2026_09_25_ds1_iteration29_resolution_safe_search/REPORT.md"
+      ],
+      "terminal_gate": "non-duplicate final proposal converges and all checkpoint bindings validate"
+    }
+  ],
+  "dataset": {
+    "manifest": "reports/2026_09_24_ds3_all_captures/inference-manifest.json",
+    "name": "DS3",
+    "scope": "all56"
+  },
+  "iteration_ledger": "reports/2026_09_25_ds3_all_iterations_backfill/paired-completion-matrix-v4.json",
+  "policy": {
+    "i15": "superseded and unrankable after sealed I19 audit",
+    "i26": "not portable and superseded by I27 exact phase atlas",
+    "inference_inputs": "fresh DS3 state only",
+    "no_compute_by_this_plan": true
+  },
+  "schema": "ds3-method-execution-coverage-plan/v1",
+  "source_audit": "reports/2026_09_25_ds1_ds3_all_methods/method-coverage-audit.json"
+}
