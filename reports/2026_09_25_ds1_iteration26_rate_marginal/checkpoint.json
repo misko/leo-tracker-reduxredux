@@ -1,0 +1,45 @@
+{
+  "schema": "ds1-iteration26-rate-marginal-checkpoint/v1",
+  "complete": true,
+  "stage": "fixed-anchor-smoke",
+  "decision": "no-go",
+  "truth_used": false,
+  "held_used": false,
+  "geographic_search_run": false,
+  "sealed_stencil_run": false,
+  "reason": "The exact-SGP4 node gate failed: maximum surrogate error 0.394170447558281 Hz exceeds 0.2 Hz.",
+  "failed_gate": "maximum exact SGP4 error at zero, every refined mode, and every posterior-material node <= 0.2 Hz",
+  "limiting_node": {
+    "group_id": "20260921_00",
+    "source": "60096",
+    "rate_s_h": 1.2905164936725015,
+    "phase_s": 54.718937512923375,
+    "maximum_absolute_error_hz": 0.394170447558281,
+    "training_observations": 32,
+    "training_tracks": 4,
+    "session_id": "scan-hop-79cca97e97a1541c",
+    "node_kind": "refined secondary mode",
+    "mode_energy": 408.4917052495659
+  },
+  "passing_smoke_facts": {
+    "fine_16sigma_score": 0.0646599402873291,
+    "repeat_absolute_difference": 0.0,
+    "coarse_fine_absolute_difference": 1.715630193466211e-09,
+    "twelve_sixteen_sigma_absolute_difference": 1.1194808968717496e-11,
+    "maximum_tail_mass": 6.739999491686228e-58,
+    "exact_minus_surrogate_expected_score": -9.804851375250223e-11
+  },
+  "execution": {
+    "elapsed_s": 78.08612623705994,
+    "hard_wall_s": 1800,
+    "external_timeout_used": true,
+    "workers_allowed": 4,
+    "workers_used": 1,
+    "single_thread_math": true
+  },
+  "bindings": {
+    "plan": "sha256:d86a870b1403120be6880e85aaf922ac599a2edcfdd39391b1ce6fb3796d4bc8",
+    "runner": "sha256:3a26155104be1d55d0b17d08edeaedd019a417966c2341a6428c6f6abcbdbb55",
+    "smoke": "sha256:db2977e1138ebea868f8e707b5e075c9dd6b31d63d3b892a342db2e617dc0e62"
+  }
+}
