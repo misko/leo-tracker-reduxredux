@@ -7,6 +7,7 @@ import zstandard as zstd
 import leo.scanner.adaptive_hop_analysis as detector
 from leo.application.adaptive_hop_analysis import AdaptiveHopAnalysisService
 from leo.cli import firmware_adaptive_import as importer
+from leo.presentation.adaptive_hop_analysis import project_adaptive_overview
 from leo.scanner.adaptive_hop_products import VariableDwellAnalysisBindingV8
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_analysis import AdaptiveHopAnalysisStore
@@ -75,6 +76,17 @@ def test_schema12_input_and_v8_metrics_use_separate_roots(tmp_path, monkeypatch)
     status = presentation.status(session_id, probe_stride_ms=120)
     assert status is not None and status.schema_version == 8
     assert status.state == "metrics_complete"
+    binding = presentation._binding(session_id, 120)
+    assert isinstance(binding, VariableDwellAnalysisBindingV8)
+    metrics = AdaptiveHopAnalysisStore(metrics_root, read_only=True)
+    try:
+        with metrics.job(binding) as job:
+            manifest = job.manifest()
+            assert manifest is not None
+            projected = project_adaptive_overview(binding, manifest, job.published_visits())
+    finally:
+        metrics.close()
+    assert projected.winners.shape[1] == 4
     client = client_for(capture_root, adaptive_hop_analysis=presentation)
     for api_version in ("v2", "v3"):
         response = client.get(
@@ -91,7 +103,6 @@ def test_schema12_input_and_v8_metrics_use_separate_roots(tmp_path, monkeypatch)
         ).status_code
         == 404
     )
-    assert isinstance(presentation._binding(session_id, 120), VariableDwellAnalysisBindingV8)
     tracking = ScannerTrackingInputStore(capture_root, adaptive_analysis_root=metrics_root)
     try:
         source = tracking.load(session_id)

@@ -35,6 +35,8 @@ from leo.scanner.adaptive_hop_products import (
     Feature103MetricsManifestV6,
     Feature104AnalysisBindingV7,
     Feature104MetricsManifestV7,
+    VariableDwellAnalysisBindingV8,
+    VariableDwellMetricsManifestV8,
 )
 from leo.scanner.host_adaptive_products import (
     HostAdaptiveAnalysisBindingV2,
@@ -92,6 +94,11 @@ def project_adaptive_overview(
     )
     if isinstance(binding, Feature104AnalysisBindingV7):
         binding_model, metrics_model = Feature104AnalysisBindingV7, Feature104MetricsManifestV7
+    elif isinstance(binding, VariableDwellAnalysisBindingV8):
+        binding_model, metrics_model = (
+            VariableDwellAnalysisBindingV8,
+            VariableDwellMetricsManifestV8,
+        )
     elif isinstance(binding, Feature103AnalysisBindingV6):
         binding_model, metrics_model = Feature103AnalysisBindingV6, Feature103MetricsManifestV6
     elif isinstance(binding, DualRx10mAdaptiveAnalysisBindingV5):
@@ -338,6 +345,22 @@ def _render_overview(
     origin = receipt.terminal.first_counter
     metrics_sha = sha256_digest(canonical_json_bytes(manifest.model_dump(mode="json")))
     figures = {}
+
+    def event_end(event) -> int:
+        exact = getattr(event, "valid_end_counter_exclusive", None)
+        return (
+            exact
+            if exact is not None
+            else event.valid_start_counter + receipt.plan.geometry.valid_visit_samples
+        )
+
+    visit_durations_ms = sorted(
+        {
+            (event_end(event) - event.valid_start_counter) * 1000 // rate
+            for event in receipt.events[: receipt.complete_visit_count]
+        }
+    )
+    visit_duration_label = "/".join(str(value) for value in visit_durations_ms)
     with _RENDER_LOCK, rc_context({"font.size": 12, "axes.titlesize": 14, "legend.fontsize": 10}):
         figure = Figure(figsize=(15.5, 6.5), dpi=160, constrained_layout=True)
         axis = figure.subplots()
@@ -345,8 +368,7 @@ def _render_overview(
             intervals = [
                 (
                     (e.valid_start_counter - origin) / rate,
-                    (e.valid_start_counter + receipt.plan.geometry.valid_visit_samples - origin)
-                    / rate,
+                    (event_end(e) - origin) / rate,
                 )
                 for e in receipt.events[: receipt.complete_visit_count]
                 if e.target_index == target
@@ -376,7 +398,8 @@ def _render_overview(
         axis.set_xlabel("Device time since capture start (s)")
         axis.set_title(
             f"Actual retained channel visits · {receipt.terminal.state}\n"
-            f"{binding.session_id} · {receipt.complete_visit_count} complete 120 ms visits",
+            f"{binding.session_id} · {receipt.complete_visit_count} complete "
+            f"{visit_duration_label} ms visits",
             loc="left",
         )
         if axis.get_legend_handles_labels()[0]:
