@@ -1,0 +1,45 @@
+{
+  "schema": "ds1-iteration24-crossfit-rate-plan/v1",
+  "status": "sealed-fixed-coordinate-train-only-crossfit-rate-audit",
+  "source_iteration": {
+    "code": "reports/2026_09_25_ds1_iteration23_widened_rate/run.py",
+    "artifact": "reports/2026_09_25_ds1_iteration23_widened_rate/smoke.json",
+    "required_schema": "ds1-iteration23-widened-rate-audit/v1",
+    "require_complete": true
+  },
+  "reference_used_for_inference": false,
+  "coordinate_policy": "reuse iteration23 fixed latitude, longitude, and tau for each DS1 group; do not run a geographic search",
+  "mask_policy": "TRAIN rows alone determine support, folds, rate profiles, per-fold CFO, scores, gates, and the decision; HELD is neither read nor scored",
+  "fold_policy": "within each source, leave one complete TRAIN track out; fit the rate on all remaining TRAIN tracks, then fit only one CFO on the omitted track TRAIN rows and score those rows",
+  "eligibility": {
+    "minimum_training_tracks": 3,
+    "minimum_total_training_rows": 24,
+    "minimum_remaining_training_tracks_per_fold": 2,
+    "minimum_remaining_training_rows_per_fold": 24,
+    "ineligible_prospective_rate_s_h": 0.0
+  },
+  "rate_profile": {
+    "diagnostic_bound_s_h": 1.0,
+    "method": "iteration23 deterministic source-specific phase grid plus interleaved half-step scan, bounded refinement of every sampled local minimum, explicit endpoints and zero, and deterministic tie breaks",
+    "maximum_coarse_phase_step_s": 0.05,
+    "robust_scale_hz": 250.0,
+    "rate_sigma_s_h": 0.09176615915,
+    "regularization": "0.5*(rate/RATE_SIGMA)^2 on each fold fit; omitted-track score contains observation loss only",
+    "prospective_rate_for_eligible_source": "iteration23 full-TRAIN +/-1 s/hour diagnostic winner, subject to the cross-fit gates"
+  },
+  "gates": {
+    "fold_convergence": "every local refinement in every fold reports convergence",
+    "exact_replay": "for every fold winner, direct causal SGP4 and the iteration23 quartic surrogate differ by at most 0.2 Hz on the remaining TRAIN fit rows",
+    "interior": "every fold winner is farther from +/-1 s/hour than the iteration23 optimizer-aware boundary tolerance",
+    "winning_basin_and_sign": "all folds for a source select the same strict sign basin (negative or positive); a zero winner or mixed signs fails",
+    "maximum_fold_rate_range_s_h": 0.1835323183,
+    "predictive_improvement": "the sum of omitted-track pseudo-Huber observation losses across all folds is strictly below the corresponding zero-rate sum, with each omitted track counted once"
+  },
+  "decision_policy": "go for a subsequent separately sealed prospective fixed-coordinate rate-model evaluation only if every eligible source passes every gate; ineligible sources remain exactly zero; this audit never authorizes or launches a geographic basin",
+  "required_explicit_sources": {
+    "68739": "report all five folds and whether any fold selects the negative basin",
+    "57248": "must be ineligible and prospective zero",
+    "58683": "must be ineligible and prospective zero"
+  },
+  "compute_limit_s": 600
+}
