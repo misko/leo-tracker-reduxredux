@@ -69,10 +69,10 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "recordings" | "queue" | "scanner" | "native" | "sky" | "tle";
+type PrimaryView = "adaptive" | "legacy" | "recordings" | "queue" | "native" | "sky" | "tle";
 
 export default function App() {
-  const [view, setView] = useState<PrimaryView>("recordings");
+  const [view, setView] = useState<PrimaryView>("adaptive");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [reprocessEnabled, setReprocessEnabled] = useState(false);
   const [researchEnabled, setResearchEnabled] = useState(false);
@@ -210,7 +210,9 @@ export default function App() {
         onStartCapture={() => void updateCapture("start")}
         onStopCapture={() => void updateCapture("stop")}
       />
-      {view === "recordings" ? (
+      {view === "adaptive" ? (
+        <AdaptiveScannerView />
+      ) : view === "recordings" ? (
         <main className="workspace">
           <RecordingBrowser
             recordings={recordings}
@@ -239,8 +241,8 @@ export default function App() {
         </main>
       ) : view === "queue" ? (
         <QueueView />
-      ) : view === "scanner" ? (
-        <ScannerView />
+      ) : view === "legacy" ? (
+        <LegacyScannerView />
       ) : view === "native" ? (
         <NativeRecordings />
       ) : view === "sky" ? (
@@ -299,6 +301,13 @@ function Header({
       <nav className="primary-nav" aria-label="Primary views">
         <button
           type="button"
+          aria-current={view === "adaptive" ? "page" : undefined}
+          onClick={() => onView("adaptive")}
+        >
+          Adaptive scans
+        </button>
+        <button
+          type="button"
           aria-current={view === "recordings" ? "page" : undefined}
           onClick={() => onView("recordings")}
         >
@@ -313,10 +322,10 @@ function Header({
         </button>
         <button
           type="button"
-          aria-current={view === "scanner" ? "page" : undefined}
-          onClick={() => onView("scanner")}
+          aria-current={view === "legacy" ? "page" : undefined}
+          onClick={() => onView("legacy")}
         >
-          Scanner
+          Legacy scans
         </button>
         <button
           type="button"
@@ -451,8 +460,28 @@ const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; 
   },
 };
 
-function ScannerView() {
+function AdaptiveScannerView() {
   const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(null);
+  return <main className="workspace scanner-workspace">
+    <aside className="browser-pane scanner-browser" aria-label="Adaptive scan browser">
+      <div className="browser-header">
+        <div><p className="section-label">ADAPTIVE SCANNER</p><strong>Current adaptive captures</strong></div>
+      </div>
+      <AdaptiveHopBrowser
+        selectedId={selectedAdaptiveId}
+        onSelect={setSelectedAdaptiveId}
+        autoSelectFirst
+      />
+    </aside>
+    <section className="detail-pane scanner-analysis-detail" aria-label="Adaptive scan detail">
+      {selectedAdaptiveId === null
+        ? <div className="empty-detail"><strong>Loading adaptive scans…</strong><span>The newest adaptive capture will open automatically.</span></div>
+        : <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} />}
+    </section>
+  </main>;
+}
+
+function LegacyScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
   const [persistentPage, setPersistentPage] = useState<CurrentPersistentHopPage | null>(null);
@@ -476,7 +505,7 @@ function ScannerView() {
       setPage(result);
       setAttempts(attemptResult);
       setPersistentPage(persistentResult);
-      setSelectedScanId((current) => selectedPersistentId !== null || selectedAdaptiveId !== null
+      setSelectedScanId((current) => selectedPersistentId !== null
         ? null
         : current && result.items.some((item) => item.scan_id === current)
           ? current
@@ -491,7 +520,7 @@ function ScannerView() {
       window.clearInterval(timer);
       controller.abort();
     };
-  }, [cursor, persistentCursor, selectedPersistentId, selectedAdaptiveId]);
+  }, [cursor, persistentCursor, selectedPersistentId]);
   const selectedPersistentSummary = persistentPage?.items.find(
     (item) => item.capture.session_id === selectedPersistentId,
   ) ?? null;
@@ -551,14 +580,9 @@ function ScannerView() {
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Scanner browser">
       <div className="browser-header">
-        <div><p className="section-label">INTER-DWELL SCANNER</p><strong>{page === null ? "Loading…" : `${page.total} scans`}</strong></div>
+        <div><p className="section-label">LEGACY SCANS &amp; DWELLS</p><strong>{page === null ? "Loading…" : `${page.total} scans`}</strong></div>
       </div>
       {error ? <ErrorBanner message={error} /> : null}
-      <AdaptiveHopBrowser selectedId={selectedAdaptiveId} onSelect={(id) => {
-        setSelectedAdaptiveId(id);
-        setSelectedPersistentId(null);
-        setSelectedScanId(null);
-      }} />
       <section className="persistent-hop-history" aria-labelledby="persistent-hop-history-heading">
         <header>
           <div><span>PERSISTENT HOP CAPTURES</span><h3 id="persistent-hop-history-heading">300-second sessions</h3></div>
@@ -578,7 +602,6 @@ function ScannerView() {
             return <tr key={capture.session_id} className={selectedPersistentId === capture.session_id ? "selected" : undefined}>
               <td><button className="scanner-row-button persistent-hop-row" type="button" onClick={() => {
                 setSelectedPersistentId(capture.session_id);
-                setSelectedAdaptiveId(null);
                 setSelectedScanId(null);
                 setPersistentArtifact("coverage");
               }}>
@@ -610,7 +633,6 @@ function ScannerView() {
             return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
               <td><button className="scanner-row-button" type="button" onClick={() => {
                 setSelectedScanId(item.scan_id);
-                setSelectedAdaptiveId(null);
                 setSelectedPersistentId(null);
                 const supportsPilot = item.analysis_id === "standard-scan-analysis-pilot-v1"
                   || item.analysis_id === "standard-scan-analysis-pilot-plots-v1"
@@ -640,11 +662,11 @@ function ScannerView() {
       </> : null}
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Scanner analysis detail">
-      {selectedAdaptiveId === null && selectedPersistentId === null && persistentDetail === null && failedAttempt ? <div className="error-banner" role="alert">
+      {selectedPersistentId === null && persistentDetail === null && failedAttempt ? <div className="error-banner" role="alert">
         <strong>Scanner capture failure · {failedAttempt.report.scan_id}</strong>
         <span>{failedAttemptDetail} The immutable attempt report remains available through scanner history.</span>
       </div> : null}
-      {selectedAdaptiveId !== null ? <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} /> : persistentDetail ? <PersistentHopAnalysisDetail
+      {persistentDetail ? <PersistentHopAnalysisDetail
         detail={persistentDetail}
         tracking={persistentTracking}
         artifact={persistentArtifact}
