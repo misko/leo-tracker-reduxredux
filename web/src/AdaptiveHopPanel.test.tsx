@@ -148,11 +148,26 @@ describe("adaptive actual-visit presentation", () => {
       active_mask: visit.active_mask & 15,
       quiet_mask: visit.quiet_mask & 15,
     }));
+    const longVisit = visits.find(visit => visit.retained)!;
+    longVisit.valid_end_counter = (
+      BigInt(longVisit.valid_start_counter) + BigInt(2500000 * 360 / 1000)
+    ).toString();
+    longVisit.valid_end_seconds = Number(
+      BigInt(longVisit.valid_end_counter) - BigInt(legacy.source_origin_counter!)
+    ) / 2500000;
     const coverage = legacy.capture.target_coverage.map(row => {
       const retained = row.target_index < 4
-        ? visits.filter(visit => visit.retained && visit.target_index === row.target_index).length
-        : 0;
-      return { ...row, retained_visits: retained, valid_seconds: retained * 0.12, allocation_ppm: retained ? row.allocation_ppm : 0 };
+        ? visits.filter(visit => visit.retained && visit.target_index === row.target_index)
+        : [];
+      return {
+        ...row,
+        retained_visits: retained.length,
+        valid_seconds: retained.reduce(
+          (total, visit) => total + visit.valid_end_seconds! - visit.valid_start_seconds,
+          0,
+        ),
+        allocation_ppm: retained.length ? row.allocation_ppm : 0,
+      };
     });
     const detail = { ...legacy, schema_version: 8, visits, capture: {
       ...legacy.capture,
@@ -175,6 +190,7 @@ describe("adaptive actual-visit presentation", () => {
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     expect(await screen.findByText(label)).toBeInTheDocument();
     expect(screen.getByText("120 ms quiet / 360 ms active dwell · both receivers retained")).toBeInTheDocument();
+    expect(screen.getByText("360 ms retained")).toBeInTheDocument();
   });
 
   it.each(["receiver", "rate", "inventory", "missing-decision", "rounded-counter"])("rejects invalid native %s", async fault => {

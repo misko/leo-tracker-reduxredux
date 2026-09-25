@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime
 from typing import Annotated, Literal, Protocol, Self
 
@@ -14,6 +15,25 @@ from leo.scanner.models import ScanTarget
 Seconds = Annotated[float, Field(ge=0, allow_inf_nan=False)]
 VisitCount = Annotated[int, Field(strict=True, ge=0, le=2500)]
 TargetIndex = Annotated[int, Field(strict=True, ge=0, le=7)]
+
+
+def _variable_coverage_seconds_are_possible(
+    *, retained_visits: int, valid_seconds: float, active_dwell_ms: int
+) -> bool:
+    """Validate an aggregate of persisted 120 ms or selected active dwells."""
+
+    base_ms = retained_visits * 120
+    extra_step_ms = active_dwell_ms - 120
+    valid_ms = valid_seconds * 1_000
+    if extra_step_ms == 0:
+        return math.isclose(valid_ms, base_ms, rel_tol=0, abs_tol=1e-9)
+    active_visits = round((valid_ms - base_ms) / extra_step_ms)
+    return 0 <= active_visits <= retained_visits and math.isclose(
+        valid_ms,
+        base_ms + active_visits * extra_step_ms,
+        rel_tol=0,
+        abs_tol=1e-9,
+    )
 
 
 class AdaptiveHopCoverageV1(AdaptiveModel):
@@ -192,6 +212,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
 
     @model_validator(mode="after")
     def _bound(self) -> Self:
+        variable_dwell = type(self).__name__ == "VariableDwellSessionDetailV8"
         if (
             self.capture.source_span_attested != (self.source_origin_counter is not None)
             or len(self.visits) != self.capture.started_visits
@@ -206,6 +227,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
                 and sum(v.retained for v in self.visits) != self.capture.retained_visits
             )
         ):
+            print("DBG", type(self), self.schema_version, type(self.capture), self.capture.schema_version, self.capture.source_span_attested, self.source_origin_counter is not None, len(self.visits), self.capture.started_visits, tuple(v.visit_index for v in self.visits), tuple(v.retained for v in self.visits), self.capture.retained_visits, variable_dwell)
             raise ValueError("adaptive detail differs from started/retained inventory")
         if self.source_origin_counter is not None:
             rate = self.capture.sample_rate_hz

@@ -4,6 +4,11 @@ from types import SimpleNamespace
 
 import pytest
 
+from leo.scanner.adaptive_hop_history import (
+    AdaptiveHopVisitViewV1,
+    VariableDwellSessionDetailV8,
+)
+from leo.scanner.host_adaptive_history import AdaptiveHistoryPageV7
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import (
     AdaptiveHopGlrtPresentationStore,
@@ -25,7 +30,7 @@ def publish_capture(root, **kwargs):
 _DEFAULT_TIMING = object()
 
 
-def test_variable_dwell_history_exposes_persisted_gain() -> None:
+def _variable_dwell_summary():
     receipt = variable_dwell_receipt()
     manifest = SimpleNamespace(
         receipt=receipt,
@@ -33,7 +38,7 @@ def test_variable_dwell_history_exposes_persisted_gain() -> None:
         finalized_utc_ns=1_800_000_001_000_000_000,
         timing=None,
     )
-    item = _summary(
+    return _summary(
         SimpleNamespace(
             manifest=manifest,
             session_id=receipt.session_id,
@@ -41,9 +46,76 @@ def test_variable_dwell_history_exposes_persisted_gain() -> None:
         )
     )
 
+
+def test_variable_dwell_history_exposes_persisted_gain() -> None:
+    item = _variable_dwell_summary()
+
     assert item.schema_version == 8
     assert item.recorded_gain_mode == "manual"
     assert item.recorded_manual_gain_db == 50.0
+
+
+def test_variable_dwell_history_accepts_sparse_long_visits_and_mixed_page(tmp_path) -> None:
+    legacy = publish_capture(tmp_path, count=2, session_id="legacy-fixed-dwell")
+    presentation = AdaptiveHopPresentationStore(tmp_path)
+    receipt = variable_dwell_receipt()
+    capture = _variable_dwell_summary()
+    origin = receipt.terminal.first_counter
+    retained = set(receipt.retained_visit_indices)
+    detail = VariableDwellSessionDetailV8(
+        capture=capture,
+        source_origin_counter=origin,
+        visits=tuple(
+            AdaptiveHopVisitViewV1(
+                visit_index=event.visit_index,
+                target_index=event.target_index,
+                retained=event.visit_index in retained,
+                invalid_start_seconds=(event.invalid_start_counter - origin) / 2_500_000,
+                valid_start_seconds=(event.valid_start_counter - origin) / 2_500_000,
+                valid_end_seconds=(event.valid_end_counter_exclusive - origin) / 2_500_000
+                if event.visit_index in retained
+                else None,
+                valid_start_counter=event.valid_start_counter,
+                valid_end_counter=event.valid_end_counter_exclusive
+                if event.visit_index in retained
+                else None,
+                decision_counter=event.decision.decision_counter,
+                basis_visit=event.decision.basis_visit,
+                proposed_target_index=event.decision.proposed_target,
+                reason=event.decision.reason,
+                active_mask=event.decision.active_mask,
+                quiet_mask=event.decision.quiet_mask,
+                consecutive_misses=event.decision.consecutive_misses,
+                cooldown_remaining_seconds=event.decision.cooldown_remaining_samples / 2_500_000,
+            )
+            for event in receipt.events
+        ),
+    )
+    assert [row.retained for row in detail.visits] == [True, False, True]
+    long_detail = detail.model_dump(mode="json")
+    start = int(long_detail["visits"][0]["valid_start_counter"])
+    long_detail["visits"][0]["valid_end_counter"] = str(start + 900_000)
+    long_detail["visits"][0]["valid_end_seconds"] = (
+        start + 900_000 - int(long_detail["source_origin_counter"])
+    ) / 2_500_000
+    long_detail["capture"]["target_coverage"][0]["valid_seconds"] = 0.36
+    validated = VariableDwellSessionDetailV8.model_validate(long_detail)
+    assert validated.visits[0].valid_end_seconds - validated.visits[0].valid_start_seconds == 0.36
+    invalid_coverage = validated.model_dump(mode="json")
+    invalid_coverage["capture"]["target_coverage"][1]["valid_seconds"] = 0.24
+    with pytest.raises(ValueError, match="coverage disagrees"):
+        VariableDwellSessionDetailV8.model_validate(invalid_coverage)
+    invalid_duration = validated.model_dump(mode="json")
+    start = int(invalid_duration["visits"][0]["valid_start_counter"])
+    invalid_duration["visits"][0]["valid_end_counter"] = str(start + 600_000)
+    with pytest.raises(ValueError, match="source times or actual targets"):
+        VariableDwellSessionDetailV8.model_validate(invalid_duration)
+    legacy_item = presentation.page_v2(cursor=0, limit=20).items[0]
+    page = AdaptiveHistoryPageV7(
+        cursor=0, limit=20, total=2, next_cursor=None, items=(capture, legacy_item)
+    )
+    assert page.schema_version == 7
+    assert {item.session_id for item in page.items} == {capture.session_id, legacy.session_id}
 
 
 def publish_receipt(root, receipt, *, timing=_DEFAULT_TIMING):

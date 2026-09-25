@@ -550,7 +550,17 @@ def create_app(
     )
     def adaptive_detail_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
-    ) -> AdaptiveHopSessionDetailV1 | EdgeAdaptiveSessionDetailV4 | VariableDwellSessionDetailV8:
+    ) -> (
+        AdaptiveHopSessionDetailV1
+        | HostAdaptiveSessionDetailV2
+        | HostAdaptiveSessionDetailV3
+        | EdgeAdaptiveSessionDetailV4
+        | DualRx10mAdaptiveSessionDetailV5
+        | Feature103SessionDetailV6
+        | Feature104SessionDetailV7
+        | VariableDwellSessionDetailV8
+        | None
+    ):
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
         try:

@@ -120,6 +120,15 @@ function seconds(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 function optionalSeconds(value: unknown): boolean { return value === null || seconds(value); }
+function variableCoverageSecondsArePossible(row: AdaptiveCoverage, activeDwellMs: number): boolean {
+  const baseMs = row.retained_visits * 120;
+  const stepMs = activeDwellMs - 120;
+  const validMs = row.valid_seconds * 1000;
+  if (stepMs === 0) return Math.abs(validMs - baseMs) <= 1e-9;
+  const activeVisits = Math.round((validMs - baseMs) / stepMs);
+  return activeVisits >= 0 && activeVisits <= row.retained_visits
+    && Math.abs(validMs - (baseMs + activeVisits * stepMs)) <= 1e-9;
+}
 
 function validateCapture(c: AdaptiveCapture): void {
   if (!c || c.kind !== "adaptive_hop_history_item" || ![1, 2, 3, 4, 5, 6, 7, 8].includes(c.schema_version)
@@ -177,6 +186,8 @@ function validateCapture(c: AdaptiveCapture): void {
         || row.target.edge !== (i < 4 ? "lower" : "upper")
         || !seconds(row.target.rf_center_hz) || !seconds(row.target.if_center_hz)
         || !integer(row.retained_visits, c.retained_visits) || !seconds(row.valid_seconds)
+        || (c.schema_version === 8
+          && !variableCoverageSecondsArePossible(row, c.active_dwell_ms))
         || (row.allocation_ppm !== null && !integer(row.allocation_ppm, 1000000))
         || !optionalSeconds(row.maximum_revisit_seconds) || !optionalSeconds(row.maximum_unobserved_seconds)) {
       throw new Error("Adaptive coverage evidence is invalid");
@@ -272,9 +283,15 @@ export async function getAdaptiveSession(sessionId: string, signal?: AbortSignal
       throw new Error("Adaptive visit evidence is invalid");
     }
     const relative = Number(BigInt(v.valid_start_counter) - BigInt(detail.source_origin_counter!)) / c.sample_rate_hz;
+    const retainedSamples = v.retained
+      ? BigInt(v.valid_end_counter!) - BigInt(v.valid_start_counter)
+      : 0n;
+    const allowedSamples = c.schema_version === 8
+      ? [120, c.active_dwell_ms].map(ms => BigInt(c.sample_rate_hz * ms / 1000))
+      : [BigInt(c.sample_rate_hz * 0.12)];
     if (relative !== v.valid_start_seconds || v.invalid_start_seconds > relative
         || BigInt(v.decision_counter) > BigInt(v.valid_start_counter)
-        || (v.retained && (BigInt(v.valid_end_counter!) - BigInt(v.valid_start_counter) !== BigInt(c.sample_rate_hz * .12)
+        || (v.retained && (!allowedSamples.includes(retainedSamples)
           || v.valid_end_seconds !== Number(BigInt(v.valid_end_counter!) - BigInt(detail.source_origin_counter!)) / c.sample_rate_hz))) {
       throw new Error("Adaptive source times differ from exact counters");
     }
