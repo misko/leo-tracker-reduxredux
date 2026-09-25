@@ -1,0 +1,91 @@
+{
+  "complete": true,
+  "dataset_scope": "DS3/all56",
+  "dependencies": [
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_iteration32_session_nominal_closure/run.py",
+      "sha256": "sha256:4726f4a40042338a069321724219a6382edcba020697200dfd521d18fde8107c"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_all_iterations_backfill/batch-b/successor_adapter_cached.py",
+      "sha256": "sha256:5b275c748bb534657233acc00222d0c2de4d713be52793a284acbba4680c4d5a"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_all_iterations_backfill/batch-b/iteration12_adapter.py",
+      "sha256": "sha256:0a1f4a876c00f6021499d6118f1a40e18dac2e30631fcf5147e7d488d5ea588c"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_joint_rate_search/joint_rate_search.py",
+      "sha256": "sha256:ee110f26d66e3812fc855e9de5b6b13c6bf53448b8d0faca2cde82f1f2a7cc44"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_orbit_arm/run.py",
+      "sha256": "sha256:4257e342d52370a023e9e49285c6ce0c11ebc4d2266613f222e3ba50b3c9fffc"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds1_train_full_orbit_soft/run.py",
+      "sha256": "sha256:9d941f25552d87820ed2ca53922ca2d74197e7384993f3c09c6b054fb37c9509"
+    }
+  ],
+  "experiment_id": "ds3-iteration32-session-nominal-closure",
+  "held_observations_used": false,
+  "iteration": 32,
+  "method": {
+    "association": "frozen",
+    "fitted_parameters": [
+      "receiver latitude and longitude",
+      "one profiled constant CFO per frozen track"
+    ],
+    "frozen_parameters": [
+      "DS3-local hard candidate identity per track",
+      "DS3-local interleave receive-time offsets",
+      "DS3-local RF group weights"
+    ],
+    "group_weight_rule": "reuse sealed DS3 I20 RF-only occupied-second support times local frequency-curvature weights, normalized",
+    "nonselecting_final_audit": "per-NORAD causal phase rates with active-set widening from +/-0.25 to +/-0.50 s/hour and direct SGP4 replay",
+    "rate_bound": 0.5,
+    "rate_boundary_margin_s_h": 1e-06,
+    "selection_objective": "per-session mean of per-track mean-squared residual capped at 800 Hz, RF-weighted across the two sealed interleaves",
+    "selector": "session_nominal",
+    "stages": [
+      {
+        "maximum_translations": 32,
+        "spacing_km": 0.048828125
+      },
+      {
+        "maximum_translations": 8,
+        "spacing_km": 0.0244140625
+      },
+      {
+        "maximum_translations": 8,
+        "spacing_km": 0.01220703125
+      }
+    ],
+    "stopping_rule": "advance only after an interior 3x3 winner; fail closed after the declared translation budget; never inspect reference error",
+    "timing_refresh": {
+      "applied": false,
+      "maximum_translations": 4,
+      "node_count": 9,
+      "spacing_s": 0.05
+    }
+  },
+  "parent": {
+    "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_all_iterations_backfill/batch-b-output/iteration-21/inference.json",
+    "sha256": "sha256:a67d61ef0ca2b2b9fc50a47dc990905eabb8a427dbeb2bcffd404f34c8f82d7f"
+  },
+  "parent_coordinate": {
+    "latitude_deg": 37.861150792579686,
+    "longitude_deg": -122.48993461536244
+  },
+  "parent_qualification": {
+    "qualified": false,
+    "terminal_status": "unqualified_boundary"
+  },
+  "reference_coordinate_present": false,
+  "reference_used_for_inference": false,
+  "schema": "ds3-successor-plan/v1",
+  "support": {
+    "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_all_iterations_backfill/batch-b-output/iteration-20/support-for-next.json",
+    "sha256": "sha256:62cf5034b9311f9d9b6e112edb99d1c9321fc0d74e42a26c70a56ec4dbbcf494"
+  }
+}
