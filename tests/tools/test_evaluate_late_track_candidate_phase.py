@@ -1,5 +1,6 @@
 import gzip
 import json
+import math
 from types import SimpleNamespace
 
 import numpy as np
@@ -10,6 +11,7 @@ from tools.research.evaluate_late_track_candidate_phase import (
     fit_baseline_orientation,
     glrt_timeline_rows,
     joint_receiver_result,
+    phase_difference_summary,
     phase_difference_timeline_rows,
     response_metrics,
     selected_track_points,
@@ -243,3 +245,24 @@ def test_phase_difference_timeline_keeps_every_saved_estimate(tmp_path) -> None:
     assert [row["phase_difference_rad"] for row in rows] == [0.25, -0.5, 0.75]
     assert [row["channel"] for row in rows] == [3, 3, 1]
     assert [row["supported_dwell"] for row in rows] == [False, False, True]
+
+
+def test_phase_difference_summary_uses_ordinary_two_pi_resultant() -> None:
+    rows = [
+        {
+            "session_id": "scan-test",
+            "visit_index": visit,
+            "time_s": float(index),
+            "phase_difference_rad": phase,
+        }
+        for index, (visit, phase) in enumerate(
+            [(1, 0.0), (1, math.pi / 2), (2, 0.0), (2, -math.pi / 2)]
+        )
+    ]
+
+    summary = phase_difference_summary(rows)
+
+    assert summary["point_count"] == 4
+    assert summary["phase_period_rad"] == pytest.approx(2 * math.pi)
+    assert summary["circular_r"] == pytest.approx(0.5)
+    assert summary["median_dwell_circular_r"] == pytest.approx(math.sqrt(0.5))
