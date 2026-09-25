@@ -93,6 +93,33 @@ describe("adaptive analysis publication", () => {
     value.configuration.schema_version = 3;
     await expect(getAdaptiveAnalysis(c)).rejects.toThrow("source or configuration");
   });
+  it("renders schema-8 variable-dwell GLRT figures", async () => {
+    const c = {
+      ...capture, session_id: "scan-fw-506bf7282490266d", schema_version: 8 as const, nominal_duration_seconds: 300,
+      sample_rate_hz: 10000000 as const, bandwidth_hz: 10000000 as const,
+      analysis_state: "separate_product" as const, radio_serial: "test", selected_edge: "upper" as const,
+      allowed_target_mask: 240 as const, active_dwell_ms: 360 as const,
+      recorded_gain_mode: "manual" as const, recorded_manual_gain_db: 40,
+    };
+    const value = analysisFixture("figures_ready");
+    value.schema_version = 8; value.session_id = c.session_id; value.overview!.session_id = c.session_id;
+    Object.assign(value.configuration, {
+      schema_version: 5, analyzer_id: "adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1",
+      sample_rate_hz: 10000000, valid_visit_ms: undefined, allowed_valid_visit_ms: [120, 240, 360],
+    });
+    value.overview!.schema_version = 8;
+    vi.stubGlobal("fetch", analysisFetch(value));
+
+    render(<AdaptiveAnalysisPanel capture={c} />);
+    expect(await screen.findAllByRole("img")).toHaveLength(3);
+    expect(screen.getByRole("img", { name: "Fractional GLRT response" })).toHaveAttribute(
+      "src", expect.stringContaining("/api/v3/scanner/adaptive-sessions/"),
+    );
+    await expect(getAdaptiveAnalysis(c)).resolves.toEqual(value);
+
+    value.configuration.allowed_valid_visit_ms = [120, 240, 240] as unknown as [120, 240, 360];
+    await expect(getAdaptiveAnalysis(c)).rejects.toThrow("source or configuration");
+  });
   it("binds the feature-103 dual RX overview to its native rate and source", async () => {
     const c = { ...capture, schema_version: 6 as const, sample_rate_hz: 10000000 as const, bandwidth_hz: 10000000 as const,
       analysis_state: "separate_product" as const, radio_serial: "test", selected_edge: "lower" as const, allowed_target_mask: 15 as const };

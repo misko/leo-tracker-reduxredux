@@ -7,11 +7,11 @@ export interface AdaptiveFigure {
   name: AdaptiveArtifact; content_type: "image/png"; sha256: string; byte_count: number;
 }
 export interface AdaptiveAnalysisStatus {
-  schema_version: 1 | 2 | 3 | 4 | 5 | 6 | 7; kind: "adaptive_hop_analysis_status";
+  schema_version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; kind: "adaptive_hop_analysis_status";
   session_id: string; input_manifest_sha256: string; binding_sha256: string;
   configuration: {
-    schema_version: 1 | 2 | 3 | 4; analyzer_id: "adaptive-hop-fractional-glrt64-cfo-v1" | "adaptive-hop-fractional-glrt64-cfo-10m-v1" | "host-adaptive-native-10m-fractional-glrt64-cfo-v2" | "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3";
-    sample_rate_hz: 2500000 | 5000000 | 10000000 | 15000000 | 20000000; valid_visit_ms: 120; probe_ms: 20;
+    schema_version: 1 | 2 | 3 | 4 | 5; analyzer_id: "adaptive-hop-fractional-glrt64-cfo-v1" | "adaptive-hop-fractional-glrt64-cfo-10m-v1" | "host-adaptive-native-10m-fractional-glrt64-cfo-v2" | "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3" | "adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1";
+    sample_rate_hz: 2500000 | 5000000 | 10000000 | 15000000 | 20000000; valid_visit_ms?: 120; allowed_valid_visit_ms?: [120, 240, 360]; probe_ms: 20;
     probe_stride_ms: number; glrt64_margin_gate: number; maximum_acquisition_candidates: number;
     receiver_ids: [0, 1] | [0] | [1]; timing_refinement: "circular-five-cell-log-parabola-plus-lanczos16-v1";
     decision_score: "fractional-epoch-conditioned-glrt64-v1";
@@ -21,7 +21,7 @@ export interface AdaptiveAnalysisStatus {
   progress_basis: "no_checkpoints" | "file_inventory" | "sealed_metrics_manifest";
   worker_activity: "not_observed"; metrics_manifest_sha256: string | null;
   overview: null | {
-    schema_version: 1 | 2 | 3 | 4 | 5 | 6 | 7; kind: "adaptive_hop_fractional_overview";
+    schema_version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; kind: "adaptive_hop_fractional_overview";
     presentation_id: "adaptive-actual-visit-glrt64-overview-v1" | "host-adaptive-native-10m-overview-v2" | "host-adaptive-native-15m-20m-overview-v3";
     session_id: string; binding_sha256: string; metrics_manifest_sha256: string;
     finalized_utc_ns: string; artifacts: AdaptiveFigure[];
@@ -36,6 +36,13 @@ const digest = (v: unknown): v is string => typeof v === "string" && /^sha256:[0
 const count = (v: unknown, maximum: number): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0 && v <= maximum;
 const u64 = (v: unknown): v is string => typeof v === "string" && /^(0|[1-9][0-9]{0,19})$/.test(v) && BigInt(v) < 18446744073709551616n;
 const routeVersion = (schemaVersion: AdaptiveCapture["schema_version"]): number => schemaVersion >= 4 ? 3 : schemaVersion;
+const variableDwellDurations = [120, 240, 360] as const;
+const visitDurationsMatch = (configuration: AdaptiveAnalysisStatus["configuration"], variableDwell: boolean): boolean => variableDwell
+  ? configuration.valid_visit_ms === undefined
+    && Array.isArray(configuration.allowed_valid_visit_ms)
+    && configuration.allowed_valid_visit_ms.length === variableDwellDurations.length
+    && configuration.allowed_valid_visit_ms.every((duration, index) => duration === variableDwellDurations[index])
+  : configuration.valid_visit_ms === 120 && configuration.allowed_valid_visit_ms === undefined;
 
 export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: AbortSignal, probeStrideMs: AdaptiveProbeStride = 120): Promise<AdaptiveAnalysisStatus | null> {
   const response = await fetch(`/api/v${routeVersion(capture.schema_version)}/scanner/adaptive-sessions/${encodeURIComponent(capture.session_id)}/analysis?probe_stride_ms=${probeStrideMs}`, { signal, cache: "no-store" });
@@ -44,16 +51,16 @@ export async function getAdaptiveAnalysis(capture: AdaptiveCapture, signal?: Abo
   const value = await response.json() as AdaptiveAnalysisStatus;
   const cfg = value?.configuration;
   const native = capture.schema_version === 2 || capture.schema_version === 3;
-  const analyzer = capture.schema_version === 5 ? "adaptive-hop-fractional-glrt64-cfo-10m-v1" : capture.schema_version === 3 ? "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3"
+  const analyzer = capture.schema_version === 8 ? "adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1" : capture.schema_version === 5 ? "adaptive-hop-fractional-glrt64-cfo-10m-v1" : capture.schema_version === 3 ? "host-adaptive-native-15m-20m-fractional-glrt64-cfo-v3"
     : native ? "host-adaptive-native-10m-fractional-glrt64-cfo-v2" : "adaptive-hop-fractional-glrt64-cfo-v1";
   const presentation = capture.schema_version === 3 ? "host-adaptive-native-15m-20m-overview-v3"
     : native ? "host-adaptive-native-10m-overview-v2" : "adaptive-actual-visit-glrt64-overview-v1";
   const receivers = native ? [capture.physical_receiver] : [0, 1];
   if (!value || value.schema_version !== capture.schema_version || value.kind !== "adaptive_hop_analysis_status"
       || value.session_id !== capture.session_id || value.input_manifest_sha256 !== capture.input_manifest_sha256
-      || !digest(value.binding_sha256) || !cfg || cfg.schema_version !== (capture.schema_version === 7 ? 4 : capture.schema_version === 6 ? 3 : capture.schema_version === 5 ? 2 : capture.schema_version === 4 ? 1 : capture.schema_version)
+      || !digest(value.binding_sha256) || !cfg || cfg.schema_version !== (capture.schema_version === 8 ? 5 : capture.schema_version === 7 ? 4 : capture.schema_version === 6 ? 3 : capture.schema_version === 5 ? 2 : capture.schema_version === 4 ? 1 : capture.schema_version)
       || cfg.analyzer_id !== analyzer || cfg.sample_rate_hz !== capture.sample_rate_hz
-      || cfg.valid_visit_ms !== 120 || cfg.probe_ms !== 20 || cfg.probe_stride_ms !== probeStrideMs
+      || !visitDurationsMatch(cfg, capture.schema_version === 8) || cfg.probe_ms !== 20 || cfg.probe_stride_ms !== probeStrideMs
       || !Number.isFinite(cfg.glrt64_margin_gate) || cfg.glrt64_margin_gate <= 0
       || !count(cfg.maximum_acquisition_candidates, 16) || cfg.maximum_acquisition_candidates < 1
       || !Array.isArray(cfg.receiver_ids) || cfg.receiver_ids.length !== receivers.length || cfg.receiver_ids.some((rx, i) => rx !== receivers[i])
