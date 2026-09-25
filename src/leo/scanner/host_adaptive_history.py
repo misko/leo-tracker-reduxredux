@@ -17,6 +17,8 @@ from leo.scanner.adaptive_hop_history import (
     Feature103SessionDetailV6,
     Feature104HistoryItemV7,
     Feature104SessionDetailV7,
+    FourRateVariableDwellHistoryItemV9,
+    FourRateVariableDwellSessionDetailV9,
     Seconds,
     VariableDwellHistoryItemV8,
     VariableDwellSessionDetailV8,
@@ -227,6 +229,25 @@ class AdaptiveHistoryPageV7(AdaptiveHistoryPageV6):
     ]
 
 
+class AdaptiveHistoryPageV8(AdaptiveHistoryPageV7):
+    schema_version: Literal[8] = 8  # type: ignore[assignment]
+    items: Annotated[
+        tuple[
+            AdaptiveHopHistoryItemV1
+            | HostAdaptiveHistoryItemV2
+            | HostAdaptiveHistoryItemV3
+            | EdgeAdaptiveHistoryItemV4
+            | DualRx10mAdaptiveHistoryItemV5
+            | Feature103HistoryItemV6
+            | Feature104HistoryItemV7
+            | VariableDwellHistoryItemV8
+            | FourRateVariableDwellHistoryItemV9,
+            ...,
+        ],
+        Field(max_length=20),
+    ]
+
+
 class AdaptiveHistoryReaderV2(Protocol):
     def page_v2(
         self, *, cursor: int, limit: int
@@ -237,6 +258,7 @@ class AdaptiveHistoryReaderV2(Protocol):
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
+        | AdaptiveHistoryPageV8
     ): ...
     def detail_v2(
         self, session_id: str
@@ -249,5 +271,6 @@ class AdaptiveHistoryReaderV2(Protocol):
         | Feature103SessionDetailV6
         | Feature104SessionDetailV7
         | VariableDwellSessionDetailV8
+        | FourRateVariableDwellSessionDetailV9
         | None
     ): ...

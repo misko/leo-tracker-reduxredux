@@ -13,6 +13,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
 )
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
@@ -28,6 +29,8 @@ from leo.scanner.adaptive_hop_history import (
     Feature103SessionDetailV6,
     Feature104HistoryItemV7,
     Feature104SessionDetailV7,
+    FourRateVariableDwellHistoryItemV9,
+    FourRateVariableDwellSessionDetailV9,
     VariableDwellHistoryItemV8,
     VariableDwellSessionDetailV8,
 )
@@ -44,6 +47,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV5,
     AdaptiveHistoryPageV6,
     AdaptiveHistoryPageV7,
+    AdaptiveHistoryPageV8,
     HostAdaptiveHistoryItemV2,
     HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
@@ -134,7 +138,9 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
         )
     elif isinstance(receipt, AdaptiveHopReceiptV2):
         model = (
-            VariableDwellHistoryItemV8
+            FourRateVariableDwellHistoryItemV9
+            if isinstance(receipt, AdaptiveHopReceiptV7)
+            else VariableDwellHistoryItemV8
             if isinstance(receipt, AdaptiveHopReceiptV6)
             else Feature104HistoryItemV7
             if isinstance(receipt, AdaptiveHopReceiptV5)
@@ -156,7 +162,7 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
                     "recorded_gain_mode": receipt.plan.geometry.gain_mode.value,
                     "recorded_manual_gain_db": receipt.plan.geometry.gain_db,
                 }
-                if isinstance(receipt, AdaptiveHopReceiptV6)
+                if isinstance(receipt, (AdaptiveHopReceiptV6, AdaptiveHopReceiptV7))
                 else {}
             ),
         )
@@ -208,6 +214,7 @@ class AdaptiveHopPresentationStore:
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
+        | AdaptiveHistoryPageV8
     ):
         result = self._page(cursor=cursor, limit=limit, include_host=True)
         assert isinstance(
@@ -219,6 +226,7 @@ class AdaptiveHopPresentationStore:
                 AdaptiveHistoryPageV5,
                 AdaptiveHistoryPageV6,
                 AdaptiveHistoryPageV7,
+                AdaptiveHistoryPageV8,
             ),
         )
         return result
@@ -247,7 +255,10 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV7
+            AdaptiveHistoryPageV8
+            if include_host
+            and any(isinstance(item, FourRateVariableDwellHistoryItemV9) for item in items)
+            else AdaptiveHistoryPageV7
             if include_host and any(isinstance(item, VariableDwellHistoryItemV8) for item in items)
             else AdaptiveHistoryPageV6
             if include_host and any(isinstance(item, Feature104HistoryItemV7) for item in items)
@@ -294,6 +305,7 @@ class AdaptiveHopPresentationStore:
         | HostAdaptiveSessionDetailV3
         | EdgeAdaptiveSessionDetailV4
         | VariableDwellSessionDetailV8
+        | FourRateVariableDwellSessionDetailV9
         | None
     ):
         return self._detail(session_id, include_host=True)
@@ -401,7 +413,9 @@ class AdaptiveHopPresentationStore:
             fields = dict(host_decisions=tuple(decision_views))
         elif isinstance(receipt, AdaptiveHopReceiptV2):
             model = (
-                VariableDwellSessionDetailV8
+                FourRateVariableDwellSessionDetailV9
+                if isinstance(receipt, AdaptiveHopReceiptV7)
+                else VariableDwellSessionDetailV8
                 if isinstance(receipt, AdaptiveHopReceiptV6)
                 else Feature104SessionDetailV7
                 if isinstance(receipt, AdaptiveHopReceiptV5)
