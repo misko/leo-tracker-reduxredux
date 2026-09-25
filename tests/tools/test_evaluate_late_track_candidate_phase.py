@@ -1,3 +1,5 @@
+import gzip
+import json
 from types import SimpleNamespace
 
 import numpy as np
@@ -8,6 +10,7 @@ from tools.research.evaluate_late_track_candidate_phase import (
     fit_baseline_orientation,
     glrt_timeline_rows,
     joint_receiver_result,
+    phase_difference_timeline_rows,
     response_metrics,
     selected_track_points,
     wrap_pi,
@@ -176,3 +179,67 @@ def test_selected_track_points_collapses_phase_intervals() -> None:
             "tracking_cfo_hz": 12_500.0,
         }
     ]
+
+
+def test_phase_difference_timeline_keeps_every_saved_estimate(tmp_path) -> None:
+    artifact = {
+        "state": "replayed",
+        "visit_index": 7,
+        "channel": 3,
+        "edge": "upper",
+        "random_phase": {
+            "supported": False,
+            "held_rows": [
+                {
+                    "center_sample": 100.0,
+                    "a_phase_rad": 0.25,
+                    "group_id": 2,
+                    "block_index": 4,
+                },
+                {
+                    "center_sample": 200.0,
+                    "a_phase_rad": -0.5,
+                    "group_id": 3,
+                    "block_index": 5,
+                },
+            ],
+        },
+    }
+    path = tmp_path / "scan-test-visit-000007.json.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as target:
+        json.dump(artifact, target)
+    second_artifact = {
+        **artifact,
+        "visit_index": 8,
+        "channel": 1,
+        "random_phase": {
+            **artifact["random_phase"],
+            "supported": True,
+            "held_rows": [
+                {
+                    "center_sample": 50.0,
+                    "a_phase_rad": 0.75,
+                    "group_id": 6,
+                    "block_index": 8,
+                }
+            ],
+        },
+    }
+    path = tmp_path / "scan-test-visit-000008.json.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as target:
+        json.dump(second_artifact, target)
+    source = SimpleNamespace(
+        timing=SimpleNamespace(session_start_device_sample_counter=1000),
+        sample_rate_hz=1000,
+        probes=(
+            SimpleNamespace(visit_index=7, valid_start_counter=2000),
+            SimpleNamespace(visit_index=8, valid_start_counter=3000),
+        ),
+    )
+
+    rows = phase_difference_timeline_rows(tmp_path, "scan-test", source)
+
+    assert [row["time_s"] for row in rows] == pytest.approx([1.1, 1.2, 2.05])
+    assert [row["phase_difference_rad"] for row in rows] == [0.25, -0.5, 0.75]
+    assert [row["channel"] for row in rows] == [3, 3, 1]
+    assert [row["supported_dwell"] for row in rows] == [False, False, True]

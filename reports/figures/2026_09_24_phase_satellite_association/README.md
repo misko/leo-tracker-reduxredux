@@ -11,11 +11,14 @@
   and coloured by RF channel.
 - `glrt-vs-time-300s.png`: complete per-receiver GLRT margins over the scan
   clock, with passing candidates coloured by RF channel.
-- `standard-trajectory-t1.png` through `standard-trajectory-t5.png`: verbatim
-  standard adaptive-analysis plots containing every TLE-blind reconstructed
-  RX0/RX1 track for each capture.
-- `standard-trajectories.json`: source sessions, per-receiver track counts, and
-  source artifact digests for the five standard trajectory plots.
+- `standard-adaptive-cfo-trajectories-t1.png` through
+  `standard-adaptive-cfo-trajectories-t5.png`: verbatim standard adaptive
+  four-channel RX0/RX1 CFO trajectory plots for each capture.
+- `standard-adaptive-trajectories.json`: source sessions, analysis bindings,
+  byte counts, and digests for those standard plots.
+- `phase-difference-vs-time-300s.png`: every saved per-block conditional
+  RX1−RX0 phase estimate, coloured by channel on the full scan clock.
+- `phase-difference-timeline.json.gz`: the points plotted in that figure.
 - `candidate-score-by-track-receiver.png`: receiver-level train and held scores.
 - `joint-receiver-candidate-score.png`: equal-weight RX0/RX1 candidate scores.
 - `held-phase-association-summary.png`: held modulo-π R, controls, and contrast.
