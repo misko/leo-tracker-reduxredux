@@ -70,6 +70,12 @@ MINIMUM_IDENTIFIABLE_CONTRAST_RAD = 0.10
 SPEED_OF_LIGHT_M_S = 299_792_458.0
 MECHANICAL_BASELINE_M = 0.08
 NOMINAL_BASELINE_AZIMUTH_DEG = 79
+CHANNEL_COLOURS = {
+    1: "#0072B2",
+    2: "#E69F00",
+    3: "#009E73",
+    4: "#CC79A7",
+}
 
 
 def digest(path: Path) -> str:
@@ -166,6 +172,38 @@ def fit_baseline_orientation(
         ),
         "models": models,
     }
+
+
+def glrt_timeline_rows(source: Any) -> list[dict[str, Any]]:
+    """Flatten every published fractional GLRT candidate onto the scan clock."""
+    if source.timing is None:
+        raise ValueError("GLRT timeline requires qualified device-counter timing")
+    rows = []
+    for probe in source.probes:
+        elapsed_s = (
+            probe.valid_start_counter
+            - source.timing.session_start_device_sample_counter
+        ) / source.sample_rate_hz + probe.probe_start_ms / 1000
+        for candidate in probe.candidates:
+            rows.append(
+                {
+                    "session_id": source.session_id,
+                    "visit_index": probe.visit_index,
+                    "receiver_id": probe.receiver_id,
+                    "channel": probe.channel,
+                    "edge": probe.edge,
+                    "time_s": elapsed_s,
+                    "candidate_rank": candidate.candidate_rank,
+                    "fractional_margin": candidate.fractional_margin,
+                    "fractional_tracking_cfo_hz": (
+                        candidate.fractional_tracking_cfo_hz
+                    ),
+                    "passed_fractional_margin_gate": (
+                        candidate.passed_fractional_margin_gate
+                    ),
+                }
+            )
+    return rows
 
 
 def frame_opportunities(sample_count: int, rate: int, epoch: int) -> list[tuple[int, int]]:
@@ -610,6 +648,7 @@ def run(
     iq_store = AdaptiveHopIqStore(bulk_root, read_only=True)
     tracks = []
     evidence_rows = []
+    glrt_rows = []
     try:
         for chosen in selection["tracks"]:
             session_id = str(chosen["session_id"])
@@ -618,6 +657,7 @@ def run(
             source = tracking_store.load(session_id)
             if source.timing is None:
                 raise ValueError("phase transport requires qualified UTC")
+            glrt_rows.extend(glrt_timeline_rows(source))
             projected = project_scanner_candidates(source)
             by_candidate = {row.candidate_id: row for row in projected}
             trajectory = reconstruct_persistent_hop_trajectories(
@@ -690,6 +730,15 @@ def run(
                                     "session_id": session_id,
                                     "visit_index": visit_index,
                                     "receiver_id": receiver_id,
+                                    "channel": int(chosen["channel"]),
+                                    "edge": str(chosen["edge"]),
+                                    "scan_elapsed_s": (
+                                        (
+                                            int(row["midpoint_utc_ns"])
+                                            - source.timing.first_sample_estimate_utc_ns
+                                        )
+                                        / 1e9
+                                    ),
                                     "source_candidate_id": point.candidate_id,
                                     "source_probe_index": point.probe_index,
                                     "source_candidate_rank": point.candidate_rank,
@@ -975,14 +1024,21 @@ def run(
     }
     with gzip.open(output / "phase-advance-evidence.json.gz", "wt", encoding="utf-8") as target:
         json.dump(serial({"protocol": output_document["protocol"], "rows": evidence_rows}), target)
+    with gzip.open(output / "glrt-timeline.json.gz", "wt", encoding="utf-8") as target:
+        json.dump(serial({"rows": glrt_rows}), target)
     (output / "summary.json").write_text(
         json.dumps(serial(output_document), indent=2) + "\n", encoding="utf-8"
     )
-    render(output_document, output)
+    render(output_document, output, evidence_rows, glrt_rows)
     return output_document
 
 
-def render(document: dict[str, Any], output: Path) -> None:
+def render(
+    document: dict[str, Any],
+    output: Path,
+    evidence_rows: list[dict[str, Any]],
+    glrt_rows: list[dict[str, Any]],
+) -> None:
     colours = plt.cm.tab10(np.arange(5))
     fig, axes = plt.subplots(5, 2, figsize=(15, 16), constrained_layout=True)
     for track, colour, row_axes in zip(document["tracks"], colours, axes, strict=True):
@@ -1157,6 +1213,121 @@ def render(document: dict[str, Any], output: Path) -> None:
     axes[0].set_title("Feasibility-only azimuth fit; orientation is not identified")
     axes[1].set_title("Held geometry-rate test; bars should differ if usable")
     fig.savefig(output / "baseline-orientation-held-test.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(5, 1, figsize=(14, 14), sharex=True, constrained_layout=True)
+    receiver_markers = {0: "o", 1: "x"}
+    for track, axis in zip(document["tracks"], axes, strict=True):
+        rows = [
+            row for row in evidence_rows if row["session_id"] == track["session_id"]
+        ]
+        for receiver_id, marker in receiver_markers.items():
+            selected = [row for row in rows if row["receiver_id"] == receiver_id]
+            axis.scatter(
+                [row["scan_elapsed_s"] for row in selected],
+                [
+                    math.degrees(float(wrap_pi(row["odd_phase_advance_rad"])))
+                    for row in selected
+                ],
+                s=13,
+                marker=marker,
+                color=CHANNEL_COLOURS[track["channel"]],
+                alpha=0.62,
+                linewidths=0.7,
+                rasterized=True,
+                label=f"RX{receiver_id}" if track["rank"] == 1 else None,
+            )
+        axis.set_ylim(-90, 90)
+        axis.set_yticks([-90, -45, 0, 45, 90])
+        axis.set_ylabel("Phase advance (°)")
+        axis.set_title(
+            f"T{track['rank']} · {track['session_id']} · CH{track['channel']} {track['edge']}",
+            loc="left",
+            fontsize=10,
+        )
+        axis.grid(alpha=0.2)
+        axis.spines[["top", "right"]].set_visible(False)
+    for channel in sorted({track["channel"] for track in document["tracks"]}):
+        axes[0].scatter(
+            [],
+            [],
+            marker="s",
+            color=CHANNEL_COLOURS[channel],
+            label=f"CH{channel}",
+        )
+    axes[0].legend(loc="upper right", ncol=5)
+    axes[-1].set_xlim(0, 300)
+    axes[-1].set_xlabel("Elapsed scan time from qualified device-counter timing (seconds)")
+    fig.suptitle(
+        "Random-held odd-symbol adjacent-frame phase over each 300-second scan\n"
+        "Colours identify RF channel · modulo π · no connection across visits"
+    )
+    fig.savefig(output / "phase-vs-time-300s.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(5, 2, figsize=(15, 16), sharex=True, constrained_layout=True)
+    for track, row_axes in zip(document["tracks"], axes, strict=True):
+        session_rows = [
+            row for row in glrt_rows if row["session_id"] == track["session_id"]
+        ]
+        for receiver_id, axis in enumerate(row_axes):
+            receiver_rows = [
+                row for row in session_rows if row["receiver_id"] == receiver_id
+            ]
+            failed = [
+                row
+                for row in receiver_rows
+                if not row["passed_fractional_margin_gate"]
+            ]
+            axis.scatter(
+                [row["time_s"] for row in failed],
+                [row["fractional_margin"] for row in failed],
+                s=2,
+                color="0.75",
+                alpha=0.22,
+                linewidths=0,
+                rasterized=True,
+                label="Below gate" if track["rank"] == 1 and receiver_id == 0 else None,
+            )
+            for channel, colour in CHANNEL_COLOURS.items():
+                passed = [
+                    row
+                    for row in receiver_rows
+                    if row["passed_fractional_margin_gate"]
+                    and row["channel"] == channel
+                ]
+                axis.scatter(
+                    [row["time_s"] for row in passed],
+                    [row["fractional_margin"] for row in passed],
+                    s=6,
+                    color=colour,
+                    alpha=0.58,
+                    linewidths=0,
+                    rasterized=True,
+                    label=(
+                        f"CH{channel}"
+                        if track["rank"] == 1 and receiver_id == 0
+                        else None
+                    ),
+                )
+            axis.axhline(0.025, color="0.3", linewidth=0.8, linestyle="--")
+            axis.set_xlim(0, 300)
+            axis.set_ylabel("GLRT margin")
+            axis.set_title(
+                f"T{track['rank']} · RX{receiver_id} · {track['session_id']}",
+                loc="left",
+                fontsize=9,
+            )
+            axis.grid(alpha=0.2)
+            axis.spines[["top", "right"]].set_visible(False)
+    axes[0, 0].legend(ncol=5, fontsize=8, loc="upper center")
+    axes[-1, 0].set_xlabel("Elapsed scan time (seconds)")
+    axes[-1, 1].set_xlabel("Elapsed scan time (seconds)")
+    fig.suptitle(
+        "Full fractional-GLRT inventory over each 300-second scan\n"
+        "Passed candidates coloured by RF channel · gray below the 0.025 margin gate"
+    )
+    fig.savefig(output / "glrt-vs-time-300s.png", dpi=170)
     plt.close(fig)
 
 
