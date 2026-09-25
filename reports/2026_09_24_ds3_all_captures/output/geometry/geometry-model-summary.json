@@ -1,0 +1,233 @@
+{
+  "complete": true,
+  "dataset_name": "DS3",
+  "model_ids": [
+    "lt3d_geometry_only",
+    "lt3d_fixed_up_cone",
+    "lt3d_learned_zenith_cone",
+    "global_time_plus_lt3d_cone"
+  ],
+  "models": [
+    {
+      "joint_five": {
+        "fit": {
+          "attempt_count": 5,
+          "converged": true
+        },
+        "objective": {
+          "held_capped_loss": null,
+          "training_capped_loss": 0.328412232198888
+        },
+        "position": {
+          "latitude_deg": 38.68492057707508,
+          "longitude_deg": -119.95914883471241,
+          "xy_km": [
+            133.25107271744497,
+            12.602974439815737
+          ]
+        },
+        "support": {
+          "supported_occupied_second_fraction": 1.0,
+          "supported_tracks": 76,
+          "unsupported_tracks": 0
+        }
+      },
+      "model_id": "lt3d_geometry_only",
+      "qualification": "qualified",
+      "qualification_reason": "joint-five sealed diagnostics passed all model gates",
+      "session_ids": [
+        "scan-fw-294be7850b76a34d",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-ff02a0ba4200d0dc"
+      ],
+      "source": "learned15_inference"
+    },
+    {
+      "joint_five": {
+        "cone": {
+          "full_fov_deg": 60.0,
+          "mapping": [
+            0,
+            1
+          ],
+          "orientation_index": 2
+        },
+        "objective": {
+          "held_capped_loss": 0.4151737160355662,
+          "training_capped_loss": 0.40103095370523334
+        },
+        "position": {
+          "latitude_deg": 38.68492057707508,
+          "longitude_deg": -119.95914883471241,
+          "xy_km": [
+            133.25107271744497,
+            12.602974439815737
+          ]
+        },
+        "support": {
+          "changed_candidate_id_count": 6,
+          "supported_occupied_second_fraction": 0.7250695235061169,
+          "supported_tracks": 62,
+          "unsupported_tracks": 14
+        }
+      },
+      "model_id": "lt3d_fixed_up_cone",
+      "qualification": "qualified",
+      "qualification_reason": "joint-five sealed diagnostics passed all model gates",
+      "session_ids": [
+        "scan-fw-294be7850b76a34d",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-ff02a0ba4200d0dc"
+      ],
+      "source": "fixed_up_inference"
+    },
+    {
+      "joint_five": {
+        "cone": {
+          "full_fov_deg": 50.0,
+          "mapping": [
+            0,
+            1
+          ],
+          "orientation_index": 436
+        },
+        "objective": {
+          "held_capped_loss": 0.46491726687774276,
+          "training_capped_loss": 0.4303684188429281
+        },
+        "position": {
+          "latitude_deg": 38.909702587670274,
+          "longitude_deg": -119.95430574089255,
+          "xy_km": [
+            133.25107271744497,
+            37.60297443981574
+          ]
+        },
+        "support": {
+          "changed_candidate_id_count": 11,
+          "supported_occupied_second_fraction": 0.7303994074879222,
+          "supported_tracks": 62,
+          "unsupported_tracks": 14
+        }
+      },
+      "model_id": "lt3d_learned_zenith_cone",
+      "qualification": "qualified",
+      "qualification_reason": "joint-five sealed diagnostics passed all model gates",
+      "session_ids": [
+        "scan-fw-294be7850b76a34d",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-ff02a0ba4200d0dc"
+      ],
+      "source": "learned15_inference"
+    },
+    {
+      "joint_five": {
+        "cone": {
+          "full_fov_deg": 50.0,
+          "mapping": [
+            0,
+            1
+          ],
+          "orientation_index": 436
+        },
+        "objective": {
+          "held_capped_loss": 0.46491726687774276,
+          "training_capped_loss": 0.4303684188429281
+        },
+        "position": {
+          "latitude_deg": 38.909702587670274,
+          "longitude_deg": -119.95430574089255,
+          "xy_km": [
+            133.25107271744497,
+            37.60297443981574
+          ]
+        },
+        "reuse": {
+          "required_seals": [
+            "sha256:ebe034bf988a7410d77c9a9b0038b0bad2accf2062786f581614d883a7a2de35",
+            "sha256:ac0c41bce17a661227a875435d075764ca89619c64b00882cf49d4950763cf0f"
+          ],
+          "source_model_id": "lt3d_learned_zenith_cone",
+          "status": "valid_exact_zero_tau_reuse"
+        },
+        "support": {
+          "changed_candidate_id_count": 11,
+          "supported_occupied_second_fraction": 0.7303994074879222,
+          "supported_tracks": 62,
+          "unsupported_tracks": 14
+        },
+        "time_control": {
+          "control_objective": {
+            "full_observation_capped_loss": 0.10986613498903093,
+            "selection_value": 0.10986613498903093
+          },
+          "control_position": {
+            "latitude_deg": 37.83333072050822,
+            "longitude_deg": -122.40176707692177
+          },
+          "control_support": {
+            "full_observations": 1651,
+            "occupied_seconds": 980,
+            "qualified_tracks": 76
+          },
+          "global_tau_s": 0.0
+        }
+      },
+      "model_id": "global_time_plus_lt3d_cone",
+      "qualification": "qualified",
+      "qualification_reason": "joint-five sealed diagnostics passed all model gates",
+      "session_ids": [
+        "scan-fw-294be7850b76a34d",
+        "scan-fw-9f3d5067d149118e",
+        "scan-fw-cfcf667726e80735",
+        "scan-fw-f3ce5fe73aa40506",
+        "scan-fw-ff02a0ba4200d0dc"
+      ],
+      "source": "learned15_inference+global_time_control"
+    }
+  ],
+  "phase_used": false,
+  "provenance": {
+    "fixed_up_inference": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/fixed-up-inference.json",
+      "seal_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/fixed-up-inference.json.sha256",
+      "seal_value": "sha256:2a9ab3eff1d3b81a68607d75013012f3f0b9641aab23a743d2744ac9d4594132",
+      "sha256": "sha256:2a9ab3eff1d3b81a68607d75013012f3f0b9641aab23a743d2744ac9d4594132"
+    },
+    "geometry_plan": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/geometry-cone-plan.json",
+      "seal_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/geometry-cone-plan.json.sha256",
+      "seal_value": "sha256:4d87bdb7ec18666a71ccef111825eb2699a93959983906faf5ad781982ae65d6",
+      "sha256": "sha256:4d87bdb7ec18666a71ccef111825eb2699a93959983906faf5ad781982ae65d6"
+    },
+    "global_time_control": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/global-time-control.json",
+      "seal_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/global-time-control.json.sha256",
+      "seal_value": "sha256:ac0c41bce17a661227a875435d075764ca89619c64b00882cf49d4950763cf0f",
+      "sha256": "sha256:ac0c41bce17a661227a875435d075764ca89619c64b00882cf49d4950763cf0f"
+    },
+    "learned15_inference": {
+      "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/learned15-inference.json",
+      "seal_path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_24_ds3_all_captures/output/geometry/learned15-inference.json.sha256",
+      "seal_value": "sha256:ebe034bf988a7410d77c9a9b0038b0bad2accf2062786f581614d883a7a2de35",
+      "sha256": "sha256:ebe034bf988a7410d77c9a9b0038b0bad2accf2062786f581614d883a7a2de35"
+    }
+  },
+  "qualification_policy": "structural completeness, joint-five support, convergence, sealed provenance, and declared causal/reference exclusions; no position truth",
+  "reference_coordinate_present": false,
+  "reference_used_for_qualification": false,
+  "schema": "ds3-lt3d-geometry-model-summary/v1",
+  "session_ids": [
+    "scan-fw-294be7850b76a34d",
+    "scan-fw-9f3d5067d149118e",
+    "scan-fw-cfcf667726e80735",
+    "scan-fw-f3ce5fe73aa40506",
+    "scan-fw-ff02a0ba4200d0dc"
+  ]
+}
