@@ -133,7 +133,7 @@ margins 0.4112 through 0.5820. That full diagnostic took 94.6 seconds with
 numerical-library threads deliberately limited to one; it is not a production
 throughput benchmark.
 
-## Verification before rollout
+## Verification gates and follow-up
 
 - Existing geometry tests: 11 passed locally, including lower/upper edges and
   synthetic native 10-MS/s recovery outside the old zero-centred window.
@@ -149,3 +149,28 @@ throughput benchmark.
 - Shadow replay before deployment; compare both-RX recovery, false alarms, frequency
   aliases, per-probe latency, and queue throughput. Do not infer production readiness
   from these five selected positive-oriented examples.
+
+## Post-deployment live verification
+
+The correction was deployed to the adaptive analysis queue/worker units as immutable
+release `a49b686331d65fa08db60c77e33c6bd05c2c3378`. One explicitly bounded 30-second
+10-MS/s adaptive capture, `scan-fw-776915aa0fb2df2f`, then delivered 220 dual-RX
+visits with manual gain, zero invalid/skipped/cancelled visits, and exact radio
+restoration. It is API-visible and was admitted to the deployed analysis queue.
+
+Two strong upper-edge visits were replayed through the deployed release, using the
+native first 20-ms probe and normal eight-candidate output budget:
+
+| Visit | RX | Old zero-centred margin | Deployed margin | Deployed CFO | Epoch |
+|---:|---:|---:|---:|---:|---:|
+| 198 | 0 | 0.29604 | 0.29604 | +141350 Hz | 2153 |
+| 198 | 1 | 0.00059 | **0.49481** | +801623 Hz | 2155 |
+| 202 | 0 | 0.39073 | 0.39072 | +139483 Hz | 9225 |
+| 202 | 1 | 0.00615 | **0.55294** | +799659 Hz | 9225 |
+
+The gate is 0.025. In both examples the old path missed RX1 and the deployed path
+recovers it while retaining RX0. The compiler derived a +312.5-kHz nominal pilot
+centre and +/-800-kHz residual policy from the upper-edge capture metadata. Neither
+receiver CFO nor epoch was fitted into the search. A third inspected visit retained
+strong RX1-only evidence (0.57254 versus RX0 0.00426), so the correction does not
+force artificial dual-RX outcomes.
