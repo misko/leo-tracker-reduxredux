@@ -11,7 +11,7 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
-def test_enqueue_pending_skips_variable_dwell_without_blocking_queue(monkeypatch, tmp_path) -> None:
+def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path) -> None:
     class VariableReceipt:
         pass
 
@@ -34,14 +34,14 @@ def test_enqueue_pending_skips_variable_dwell_without_blocking_queue(monkeypatch
         def close(self):
             pass
 
-    monkeypatch.setattr(subject, "AdaptiveHopReceiptV6", VariableReceipt)
     monkeypatch.setattr(subject, "AdaptiveHopIqStore", Captures)
     monkeypatch.setattr(
         subject,
         "AdaptiveHopAnalysisPresentationStore",
         lambda *_args, **_kwargs: SimpleNamespace(
-            status_for_capture=lambda *_args, **_kwargs: (_ for _ in ()).throw(
-                AssertionError("variable dwell has no metrics binding")
+            status_for_capture=lambda *_args, **_kwargs: SimpleNamespace(
+                state="not_started",
+                binding_sha256="sha256:" + "2" * 64,
             )
         ),
     )
@@ -50,9 +50,18 @@ def test_enqueue_pending_skips_variable_dwell_without_blocking_queue(monkeypatch
         "ScannerTrackingStore",
         lambda *_args, **_kwargs: SimpleNamespace(),
     )
-    monkeypatch.setattr(subject, "_catalog", lambda: SimpleNamespace())
+    queued = []
+    monkeypatch.setattr(
+        subject,
+        "_catalog",
+        lambda: SimpleNamespace(
+            enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True
+        ),
+    )
 
-    assert subject.enqueue_pending(bulk_root=tmp_path) == ()
+    assert subject.enqueue_pending(bulk_root=tmp_path) == ("scan-fw-variable",)
+    assert queued[0]["session_id"] == "scan-fw-variable"
+    assert queued[0]["input_manifest_digest"] == capture.manifest_sha256
 
 
 def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
