@@ -19,6 +19,10 @@
 - `phase-difference-vs-time-300s.png`: every saved per-block conditional
   RX1−RX0 phase estimate, coloured by channel on the full scan clock.
 - `phase-difference-timeline.json.gz`: the points plotted in that figure.
+- `t1-phase-difference-vs-time.png`: zoomed T1-only phase differences with
+  per-dwell circular means.
+- `t1-phase-difference-summary.json`: ordinary 2π circular `R` overall and by
+  dwell for the T1 plot.
 - `candidate-score-by-track-receiver.png`: receiver-level train and held scores.
 - `joint-receiver-candidate-score.png`: equal-weight RX0/RX1 candidate scores.
 - `held-phase-association-summary.png`: held modulo-π R, controls, and contrast.

@@ -111,6 +111,15 @@ unwrap bridges retunes.
 
 ![Every saved RX1−RX0 phase difference over 300 seconds](figures/2026_09_24_phase_satellite_association/phase-difference-vs-time-300s.png)
 
+For T1 alone, all 264 estimates are supported CH4/lower-edge results from
+eight independently normalized dwells. Their ordinary 2π circular resultant is
+`R = 0.269`; the circular mean is −32.0° and the circular standard deviation is
+92.8°. The median within-dwell `R` is `0.499` (range `0.131–0.871`). The pooled
+value therefore describes repeatability across retuned dwell fits, not a
+calibrated geometric baseline coherence.
+
+![T1 phase difference and per-dwell circular means](figures/2026_09_24_phase_satellite_association/t1-phase-difference-vs-time.png)
+
 The companion GLRT plot uses the complete published fractional-GLRT inventory
 for the same five captures: 110,879 candidate records, of which 10,572 pass the
 `0.025` fractional-margin gate. Passed candidates are coloured by channel;
@@ -215,7 +224,9 @@ The [standard adaptive trajectory provenance](figures/2026_09_24_phase_satellite
 records the source session, analysis binding, byte count, and SHA-256 digest
 for each verbatim standard plot. The compressed
 [phase-difference timeline](figures/2026_09_24_phase_satellite_association/phase-difference-timeline.json.gz)
-contains every point in the phase-difference figure.
+contains every point in the phase-difference figures. The
+[T1 phase-difference summary](figures/2026_09_24_phase_satellite_association/t1-phase-difference-summary.json)
+records the ordinary 2π circular statistics overall and by dwell.
 
 ```bash
 sudo -u leo env HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib \

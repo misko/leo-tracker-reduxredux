@@ -545,6 +545,51 @@ def phase_difference_timeline_rows(
     return output
 
 
+def phase_difference_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize ordinary 2π circular concentration overall and by dwell."""
+    if not rows:
+        raise ValueError("phase-difference summary requires at least one estimate")
+
+    def metrics(selected: list[dict[str, Any]]) -> dict[str, Any]:
+        phases = np.asarray([row["phase_difference_rad"] for row in selected])
+        phasor = np.mean(np.exp(1j * phases))
+        resultant = float(abs(phasor))
+        return {
+            "point_count": len(selected),
+            "circular_r": resultant,
+            "circular_mean_rad": float(np.angle(phasor)),
+            "circular_standard_deviation_deg": float(
+                math.degrees(math.sqrt(-2.0 * math.log(resultant)))
+            ),
+        }
+
+    visits = []
+    for visit_index in sorted({int(row["visit_index"]) for row in rows}):
+        selected = [row for row in rows if int(row["visit_index"]) == visit_index]
+        visits.append(
+            {
+                "visit_index": visit_index,
+                "start_time_s": min(float(row["time_s"]) for row in selected),
+                "stop_time_s": max(float(row["time_s"]) for row in selected),
+                **metrics(selected),
+            }
+        )
+    return {
+        "session_id": str(rows[0]["session_id"]),
+        "phase_period_rad": 2 * math.pi,
+        "interpretation": (
+            "conditional same-block A-band RX1-minus-RX0 phase; pooled R mixes "
+            "independently normalized retuned dwells"
+        ),
+        **metrics(rows),
+        "dwell_count": len(visits),
+        "median_dwell_circular_r": float(
+            np.median([row["circular_r"] for row in visits])
+        ),
+        "visits": visits,
+    }
+
+
 def _extract_receiver_pairs(
     iq: np.ndarray,
     receiver_id: int,
@@ -1128,6 +1173,14 @@ def run(
         output / "phase-difference-timeline.json.gz", "wt", encoding="utf-8"
     ) as target:
         json.dump(serial({"rows": phase_difference_rows}), target)
+    t1_session_id = str(min(tracks, key=lambda row: int(row["rank"]))["session_id"])
+    t1_phase_rows = [
+        row for row in phase_difference_rows if row["session_id"] == t1_session_id
+    ]
+    (output / "t1-phase-difference-summary.json").write_text(
+        json.dumps(serial(phase_difference_summary(t1_phase_rows)), indent=2) + "\n",
+        encoding="utf-8",
+    )
     (output / "summary.json").write_text(
         json.dumps(serial(output_document), indent=2) + "\n", encoding="utf-8"
     )
@@ -1465,6 +1518,58 @@ def render(
         "Colours identify RF channel · wrapped to ±180° · no cross-visit connection"
     )
     fig.savefig(output / "phase-difference-vs-time-300s.png", dpi=170)
+    plt.close(fig)
+
+    t1_track = min(document["tracks"], key=lambda row: int(row["rank"]))
+    t1_rows = [
+        row
+        for row in phase_difference_rows
+        if row["session_id"] == t1_track["session_id"]
+    ]
+    t1_summary = phase_difference_summary(t1_rows)
+    fig, axis = plt.subplots(figsize=(14, 6.5), constrained_layout=True)
+    for channel, colour in CHANNEL_COLOURS.items():
+        selected = [row for row in t1_rows if row["channel"] == channel]
+        if selected:
+            axis.scatter(
+                [row["time_s"] for row in selected],
+                [math.degrees(float(row["phase_difference_rad"])) for row in selected],
+                s=22,
+                color=colour,
+                alpha=0.65,
+                linewidths=0,
+                label=f"CH{channel} estimates (n={len(selected)})",
+            )
+    axis.scatter(
+        [0.5 * (row["start_time_s"] + row["stop_time_s"]) for row in t1_summary["visits"]],
+        [math.degrees(row["circular_mean_rad"]) for row in t1_summary["visits"]],
+        s=58,
+        marker="D",
+        facecolors="white",
+        edgecolors="black",
+        linewidths=1.1,
+        zorder=3,
+        label="Per-dwell circular mean",
+    )
+    padding_s = 0.25
+    axis.set_xlim(
+        min(float(row["time_s"]) for row in t1_rows) - padding_s,
+        max(float(row["time_s"]) for row in t1_rows) + padding_s,
+    )
+    axis.set_ylim(-180, 180)
+    axis.set_yticks([-180, -90, 0, 90, 180])
+    axis.set_xlabel("Elapsed time within the 300-second scan (seconds)")
+    axis.set_ylabel("RX1−RX0 phase difference (°)")
+    axis.set_title(
+        "T1 conditional phase difference · every random-held estimate\n"
+        f"ordinary 2π circular R={t1_summary['circular_r']:.3f} overall · "
+        f"median per-dwell R={t1_summary['median_dwell_circular_r']:.3f}",
+        loc="left",
+    )
+    axis.legend(loc="upper right")
+    axis.grid(alpha=0.2)
+    axis.spines[["top", "right"]].set_visible(False)
+    fig.savefig(output / "t1-phase-difference-vs-time.png", dpi=170)
     plt.close(fig)
 
     fig, axes = plt.subplots(5, 2, figsize=(15, 16), sharex=True, constrained_layout=True)
