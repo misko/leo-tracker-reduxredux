@@ -1,0 +1,970 @@
+{
+  "counts": {
+    "method_arms": 49,
+    "required_for_publication": 49
+  },
+  "iteration_ledger": {
+    "identity_role": "execution provenance only; integer iteration is not method identity",
+    "path": "reports/2026_09_25_ds3_all_iterations_backfill/paired-completion-matrix-v4.json",
+    "sha256": "sha256:9aeff77e5019fbb1f39a08c1906f4e7d2849f3378c888bf5ba157c735ab7570e"
+  },
+  "methods": [
+    {
+      "arm": "baseline",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "baseline"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/baseline.json",
+          "sha256": "sha256:2d5792786cb3f778f1818e8518c52a51b15d0677c54c62519ac0c6de188984df"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "baseline-doppler",
+      "name": "Baseline Doppler",
+      "required_for_publication": true
+    },
+    {
+      "arm": "causal_per_norad_orbit_rate",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "causal_per_norad_orbit_rate"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_orbit_arm",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "No sealed standalone DS3/all56 causal-rate arm exists."
+      },
+      "iteration": null,
+      "method_id": "causal-per-norad-orbit-rate",
+      "name": "Causal per-NORAD orbit-rate correction",
+      "required_for_publication": true
+    },
+    {
+      "arm": "fixed_hard_cone_orientation",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_23_train_fixed_cone",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/output/geometry/fixed_hard_cone_orientation.json",
+          "sha256": "sha256:44e2e3e0d627abebea56450817882fa2e8eec36c2343e5120efa55d066db13dc"
+        },
+        "kind": "artifact",
+        "terminal_status": "qualified"
+      },
+      "iteration": null,
+      "method_id": "fixed-hard-cone-orientation",
+      "name": "Fixed hard cone orientation",
+      "required_for_publication": true
+    },
+    {
+      "arm": "shared_global_tau",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "global_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full_timing",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/global_time.json",
+          "sha256": "sha256:72567f1d317656e1e22685361f434c463b5eae737304fd6292d7fc3696c38e58"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "global-time",
+      "name": "Shared global receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "global_tau_per_norad_orbit_rate",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "global_time_plus_per_norad_orbit_rate"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full_orbit_soft",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/global_time_plus_per_norad_orbit_rate.json",
+          "sha256": "sha256:92ae359b7f53c4a1d8ca2b6d03da1a4b8c6df916a1c14e1a7acddab3be23c7a7"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "global-time-plus-per-norad-orbit-rate",
+      "name": "Shared global receive time plus causal per-NORAD rate",
+      "required_for_publication": true
+    },
+    {
+      "arm": "unknown",
+      "classification": "missing_history",
+      "ds1": {
+        "report_dir": null,
+        "terminal_status": "missing_historical_artifact"
+      },
+      "ds3_binding": {
+        "kind": "accounting",
+        "reason": "Historical method identity is unavailable.",
+        "terminal_status": "missing_historical_artifact"
+      },
+      "iteration": 1,
+      "method_id": "i01-unknown-history",
+      "name": "Iteration 1 unknown historical method",
+      "required_for_publication": true
+    },
+    {
+      "arm": "regularized_per_scan_tau",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_iteration2/post-seal-evaluation/iteration2-post-seal-evaluation.json",
+            "sha256": "sha256:9dff0ecc4c2cacc082e0fe9c67be09d642495f9404509871dd7058deadfd68de"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "per_scan_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_iteration2",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "estimate_label": "regularized_per_scan_tau",
+        "iteration": 2,
+        "kind": "iteration"
+      },
+      "iteration": 2,
+      "method_id": "i02-regularized-per-scan-time",
+      "name": "Iteration 2 regularized per-scan receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "shared_global_tau",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_iteration2/post-seal-evaluation/iteration2-post-seal-evaluation.json",
+            "sha256": "sha256:9dff0ecc4c2cacc082e0fe9c67be09d642495f9404509871dd7058deadfd68de"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "global_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_iteration2",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "estimate_label": "shared_global_tau",
+        "iteration": 2,
+        "kind": "iteration"
+      },
+      "iteration": 2,
+      "method_id": "i02-shared-global-time",
+      "name": "Iteration 2 shared global receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "global_time_plus_per_norad_orbit_rate",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "The ledger's I3 diagnostic is not the canonical position-producing I3 method."
+      },
+      "iteration": 3,
+      "method_id": "i03-global-time-plus-orbit-rate-screen",
+      "name": "Iteration 3 global time plus per-NORAD rate geographic screen",
+      "registry_aliases": [
+        "rate_aware_joint_geographic_screen"
+      ],
+      "required_for_publication": true
+    },
+    {
+      "arm": "seed_union_exact_selection",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "The ledger's I4 diagnostic is not the canonical position-producing I4 method."
+      },
+      "iteration": 4,
+      "method_id": "i04-seed-union-exact-selection",
+      "name": "Iteration 4 seed-union exact selection",
+      "required_for_publication": true
+    },
+    {
+      "arm": "common_grid_timing_refinement",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "Canonical position-producing I5 has no DS3 terminal artifact."
+      },
+      "iteration": 5,
+      "method_id": "i05-common-grid-timing-refinement",
+      "name": "Iteration 5 frozen-spatial common-grid timing refinement",
+      "required_for_publication": true
+    },
+    {
+      "arm": "matched_cap300_cap800",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "Canonical position-producing I6 has no DS3 terminal artifact."
+      },
+      "iteration": 6,
+      "method_id": "i06-matched-cap300-cap800",
+      "name": "Iteration 6 matched cap-300 proposal / cap-800 exact rank",
+      "required_for_publication": true
+    },
+    {
+      "arm": "legacy_session_scale_lbfgsb",
+      "classification": "nonportable",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration6b_session_scale",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "accounting",
+        "reason": "Rejected legacy optimizer; superseded by block-coordinate I12.",
+        "terminal_status": "not_portable_legacy"
+      },
+      "iteration": 6,
+      "method_id": "i06b-legacy-session-scale",
+      "name": "Iteration 6B legacy joint session-scale L-BFGS-B",
+      "required_for_publication": true,
+      "superseded_by": "i12-regularized-session-scale"
+    },
+    {
+      "arm": "ar1_student_t",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "Canonical I7 robust rerank has no DS3 terminal diagnostic."
+      },
+      "iteration": 7,
+      "method_id": "i07-ar1-student-t-rerank",
+      "name": "Iteration 7 AR(1)+Student-t residual rerank",
+      "required_for_publication": true
+    },
+    {
+      "arm": "independent_gaussian",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_joint_rate_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "Canonical I7 Gaussian rerank has no DS3 terminal diagnostic."
+      },
+      "iteration": 7,
+      "method_id": "i07-independent-gaussian-rerank",
+      "name": "Iteration 7 independent-Gaussian residual rerank",
+      "required_for_publication": true
+    },
+    {
+      "arm": "joint",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration8_joint_groups",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 8,
+        "kind": "iteration"
+      },
+      "iteration": 8,
+      "method_id": "i08-equal-weight-joint-multiscan",
+      "name": "Iteration 8 Equal-weight joint multiscan position",
+      "required_for_publication": true
+    },
+    {
+      "arm": "joint",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration9_joint_refinement",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 9,
+        "kind": "iteration"
+      },
+      "iteration": 9,
+      "method_id": "i09-symmetric-joint-refinement",
+      "name": "Iteration 9 Symmetric shared-coordinate refinement",
+      "required_for_publication": true
+    },
+    {
+      "arm": "joint",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration10_refinement",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 10,
+        "kind": "iteration"
+      },
+      "iteration": 10,
+      "method_id": "i10-three-level-shared-refinement",
+      "name": "Iteration 10 Three-level symmetric shared refinement",
+      "required_for_publication": true
+    },
+    {
+      "arm": "joint",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration11_fine_confirmation",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 11,
+        "kind": "iteration"
+      },
+      "iteration": 11,
+      "method_id": "i11-fine-symmetric-confirmation",
+      "name": "Iteration 11 Fine symmetric confirmation",
+      "required_for_publication": true
+    },
+    {
+      "arm": "consistent_cap800",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration12_consistent_objective",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_24_ds3_all_captures/output/followups-v2/consistent-cap800.json",
+          "sha256": "sha256:9c9bfc6cfddcd6b222ad22378c9643f4a74176935aea78c4032e859e8b005c50"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": 12,
+      "method_id": "i12-consistent-cap800",
+      "name": "Iteration 12 consistent cap-800 joint objective",
+      "required_for_publication": true
+    },
+    {
+      "arm": "expanded_exact_rate_only",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration12_comparison",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i12-method-arm-output/expanded-exact-rate-only.json",
+          "sha256": "sha256:a7eb01e1a98419d289d2095b1a2791bf1bc2c9946b10d142e623d1fa2a5f2384"
+        },
+        "kind": "artifact",
+        "terminal_status": "unqualified_boundary"
+      },
+      "iteration": 12,
+      "method_id": "i12-expanded-exact-rate-only",
+      "name": "Iteration 12 expanded exact rate-only",
+      "required_for_publication": true
+    },
+    {
+      "arm": "regularized_common_plus_session_scale",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration12_session_scale",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 12,
+        "kind": "iteration"
+      },
+      "iteration": 12,
+      "method_id": "i12-regularized-session-scale",
+      "name": "Iteration 12 regularized common plus session scale",
+      "required_for_publication": true
+    },
+    {
+      "arm": "shared_norad_rate",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration12_shared_norad",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/i12-method-arm-output/shared-norad-rate.json",
+          "sha256": "sha256:2a6abdccb68b93f000983d7a5c53688cf48699fa4827b108d2e3c22b8e32c3b1"
+        },
+        "kind": "artifact",
+        "terminal_status": "no_position_diagnostic"
+      },
+      "iteration": 12,
+      "method_id": "i12-shared-norad-rate",
+      "name": "Iteration 12 shared-NORAD rate control",
+      "required_for_publication": true
+    },
+    {
+      "arm": "basin",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration13_basin_closure",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 13,
+        "kind": "iteration"
+      },
+      "iteration": 13,
+      "method_id": "i13-basin-closure",
+      "name": "Iteration 13 Basin closure",
+      "required_for_publication": true
+    },
+    {
+      "arm": "basin",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration14_cap800_basin",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 14,
+        "kind": "iteration"
+      },
+      "iteration": 14,
+      "method_id": "i14-cap800-basin",
+      "name": "Iteration 14 Cap-800 basin search",
+      "required_for_publication": true
+    },
+    {
+      "arm": "information_weighted",
+      "classification": "superseded",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration15_information_weighted",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 15,
+        "kind": "iteration"
+      },
+      "iteration": 15,
+      "method_id": "i15-information-weighted",
+      "name": "Iteration 15 Information-weighted search",
+      "required_for_publication": true,
+      "superseded_by": "i19-rate-bound-audit"
+    },
+    {
+      "arm": "dynamic_association",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration16_dynamic_association",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 16,
+        "kind": "iteration"
+      },
+      "iteration": 16,
+      "method_id": "i16-dynamic-association",
+      "name": "Iteration 16 Dynamic association",
+      "required_for_publication": true
+    },
+    {
+      "arm": "reacquire_then_freeze",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration17_reacquire_then_freeze",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 17,
+        "kind": "iteration"
+      },
+      "iteration": 17,
+      "method_id": "i17-reacquire-then-freeze",
+      "name": "Iteration 17 Reacquire then freeze",
+      "required_for_publication": true
+    },
+    {
+      "arm": "timing_refresh",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_ds1_iteration18_timing_refresh",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 18,
+        "kind": "iteration"
+      },
+      "iteration": 18,
+      "method_id": "i18-timing-refresh",
+      "name": "Iteration 18 Timing refresh",
+      "required_for_publication": true
+    },
+    {
+      "arm": "rate_bound_audit",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration19_rate_bound_audit",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 19,
+        "kind": "iteration"
+      },
+      "iteration": 19,
+      "method_id": "i19-rate-bound-audit",
+      "name": "Iteration 19 Corrected rate-bound audit",
+      "required_for_publication": true
+    },
+    {
+      "arm": "session_predictive",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration20_session_predictive",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 20,
+        "kind": "iteration"
+      },
+      "iteration": 20,
+      "method_id": "i20-session-predictive",
+      "name": "Iteration 20 Session-predictive search",
+      "required_for_publication": true
+    },
+    {
+      "arm": "session_balanced",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration21_session_balanced_closure",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 21,
+        "kind": "iteration"
+      },
+      "iteration": 21,
+      "method_id": "i21-session-balanced-closure",
+      "name": "Iteration 21 Session-balanced closure",
+      "required_for_publication": true
+    },
+    {
+      "arm": "randomized_time_predictive",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration22_randomized_time_predictive",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 22,
+        "kind": "iteration",
+        "require_ds3_execution": true
+      },
+      "iteration": 22,
+      "method_id": "i22-randomized-time-predictive",
+      "name": "Iteration 22 randomized-time predictive diagnostic",
+      "required_for_publication": true
+    },
+    {
+      "arm": "widened_rate",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration23_widened_rate",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 23,
+        "kind": "iteration",
+        "require_ds3_execution": true
+      },
+      "iteration": 23,
+      "method_id": "i23-widened-rate",
+      "name": "Iteration 23 widened-rate diagnostic",
+      "required_for_publication": true
+    },
+    {
+      "arm": "crossfit_rate",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration24_crossfit_rate",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 24,
+        "kind": "iteration",
+        "require_ds3_execution": true
+      },
+      "iteration": 24,
+      "method_id": "i24-crossfit-rate",
+      "name": "Iteration 24 cross-fit rate diagnostic",
+      "required_for_publication": true
+    },
+    {
+      "arm": "source_admission",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration25_source_admission",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 25,
+        "kind": "iteration",
+        "require_ds3_execution": true
+      },
+      "iteration": 25,
+      "method_id": "i25-source-admission",
+      "name": "Iteration 25 source-admission diagnostic",
+      "required_for_publication": true
+    },
+    {
+      "arm": "quartic_rate_marginal",
+      "classification": "nonportable",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration26_rate_marginal",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "accounting",
+        "reason": "Numerically prohibited surrogate; superseded by the exact I27 phase atlas.",
+        "terminal_status": "not_portable_legacy"
+      },
+      "iteration": 26,
+      "method_id": "i26-quartic-rate-marginal",
+      "name": "Iteration 26 quartic rate-marginal surrogate",
+      "required_for_publication": true,
+      "superseded_by": "i27-phase-cache"
+    },
+    {
+      "arm": "phase_cache",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration27_phase_cache",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 27,
+        "kind": "iteration"
+      },
+      "iteration": 27,
+      "method_id": "i27-phase-cache",
+      "name": "Iteration 27 Exact phase-cache atlas",
+      "required_for_publication": true
+    },
+    {
+      "arm": "phase_basin",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration28_basin_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 28,
+        "kind": "iteration"
+      },
+      "iteration": 28,
+      "method_id": "i28-basin-search",
+      "name": "Iteration 28 Phase-atlas basin search",
+      "required_for_publication": true
+    },
+    {
+      "arm": "resolution_safe",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_iteration29_resolution_safe_search",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 29,
+        "kind": "iteration"
+      },
+      "iteration": 29,
+      "method_id": "i29-resolution-safe-search",
+      "name": "Iteration 29 Resolution-safe search",
+      "required_for_publication": true
+    },
+    {
+      "arm": "fixed_topk",
+      "classification": "preflight",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_ds3_iteration30_soft_association_preflight",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 30,
+        "kind": "iteration"
+      },
+      "iteration": 30,
+      "method_id": "i30-fixed-topk-soft-preflight",
+      "name": "Iteration 30 Fixed top-K soft-association preflight",
+      "required_for_publication": true
+    },
+    {
+      "arm": "exact_state",
+      "classification": "preflight",
+      "ds1": {
+        "report_dir": "reports/2026_09_25_ds1_ds3_iteration31_exact_soft_preflight",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "iteration": 31,
+        "kind": "iteration"
+      },
+      "iteration": 31,
+      "method_id": "i31-exact-state-soft-preflight",
+      "name": "Iteration 31 Exact candidate-state soft preflight",
+      "required_for_publication": true
+    },
+    {
+      "arm": "independent_per_track_tau",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "independent_per_track_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_timing_ablations",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/independent_per_track_time.json",
+          "sha256": "sha256:960af9dcd7421d0d4107fb9d3251c33d180ad028585da47cf070ffcbebca7933"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "independent-per-track-time",
+      "name": "Independent per-track receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "learned_pointing_cone_quantiles",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_23_train_pointing_cone",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/output/geometry/learned_pointing_cone_quantiles.json",
+          "sha256": "sha256:7f85125365ca96f2f5b3b66bf2e7744d6250f974338b49b1ec6d7216f6e317b6"
+        },
+        "kind": "artifact",
+        "terminal_status": "no_position_diagnostic"
+      },
+      "iteration": null,
+      "method_id": "learned-pointing-cone-quantiles",
+      "name": "Learned pointing-cone quantiles",
+      "required_for_publication": true
+    },
+    {
+      "arm": "local_fitted_full_fov_cone_position",
+      "classification": "position_method",
+      "ds1": {
+        "report_dir": "reports/2026_09_24_local_cone_grid",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/output/geometry/local_fitted_full_fov_cone_position.json",
+          "sha256": "sha256:5fac9f61583f874ec8cc3b2c33f4b806478cdb9fcc0c6a52d43fb956dedbad4d"
+        },
+        "kind": "artifact",
+        "terminal_status": "qualified"
+      },
+      "iteration": null,
+      "method_id": "local-fitted-full-fov-cone-position",
+      "name": "Local fitted full-FOV cone position",
+      "required_for_publication": true
+    },
+    {
+      "arm": "regularized_per_scan_tau",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "per_scan_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full_timing",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/per_scan_time.json",
+          "sha256": "sha256:fcc3b7fc9bab9751252d1532b639e353df8be78ba8bd74ce7d82e28406423e18"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "regularized-per-scan-time",
+      "name": "Regularized per-scan receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "soft_association",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "soft_association"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "kind": "pending",
+        "reason": "The available DS3 soft artifact is unsealed and cannot be consumed."
+      },
+      "iteration": null,
+      "method_id": "soft-association",
+      "name": "Soft identity mixture",
+      "required_for_publication": true
+    },
+    {
+      "arm": "soft_association_plus_global_time",
+      "classification": "position_method",
+      "ds1": {
+        "historical_evidence": {
+          "artifact": {
+            "path": "reports/2026_09_24_ds1_train_full/post-seal-evaluation/one-hour-post-seal-evaluation.json",
+            "sha256": "sha256:6eba93598297adb57a5e45237dbd391fc0e72f6dc8e37085eedde8977ea3552f"
+          },
+          "kind": "sealed_method_rows",
+          "selector": {
+            "method": "soft_association_plus_global_time"
+          }
+        },
+        "report_dir": "reports/2026_09_24_ds1_train_full",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-c/runner-family-output/exact-method-arms/soft_association_plus_global_time.json",
+          "sha256": "sha256:3c5eb64dd2761123996da86ab4861363304537fdcf1f4deacb213d1ce29e4b93"
+        },
+        "kind": "artifact",
+        "terminal_status": "terminal_control"
+      },
+      "iteration": null,
+      "method_id": "soft-association-plus-global-time",
+      "name": "Soft identity mixture plus global receive time",
+      "required_for_publication": true
+    },
+    {
+      "arm": "staged_full_fov_cone_sweep",
+      "classification": "diagnostic",
+      "ds1": {
+        "report_dir": "reports/2026_09_23_staged_cone_width_sweep",
+        "terminal_status": "historical_terminal"
+      },
+      "ds3_binding": {
+        "artifact": {
+          "path": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/output/geometry/staged_full_fov_cone_sweep.json",
+          "sha256": "sha256:1c808c728b783a793611408a6ce1cc5130d22f4a972bc6fb094ede2643f6688f"
+        },
+        "kind": "artifact",
+        "terminal_status": "no_position_diagnostic"
+      },
+      "iteration": null,
+      "method_id": "staged-full-fov-cone-sweep",
+      "name": "Staged full-FOV cone sweep",
+      "required_for_publication": true
+    }
+  ],
+  "schema": "ds1-ds3-method-registry/v1",
+  "source_registries": [
+    "reports/2026_09_24_ds1_train_full/runner_registry.json",
+    "reports/2026_09_24_ds1_ds2_final_comparison/REPORT.md",
+    "reports/2026_09_24_ds1_iterative_subkm/REPORT.md"
+  ]
+}

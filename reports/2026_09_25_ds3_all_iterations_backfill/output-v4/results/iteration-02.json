@@ -1,0 +1,91 @@
+{
+  "artifact": {
+    "configuration_projection": {
+      "arm_methods": [
+        "regularized_per_scan_tau",
+        "shared_global_tau"
+      ],
+      "artifact_schema": "ds3-iteration02-fresh-all56/v1",
+      "batch_a_plan_sha256": "sha256:d5f153accfdf1a51fe28ecc0414279e414daf444f90d3704d74a55650180f82a",
+      "family": "batch-a-iteration02/v1",
+      "historical_configuration": {
+        "arms": [
+          "shared_global_tau",
+          "regularized_per_scan_tau"
+        ],
+        "geographic_levels_km": [
+          6.25,
+          3.125,
+          1.5625,
+          0.78125,
+          0.390625
+        ],
+        "local_radius_km": 25.0,
+        "timing_policy": "zero plus sealed DS3 stage-1 winner and +/-0.25 seconds"
+      },
+      "qualification": {
+        "arms": [
+          {
+            "method": "regularized_per_scan_tau",
+            "nonzero_per_scan_delta_count": 0,
+            "selected_global_tau_s": -0.25,
+            "timing_boundary": true,
+            "timing_grid_s": [
+              -0.25,
+              0.0,
+              0.25
+            ]
+          },
+          {
+            "method": "shared_global_tau",
+            "nonzero_per_scan_delta_count": 0,
+            "selected_global_tau_s": -0.25,
+            "timing_boundary": true,
+            "timing_grid_s": [
+              -0.25,
+              0.0,
+              0.25
+            ]
+          }
+        ],
+        "status": "unqualified_boundary"
+      },
+      "session_count": 56,
+      "session_set_sha256": "sha256:bf3b4b0896bb4c6a06771914ee34a321994b9a0b7c29a924556fd851f413f4c4"
+    },
+    "configuration_sha256": "sha256:94cdb4e8bb8076b9bf207eec767ee2a835d4215a81c4c711d1034023bff47f0c",
+    "path": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_25_ds3_all_iterations_backfill/batch-a-output/iteration-02.json",
+    "sha256": "sha256:6c5af338a13721746681ba1f76bd0c7ba9c3a113675667c44925f6db5a92ff87"
+  },
+  "configuration_sha256": "sha256:94cdb4e8bb8076b9bf207eec767ee2a835d4215a81c4c711d1034023bff47f0c",
+  "disposition": "reused-proven-equivalent",
+  "elapsed_s": 0.04388228605967015,
+  "estimated_position": null,
+  "estimated_positions": [
+    {
+      "label": "regularized_per_scan_tau",
+      "latitude_deg": 37.85060764676994,
+      "longitude_deg": -122.47312014456215
+    },
+    {
+      "label": "shared_global_tau",
+      "latitude_deg": 37.85060764676994,
+      "longitude_deg": -122.47312014456215
+    }
+  ],
+  "family": "batch-a-iteration02/v1",
+  "held_observations_used": false,
+  "historical_method": {
+    "description": "Local 25-km geographic refinement; baseline/global shared tau and regularized per-scan tau; profiled track CFO; all qualified rows; source tasks from DS1 stage-1.",
+    "fresh_ds3_all56_replay": true
+  },
+  "iteration_id": "iteration-02",
+  "iteration_number": 2,
+  "plan_sha256": "sha256:7a03cabc16d5fcd97e70fa12521d90cf6bbc6c5f1322451c11c4cf150f4dc373",
+  "reference_coordinate_present": false,
+  "reference_used_for_inference": false,
+  "schema": "ds3-all-iterations-result/v1",
+  "scientific_terminal_status": "unqualified_boundary",
+  "stages": [],
+  "state": "complete"
+}

@@ -1,0 +1,92 @@
+{
+  "schema": "ds1-ds3-method-coverage-audit/v1",
+  "audited_matrix": "reports/2026_09_25_ds3_all_iterations_backfill/paired-completion-matrix-v3.json",
+  "conclusion": {
+    "all_31_numbered_slots_accounted": true,
+    "all_ds1_methods_on_ds3_defensible": false,
+    "reason": "The matrix and report are keyed one row per integer iteration, but DS1 contains multiple method arms per iteration and unnumbered frozen-registry methods."
+  },
+  "critical_findings": [
+    {
+      "id": "wrong-i3-i7-history",
+      "iterations": [3, 4, 5, 6, 7],
+      "severity": "critical",
+      "finding": "Canonical position-producing I3-I7 are misbound, falsely missing, or conflated with I6B.",
+      "evidence": [
+        "reports/2026_09_24_ds1_iterative_subkm/REPORT.md",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION3_REPORT.md",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION4_REPORT.md",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION5_REPORT.md",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION6_REPORT.md",
+        "reports/2026_09_24_ds1_joint_rate_search/ITERATION7_REPORT.md"
+      ]
+    },
+    {
+      "id": "iteration-is-not-method",
+      "severity": "critical",
+      "finding": "The report indexes and counts rows by integer iteration, so it cannot represent multiple arms per iteration.",
+      "evidence": [
+        "reports/2026_09_25_ds1_ds3_all_methods/run.py",
+        "reports/2026_09_25_ds3_all_iterations_backfill/paired-completion-matrix-v3.json"
+      ]
+    },
+    {
+      "id": "unexecuted-ds3-diagnostics",
+      "iterations": [22, 23, 24, 25],
+      "severity": "high",
+      "finding": "Accounting artifacts are terminal but explicitly state ds3_diagnostic_executed=false."
+    },
+    {
+      "id": "stale-i29-status",
+      "iterations": [29],
+      "severity": "high",
+      "finding": "The matrix says adapter unavailable, but the phase-atlas I27-I29 chain is now implemented."
+    }
+  ],
+  "collapsed_iterations": {
+    "2": ["shared_global_time", "regularized_per_scan_time"],
+    "7": ["independent_gaussian_rerank", "ar1_student_t_rerank"],
+    "12": [
+      "expanded_exact_rate_only",
+      "regularized_common_plus_session_scale",
+      "shared_norad_rate_control",
+      "consistent_cap800_objective"
+    ]
+  },
+  "frozen_17_model_registry": {
+    "source": "reports/2026_09_24_ds1_ds2_final_comparison/REPORT.md",
+    "explicitly_represented": [
+      "equal_weight_joint_multiscan_position",
+      "regularized_common_plus_session_scale",
+      "legacy_joint_session_scale_lbfgsb"
+    ],
+    "represented_but_collapsed_or_misbound": [
+      "shared_global_receive_time",
+      "regularized_per_scan_time",
+      "rate_aware_joint_geographic_screen",
+      "consistent_cap800_joint_objective",
+      "shared_norad_rate_joint",
+      "robust_residual_likelihood_rerank"
+    ],
+    "omitted": [
+      "baseline_doppler",
+      "independent_per_track_time",
+      "causal_per_norad_orbit_rate",
+      "soft_identity_mixture",
+      "learned_pointing_cone_quantiles",
+      "fixed_hard_cone_orientation",
+      "staged_full_fov_cone_sweep",
+      "local_fitted_full_fov_cone_position"
+    ]
+  },
+  "required_fixes": [
+    "Introduce stable method_id and arm fields while retaining the integer iteration ledger.",
+    "Correct and rerun canonical I3-I7 on DS3.",
+    "Split I2 and I12 arms and restore omitted frozen-registry methods.",
+    "Account for all geometry methods with DS3 run or measured not_applicable status.",
+    "Run I22-I25 DS3-native diagnostics or narrow the publication claim.",
+    "Refresh I29 status after the phase-atlas chain seals.",
+    "Encode supersession and qualification edges explicitly."
+  ],
+  "safe_claim": "All 31 numbered iteration slots are accounted for; distinct DS1 method-arm coverage on DS3 is incomplete."
+}
