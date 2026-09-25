@@ -1,0 +1,98 @@
+{
+  "schema_version": "org.leo.research.pss-sss-doppler-rate-comparison/v1",
+  "session_id": "cap-20260825T150802-473cb5bbcbd6",
+  "analysis_run_id": "capture-a5d45dd7752c4fc7833cd017a289f8d7",
+  "path": {
+    "stream_id": "stream-0",
+    "receiver_id": 0,
+    "edge": "lower",
+    "radio_id": "radio_pluto_5d4d",
+    "sample_rate_hz": 2500000.0,
+    "scope_id": "sha256:579e7c932f638ede2bd5154764c98924be9bd6a45d1a14789261ca5e66d4a639"
+  },
+  "source_binding": {
+    "capture_root": "/srv/bulk/leo/recordings/2026/08/25/cap-20260825T150802-473cb5bbcbd6",
+    "recording_manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+    "pilot_scan_path": "/srv/bulk/leo/analysis/cap-20260825T150802-473cb5bbcbd6/capture-a5d45dd7752c4fc7833cd017a289f8d7/scientific/path-standard/sha256:579e7c932f638ede2bd5154764c98924be9bd6a45d1a14789261ca5e66d4a639/standard.pilot-scan.v3.json",
+    "pilot_scan_sha256": "sha256:5f5b949284cbed711da61d074c7b0ed23c3db1ee844b9f4fd8cd05fb0ad474f3",
+    "sync_detection_comparison_sha256": "sha256:876ec268ddd359cadd4d4d026497d1934119cb7d04cb7f426cfc1710f7199240"
+  },
+  "configuration": {
+    "dense_interval_s": [0.0, 6.0],
+    "frame_rate_hz": 750.0,
+    "frames_per_second": 750,
+    "sync_template_samples": 11,
+    "frequency_grid_hz": {
+      "minimum": -1200000.0,
+      "maximum": 1200000.0,
+      "step": 2000.0,
+      "peak_refinement": "three-point log-parabolic"
+    },
+    "glrt_positive_margin_minimum": 0.05,
+    "confidence_interval": "two-sided 95% Student-t OLS interval"
+  },
+  "per_second": [
+    {"center_time_s": 0.5, "pss_cfo_hz": 395436.79116457776, "pss_peak_to_median": 1.805, "pss_timed_sss_cfo_hz": 347080.9, "pss_timed_sss_peak_to_median": 1.733, "glrt_mean_cfo_hz": 379668.4093195243, "glrt_probe_count": 40},
+    {"center_time_s": 1.5, "pss_cfo_hz": 376851.3948253521, "pss_peak_to_median": 1.829, "pss_timed_sss_cfo_hz": 351944.8, "pss_timed_sss_peak_to_median": 1.584, "glrt_mean_cfo_hz": 376380.3569877607, "glrt_probe_count": 40},
+    {"center_time_s": 2.5, "pss_cfo_hz": 382218.2262519442, "pss_peak_to_median": 1.871, "pss_timed_sss_cfo_hz": 337414.3, "pss_timed_sss_peak_to_median": 1.477, "glrt_mean_cfo_hz": 373096.792993446, "glrt_probe_count": 40},
+    {"center_time_s": 3.5, "pss_cfo_hz": 376968.2893825072, "pss_peak_to_median": 1.697, "pss_timed_sss_cfo_hz": 351369.9, "pss_timed_sss_peak_to_median": 1.393, "glrt_mean_cfo_hz": 369839.4050831715, "glrt_probe_count": 40},
+    {"center_time_s": 4.5, "pss_cfo_hz": 392102.4378270119, "pss_peak_to_median": 1.625, "pss_timed_sss_cfo_hz": 337243.0, "pss_timed_sss_peak_to_median": 1.304, "glrt_mean_cfo_hz": 366586.27232404397, "glrt_probe_count": 40},
+    {"center_time_s": 5.5, "pss_cfo_hz": 366796.3780373764, "pss_peak_to_median": 1.612, "pss_timed_sss_cfo_hz": 327602.0, "pss_timed_sss_peak_to_median": 1.211, "glrt_mean_cfo_hz": 363337.46465307206, "glrt_probe_count": 40}
+  ],
+  "fits": {
+    "glrt20ms": {
+      "probe_count": 240,
+      "rate_hz_s": -3265.73409994496,
+      "rate_standard_error_hz_s": 0.9365365421662623,
+      "rate_ci95_hz_s": [-3267.579059634757, -3263.8891402551626],
+      "intercept_hz_at_capture_start": 381241.1641837553,
+      "correlation": -0.9999902134774994
+    },
+    "pss": {
+      "timing_source": "independent one-second exact-PSS epoch fit",
+      "rate_hz_s": -2934.2535285846993,
+      "rate_standard_error_hz_s": 2433.4497082361736,
+      "rate_ci95_hz_s": [-9690.593059762023, 3822.0860025926236],
+      "correlation": -0.5163207090393647,
+      "rms_line_residual_hz": 8311.81311724495,
+      "mean_bias_vs_glrt_line_hz": 10284.957697541191,
+      "rmse_vs_glrt_line_hz": 13235.82538528239,
+      "rate_delta_vs_glrt_hz_s": 331.48057136026046
+    },
+    "pss_timed_sss": {
+      "timing_source": "independent one-second exact-PSS epoch fit plus one 11-sample symbol",
+      "rate_hz_s": -3644.1228571428583,
+      "rate_standard_error_hz_s": 1816.6086281501011,
+      "rate_ci95_hz_s": [-8687.836990830285, 1399.5912765445682],
+      "correlation": -0.7081656347630537,
+      "rms_line_residual_hz": 6204.8997245571645,
+      "mean_bias_vs_glrt_line_hz": -29334.811883920407,
+      "rmse_vs_glrt_line_hz": 29990.82478871215,
+      "rate_delta_vs_glrt_hz_s": -378.3887571978985
+    },
+    "independent_sss_control": {
+      "accepted": false,
+      "epoch_agreement_count": 0,
+      "epoch_comparison_count": 6,
+      "rate_hz_s": 134257.3821328045,
+      "rate_standard_error_hz_s": 132314.74293992657,
+      "rate_ci95_hz_s": [-233107.23824825895, 501622.0025138679],
+      "rms_line_residual_hz": 451940.88550534257,
+      "rejection_reason": "independent SSS maxima do not recover the PSS/GLRT frame epoch"
+    },
+    "upper_edge_pss_control": {
+      "accepted": false,
+      "rate_hz_s": 1564.2602125586175,
+      "rate_standard_error_hz_s": 4343.465625287259,
+      "rate_ci95_hz_s": [-10495.133662365066, 13623.654087482302],
+      "rms_line_residual_hz": 14835.75947198548,
+      "rejection_reason": "wrong-edge template and zero of six independent epoch agreements"
+    }
+  },
+  "phase_test": {
+    "accepted": false,
+    "adjacent_frame_coherence_range": [0.0038, 0.0527],
+    "rejection_reason": "frame-to-frame sync correlation phase is incoherent and unwraps are dominated by near-pi jumps"
+  },
+  "claim": "PSS and PSS-timed SSS provide coarse observed-CFO slope estimates consistent with the GLRT20ms rate, but neither narrow 11-sample sync slice yields a statistically decisive standalone rate in this dwell; shared uncalibrated oscillator drift is not separated from spacecraft Doppler."
+}

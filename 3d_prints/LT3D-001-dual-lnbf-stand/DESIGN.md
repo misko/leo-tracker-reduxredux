@@ -46,3 +46,22 @@ uv run --with numpy --with trimesh --with manifold3d --with scipy --with pytest 
 The tests verify that the holder is one watertight printable body, has a flat
 base, retains the released geometry contract, keeps its bridge outside both
 bores, and has positive nominal body clearance.
+
+## Receiver geometry authority
+
+The content-addressed station record
+[`deploy/station/gauss-r21-lt3d-001a-20260920-v1.json`](../../deploy/station/gauss-r21-lt3d-001a-20260920-v1.json)
+records the nominal slot mount references and neck axes in metres using a local
+right/front/up frame. It binds `LT3D-001A` to radio `.21` by stable radio serial
+and physical receiver IDs without changing the published recording manifest.
+
+The authority deliberately leaves RF phase-centre positions and RF boresights
+unset. The holder CAD does not establish either quantity; they require LNBF
+measurements or manufacturer evidence before geometry-aware RF analysis may use
+them.
+
+The current RX0/RX1-to-left/right assignment is marked `provisional` because a
+physical cable trace has not been recorded. Geometry-aware analysis must retain
+that status and must not interpret the sign of the baseline until an operator
+publishes a new authority revision with a verified mapping. The 80 mm baseline
+length and 20° included boresight angle are unaffected by swapping the slots.

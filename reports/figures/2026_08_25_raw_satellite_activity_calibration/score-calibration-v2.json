@@ -1,0 +1,237 @@
+{
+  "accounting": {
+    "null_deduplicated_glrt64_row_count": 192000,
+    "null_input_file_count": 8,
+    "null_raw_glrt64_row_count": 192000,
+    "null_resolution_group_count": 183213,
+    "signal_component_spec_count": 1,
+    "signal_deduplicated_glrt64_row_count": 1627,
+    "signal_raw_glrt64_row_count": 1627,
+    "signal_resolution_group_count": 1627
+  },
+  "caveats": [
+    "Null inventories are empirical no-result dwells, not proof that no transmitter was present.",
+    "Signal inventories are radio-selected resolved components, not payload-decoded spacecraft identities.",
+    "The binary exact-minus-control margin threshold discards information in the full GLRT64 score pair.",
+    "Zero declared truncation does not prove physical peak exhaustiveness; Standard acquisition retains a bounded candidate inventory.",
+    "Null frequencies are resolution-group and minimum-rank aware; the signal score frequency remains pooled across ranks.",
+    "The detection probability remains an explicit modeling assumption.",
+    "Derived costs are smoothed research pseudo-costs, not posterior probabilities.",
+    "Calibration sources must remain frozen and disjoint from evaluation dwells."
+  ],
+  "costs": {
+    "missed_detection_cost": 1.3862943611198906,
+    "weak_match_is_dominated_by_miss": true
+  },
+  "detection_probability": 0.75,
+  "grouping": {
+    "epoch_tolerance_samples": 1,
+    "physical_source_identity_claimed": false,
+    "tracking_cfo_tolerance_hz": 500.0,
+    "unit": "unresolved_probe_epoch_tracking_cfo_cell"
+  },
+  "null": {
+    "group_count": 183213,
+    "positive_group_count": 9,
+    "rank_buckets": [
+      {
+        "costs": {
+          "negative": {
+            "clutter_cost": 0.0004688110516910001,
+            "match_delta_before_residual": 7.682934870002137,
+            "matched_base_cost": 7.683403681053829
+          },
+          "positive": {
+            "clutter_cost": 7.66554514192135,
+            "match_delta_before_residual": -7.377249007430009,
+            "matched_base_cost": 0.2882961344913404
+          }
+        },
+        "label": "rank0",
+        "maximum_rank": 0,
+        "minimum_rank": 0,
+        "positive_count": 8,
+        "positive_probability": 0.00046870117696073325,
+        "total_count": 19200
+      },
+      {
+        "costs": {
+          "negative": {
+            "clutter_cost": 5.453306068153865e-05,
+            "match_delta_before_residual": 7.683349147993147,
+            "matched_base_cost": 7.683403681053829
+          },
+          "positive": {
+            "clutter_cost": 9.816730688609846,
+            "match_delta_before_residual": -9.528434554118506,
+            "matched_base_cost": 0.2882961344913404
+          }
+        },
+        "label": "rank1",
+        "maximum_rank": 1,
+        "minimum_rank": 1,
+        "positive_count": 0,
+        "positive_probability": 5.4531573781219325e-05,
+        "total_count": 18336
+      },
+      {
+        "costs": {
+          "negative": {
+            "clutter_cost": 3.6402686522250806e-05,
+            "match_delta_before_residual": 7.683367278367307,
+            "matched_base_cost": 7.683403681053829
+          },
+          "positive": {
+            "clutter_cost": 10.220886181775843,
+            "match_delta_before_residual": -9.932590047284503,
+            "matched_base_cost": 0.2882961344913404
+          }
+        },
+        "label": "rank2_4",
+        "maximum_rank": 4,
+        "minimum_rank": 2,
+        "positive_count": 1,
+        "positive_probability": 3.640202395253176e-05,
+        "total_count": 54940
+      },
+      {
+        "costs": {
+          "negative": {
+            "clutter_cost": 1.1020680306723617e-05,
+            "match_delta_before_residual": 7.683392660373522,
+            "matched_base_cost": 7.683403681053829
+          },
+          "positive": {
+            "clutter_cost": 11.415742532659102,
+            "match_delta_before_residual": -11.127446398167763,
+            "matched_base_cost": 0.2882961344913404
+          }
+        },
+        "label": "rank5_plus",
+        "maximum_rank": null,
+        "minimum_rank": 5,
+        "positive_count": 0,
+        "positive_probability": 1.1020619579232745e-05,
+        "total_count": 90737
+      }
+    ]
+  },
+  "pseudocount": 1.0,
+  "schema": "org.leo.research.raw-pilot-activity-score-calibration/v2",
+  "score_threshold": 0.1,
+  "signal": {
+    "positive_count": 1627,
+    "positive_probability": 0.9993861264579497,
+    "total_count": 1627
+  },
+  "sources": {
+    "disjoint_pilot_scan_digests": true,
+    "null": [
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:308fd65bc0ea645c7d676611900abfb5acdf95a46695b1588dc4e441ddbfbf86",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T193733-1454b499b8bb/capture-433e7ae26bac4afc83993e1b819a70a1/scientific/path-standard/sha256:20d5df0919e160222c4baf7aa61702e07e69e35abfc7b4358b3573c3c03e3395/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 23003
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:3345218ba4adc72aab8a076eacc79063f563db98f8408f817a545eaa556fc12f",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T124902-20c1bfc10f52/capture-d3fcc7557fe94b3e884d1987c4708c70/scientific/path-standard/sha256:79345e236dfa2d8cea4f6ff595836f8cf5e220e61da61995afb549a0db30d8b8/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 23033
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:36e1248398f450a03952dd29d586a9bac623bcbff55953e96351223992bd84d0",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T193733-1454b499b8bb/capture-433e7ae26bac4afc83993e1b819a70a1/scientific/path-standard/sha256:311e3c8929201f6149f05392f451cdee878af9866feb0346ba5e16c38d68949b/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 22790
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:4df10e8672af47dd2e2c5dd034f7b68ad6846243c27169bc2ca1a5f6e12c720f",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T124902-20c1bfc10f52/capture-d3fcc7557fe94b3e884d1987c4708c70/scientific/path-standard/sha256:6a94d1a15e2c7b2fef8a9ab585b14aea5a09e0cbb232c19ff7973a5f0632d7e8/standard.pilot-scan.v3.json",
+        "positive_count": 1,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 22750
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:55be5e48340ab25d602394b7b8d9d4b327f7e33ab37ce0efdc051a57b5bc99c0",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T124902-20c1bfc10f52/capture-d3fcc7557fe94b3e884d1987c4708c70/scientific/path-standard/sha256:bbcea29c732878a14553f9505258decffda7edae9fd79bdc056b4e1b5cdcb99b/standard.pilot-scan.v3.json",
+        "positive_count": 8,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 22819
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:932bf6590e2f38926eb893f93ace861be3f50a8cb755756fe128b80360caea06",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T193733-1454b499b8bb/capture-433e7ae26bac4afc83993e1b819a70a1/scientific/path-standard/sha256:331bfb3e606783f4e662a7a4c0bde0d193882d3dcb62f958c403ebc1d1e7e026/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 22993
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:d40091a06a7d542ce46cd80f24dab78bd021798233811999b48b1a7eefd35904",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T193733-1454b499b8bb/capture-433e7ae26bac4afc83993e1b819a70a1/scientific/path-standard/sha256:7118d69a7bc47e3196bf537ce9f7465fd992ea4ca14c901b46377fb8763d2a58/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 22786
+      },
+      {
+        "deduplicated_glrt64_row_count": 24000,
+        "detection_count": 2400,
+        "file_digest": "sha256:f19101c215d59f8c4ba64f9bd09f1d126de7a30355362c5e99b80fa5bcc15918",
+        "maximum_scored_candidates_per_probe": 10,
+        "path": "/srv/bulk/leo/analysis/cap-20260824T124902-20c1bfc10f52/capture-d3fcc7557fe94b3e884d1987c4708c70/scientific/path-standard/sha256:ca11ef9805cacfad3f876b2155bcaed076a372aac1103c4390e24e5eaa36e4f9/standard.pilot-scan.v3.json",
+        "positive_count": 0,
+        "probe_schedule_digest": "sha256:0a972025511f0f651e48c263d43579bff034a0b9d169bcb237cf801d732aba76",
+        "raw_glrt64_row_count": 24000,
+        "resolution_group_count": 23039
+      }
+    ],
+    "signal": [
+      {
+        "branch_count": 7,
+        "component_id": "sha256:944b71f491181440bed05f2317b62fd5482d505a13fdc384d89c4d68ceec47b3",
+        "deduplicated_glrt64_row_count": 1627,
+        "duplicate_glrt64_row_count": 0,
+        "file_digest": "sha256:de3f427d192d2293c94072a55be7632dcce9616b2477b9daefe0d3e91fabbc9c",
+        "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/figures/2026_08_25_065355_satellite_activity/capture-input.json",
+        "pilot_scan": {
+          "file_digest": "sha256:1037756c0c1266befb48f44139d33b4d4123d76c98aec96d6d44283266064be4",
+          "path": "/srv/bulk/leo/analysis/cap-20260825T065355-ba3e4fb8857b/capture-fec2f268eb324168853828203b6f72fd/scientific/path-standard/sha256:b40185ace0929be215411a24ac95641e3dc53fecf7d6a1a00ba8eb9b8c522bd2/standard.pilot-scan.v3.json"
+        },
+        "positive_count": 1627,
+        "raw_glrt64_row_count": 1627,
+        "resolution_group_count": 1627
+      }
+    ]
+  }
+}

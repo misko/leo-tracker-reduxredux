@@ -41,6 +41,18 @@ The two receiver channels agree on both scales: their sealed GLRT slopes differ 
 
 *Figure 2. Accepted pilot CFO measurements form repeated short ramps—the "teeth"—against the frozen GLRT model. Gray frames fail or coast through the declared gates; orange lines are the qualified local fits.*
 
+## Tracking resolution ladder
+
+![Full-recording multiscale CFO](figures/2026_08_23_glrt_phase_segment_comparison/multiscale-cfo-full-recording.png)
+
+*Figure 3. The complete recording time axis puts every audited scale in its proper temporal context. Panel A contains one independent CFO measurement per complete 1.333 ms pilot frame, but only inside the explicitly re-read 70 ms source windows; gaps are not interpolated. Panels B and C apply increasing local-linear support to those same measurements. Panel D is the slope of each fitted CFO, with the sealed multi-second GLRT rates shown as heavy references. The pale vertical band marks the zoom below.*
+
+![Strongest 500 ms multiscale CFO zoom](figures/2026_08_23_glrt_phase_segment_comparison/multiscale-cfo-500ms-zoom.png)
+
+*Figure 4. The strongest audited 0.5 s region runs from 49.800 to 50.300 s and contains the shared qualified epoch at 49.850 s. The two paths contribute 97 and 99 supported frame-CFO measurements from the contained 70 ms raw-IQ audits; unsampled gaps remain blank. A 1.333 ms point is a frequency measurement, while the 16, 20, 50, and 70 ms curves fit frequency over time.*
+
+The resolution ladder is deliberately plotted as CFO residual relative to each path's own frozen GLRT fit. This removes the arbitrary constant receiver/LNB offset without removing a difference in slope. The zoom is a descriptive scale comparison, not four additional independently qualified Doppler products.
+
 ## Every qualified 20–70 ms segment
 
 | Path | Track | Start (s) | Phase span (ms) | GLRT (kHz/s) | Local CFO (kHz/s) | 1σ (kHz/s) | Phase+freq KF (kHz/s) | Local−GLRT (kHz/s) |
@@ -76,6 +88,7 @@ The strongest defensible output is therefore a receiver-relative local CFO and C
 3. Require at least one production phase-qualified window, then rank only by final-bank observation count, evaluated probes, and span. Local-rate values never enter the ranking.
 4. Return to the pinned raw IQ for the two selected tracks and re-run every selected source window at a strict 70 ms bound.
 5. Accept a segment only when modulo-pi phase lock, supported-frame coverage, coherence, line-fit, held-out prediction, and local/Kalman agreement gates pass. Measure the reported span from the first to last applied phase update and reject spans below 20 ms.
+6. Select the 0.5 s zoom by maximizing supported-frame coverage across both paths, retaining only the contained bounded raw-IQ audits. Rolling 16, 20, 50, and 70 ms lines are evaluated causally and never bridge a supported-frame gap above 4.1 ms.
 
 No new RF was collected and no sealed Standard product was modified.
 
@@ -120,6 +133,8 @@ No new RF was collected and no sealed Standard product was modified.
 - `GLRT rate` is coefficient 0 of the sealed degree-one final trajectory; same-branch frequency aliases are listed once because their slope is identical.
 - `Local CFO rate` is a straight-line fit to independently measured known-pilot CFO inside a raw-IQ 70 ms container. The reported phase span is the interval from the first to last applied modulo-pi phase update, and spans below 20 ms are rejected.
 - `Phase+frequency KF rate` is the terminal five-state modulo-pi pilot Kalman estimate. It is not a phase-only derivative, so agreement between it and the local CFO fit is a consistency check, not a fully independent estimator.
+- `1.333 ms frame CFO` combines all 300 known symbols and eight edge subcarriers in one frame. It is frame-cadence frequency evidence, not a standalone 1.333 ms Doppler-rate estimate.
+- `16/20/50/70 ms rolling fits` are descriptive causal lines over supported frame CFO measurements. Their samples overlap heavily; apparent point density must not be interpreted as independent rate evidence.
 - The large local-versus-GLRT difference is consistent with a ramp-plus-jump receiver-relative carrier process: the multi-second line averages local ramps and discrete carrier-bias changes. Unknown LNB/receiver and transmitter states remain nuisance terms.
 - The selection is not Starlink-specific evidence and makes no satellite association, absolute carrier-phase, range, or range-rate claim.
 

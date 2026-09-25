@@ -1,0 +1,1581 @@
+{
+  "census": {
+    "cutoff_utc_exclusive": "2026-08-25T12:15:00Z",
+    "digest": "sha256:6edc96ab86115ccafe95f6ca2879f065ab57d920a9c6a35e234af552bf428f12",
+    "path": "structural-penalty-census.json",
+    "selection_algorithm": "sha256-study-id-nul-session-id-ascending-v1"
+  },
+  "ordered_penalty_pairs": [
+    {
+      "episode_cost": 5.75,
+      "satellite_cost": 5.25
+    },
+    {
+      "episode_cost": 6.75,
+      "satellite_cost": 6.25
+    },
+    {
+      "episode_cost": 8.75,
+      "satellite_cost": 8.25
+    },
+    {
+      "episode_cost": 10.75,
+      "satellite_cost": 10.25
+    },
+    {
+      "episode_cost": 14.75,
+      "satellite_cost": 14.25
+    },
+    {
+      "episode_cost": 22.75,
+      "satellite_cost": 22.25
+    }
+  ],
+  "penalty_rationale": "The current 5.25/5.75 prototype pair is evaluated first. Costs near 6 are the log-count scale for roughly 440 visible catalogues and 600 possible episode starts. Later componentwise-monotone pairs add conservative safety margin, reaching a combined cost of 45 for hard minimum-duration clutter bursts.",
+  "schema": "org.leo.research.raw-satellite-activity-structural-penalty-corpus-specification/v1",
+  "settings": {
+    "catalogue_screen": {
+      "coarse_delay_step_s": 0.5,
+      "coarse_modes_per_delay": 1,
+      "final_catalog_count": 3,
+      "geometry_spacing_s": 0.5,
+      "maximum_refinement_catalog_count": 64,
+      "name_prefix": "STARLINK",
+      "refinement_catalog_count": 32,
+      "refinement_guard_cost": 0.0
+    },
+    "observer": {
+      "altitude_m": -29.0,
+      "label": "spinnaker-sausalito",
+      "latitude_deg": 37.858988,
+      "longitude_deg": -122.478103,
+      "schema_version": 1
+    },
+    "pilot_scan": {
+      "algorithm_version": "standard-pilot-scan-v3",
+      "coarse_window_samples": 2500000,
+      "frequency_coordinate": "baseband_cfo_hz",
+      "frequency_reference": "uncalibrated_prior",
+      "maximum_scored_candidates_per_probe": 10,
+      "methods": [
+        "anchor8",
+        "glrt64",
+        "symbolwise"
+      ],
+      "probe_samples": 50000,
+      "schema_version": 3,
+      "subwindow_samples": 125000
+    },
+    "raw_replay": {
+      "allow_left_censored": false,
+      "allow_right_censored": false,
+      "cell_duration_s": 0.1,
+      "cfo_sigma_hz": 100.0,
+      "delay_max_s": 2.0,
+      "delay_min_s": -2.0,
+      "delay_prior_mean_s": 0.0,
+      "delay_prior_sigma_s": 0.5,
+      "delay_step_s": 0.1,
+      "duplicate_cfo_tolerance_hz": 0.0,
+      "horizon_mask_deg": 0.0,
+      "huber_threshold": 1.345,
+      "maximum_state_combinations": 256,
+      "minimum_active_duration_s": 0.5,
+      "mode_bin_hz": 100.0,
+      "mode_half_width_hz": 300.0,
+      "modes_per_delay": 2,
+      "resolution_epoch_tolerance_samples": 1,
+      "resolution_tracking_cfo_tolerance_hz": 500.0,
+      "retained_states_per_catalog": 4
+    },
+    "score_calibration": {
+      "digest": "sha256:86e9e6bee34ccc178ae83788ae1a8dbda36fdf7646f1c28a1984a2c7408000d1",
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/figures/2026_08_25_raw_satellite_activity_calibration/score-calibration-v3.json",
+      "schema": "org.leo.research.raw-pilot-activity-score-calibration/v3"
+    },
+    "tle": {
+      "digest": "sha256:ac36512e603e6a21bc2ca16d0512a1e14db846ccbad9409d9ac601b371f16dee",
+      "path": "/home/mouse9911/.codex/visualizations/2026/08/22/01a02af8-cec4-7703-a883-75760f132c40/radio1-rx1-catalog-search-agent/causal-space-track-ac36512e.tle"
+    },
+    "window": {
+      "cell_count": 600,
+      "end_s": 60.0,
+      "scheduled_probe_count": 2400,
+      "start_s": 0.0
+    }
+  },
+  "splits": {
+    "holdout": {
+      "clusters": [
+        {
+          "cluster_id": "dwell:cap-20260823T080000-837384ca129c",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:8682da86e7b69617a2a5f0f77669b351b344677bc994d9d69a89197c0d24c352",
+              "duration_dataset_path": "duration-inputs/duration-input-080000-19f2-rx0-d537f34feb7c.json",
+              "member_id": "cap-20260823T080000-837384ca129c:stream-1:radio_pluto_19f2:rx0:d537f34feb7c",
+              "pilot_scan_digest": "sha256:b87d9e9f9bc62026e6b1093d04926f997d8b01019b1a2af1e584de4d43df2c6e"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:d9c9ca2186eb83d3d27438093b0dae86c5c9df6c6f136f7d9e44bf4ebc76c6f5",
+            "recording-manifest:sha256:8f5de64f82af2cd12b61b3182222aa512712c0642739503bebd455a5d7817d84",
+            "session:cap-20260823T080000-837384ca129c"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T080900-681acb8fef7c",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:d11b244cf35b5e81c3389b056aafc5421c86751cf87797caf6f483638958ba0a",
+              "duration_dataset_path": "duration-inputs/duration-input-080900-19f2-rx0-e1f5f7aaf33e.json",
+              "member_id": "cap-20260823T080900-681acb8fef7c:stream-1:radio_pluto_19f2:rx0:e1f5f7aaf33e",
+              "pilot_scan_digest": "sha256:2d839c8554210fb6b68521e06a4af537810c0fcccf414408d4a0468e1831128e"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:9a5fdf9cce7188d44988eece0b2f485fc44fb2f900000227c7b88aebb8ee38e1",
+            "recording-manifest:sha256:35305abca2d3c61265c4ed400e6f2f01b53a0378958f9bcbf4cce5365f4a3a7d",
+            "session:cap-20260823T080900-681acb8fef7c"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T081500-6673b8645d5b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:6be292cf18996d0a26448a12730cc3cba9e62a38ed63ff7efc478bf7bc52134d",
+              "duration_dataset_path": "duration-inputs/duration-input-081500-19f2-rx0-0799a102dc95.json",
+              "member_id": "cap-20260823T081500-6673b8645d5b:stream-1:radio_pluto_19f2:rx0:0799a102dc95",
+              "pilot_scan_digest": "sha256:d62633e8d16bf1db996ec1e966a8fa56eb005e38d9761da5a415bd31ff551365"
+            },
+            {
+              "duration_dataset_digest": "sha256:3cd383ecd7ba1a2b133aa2910afd6303b69f0d1ab7f4b1368c4994bfe47e55e5",
+              "duration_dataset_path": "duration-inputs/duration-input-081500-19f2-rx1-17b621964b59.json",
+              "member_id": "cap-20260823T081500-6673b8645d5b:stream-1:radio_pluto_19f2:rx1:17b621964b59",
+              "pilot_scan_digest": "sha256:e1bf6f3a865686485937780d4a69c24391970985520d7dbf5b02e2ccb2bc98aa"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:4831677922eb0c8db078da74617055a12fb623a7c99e8a6d6ea4cee7784a4962",
+            "recording-manifest:sha256:37d93118209192d9f50ff235ce95736503100302a798cde75dd78cb41d68c0d4",
+            "session:cap-20260823T081500-6673b8645d5b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T084800-235cfbc3fe7f",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:96d208c455c627ddb3a34c8cf01d9f7670d9bc3231ac15980dad7b27f83d4509",
+              "duration_dataset_path": "duration-inputs/duration-input-084800-5d4d-rx0-3bc0da41505c.json",
+              "member_id": "cap-20260823T084800-235cfbc3fe7f:stream-0:radio_pluto_5d4d:rx0:3bc0da41505c",
+              "pilot_scan_digest": "sha256:fac49c7285a34be649d8033ba2c29bf4717bf0cd5e63c83f0ac49c5ecb6f39fc"
+            },
+            {
+              "duration_dataset_digest": "sha256:7eaa702e63b2cbe7a8d64d69d3d8fe080f2f3196f28b8ac193a74e00e5f1fbe1",
+              "duration_dataset_path": "duration-inputs/duration-input-084800-5d4d-rx1-777e86f06220.json",
+              "member_id": "cap-20260823T084800-235cfbc3fe7f:stream-0:radio_pluto_5d4d:rx1:777e86f06220",
+              "pilot_scan_digest": "sha256:4bde250279f9743da931ae7fac47aa139aa043b3e3354ff20da9d8364f19de8a"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:303be0a38eb0c785f88ee6b58aee1481bde98d230727071067a6a42a903b6398",
+            "recording-manifest:sha256:a4730e67e895a37157fc7e10c17a5fa6fb49ed2eea69df9da150fbd9118bf213",
+            "session:cap-20260823T084800-235cfbc3fe7f"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T090059-690313ca896b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:f9129e3da03fd1033aaf5a76c54f16ec8362dd196747e3e6361f52a716c16079",
+              "duration_dataset_path": "duration-inputs/duration-input-090059-5d4d-rx0-2ca2ad7a0485.json",
+              "member_id": "cap-20260823T090059-690313ca896b:stream-0:radio_pluto_5d4d:rx0:2ca2ad7a0485",
+              "pilot_scan_digest": "sha256:0bdb88656bb01f4f373e8bdd9e2a5b779050c676a98d90aeeffb27a8f4c157cb"
+            },
+            {
+              "duration_dataset_digest": "sha256:d94c4fe831428021ccf08ab44afc5c35d9a411febca5e3179bb6a07cac9a3a3c",
+              "duration_dataset_path": "duration-inputs/duration-input-090059-5d4d-rx1-5f64c647498e.json",
+              "member_id": "cap-20260823T090059-690313ca896b:stream-0:radio_pluto_5d4d:rx1:5f64c647498e",
+              "pilot_scan_digest": "sha256:ca9827512d8e70b2ec56f9989393733c24cdbf6dc993c82022d059a5debebd49"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:925b5dcf948c854bf599e9eb08d9bd0b31d381b5fe7857ef2e8a320149b9f693",
+            "recording-manifest:sha256:86e4ec7ae7817c90091feba208422f9596de760a2436255459e9bc70b3acd03a",
+            "session:cap-20260823T090059-690313ca896b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T091800-9bd536243a3e",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:dc5e47c6cfedc75060f8cc442ab88fdfa1fe92f68109e9ec99b128e2b9ffb3d9",
+              "duration_dataset_path": "duration-inputs/duration-input-091800-19f2-rx0-def55f31fe1d.json",
+              "member_id": "cap-20260823T091800-9bd536243a3e:stream-1:radio_pluto_19f2:rx0:def55f31fe1d",
+              "pilot_scan_digest": "sha256:5d2b13db920209544f81d4b640b4ed7cefabe81c5d707a564e43665433443659"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:677c13e0c986284cce1736999e07f7e7c364fcf524b5fbb6574087ac317c7d5b",
+            "recording-manifest:sha256:cb415d8dea3c1ed60aec54d9c2c5a0c58d47526bbea373ff158d6d6d5d917d04",
+            "session:cap-20260823T091800-9bd536243a3e"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T092400-3c35810955bd",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:76f85e7d1f28d996b8367a801801b15433369aeeefb26b5b4f669848623000bf",
+              "duration_dataset_path": "duration-inputs/duration-input-092400-19f2-rx0-2aaedb0eddc5.json",
+              "member_id": "cap-20260823T092400-3c35810955bd:stream-1:radio_pluto_19f2:rx0:2aaedb0eddc5",
+              "pilot_scan_digest": "sha256:bae1af7c0c317c199bc8ff2461f9210c3dfbc056cd5c22a82401f17459f3d7e5"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:3ca56d6d86365d5df0e0435bc197319f8985d75983752c54e7a46a234b187775",
+            "recording-manifest:sha256:1c86a062574fe600a9214ca09564fb83d985285dfc59c52fb954fc63735cd9f2",
+            "session:cap-20260823T092400-3c35810955bd"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T100040-7bc5ba3cc0ac",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:b6997440a71bff7ec49b3e46a7861af11fbd72024759b02852068611cc01aa66",
+              "duration_dataset_path": "duration-inputs/duration-input-100040-5d4d-rx0-82b186919c83.json",
+              "member_id": "cap-20260823T100040-7bc5ba3cc0ac:stream-0:radio_pluto_5d4d:rx0:82b186919c83",
+              "pilot_scan_digest": "sha256:a493c97803e61a7e980f09d6e70ff9c36c31853cba02dc88d117b66a4d695ada"
+            },
+            {
+              "duration_dataset_digest": "sha256:1220ac6eaa0892be9d781a9408a687a8bf2460961d97c2e19b6f26f55567bcc4",
+              "duration_dataset_path": "duration-inputs/duration-input-100040-19f2-rx0-bdaeb28036f5.json",
+              "member_id": "cap-20260823T100040-7bc5ba3cc0ac:stream-1:radio_pluto_19f2:rx0:bdaeb28036f5",
+              "pilot_scan_digest": "sha256:c6fc31b96b8374f90e1d66294657af8dcfc86c8d22897d67ce4bf97226e59e9c"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:afbe7178741c6ec646803b7f96d9dd239b56f5428d3548dae7a98911b0746fa1",
+            "recording-manifest:sha256:9563cf6f90b3abe97d053c27a1ee160d6d8affe2ac8e043c0d9994b7c2d34129",
+            "session:cap-20260823T100040-7bc5ba3cc0ac"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T102721-5eb863f3e015",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:2d94a1e6982d1b39ef59f31d428696b20a43a15dd3724a1a74da290f5ba92a32",
+              "duration_dataset_path": "duration-inputs/duration-input-102721-5d4d-rx0-6fbf99189621.json",
+              "member_id": "cap-20260823T102721-5eb863f3e015:stream-0:radio_pluto_5d4d:rx0:6fbf99189621",
+              "pilot_scan_digest": "sha256:473282b8eee46e2a66d7131991a0cb8afe322f2f8542373046579ae174aed5c5"
+            },
+            {
+              "duration_dataset_digest": "sha256:ba153bfce77c459ed842a8dbede5f692f9e0ab8afa6ece8307f6fff7deb03d29",
+              "duration_dataset_path": "duration-inputs/duration-input-102721-5d4d-rx1-422b44b5dea0.json",
+              "member_id": "cap-20260823T102721-5eb863f3e015:stream-0:radio_pluto_5d4d:rx1:422b44b5dea0",
+              "pilot_scan_digest": "sha256:033881898ec50928464b78217c84bda5867692922f4a16fac617fcc8557fcbd9"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:205d66b56258404b19e56665bae43df92097ce7d81b41dc602dab5837e6ff863",
+            "recording-manifest:sha256:750dd969e81a0a7f6bd41a1f9cc885650d782d144fdc80d98f7141dea3b9d28e",
+            "session:cap-20260823T102721-5eb863f3e015"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T104200-597c155f2bcf",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:fa22cfb23e919bbd4f60aaf1f55f0c66e9f3d5d79a18b2554b88f0e209c41292",
+              "duration_dataset_path": "duration-inputs/duration-input-104200-5d4d-rx1-047ed9840770.json",
+              "member_id": "cap-20260823T104200-597c155f2bcf:stream-0:radio_pluto_5d4d:rx1:047ed9840770",
+              "pilot_scan_digest": "sha256:ca356002f19b136b2c52d3d22c82b04980b8ce84d822ac4972d466e2f3bb3795"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:5d7e214560841fa214d8fe780b3fdb14462f520e6ae007d3560a474cf9b3d5fe",
+            "recording-manifest:sha256:e49a8977b5586ab8647123c1ab497b4daee02037075e5fede054b6d2456b498e",
+            "session:cap-20260823T104200-597c155f2bcf"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T110622-a02d007ca14a",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:508852e2c895d3abeacbc14ca37764d96f82a5d882ed6cce0e672db41bfcd186",
+              "duration_dataset_path": "duration-inputs/duration-input-110622-5d4d-rx0-5c37000e3198.json",
+              "member_id": "cap-20260823T110622-a02d007ca14a:stream-0:radio_pluto_5d4d:rx0:5c37000e3198",
+              "pilot_scan_digest": "sha256:fea022c24059194456221b48eed14dda0d84186c009ec3267ac21016074ef3c3"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:b3e558e3a309ddbafcbb22747c9daa3f15e541d312ecab4a216df00585a58761",
+            "recording-manifest:sha256:d5a0666ff69179495b65bf0a8ca2522ddd7fc500b86aad4d6691d495946a11a7",
+            "session:cap-20260823T110622-a02d007ca14a"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T111139-5bde5bd4dd04",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:7b2473534ef79207e6f9150976eb713a89a6bdde1a64c607b2cccd3c85551dd3",
+              "duration_dataset_path": "duration-inputs/duration-input-111139-5d4d-rx0-46e565ff7d52.json",
+              "member_id": "cap-20260823T111139-5bde5bd4dd04:stream-0:radio_pluto_5d4d:rx0:46e565ff7d52",
+              "pilot_scan_digest": "sha256:791facd2b2ffadd84f209d662acdd80b72b698bc05043fe4cdfeedb28a3b2b20"
+            },
+            {
+              "duration_dataset_digest": "sha256:c80434607b170bfc60ad9899f97fff4226700fe5003d6eb7ad4a4cf63c7f2d6d",
+              "duration_dataset_path": "duration-inputs/duration-input-111139-19f2-rx0-114c0fb051e4.json",
+              "member_id": "cap-20260823T111139-5bde5bd4dd04:stream-1:radio_pluto_19f2:rx0:114c0fb051e4",
+              "pilot_scan_digest": "sha256:e6d679ff657de8ef9e118aa0334d8da908fd9dbeceeb7932c3f678b241e36f3f"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:49903be2f7cb217de3f5adc87a29946b843adec8e1fcc8d2ddc01d7a66f31a42",
+            "recording-manifest:sha256:2d8b83f69340f1e87d89adf2b89627f9167f68a733e28af60dc1ad58854bb1a1",
+            "session:cap-20260823T111139-5bde5bd4dd04"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T111715-35a82d19c4c5",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:8bb9c302cb154058340f73a879514afa63dde49bcdddb6cdd846a4b8ad78b818",
+              "duration_dataset_path": "duration-inputs/duration-input-111715-5d4d-rx0-62da29e0de0f.json",
+              "member_id": "cap-20260823T111715-35a82d19c4c5:stream-0:radio_pluto_5d4d:rx0:62da29e0de0f",
+              "pilot_scan_digest": "sha256:6008a0e35470916a88e177286784fe6f249280f0dc3165265745fe51f318d7c8"
+            },
+            {
+              "duration_dataset_digest": "sha256:5afc2c27826ca9db14dd44d9dec5ef8ff8632f8d77021c53e1d75b3413ff3fd0",
+              "duration_dataset_path": "duration-inputs/duration-input-111715-19f2-rx0-e623ecf40518.json",
+              "member_id": "cap-20260823T111715-35a82d19c4c5:stream-1:radio_pluto_19f2:rx0:e623ecf40518",
+              "pilot_scan_digest": "sha256:100b912437d19633c1fc3116a6250dfd593f1752470aa50282dbd5a54a793c05"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:068acb4e33e4c90ab30abffe72273acca32ab0cbc009db5c42c101987cba0245",
+            "recording-manifest:sha256:482cae613e7ec323ee7aa9eb4fcd4f1b39ecbb9d5fad354ccd0842547d8fc214",
+            "session:cap-20260823T111715-35a82d19c4c5"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T114012-49c3afc433c0",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:60a58545d4b365ff81255fb0424a5aae0f0f74d34726ba71e8f6368841915e54",
+              "duration_dataset_path": "duration-inputs/duration-input-114012-19f2-rx0-28561217a454.json",
+              "member_id": "cap-20260823T114012-49c3afc433c0:stream-1:radio_pluto_19f2:rx0:28561217a454",
+              "pilot_scan_digest": "sha256:ce4c1c3fd54b8951515cd86745598e737af7553346b10d0387025896e539ef42"
+            },
+            {
+              "duration_dataset_digest": "sha256:dc1ea1839a8ff895264bb17226a36a2683fa138d9d7b02d6eb4c3a258e002bf7",
+              "duration_dataset_path": "duration-inputs/duration-input-114012-19f2-rx1-841bf7f47232.json",
+              "member_id": "cap-20260823T114012-49c3afc433c0:stream-1:radio_pluto_19f2:rx1:841bf7f47232",
+              "pilot_scan_digest": "sha256:2e1122a3d5932c4e2a80156f27c657c47a3ae8e05442f922c528cf8ecf442b02"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:7abe043afb31a14e94b9da3d04d15114052334f48b63c664f9dd57194967589f",
+            "recording-manifest:sha256:c573ab654792814a503db541907916d023f12fdc378782c05ee0ad2d0712db48",
+            "session:cap-20260823T114012-49c3afc433c0"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T114819-6119ff0fc686",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:3566584ba07dce584e5635e6806ac3ff257a2dbb8fd61c53cb93a428a69d2ae0",
+              "duration_dataset_path": "duration-inputs/duration-input-114819-19f2-rx0-257e43394b3a.json",
+              "member_id": "cap-20260823T114819-6119ff0fc686:stream-1:radio_pluto_19f2:rx0:257e43394b3a",
+              "pilot_scan_digest": "sha256:ddc480cc69fd13f36996a4d18ff00b9fbc6f9449acb736193c5eb84696c8ecd4"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:5e1d9c5a699fbcfd245f2d0675f4343569a1f01ba2cf447ce8f80cfa2713c4c9",
+            "recording-manifest:sha256:a85794a6a625417ca3e7771a4eeb0a3c1beed858686d54cbf9f6a702a138d3da",
+            "session:cap-20260823T114819-6119ff0fc686"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T115700-5d76364aed04",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:81a1859d1a36318d5bbb77339cfab52d0b0b05b6fbf13c397fdf4dcc2986b996",
+              "duration_dataset_path": "duration-inputs/duration-input-115700-5d4d-rx1-26c7ca875d15.json",
+              "member_id": "cap-20260823T115700-5d76364aed04:stream-0:radio_pluto_5d4d:rx1:26c7ca875d15",
+              "pilot_scan_digest": "sha256:82106602acad8d6e95b15ccecc51cf93154b1d4740b6c4476c51e56eadfff2ce"
+            },
+            {
+              "duration_dataset_digest": "sha256:d6e91fdacedefde3aa62dbd8e0c58db650da5b9f5c710ef27a390b6e26018a45",
+              "duration_dataset_path": "duration-inputs/duration-input-115700-19f2-rx0-92c25fce049d.json",
+              "member_id": "cap-20260823T115700-5d76364aed04:stream-1:radio_pluto_19f2:rx0:92c25fce049d",
+              "pilot_scan_digest": "sha256:dc944ca2722a077efdbecb3c004e8b0d4b0177852868809b654084b3105e7cac"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:a309fe12960f0d567c3bb32a4151fb59282bb2bb221a014ca38acd09f396a8d3",
+            "recording-manifest:sha256:bb22125a86bd31dd6d804e7853769536aaf340e289b6aebebf85f0d3e1ee1eac",
+            "session:cap-20260823T115700-5d76364aed04"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T121800-1b13c9a3deb5",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:32a951876b242561d6fcbc4a0a68b641c7f6e2393dec6229d12c9999c4ad2c57",
+              "duration_dataset_path": "duration-inputs/duration-input-121800-19f2-rx0-671b164704e2.json",
+              "member_id": "cap-20260823T121800-1b13c9a3deb5:stream-1:radio_pluto_19f2:rx0:671b164704e2",
+              "pilot_scan_digest": "sha256:dea59f9db91c646b1a4fa1349d29898ed7d2c2583ce238149bbaf205b29999af"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:87eb5353f34973c1f2778c4c62abfac2053c044ba03bba9d2281469861e81630",
+            "recording-manifest:sha256:5278d8d193fe4a19892659be46fcc86ed91c72f7d108f3c3ae126b6fd2720262",
+            "session:cap-20260823T121800-1b13c9a3deb5"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T122700-0f0409ec36c0",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:023b8556c21a4658b8ba8a5c5bfa68a373f98d5d7d09896ddbc72db1f7810b35",
+              "duration_dataset_path": "duration-inputs/duration-input-122700-19f2-rx0-fbd636fb2c00.json",
+              "member_id": "cap-20260823T122700-0f0409ec36c0:stream-1:radio_pluto_19f2:rx0:fbd636fb2c00",
+              "pilot_scan_digest": "sha256:01c98089355bf9a7c95272b49ba47939d7b79b8af7f4ad9242a363358ca4993a"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:3c04293b950378806c715dcbb960e5c3cf672e057562c7951124061dd327a880",
+            "recording-manifest:sha256:2f14876e3485afcbbc6fd417ee58a4880c0036196c33a046284c38b6f028fa34",
+            "session:cap-20260823T122700-0f0409ec36c0"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T124500-aeeb35522ab9",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:c2387cd35e0529dd1591a9b4d59b1f5eabb8f0c64b061ccdee20e13cb951d6cf",
+              "duration_dataset_path": "duration-inputs/duration-input-124500-5d4d-rx0-5aecfb65d39a.json",
+              "member_id": "cap-20260823T124500-aeeb35522ab9:stream-0:radio_pluto_5d4d:rx0:5aecfb65d39a",
+              "pilot_scan_digest": "sha256:fbb16f54c08fa0efa02a7bac9555177e04e47e0bdbe15e519067909d338ea030"
+            },
+            {
+              "duration_dataset_digest": "sha256:f74405e68addf2af17436c2b8579e71c3948a7da0a9d2680e119d0f9360fa2ec",
+              "duration_dataset_path": "duration-inputs/duration-input-124500-5d4d-rx1-23fbe8312938.json",
+              "member_id": "cap-20260823T124500-aeeb35522ab9:stream-0:radio_pluto_5d4d:rx1:23fbe8312938",
+              "pilot_scan_digest": "sha256:cae1863ff5b21e96525b1e729570506b70b5b68b889a3314005e5b99040042e8"
+            },
+            {
+              "duration_dataset_digest": "sha256:d9494915c0ef8e0497a20ae71cb613e0c3089c9da6b57daae4e1d82cdbf680d8",
+              "duration_dataset_path": "duration-inputs/duration-input-124500-19f2-rx0-65fed42c7b5a.json",
+              "member_id": "cap-20260823T124500-aeeb35522ab9:stream-1:radio_pluto_19f2:rx0:65fed42c7b5a",
+              "pilot_scan_digest": "sha256:5a3205e69db6445306023696b3c7fcdedc8aa6f1569f6814c4c74cbd8af18a76"
+            },
+            {
+              "duration_dataset_digest": "sha256:4986d84b58d5ae0ea5ff900c79f65d5a6ce5481f3816d9864875f68603b034fd",
+              "duration_dataset_path": "duration-inputs/duration-input-124500-19f2-rx1-dd1210f0f5cc.json",
+              "member_id": "cap-20260823T124500-aeeb35522ab9:stream-1:radio_pluto_19f2:rx1:dd1210f0f5cc",
+              "pilot_scan_digest": "sha256:11a5a8aaac6519e4eb43b57bc763a2accaba231840ef279510de9626a2d80a6d"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:597bd600f090b04c3e7309e764bbb9959a1be87af62a5c14d8f8dff4b02519d5",
+            "recording-manifest:sha256:c2632dd115e124e8bd21b2e9e4c0b3e490368007e3f8153b10e8bcd534f4399f",
+            "session:cap-20260823T124500-aeeb35522ab9"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T130000-3b8996fa984b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:7aeea3aec9460f54ac76c2e3c1e2252b958970e2a914f0fefbb0a9705108e572",
+              "duration_dataset_path": "duration-inputs/duration-input-130000-5d4d-rx0-1dbf06dee85c.json",
+              "member_id": "cap-20260823T130000-3b8996fa984b:stream-0:radio_pluto_5d4d:rx0:1dbf06dee85c",
+              "pilot_scan_digest": "sha256:7169943d207f6165a7ee5667585438ee93cb12f0fda0d0a936ddad6707f64deb"
+            },
+            {
+              "duration_dataset_digest": "sha256:f1b5d5db1330b539780be295f292a7ee3a59bb6913f467a8f0121e97e556fae5",
+              "duration_dataset_path": "duration-inputs/duration-input-130000-19f2-rx0-56536c32eaef.json",
+              "member_id": "cap-20260823T130000-3b8996fa984b:stream-1:radio_pluto_19f2:rx0:56536c32eaef",
+              "pilot_scan_digest": "sha256:b6c15d24dc2a83f137b0fac711a951e82264c43ce55d0accb472ac24c3b75c44"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:ca7280ceea237da4c5d227f73a4caf232f38f620a6f055e97f36d414e7e3e5ae",
+            "recording-manifest:sha256:48a05e777fbbae29def06b7d461a1b2fec1ac0409591789f9b7c56a659c1f6d8",
+            "session:cap-20260823T130000-3b8996fa984b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T132700-1f1a9f00d07d",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:bb3be77b15c86259896ea450752353c0a584c8f31d5f49ec0492869215b7c8a2",
+              "duration_dataset_path": "duration-inputs/duration-input-132700-5d4d-rx0-3f9877f818b6.json",
+              "member_id": "cap-20260823T132700-1f1a9f00d07d:stream-0:radio_pluto_5d4d:rx0:3f9877f818b6",
+              "pilot_scan_digest": "sha256:af79763cce4cac5ffd22f8302f13e6d0b7b988120a2ac659ff53db5182761266"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:15bd0bb00994348145067be190a6d1b1b6f0beb8ed3acfbc643bd49f7254e6b9",
+            "recording-manifest:sha256:33f559e379bca88fcaebe78d416fd7e8cdce9d68435dba420afcaef8614a2988",
+            "session:cap-20260823T132700-1f1a9f00d07d"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T133300-eb7033a60d1c",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:f2ef976d290c92ac7c708d4023b8e8f81007de236426f4a98863bbf8a9de5504",
+              "duration_dataset_path": "duration-inputs/duration-input-133300-19f2-rx0-d4b26b53e18b.json",
+              "member_id": "cap-20260823T133300-eb7033a60d1c:stream-1:radio_pluto_19f2:rx0:d4b26b53e18b",
+              "pilot_scan_digest": "sha256:bf1881c5a3ecdcfa6b83c27083ce754bc3c24da5073b9a3ad55d84a948686fdb"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:a55790d8537ab3e20374242c44bbfd6cad9f70d616b071436aa0fbdf3d774abf",
+            "recording-manifest:sha256:cd2c8ae1da35b168f3d2420043b78b86abccb2924534876c563f12936abcf524",
+            "session:cap-20260823T133300-eb7033a60d1c"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T134800-272180665c42",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:3c33f807fc9035c185485aa98d1ae4d919a028a24ff00062d5f16353966c3e00",
+              "duration_dataset_path": "duration-inputs/duration-input-134800-19f2-rx0-7aeb45cd24c4.json",
+              "member_id": "cap-20260823T134800-272180665c42:stream-1:radio_pluto_19f2:rx0:7aeb45cd24c4",
+              "pilot_scan_digest": "sha256:cbc569685e2fdacf3e907f8c3785a09bc1cb271e1709d476185a0c5acf373baf"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:0ff19eac6ac684c3da76defe6fa6dc932b85c5027da9f5838bb1e571e0c61717",
+            "recording-manifest:sha256:ddfc71074be08e0da543808aa319bfd34770da8e40d83a1e43658101481638c0",
+            "session:cap-20260823T134800-272180665c42"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T135400-a8a9c0924e3e",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:70da777bbbe94c71b9c4f55fd0c5ec4a49c1c38c40d16206b0671237de9af2d9",
+              "duration_dataset_path": "duration-inputs/duration-input-135400-5d4d-rx0-2f22882a5db2.json",
+              "member_id": "cap-20260823T135400-a8a9c0924e3e:stream-0:radio_pluto_5d4d:rx0:2f22882a5db2",
+              "pilot_scan_digest": "sha256:91cd31f8bf7a9fbec2943de7fd503d98589a7b7380f1f07b6e10265e3f77c735"
+            },
+            {
+              "duration_dataset_digest": "sha256:9354764b4c05fc4695cbc872c9be7069759ac51e021328c6a8cf6747c7e07192",
+              "duration_dataset_path": "duration-inputs/duration-input-135400-19f2-rx0-041d3c861351.json",
+              "member_id": "cap-20260823T135400-a8a9c0924e3e:stream-1:radio_pluto_19f2:rx0:041d3c861351",
+              "pilot_scan_digest": "sha256:41c72e6ce2c5a88922d92df76c12d3e7ad9ff3634a70161f3b6a3678918e6f5b"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:74fbea8e4b44c96a661ce4df3276fe8854144923dd876dfda2f399fa75399284",
+            "recording-manifest:sha256:20f3c2c98cfeb6f8c3841b81c64313a940be99ef6824ff29c3ed8b307628fdee",
+            "session:cap-20260823T135400-a8a9c0924e3e"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T140900-266ce4a2f30a",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:9bf04f21177c0d4895fd9ff41a10ec7b15c6933d14075135909b603c15162018",
+              "duration_dataset_path": "duration-inputs/duration-input-140900-19f2-rx0-35aeca084d51.json",
+              "member_id": "cap-20260823T140900-266ce4a2f30a:stream-1:radio_pluto_19f2:rx0:35aeca084d51",
+              "pilot_scan_digest": "sha256:1c92bd0ec1417b34dafb74288db343b80d055aecce263060d622e3b97eeb54ce"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:b8e99580943b010eb243aa52fbcb78d340da5868e5a45516ebd13d54fb9c97c3",
+            "recording-manifest:sha256:36d06d5c1b3e7857274861cfe10a93689e803c589aa176e78072421bdfb09473",
+            "session:cap-20260823T140900-266ce4a2f30a"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T141500-ac017465e83c",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:4db8e449278d5866c211b29e37eb1c0f2e64b6956d6fd5646340b5e424b068db",
+              "duration_dataset_path": "duration-inputs/duration-input-141500-5d4d-rx0-5c156d69831b.json",
+              "member_id": "cap-20260823T141500-ac017465e83c:stream-0:radio_pluto_5d4d:rx0:5c156d69831b",
+              "pilot_scan_digest": "sha256:efb7fda4a46beffe383ed2018052bcbba652ecd96d6915c01b7d1b8dd2e0393b"
+            },
+            {
+              "duration_dataset_digest": "sha256:82c4c340d403a139835649479915c3cfb3b380b129a51f6a9fdf17d3aee9c257",
+              "duration_dataset_path": "duration-inputs/duration-input-141500-5d4d-rx1-9bc7d8f14ffa.json",
+              "member_id": "cap-20260823T141500-ac017465e83c:stream-0:radio_pluto_5d4d:rx1:9bc7d8f14ffa",
+              "pilot_scan_digest": "sha256:7df833f4be61b546100b5a1cdfb8318ec71acde45117cb570ab9899a162d1e66"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:3679a90f73db70e0bf50ac1fa51a271364c110fe42be7e7bfff330701d45e3a9",
+            "recording-manifest:sha256:bab69a1d61beda85310079052594cafb7a7b833e4ff24dca206949b070e26ce1",
+            "session:cap-20260823T141500-ac017465e83c"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T143600-d224768d8147",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:6575294acf74e720d06de8e1d67b5c10f97d24b3d83ca33304a9026a1c18b468",
+              "duration_dataset_path": "duration-inputs/duration-input-143600-19f2-rx0-fa2a269c2d24.json",
+              "member_id": "cap-20260823T143600-d224768d8147:stream-1:radio_pluto_19f2:rx0:fa2a269c2d24",
+              "pilot_scan_digest": "sha256:3b8505002460db5414233c7ce8a416146823d0ff281b6bbccd4c5f398a064589"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:c198c62473085eb03d390dd58dd9fd38dd6e276b97d629385c37bbb1ef0380a9",
+            "recording-manifest:sha256:c91f523cf61525e94aa973d97f8f2f89b586b36cce20b17326352dd78a213048",
+            "session:cap-20260823T143600-d224768d8147"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T145400-e198c8bbd577",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:864d0f6b3da0393968c8c8736e87fd885dcdafbf5f3e26359b146deb91de0a6e",
+              "duration_dataset_path": "duration-inputs/duration-input-145400-19f2-rx0-b3dfaa5fe30e.json",
+              "member_id": "cap-20260823T145400-e198c8bbd577:stream-1:radio_pluto_19f2:rx0:b3dfaa5fe30e",
+              "pilot_scan_digest": "sha256:640d4098968a531061320bedef06e87d79760d155542f92598b6fb53ef24c051"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:d4ca67335e59d94373d616a60613357f6de3c7344b5e6db4cc70626495d1d80b",
+            "recording-manifest:sha256:a3a728291c8e3914486c78fd25463a8ca0f91ef225348cc8841be61adad47176",
+            "session:cap-20260823T145400-e198c8bbd577"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260823T150000-081192b64713",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:bf28a403eb6e1a562ce81252aeda677cffd7d62f48e355959a092169527ac868",
+              "duration_dataset_path": "duration-inputs/duration-input-150000-5d4d-rx1-487069683860.json",
+              "member_id": "cap-20260823T150000-081192b64713:stream-0:radio_pluto_5d4d:rx1:487069683860",
+              "pilot_scan_digest": "sha256:64e71c0586150f743a3e000682bfa42b889e7e5c1f0317ffc8e348b57480e812"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:b4441207f1fb9cedad53a6275a7ebd06cbace7c6d941d812b8dfbb1fb2281d40",
+            "recording-manifest:sha256:66cbe0273b7df877e692a85210db5a832f01279158df7fa8ac2b0d1cae1b9ddc",
+            "session:cap-20260823T150000-081192b64713"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T053347-3cff5ebdd48c",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:cf70aba2a7e06310841e7c73f18f126d2839ba65b9ad47c7256aa75b9e559c0a",
+              "duration_dataset_path": "duration-inputs/duration-input-053347-19f2-rx0-8e9b7b88cdcf.json",
+              "member_id": "cap-20260824T053347-3cff5ebdd48c:stream-1:radio_pluto_19f2:rx0:8e9b7b88cdcf",
+              "pilot_scan_digest": "sha256:033053d6da35db4b75bd6ce9a85863c25007167ebd0476837ed57361c10712df"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:1a8ced8cc9984317307bb98eb430e2c09338699e5c40789b4eed98f8b6ad6a15",
+            "recording-manifest:sha256:83da7be1a22b2bde390e05e3a7d12675580f80ad9709e163f24d86e708cc4bda",
+            "session:cap-20260824T053347-3cff5ebdd48c"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T072619-664e6e63da60",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:822b77fa134f3e42fa9204f4588b79e9fa066090148d07374c86c2e83d6397d9",
+              "duration_dataset_path": "duration-inputs/duration-input-072619-5d4d-rx1-0489f8ddc89d.json",
+              "member_id": "cap-20260824T072619-664e6e63da60:stream-0:radio_pluto_5d4d:rx1:0489f8ddc89d",
+              "pilot_scan_digest": "sha256:c562439536ea2b32b2d21b5050d74343eeaebeaa3540d68cc0befbc42ef82cca"
+            },
+            {
+              "duration_dataset_digest": "sha256:d59026a2cb57477e887cdcf64ec861bcf0f5eed008fdebc2b7d1b9c5b59f7ed9",
+              "duration_dataset_path": "duration-inputs/duration-input-072619-19f2-rx0-3ec9778a6898.json",
+              "member_id": "cap-20260824T072619-664e6e63da60:stream-1:radio_pluto_19f2:rx0:3ec9778a6898",
+              "pilot_scan_digest": "sha256:4dd3aa12988acf6bd0b0a01df4097878bfdc80c0cd9a1714b37809deb87b7bd3"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:7ae90f514f865d7fcd496df683c1edeb904dfa4158501a6bc4762eeb1dfad9b8",
+            "recording-manifest:sha256:0dc4b7fbc4966e7ff42df8f8e29f617b95c24351949a3a47636da6506683bfed",
+            "session:cap-20260824T072619-664e6e63da60"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T072906-bfabf43d18ea",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:77bebdf76ae4811aa47f35ae0b044e0847ae61062f32d0ba72e0585e2cfff074",
+              "duration_dataset_path": "duration-inputs/duration-input-072906-5d4d-rx0-9385ed914eb7.json",
+              "member_id": "cap-20260824T072906-bfabf43d18ea:stream-0:radio_pluto_5d4d:rx0:9385ed914eb7",
+              "pilot_scan_digest": "sha256:6e979536451a526d29b681d86879e292e824b47f96e3a1fa6bd4ec9e4e39363c"
+            },
+            {
+              "duration_dataset_digest": "sha256:2e042dd270edcc114ea06e5354b9a76e1ae669d8404664482961f30d3e2147d9",
+              "duration_dataset_path": "duration-inputs/duration-input-072906-5d4d-rx1-95d145dd92b5.json",
+              "member_id": "cap-20260824T072906-bfabf43d18ea:stream-0:radio_pluto_5d4d:rx1:95d145dd92b5",
+              "pilot_scan_digest": "sha256:d792e7db08863fbbc7dcd56b9a9b6fbe6df5e3a63cdc86b1ea4010e718d7c6a5"
+            },
+            {
+              "duration_dataset_digest": "sha256:092b07b26e476a5dcb71cc2605b20033718379156f512277fd45df5b370ad371",
+              "duration_dataset_path": "duration-inputs/duration-input-072906-19f2-rx0-c2c66e8e1847.json",
+              "member_id": "cap-20260824T072906-bfabf43d18ea:stream-1:radio_pluto_19f2:rx0:c2c66e8e1847",
+              "pilot_scan_digest": "sha256:5848cc940cec05c8395985ac9677cef3f74fc25a9e9e4cd1d212b49f21eb1057"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:9153ab9d00cacd3420ef0af1a85951be5592650847aaea5a53d784488ed3425c",
+            "recording-manifest:sha256:ccb6e607b5222cde945d015c2fd9c2d105078dbd4812120273e77735e0fe7ea6",
+            "session:cap-20260824T072906-bfabf43d18ea"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T074502-3bc1169320b4",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:b1e02889998b0e9ecdcab8246353569a9332c61be76e2ba4fb21b9bb2aa2d9f9",
+              "duration_dataset_path": "duration-inputs/duration-input-074502-5d4d-rx0-12a175d04c21.json",
+              "member_id": "cap-20260824T074502-3bc1169320b4:stream-0:radio_pluto_5d4d:rx0:12a175d04c21",
+              "pilot_scan_digest": "sha256:8e2701b3dbba5a0d222baecd257f164f736b00b9bb587ae107ece009c7fa416f"
+            },
+            {
+              "duration_dataset_digest": "sha256:80f33992ff1d6f178640e5e388a0217cb208796edeed71f73114ef713fea0fd5",
+              "duration_dataset_path": "duration-inputs/duration-input-074502-5d4d-rx1-a1719dd9a6d0.json",
+              "member_id": "cap-20260824T074502-3bc1169320b4:stream-0:radio_pluto_5d4d:rx1:a1719dd9a6d0",
+              "pilot_scan_digest": "sha256:0f18b84d36e8d4fe2304e885b2198bfe777b16b4ce77a58efd7b19252d13c73e"
+            },
+            {
+              "duration_dataset_digest": "sha256:43e61a7bd50b290c113e7a736b58676b3be2b1abf405a14578e390a599fb8f59",
+              "duration_dataset_path": "duration-inputs/duration-input-074502-19f2-rx0-82ec899e8a5a.json",
+              "member_id": "cap-20260824T074502-3bc1169320b4:stream-1:radio_pluto_19f2:rx0:82ec899e8a5a",
+              "pilot_scan_digest": "sha256:aac06982c640775c3dd176af51f6fc17d7d19b5c9568f1e51d3600870938ed2d"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:eb64171954b053a8f77c5cbe473137984359cffc56b313501bdc082e46007e29",
+            "recording-manifest:sha256:b18e3f6d0397d7fa964629643e5e89308bb75b0f62fdd3d0b527e60e80737c42",
+            "session:cap-20260824T074502-3bc1169320b4"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T075945-45f12c1bf170",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:0ba6381913d82603b3e16d1466adc1a2465adca88665feefa0e35b1cbc3cd978",
+              "duration_dataset_path": "duration-inputs/duration-input-075945-5d4d-rx0-01bd28cb0eac.json",
+              "member_id": "cap-20260824T075945-45f12c1bf170:stream-0:radio_pluto_5d4d:rx0:01bd28cb0eac",
+              "pilot_scan_digest": "sha256:3f973090da09689690f00fe555209d697f9a7aa00a2d5c7986a28cb34700f7b0"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:53f45797fba0a48f7fa547fb4d404ea7207e1abf3702efcfc6bba689c632b354",
+            "recording-manifest:sha256:ae74d48df943ecf2a07425b189c60c80dd764ac585e3304fa4e1ea2598abf1ac",
+            "session:cap-20260824T075945-45f12c1bf170"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T081639-5939bf19419f",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:a7953916ec172bf1d84a6eb02ea86190b16b1a41dd329b44d0eac9e667780673",
+              "duration_dataset_path": "duration-inputs/duration-input-081639-5d4d-rx1-b12deae8e0e5.json",
+              "member_id": "cap-20260824T081639-5939bf19419f:stream-0:radio_pluto_5d4d:rx1:b12deae8e0e5",
+              "pilot_scan_digest": "sha256:01c45e51cc86e340281caa9fbec220b004e30ec9159693b1933aeba3d282f039"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:5a402ab07808eaa6e2963b324ebba1185be66f0650d0ad173920e3a53192043e",
+            "recording-manifest:sha256:9785052c0397567862b8671e6c0c7a5e73631ffa65d079c2f89729d57b7123ae",
+            "session:cap-20260824T081639-5939bf19419f"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T082857-6c6bb132d3d0",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:32157c7ea70db40fcc356e23923d621d67052b4dc26c471fe3f797790c915389",
+              "duration_dataset_path": "duration-inputs/duration-input-082857-5d4d-rx0-95e12e9d7b4b.json",
+              "member_id": "cap-20260824T082857-6c6bb132d3d0:stream-0:radio_pluto_5d4d:rx0:95e12e9d7b4b",
+              "pilot_scan_digest": "sha256:9de4d7dc930eec4082c8f00910b2fd3de8f313275ef89d991b08db1dcaff1da4"
+            },
+            {
+              "duration_dataset_digest": "sha256:19cc6451e35977fc32b5f7badf8a86d39e0b164182fb1c0f39e9538018080769",
+              "duration_dataset_path": "duration-inputs/duration-input-082857-19f2-rx0-6aa9d161b366.json",
+              "member_id": "cap-20260824T082857-6c6bb132d3d0:stream-1:radio_pluto_19f2:rx0:6aa9d161b366",
+              "pilot_scan_digest": "sha256:a209cdc94ab0d672d6a52bbbe071fa8418eb3383f75f390f40fb7247f7c72c68"
+            },
+            {
+              "duration_dataset_digest": "sha256:c3f99f84b9c717aec3a64d565998a9728fd828b2902dc1fdbc37f1d05be0066d",
+              "duration_dataset_path": "duration-inputs/duration-input-082857-19f2-rx1-d4975bd9e848.json",
+              "member_id": "cap-20260824T082857-6c6bb132d3d0:stream-1:radio_pluto_19f2:rx1:d4975bd9e848",
+              "pilot_scan_digest": "sha256:bd97a7dd1519ce858d9fe5cbe6c3a7fb9366172b3a2c18191d6007d6086b0865"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:056c447d6dd1257a68430fa3e291085bbf1f622283a1e465a6f0127c041096d1",
+            "recording-manifest:sha256:ff4a512948bc7a6ba04d6d53ecbddece398eb7ff5b33130307de8929c4e56441",
+            "session:cap-20260824T082857-6c6bb132d3d0"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T083136-3ff95bab083d",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:035dee472ed90fd2c4e8b9e25a3aabfb983520f2a1ecde46ec04063b03ea5c52",
+              "duration_dataset_path": "duration-inputs/duration-input-083136-19f2-rx0-39e1b6cf0323.json",
+              "member_id": "cap-20260824T083136-3ff95bab083d:stream-1:radio_pluto_19f2:rx0:39e1b6cf0323",
+              "pilot_scan_digest": "sha256:ef0539ef2f67c60de627f5c196f94874a509b90b11268372db15dbae8ccf2e37"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:c7626ed78bf25bc21711c5896ecb3863f89acb4ae187c7d965828a29c86aeb2f",
+            "recording-manifest:sha256:28c78057841eaba914252f4b965db50bf8ed357869f686ef5e764348892dcc1f",
+            "session:cap-20260824T083136-3ff95bab083d"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T083417-04d7e49ecb31",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:42de4172860ba4d7a9d07b15527817e2c9d433413f925cce5f469e925907bb80",
+              "duration_dataset_path": "duration-inputs/duration-input-083417-5d4d-rx0-26991e053c11.json",
+              "member_id": "cap-20260824T083417-04d7e49ecb31:stream-0:radio_pluto_5d4d:rx0:26991e053c11",
+              "pilot_scan_digest": "sha256:3d593b8703664d7f737fea1bcfed7205103ab9d3c380b6339f3e55b6a75369cb"
+            },
+            {
+              "duration_dataset_digest": "sha256:69e6ad0e0be2953c36c2fef7ad9729eb3114d69e77dfc1abfe657f11511ea1e4",
+              "duration_dataset_path": "duration-inputs/duration-input-083417-5d4d-rx1-18490d0c0a4c.json",
+              "member_id": "cap-20260824T083417-04d7e49ecb31:stream-0:radio_pluto_5d4d:rx1:18490d0c0a4c",
+              "pilot_scan_digest": "sha256:5e479551ac329b14c7d11ec0ac16a26cd24d1684c59e3715291a97bc7facbd53"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:ba6020c16ac953ffa2017bfa02f5cc89194abf52094b79b44f1f85ab5f2e135c",
+            "recording-manifest:sha256:6aa4ccc195def14fd237c467a4c789134f7babbf52ea4bb989d94f2b802ceb4f",
+            "session:cap-20260824T083417-04d7e49ecb31"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T084733-b980a62aee89",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:4e6926e65463c1435aef17f44fd7edcd3fe8270536328f7e7a0dd6e07df9ec2b",
+              "duration_dataset_path": "duration-inputs/duration-input-084733-19f2-rx0-11f9f0d1f3e0.json",
+              "member_id": "cap-20260824T084733-b980a62aee89:stream-1:radio_pluto_19f2:rx0:11f9f0d1f3e0",
+              "pilot_scan_digest": "sha256:6e8e5c88dfb5ccfdf4cdb91baf6f142e240096737c777fd48b81837c4fc2a1db"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:23bde549d5e7541ff465b45575edeb6261608808b30f487b6f5858acd2ca725a",
+            "recording-manifest:sha256:2af98e8424f86f95c708f574ce47c9953359e24523333b6df621925dc38b592f",
+            "session:cap-20260824T084733-b980a62aee89"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T100139-75f838de14a1",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:695c5026b860031e720914bda2d063e6bf5d46f82a56b8ba357e4422af9859b8",
+              "duration_dataset_path": "duration-inputs/duration-input-100139-5d4d-rx0-7dc4c0c8d55c.json",
+              "member_id": "cap-20260824T100139-75f838de14a1:stream-0:radio_pluto_5d4d:rx0:7dc4c0c8d55c",
+              "pilot_scan_digest": "sha256:0153497d41720a7042baac176b5fe45a0ecc3c2067702e18642a45a9e6adb818"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:00d78ae80d60fe888eafe42d4361f503a0e4de073d79838e3fc421d8504e762f",
+            "recording-manifest:sha256:d1a3ccfff96f2889663ad9a1f8f0d3c5adb350d4a275ff647c2497a36c2b265f",
+            "session:cap-20260824T100139-75f838de14a1"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T101817-998d1da992f7",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:8159e75aaa62fe6ed493e0f7989c086ed1115dd50396af8a3af0a9cc02bbb903",
+              "duration_dataset_path": "duration-inputs/duration-input-101817-19f2-rx0-1722abce0ff0.json",
+              "member_id": "cap-20260824T101817-998d1da992f7:stream-1:radio_pluto_19f2:rx0:1722abce0ff0",
+              "pilot_scan_digest": "sha256:9d26a33c9252b20207f357c0b60ab1019dc5695cfef810c5500a8661171fca63"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:5206bb7671374ebf6bc551fdee817a7adf3170108c484ce1b9d9ce19e7497440",
+            "recording-manifest:sha256:14407013e71059a6c5b618a561a09266f9fa376334f79b2b9f1b0061c05fece4",
+            "session:cap-20260824T101817-998d1da992f7"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T120325-d389ad5bba26",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:4d9499c120ffdfbeb6cd42eceafc003c7965030968acd6d493212415933a3f4a",
+              "duration_dataset_path": "duration-inputs/duration-input-120325-5d4d-rx0-23abab9e3140.json",
+              "member_id": "cap-20260824T120325-d389ad5bba26:stream-0:radio_pluto_5d4d:rx0:23abab9e3140",
+              "pilot_scan_digest": "sha256:5148271f37078c9779204735716d7b2d60a4d4e51f2af33f0c29a8bc3ef99017"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:11b94791e16c86e3e1a3a4e204a6d5fff58e0dc1c01eb89c4a0924a916413c52",
+            "recording-manifest:sha256:a9eff0260ab3db094531a7d9c74712d7bc63b9eeed925cbbd511d2c68f795370",
+            "session:cap-20260824T120325-d389ad5bba26"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T121810-7dbc14f472d2",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:865bbed529cd9359eac5aca8067953d6d582924c881e1788c58b2cfe8250910a",
+              "duration_dataset_path": "duration-inputs/duration-input-121810-19f2-rx0-afb97b9f64aa.json",
+              "member_id": "cap-20260824T121810-7dbc14f472d2:stream-1:radio_pluto_19f2:rx0:afb97b9f64aa",
+              "pilot_scan_digest": "sha256:4c25c304520d37f9c1c03dc093b37a701214ae9a58ff7735323ec781a64c239b"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:399d4e1104faf0242a2a3bf7d9dd0fa9b0e7f0e92fe3ac37c0e9e2fd85e51556",
+            "recording-manifest:sha256:141f1a4b3234763d48952df8096643217657aad38da7fb354693f31f12ebddf8",
+            "session:cap-20260824T121810-7dbc14f472d2"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T133623-98176fbf1958",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:2d1c0306a223122db8ee2e33eb1fc2bcbed4b8e9954811c486244520b8853ecf",
+              "duration_dataset_path": "duration-inputs/duration-input-133623-19f2-rx0-a6c8978165c0.json",
+              "member_id": "cap-20260824T133623-98176fbf1958:stream-1:radio_pluto_19f2:rx0:a6c8978165c0",
+              "pilot_scan_digest": "sha256:6a06f2d0ee0f1698a1e17dfa821c97d037bea5f1a876d097180d20fd6887b67c"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:825b2982fdf5aef4a76d2f556419666eee4c5e79ecf5a385876f18c2de69e7d4",
+            "recording-manifest:sha256:395184b952010b1f530eb081016bbfaf4fe812fb818c55c5f27aaf9c55e68304",
+            "session:cap-20260824T133623-98176fbf1958"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T144651-7599c1353b67",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:cdcaea70b47351eae906f9e5cf15f61bec1bb2e2f231b049c62a8f69a3e90a99",
+              "duration_dataset_path": "duration-inputs/duration-input-144651-19f2-rx0-98b068ab80ca.json",
+              "member_id": "cap-20260824T144651-7599c1353b67:stream-1:radio_pluto_19f2:rx0:98b068ab80ca",
+              "pilot_scan_digest": "sha256:70b9a8133634009ee80e98bca7f11e26d0cea090df6c5e318cbee7d56d896e63"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:51050d657d758dcb3b0cadca7b87fd923d80a6ce65a33ce2cee436314ad00854",
+            "recording-manifest:sha256:fd669609639a8dede0e8126d1deaff03fc8113f0a767e6a4f685d68e4c6ec0b7",
+            "session:cap-20260824T144651-7599c1353b67"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T192019-9023840c8e9f",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:2165398753e16c665dd789b9b12ec4a13ac7fd4905029cfe23fbafaa106c68b6",
+              "duration_dataset_path": "duration-inputs/duration-input-192019-19f2-rx0-4b22c84825da.json",
+              "member_id": "cap-20260824T192019-9023840c8e9f:stream-1:radio_pluto_19f2:rx0:4b22c84825da",
+              "pilot_scan_digest": "sha256:481573b7b5fd8b9eeb273c5f7bcf4fe30851c084ca777a74bc82b42370ec9169"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:e4f595e4dbcd96c0990ce938c1f7ec959b4d62c8abb1b3cddfbde47da7659822",
+            "recording-manifest:sha256:cd0049f00d83f328de1cb0105a54f5492448d6b60ae71d7848a4554fcb618717",
+            "session:cap-20260824T192019-9023840c8e9f"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T194009-34ae34f129bc",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:27077eee4d4f03e2a4a448ac804905900e107583a23cd2f2fe9b3b9c2a02a54a",
+              "duration_dataset_path": "duration-inputs/duration-input-194009-19f2-rx0-958fce60a7a7.json",
+              "member_id": "cap-20260824T194009-34ae34f129bc:stream-1:radio_pluto_19f2:rx0:958fce60a7a7",
+              "pilot_scan_digest": "sha256:47f1b198ba80c690a5a47693dba5755b9f9aa7a9a5e9089423b63f3fa3bd2f35"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:35d71825bb7d957263f60d90bee13189be35d4cdbffc5fec50b983cf357df43d",
+            "recording-manifest:sha256:36d5aff52be690816bf1a0e98e29421204fded2ffa133f464864a6e9cb09c764",
+            "session:cap-20260824T194009-34ae34f129bc"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T194245-1dfbc879df2b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:35bd646256311ae59339db39d7dae9ed1857e20e6887dc70934b8e4cb9405721",
+              "duration_dataset_path": "duration-inputs/duration-input-194245-19f2-rx0-08929f56d318.json",
+              "member_id": "cap-20260824T194245-1dfbc879df2b:stream-1:radio_pluto_19f2:rx0:08929f56d318",
+              "pilot_scan_digest": "sha256:2eb77b82a66862b492f786490e0d8281da3932d709786a68e264f9cf53e8cb43"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:e0bef80e095dc9d83f3043baebdf70f34f5dc9dcd3385558c0837bb66c9be565",
+            "recording-manifest:sha256:90a15636bead27e955e6009f71b6cecb3dd207e05fd8633b49d469c7585e3213",
+            "session:cap-20260824T194245-1dfbc879df2b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T013042-add800a6b98b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:046173ae3030bc67fb140f507e31e7be980da171e476c5ebb89e15066a770dda",
+              "duration_dataset_path": "duration-inputs/duration-input-013042-5d4d-rx0-3a6ae9a51082.json",
+              "member_id": "cap-20260825T013042-add800a6b98b:stream-0:radio_pluto_5d4d:rx0:3a6ae9a51082",
+              "pilot_scan_digest": "sha256:874d38bad8d63918a7a311bdc7f6b3248bf787c65bbf53f5fd389ea78a7cef89"
+            },
+            {
+              "duration_dataset_digest": "sha256:9dd6738bd6f164e1c3df05c2edf4b0343b8cd0e4ee88e139548de14933384f5e",
+              "duration_dataset_path": "duration-inputs/duration-input-013042-5d4d-rx1-336deb6ec457.json",
+              "member_id": "cap-20260825T013042-add800a6b98b:stream-0:radio_pluto_5d4d:rx1:336deb6ec457",
+              "pilot_scan_digest": "sha256:1b0a2e6d3b8bb89677502f6e59a6878f804dc449e30228f1e2ca22c8ee3f4517"
+            },
+            {
+              "duration_dataset_digest": "sha256:4ef185131035c81e0ea75a9d346e5eb96191322c38ce836963098a29aba72872",
+              "duration_dataset_path": "duration-inputs/duration-input-013042-19f2-rx0-7280b4595009.json",
+              "member_id": "cap-20260825T013042-add800a6b98b:stream-1:radio_pluto_19f2:rx0:7280b4595009",
+              "pilot_scan_digest": "sha256:458358f263f6e4220f407187a436dc99634587dc3b0b536d3b0e8b6bbb1dcfbe"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:b7c69a94140aa92cb6be9667d3b8b3d7be1761557abb6655a420e282e2426871",
+            "recording-manifest:sha256:654d237d5d23635a2a6c4ecfd1f964e4e8f5cdef85e50b74dbc68a76e62d1b23",
+            "session:cap-20260825T013042-add800a6b98b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T024341-f541d7f4b1b8",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:290a0884dac1f55df1b35ede146bef507f88d59d68a30709c66f49c04f8cca90",
+              "duration_dataset_path": "duration-inputs/duration-input-024341-5d4d-rx0-26f4b84a5403.json",
+              "member_id": "cap-20260825T024341-f541d7f4b1b8:stream-0:radio_pluto_5d4d:rx0:26f4b84a5403",
+              "pilot_scan_digest": "sha256:e578da63d8c5c90e5bdf2eb554fcc1b1f2f57c8caf3735bd3c59c86c75841810"
+            },
+            {
+              "duration_dataset_digest": "sha256:7aeadaf6d5fefb2e2a2ed0377d01eb754c4fb6f1f664ffb4f78734b086da470b",
+              "duration_dataset_path": "duration-inputs/duration-input-024341-5d4d-rx1-74ec7c28d369.json",
+              "member_id": "cap-20260825T024341-f541d7f4b1b8:stream-0:radio_pluto_5d4d:rx1:74ec7c28d369",
+              "pilot_scan_digest": "sha256:dcdf95caf9bf8eb0fdd7d952bd1e07cbd4b79a8b47a6ee637a1cd938e93a2e56"
+            },
+            {
+              "duration_dataset_digest": "sha256:0004d37cd972fe27d91b577b529bb3cfa5f89ae213738686ab8a82b6cb5c112b",
+              "duration_dataset_path": "duration-inputs/duration-input-024341-19f2-rx0-6a9a89ea73aa.json",
+              "member_id": "cap-20260825T024341-f541d7f4b1b8:stream-1:radio_pluto_19f2:rx0:6a9a89ea73aa",
+              "pilot_scan_digest": "sha256:7fa25caccf51e9aef438b29f23423fd4180eac3319bcb3d00578b77a8edab833"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:51f7119326d61d5667bca72c9e2e44435a132c134e8abe1d012afab6756739cd",
+            "recording-manifest:sha256:f608ae48e9f4fe0f21e56ad9c4fa1d6b9c4d4e7467edcf9f184e1a3fb5d4c53d",
+            "session:cap-20260825T024341-f541d7f4b1b8"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T025726-95600b91320e",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:d791853bdd92904880361163309301d76abb9d51388cffc923f110e2f9b7544d",
+              "duration_dataset_path": "duration-inputs/duration-input-025726-5d4d-rx0-a74aca040345.json",
+              "member_id": "cap-20260825T025726-95600b91320e:stream-0:radio_pluto_5d4d:rx0:a74aca040345",
+              "pilot_scan_digest": "sha256:535bc6835553aca373b96eb71f37fe338ed8af063e54520618d9a9345b7f968c"
+            },
+            {
+              "duration_dataset_digest": "sha256:30c3fe54b94627f5cbc19fd0c6c5dd466e874666dc7ba6baac4c45fa4e96d32b",
+              "duration_dataset_path": "duration-inputs/duration-input-025726-5d4d-rx1-8f6903aa13cf.json",
+              "member_id": "cap-20260825T025726-95600b91320e:stream-0:radio_pluto_5d4d:rx1:8f6903aa13cf",
+              "pilot_scan_digest": "sha256:677b77b09095447f3d83bc9bc6093016433855be1e0aa9406a966696232a427d"
+            },
+            {
+              "duration_dataset_digest": "sha256:8b4155380893a8d3e1539d4faddc7da5f599cc68543d855d548417e1e95cc1d3",
+              "duration_dataset_path": "duration-inputs/duration-input-025726-19f2-rx0-b38c078d90ac.json",
+              "member_id": "cap-20260825T025726-95600b91320e:stream-1:radio_pluto_19f2:rx0:b38c078d90ac",
+              "pilot_scan_digest": "sha256:b0e980207956ac6228b92fdda52ed39c809f4959f72e201773af97839aeb3cec"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:c2826eb30195c5f4149ede41e1bdb39a4f986f4f6d55b3f5095720e27525d0d3",
+            "recording-manifest:sha256:3f52947d6e8ecfd578354c1999a9a57d2d754ed5d18f06b5634fd7df519032b0",
+            "session:cap-20260825T025726-95600b91320e"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T043423-8ad77822f2d4",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:e93faaf6cf002f446e3d39c7f0c956abacfed82a115bedd4eb2bd892960deed8",
+              "duration_dataset_path": "duration-inputs/duration-input-043423-5d4d-rx0-0efa756d4982.json",
+              "member_id": "cap-20260825T043423-8ad77822f2d4:stream-0:radio_pluto_5d4d:rx0:0efa756d4982",
+              "pilot_scan_digest": "sha256:80ea1c7ffceb2f12c8aa3c42ad7cf8a8064d5a5492dada7e799c08058831e258"
+            },
+            {
+              "duration_dataset_digest": "sha256:e4dc1f67c9bffde1124f4b86f04c9e8d0dae11b8c8fda941312cb353d00eb47a",
+              "duration_dataset_path": "duration-inputs/duration-input-043423-19f2-rx0-6691b2d2e5a2.json",
+              "member_id": "cap-20260825T043423-8ad77822f2d4:stream-1:radio_pluto_19f2:rx0:6691b2d2e5a2",
+              "pilot_scan_digest": "sha256:149fabbbac3e1e24edacd4c01ef91dbd67a7e7adaf07d68db684960248d6ac77"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:7d68bdede81a2b593cdb1e47bc0d51830fb84e201035d6d59d709e6181863dbe",
+            "recording-manifest:sha256:12683ee1e1e6623da9d14b85a7fc684cadbeee25ecec451832363d23e0bc221d",
+            "session:cap-20260825T043423-8ad77822f2d4"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T053000-08038a3b6ae7",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:12ef6625c136132ae78bc3ad68eb4cb1841a7a24efc731c85461bcad1c7648bc",
+              "duration_dataset_path": "duration-inputs/duration-input-053000-5d4d-rx0-1e846d08abe4.json",
+              "member_id": "cap-20260825T053000-08038a3b6ae7:stream-0:radio_pluto_5d4d:rx0:1e846d08abe4",
+              "pilot_scan_digest": "sha256:88979bb8c0e06baab4dcc63ddf35fa4863b4a9c8090f0ce75f49b23f3ec7b9e6"
+            },
+            {
+              "duration_dataset_digest": "sha256:6b5435aa009f549814fcf3b907035275e08c715267a64240889b8a9601b650cf",
+              "duration_dataset_path": "duration-inputs/duration-input-053000-19f2-rx0-9ae0b1483c8c.json",
+              "member_id": "cap-20260825T053000-08038a3b6ae7:stream-1:radio_pluto_19f2:rx0:9ae0b1483c8c",
+              "pilot_scan_digest": "sha256:9fa4dca14fb43593d3de160f5038e223cb05f63fcfa6decc8ce2e03d37468bd4"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:21a418225c430b936750229477e79ac91ec164f2c91219447285f480a9d9447a",
+            "recording-manifest:sha256:06ecb3f83db1dcca3d0fd5cb362f54911ae6447a3e811b0212ca65239e13252d",
+            "session:cap-20260825T053000-08038a3b6ae7"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T060148-5be06461ce89",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:ce5495d3401211bc537f0519f9d00f04c45eb53194636eb5d5cb9530e138bba0",
+              "duration_dataset_path": "duration-inputs/duration-input-060148-5d4d-rx0-126ee7cb021a.json",
+              "member_id": "cap-20260825T060148-5be06461ce89:stream-0:radio_pluto_5d4d:rx0:126ee7cb021a",
+              "pilot_scan_digest": "sha256:5a5d4faddef43c90617685220bfc79d84f74ab40defa08fcc2019f11c1263a25"
+            },
+            {
+              "duration_dataset_digest": "sha256:dbe953854dd7c0d0dfeae2b839e6d9e164f071fa13ba643e0eb7e29847b8d3e2",
+              "duration_dataset_path": "duration-inputs/duration-input-060148-5d4d-rx1-3ef4d60da9ef.json",
+              "member_id": "cap-20260825T060148-5be06461ce89:stream-0:radio_pluto_5d4d:rx1:3ef4d60da9ef",
+              "pilot_scan_digest": "sha256:20b0cfba47e01586c8d05ddb7c84809f34aba6c04561cfc232113d509c58e725"
+            },
+            {
+              "duration_dataset_digest": "sha256:28dbf51d04a3778fe2f24c40b894966c230afb492cad0f47d843320dc8646e70",
+              "duration_dataset_path": "duration-inputs/duration-input-060148-19f2-rx0-c2a60d53b2c5.json",
+              "member_id": "cap-20260825T060148-5be06461ce89:stream-1:radio_pluto_19f2:rx0:c2a60d53b2c5",
+              "pilot_scan_digest": "sha256:0d3bee3b5852fd5cafed367084e4769f45b7ac53e7e7f5c2d9e648903e2adfe0"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:cf4c31d843e5b2b992a8f576d287a88d6961fd5cedf656abb609abf3081ccfec",
+            "recording-manifest:sha256:bcc7213ac55c495b58c9ae4d9d14da013b93857c8fb1b46caeb8341c07396221",
+            "session:cap-20260825T060148-5be06461ce89"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T060423-a01f3d951828",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:a5da01d87993116734d31bbf4778ca34a7624e5c11186fd1350645b0033bb59e",
+              "duration_dataset_path": "duration-inputs/duration-input-060423-5d4d-rx0-dcb02aa98f88.json",
+              "member_id": "cap-20260825T060423-a01f3d951828:stream-0:radio_pluto_5d4d:rx0:dcb02aa98f88",
+              "pilot_scan_digest": "sha256:d48792302daec359d33ce3dd1864aa43133a0e6ae0a0a7766cb6cc46c6fac11d"
+            },
+            {
+              "duration_dataset_digest": "sha256:03d83546556603c6c30567cfb13bec236db73648ca84cc33ac2b8bd947dd3b74",
+              "duration_dataset_path": "duration-inputs/duration-input-060423-19f2-rx0-3701ee590758.json",
+              "member_id": "cap-20260825T060423-a01f3d951828:stream-1:radio_pluto_19f2:rx0:3701ee590758",
+              "pilot_scan_digest": "sha256:c939d2d064cfe030042ffd6e0d707c2f04795414a1ee7a2300c56d561ab97283"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:fe72b86209e6cc449fc0191673662ce7558c0cef67f6601da31070568f38e9fd",
+            "recording-manifest:sha256:b9270c4df8fbc01e89e36f4b19a53d4a9a5500613137ff400e47b6c09f04cc5a",
+            "session:cap-20260825T060423-a01f3d951828"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T064029-41a711347b33",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:82842143bcaf83684207d6b875b9082b1c54361c2f82a82db05b24550967b204",
+              "duration_dataset_path": "duration-inputs/duration-input-064029-19f2-rx0-2ba8526373c2.json",
+              "member_id": "cap-20260825T064029-41a711347b33:stream-1:radio_pluto_19f2:rx0:2ba8526373c2",
+              "pilot_scan_digest": "sha256:0f5b576014dfec35d6dee706563ca27c42f89433f28a288afe819945e3f6c343"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:31fcc7c9a8a950fd55aa327ac00563f0c4051dc07ffca0d1fd8d5762c05c7b5e",
+            "recording-manifest:sha256:59354285ff2773dbd9c0fbed434fe7f86cc464c6aede78a6ef41152bb2594daa",
+            "session:cap-20260825T064029-41a711347b33"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T065632-7f08bce0ad77",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:5bc829136d2804a658e6b2dc1c6ad19c35ee52b42ca200d55eeb47e2f5ad2c99",
+              "duration_dataset_path": "duration-inputs/duration-input-065632-19f2-rx0-d61bacc94df0.json",
+              "member_id": "cap-20260825T065632-7f08bce0ad77:stream-1:radio_pluto_19f2:rx0:d61bacc94df0",
+              "pilot_scan_digest": "sha256:4bb675c1eb750e26ac5c944d0db91f24718c121ee2b9621f56caba6447c6ae92"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:12cf8e420f41365921a421e2269b26871e5cb3a6bd15f6e2c8a6e7a8d0de7d4e",
+            "recording-manifest:sha256:1caa7f7afb7dea93b657deffccdad12b46a10ea3274f1f8058fc63d5d51605fb",
+            "session:cap-20260825T065632-7f08bce0ad77"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T112754-81caaf92ce27",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:d10b859843aae74274237cac696505b4172e2ea52c92520f34bc1435ad891f21",
+              "duration_dataset_path": "duration-inputs/duration-input-112754-5d4d-rx0-47baeec097d9.json",
+              "member_id": "cap-20260825T112754-81caaf92ce27:stream-0:radio_pluto_5d4d:rx0:47baeec097d9",
+              "pilot_scan_digest": "sha256:e2bc4a4974021ca7abe312346c2f445a13ffa92f8921c3c56e438bca9bdc5a9a"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:78ed4b8efd47cdffacfaf35ef928e4515be2c0d600784da98df366485ebae8c9",
+            "recording-manifest:sha256:74ff0bd996a778b6b2505f6fcb2ccc63d0c0d578ef2910c37a1e9dd9828009e7",
+            "session:cap-20260825T112754-81caaf92ce27"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T120814-0b3f87b4c621",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:58fc79504d57940bef098456e78541ef73d2587c5867c091380780985313dd9e",
+              "duration_dataset_path": "duration-inputs/duration-input-120814-5d4d-rx0-c0a1fe892061.json",
+              "member_id": "cap-20260825T120814-0b3f87b4c621:stream-0:radio_pluto_5d4d:rx0:c0a1fe892061",
+              "pilot_scan_digest": "sha256:b8ed0abafab004751b8a1c55689948041012656b4eecdd0a171f5b20474aa296"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:bc14b645ee98beeb47d41f2792f8937e4ca87501cbe505262cf75d7395dda58d",
+            "recording-manifest:sha256:6a870fee6aa5da9a6205a4add760ff601e01b11995b41a9413975fda3be1f1e0",
+            "session:cap-20260825T120814-0b3f87b4c621"
+          ]
+        }
+      ]
+    },
+    "tuning": {
+      "clusters": [
+        {
+          "cluster_id": "dwell:cap-20260823T022003-6aeb95ddead5",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:91f2891248a2227a5034220af875226c0fd2234e973e17dc8ab30dc4e625fbb9",
+              "duration_dataset_path": "duration-inputs/duration-input-022003-19f2-rx0-056c9c8fae35.json",
+              "member_id": "cap-20260823T022003-6aeb95ddead5:stream-1:radio_pluto_19f2:rx0:056c9c8fae35",
+              "pilot_scan_digest": "sha256:4612eb2ffaad3643d9fff80aaf3faedd55c5cd6eb2de80385f033fed3143f17b"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:0b5509cc4d10cc6b111f8927012d3f147a6b6865154247f52efea499d0f8b4b5",
+            "recording-manifest:sha256:298566f1a1b2b8d5195995dc254efdad38aed930e9e38341a0942b593be25bc2",
+            "session:cap-20260823T022003-6aeb95ddead5"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260824T053636-5f655fed330a",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:b2c720cbcd3b94b827a6581350d406932a96d46c2355e97b6b1d991ded210e50",
+              "duration_dataset_path": "duration-inputs/duration-input-053636-5d4d-rx0-c4c7242a7bd4.json",
+              "member_id": "cap-20260824T053636-5f655fed330a:stream-0:radio_pluto_5d4d:rx0:c4c7242a7bd4",
+              "pilot_scan_digest": "sha256:f3b3bdced0359fe5bfcd9e40f94ee56c99ded3e22bdac8460383eb026babc224"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:70fb301fb6cb99bb19e7fddf7dd025fcf88425873d5e0153eb0941d6f072cd37",
+            "recording-manifest:sha256:f78af854c7df891fe2bd143565b2496e82acb5940e868a0c0abd541a4d56b504",
+            "session:cap-20260824T053636-5f655fed330a"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T022509-735366370195",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:da074307388fea244633cee3ac1abd07a54ed320be35d55e9c35ee4960086e72",
+              "duration_dataset_path": "duration-inputs/duration-input-022509-5d4d-rx1-c54dba18df62.json",
+              "member_id": "cap-20260825T022509-735366370195:stream-0:radio_pluto_5d4d:rx1:c54dba18df62",
+              "pilot_scan_digest": "sha256:9f9b57b1a812de3ec74e979c5ea33f86a7294e698afc4ed3d901603a09238b9d"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:a0358a8844aa02a190253d6c90f9592452ef22418e11147a172c58c89617ca70",
+            "recording-manifest:sha256:6ba3f2984c0af96ddca3d6a53e036eeb7b95189df5072620441a08b8cc4f1d48",
+            "session:cap-20260825T022509-735366370195"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T024108-b84b64ae03dd",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:06a06484c15354599bfcc1d3986dda35b85499753e197a1c026cc066e6f18289",
+              "duration_dataset_path": "duration-inputs/duration-input-024108-19f2-rx0-3c13c51179ed.json",
+              "member_id": "cap-20260825T024108-b84b64ae03dd:stream-1:radio_pluto_19f2:rx0:3c13c51179ed",
+              "pilot_scan_digest": "sha256:9ff7af024ce25b2ef3f8afb2be381c2ddabe0626c2d93414ad20c405e88fa42e"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:4356347ee25155df282c55b101735fa80aa4d60b94aa89f17986c22ffc46dc68",
+            "recording-manifest:sha256:d0f9b95eff8bbf970eb6d277282cbfa6f77cf7bb462dbdd8b834ada050ee6da1",
+            "session:cap-20260825T024108-b84b64ae03dd"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T062228-886fe2dd9cde",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:936e24bb5585f048b4aa1e837d44098009cfc68303231d433dfcf971f914ba58",
+              "duration_dataset_path": "duration-inputs/duration-input-062228-5d4d-rx0-15540c6f5e00.json",
+              "member_id": "cap-20260825T062228-886fe2dd9cde:stream-0:radio_pluto_5d4d:rx0:15540c6f5e00",
+              "pilot_scan_digest": "sha256:a6a332f539bd41121b0b4742a2baa830fa53d560c33fb5e0c1e9090c813b7f48"
+            },
+            {
+              "duration_dataset_digest": "sha256:45c648773beec569b62d6c4d3ffe99020116c118b694d26a3c2ba2033d774275",
+              "duration_dataset_path": "duration-inputs/duration-input-062228-5d4d-rx1-73c43f7e857f.json",
+              "member_id": "cap-20260825T062228-886fe2dd9cde:stream-0:radio_pluto_5d4d:rx1:73c43f7e857f",
+              "pilot_scan_digest": "sha256:e1e34e9dcd454964560148109960b8d9d4e6a9371088107684d37676cb270e8c"
+            },
+            {
+              "duration_dataset_digest": "sha256:5df187aeabf0db37286cbbd80952b45fa0854d9fbfdf9de6b439eff4b983df0d",
+              "duration_dataset_path": "duration-inputs/duration-input-062228-19f2-rx0-30b1d6dd683f.json",
+              "member_id": "cap-20260825T062228-886fe2dd9cde:stream-1:radio_pluto_19f2:rx0:30b1d6dd683f",
+              "pilot_scan_digest": "sha256:ea8fceb66fdeaeb3be2ed0f937b78236de4896a2fc9356a5320a87dbd3ded562"
+            },
+            {
+              "duration_dataset_digest": "sha256:413c1888728cc34c67d2defab8debabf78b5de4480d0373e3f3b421ebf7682a7",
+              "duration_dataset_path": "duration-inputs/duration-input-062228-19f2-rx1-b79d95346744.json",
+              "member_id": "cap-20260825T062228-886fe2dd9cde:stream-1:radio_pluto_19f2:rx1:b79d95346744",
+              "pilot_scan_digest": "sha256:e6265c4284fb3f96433fbef2b81a7f9d52cf5fd5f280f43548941ce7730252a0"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:edf652a1e1aef5209474cf4c35d0ea9434fd407bb6a7c04bd8544a3d46290c94",
+            "recording-manifest:sha256:e19676663eef3a37ae11f050eb041688b0c171efc062ed80dd272fbf9882b718",
+            "session:cap-20260825T062228-886fe2dd9cde"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T063754-ef4ff74230d6",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:db51b26c0cb6440abfddc95ad115ba1bc98f8c05ab6615f0c531eb007b499687",
+              "duration_dataset_path": "duration-inputs/duration-input-063754-5d4d-rx0-f88f5f442ed2.json",
+              "member_id": "cap-20260825T063754-ef4ff74230d6:stream-0:radio_pluto_5d4d:rx0:f88f5f442ed2",
+              "pilot_scan_digest": "sha256:56f884ac1e0d6a2f748733dc7bbbacba2ecc90d491a2d1e5316c1c9b21a960ed"
+            },
+            {
+              "duration_dataset_digest": "sha256:7bf3753a58133c1291e452d325018050faa42047ca9017fe338c3fd5a389e941",
+              "duration_dataset_path": "duration-inputs/duration-input-063754-19f2-rx0-e71cea48bbac.json",
+              "member_id": "cap-20260825T063754-ef4ff74230d6:stream-1:radio_pluto_19f2:rx0:e71cea48bbac",
+              "pilot_scan_digest": "sha256:abb9d4837839ad63f5ab2a7ae07425e3c2d1c464a964d775014c6e1291398b7f"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:6b27bb18f50b019bde137399a65cf4855e93a3bbcb07da93e3874761574d96a7",
+            "recording-manifest:sha256:47cf2f2a6ba38ce4376e4d5e7ffe0e27d622c8d93537811398a8ad582e3260fb",
+            "session:cap-20260825T063754-ef4ff74230d6"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T082057-aa0a740de6db",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:c93b4cb8f81194dda780f339df36bcdffa87f0f9b692cb8f6a861d64efd9b239",
+              "duration_dataset_path": "duration-inputs/duration-input-082057-19f2-rx0-5bc3d652e930.json",
+              "member_id": "cap-20260825T082057-aa0a740de6db:stream-1:radio_pluto_19f2:rx0:5bc3d652e930",
+              "pilot_scan_digest": "sha256:5dc951220744a705f320bc8ea25d8a263edbd6362728bbd63d0f96ec695a04b7"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:2cc40c9b1cb1ee17d314d79c1ab0fee11b600e8bf5033610b562473687e2b4f5",
+            "recording-manifest:sha256:38f80aa2aca82c9e89c55e6a8e4b3ad666facd913790abbbd6a192aefb6ffac6",
+            "session:cap-20260825T082057-aa0a740de6db"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T082330-c8a2692839cd",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:8231322c8462d7061763fc24e295dd284b0b8585405e5425baad03dfe9bdce12",
+              "duration_dataset_path": "duration-inputs/duration-input-082330-19f2-rx0-b713fc540a68.json",
+              "member_id": "cap-20260825T082330-c8a2692839cd:stream-1:radio_pluto_19f2:rx0:b713fc540a68",
+              "pilot_scan_digest": "sha256:990b9e2072386362846c80bb2bd71647188f1f915236c8bf53262d7c319bc65a"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:3cd942ea1b1851d8304c54a0dca5c0351e28b7f9c754912036bcfb4f2f48b33c",
+            "recording-manifest:sha256:b9393f93c69ea904f0fc1298c089f3d68800daa270f86c6c2083388d3af1e1bf",
+            "session:cap-20260825T082330-c8a2692839cd"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T084200-6614872688fa",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:9b6170289b94ef9bffe5f5c9ff07d2878659c2100a48062ce46f94f4e864374d",
+              "duration_dataset_path": "duration-inputs/duration-input-084200-19f2-rx0-9a7653aecc6d.json",
+              "member_id": "cap-20260825T084200-6614872688fa:stream-1:radio_pluto_19f2:rx0:9a7653aecc6d",
+              "pilot_scan_digest": "sha256:6217ede9b67108d2e52770cff16df06e483dfb518630fa4bc12e6efc0c428265"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:a81bf639c0e417a590f1e23daedfefb5dfe9e1e3e904c5c75e258e13851a45b4",
+            "recording-manifest:sha256:f622fd2ea54e6fa0a546b851d602fca11cfdd77e5be2c49f1fe1a262ec871c74",
+            "session:cap-20260825T084200-6614872688fa"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T085857-6d87a16d291d",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:a2f1f18d927ff3637131d152012129ba0def14f4fc6ad6825a4310a518465ab5",
+              "duration_dataset_path": "duration-inputs/duration-input-085857-5d4d-rx0-f3abe363b20b.json",
+              "member_id": "cap-20260825T085857-6d87a16d291d:stream-0:radio_pluto_5d4d:rx0:f3abe363b20b",
+              "pilot_scan_digest": "sha256:abe499a8cc798ec55619f128e7c64fbd002279af6907c95c61e7a256aa2020cb"
+            },
+            {
+              "duration_dataset_digest": "sha256:37e1bc1d1a559d4eaffb185387738a33d5f4fe542f7297b93aa79af740718af5",
+              "duration_dataset_path": "duration-inputs/duration-input-085857-19f2-rx0-0b378e60a7a1.json",
+              "member_id": "cap-20260825T085857-6d87a16d291d:stream-1:radio_pluto_19f2:rx0:0b378e60a7a1",
+              "pilot_scan_digest": "sha256:2fa47c557426075877b00eb4d2c921e5a16a3269090b7af35a44a02ed91b1d59"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:d02eecfb4fbfa06805ed109785993b35e6546e099dc1ed1667e9310769c9354f",
+            "recording-manifest:sha256:2e5edff93fe364bc80f436f5294e245bcc4ab01121fc9096afc95387946d4903",
+            "session:cap-20260825T085857-6d87a16d291d"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T091429-c1446df4dd6a",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:dd9f0cb030ca867b1a4d9fbd07a97886cdb370476875aa6147901a8964633810",
+              "duration_dataset_path": "duration-inputs/duration-input-091429-5d4d-rx0-79a034b85e59.json",
+              "member_id": "cap-20260825T091429-c1446df4dd6a:stream-0:radio_pluto_5d4d:rx0:79a034b85e59",
+              "pilot_scan_digest": "sha256:09644102d90c707ad2006f219b355cc5d41b477de325d22bb72ee03d151eccc8"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:fe1ad18e9541bc318e74f6b5b2b5feff0e2d3f0be3abd3edb1773c8212e5d3c9",
+            "recording-manifest:sha256:01fe9f35bba4a8496d767aab3bc825c2eb25212ea307cfb0191507d79e64fbc3",
+            "session:cap-20260825T091429-c1446df4dd6a"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T101702-f60463e1402e",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:a3a243e8689df5dfaf93f300d4301ec538408d6dbb33f5b7d2b5aa83a3e6b9c8",
+              "duration_dataset_path": "duration-inputs/duration-input-101702-5d4d-rx0-31e845b0605d.json",
+              "member_id": "cap-20260825T101702-f60463e1402e:stream-0:radio_pluto_5d4d:rx0:31e845b0605d",
+              "pilot_scan_digest": "sha256:d4777fb33aba128c5024c836a501389085b7796cbda32bfe8e6ab50a3fb9bb7f"
+            },
+            {
+              "duration_dataset_digest": "sha256:106f156cfbd7a42a4a40acb348db137e5be7e3ede93b64e47b105a545cb4bfbf",
+              "duration_dataset_path": "duration-inputs/duration-input-101702-19f2-rx0-6156eccfea53.json",
+              "member_id": "cap-20260825T101702-f60463e1402e:stream-1:radio_pluto_19f2:rx0:6156eccfea53",
+              "pilot_scan_digest": "sha256:fb44088b443cc1e9b54922c17ba1009d3032aba6fbd7aab9ec51f082b338ca5c"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:ff26bd8d61d8dc3c941dd6111017174e560d3d0bd44a39477a0b4af084627a7e",
+            "recording-manifest:sha256:e34a0199c15c19b7130dcfb3b0211feb2b2ac42ae54ee33a0888f591d438ed89",
+            "session:cap-20260825T101702-f60463e1402e"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T105640-facdadeffb3b",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:f82f7cec31439395cfbadf68179a03507d870ea44c1df99065b11da9718db083",
+              "duration_dataset_path": "duration-inputs/duration-input-105640-5d4d-rx0-5f9db7daabd2.json",
+              "member_id": "cap-20260825T105640-facdadeffb3b:stream-0:radio_pluto_5d4d:rx0:5f9db7daabd2",
+              "pilot_scan_digest": "sha256:56264768a3de973635528e9749d23f508f0bfb4a712d87d764ce6cf02ab4ee56"
+            },
+            {
+              "duration_dataset_digest": "sha256:5a11252b8e8363f3d5e17299a28f3886d939d336a52cac540039fb5027a27146",
+              "duration_dataset_path": "duration-inputs/duration-input-105640-5d4d-rx1-6086ee193461.json",
+              "member_id": "cap-20260825T105640-facdadeffb3b:stream-0:radio_pluto_5d4d:rx1:6086ee193461",
+              "pilot_scan_digest": "sha256:3cb99fdabd4c02ffea2582303b3ea923309640daee9c9f4e2115810610883989"
+            },
+            {
+              "duration_dataset_digest": "sha256:d495aec93c6445abff0408a654443a6c6798b43e0a4e42bc2b7f11f62d99096b",
+              "duration_dataset_path": "duration-inputs/duration-input-105640-19f2-rx0-006f7aa86f55.json",
+              "member_id": "cap-20260825T105640-facdadeffb3b:stream-1:radio_pluto_19f2:rx0:006f7aa86f55",
+              "pilot_scan_digest": "sha256:772c282b4ab622581ff2632e50a6d6f68240924e6fd11e6e0996ddefdecb5232"
+            },
+            {
+              "duration_dataset_digest": "sha256:cf9f6b4b38d0ecebf67959ba5eec12053c551aafaa02f128b57b1ab7802b324c",
+              "duration_dataset_path": "duration-inputs/duration-input-105640-19f2-rx1-260e3a8e921e.json",
+              "member_id": "cap-20260825T105640-facdadeffb3b:stream-1:radio_pluto_19f2:rx1:260e3a8e921e",
+              "pilot_scan_digest": "sha256:a7c6a7e8ed2f3dbfbe1cbbfeb1faf576f37b0bfd00f16540b015e12b67f42420"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:0898825bb8ded379dff1d60f56fdf2b0f36ac428fd4e6daa7f655902632f49a4",
+            "recording-manifest:sha256:3bc39816e57c9af91db342e23e06ff3dbd684a3d1cbfbc5507e175a17bdf202e",
+            "session:cap-20260825T105640-facdadeffb3b"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T105915-2770b84587cc",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:87d98db22303277a8b81739fb3fede5144998d24b3448ad89751cb81f5f825ca",
+              "duration_dataset_path": "duration-inputs/duration-input-105915-19f2-rx0-d937fa059834.json",
+              "member_id": "cap-20260825T105915-2770b84587cc:stream-1:radio_pluto_19f2:rx0:d937fa059834",
+              "pilot_scan_digest": "sha256:41a93e3c282fec399af9e13f8658ba5d93325e793c84d5c7525d54ba877acf42"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:7edbdf4759927e88ce3fdd8ac5bd8c61573425fe2b8b7d37c46800f9697bdfec",
+            "recording-manifest:sha256:2f632b9f1a1acdbcd98ac44c67fc23f583f797638b08d0ebc2afc762f99635b8",
+            "session:cap-20260825T105915-2770b84587cc"
+          ]
+        },
+        {
+          "cluster_id": "dwell:cap-20260825T111222-a2d4ce2afb9a",
+          "members": [
+            {
+              "duration_dataset_digest": "sha256:b79e1ceaa04d6e76d3a67ce86fbb5736a44a32648adac38ba6f3ad73afc361c2",
+              "duration_dataset_path": "duration-inputs/duration-input-111222-5d4d-rx0-222ad177c89d.json",
+              "member_id": "cap-20260825T111222-a2d4ce2afb9a:stream-0:radio_pluto_5d4d:rx0:222ad177c89d",
+              "pilot_scan_digest": "sha256:4807c5f7171a1520dc05813ceeab1ec0ceebee2797147ed1eedde84d8ccdf367"
+            },
+            {
+              "duration_dataset_digest": "sha256:aa182c74d5e630d9a40991266af66bf6d6f3ffa6ba4e170d0e7c3836ecf469fb",
+              "duration_dataset_path": "duration-inputs/duration-input-111222-5d4d-rx1-c5e02c07dab1.json",
+              "member_id": "cap-20260825T111222-a2d4ce2afb9a:stream-0:radio_pluto_5d4d:rx1:c5e02c07dab1",
+              "pilot_scan_digest": "sha256:7df2ff7686f473aede2ea517fa7a7b19269a6ce1b29df3eb6b827fc9229d43d9"
+            },
+            {
+              "duration_dataset_digest": "sha256:22a2117293480aeb7f8ea80efd735f6288444decb786b78c72eb460a18b4bef6",
+              "duration_dataset_path": "duration-inputs/duration-input-111222-19f2-rx0-a048ae647b12.json",
+              "member_id": "cap-20260825T111222-a2d4ce2afb9a:stream-1:radio_pluto_19f2:rx0:a048ae647b12",
+              "pilot_scan_digest": "sha256:32860834a55e9980eee7d6e4a545f7bc81f35bbd7e7ecca5658e475e6bdea715"
+            },
+            {
+              "duration_dataset_digest": "sha256:f2c39f2834155773ac0b642456016c840092b4d41e6b717ed23413a92a4b073f",
+              "duration_dataset_path": "duration-inputs/duration-input-111222-19f2-rx1-4721b23ebe63.json",
+              "member_id": "cap-20260825T111222-a2d4ce2afb9a:stream-1:radio_pluto_19f2:rx1:4721b23ebe63",
+              "pilot_scan_digest": "sha256:a01283888aefb8b6970200fb050e1a16dd30d7a68dbbf6b115ce416050ec2145"
+            }
+          ],
+          "source_provenance_ids": [
+            "analysis-manifest:sha256:bb87c18224792bf9847bf1d391189d02e4cf14f9798ed603d16b98a1e111ef0a",
+            "recording-manifest:sha256:d9b26a48cb4c2dae1637478e817dbc2127fb66d5d0dc9be45d2d18fa6521e9eb",
+            "session:cap-20260825T111222-a2d4ce2afb9a"
+          ]
+        }
+      ]
+    },
+    "unused": {
+      "clusters": []
+    }
+  },
+  "study_id": "raw-satellite-activity-structural-penalty-20260825-cap10-v1"
+}
