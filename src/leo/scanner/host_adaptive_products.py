@@ -11,12 +11,14 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
+    AdaptiveHopReceiptV7,
 )
 from leo.scanner.adaptive_hop_analysis import (
     AdaptiveHopAnalysisConfigurationV1,
     DualRx10mAdaptiveHopAnalysisConfigurationV2,
     Feature103AnalysisConfigurationV3,
     Feature104AnalysisConfigurationV4,
+    FourRateVariableDwellAnalysisConfigurationV6,
     VariableDwellAnalysisConfigurationV5,
 )
 from leo.scanner.adaptive_hop_products import (
@@ -27,6 +29,7 @@ from leo.scanner.adaptive_hop_products import (
     EdgeAdaptiveAnalysisBindingV4,
     Feature103AnalysisBindingV6,
     Feature104AnalysisBindingV7,
+    FourRateVariableDwellAnalysisBindingV9,
     VariableDwellAnalysisBindingV8,
 )
 from leo.scanner.host_adaptive import (
@@ -98,10 +101,18 @@ def bind_actual_visit_analysis(
     """Resolve the exact persisted major for the supplied native recording."""
     if isinstance(
         receipt,
-        (AdaptiveHopReceiptV3, AdaptiveHopReceiptV4, AdaptiveHopReceiptV5, AdaptiveHopReceiptV6),
+        (
+            AdaptiveHopReceiptV3,
+            AdaptiveHopReceiptV4,
+            AdaptiveHopReceiptV5,
+            AdaptiveHopReceiptV6,
+            AdaptiveHopReceiptV7,
+        ),
     ):
         config: Any = (
-            VariableDwellAnalysisConfigurationV5
+            FourRateVariableDwellAnalysisConfigurationV6
+            if isinstance(receipt, AdaptiveHopReceiptV7)
+            else VariableDwellAnalysisConfigurationV5
             if isinstance(receipt, AdaptiveHopReceiptV6)
             else Feature104AnalysisConfigurationV4
             if isinstance(receipt, AdaptiveHopReceiptV5)
@@ -110,7 +121,9 @@ def bind_actual_visit_analysis(
             else DualRx10mAdaptiveHopAnalysisConfigurationV2
         )
         model: Any = (
-            VariableDwellAnalysisBindingV8
+            FourRateVariableDwellAnalysisBindingV9
+            if isinstance(receipt, AdaptiveHopReceiptV7)
+            else VariableDwellAnalysisBindingV8
             if isinstance(receipt, AdaptiveHopReceiptV6)
             else Feature104AnalysisBindingV7
             if isinstance(receipt, AdaptiveHopReceiptV5)
