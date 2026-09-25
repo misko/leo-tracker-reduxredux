@@ -1,0 +1,24 @@
+{
+  "schema": "ds1-iteration19-rate-bound-audit-plan/v1",
+  "reference_used_for_inference": false,
+  "sealed_parent": "reports/2026_09_24_ds1_iteration15_information_weighted/inference.json",
+  "association_policy": "fixed iteration-10 hard associations",
+  "timing_policy": "fixed iteration-10 group timing",
+  "group_weights": {
+    "20260921_00": 0.2742,
+    "20260921_16": 0.7258
+  },
+  "model": "exact causal per-NORAD rate with profiled per-track CFO",
+  "control_rate_bound_s_h": 0.25,
+  "candidate_rate_bound_s_h": 0.5,
+  "rate_prior_sigma_s_h": 0.09176615913014215,
+  "boundary_margin_policy": "max(5 * scalar optimizer xatol, 1e-6)",
+  "stages": [
+    {"spacing_km": 0.048828125, "maximum_translations": 4},
+    {"spacing_km": 0.0244140625, "maximum_translations": 4},
+    {"spacing_km": 0.01220703125, "maximum_translations": 4}
+  ],
+  "transition_rule": "translate at unchanged spacing while the winner is on the edge; halve only after an interior winner",
+  "qualification_policy": "complete interior basin, all fits converged, zero rates within the numerical guard margin, and exact SGP4 replay <= 0.2 Hz",
+  "postseal_policy": "the geographic reference may be read only after inference.json is sealed"
+}
