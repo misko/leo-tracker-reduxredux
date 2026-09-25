@@ -1,0 +1,89 @@
+{
+  "schema": "ds1-ds2-ds3-common-evaluation-matrix/v2",
+  "dataset_scopes": {
+    "DS1_qualified_best": "0.575577 km, information-weighted fixed-identity exact rate refinement; reused development evidence, not an untouched holdout.",
+    "DS2_22": "Published 22-capture snapshot d27cd889. Best recorded all-session point was bounded consistent cap-800 at 3.039075 km; best fresh fine arm was the baseline/shared/regularized tie at 3.158768 km.",
+    "DS3_56": "Fresh 56-capture freeze. Thirty-four captures require new tracking products. Every positioning result is pending."
+  },
+  "common_protocol": {
+    "admission": "Bind manifest sha256:31ccb4b99d784ace58fc891cda43d00f5c5907c4df7df27fa4f483708b4d711b, complete tracking for all 56, and freeze eligibility plus all receipt/cache digests.",
+    "ordinary_scope": "Every capture among the 56 that passes the single predeclared positioning eligibility rule; publish every exclusion and reject a 22-capture fallback.",
+    "geometry_scope": "Exactly the five eligible IDs in geometry-cone-plan.json. This supersedes DS2's conservative three-binding scope after direct capture-time audit verified embedded LT3D bindings for 294be and ff02. The other 51 captures remain excluded.",
+    "search": "Same blind 250 km prior, initial cells, refinement spacings, beam, edge-continuation rule and compute bound for the six general arms where their model permits.",
+    "holdout": "Freeze randomized whole-session folds stratified by radio, sample rate and DS2 membership. Keep each session intact and fit preprocessing only on training folds.",
+    "reference": "Reject reference/truth fields in inference. Verify inference seals before a separate evaluator receives the reference coordinate.",
+    "objective": "Report the declared selection objective plus a common 800 Hz-capped all-observation score; never compare raw scores across unequal scopes.",
+    "compute": "Four workers, one BLAS thread each, immutable resumable checkpoints and a measured preflight before approving the full run."
+  },
+  "arms": [
+    {"id": "ordinary_doppler_baseline", "scope": "all_eligible_of_56", "tier": "primary", "matched_control": null, "DS3_56": "pending"},
+    {"id": "shared_global_receive_time", "scope": "all_eligible_of_56", "tier": "primary", "matched_control": "ordinary_doppler_baseline", "DS3_56": "pending"},
+    {"id": "regularized_per_scan_time", "scope": "all_eligible_of_56", "tier": "conditional", "matched_control": "shared_global_receive_time", "DS3_56": "pending"},
+    {"id": "joint_causal_per_norad_orbit_rate", "scope": "all_eligible_of_56", "tier": "primary", "matched_control": "ordinary_doppler_baseline", "DS3_56": "pending"},
+    {"id": "soft_identity_mixture", "scope": "all_eligible_of_56", "tier": "association_diagnostic", "matched_control": "ordinary_doppler_baseline", "DS3_56": "pending"},
+    {"id": "consistent_cap800_joint_objective", "scope": "all_eligible_of_56_bounded_followup", "tier": "robust_objective", "matched_control": "fresh DS3 joint_causal_per_norad_orbit_rate", "DS3_56": "pending parent"},
+    {"id": "lt3d_geometry_only", "scope": "geometry5", "tier": "geometry", "matched_control": "geometry5 ordinary Doppler", "DS3_56": "pending"},
+    {"id": "lt3d_fixed_up_cone", "scope": "geometry5", "tier": "geometry", "matched_control": "lt3d_geometry_only", "DS3_56": "pending"},
+    {"id": "lt3d_learned_zenith_cone", "scope": "geometry5", "tier": "geometry", "matched_control": "lt3d_fixed_up_cone", "DS3_56": "pending"},
+    {"id": "global_time_plus_lt3d_cone", "scope": "geometry5", "tier": "geometry_timing", "matched_control": "lt3d_learned_zenith_cone and shared_global_receive_time on geometry5", "DS3_56": "pending"}
+  ],
+  "qualification_gates": {
+    "all_models": [
+      "all input digests and the planned session set match",
+      "reference_coordinate_present=false and reference_used_for_fit=false",
+      "all planned cells and folds complete or explicitly fail",
+      "winner is interior at final geographic spacing or the result is unqualified",
+      "clean replay reproduces the selection"
+    ],
+    "timing": [
+      "timing winner is interior to the predeclared tau bounds",
+      "regularization scale is frozen before evaluation",
+      "report tau-bound hits and association churn"
+    ],
+    "rate": [
+      "every accepted finalist passes exact receipt-bound SGP4 replay within 0.2 Hz",
+      "report rate-bound hits and the matched no-rate control",
+      "cache derivatives screen only; exact replay decides"
+    ],
+    "association": [
+      "preserve the full causal candidate catalogue and unassigned component",
+      "report unassigned mass and identity stability",
+      "do not claim calibrated probabilities without calibration evidence"
+    ],
+    "cap800": [
+      "proposal and exact selection use the same 800 Hz cap",
+      "fresh DS3 parent and support only",
+      "bounded result is labeled local and not a fresh wide-prior result"
+    ],
+    "geometry": [
+      "session is one of the five IDs sealed in geometry-cone-plan.json",
+      "receiver-labelled causal track join is complete",
+      "both RX-to-axis mappings are marginalized unless mapping is independently confirmed",
+      "relative receiver phase and phase-derived directions are absent",
+      "fit/choice parameters use training or development rows only",
+      "report retained-track and occupied-support fractions",
+      "compare only against matched controls on the same five sessions"
+    ]
+  },
+  "comparison": [
+    {"model": "ordinary_doppler_baseline", "DS1_qualified_best": "baseline median full-block evidence 5.534 km", "DS2_22": "3.158768 km", "DS3_56": "pending"},
+    {"model": "shared_global_receive_time", "DS1_qualified_best": "median full-block 3.364 km; improved all 8 completed full-block/start pairs", "DS2_22": "3.158768 km; tied baseline", "DS3_56": "pending"},
+    {"model": "regularized_per_scan_time", "DS1_qualified_best": "timing residual benefit; no independently qualified position gain", "DS2_22": "3.158768 km; tied baseline", "DS3_56": "pending"},
+    {"model": "joint_causal_per_norad_orbit_rate", "DS1_qualified_best": "family contains the qualified 0.575577 km information-weighted fixed-ID refinement", "DS2_22": "3.235343 km", "DS3_56": "pending"},
+    {"model": "soft_identity_mixture", "DS1_qualified_best": "implemented reference-free; no independent wide positioning qualification", "DS2_22": "3.985056 km", "DS3_56": "pending"},
+    {"model": "consistent_cap800_joint_objective", "DS1_qualified_best": "raw cap-800 basin stayed open; 0.488 km boundary diagnostic was unqualified", "DS2_22": "3.039075 km bounded local; best recorded DS2-22 point", "DS3_56": "pending fresh DS3 parent"},
+    {"model": "lt3d_geometry_only", "DS1_qualified_best": "geometry consistency evidence only", "DS2_22": "three-binding geometry diagnostic", "DS3_56": "pending geometry5"},
+    {"model": "lt3d_fixed_up_cone", "DS1_qualified_best": "fixed widths produced broad/plateaued optima", "DS2_22": "three-binding fixed-cone diagnostic", "DS3_56": "pending geometry5"},
+    {"model": "lt3d_learned_zenith_cone", "DS1_qualified_best": "learned pointing support did not establish a better position", "DS2_22": "three-binding cone diagnostic", "DS3_56": "pending geometry5"},
+    {"model": "global_time_plus_lt3d_cone", "DS1_qualified_best": "not jointly qualified", "DS2_22": "not run as a combined family", "DS3_56": "pending geometry5"}
+  ],
+  "excluded_diagnostic_history": [
+    {"id": "independent_per_track_time", "DS2_22": "3.882660 km", "reason": "Known-harmful over-flexible timing diagnostic."},
+    {"id": "robust_residual_likelihood_rerank", "DS2_22": "residual accounting only", "reason": "Fixed-finalist diagnostic, not a primary position family."}
+  ],
+  "ranking_policy": [
+    "Rank the six general arms only within the common all-eligible-of-56 scope; keep the bounded cap800 label visible.",
+    "Rank the four geometry/cone arms only within geometry5 and against controls recomputed on those five sessions.",
+    "Report DS2-22 to DS3-56 changes only after DS3 seals; never reuse DS2 coordinates, identities, or scores as DS3 results."
+  ]
+}

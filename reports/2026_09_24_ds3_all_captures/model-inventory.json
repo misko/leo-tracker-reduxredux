@@ -1,0 +1,147 @@
+{
+  "schema": "ds3-position-model-inventory/v2",
+  "created_utc": "2026-09-24",
+  "datasets": {
+    "DS1": "Frozen 339-recording benchmark; repeatedly inspected development evidence. Best qualified result: 0.575577 km from the information-weighted fixed-identity exact rate refinement.",
+    "DS2_22": "Published 22-capture snapshot d27cd889. Sealed manifest sha256:9d679a812136eaeee63abb3d7c4c000e5ede1d68e04142af9d3bd0713f76bdbc.",
+    "DS3_56": "Fresh 56-capture freeze through 2026-09-24T22:20:02.797011Z, including 34 captures not in DS2-22. Admission manifest sha256:31ccb4b99d784ace58fc891cda43d00f5c5907c4df7df27fa4f483708b4d711b. All DS3 positioning results are pending."
+  },
+  "common_ds3_inputs": [
+    "reports/2026_09_24_ds3_all_captures/manifest.json and manifest.sha256",
+    "sealed tracking products and receipt-bound causal TLE/cache state for every eligible capture",
+    "blind prior centre/radius and a predeclared geographic search",
+    "qualified >=3 s tracks with all occupied observations",
+    "randomized whole-session folds frozen before fitting"
+  ],
+  "models": [
+    {
+      "rank": 1,
+      "id": "ordinary_doppler_baseline",
+      "family": "baseline",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/successor_driver.py --mode portable", "reports/2026_09_24_ds1_train_full_timing/run.py --task <task.json>"],
+      "required_inputs": ["common_ds3_inputs", "method=baseline"],
+      "nuisance_parameters": ["one profiled constant CFO per track"],
+      "association_policy": "Recompute the hard best causal catalogue candidate at every geographic cell.",
+      "reference_leakage_status": "Reference-free inference; a separate post-seal evaluator alone receives the reference coordinate.",
+      "expected_runtime": "DS2 observed 51-77 s per joint stage. Measure a DS3 preflight before extrapolating to 56 captures.",
+      "ds3_support": "Pending fresh inference over every positioning-eligible capture in the 56-capture freeze; reject a 22-capture fallback."
+    },
+    {
+      "rank": 2,
+      "id": "shared_global_receive_time",
+      "family": "timing",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/successor_driver.py --mode portable", "reports/2026_09_24_ds1_train_full_timing/run.py --task <task.json>"],
+      "required_inputs": ["common_ds3_inputs", "method=shared_global_tau", "predeclared tau grid and cache margin"],
+      "nuisance_parameters": ["one receive-time shift shared by the fit", "one profiled CFO per track"],
+      "association_policy": "Recompute hard candidates for every position/tau pair.",
+      "reference_leakage_status": "Reference-free timing and position selection; do not interpret tau as a calibrated clock error.",
+      "expected_runtime": "DS2 observed 370-675 s per joint stage. Measure a DS3 preflight.",
+      "ds3_support": "Pending fresh inference over every positioning-eligible DS3 capture."
+    },
+    {
+      "rank": 3,
+      "id": "regularized_per_scan_time",
+      "family": "timing",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/successor_driver.py --mode portable", "reports/2026_09_24_ds1_train_full_timing/run.py --task <task.json>"],
+      "required_inputs": ["common_ds3_inputs", "method=regularized_per_scan_tau", "deviation prior fixed before execution"],
+      "nuisance_parameters": ["common receive-time shift", "one shrinkage-regularized session deviation", "one profiled CFO per track"],
+      "association_policy": "Recompute hard candidates on the declared position/timing search.",
+      "reference_leakage_status": "Reference-free if the prior scale is frozen before post-seal evaluation.",
+      "expected_runtime": "DS2 observed 372-706 s per joint stage. Measure a DS3 preflight.",
+      "ds3_support": "Pending fresh inference over every positioning-eligible DS3 capture."
+    },
+    {
+      "rank": 4,
+      "id": "joint_causal_per_norad_orbit_rate",
+      "family": "orbit_rate_and_joint_position",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/successor_driver.py --mode portable", "reports/2026_09_24_ds2_sep24_rerun_22/refine_joint.py", "reports/2026_09_24_ds1_train_full_orbit_soft/run.py --task <task.json>"],
+      "required_inputs": ["common_ds3_inputs", "receipt-bound TLE epochs", "frozen rate prior/bound", "predeclared exact-finalist budget"],
+      "nuisance_parameters": ["one causal phase rate per selected NORAD", "shared/group timing offset", "one profiled CFO per track"],
+      "association_policy": "Reacquire hard identities during screening, then freeze the selected support for exact rate fits; normalize whole-session groups to equal votes.",
+      "reference_leakage_status": "Reference-free; every accepted finalist must pass exact receipt-bound SGP4 replay within 0.2 Hz.",
+      "expected_runtime": "DS2 observed 542-858 s per joint stage; exact work grows with selected NORAD support. Measure a DS3 preflight.",
+      "ds3_support": "Pending fresh inference over every positioning-eligible DS3 capture."
+    },
+    {
+      "rank": 5,
+      "id": "soft_identity_mixture",
+      "family": "association",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/successor_driver.py --mode portable", "reports/2026_09_24_ds1_train_full_orbit_soft/run.py --task <task.json>"],
+      "required_inputs": ["common_ds3_inputs", "full causal catalogue", "frozen mixture priors", "unassigned component"],
+      "nuisance_parameters": ["candidate mixture scores", "unassigned mass", "optional global tau", "profiled CFO terms"],
+      "association_policy": "Marginalize bounded candidates plus an unassigned component; scores are not treated as calibrated probabilities.",
+      "reference_leakage_status": "Reference-free. Soft global time plus per-NORAD rate remains explicitly unsupported.",
+      "expected_runtime": "DS2 observed 415-815 s per joint stage. Measure a DS3 candidate-count preflight.",
+      "ds3_support": "Pending fresh inference over every positioning-eligible DS3 capture."
+    },
+    {
+      "rank": 6,
+      "id": "consistent_cap800_joint_objective",
+      "family": "robust_capped_objective",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_sep24_rerun_22/run_followups.py", "reports/2026_09_24_ds2_consistent_cap800_runner/runner.py --manifest <manifest.json> --work-root <dir> --output <inference.json>"],
+      "required_inputs": ["fresh sealed DS3 joint-rate parent", "balanced whole-session groups", "800 Hz cap used consistently for proposal and exact ranking", "predeclared local lattice"],
+      "nuisance_parameters": ["one causal phase rate per NORAD", "group timing candidates", "one profiled CFO per track"],
+      "association_policy": "Use the fresh parent's hard support/cached basins and exact-audit retained candidates; do not import DS2 coordinates or identities.",
+      "reference_leakage_status": "Reference-free bounded refinement; seal inference before post-seal distance evaluation.",
+      "expected_runtime": "Minutes for the bounded local follow-up; a fresh wide-prior consistent-objective run was projected at 82-100 minutes.",
+      "ds3_support": "Pending until a fresh all-eligible-DS3 parent is sealed."
+    },
+    {
+      "rank": 7,
+      "id": "lt3d_geometry_only",
+      "family": "receiver_geometry",
+      "runnable_entrypoints": ["reports/2026_09_24_ds2_geometry_cone_evaluation/run.py", "reports/2026_09_24_ds2_sep24_rerun_22/execute_geometry.py"],
+      "required_inputs": ["geometry-cone-plan.json", "receiver-labelled causal tracks for the five eligible session IDs", "LT3D fixture binding", "both RX-to-axis mapping hypotheses"],
+      "nuisance_parameters": ["fixture yaw over [0,360)", "tilt from zenith over [0,15] degrees", "symmetric two-mapping marginalization"],
+      "association_policy": "Score association by nearest transformed fixture mount axis; no cone-width nuisance.",
+      "reference_leakage_status": "Reference-free; relative receiver phase and phase-derived direction are prohibited.",
+      "expected_runtime": "Minutes on five geometry-eligible captures; measure after receiver-labelled track join.",
+      "ds3_support": "Pending on exactly the five capture-time-audited eligible sessions in geometry-cone-plan.json."
+    },
+    {
+      "rank": 8,
+      "id": "lt3d_fixed_up_cone",
+      "family": "fixed_cone",
+      "runnable_entrypoints": ["reports/2026_09_23_train_fixed_cone/run.py", "reports/2026_09_24_ds2_geometry_cone_evaluation/run.py"],
+      "required_inputs": ["same five-session geometry join", "fixed half-angle grid [10,15,20,30] degrees", "development partition chosen before post-seal evaluation"],
+      "nuisance_parameters": ["fixed cone width selected on development", "symmetric mapping marginalization"],
+      "association_policy": "Local-zenith cone gates candidate support; unmatched tracks keep the declared penalty.",
+      "reference_leakage_status": "Reference-free; choose width without reference coordinates and freeze it before evaluation.",
+      "expected_runtime": "Minutes for four fixed widths on five sessions.",
+      "ds3_support": "Pending on the five geometry-eligible sessions only."
+    },
+    {
+      "rank": 9,
+      "id": "lt3d_learned_zenith_cone",
+      "family": "learned_cone",
+      "runnable_entrypoints": ["reports/2026_09_23_train_pointing_cone/run.py", "reports/2026_09_24_ds2_geometry_cone_evaluation/run_blind_reassociated.py"],
+      "required_inputs": ["same five-session geometry join", "training rows isolated by whole session", "predeclared orientation and cone grids"],
+      "nuisance_parameters": ["cone half-angle fit on training rows", "fixture yaw", "fixture tilt from zenith", "symmetric mapping marginalization"],
+      "association_policy": "Blindly score/reacquire catalogue candidates under the fitted upward cone and unmatched penalty.",
+      "reference_leakage_status": "Reference-free if cone width/orientation are learned only from training rows and frozen for evaluation.",
+      "expected_runtime": "Minutes to tens of minutes on five captures, depending on orientation-grid size.",
+      "ds3_support": "Pending on the five geometry-eligible sessions only."
+    },
+    {
+      "rank": 10,
+      "id": "global_time_plus_lt3d_cone",
+      "family": "global_time_plus_cone",
+      "runnable_entrypoints": ["reports/2026_09_24_ds1_train_full_timing/run.py --task <task.json>", "reports/2026_09_24_ds2_geometry_cone_evaluation/run_blind_reassociated.py"],
+      "required_inputs": ["same five-session geometry join", "qualified UTC timing for every participating capture", "predeclared shared-tau and cone/orientation grids"],
+      "nuisance_parameters": ["one shared global receive-time offset", "cone half-angle", "fixture yaw", "fixture tilt", "symmetric mapping marginalization", "profiled CFO"],
+      "association_policy": "Recompute candidate support under the learned cone for every position/shared-time trial.",
+      "reference_leakage_status": "Reference-free; time and cone parameters must be selected without surveyed coordinates.",
+      "expected_runtime": "Expected to exceed the learned-cone arm by the tau-grid factor; require a bounded preflight before full five-session execution.",
+      "ds3_support": "Pending on the five geometry-eligible, UTC-qualified sessions only."
+    }
+  ],
+  "excluded_diagnostics": [
+    {"id": "independent_per_track_time", "history": "DS2-22 error 3.882660 km; excessive freedom absorbs geometry. Keep only as a non-identifiability diagnostic."},
+    {"id": "robust_residual_likelihood_rerank", "history": "Fixed-finalist diagnostic only; DS1 robust rerank worsened group 00 and DS2-22 emitted no new position."},
+    {"id": "regularized_common_plus_session_scale", "history": "Hit the +/-2000 ppm guard and iteration limit and selected its matched rate-only coordinate."},
+    {"id": "shared_norad_rate_joint", "history": "No useful repeated selected-NORAD overlap in prior evaluated groups."},
+    {"id": "rate_aware_local_screen", "history": "Rates were rejected at all tested DS2 cells and the arm tied its nominal control."},
+    {"id": "legacy_joint_session_scale_lbfgsb", "history": "Rejected for optimizer nonconvergence."}
+  ],
+  "geometry_scope_note": "DS2 evaluated three geometry bindings. DS3's stricter live capture-time audit verifies two additional LT3D bindings embedded in scan-fw-294be7850b76a34d and scan-fw-ff02a0ba4200d0dc, so geometry-cone-plan.json has five eligible sessions and excludes the other 51."
+}
