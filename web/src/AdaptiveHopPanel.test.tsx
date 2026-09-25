@@ -8,6 +8,47 @@ const respond = (value: unknown, status = 200) => ({ ok: status === 200, status,
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it("accepts the schema-8 page and schema-9 four-rate adaptive detail", async () => {
+    const legacy = adaptiveDetailFixture("four-rate-test", 3);
+    const origin = BigInt(legacy.source_origin_counter!);
+    const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * 3n);
+    const visits = legacy.visits.map(visit => ({
+      ...visit,
+      proposed_target_index: visit.target_index,
+      active_mask: visit.active_mask & 15,
+      quiet_mask: visit.quiet_mask & 15,
+      valid_start_counter: scale(visit.valid_start_counter),
+      valid_end_counter: visit.valid_end_counter === null ? null : scale(visit.valid_end_counter),
+      decision_counter: scale(visit.decision_counter),
+    }));
+    const capture = {
+      ...legacy.capture,
+      schema_version: 9 as const,
+      mode: "adaptive" as const,
+      nominal_duration_seconds: 20,
+      sample_rate_hz: 7500000 as const,
+      bandwidth_hz: 7500000 as const,
+      analysis_state: "separate_product" as const,
+      radio_serial: "10400056f695001322002d0010ad1719f2",
+      selected_edge: "lower" as const,
+      allowed_target_mask: 15 as const,
+      active_dwell_ms: 120 as const,
+      recorded_gain_mode: "manual" as const,
+      recorded_manual_gain_db: 40,
+    };
+    const page = {
+      schema_version: 8 as const, kind: "adaptive_hop_history_page" as const,
+      cursor: 0, limit: 5, total: 1, next_cursor: null, items: [capture],
+    };
+    const detail = {
+      ...legacy, schema_version: 9 as const, capture, visits,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond(detail)));
+
+    await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
+    await expect(getAdaptiveSession("four-rate-test")).resolves.toEqual(detail);
+  });
+
   it("admits only the declared feature-104 schema-7 rates and page major", async () => {
     const legacy = adaptiveDetailFixture("feature104-test", 3);
     const origin = BigInt(legacy.source_origin_counter!);
