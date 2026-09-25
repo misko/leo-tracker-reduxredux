@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from contextlib import suppress
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -25,7 +26,7 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path
             pass
 
         def publication_index(self):
-            return ((1, "scan-fw-variable"),)
+            return ((time.time_ns(), "scan-fw-variable"),)
 
         def inspect(self, session_id):
             assert session_id == "scan-fw-variable"
@@ -98,6 +99,42 @@ def test_enqueue_pending_does_not_reopen_sessions_owned_by_queue(monkeypatch, tm
                 "scan-fw-owned": frozenset(("adaptive_scan",))
             }
         ),
+    )
+
+    assert subject.enqueue_pending(bulk_root=tmp_path) == ()
+
+
+def test_enqueue_pending_does_not_open_captures_outside_live_window(
+    monkeypatch, tmp_path
+) -> None:
+    class Captures:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def publication_index(self):
+            return ((1, "scan-fw-historical"),)
+
+        def inspect(self, _session_id):
+            raise AssertionError("cadence must not turn into a historical backfill")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", Captures)
+    monkeypatch.setattr(
+        subject,
+        "AdaptiveHopAnalysisPresentationStore",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        subject,
+        "_catalog",
+        lambda: SimpleNamespace(adaptive_job_kinds_by_session=lambda: {}),
     )
 
     assert subject.enqueue_pending(bulk_root=tmp_path) == ()
