@@ -121,8 +121,14 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
     catalog = _catalog()
     queued: list[str] = []
     try:
+        queued_sessions = catalog.adaptive_job_kinds_by_session()
         recent_cutoff = time.time_ns() - 2 * 3600 * 10**9
         for indexed_utc_ns, session_id in captures.publication_index():
+            # A queue job owns retries and enqueues tracking after analysis. Capture
+            # publications are immutable, so reopening an already-owned session on
+            # every cadence tick cannot discover new work.
+            if queued_sessions.get(session_id):
+                continue
             capture = captures.inspect(session_id)
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
@@ -143,6 +149,7 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                     priority=priority,
                 ):
                     queued.append(session_id)
+                    queued_sessions[session_id] = frozenset(("adaptive_scan",))
                 continue
             if indexed_utc_ns < recent_cutoff:
                 continue
@@ -167,6 +174,7 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                 priority=priority,
             ):
                 queued.append(session_id)
+                queued_sessions[session_id] = frozenset(("adaptive_tracking",))
     finally:
         captures.close()
     return tuple(queued)
