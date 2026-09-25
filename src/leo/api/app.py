@@ -187,6 +187,7 @@ from leo.scanner.adaptive_hop_presentation import (
     EdgeAdaptiveAnalysisStatusV4,
     Feature103AnalysisStatusV6,
     Feature104AnalysisStatusV7,
+    FourRateVariableDwellAnalysisStatusV9,
     VariableDwellAnalysisStatusV8,
 )
 from leo.scanner.adaptive_relative_phase import RelativePhaseStatusV1
@@ -594,6 +595,7 @@ def create_app(
             | Feature103AnalysisStatusV6
             | Feature104AnalysisStatusV7
             | VariableDwellAnalysisStatusV8
+            | FourRateVariableDwellAnalysisStatusV9
         ),
     )
     @v2_router.api_route(
@@ -608,13 +610,19 @@ def create_app(
             | Feature103AnalysisStatusV6
             | Feature104AnalysisStatusV7
             | VariableDwellAnalysisStatusV8
+            | FourRateVariableDwellAnalysisStatusV9
         ),
     )
     def adaptive_analysis_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
         response: Response,
         probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
-    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4 | VariableDwellAnalysisStatusV8:
+    ) -> (
+        AdaptiveHopAnalysisStatusV1
+        | EdgeAdaptiveAnalysisStatusV4
+        | VariableDwellAnalysisStatusV8
+        | FourRateVariableDwellAnalysisStatusV9
+    ):
         return _adaptive_analysis_status(session_id, response, probe_stride_ms)
 
     @router.api_route(
@@ -634,6 +642,7 @@ def create_app(
                 HostAdaptiveAnalysisStatusV2,
                 EdgeAdaptiveAnalysisStatusV4,
                 VariableDwellAnalysisStatusV8,
+                FourRateVariableDwellAnalysisStatusV9,
             ),
         ):
             raise HTTPException(status_code=404, detail="native adaptive analysis requires API v2")
@@ -641,7 +650,12 @@ def create_app(
 
     def _adaptive_analysis_status(
         session_id: str, response: Response, probe_stride_ms: int
-    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4 | VariableDwellAnalysisStatusV8:
+    ) -> (
+        AdaptiveHopAnalysisStatusV1
+        | EdgeAdaptiveAnalysisStatusV4
+        | VariableDwellAnalysisStatusV8
+        | FourRateVariableDwellAnalysisStatusV9
+    ):
         if adaptive_hop_analysis is None:
             raise HTTPException(
                 status_code=404, detail="adaptive analysis presentation is unavailable"

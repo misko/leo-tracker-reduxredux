@@ -35,6 +35,8 @@ from leo.scanner.adaptive_hop_products import (
     Feature103MetricsManifestV6,
     Feature104AnalysisBindingV7,
     Feature104MetricsManifestV7,
+    FourRateVariableDwellAnalysisBindingV9,
+    FourRateVariableDwellMetricsManifestV9,
     VariableDwellAnalysisBindingV8,
     VariableDwellMetricsManifestV8,
 )
@@ -94,6 +96,11 @@ def project_adaptive_overview(
     )
     if isinstance(binding, Feature104AnalysisBindingV7):
         binding_model, metrics_model = Feature104AnalysisBindingV7, Feature104MetricsManifestV7
+    elif isinstance(binding, FourRateVariableDwellAnalysisBindingV9):
+        binding_model, metrics_model = (
+            FourRateVariableDwellAnalysisBindingV9,
+            FourRateVariableDwellMetricsManifestV9,
+        )
     elif isinstance(binding, VariableDwellAnalysisBindingV8):
         binding_model, metrics_model = (
             VariableDwellAnalysisBindingV8,
