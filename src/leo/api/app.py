@@ -186,6 +186,7 @@ from leo.scanner.adaptive_hop_presentation import (
     EdgeAdaptiveAnalysisStatusV4,
     Feature103AnalysisStatusV6,
     Feature104AnalysisStatusV7,
+    VariableDwellAnalysisStatusV8,
 )
 from leo.scanner.adaptive_relative_phase import RelativePhaseStatusV1
 from leo.scanner.glrt_publication import ScannerGlrtPublicationReader
@@ -584,6 +585,7 @@ def create_app(
             | DualRx10mAdaptiveAnalysisStatusV5
             | Feature103AnalysisStatusV6
             | Feature104AnalysisStatusV7
+            | VariableDwellAnalysisStatusV8
         ),
     )
     @v2_router.api_route(
@@ -597,13 +599,14 @@ def create_app(
             | DualRx10mAdaptiveAnalysisStatusV5
             | Feature103AnalysisStatusV6
             | Feature104AnalysisStatusV7
+            | VariableDwellAnalysisStatusV8
         ),
     )
     def adaptive_analysis_v2(
         session_id: Annotated[str, ApiPath(pattern=GLRT_SESSION_PATTERN)],
         response: Response,
         probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
-    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4:
+    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4 | VariableDwellAnalysisStatusV8:
         return _adaptive_analysis_status(session_id, response, probe_stride_ms)
 
     @router.api_route(
@@ -617,13 +620,20 @@ def create_app(
         probe_stride_ms: Annotated[int, Query(ge=10, le=120)] = 10,
     ) -> AdaptiveHopAnalysisStatusV1:
         status = _adaptive_analysis_status(session_id, response, probe_stride_ms)
-        if isinstance(status, (HostAdaptiveAnalysisStatusV2, EdgeAdaptiveAnalysisStatusV4)):
+        if isinstance(
+            status,
+            (
+                HostAdaptiveAnalysisStatusV2,
+                EdgeAdaptiveAnalysisStatusV4,
+                VariableDwellAnalysisStatusV8,
+            ),
+        ):
             raise HTTPException(status_code=404, detail="native adaptive analysis requires API v2")
         return status
 
     def _adaptive_analysis_status(
         session_id: str, response: Response, probe_stride_ms: int
-    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4:
+    ) -> AdaptiveHopAnalysisStatusV1 | EdgeAdaptiveAnalysisStatusV4 | VariableDwellAnalysisStatusV8:
         if adaptive_hop_analysis is None:
             raise HTTPException(
                 status_code=404, detail="adaptive analysis presentation is unavailable"
