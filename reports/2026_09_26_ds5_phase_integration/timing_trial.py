@@ -79,8 +79,11 @@ def options(bank,sigma,n):
         out.append(dict(candidate_id=str(bank['candidate_ids'][i]),train=float(marginal[i]),held=float(logsumexp(joint[i]+bank['logprior'][i])-marginal[i]),sample_held=joint[i,ix]-tr[i,ix],projection=bank['projection'][i,ix],joint_projection=bank['projection'][i,jx],sample_tau=bank['taus'][ix],tau_mean=float(np.exp(lp)@bank['taus']),tau_sd=float(np.sqrt(np.exp(lp)@(bank['taus']-(np.exp(lp)@bank['taus']))**2))))
     return out
 
-def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
+def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=None):
     concentrations=np.broadcast_to(np.asarray(kappa,float),y.shape)
+    bp=np.full(n_baseline,-np.log(n_baseline)) if baseline_log_prior is None else np.asarray(baseline_log_prior,float)
+    if bp.shape!=(n_baseline,) or not np.isfinite(bp).all():raise ValueError('finite baseline log weights required')
+    bp=bp-logsumexp(bp)
     baseline=np.linspace(-2,2,n_baseline);lp=[];held=[];phase_train=[];phase_joint=[];coupled=[];stable_coupled=[];pairs=[]
     for a in left:
         for b in right:
@@ -90,19 +93,19 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
             model=baseline[:,None,None,None]*geom[None,:,:,:]
             tr=phase_evidence(y[train],model[...,train],concentrations[train])
             full=phase_evidence(y,model,concentrations)
-            norm=np.log(tr.size)
-            phase_train.append(float(logsumexp(tr)-norm));phase_joint.append(float(logsumexp(full)-norm))
+            integration_weight=bp[:,None,None]-np.log(tr.shape[1]*tr.shape[2])
+            phase_train.append(float(logsumexp(tr+integration_weight)));phase_joint.append(float(logsumexp(full+integration_weight)))
             ch=a['sample_held'][:,None]+b['sample_held'][None,:]
             # Same timing posterior must be updated by phase; preserve coupling
             # instead of multiplying separately marginalized held CFO terms.
-            coupled.append(float(logsumexp(tr+ch[None,:,:])-norm))
+            coupled.append(float(logsumexp(tr+ch[None,:,:]+integration_weight)))
             # Evaluate the numerator integral using its exact CFO-conditioned
             # timing posterior. Held CFO is used only in scoring that joint
             # density; phase training weights and identity updates remain train-only.
             jointgeom=2*np.pi*(b['joint_projection'][None,:,:]*f1-a['joint_projection'][:,None,:]*f0)/C
             jointmodel=baseline[:,None,None,None]*jointgeom[None,:,:,:]
             jointtr=phase_evidence(y[train],jointmodel[...,train],concentrations[train])
-            stable_coupled.append(float(logsumexp(jointtr)-norm+a['held']+b['held']))
+            stable_coupled.append(float(logsumexp(jointtr+integration_weight)+a['held']+b['held']))
             lp.append(a['train']+b['train']);held.append(a['held']+b['held'])
             pairs.append([a['candidate_id'],b['candidate_id']])
     lp=np.array(lp);lp-=logsumexp(lp);held=np.array(held);phase_train=np.array(phase_train);phase_joint=np.array(phase_joint)
