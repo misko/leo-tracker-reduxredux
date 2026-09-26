@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scan-phase-replay-observation/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "method_id", "visit_index", "target_index", "split", "receiver_id", "device_counter_start", "device_counter_stop_exclusive", "observable", "symmetry", "support", "status"],
+  "properties": {
+    "schema": {"const": "scan-phase-replay-observation/v1"}, "method_id": {"type": "string"},
+    "visit_index": {"type": "integer", "minimum": 0}, "target_index": {"enum": [4,5,6,7]},
+    "split": {"enum": ["development", "evaluation"]}, "receiver_id": {"enum": [0,1]},
+    "device_counter_start": {"type": "integer"}, "device_counter_stop_exclusive": {"type": "integer"},
+    "observable": {"enum": ["ordinary_phase_2pi", "phase_modulo_pi", "timing_code_phase", "rx_differential_phase", "response_normalized_residual_phase", "frequency_only"]},
+    "symmetry": {"enum": ["2pi", "pi", "none"]},
+    "support": {"type": "object", "required": ["training", "held_out", "expansion_samples", "disjoint"], "properties": {"training": {"type": "array", "items": {"type": "integer"}}, "held_out": {"type": "array", "items": {"type": "integer"}}, "expansion_samples": {"type": "integer", "minimum": 0}, "disjoint": {"const": true}}},
+    "status": {"enum": ["attempted", "qualified", "excluded", "failed"]}, "values": {"type": "object"}, "exclusion_reason": {"type": ["string", "null"]}
+  }
+}

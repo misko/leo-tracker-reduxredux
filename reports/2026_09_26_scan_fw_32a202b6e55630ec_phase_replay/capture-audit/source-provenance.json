@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "session_id": "scan-fw-32a202b6e55630ec",
+  "manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-32a202b6e55630ec/manifest.json",
+  "manifest_document_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+  "envelope_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+  "manifest_envelope_claimed_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+  "manifest_declared_uncompressed_sha256": "sha256:48a04ccdee196103c3364f292497fdbcf8a3c0fdf15f7e25e2243b1039ed9a2e",
+  "verified_session_uncompressed_sha256": "sha256:48a04ccdee196103c3364f292497fdbcf8a3c0fdf15f7e25e2243b1039ed9a2e",
+  "git_revision": "e1a24b200d4bb68d4f38484dc591e9b9616a2e70",
+  "reader_contract": "ci16_le, shape (sample, receiver, iq), receiver_ids (0,1); compact rows map to device counter valid_start_counter + local index",
+  "utc_policy": "UTC is derived only from the host-bracketed device-counter binding and retains the manifest uncertainty; device counter is authoritative for elapsed time.",
+  "rf_validity_policy": "Counter-word rows are metadata contamination, not RF. Preserve coordinates, exclude estimator/transform windows that touch them, and expand invalidity by filter support. Zero fill is sensitivity analysis only.",
+  "source_semantics_limit": "The repository reader preserves all stored rows and supplies no row classification. Capture code copies upstream.samples unchanged. Exact firmware/kernel insertion versus overwrite semantics are not attested by the saved manifest; the words occupy one stored IQ row and therefore the original RF values at that coordinate are unavailable."
+}

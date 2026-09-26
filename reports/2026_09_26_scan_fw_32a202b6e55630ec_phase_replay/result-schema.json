@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scan-phase-replay-method-result/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "method_id", "implementation_revision", "input_hashes", "configuration", "accounting", "outcome", "runtime"],
+  "properties": {
+    "schema": {"const": "scan-phase-replay-method-result/v1"},
+    "method_id": {"type": "string", "pattern": "^[0-9]{2}-[a-z0-9-]+$"},
+    "implementation_revision": {"type": "string", "minLength": 7},
+    "input_hashes": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "minProperties": 1},
+    "configuration": {"type": "object"},
+    "accounting": {
+      "type": "object", "additionalProperties": false,
+      "required": ["eligible", "attempted", "rf_valid", "acquired", "supported", "phase_qualified", "evaluation", "held_out_passing", "not_applicable_reasons", "exclusions"],
+      "properties": {
+        "eligible": {"type": "integer", "minimum": 0}, "attempted": {"type": "integer", "minimum": 0},
+        "rf_valid": {"type": "integer", "minimum": 0}, "acquired": {"type": "integer", "minimum": 0},
+        "supported": {"type": "integer", "minimum": 0}, "phase_qualified": {"type": ["integer", "null"], "minimum": 0},
+        "evaluation": {"type": "integer", "minimum": 0}, "held_out_passing": {"type": ["integer", "null"], "minimum": 0},
+        "not_applicable_reasons": {"type": "object", "additionalProperties": {"type": "string"}},
+        "exclusions": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "outcome": {"enum": ["completed", "failed", "not_applicable", "incomplete"]},
+    "metrics": {"type": "object"}, "figures": {"type": "array", "items": {"type": "string"}},
+    "runtime": {"type": "object", "required": ["wall_seconds", "cpu_seconds", "peak_rss_bytes"], "properties": {"wall_seconds": {"type": "number", "minimum": 0}, "cpu_seconds": {"type": "number", "minimum": 0}, "peak_rss_bytes": {"type": "integer", "minimum": 0}}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

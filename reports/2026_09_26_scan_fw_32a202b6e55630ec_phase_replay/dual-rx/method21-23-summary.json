@@ -1,0 +1,38 @@
+{
+  "schema": "scan-phase-replay-dual-rx-pilot/v1",
+  "methods": [
+    "21-dual-rx-pilot-double-difference",
+    "23-response-normalized-disjoint-band"
+  ],
+  "counts": {
+    "eligible_visits": 128,
+    "dual_rx_acquired_visits": 42,
+    "visits_with_common_frames": 33,
+    "common_frames": 2937,
+    "evaluation_common_frames": 2225
+  },
+  "response_training": "development visits only, separate complex response per target/tone",
+  "evaluation_disjoint_band": {
+    "count": 2225,
+    "a_b_phase_r": 0.9316951720705932,
+    "a_b_phase_rms_deg": 26.226894681096695
+  },
+  "double_difference_status": "not_evaluated_here: requires two phase-blind same-signal pairs in one receiver/probe",
+  "method22_common_windows": {
+    "23": {
+      "count": 165,
+      "evaluation_count": 125,
+      "evaluation_median_frame_phase_r": 0.20232660786159454
+    },
+    "47": {
+      "count": 66,
+      "evaluation_count": 50,
+      "evaluation_median_frame_phase_r": 0.13811958281923117
+    },
+    "95": {
+      "count": 33,
+      "evaluation_count": 25,
+      "evaluation_median_frame_phase_r": 0.09177103423041706
+    }
+  }
+}

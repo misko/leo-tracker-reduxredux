@@ -1,0 +1,811 @@
+{
+  "schema": "scan-phase-replay-method-registry/v1",
+  "recording_id": "scan-fw-32a202b6e55630ec",
+  "selection": {
+    "path": "selection.json",
+    "sha256": "sha256:b73c0d5322a6a70c6ee851ee80ad99ef62ca13b190ae4bdeb35ce95ce2030115"
+  },
+  "primary_local_mode_policy": {
+    "selection": "highest corrected fractional exact-control margin per receiver/probe; original acquisition rank breaks exact ties",
+    "additional_modes": "retain every admitted mode for explicit multimode and two-signal analyses",
+    "prohibition": "no phase-selected branch stitching",
+    "authority": "EXECUTION.md frozen before phase read"
+  },
+  "counts": {
+    "ledger_rows": 30,
+    "required": 30
+  },
+  "methods": [
+    {
+      "method_id": "01-integrated-cfo-boundary-bridging",
+      "ledger_row": 1,
+      "name": "Integrated CFO boundary bridging",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_within_segment_frame_phase.py",
+        "reports/2026_08_22_within_segment_frame_phase.md",
+        "reports/2026_09_23_longarc_phase_transport.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "cross-dwell/REPORT.md",
+        "scope": "552 candidate adjacent boundaries; 99 CFO-compatible; 71 evaluation"
+      }
+    },
+    {
+      "method_id": "02-frame-local-qin-phase",
+      "ledger_row": 2,
+      "name": "Frame-local Qin phase",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_frame_local_phase_qualification.py",
+        "reports/2026_08_22_frame_local_phase_qualification.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/REPORT.md",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "03-adjacent-frame-correlation",
+      "ledger_row": 3,
+      "name": "Adjacent-frame correlation",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_within_segment_frame_phase.py",
+        "reports/2026_08_22_within_segment_frame_phase.md",
+        "reports/2026_09_23_long_dwell_phase_change.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/REPORT.md",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "04-prompt-phase-linear-doppler",
+      "ledger_row": 4,
+      "name": "Prompt phase versus integrated linear Doppler",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_pnt_phase_doppler_comparison.py",
+        "reports/2026_08_22_pnt_phase_doppler_comparison.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/actual-05-14-smoke.json",
+        "scope": "8 frozen development visits / 16 receiver cases; 9 acquired"
+      }
+    },
+    {
+      "method_id": "05-five-state-phase-feedback",
+      "ledger_row": 5,
+      "name": "Five-state phase feedback",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_pnt_kalman_comparison.py",
+        "tools/report_pilot_pnt_kalman.py",
+        "reports/2026_08_22_pnt_kalman_comparison.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/actual-05-14-smoke.json",
+        "scope": "8 frozen development visits / 16 receiver cases; 9 acquired"
+      }
+    },
+    {
+      "method_id": "06-ordinary-2pi-long-tracking",
+      "ledger_row": 6,
+      "name": "Ordinary 2pi long tracking",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "reports/2026_08_22_kalman_phase_tracking_comparison.md",
+        "reports/2026_09_21_long_track_phase_connection_audit.md",
+        "reports/2026_09_23_longarc_phase.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/fullspan/fullspan-trackers.json",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "07-full-qin-phase-slope",
+      "ledger_row": 7,
+      "name": "Full Qin phase slope",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_subsecond_pilot_structure.py",
+        "reports/2026_08_22_edge_pilot_phase_slope.md",
+        "reports/2026_08_22_subsecond_pilot_structure.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/REPORT.md",
+        "scope": "10,301 frames on 124 acquired receiver arcs"
+      }
+    },
+    {
+      "method_id": "08-offline-binary-pi-batch",
+      "ledger_row": 8,
+      "name": "Offline binary-pi batch fit",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_five_dwell_modulo_pi_qualification.py",
+        "reports/2026_08_23_five_dwell_modulo_pi_qualification.md",
+        "reports/2026_09_22_postfix_phase_methods.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/actual-08-smoke.json",
+        "scope": "8 development visits: 8 complete / 8 insufficient receiver cases"
+      }
+    },
+    {
+      "method_id": "09-causal-modulo-pi-filter",
+      "ledger_row": 9,
+      "name": "Causal modulo-pi filter",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_five_dwell_modulo_pi_qualification.py",
+        "reports/2026_08_23_five_dwell_modulo_pi_qualification.md",
+        "reports/2026_09_24_consolidated_phase_methods.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/fullspan/fullspan-trackers.json",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "10-five-state-modulo-pi-pnt",
+      "ledger_row": 10,
+      "name": "Five-state modulo-pi PNT",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_pilot_pnt_kalman.py",
+        "reports/2026_08_22_pilot_pnt_kalman.md",
+        "reports/2026_09_22_postfix_phase_methods.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/fullspan/fullspan-trackers.json",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "11-production-multi-window",
+      "ledger_row": 11,
+      "name": "Production multi-window qualification",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/replay_150802_pnt_kalman_v4_canary.py"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/fullspan/fullspan-trackers.json",
+        "scope": "116 acquired arcs with \u226575 ms raw support"
+      }
+    },
+    {
+      "method_id": "12-short-segments-long-glrt",
+      "ledger_row": 12,
+      "name": "Short segments versus long GLRT lines",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "reports/2026_09_23_long_dwell_multiscale_phase.md",
+        "reports/2026_09_23_longarc_phase_reliability.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/REPORT.md",
+        "scope": "Actual 50/75/80/100/120 ms bounded spans plus full-cohort local folds"
+      }
+    },
+    {
+      "method_id": "13-scanner-retune-bounded",
+      "ledger_row": 13,
+      "name": "Scanner retune-bounded tracking",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_adaptive_dual_rx_phase.py",
+        "reports/2026_09_23_adaptive_retune_phase_audit.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/fullspan/fullspan-trackers.json",
+        "scope": "128 visits; 124/256 receiver arcs acquired; 86/192 evaluation arcs"
+      }
+    },
+    {
+      "method_id": "14-semi-coherent-pooling",
+      "ledger_row": 14,
+      "name": "Semi-coherent pooling",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/report_470384_semicoherent_recovery.py",
+        "reports/2026_08_23_470384_semicoherent_recovery.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/actual-05-14-smoke.json",
+        "scope": "9 development arcs: 20/50 ms 9 each; 100 ms 8 eligible"
+      }
+    },
+    {
+      "method_id": "15-capture-reset-mechanism",
+      "ledger_row": 15,
+      "name": "Capture/reset mechanism",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "reports/2026_09_25_glrt_timestamp_contamination.md",
+        "reports/2026_09_23_adaptive_retune_phase_audit.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "capture-audit/REPORT.md",
+        "scope": "All 2,214 chunks / 2.6568 billion dual-RX rows"
+      }
+    },
+    {
+      "method_id": "16-robust-jump-phase-gated",
+      "ledger_row": 16,
+      "name": "Robust jump and phase-gated filters",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "reports/2026_08_25_five_dwell_pilot_filter_prototypes.md",
+        "reports/2026_09_24_consolidated_phase_methods.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/row16-root/REPORT.md",
+        "scope": "124 cached arcs; exact V2/phase-gated comparison bounded to development states"
+      }
+    },
+    {
+      "method_id": "17-v3-phase-safe",
+      "ledger_row": 17,
+      "name": "V3 phase-safe tracking",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/replay_150802_pnt_kalman_v4_canary.py",
+        "reports/2026_08_25_pnt_kalman_v3_comprehensive_review.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/REPORT.md",
+        "scope": "14 actual V3 development spans at 75/120 ms"
+      }
+    },
+    {
+      "method_id": "18-v4-seed-control",
+      "ledger_row": 18,
+      "name": "V4 seed/control correction",
+      "owner_output": "frame-methods",
+      "historical_report_refs": [
+        "tools/replay_150802_pnt_kalman_v4_canary.py",
+        "reports/2026_08_25_150802_pnt_kalman_v4_experimental.md",
+        "reports/2026_08_25_pnt_kalman_v4_correction_plan.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "frame-methods/v4-smoke.json",
+        "scope": "16 development receiver cases: 8 processed, 7 not acquired, 1 short"
+      }
+    },
+    {
+      "method_id": "19-pss-sss-carrier-phase",
+      "ledger_row": 19,
+      "name": "PSS/SSS carrier phase",
+      "owner_output": "sync-spectral",
+      "historical_report_refs": [
+        "reports/2026_08_25_multi_dwell_pss_sss_doppler.md",
+        "reports/2026_09_25_pss_precision_lock.md",
+        "reports/2026_09_25_pss_wideband_fractional_alignment.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "sync-spectral/REPORT.md",
+        "scope": "128 visits / 256 receiver cases; independent PSS 4, conditioned 73, SSS 17"
+      }
+    },
+    {
+      "method_id": "20-pss-timing-weighting",
+      "ledger_row": 20,
+      "name": "PSS timing phase / weighting",
+      "owner_output": "sync-spectral",
+      "historical_report_refs": [
+        "reports/2026_09_25_dual_rx_10msps_pss_glrt.md",
+        "reports/2026_09_25_five_glrt_tracks_pss_reconstruction.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "sync-spectral/REPORT.md",
+        "scope": "48 evaluation receiver cases with GLRT-conditioned PSS timing"
+      }
+    },
+    {
+      "method_id": "21-dual-rx-pilot-double-difference",
+      "ledger_row": 21,
+      "name": "Dual-RX pilot double difference",
+      "owner_output": "dual-rx",
+      "historical_report_refs": [
+        "reports/2026_09_21_matched_pilot_double_difference_noise_control.md",
+        "reports/2026_09_21_scan_hop_28d_matched_pilot_dd.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "dual-rx/method21-22-shared-residual.json",
+        "scope": "42 sparse-acquired primary visits; 2 multimode evaluation visits"
+      }
+    },
+    {
+      "method_id": "22-double-difference-window-common-frame",
+      "ledger_row": 22,
+      "name": "Double-difference window/common-frame tests",
+      "owner_output": "dual-rx",
+      "historical_report_refs": [
+        "reports/2026_09_21_scan_hop_28d_simultaneous_dd_cohort.md",
+        "reports/2026_09_23_long_dwell_multiscale_protocol.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "dual-rx/method21-22-shared-residual.json",
+        "scope": "42 sparse-acquired visits; 29 evaluation; 23/47/95 ms"
+      }
+    },
+    {
+      "method_id": "23-response-normalized-disjoint-band",
+      "ledger_row": 23,
+      "name": "Response-normalized disjoint-band phase",
+      "owner_output": "dual-rx",
+      "historical_report_refs": [
+        "src/leo/analysis/starlink/relative_phase.py",
+        "reports/2026_09_24_late_dual_rx_track_phase.md",
+        "reports/2026_09_21_full_bandwidth_rx_alignment.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "dual-rx/method23-dense-relative-phase-summary.json",
+        "scope": "128 visits; 46 training-half acquired; 40 completed; 21 broadband-supported"
+      }
+    },
+    {
+      "method_id": "24-direct-dual-rx-iq",
+      "ledger_row": 24,
+      "name": "Direct dual-RX IQ",
+      "owner_output": "dual-rx",
+      "historical_report_refs": [
+        "reports/2026_09_21_scan_hop_28d_raw_iq_phase_audit.md",
+        "reports/2026_09_24_dual_capture_phase_random_holdout.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "dual-rx/dense-direct/method24-corrected-summary.json",
+        "scope": "46 training-half-acquired visits; 32 evaluation"
+      }
+    },
+    {
+      "method_id": "25-aggregate-per-bin-fft",
+      "ledger_row": 25,
+      "name": "Aggregate and per-bin FFT",
+      "owner_output": "sync-spectral",
+      "historical_report_refs": [
+        "reports/2026_09_21_glrt_guided_broadband_phase.md",
+        "reports/2026_09_23_matched_bandwidth_phase_results.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "sync-spectral/guarded-spectral-dense-summary.json",
+        "scope": "46 training-half-acquired visits; 32 evaluation"
+      }
+    },
+    {
+      "method_id": "26-bandwidth",
+      "ledger_row": 26,
+      "name": "Bandwidth",
+      "owner_output": "sync-spectral",
+      "historical_report_refs": [
+        "reports/2026_09_21_full_bandwidth_rx_alignment.md",
+        "reports/2026_09_23_matched_bandwidth_phase_results.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "sync-spectral/guarded-spectral-dense-summary.json",
+        "scope": "Same 32 acquired evaluation visits and identical guarded splits"
+      }
+    },
+    {
+      "method_id": "27-absolute-phase-track",
+      "ledger_row": 27,
+      "name": "Absolute phase across a track",
+      "owner_output": "cross-dwell",
+      "historical_report_refs": [
+        "reports/2026_09_21_recent8h_long_track_phase.md",
+        "reports/2026_09_24_late_dual_rx_track_phase.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "cross-dwell/REPORT.md",
+        "scope": "177 touched visits; 75 retuned returns; 54 evaluation returns after CFO gate"
+      }
+    },
+    {
+      "method_id": "28-global-time-boundary-transport",
+      "ledger_row": 28,
+      "name": "Global-time adjacent-boundary transport",
+      "owner_output": "cross-dwell",
+      "historical_report_refs": [
+        "reports/2026_09_25_adjacent_dwell_phase_transport/REPORT.md",
+        "reports/2026_09_23_longarc_phase_transport.md",
+        "reports/2026_09_23_longarc_timing.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "cross-dwell/REPORT.md",
+        "scope": "99 admitted adjacent edges; 71 evaluation / 56 overlapping-edge groups"
+      }
+    },
+    {
+      "method_id": "29-cross-track-replication",
+      "ledger_row": 29,
+      "name": "Cross-track replication",
+      "owner_output": "cross-dwell",
+      "historical_report_refs": [
+        "reports/2026_09_21_scan_hop_6ad_long_track_phase.md",
+        "reports/2026_09_22_multi_dwell_shared_track_phase.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_reported_scope",
+        "result_path": "method-summary.json",
+        "evidence_path": "cross-dwell/REPORT.md",
+        "scope": "Evaluation CH1/CH2/CH4 edges: 33/17/21"
+      }
+    },
+    {
+      "method_id": "30-phase-assisted-association",
+      "ledger_row": 30,
+      "name": "Phase-assisted association",
+      "owner_output": "cross-dwell",
+      "historical_report_refs": [
+        "reports/2026_09_24_phase_satellite_association.md",
+        "reports/2026_09_25_phase_assisted_satellite_association/REPORT.md"
+      ],
+      "historical_ref_availability": "present",
+      "missing_historical_refs": [],
+      "required": true,
+      "result_schema": "result-schema.json#scan-phase-replay-method-result/v1",
+      "allowed_terminal_outcomes": [
+        "completed",
+        "failed",
+        "not_applicable",
+        "incomplete"
+      ],
+      "execution_binding": {
+        "status": "completed_bounded",
+        "result_path": "method-summary.json",
+        "evidence_path": "cross-dwell/REPORT.md",
+        "scope": "22 development and 56 evaluation edge groups; 33 TLE reviews available"
+      }
+    }
+  ]
+}

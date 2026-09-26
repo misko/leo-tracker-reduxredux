@@ -1,0 +1,37 @@
+{
+  "schema": "single-track-pilot-cache/v1",
+  "visit_indices": [
+    259,
+    260,
+    261,
+    262,
+    263
+  ],
+  "dwell_start_s": [
+    0.0,
+    0.1202194,
+    0.2405118,
+    0.360982,
+    0.4815745
+  ],
+  "delta_f_hz": [
+    682434.861324057,
+    682465.0678911909,
+    682408.4743853409,
+    682440.6516479314,
+    682438.4431680487
+  ],
+  "sample_rate_hz": 10000000,
+  "tone_frequency_hz": [
+    -820312.5,
+    -585937.5,
+    -351562.5,
+    -117187.5,
+    117187.5,
+    351562.5,
+    585937.5,
+    820312.5
+  ],
+  "description": "Same per-dwell GLRT correction integrated over device time; h0/h1 are actual 300-symbol Qin per-tone channels. Residual frequency selected from RX0 each frame and applied equally to both; no differential phase fit or response normalization. Products=conj(h0)*h1; weights=abs(products), not independent precision. Times absolute relative to start of visit259 or dwell-local as named. Support bounds include symbol sample region, with common fractional interpolation; training/held split uses full nominal symbol support. Crossing frames excluded from frozen train/held validation. Fractional interpolation guard should additionally be checked by validation.",
+  "frame_count": 445
+}
