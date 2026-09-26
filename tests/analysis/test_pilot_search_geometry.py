@@ -141,9 +141,7 @@ def test_pilot_cfo_canonicalization_removes_any_capture_center_and_alias_branch(
     alias_lift: int,
 ) -> None:
     physical_residual_hz = 21_250.0
-    raw_baseband_hz = (
-        nominal_baseband_hz + physical_residual_hz + alias_lift * CFO_ALIAS_SPACING_HZ
-    )
+    raw_baseband_hz = nominal_baseband_hz + physical_residual_hz + alias_lift * CFO_ALIAS_SPACING_HZ
 
     result = canonicalize_pilot_cfo(
         raw_baseband_hz,
