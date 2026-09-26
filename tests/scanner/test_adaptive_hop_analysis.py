@@ -179,7 +179,8 @@ def test_reader_cannot_relabel_or_reshape_iq(fault):
     ],
 )
 def test_complete_probe_inventory_and_fractional_abstention(monkeypatch, fault):
-    def detector(samples, cfg, *, edge):
+    def detector(samples, cfg, *, edge, search_geometry):
+        assert search_geometry.receiver_calibrations
         result = _fake_fractional_dwell(samples, cfg, edge=edge)
         probes = list(result.probes)
         if fault == "missing_probe":
