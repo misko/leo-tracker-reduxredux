@@ -1,0 +1,21 @@
+{
+  "schema": "single-track-reversible-phase-replay/v1",
+  "frame_count": 445,
+  "supported_replay_frames": 435,
+  "unsupported_frames_after_segment_starts": 10,
+  "max_complex_reconstruction_abs_error": 2.2887833992611187e-16,
+  "naive_residual_only_difference_from_input_wrapped_rms_deg": 104.34338029651087,
+  "coordinate_contract": {
+    "cached_corrected": "conj(h0)*h1 after sample-level declared differential-CFO removal",
+    "declared_uncorrected_gauge": "cached product times exp(+i*2pi*correction_cycles) at frame reference; not raw pre-average broadband product",
+    "residual": "declared gauge after reversible removal of declared correction and causal tracker prediction",
+    "reconstructed": "residual times both retained correction phasors; numerically identical to declared gauge",
+    "within_dwell_change": "cached phase unwrapped only across observed adjacent frames and zeroed per segment; a processing-gauge diagnostic. Geometric interpretation additionally requires independent proof that the removed GLRT correction contains only instrument phase, with remaining instrument/propagation phase constant; neither is established here."
+  },
+  "limitations": [
+    "All reported phases are modulo 2pi unless a within-segment unwrap is explicitly named.",
+    "No integer cycles are inferred across dwell or unsupported gaps.",
+    "The 682 kHz-scale declared correction and tracker prediction are processing coordinates, not hardware calibration or geometric phase.",
+    "No satellite-only observation can separate geometry from time-varying differential hardware or propagation phase."
+  ]
+}

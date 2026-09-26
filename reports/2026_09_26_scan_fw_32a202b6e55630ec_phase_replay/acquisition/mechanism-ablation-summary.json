@@ -1,0 +1,12 @@
+{
+  "schema": "scan-acquisition-mechanism-ablation-summary/v1",
+  "cohort_visit_count": 8,
+  "cohort": [177, 194, 250, 2, 86, 161, 106, 139],
+  "modes": {
+    "tuning_only": {"visits_with_any_pass": 5, "passing_candidates": 14, "median_runtime_seconds": 6.70},
+    "wider_coverage": {"visits_with_any_pass": 5, "passing_candidates": 13, "median_runtime_seconds": 29.22},
+    "fallback": {"visits_with_any_pass": 5, "passing_candidates": 15, "median_runtime_seconds": 10.95},
+    "shortlist22": {"visits_with_any_pass": 5, "passing_candidates": 18, "median_runtime_seconds": 8.76}
+  },
+  "interpretation": "No mechanism recovered another visit. Fallback added one passing basin and the 22-candidate shortlist retained four more than tuning-only; physically wider coverage was 4.4x slower and retained one fewer passing basin. These are bounded same-cohort diagnostics, not independently calibrated detection rates."
+}

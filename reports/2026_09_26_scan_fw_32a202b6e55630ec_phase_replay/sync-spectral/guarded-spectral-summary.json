@@ -1,0 +1,82 @@
+{
+  "schema": "scan-guarded-spectral-summary/v4",
+  "eligible": 128,
+  "completed": 42,
+  "evaluation_completed": 29,
+  "native_window_samples": 32768,
+  "native_fir_half_support_samples": 128,
+  "split_policy": "same raw-disjoint random and forward block indices at both rates",
+  "mask_policy": "physical overlap and magnitude mask fitted on training FFTs only",
+  "runtime_seconds": 62.528138008667156,
+  "medians": {
+    "native": {
+      "random": {
+        "train_r": 0.6985018363165701,
+        "held_r": 0.5016503799151156,
+        "held_zero_intercept_rms_deg": 99.83153515723656,
+        "held_median_coherence": 0.08072649763825077,
+        "parseval_rms_rad": 7.125372543706973e-17,
+        "fft_held_r": {
+          "1000000": 0.48419691518899494,
+          "2000000": 0.5001908887799976,
+          "4000000": 0.5085752247349453,
+          "500000": 0.49386674002229103,
+          "8000000": 0.5018594312518682,
+          "common": 0.49829923236093815,
+          "full": 0.5016503799151155,
+          "phase_only": 0.4928143449843041
+        }
+      },
+      "forward": {
+        "train_r": 0.7839886464248835,
+        "held_r": 0.2623332402315182,
+        "held_zero_intercept_rms_deg": 101.51920891528667,
+        "held_median_coherence": 0.08496610450262787,
+        "parseval_rms_rad": 6.953249793872463e-17,
+        "fft_held_r": {
+          "1000000": 0.19016952176975477,
+          "2000000": 0.19937617957800252,
+          "4000000": 0.2643180777906435,
+          "500000": 0.2536858538727645,
+          "8000000": 0.26450798289648975,
+          "common": 0.26315700237071443,
+          "full": 0.26233324023151816,
+          "phase_only": 0.2612248455551176
+        }
+      }
+    },
+    "derived_2p5": {
+      "random": {
+        "train_r": 0.6918403129079355,
+        "held_r": 0.4480129478405166,
+        "held_zero_intercept_rms_deg": 98.61033538229334,
+        "held_median_coherence": 0.08328677013108465,
+        "parseval_rms_rad": 8.610500752125786e-17,
+        "fft_held_r": {
+          "1000000": 0.46903112213479087,
+          "2000000": 0.44938766220983184,
+          "500000": 0.45630738465159393,
+          "common": 0.44810236062337744,
+          "full": 0.4480129478405166,
+          "phase_only": 0.4452221824692193
+        }
+      },
+      "forward": {
+        "train_r": 0.810660715478672,
+        "held_r": 0.24457360985234608,
+        "held_zero_intercept_rms_deg": 102.21116726886619,
+        "held_median_coherence": 0.07982409208420484,
+        "parseval_rms_rad": 8.832718347888102e-17,
+        "fft_held_r": {
+          "1000000": 0.22617905795469925,
+          "2000000": 0.24367818658964793,
+          "500000": 0.23921290642359608,
+          "common": 0.2445258335204601,
+          "full": 0.24457360985234614,
+          "phase_only": 0.2556359452293975
+        }
+      }
+    }
+  },
+  "supersedes": "spectral results-v1/v2/v3 holdout claims; v3 had overlapping transform/FIR support"
+}

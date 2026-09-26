@@ -1,0 +1,19 @@
+method_id,approach,status,eligible_visits,processed_visits,acquired_receivers,frame_count,evidence,primary_metric
+01,Integrated CFO boundary bridging,deferred_to_G,128,128,124,10301,D supplies counter-referenced local CFO; boundary transport belongs to G,
+02,Frame-local Qin phase,completed,128,128,124,10301,all 300 Qin symbols/eight tones plus rolled control and even/odd split,0.27574593367462935
+03,Adjacent-frame correlation,completed,128,128,124,10301,constant-increment prediction on cached contiguous frames,0.5232472160031802
+04,Prompt phase versus integrated linear Doppler,bounded_actual_smoke,128,128,124,10301,actual 64-symbol prompt phase tested against the integral of the robust degree-one frequency fit on 9 smoke receiver-arcs; exact accepted 126/632 transitions versus control 124/632,0.29511569015391154
+05,Five-state phase feedback,bounded_actual_smoke,128,128,124,10301,actual five-state replay phase feedback on/off on 9 smoke receiver-arcs,
+06,Ordinary 2pi long tracking,partial_actual_kernel,128,128,124,10301,actual phase_symmetry_order=1 span checkpoints,
+07,Full Qin phase slope,completed,128,128,124,10301,actual all-300-symbol/eight-tone phase-slope kernel,169.83206995370617
+08,Offline binary-pi batch fit,bounded_actual_smoke,128,128,124,10301,historical channel/delay separation and noncausal doubled-phase polynomial branch fit on 8 smoke receiver-arcs,0.7555905823780625
+09,Causal modulo-pi filter,partial_actual_kernel,128,128,124,10301,actual phase_symmetry_order=2 span checkpoints,
+10,Five-state modulo-pi PNT,partial_actual_kernel,128,128,124,10301,actual PNT V1/V2/V3 span checkpoints,
+11,Production multi-window qualification,bounded_actual_gate_outcome,128,128,124,10301,"actual inner phase gate passed 0/38 completed bounded spans; an outer production qualification cannot pass when its required inner gate fails, so no outer score is asserted for those failures",0
+12,Short segments versus long GLRT lines,completed,128,128,124,10301,duration-stratified actual span inventory,
+13,Scanner retune-bounded tracking,completed,128,128,124,10301,all arcs remain within one 120 ms visit; no retune continuation,
+14,Semi-coherent pooling,bounded_actual_smoke,128,128,124,10301,actual normalized likelihood curves and even/odd frequency-line fits for 26 smoke duration cases (20/50/100 ms),0.0
+15,Capture/reset mechanism,completed,128,128,124,10301,capture audit has zero invalid payload rows; resets retained from actual trackers,
+16,Robust jump and phase-gated filters,completed_actual_research_kernel,128,128,124,10301,pilot_locklet_prototypes.track_piecewise_locklets on 124 arcs; robust_blockwise_cfo_rate on 0 arcs,6723
+17,V3 phase-safe tracking,bounded_actual_ablation,128,128,124,10301,actual V3 on 14 75/120-ms spans; full cached population uses common folds,10
+18,V4 seed/control correction,bounded_actual_ablation,128,128,124,10301,actual V4 on 8 smoke receiver-arcs; uncalibrated thresholds preserved,0

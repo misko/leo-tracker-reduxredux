@@ -1,0 +1,159 @@
+{
+  "schema": "scan-phase-replay-method21-two-mode-diagnostic/v1",
+  "status": "diagnostic_candidate_only",
+  "phase_blind_two_mode_visits": [
+    1074,
+    1711
+  ],
+  "selection_policy": {
+    "receiver_pair_epoch_tolerance_samples": 3,
+    "receiver_pair_canonical_cfo_tolerance_hz": 2000,
+    "distinct_mode_minimum_canonical_cfo_separation_hz": 10000,
+    "alias_policy": "canonical separation prevents counting a 227272.727 Hz symbol alias as another emitter",
+    "phase_used_for_selection": false
+  },
+  "candidate_pairs": {
+    "1074": [
+      {
+        "canonical_cfo_hz": 7753.077704000054,
+        "receivers": [
+          {
+            "receiver_id": "0",
+            "candidate_rank": "4",
+            "integer_epoch_sample": "4647",
+            "fractional_epoch_offset_samples": "-0.09261839851115576",
+            "tracking_absolute_baseband_cfo_hz": "-134292.37684145448",
+            "pilot_relative_canonical_display_cfo_hz": "7753.077704000054",
+            "pilot_alias_lift": "-2"
+          },
+          {
+            "receiver_id": "1",
+            "candidate_rank": "0",
+            "integer_epoch_sample": "4647",
+            "fractional_epoch_offset_samples": "-0.187173713493267",
+            "tracking_absolute_baseband_cfo_hz": "775433.7919007766",
+            "pilot_relative_canonical_display_cfo_hz": "8388.33735532203",
+            "pilot_alias_lift": "2"
+          }
+        ]
+      },
+      {
+        "canonical_cfo_hz": 66326.21224423524,
+        "receivers": [
+          {
+            "receiver_id": "0",
+            "candidate_rank": "2",
+            "integer_epoch_sample": "3815",
+            "fractional_epoch_offset_samples": "-0.15323381611450515",
+            "tracking_absolute_baseband_cfo_hz": "151553.48497150798",
+            "pilot_relative_canonical_display_cfo_hz": "66326.21224423524",
+            "pilot_alias_lift": "-1"
+          },
+          {
+            "receiver_id": "1",
+            "candidate_rank": "2",
+            "integer_epoch_sample": "3815",
+            "fractional_epoch_offset_samples": "-0.2641410389768384",
+            "tracking_absolute_baseband_cfo_hz": "833857.9318564252",
+            "pilot_relative_canonical_display_cfo_hz": "66812.47731097072",
+            "pilot_alias_lift": "2"
+          }
+        ]
+      }
+    ],
+    "1711": [
+      {
+        "canonical_cfo_hz": -53720.55321221767,
+        "receivers": [
+          {
+            "receiver_id": "0",
+            "candidate_rank": "4",
+            "integer_epoch_sample": "6501",
+            "fractional_epoch_offset_samples": "-0.003152224023332214",
+            "tracking_absolute_baseband_cfo_hz": "31506.719515055054",
+            "pilot_relative_canonical_display_cfo_hz": "-53720.55321221767",
+            "pilot_alias_lift": "-1"
+          },
+          {
+            "receiver_id": "1",
+            "candidate_rank": "0",
+            "integer_epoch_sample": "6501",
+            "fractional_epoch_offset_samples": "0.06910475974858263",
+            "tracking_absolute_baseband_cfo_hz": "713796.8398511156",
+            "pilot_relative_canonical_display_cfo_hz": "-53248.61469433893",
+            "pilot_alias_lift": "2"
+          }
+        ]
+      },
+      {
+        "canonical_cfo_hz": -18718.872862830904,
+        "receivers": [
+          {
+            "receiver_id": "0",
+            "candidate_rank": "2",
+            "integer_epoch_sample": "6078",
+            "fractional_epoch_offset_samples": "0.4527592241614679",
+            "tracking_absolute_baseband_cfo_hz": "66508.39986444183",
+            "pilot_relative_canonical_display_cfo_hz": "-18718.872862830904",
+            "pilot_alias_lift": "-1"
+          },
+          {
+            "receiver_id": "1",
+            "candidate_rank": "1",
+            "integer_epoch_sample": "6078",
+            "fractional_epoch_offset_samples": "0.3492023956211492",
+            "tracking_absolute_baseband_cfo_hz": "748580.3401175415",
+            "pilot_relative_canonical_display_cfo_hz": "-18465.11442791304",
+            "pilot_alias_lift": "2"
+          }
+        ]
+      }
+    ]
+  },
+  "input_hashes": {
+    "selection": "sha256:b73c0d5322a6a70c6ee851ee80ad99ef62ca13b190ae4bdeb35ce95ce2030115",
+    "candidate_inventory": "sha256:62b1d51b141c86da59f0af1dcff0a74eabf5569eacae41683b9bab8cca4ed167"
+  },
+  "rows": [],
+  "simultaneous_common_time_rows": [],
+  "simultaneous_kernel_failures": [
+    {
+      "visit_index": 1074,
+      "mode_index": 0,
+      "reason": "production kernel returned no matched pilot row",
+      "pilot_failures": [
+        "Pilot frames outside valid broadband centers"
+      ]
+    },
+    {
+      "visit_index": 1074,
+      "mode_index": 0,
+      "reason": "production kernel returned no matched pilot row",
+      "pilot_failures": [
+        "Pilot frames outside valid broadband centers"
+      ]
+    },
+    {
+      "visit_index": 1711,
+      "mode_index": 0,
+      "reason": "production kernel returned no matched pilot row",
+      "pilot_failures": [
+        "Pilot frames outside valid broadband centers"
+      ]
+    },
+    {
+      "visit_index": 1711,
+      "mode_index": 0,
+      "reason": "production kernel returned no matched pilot row",
+      "pilot_failures": [
+        "Pilot frames outside valid broadband centers"
+      ]
+    }
+  ],
+  "metrics": {
+    "row_count": 0,
+    "double_difference_r": null,
+    "deranged_control_r": null
+  },
+  "limitation": "two frequency-separated phase-blind modes are candidates, not proven distinct emitters; the same-source/multipath ambiguity remains"
+}

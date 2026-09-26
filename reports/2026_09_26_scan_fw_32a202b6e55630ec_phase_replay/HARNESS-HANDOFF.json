@@ -1,0 +1,18 @@
+{
+  "schema": "scan-phase-replay-harness-handoff/v1",
+  "implementation_revision": "e1a24b200d4bb68d4f38484dc591e9b9616a2e70+report-local-uncommitted",
+  "artifacts": {
+    "selection.json": "sha256:b73c0d5322a6a70c6ee851ee80ad99ef62ca13b190ae4bdeb35ce95ce2030115",
+    "method-registry.json": "sha256:de4f88923cc4a9123f8341be440ef5908415f83496f63a05757437263117091c",
+    "result-schema.json": "sha256:6ff6a0178ed7cf07d1be49ec046b3740dafdbe90067aa9b987e89124103900c7",
+    "observation-schema.json": "sha256:01855345fe145970a57f5781ec157d8322929434520091e2b8c96218bd6a02c2",
+    "common.py": "sha256:ca8685109bd36dd745e95e8c04b2c9dbe346feb72e657daa4c79eb26a86a031f"
+  },
+  "selection_counts": {"selected": 128, "development": 32, "evaluation": 96},
+  "tests": {
+    "command": "TMPDIR=/srv/bulk/leo-dev/pytest-tmp-harness .venv/bin/pytest -q tests/reports/test_scan_phase_replay_harness.py",
+    "result": "10 passed including package F",
+    "ruff": "all checks passed"
+  },
+  "cache_index_sha256": "sha256:535885ebcb6a27212ec6da74555770871b21aa4aba4317c9f644ed87856834d9"
+}
