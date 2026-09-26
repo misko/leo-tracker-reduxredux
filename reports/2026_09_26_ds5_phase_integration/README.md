@@ -14,6 +14,8 @@ The [cross-scan pilot-support calibration](SUPPORT_CALIBRATION.md) then predicts
 
 The [spectral response and mode-leakage audit](SPECTRAL_MODE_AUDIT.md) improves internal phase agreement but finds a more fundamental qualification issue: a single source can produce high R and passing pilot/control ratios at an absent mode's template. Joint pilot fitting rejects that synthetic false component and supplies a conditional-support test for real simultaneous modes. Earlier support ratios must not be interpreted as proof of independent sources.
 
+The [joint-phase tracking prototype](JOINT_PHASE_TRACKING.md) separates fitting, source qualification and phase evaluation, retains neutral fallback, and tests sharing a physical-baseline distribution across scans. It rejects the known false-mode controls and yields useful qualified phase, but association benefit remains sensitive to the CFO uncertainty model.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.
