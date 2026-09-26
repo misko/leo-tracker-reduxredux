@@ -12,6 +12,8 @@ The [timing-aware satellite-pair trial](TIMING_TRIAL.md) evaluates those longer 
 
 The [cross-scan pilot-support calibration](SUPPORT_CALIBRATION.md) then predicts internal phase agreement using other scans only. It improves agreement likelihood but does not resolve association sensitivity; greater confidence can strengthen harmful orbital identity updates. Repeatability is not a complete geometric error model.
 
+The [spectral response and mode-leakage audit](SPECTRAL_MODE_AUDIT.md) improves internal phase agreement but finds a more fundamental qualification issue: a single source can produce high R and passing pilot/control ratios at an absent mode's template. Joint pilot fitting rejects that synthetic false component and supplies a conditional-support test for real simultaneous modes. Earlier support ratios must not be interpreted as proof of independent sources.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.
