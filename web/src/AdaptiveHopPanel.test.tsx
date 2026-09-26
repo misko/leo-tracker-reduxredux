@@ -298,6 +298,21 @@ describe("adaptive actual-visit presentation", () => {
     expect(fetcher.mock.calls[1][0]).toContain("cursor=10");
   });
 
+  it("renders all ten captures in the adaptive page without the legacy inner scroller", async () => {
+    const page = adaptivePageFixture();
+    page.total = 10;
+    page.items = Array.from({ length: 10 }, (_, index) => ({
+      ...page.items[0],
+      session_id: `adaptive-test-${index}`,
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(page)));
+    render(<AdaptiveHopBrowser selectedId={null} onSelect={() => {}} />);
+
+    const table = await screen.findByRole("table", { name: "Adaptive capture history" });
+    expect(within(table).getAllByRole("button")).toHaveLength(10);
+    expect(table.parentElement).toHaveClass("adaptive-history-scroll");
+  });
+
   it("distinguishes old-server support from an empty successful history", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(null, 404)));
     render(<AdaptiveHopBrowser selectedId={null} onSelect={() => {}} />);
