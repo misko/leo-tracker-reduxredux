@@ -80,6 +80,7 @@ def options(bank,sigma,n):
     return out
 
 def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
+    concentrations=np.broadcast_to(np.asarray(kappa,float),y.shape)
     baseline=np.linspace(-2,2,n_baseline);lp=[];held=[];phase_train=[];phase_joint=[];coupled=[];stable_coupled=[];pairs=[]
     for a in left:
         for b in right:
@@ -87,8 +88,8 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
             # crossed independently for the two tracks and the baseline grid.
             geom=2*np.pi*(b['projection'][None,:,:]*f1-a['projection'][:,None,:]*f0)/C
             model=baseline[:,None,None,None]*geom[None,:,:,:]
-            tr=phase_evidence(y[train],model[...,train],np.full(train.sum(),kappa))
-            full=phase_evidence(y,model,np.full(len(y),kappa))
+            tr=phase_evidence(y[train],model[...,train],concentrations[train])
+            full=phase_evidence(y,model,concentrations)
             norm=np.log(tr.size)
             phase_train.append(float(logsumexp(tr)-norm));phase_joint.append(float(logsumexp(full)-norm))
             ch=a['sample_held'][:,None]+b['sample_held'][None,:]
@@ -100,7 +101,7 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
             # density; phase training weights and identity updates remain train-only.
             jointgeom=2*np.pi*(b['joint_projection'][None,:,:]*f1-a['joint_projection'][:,None,:]*f0)/C
             jointmodel=baseline[:,None,None,None]*jointgeom[None,:,:,:]
-            jointtr=phase_evidence(y[train],jointmodel[...,train],np.full(train.sum(),kappa))
+            jointtr=phase_evidence(y[train],jointmodel[...,train],concentrations[train])
             stable_coupled.append(float(logsumexp(jointtr)-norm+a['held']+b['held']))
             lp.append(a['train']+b['train']);held.append(a['held']+b['held'])
             pairs.append([a['candidate_id'],b['candidate_id']])
@@ -114,7 +115,8 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81):
     stable_after=float(logsumexp(lp+np.array(stable_coupled))-logsumexp(lp+phase_train))
     identity_only=float(logsumexp(posterior+held))
     phase_held=float(logsumexp(lp+phase_joint)-logsumexp(lp+phase_train))
-    constant=float(phase_evidence(y,np.zeros(len(y)),np.full(len(y),kappa))-phase_evidence(y[train],np.zeros(train.sum()),np.full(train.sum(),kappa)))
+    constant=float(phase_evidence(y,np.zeros(len(y)),concentrations)-phase_evidence(y[train],np.zeros(train.sum()),concentrations[train]))
+    kappa=np.asarray(kappa).tolist()
     return dict(kappa=kappa,pairs=pairs,cfo_probabilities=np.exp(lp).tolist(),phase_updated_probabilities=np.exp(posterior).tolist(),top_before=pairs[int(np.argmax(lp))],top_after=pairs[int(np.argmax(posterior))],maximum_probability_change=float(np.max(abs(np.exp(posterior)-np.exp(lp)))),exact_cfo_held=before,quantile_cfo_held=approximate_before,quantile_error_nats=approximate_before-before,cfo_held_after_phase=stable_after,cfo_gain=stable_after-before,train_quadrature_cfo_gain=after-approximate_before,identity_reweight_only_gain=identity_only-before,phase_held_vs_uniform=phase_held,constant_phase_held_vs_uniform=constant,phase_gain_vs_constant=phase_held-constant)
 
 def main():
