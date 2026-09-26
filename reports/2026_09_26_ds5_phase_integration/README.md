@@ -16,6 +16,8 @@ The [spectral response and mode-leakage audit](SPECTRAL_MODE_AUDIT.md) improves 
 
 The [joint-phase tracking prototype](JOINT_PHASE_TRACKING.md) separates fitting, source qualification and phase evaluation, retains neutral fallback, and tests sharing a physical-baseline distribution across scans. It rejects the known false-mode controls and yields useful qualified phase, but association benefit remains sensitive to the CFO uncertainty model.
 
+The [CFO uncertainty and pilot-continuity audit](CFO_CONTINUITY.md) integrates the residual scale instead of choosing a favorable value. Gains remain inconsistent, and two acquisition timing discontinuities in the 12:00 tracks motivate testing separate reference episodes before applying phase across an entire track.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.

@@ -1,0 +1,24 @@
+{
+  "target": "scan-fw-f7515a5fdb02cda5",
+  "donor": "scan-fw-888fc1e1e005ded3",
+  "scales_hz": [
+    3.125,
+    6.25,
+    12.5,
+    25,
+    50,
+    100,
+    200,
+    400,
+    800,
+    1600
+  ],
+  "scale_prior": "Equal probability on declared discrete log-spaced grid; independent scale per track; shared across its train and held blocks",
+  "selection": "All candidates already in each frozen proposal bank, no new scale-dependent top-four truncation. Banks were proposed at 100/200 Hz; full-catalogue completeness for other scales is not established.",
+  "phase": "Qualified joint-source evaluation phases; unsupported dwell slots neutral; same earlier folds",
+  "baseline": "Uniform +/-2m versus learned from other scan with identities, CFO scales and orbit times marginalized",
+  "quantiles": 33,
+  "tau_step_s": 0.05,
+  "refinement": "Cubic interpolation of CFO residuals and phase projections; historical timing density recomputed on refined grid; requires finite original visibility support",
+  "meaning": "Retrospective conditional predictive comparison, not independent identity truth"
+}
