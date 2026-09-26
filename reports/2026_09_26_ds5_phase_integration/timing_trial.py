@@ -79,8 +79,18 @@ def options(bank,sigma,n):
         out.append(dict(candidate_id=str(bank['candidate_ids'][i]),train=float(marginal[i]),held=float(logsumexp(joint[i]+bank['logprior'][i])-marginal[i]),sample_held=joint[i,ix]-tr[i,ix],projection=bank['projection'][i,ix],joint_projection=bank['projection'][i,jx],sample_tau=bank['taus'][ix],tau_mean=float(np.exp(lp)@bank['taus']),tau_sd=float(np.sqrt(np.exp(lp)@(bank['taus']-(np.exp(lp)@bank['taus']))**2))))
     return out
 
-def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=None):
+def episode_evidence(y,model,kappa,groups):
+    """Integrate an independent constant phase per declared reference episode."""
+    result=np.zeros(np.shape(model)[:-1])
+    for group in np.unique(groups):
+        keep=groups==group
+        result+=phase_evidence(y[keep],model[...,keep],kappa[keep])
+    return result
+
+def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=None,phase_groups=None):
     concentrations=np.broadcast_to(np.asarray(kappa,float),y.shape)
+    groups=np.zeros(len(y),dtype=int) if phase_groups is None else np.asarray(phase_groups)
+    if groups.shape!=y.shape:raise ValueError('one phase group per observation required')
     bp=np.full(n_baseline,-np.log(n_baseline)) if baseline_log_prior is None else np.asarray(baseline_log_prior,float)
     if bp.shape!=(n_baseline,) or not np.isfinite(bp).all():raise ValueError('finite baseline log weights required')
     bp=bp-logsumexp(bp)
@@ -91,8 +101,8 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=Non
             # crossed independently for the two tracks and the baseline grid.
             geom=2*np.pi*(b['projection'][None,:,:]*f1-a['projection'][:,None,:]*f0)/C
             model=baseline[:,None,None,None]*geom[None,:,:,:]
-            tr=phase_evidence(y[train],model[...,train],concentrations[train])
-            full=phase_evidence(y,model,concentrations)
+            tr=episode_evidence(y[train],model[...,train],concentrations[train],groups[train])
+            full=episode_evidence(y,model,concentrations,groups)
             integration_weight=bp[:,None,None]-np.log(tr.shape[1]*tr.shape[2])
             phase_train.append(float(logsumexp(tr+integration_weight)));phase_joint.append(float(logsumexp(full+integration_weight)))
             ch=a['sample_held'][:,None]+b['sample_held'][None,:]
@@ -104,7 +114,7 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=Non
             # density; phase training weights and identity updates remain train-only.
             jointgeom=2*np.pi*(b['joint_projection'][None,:,:]*f1-a['joint_projection'][:,None,:]*f0)/C
             jointmodel=baseline[:,None,None,None]*jointgeom[None,:,:,:]
-            jointtr=phase_evidence(y[train],jointmodel[...,train],concentrations[train])
+            jointtr=episode_evidence(y[train],jointmodel[...,train],concentrations[train],groups[train])
             stable_coupled.append(float(logsumexp(jointtr+integration_weight)+a['held']+b['held']))
             lp.append(a['train']+b['train']);held.append(a['held']+b['held'])
             pairs.append([a['candidate_id'],b['candidate_id']])
@@ -118,7 +128,7 @@ def evaluate(left,right,y,train,f0,f1,kappa,n_baseline=81,baseline_log_prior=Non
     stable_after=float(logsumexp(lp+np.array(stable_coupled))-logsumexp(lp+phase_train))
     identity_only=float(logsumexp(posterior+held))
     phase_held=float(logsumexp(lp+phase_joint)-logsumexp(lp+phase_train))
-    constant=float(phase_evidence(y,np.zeros(len(y)),concentrations)-phase_evidence(y[train],np.zeros(train.sum()),concentrations[train]))
+    constant=float(episode_evidence(y,np.zeros(len(y)),concentrations,groups)-episode_evidence(y[train],np.zeros(train.sum()),concentrations[train],groups[train]))
     kappa=np.asarray(kappa).tolist()
     return dict(kappa=kappa,pairs=pairs,cfo_probabilities=np.exp(lp).tolist(),phase_updated_probabilities=np.exp(posterior).tolist(),top_before=pairs[int(np.argmax(lp))],top_after=pairs[int(np.argmax(posterior))],maximum_probability_change=float(np.max(abs(np.exp(posterior)-np.exp(lp)))),exact_cfo_held=before,quantile_cfo_held=approximate_before,quantile_error_nats=approximate_before-before,cfo_held_after_phase=stable_after,cfo_gain=stable_after-before,train_quadrature_cfo_gain=after-approximate_before,identity_reweight_only_gain=identity_only-before,phase_held_vs_uniform=phase_held,constant_phase_held_vs_uniform=constant,phase_gain_vs_constant=phase_held-constant)
 
