@@ -207,15 +207,18 @@ function validateCapture(c: AdaptiveCapture): void {
   }
 }
 
+export const ADAPTIVE_SESSION_PAGE_SIZE = 10;
+
 export async function getAdaptiveSessions(cursor: number, signal?: AbortSignal): Promise<AdaptivePage | null> {
-  let response = await fetch(`/api/v3/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
-  if (response.status === 404) response = await fetch(`/api/v2/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
-  if (response.status === 404) response = await fetch(`/api/v1/scanner/adaptive-sessions?cursor=${cursor}&limit=5`, { signal });
+  const query = `cursor=${cursor}&limit=${ADAPTIVE_SESSION_PAGE_SIZE}`;
+  let response = await fetch(`/api/v3/scanner/adaptive-sessions?${query}`, { signal });
+  if (response.status === 404) response = await fetch(`/api/v2/scanner/adaptive-sessions?${query}`, { signal });
+  if (response.status === 404) response = await fetch(`/api/v1/scanner/adaptive-sessions?${query}`, { signal });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Adaptive history request failed (${response.status})`);
   const page = await response.json() as AdaptivePage;
   if (!page || ![1, 2, 3, 4, 5, 6, 7, 8].includes(page.schema_version) || page.kind !== "adaptive_hop_history_page"
-      || page.cursor !== cursor || page.limit !== 5 || !integer(page.total)
+      || page.cursor !== cursor || page.limit !== ADAPTIVE_SESSION_PAGE_SIZE || !integer(page.total)
       || !Array.isArray(page.items) || page.items.length > page.limit
       || (page.next_cursor !== null && page.next_cursor !== cursor + page.limit)) {
     throw new Error("Adaptive history response is invalid");

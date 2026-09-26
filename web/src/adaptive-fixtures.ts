@@ -47,7 +47,7 @@ export function adaptiveDetailFixture(sessionId = "adaptive-test", count = 54): 
 }
 
 export function adaptivePageFixture(detail = adaptiveDetailFixture()): AdaptivePage {
-  return { schema_version: 1, kind: "adaptive_hop_history_page", cursor: 0, limit: 5, total: 1, next_cursor: null, items: [detail.capture] };
+  return { schema_version: 1, kind: "adaptive_hop_history_page", cursor: 0, limit: 10, total: 1, next_cursor: null, items: [detail.capture] };
 }
 
 export function hostAdaptiveDetailFixture(receiver: 0 | 1 = 0): AdaptiveDetail & { capture: HostAdaptiveCapture } {
