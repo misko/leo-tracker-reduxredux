@@ -70,9 +70,9 @@ export function AdaptiveHopBrowser({ selectedId, onSelect, autoSelectFirst = fal
         </button></td><td>{duty(c.valid_duty_ppm)}<small className="persistent-terminal-state">{c.terminal_state}</small></td>
       </tr>)}</tbody>
     </table></div> : null}
-    {page && page.total > 5 ? <div className="candidate-pagination scanner-pagination" aria-label="Adaptive history pagination">
+    {page && page.total > page.limit ? <div className="candidate-pagination scanner-pagination" aria-label="Adaptive history pagination">
       <span>{page.cursor + (page.items.length ? 1 : 0)}–{page.cursor + page.items.length} of {page.total}</span><div>
-        <button type="button" disabled={cursor === 0} onClick={() => setCursor(Math.max(0, cursor - 5))}>Previous adaptive captures</button>
+        <button type="button" disabled={cursor === 0} onClick={() => setCursor(Math.max(0, cursor - page.limit))}>Previous adaptive captures</button>
         <button type="button" disabled={page.next_cursor === null} onClick={() => page.next_cursor !== null && setCursor(page.next_cursor)}>Next adaptive captures</button>
       </div></div> : null}
   </section>;

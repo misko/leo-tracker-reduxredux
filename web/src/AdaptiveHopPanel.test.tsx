@@ -38,7 +38,7 @@ describe("adaptive actual-visit presentation", () => {
     };
     const page = {
       schema_version: 8 as const, kind: "adaptive_hop_history_page" as const,
-      cursor: 0, limit: 5, total: 1, next_cursor: null, items: [capture],
+      cursor: 0, limit: 10, total: 1, next_cursor: null, items: [capture],
     };
     const detail = {
       ...legacy, schema_version: 9 as const, capture, visits,
@@ -67,7 +67,7 @@ describe("adaptive actual-visit presentation", () => {
         decision_counter: scale(v.decision_counter),
       })),
     };
-    const page = { schema_version: 6, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 5, total: 1, next_cursor: null };
+    const page = { schema_version: 6, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 10, total: 1, next_cursor: null };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond(detail)));
     await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
     await expect(getAdaptiveSession("feature104-test")).resolves.toEqual(detail);
@@ -145,7 +145,7 @@ describe("adaptive actual-visit presentation", () => {
     capture.mode = "adaptive";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(value)));
     await expect(getAdaptiveSession("feature103-test")).resolves.toEqual(value);
-    const page = { schema_version: 5, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 5, total: 1, next_cursor: null };
+    const page = { schema_version: 5, kind: "adaptive_hop_history_page", items: [capture], cursor: 0, limit: 10, total: 1, next_cursor: null };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(respond(page)));
     await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
   });
@@ -285,16 +285,17 @@ describe("adaptive actual-visit presentation", () => {
 
   it("selects a capture and paginates history", async () => {
     const page = adaptivePageFixture();
-    page.total = 6; page.next_cursor = 5;
-    const fetcher = vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond({ ...page, cursor: 5, next_cursor: null }));
+    page.total = 11; page.next_cursor = 10;
+    const fetcher = vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond({ ...page, cursor: 10, next_cursor: null }));
     vi.stubGlobal("fetch", fetcher);
     const onSelect = vi.fn();
     render(<AdaptiveHopBrowser selectedId={null} onSelect={onSelect} />);
     fireEvent.click(await screen.findByRole("button", { name: /adaptive-test/ }));
     expect(onSelect).toHaveBeenCalledWith("adaptive-test");
+    expect(fetcher.mock.calls[0][0]).toContain("limit=10");
     fireEvent.click(screen.getByRole("button", { name: "Next adaptive captures" }));
-    await screen.findByText("6–6 of 6");
-    expect(fetcher.mock.calls[1][0]).toContain("cursor=5");
+    await screen.findByText("11–11 of 11");
+    expect(fetcher.mock.calls[1][0]).toContain("cursor=10");
   });
 
   it("distinguishes old-server support from an empty successful history", async () => {
