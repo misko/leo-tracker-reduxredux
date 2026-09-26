@@ -6,6 +6,8 @@ This report extends the [standalone phase-to-sky explanation](../2026_09_26_phas
 
 The subsequent [real catalogue trial](CATALOGUE_TRIAL.md) verifies production-track joins, expands one recurring pair from four to nine dwells, and evaluates actual satellite hypotheses. It finds small, mixed candidate-weight gains and no top-pair changes; orbital phase loses to a constant double-difference control. Satellite-association improvement remains unproven.
 
+The [longer-overlap extension](LONG_OVERLAP.md) adds 432 guided-recovery windows over approximately 22-second track-pair overlaps in two scans. It finds repeatable simultaneous phase structure, with mixed held-dwell evidence for a slow rate. It includes weaker-receiver recovery, negative controls, whole-dwell prediction tests and an integration path for tracking and association.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.

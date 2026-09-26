@@ -8,11 +8,15 @@ from run import split,summarize,RATE
 
 HERE=Path(__file__).resolve().parent
 
-def main():
+def main(selection_policy='single-and-pair'):
     plan=json.loads((HERE/'plan.json').read_text());train,held,_=split();rows=[];selection=[]
     # Select first eligible visit by metadata order, not by measured phase.
     for scan in plan['scans']:
-        chosen=[next(v for v in scan['selected'] if len(v['modes'])==n) for n in (1,2)]
+        if selection_policy=='long-overlap':
+            visits=scan['selected']
+            chosen=[visits[0],visits[len(visits)//2]] if visits else []
+        else:
+            chosen=[next(v for v in scan['selected'] if len(v['modes'])==n) for n in (1,2)]
         selection.append(dict(session_id=scan['session_id'],visits=[v['visit'] for v in chosen]))
     (HERE/'shifted-control-plan.json').write_text(json.dumps(dict(selection=selection,shift_samples=30000,meaning='RX1 circularly shifted by 3 ms; exact-branch timing frozen, no control parameter search'),indent=2)+'\n')
     for scan,selection_row in zip(plan['scans'],selection):
@@ -39,6 +43,7 @@ def main():
     out=[]
     for scan in plan['scans']:
         rs=[r for r in rows if r['session_id']==scan['session_id']]
+        if not rs:continue
         out.append(dict(session_id=scan['session_id'],windows=len(rs),median_exact_held_R=float(np.median([r['exact_R'] for r in rs])),median_shifted_held_R=float(np.median([r['shifted_R'] for r in rs])),exact_rms_deg=float(np.degrees(np.sqrt(np.mean([r['exact_disagreement_rad']**2 for r in rs])))),shifted_rms_deg=float(np.degrees(np.sqrt(np.mean([r['shifted_disagreement_rad']**2 for r in rs]))))))
     (HERE/'shifted-controls.json').write_text(json.dumps(dict(rows=rows,summary=out),indent=2)+'\n')
     print(json.dumps(out,indent=2))
