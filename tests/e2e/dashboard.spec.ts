@@ -11,6 +11,7 @@ test("production dashboard reads an atomically promoted current-format live run"
   await expect(page.getByRole("heading", { name: "Observation Console" })).toBeVisible();
   await expect(page.getByText("Operator controls")).toBeVisible();
   await expect(page.getByText(/\d+% used/)).toBeVisible();
+  await page.getByRole("button", { name: "Recordings" }).click();
 
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-main-test-recording");
@@ -113,6 +114,7 @@ test("capture control stops admission, preserves queued work, and starts without
 
 test("production dashboard exposes an ordinary failed analysis explicitly", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("button", { name: "Recordings" }).click();
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-failed-test-recording");
   const row = page.getByRole("button", { name: /e2e-failed-test-recording/ });
@@ -136,6 +138,7 @@ test("an in-progress recording reports pending Standard images without a server 
   page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
 
   await page.goto("/");
+  await page.getByRole("button", { name: "Recordings" }).click();
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-pending-test-recording");
   await page.getByRole("button", { name: /e2e-pending-test-recording/ }).click();
@@ -156,7 +159,7 @@ test("scanner view pages through Standard analyses and loads selected PNGs", asy
   page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Scanner" }).click();
+  await page.getByRole("button", { name: "Legacy scans" }).click();
 
   await expect(page.getByRole("heading", { name: "Starlink channel scans" })).toBeVisible();
   await expect(page.getByText("22 scans")).toBeVisible();
@@ -197,7 +200,7 @@ test("scanner view presents an empty archive without a server failure", async ({
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Scanner" }).click();
+  await page.getByRole("button", { name: "Legacy scans" }).click();
 
   await expect(page.getByText("No Standard scanner analysis has been published yet.")).toBeVisible();
   expect(serverFailures).toEqual([]);
@@ -217,7 +220,7 @@ test("scanner view reports a corrupt selected page as a bounded conflict, not a 
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Scanner" }).click();
+  await page.getByRole("button", { name: "Legacy scans" }).click();
   await page.getByRole("button", { name: "Next" }).click();
 
   await expect(page.getByText("Request failed (409)")).toBeVisible();
