@@ -85,9 +85,7 @@ def canonicalize_pilot_cfo(
     ):
         raise ValueError("pilot CFO requires positive integer capture geometry")
     selected_edge = StarlinkEdge(edge)
-    pilot_if_hz = (
-        starlink_edge_rf_center_frequency_hz(starlink_channel, selected_edge) - lnb_lo_hz
-    )
+    pilot_if_hz = starlink_edge_rf_center_frequency_hz(starlink_channel, selected_edge) - lnb_lo_hz
     nominal = float(pilot_if_hz - tuned_center_frequency_hz)
     residual = raw - nominal
     canonical, lift = canonicalize_cfo_alias(residual)
