@@ -4,6 +4,8 @@
 
 This standalone report explains and packages a prototype for using two simultaneous receiver signals to constrain satellite direction. It includes the real extracted measurements, explanatory figures, a geometry model, and a reproducible synthetic candidate-scoring demonstration. Reading it requires no earlier report.
 
+Follow-up: the [three-scan DS5 replay and integration report](../2026_09_26_ds5_phase_integration/README.md) adds 324 real measurements, receiver-time controls, simultaneous-track prediction tests and an optional circular association factor.
+
 **Result:** the prototype exports 72 wrapped phase measurements and 36 simultaneous signal-pair differences from six selected visits. It demonstrates candidate discrimination with known synthetic geometry. It has **not recovered an absolute satellite direction or calibrated distance from this recording**. Real phase contains receiver effects, measurement error, and wavelength ambiguity; observer location and baseline length are also unverified.
 
 ## 1. What the two antennas measure
