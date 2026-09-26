@@ -106,6 +106,10 @@ def test_renderer_emits_real_decodable_bound_pngs_and_explicit_associations(monk
         assert image.shape[1] == 2480 and image.shape[0] > 1000
         assert binding.session_id.encode() in png
         assert float(image.std()) > 0.02
+        with Image.open(io.BytesIO(png)) as metadata_image:
+            assert metadata_image.info["CFOCoordinate"].startswith(
+                "pilot-relative alias-canonical residual"
+            )
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
@@ -125,4 +129,6 @@ def test_full_300s_maximum_candidate_projection_is_bounded_and_keeps_every_passe
     expected = 400_000 - 1000 * data.passed[:, 2] + 2 * data.passed[:, 2] ** 2
     expected -= data.passed[:, 1] * 600_000
     expected += data.passed[:, 0] * 10_000 + np.tile(np.arange(16), count * 22) * 4000
+    alias_hz = 1.0 / 4.4e-6
+    expected -= np.floor((expected + 0.5 * alias_hz) / alias_hz) * alias_hz
     np.testing.assert_allclose(data.passed[:, 3], expected, rtol=1e-14, atol=1e-8)

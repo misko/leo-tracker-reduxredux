@@ -14,7 +14,13 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.collections import LineCollection
 from matplotlib.figure import Figure
 
-from leo.analysis.starlink import PilotMethod, TrajectoryObservation, fit_trajectory_bank
+from leo.analysis.starlink import (
+    CFO_ALIAS_SPACING_HZ,
+    PilotMethod,
+    TrajectoryObservation,
+    fit_trajectory_bank,
+)
+from leo.analysis.starlink.pilot_search_geometry import canonicalize_pilot_cfo
 from leo.analysis.starlink.trajectories import TrajectoryBankConfig, TrajectoryBankResult
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.presentation.persistent_hop_analysis import _RENDER_LOCK, _trajectory_configuration
@@ -163,6 +169,7 @@ def _project_overview(
             range(binding.receipt.complete_visit_count),
         )
     )
+    events = {event.visit_index: event for event in binding.receipt.events}
     for product in visits:
         binding.validate_visit(product)
         if (
@@ -171,6 +178,9 @@ def _project_overview(
         ):
             raise ValueError("adaptive overview requires every actual visit once in source order")
         reference = manifest.visits[visited]
+        event = events.get(product.visit_index)
+        if event is None or event.target != product.target:
+            raise ValueError("adaptive overview visit lacks matching capture geometry")
         counts = (
             len(product.probes),
             sum(p.candidate_count for p in product.probes),
@@ -199,11 +209,18 @@ def _project_overview(
                     winner_cursor += 1
                 if not candidate.passed_fractional_margin_gate:
                     continue
+                canonical_cfo = canonicalize_pilot_cfo(
+                    candidate.fractional_tracking_cfo_hz,
+                    starlink_channel=product.target.channel,
+                    edge=product.target.edge,
+                    tuned_center_frequency_hz=event.actual_lo_frequency_hz,
+                    lnb_lo_hz=binding.receipt.plan.geometry.lnb_lo_hz,
+                ).canonical_residual_cfo_hz
                 passed[passed_cursor] = (
                     product.target_index,
                     probe.receiver_id,
                     candidate.fractional_time_s,
-                    candidate.fractional_tracking_cfo_hz,
+                    canonical_cfo,
                 )
                 passed_cursor += 1
                 previous = strongest.get(probe.receiver_id)
@@ -216,7 +233,13 @@ def _project_overview(
                     method=PilotMethod.GLRT64,
                     sample_start=candidate.integer_session_sample,
                     time_s=candidate.fractional_time_s,
-                    tracking_cfo_hz=candidate.fractional_tracking_cfo_hz,
+                    tracking_cfo_hz=canonicalize_pilot_cfo(
+                        candidate.fractional_tracking_cfo_hz,
+                        starlink_channel=product.target.channel,
+                        edge=product.target.edge,
+                        tuned_center_frequency_hz=event.actual_lo_frequency_hz,
+                        lnb_lo_hz=binding.receipt.plan.geometry.lnb_lo_hz,
+                    ).canonical_residual_cfo_hz,
                     score=candidate.fractional_exact_score,
                     control_score=candidate.fractional_control_score,
                     margin=candidate.fractional_margin,
@@ -285,6 +308,10 @@ def _save(
             "Software": f"leo-tracker adaptive actual-visit overview-v{binding.schema_version}",
             "Session": binding.session_id,
             "Metrics": metrics_sha256,
+            "CFOCoordinate": (
+                "pilot-relative alias-canonical residual; "
+                f"alias-spacing-hz={CFO_ALIAS_SPACING_HZ:.12g}"
+            ),
             **host_metadata,
             **({"TestData": _TEST_LABELS[test_data]} if test_data is not None else {}),
         },
@@ -475,7 +502,7 @@ def _render_overview(
                             )
             _axes_time(axis, binding)
             axis.set_xlabel("")
-            axis.set_ylabel(f"CH{channel + 1}\nCFO (Hz)")
+            axis.set_ylabel(f"CH{channel + 1}\nCanonical residual (Hz)")
             if not np.any((data.passed[:, 0] % 4) == channel):
                 axis.set_yticks([])
                 if receipt.source_span_attested:
@@ -490,7 +517,8 @@ def _render_overview(
                 axis.legend(loc="upper right", ncol=4)
         axes[-1].set_xlabel("Device time since capture start (s); fractional candidate epochs")
         figure.suptitle(
-            "All passed fractional GLRT64 CFO candidates\n"
+            "All passed fractional GLRT64 pilot-relative CFO candidates\n"
+            f"Capture tuning removed; canonical modulo {CFO_ALIAS_SPACING_HZ / 1000:.3f} kHz · "
             "Dashed lines: strongest-per-visit candidate associations, not satellite IDs; "
             "no L/U or cross-channel joins",
             fontsize=14,
