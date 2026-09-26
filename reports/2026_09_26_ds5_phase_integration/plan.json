@@ -1,0 +1,1766 @@
+{
+  "seed": 20260927,
+  "scan_selection": "Three additional 10 MS/s scans: early 07:20, middle 09:50, late 12:00 UTC; metadata only, original 12:20 excluded.",
+  "ds5_manifest_sha256": "6c7cfbe0e91f6eb2d5f041295d453f44ab99910cd17ff63b0fb1f3096655fa35",
+  "selection": "top three recurring exact RX0 track-pair/channel/edge groups by visit count; randomly sample at most six visits per group; add up to six single-pair visits",
+  "split": "random whole visits per pair group, half held; pilot train/held uses guarded whole symbol blocks; within-dwell window transfer is a separate conditional diagnostic",
+  "starts_ms": [
+    0,
+    21,
+    42,
+    63,
+    84,
+    105
+  ],
+  "width_ms": 7,
+  "scans": [
+    {
+      "session_id": "scan-fw-006056cf3db5b95a",
+      "metadata": {
+        "active_dwell_seconds": 265.44,
+        "active_dwell_time_stratum": "low",
+        "admission_status": "included",
+        "capture_schema_version": 14,
+        "capture_start_utc": "2026-09-26T07:20:02.211070Z",
+        "complete_visit_count": 2212,
+        "device_dropped_events": 0,
+        "dwell_ms_observed": [
+          120.0
+        ],
+        "exclusion_reason": null,
+        "finalized_utc": "2026-09-26T07:30:37.723203Z",
+        "median_visit_dwell_ms": 120.0,
+        "qualified_utc_timing": true,
+        "radio_id": "radio_pluto_5d4d",
+        "receipt_schema_version": 6,
+        "recording_complete": true,
+        "recording_manifest_content_sha256": "sha256:c0fd3b8d689b40b2995441bde9a16fb7cbf0bdb1d6131239334ddee3705aee9c",
+        "recording_manifest_file_sha256": "sha256:93957d513c692924856d65ad5d57cf75e3e0a3b12a9f181eb3a7e9fbc6a363be",
+        "recording_manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-006056cf3db5b95a/manifest.json",
+        "sample_format": "ci16_le",
+        "sample_layout": "sample_receiver_iq",
+        "sample_rate_hz": 10000000,
+        "session_id": "scan-fw-006056cf3db5b95a",
+        "source_span_attested": true,
+        "timing_schema_version": 3,
+        "total_sample_count": 2654400000,
+        "valid_duty_fraction": 0.8848,
+        "valid_duty_ppm": 884800
+      },
+      "input_manifest_sha256": "sha256:c0fd3b8d689b40b2995441bde9a16fb7cbf0bdb1d6131239334ddee3705aee9c",
+      "analysis_manifest_sha256": "sha256:65ca2a5cefcdbd3470c78480cae78836a6cd8b0b2df604b6d02a7f50b0fc393b",
+      "track_count": 35,
+      "all_visits": 2212,
+      "eligible_joint_visits": 312,
+      "eligible_two_mode_visits": 4,
+      "recurrent_pair_groups": [],
+      "selected": [
+        {
+          "visit": 1,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 163260388225,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 1337,
+                  "fractional_epoch_offset_samples": 0.13111541828696271,
+                  "tracking_absolute_baseband_cfo_hz": -575713.7555905672,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 1337,
+                  "fractional_epoch_offset_samples": 0.32048568197847455,
+                  "tracking_absolute_baseband_cfo_hz": 102229.62652452133,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:ab2fd14bd74dba9aba3410aa8fcadd59934710d87daff902c8f877a2d05ed7ca"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 37,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 163309126396,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9846,
+                  "fractional_epoch_offset_samples": 0.4208538729798176,
+                  "tracking_absolute_baseband_cfo_hz": -591975.9610987329,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9846,
+                  "fractional_epoch_offset_samples": 0.5196441553836876,
+                  "tracking_absolute_baseband_cfo_hz": 86109.46126224234,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:ab2fd14bd74dba9aba3410aa8fcadd59934710d87daff902c8f877a2d05ed7ca"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1562,
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10710000000.0,
+          "valid_start_counter": 165377306128,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5340,
+                  "fractional_epoch_offset_samples": -0.005935106282809544,
+                  "tracking_absolute_baseband_cfo_hz": -502066.6513796731,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5339,
+                  "fractional_epoch_offset_samples": 0.6186877746469568,
+                  "tracking_absolute_baseband_cfo_hz": 175979.4778109247,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:f4cd4f593ffe70815690fd62e5ba5a55f84f12cf117a7d8385009ef48730b4a8"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1738,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 165616282853,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 12995,
+                  "fractional_epoch_offset_samples": -0.4417013001887073,
+                  "tracking_absolute_baseband_cfo_hz": -636168.3353953364,
+                  "candidate_rank": 1
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 12994,
+                  "fractional_epoch_offset_samples": 0.6747779498832325,
+                  "tracking_absolute_baseband_cfo_hz": 41942.30745915958,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:2b4df341d223d558f789943b8628cd277d1a175429dea7f5d264af6336d2c87f"
+              ],
+              "rx1_track_ids": [
+                "sha256:17852be2193198677291b9647aa51c1613a53db49d0a2e0de0372662ed8af634"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 2483,
+                  "fractional_epoch_offset_samples": -0.6594094663850502,
+                  "tracking_absolute_baseband_cfo_hz": -471843.8358407109,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 2483,
+                  "fractional_epoch_offset_samples": -0.3325333870673109,
+                  "tracking_absolute_baseband_cfo_hz": 206315.07372581377,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:3866cc399c58f7f0673d7d0678413c11b50d810a6dcbb601756a49ae2b9840f9"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1803,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 165703347656,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 1544,
+                  "fractional_epoch_offset_samples": 0.37615615353921245,
+                  "tracking_absolute_baseband_cfo_hz": -662057.8686138231,
+                  "candidate_rank": 1
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 1544,
+                  "fractional_epoch_offset_samples": 0.13828296228691134,
+                  "tracking_absolute_baseband_cfo_hz": 16025.758447542961,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:17852be2193198677291b9647aa51c1613a53db49d0a2e0de0372662ed8af634"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5125,
+                  "fractional_epoch_offset_samples": 0.19059707760913616,
+                  "tracking_absolute_baseband_cfo_hz": -498928.7785860764,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5125,
+                  "fractional_epoch_offset_samples": 0.4337809712772794,
+                  "tracking_absolute_baseband_cfo_hz": 179229.99908301892,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d07dfa4d5fc9ffda74ba3c07e8f2362066d51bb9492e69736b551ed945aaf70b"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1871,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 165796294634,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 1025,
+                  "fractional_epoch_offset_samples": 0.43995730991698956,
+                  "tracking_absolute_baseband_cfo_hz": -687202.3587025681,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 1025,
+                  "fractional_epoch_offset_samples": 0.6124442818877467,
+                  "tracking_absolute_baseband_cfo_hz": -9182.806611287,
+                  "candidate_rank": 1
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5200,
+                  "fractional_epoch_offset_samples": 0.5599966492171246,
+                  "tracking_absolute_baseband_cfo_hz": -531139.8728731859,
+                  "candidate_rank": 1
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5200,
+                  "fractional_epoch_offset_samples": 0.6543045896946085,
+                  "tracking_absolute_baseband_cfo_hz": 146859.55117333325,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d07dfa4d5fc9ffda74ba3c07e8f2362066d51bb9492e69736b551ed945aaf70b"
+              ],
+              "rx1_track_ids": [
+                "sha256:744dada78fc6b6791576011e5be1e9741f5e57e6c245426ba58c0b65dbb703d3"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1911,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 165850850029,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5191,
+                  "fractional_epoch_offset_samples": 0.5956004676380291,
+                  "tracking_absolute_baseband_cfo_hz": -700645.642163388,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5191,
+                  "fractional_epoch_offset_samples": -0.03452987373681418,
+                  "tracking_absolute_baseband_cfo_hz": -22628.62796598085,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 10086,
+                  "fractional_epoch_offset_samples": 0.3827654507001646,
+                  "tracking_absolute_baseband_cfo_hz": -551433.165592708,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 10086,
+                  "fractional_epoch_offset_samples": 0.3749255245044716,
+                  "tracking_absolute_baseband_cfo_hz": 126565.16708518896,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d07dfa4d5fc9ffda74ba3c07e8f2362066d51bb9492e69736b551ed945aaf70b"
+              ],
+              "rx1_track_ids": [
+                "sha256:744dada78fc6b6791576011e5be1e9741f5e57e6c245426ba58c0b65dbb703d3"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1998,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 165968616041,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 3017,
+                  "fractional_epoch_offset_samples": 0.39306031153420634,
+                  "tracking_absolute_baseband_cfo_hz": -597144.1854308038,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 3017,
+                  "fractional_epoch_offset_samples": 0.38699115563644015,
+                  "tracking_absolute_baseband_cfo_hz": 80871.53923224605,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:c11fcc2bb36aac826607f834ce1c24b7a1087edbf2d76c361b0050b0edcdad1f"
+              ],
+              "rx1_track_ids": [
+                "sha256:9302375c38ef1a3445f067aa183e8550986db2b24a5870a583400059d8a09f6c"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 2003,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 165975035946,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9776,
+                  "fractional_epoch_offset_samples": 0.13412415275852196,
+                  "tracking_absolute_baseband_cfo_hz": -599412.1303916923,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9776,
+                  "fractional_epoch_offset_samples": -0.16297230017352932,
+                  "tracking_absolute_baseband_cfo_hz": 78629.31954546919,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:c11fcc2bb36aac826607f834ce1c24b7a1087edbf2d76c361b0050b0edcdad1f"
+              ],
+              "rx1_track_ids": [
+                "sha256:9302375c38ef1a3445f067aa183e8550986db2b24a5870a583400059d8a09f6c"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 2016,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 165992735656,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 4651,
+                  "fractional_epoch_offset_samples": -0.22915870343827013,
+                  "tracking_absolute_baseband_cfo_hz": -605843.3654315139,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 4651,
+                  "fractional_epoch_offset_samples": -0.17803232806068045,
+                  "tracking_absolute_baseband_cfo_hz": 72265.55638252496,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "metadata": {
+        "active_dwell_seconds": 265.92,
+        "active_dwell_time_stratum": "high",
+        "admission_status": "included",
+        "capture_schema_version": 14,
+        "capture_start_utc": "2026-09-26T09:50:02.116356Z",
+        "complete_visit_count": 2216,
+        "device_dropped_events": 0,
+        "dwell_ms_observed": [
+          120.0
+        ],
+        "exclusion_reason": null,
+        "finalized_utc": "2026-09-26T10:00:19.769445Z",
+        "median_visit_dwell_ms": 120.0,
+        "qualified_utc_timing": true,
+        "radio_id": "radio_pluto_5d4d",
+        "receipt_schema_version": 6,
+        "recording_complete": true,
+        "recording_manifest_content_sha256": "sha256:6368cbb20d73e39267035da01d27743764ff1c6c3e3c24a4a0f7366cfd35b3fb",
+        "recording_manifest_file_sha256": "sha256:38ad7d9d27bf1a9b8739880bf767d7a832d28f1b44f1975addfe24d394125f78",
+        "recording_manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-f7515a5fdb02cda5/manifest.json",
+        "sample_format": "ci16_le",
+        "sample_layout": "sample_receiver_iq",
+        "sample_rate_hz": 10000000,
+        "session_id": "scan-fw-f7515a5fdb02cda5",
+        "source_span_attested": true,
+        "timing_schema_version": 3,
+        "total_sample_count": 2659200000,
+        "valid_duty_fraction": 0.8864,
+        "valid_duty_ppm": 886400
+      },
+      "input_manifest_sha256": "sha256:6368cbb20d73e39267035da01d27743764ff1c6c3e3c24a4a0f7366cfd35b3fb",
+      "analysis_manifest_sha256": "sha256:a2121ede92795f4ae0140b266151613fd0da09d75fe61365cf58a236896c77e8",
+      "track_count": 45,
+      "all_visits": 2216,
+      "eligible_joint_visits": 644,
+      "eligible_two_mode_visits": 13,
+      "recurrent_pair_groups": [
+        {
+          "key": "[2, \"lower\", [\"sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5\"], [\"sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d\"]]",
+          "eligible_visits": 4,
+          "selected_visits": [
+            1838,
+            1839,
+            1853,
+            1891
+          ],
+          "held_visits": [
+            1853,
+            1891
+          ]
+        }
+      ],
+      "selected": [
+        {
+          "visit": 111,
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10710000000.0,
+          "valid_start_counter": 324054446008,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 13325,
+                  "fractional_epoch_offset_samples": -0.16304333873200205,
+                  "tracking_absolute_baseband_cfo_hz": -538440.2759316205,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 13325,
+                  "fractional_epoch_offset_samples": 0.024310253172389634,
+                  "tracking_absolute_baseband_cfo_hz": 141331.09753690392,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:b6581035f62c45ad396db4a5402cf3c14c84c44458077ad49b93e76fcbeded33"
+              ],
+              "rx1_track_ids": [
+                "sha256:3f5a6a022d6c82845056bab7e3996aa866241c4c61f5c43e2ba62d8a57678cd4"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1097,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 325388908111,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 7632,
+                  "fractional_epoch_offset_samples": 0.3855351595299743,
+                  "tracking_absolute_baseband_cfo_hz": -593970.4450668226,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 7632,
+                  "fractional_epoch_offset_samples": 0.04613136091954786,
+                  "tracking_absolute_baseband_cfo_hz": 85696.52714406623,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:7da7da82a90427b0f1d30717d155fe718a0680a382870569de030167088cc8a9"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1838,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326393218270,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 4277,
+                  "fractional_epoch_offset_samples": -0.33756918186340923,
+                  "tracking_absolute_baseband_cfo_hz": -644503.3125382643,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 4277,
+                  "fractional_epoch_offset_samples": -0.4155893257160025,
+                  "tracking_absolute_baseband_cfo_hz": 35176.20685334189,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 1367,
+                  "fractional_epoch_offset_samples": 0.5195570604707687,
+                  "tracking_absolute_baseband_cfo_hz": -537397.7832226302,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 1369,
+                  "fractional_epoch_offset_samples": -0.9748663861036297,
+                  "tracking_absolute_baseband_cfo_hz": 142342.65089413786,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "[2, \"lower\", [\"sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5\"], [\"sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d\"]]",
+          "partition": "train"
+        },
+        {
+          "visit": 1839,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326394426803,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9071,
+                  "fractional_epoch_offset_samples": 0.36259930511077165,
+                  "tracking_absolute_baseband_cfo_hz": -644909.7346872294,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9072,
+                  "fractional_epoch_offset_samples": -0.7918613260761023,
+                  "tracking_absolute_baseband_cfo_hz": 34810.824228518584,
+                  "candidate_rank": 1
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 6175,
+                  "fractional_epoch_offset_samples": 0.7213380275399459,
+                  "tracking_absolute_baseband_cfo_hz": -537724.4996171561,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 6175,
+                  "fractional_epoch_offset_samples": 0.19363545394126552,
+                  "tracking_absolute_baseband_cfo_hz": 141961.63079281285,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "[2, \"lower\", [\"sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5\"], [\"sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d\"]]",
+          "partition": "train"
+        },
+        {
+          "visit": 1843,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326400038449,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 10732,
+                  "fractional_epoch_offset_samples": -0.08846628498872672,
+                  "tracking_absolute_baseband_cfo_hz": -646896.1873983949,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 10732,
+                  "fractional_epoch_offset_samples": -0.17703264011593506,
+                  "tracking_absolute_baseband_cfo_hz": 32913.582058476924,
+                  "candidate_rank": 1
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 7896,
+                  "fractional_epoch_offset_samples": 0.4396695769249588,
+                  "tracking_absolute_baseband_cfo_hz": -539527.0295998999,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 7897,
+                  "fractional_epoch_offset_samples": -0.6906608600532389,
+                  "tracking_absolute_baseband_cfo_hz": 140226.9241818618,
+                  "candidate_rank": 3
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1853,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326413678251,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 10860,
+                  "fractional_epoch_offset_samples": -0.023331700519271834,
+                  "tracking_absolute_baseband_cfo_hz": -651436.7612517015,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 10860,
+                  "fractional_epoch_offset_samples": 0.12196424924334962,
+                  "tracking_absolute_baseband_cfo_hz": 28392.88918491063,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 8173,
+                  "fractional_epoch_offset_samples": -0.4334433741406403,
+                  "tracking_absolute_baseband_cfo_hz": -543636.549116968,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 8173,
+                  "fractional_epoch_offset_samples": -0.4985045247735702,
+                  "tracking_absolute_baseband_cfo_hz": 136102.25598367344,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "[2, \"lower\", [\"sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5\"], [\"sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d\"]]",
+          "partition": "held"
+        },
+        {
+          "visit": 1859,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326421699293,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 3108,
+                  "fractional_epoch_offset_samples": -0.17141464242683202,
+                  "tracking_absolute_baseband_cfo_hz": -653974.8660861377,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 3107,
+                  "fractional_epoch_offset_samples": 0.9568614898921998,
+                  "tracking_absolute_baseband_cfo_hz": 25723.59514533059,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 507,
+                  "fractional_epoch_offset_samples": 0.4920487564630559,
+                  "tracking_absolute_baseband_cfo_hz": -546028.9493525514,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 507,
+                  "fractional_epoch_offset_samples": 0.17919745787180535,
+                  "tracking_absolute_baseband_cfo_hz": 133649.69897678698,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1862,
+          "channel": 1,
+          "edge": "lower",
+          "rf_center_hz": 10710000000.0,
+          "valid_start_counter": 326425707307,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 8312,
+                  "fractional_epoch_offset_samples": -0.9086893296379799,
+                  "tracking_absolute_baseband_cfo_hz": -653538.7534906666,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 8312,
+                  "fractional_epoch_offset_samples": -0.75582476193896,
+                  "tracking_absolute_baseband_cfo_hz": 26127.967545126972,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:e8d70b33aa49d028e9bba2b45b3a337f225671aaddf8690c4a449d28f6e01d8b"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1873,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326440763622,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5334,
+                  "fractional_epoch_offset_samples": 0.31107537505341115,
+                  "tracking_absolute_baseband_cfo_hz": -660108.7214930521,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5335,
+                  "fractional_epoch_offset_samples": -0.6063584937587967,
+                  "tracking_absolute_baseband_cfo_hz": 19539.581120260525,
+                  "candidate_rank": 3
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 2941,
+                  "fractional_epoch_offset_samples": 0.5415942802130533,
+                  "tracking_absolute_baseband_cfo_hz": -551873.0719422185,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 2941,
+                  "fractional_epoch_offset_samples": 0.5438445382509732,
+                  "tracking_absolute_baseband_cfo_hz": 127852.57506701653,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1874,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326441965705,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 3244,
+                  "fractional_epoch_offset_samples": -0.14265170695095622,
+                  "tracking_absolute_baseband_cfo_hz": -660522.1336244107,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 3244,
+                  "fractional_epoch_offset_samples": -0.11293262669364368,
+                  "tracking_absolute_baseband_cfo_hz": 19132.554896576272,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 864,
+                  "fractional_epoch_offset_samples": 0.36450855609774546,
+                  "tracking_absolute_baseband_cfo_hz": -552224.0360713266,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 864,
+                  "fractional_epoch_offset_samples": 0.23490566107118474,
+                  "tracking_absolute_baseband_cfo_hz": 127460.18679820513,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1882,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326452585768,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9781,
+                  "fractional_epoch_offset_samples": -0.09901333350842148,
+                  "tracking_absolute_baseband_cfo_hz": -664030.2400189,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9780,
+                  "fractional_epoch_offset_samples": 0.8701273062841638,
+                  "tracking_absolute_baseband_cfo_hz": 15811.897507002985,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 7517,
+                  "fractional_epoch_offset_samples": 0.003907186806308042,
+                  "tracking_absolute_baseband_cfo_hz": -555631.6054560497,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 7517,
+                  "fractional_epoch_offset_samples": -0.07279145764119546,
+                  "tracking_absolute_baseband_cfo_hz": 124146.41360890231,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1890,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 326463610416,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9432,
+                  "fractional_epoch_offset_samples": -0.18798736117037487,
+                  "tracking_absolute_baseband_cfo_hz": -558612.3554510298,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9432,
+                  "fractional_epoch_offset_samples": -0.16474538263851674,
+                  "tracking_absolute_baseband_cfo_hz": 121106.60202040058,
+                  "candidate_rank": 1
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:41abcd809a399f0c949839232a98e448e9a9bee668a4cf58c15237d03ba5b14e"
+              ],
+              "rx1_track_ids": [
+                "sha256:47811a064867f40437da95556642e6557067c4d2b43aad2857e918756e17014c"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1891,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326465018860,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 3273,
+                  "fractional_epoch_offset_samples": 0.3456883719513369,
+                  "tracking_absolute_baseband_cfo_hz": -667931.9356558975,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 3273,
+                  "fractional_epoch_offset_samples": 0.5733407315028966,
+                  "tracking_absolute_baseband_cfo_hz": 11898.804581882665,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5"
+              ],
+              "rx1_track_ids": [
+                "sha256:69858d3b9fec94be5628bfacd450917ee3966717e02658c5b132354622f235c3"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 1145,
+                  "fractional_epoch_offset_samples": -0.044291803105049356,
+                  "tracking_absolute_baseband_cfo_hz": -559501.8931552785,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 1145,
+                  "fractional_epoch_offset_samples": -0.01605188272486576,
+                  "tracking_absolute_baseband_cfo_hz": 120327.86538436415,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "[2, \"lower\", [\"sha256:65977c43c60564d07c758752c5894f12344423ebc1f73cffc21010b1cc407ea5\"], [\"sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d\"]]",
+          "partition": "held"
+        },
+        {
+          "visit": 2046,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 326674322854,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 4054,
+                  "fractional_epoch_offset_samples": 0.6426455068994175,
+                  "tracking_absolute_baseband_cfo_hz": -625304.6265564025,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 4055,
+                  "fractional_epoch_offset_samples": -0.24819547756850063,
+                  "tracking_absolute_baseband_cfo_hz": 54400.86876418174,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:d8fe017c4a9f9a10d94058537f794a9012b061a86191270f925c7a7c9224f67d"
+              ],
+              "rx1_track_ids": [
+                "sha256:e49a45c935aa63372e8f05ca19de9c949b09c5f0b97782301f942b18254a9885"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 2085,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 326727079938,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 6833,
+                  "fractional_epoch_offset_samples": -0.43324693747339743,
+                  "tracking_absolute_baseband_cfo_hz": -642942.5808386302,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 6833,
+                  "fractional_epoch_offset_samples": -0.5129437290856235,
+                  "tracking_absolute_baseband_cfo_hz": 36975.271004665,
+                  "candidate_rank": 1
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:41abcd809a399f0c949839232a98e448e9a9bee668a4cf58c15237d03ba5b14e"
+              ],
+              "rx1_track_ids": [
+                "sha256:47811a064867f40437da95556642e6557067c4d2b43aad2857e918756e17014c"
+              ]
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 8421,
+                  "fractional_epoch_offset_samples": 0.37106815748152855,
+                  "tracking_absolute_baseband_cfo_hz": -513132.64250182395,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 8421,
+                  "fractional_epoch_offset_samples": 0.13870598060079223,
+                  "tracking_absolute_baseband_cfo_hz": 166734.98261535953,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 2133,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 326792090785,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 11327,
+                  "fractional_epoch_offset_samples": 1.3871068150866668,
+                  "tracking_absolute_baseband_cfo_hz": -535770.0663786698,
+                  "candidate_rank": 1
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 11328,
+                  "fractional_epoch_offset_samples": 0.33887232950056173,
+                  "tracking_absolute_baseband_cfo_hz": 143996.22149829956,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "metadata": {
+        "active_dwell_seconds": 264.96,
+        "active_dwell_time_stratum": "low",
+        "admission_status": "included",
+        "capture_schema_version": 14,
+        "capture_start_utc": "2026-09-26T12:00:02.146480Z",
+        "complete_visit_count": 2208,
+        "device_dropped_events": 0,
+        "dwell_ms_observed": [
+          120.0
+        ],
+        "exclusion_reason": null,
+        "finalized_utc": "2026-09-26T12:10:46.349672Z",
+        "median_visit_dwell_ms": 120.0,
+        "qualified_utc_timing": true,
+        "radio_id": "radio_pluto_5d4d",
+        "receipt_schema_version": 6,
+        "recording_complete": true,
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-888fc1e1e005ded3/manifest.json",
+        "sample_format": "ci16_le",
+        "sample_layout": "sample_receiver_iq",
+        "sample_rate_hz": 10000000,
+        "session_id": "scan-fw-888fc1e1e005ded3",
+        "source_span_attested": true,
+        "timing_schema_version": 3,
+        "total_sample_count": 2649600000,
+        "valid_duty_fraction": 0.8832,
+        "valid_duty_ppm": 883200
+      },
+      "input_manifest_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+      "analysis_manifest_sha256": "sha256:8d850857ad6489863b4250b3f83e71973fe6c18a5873d57b405d34a74486d42a",
+      "track_count": 47,
+      "all_visits": 2208,
+      "eligible_joint_visits": 597,
+      "eligible_two_mode_visits": 4,
+      "recurrent_pair_groups": [],
+      "selected": [
+        {
+          "visit": 19,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 470095209786,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 8988,
+                  "fractional_epoch_offset_samples": -0.4132936585040101,
+                  "tracking_absolute_baseband_cfo_hz": -622333.8262824855,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 8988,
+                  "fractional_epoch_offset_samples": -0.4195991906882846,
+                  "tracking_absolute_baseband_cfo_hz": 59848.248580332904,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 460,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 470695725740,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 88,
+                  "fractional_epoch_offset_samples": -0.6538766436969949,
+                  "tracking_absolute_baseband_cfo_hz": -649044.0293722881,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 87,
+                  "fractional_epoch_offset_samples": 0.23738581241758983,
+                  "tracking_absolute_baseband_cfo_hz": 33095.56482302892,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:92b70c196fca2437de5d90367858e3c8b0478147cf5397a22daf000947c3f3ef"
+              ],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 13086,
+                  "fractional_epoch_offset_samples": 0.11262656860876961,
+                  "tracking_absolute_baseband_cfo_hz": -635306.1219714291,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 13087,
+                  "fractional_epoch_offset_samples": -1.0937267383642753,
+                  "tracking_absolute_baseband_cfo_hz": 46898.840070580714,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 578,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 470855745630,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 5596,
+                  "fractional_epoch_offset_samples": 0.2530090438160894,
+                  "tracking_absolute_baseband_cfo_hz": -687228.2842069273,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 5596,
+                  "fractional_epoch_offset_samples": -0.08221719952302788,
+                  "tracking_absolute_baseband_cfo_hz": -5114.322453117697,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:7ac05d48146798e4bba06bfd985ce77a9c7a7d4004dedbe1c8a6df21886d80eb"
+              ]
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 971,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 471390277635,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 7295,
+                  "fractional_epoch_offset_samples": 0.19476743051527093,
+                  "tracking_absolute_baseband_cfo_hz": -587733.6647239076,
+                  "candidate_rank": 1
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 7296,
+                  "fractional_epoch_offset_samples": -0.7695365240204864,
+                  "tracking_absolute_baseband_cfo_hz": 94494.52894891478,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:156a90487accbbc965ff43b828fed9023bfc3d8f0ed623d912ccd7cc914e865d"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1047,
+          "channel": 3,
+          "edge": "lower",
+          "rf_center_hz": 11210000000.0,
+          "valid_start_counter": 471494022321,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9193,
+                  "fractional_epoch_offset_samples": 0.6185262877157436,
+                  "tracking_absolute_baseband_cfo_hz": -623054.5472261535,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9194,
+                  "fractional_epoch_offset_samples": -0.12033983215410073,
+                  "tracking_absolute_baseband_cfo_hz": 59058.7219515614,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:156a90487accbbc965ff43b828fed9023bfc3d8f0ed623d912ccd7cc914e865d"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1438,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 472023098085,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 649,
+                  "fractional_epoch_offset_samples": -0.37761545798623997,
+                  "tracking_absolute_baseband_cfo_hz": -575370.6207895447,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 649,
+                  "fractional_epoch_offset_samples": -0.5159735351241299,
+                  "tracking_absolute_baseband_cfo_hz": 106849.32586088241,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:fa96f3c3e9ec41272a21b566cb85366ec73fc8442cafa4d0d6eaa55665fafd1d"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1835,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 472563278568,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 9400,
+                  "fractional_epoch_offset_samples": -0.5638543071880555,
+                  "tracking_absolute_baseband_cfo_hz": -609632.35653641,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 9400,
+                  "fractional_epoch_offset_samples": -0.4368109012359573,
+                  "tracking_absolute_baseband_cfo_hz": 72556.05084688036,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 6752,
+                  "fractional_epoch_offset_samples": -0.6133359476870694,
+                  "tracking_absolute_baseband_cfo_hz": -589996.4716550116,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 6751,
+                  "fractional_epoch_offset_samples": 0.24411051207857987,
+                  "tracking_absolute_baseband_cfo_hz": 92193.39599714999,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:da09adef56f1e695ad521a77c1168ca1d0d95e7af8e2d3f96a8ab039d7b9aa3e"
+              ],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1863,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 472601791095,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 3443,
+                  "fractional_epoch_offset_samples": 0.1655534768188204,
+                  "tracking_absolute_baseband_cfo_hz": -624548.8385471136,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 3442,
+                  "fractional_epoch_offset_samples": 1.017373170622059,
+                  "tracking_absolute_baseband_cfo_hz": 57658.276868223445,
+                  "candidate_rank": 3
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:08093a4498f93d798d84847e707e61405fd127f321417287f9de75bfedc3190f"
+              ],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 886,
+                  "fractional_epoch_offset_samples": 0.037015040116362044,
+                  "tracking_absolute_baseband_cfo_hz": -602774.481583752,
+                  "candidate_rank": 2
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 886,
+                  "fractional_epoch_offset_samples": 0.019286359390273632,
+                  "tracking_absolute_baseband_cfo_hz": 79489.54602735647,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": [
+                "sha256:974f3c77b8eaebaaf9a5e6992bc03ca584949ba9d37743b76d592d3f082205fe"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 1865,
+          "channel": 2,
+          "edge": "lower",
+          "rf_center_hz": 10960000000.0,
+          "valid_start_counter": 472604594826,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 13040,
+                  "fractional_epoch_offset_samples": 0.6296583038916469,
+                  "tracking_absolute_baseband_cfo_hz": -625577.814347961,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 13041,
+                  "fractional_epoch_offset_samples": -0.3060306059391165,
+                  "tracking_absolute_baseband_cfo_hz": 56581.79350938025,
+                  "candidate_rank": 5
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:08093a4498f93d798d84847e707e61405fd127f321417287f9de75bfedc3190f"
+              ],
+              "rx1_track_ids": []
+            },
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 10486,
+                  "fractional_epoch_offset_samples": 0.28479178804760646,
+                  "tracking_absolute_baseband_cfo_hz": -603604.7188870175,
+                  "candidate_rank": 3
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 10487,
+                  "fractional_epoch_offset_samples": -0.7598657303127218,
+                  "tracking_absolute_baseband_cfo_hz": 78550.56176628743,
+                  "candidate_rank": 2
+                }
+              ],
+              "rx0_track_ids": [
+                "sha256:da09adef56f1e695ad521a77c1168ca1d0d95e7af8e2d3f96a8ab039d7b9aa3e"
+              ],
+              "rx1_track_ids": [
+                "sha256:974f3c77b8eaebaaf9a5e6992bc03ca584949ba9d37743b76d592d3f082205fe"
+              ]
+            }
+          ],
+          "group": "nonrecurrent-pair",
+          "partition": "diagnostic"
+        },
+        {
+          "visit": 2161,
+          "channel": 4,
+          "edge": "lower",
+          "rf_center_hz": 11460000000.0,
+          "valid_start_counter": 473005528140,
+          "modes": [
+            {
+              "seeds": [
+                {
+                  "receiver_id": 0,
+                  "integer_epoch_sample": 10033,
+                  "fractional_epoch_offset_samples": 0.7730797362136987,
+                  "tracking_absolute_baseband_cfo_hz": -512876.6276602417,
+                  "candidate_rank": 0
+                },
+                {
+                  "receiver_id": 1,
+                  "integer_epoch_sample": 10033,
+                  "fractional_epoch_offset_samples": 1.0942944877753709,
+                  "tracking_absolute_baseband_cfo_hz": 169426.4638077601,
+                  "candidate_rank": 0
+                }
+              ],
+              "rx0_track_ids": [],
+              "rx1_track_ids": []
+            }
+          ],
+          "group": "single",
+          "partition": "diagnostic"
+        }
+      ]
+    }
+  ]
+}
