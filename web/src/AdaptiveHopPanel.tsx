@@ -60,7 +60,7 @@ export function AdaptiveHopBrowser({ selectedId, onSelect, autoSelectFirst = fal
     {error ? <p role="status">{error}. Existing scan history remains separate.</p> : null}
     {!loading && !error && page === null ? <p>Adaptive history is not available on this server.</p> : null}
     {page?.total === 0 ? <p>No adaptive or shadow capture has been published yet.</p> : null}
-    {page && page.items.length > 0 ? <div className="persistent-hop-scroll"><table className="scanner-history-table" aria-label="Adaptive capture history">
+    {page && page.items.length > 0 ? <div className="persistent-hop-scroll adaptive-history-scroll"><table className="scanner-history-table" aria-label="Adaptive capture history">
       <thead><tr><th>Capture</th><th>Duty</th></tr></thead>
       <tbody>{page.items.map(c => <tr key={c.session_id} className={selectedId === c.session_id ? "selected" : undefined}>
         <td><button type="button" className="scanner-row-button persistent-hop-row" onClick={() => onSelect(c.session_id)}>
