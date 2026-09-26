@@ -4,6 +4,8 @@ Three additional DS5 scans provide repeatable simultaneous-receiver phase eviden
 
 This report extends the [standalone phase-to-sky explanation](../2026_09_26_phase_to_sky_standalone/README.md). All measurements below are from existing real recordings; the estimator sign test uses explicitly synthetic IQ. No RF collection, production association change or database write was performed.
 
+The subsequent [real catalogue trial](CATALOGUE_TRIAL.md) verifies production-track joins, expands one recurring pair from four to nine dwells, and evaluates actual satellite hypotheses. It finds small, mixed candidate-weight gains and no top-pair changes; orbital phase loses to a constant double-difference control. Satellite-association improvement remains unproven.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.

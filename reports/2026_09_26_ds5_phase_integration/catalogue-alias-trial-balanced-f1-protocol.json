@@ -1,0 +1,24 @@
+{
+  "seed_policy": "sha256 phase-catalogue-20260927:session:visit-start-second-bin, modulo10 <6 training; same assignment for all CFO/phase samples in each dwell",
+  "selection": "existing real phase groups with at least four exact recurring production-track pair visits; full visible catalogue top4 per CFO track on train only",
+  "site": "previous DS5 fixed reference evaluation coordinate; conditional site hypothesis, not newly surveyed",
+  "baseline_grid_m": [
+    -2.0,
+    2.0,
+    0.01
+  ],
+  "baseline_prior": "uniform grid; illustrative unmeasured range; zero included",
+  "phase_kappas": [
+    0.5,
+    1.0,
+    2.0
+  ],
+  "orbit_time_offset_s": 0.0,
+  "phase_intercept": "one constant per recurring pair, analytically integrated",
+  "likelihood": "CFO 100Hz per occupied-second block; phase one circular mean per dwell",
+  "meaning": "conditional held predictive scores, not satellite identity ground truth; no deployment",
+  "membership": "same-epoch CFO-alias equivalent, unique per receiver",
+  "balanced_phase_groups": true,
+  "fold": 1,
+  "cfo_scale": "100 Hz"
+}

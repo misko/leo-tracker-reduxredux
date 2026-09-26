@@ -1,0 +1,372 @@
+{
+  "protocol": {
+    "seed_policy": "sha256 phase-catalogue-20260927:session:visit-start-second-bin, modulo10 <6 training; same assignment for all CFO/phase samples in each dwell",
+    "selection": "existing real phase groups with at least four exact recurring production-track pair visits; full visible catalogue top4 per CFO track on train only",
+    "site": "previous DS5 fixed reference evaluation coordinate; conditional site hypothesis, not newly surveyed",
+    "baseline_grid_m": [
+      -2.0,
+      2.0,
+      0.01
+    ],
+    "baseline_prior": "uniform grid; illustrative unmeasured range; zero included",
+    "phase_kappas": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "orbit_time_offset_s": 0.0,
+    "phase_intercept": "one constant per recurring pair, analytically integrated",
+    "likelihood": "CFO 100Hz per occupied-second block; phase one circular mean per dwell",
+    "meaning": "conditional held predictive scores, not satellite identity ground truth; no deployment"
+  },
+  "groups": [
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "group": {
+        "key": "[2, \"lower\", \"sha256:cc4b3f7fc37e66d0dfa45029f14ef2f97c6402602b1627271e3dd0a51b03a6ee\", \"sha256:b3d49eacd30c0308f9025295b787702fb64042ddb866e42e6ed20b4e5acad123\"]",
+        "visits": [
+          1838,
+          1839,
+          1853,
+          1891
+        ]
+      },
+      "status": "scored",
+      "snapshot_digest": "sha256:6c646f4a19e36137a645180b4e866031db0ba999dad539dd2795de4c24864226",
+      "site": {
+        "latitude_deg": 37.84903264307456,
+        "longitude_deg": -122.4856541910174
+      },
+      "observations": [
+        {
+          "visit": 1838,
+          "time_s": 248.8277888,
+          "dd_phase": -0.46549165762338107,
+          "dd_R": 0.872603253951379,
+          "rf0_hz": 10959355496.687462,
+          "rf1_hz": 10959462602.216778
+        },
+        {
+          "visit": 1839,
+          "time_s": 248.9486421,
+          "dd_phase": -0.4851615459246918,
+          "dd_R": 0.7937167544465008,
+          "rf0_hz": 10959355090.265312,
+          "rf1_hz": 10959462275.500383
+        },
+        {
+          "visit": 1853,
+          "time_s": 250.8737869,
+          "dd_phase": -0.3113578584663318,
+          "dd_R": 0.9814148672942082,
+          "rf0_hz": 10959348563.238749,
+          "rf1_hz": 10959456363.450884
+        },
+        {
+          "visit": 1891,
+          "time_s": 256.0078478,
+          "dd_phase": 0.14603719115896271,
+          "dd_R": 0.9895670317068046,
+          "rf0_hz": 10959332068.064344,
+          "rf1_hz": 10959440498.106844
+        }
+      ],
+      "phase_training_mask": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "left_candidates": [
+        {
+          "candidate_id": "59526",
+          "catalogue_index": 4530,
+          "train_log_evidence": -1011.3040288957708,
+          "held_log_predictive": -1346.5579614945814,
+          "train_blocks": 27,
+          "held_blocks": 23,
+          "training_rms_hz": 794.0155277218539
+        },
+        {
+          "candidate_id": "63678",
+          "catalogue_index": 6555,
+          "train_log_evidence": -1307.704899644309,
+          "held_log_predictive": -1205.733178410314,
+          "train_blocks": 27,
+          "held_blocks": 23,
+          "training_rms_hz": 921.9645762201058
+        },
+        {
+          "candidate_id": "66099",
+          "catalogue_index": 8188,
+          "train_log_evidence": -1749.8105694897633,
+          "held_log_predictive": -1426.6746462998956,
+          "train_blocks": 27,
+          "held_blocks": 23,
+          "training_rms_hz": 1085.122453057662
+        },
+        {
+          "candidate_id": "60191",
+          "catalogue_index": 4976,
+          "train_log_evidence": -15082.401761215824,
+          "held_log_predictive": -25749.699685647796,
+          "train_blocks": 27,
+          "held_blocks": 23,
+          "training_rms_hz": 3324.677117883539
+        }
+      ],
+      "right_candidates": [
+        {
+          "candidate_id": "67094",
+          "catalogue_index": 8903,
+          "train_log_evidence": -149.68821245935217,
+          "held_log_predictive": -103.64154241835826,
+          "train_blocks": 24,
+          "held_blocks": 17,
+          "training_rms_hz": 71.47175628977392
+        },
+        {
+          "candidate_id": "58826",
+          "catalogue_index": 4076,
+          "train_log_evidence": -206.33845090688354,
+          "held_log_predictive": -140.37328040694902,
+          "train_blocks": 24,
+          "held_blocks": 17,
+          "training_rms_hz": 228.7321963347455
+        },
+        {
+          "candidate_id": "67079",
+          "catalogue_index": 8888,
+          "train_log_evidence": -2123.8843628034942,
+          "held_log_predictive": -2005.9674712541741,
+          "train_blocks": 24,
+          "held_blocks": 17,
+          "training_rms_hz": 1284.6213813464526
+        },
+        {
+          "candidate_id": "62183",
+          "catalogue_index": 5705,
+          "train_log_evidence": -3733.8625674444697,
+          "held_log_predictive": -4151.959717130399,
+          "train_blocks": 24,
+          "held_blocks": 17,
+          "training_rms_hz": 1729.7085693876309
+        }
+      ],
+      "pairs": [
+        {
+          "left_id": "59526",
+          "right_id": "67094",
+          "cfo_train": -1160.992241355123,
+          "cfo_held": -1450.1995039129397
+        },
+        {
+          "left_id": "59526",
+          "right_id": "58826",
+          "cfo_train": -1217.6424798026544,
+          "cfo_held": -1486.9312419015305
+        },
+        {
+          "left_id": "59526",
+          "right_id": "67079",
+          "cfo_train": -3135.188391699265,
+          "cfo_held": -3352.5254327487555
+        },
+        {
+          "left_id": "59526",
+          "right_id": "62183",
+          "cfo_train": -4745.16659634024,
+          "cfo_held": -5498.517678624981
+        },
+        {
+          "left_id": "63678",
+          "right_id": "67094",
+          "cfo_train": -1457.3931121036612,
+          "cfo_held": -1309.3747208286723
+        },
+        {
+          "left_id": "63678",
+          "right_id": "58826",
+          "cfo_train": -1514.0433505511926,
+          "cfo_held": -1346.106458817263
+        },
+        {
+          "left_id": "63678",
+          "right_id": "67079",
+          "cfo_train": -3431.5892624478033,
+          "cfo_held": -3211.700649664488
+        },
+        {
+          "left_id": "63678",
+          "right_id": "62183",
+          "cfo_train": -5041.567467088778,
+          "cfo_held": -5357.692895540713
+        },
+        {
+          "left_id": "66099",
+          "right_id": "67094",
+          "cfo_train": -1899.4987819491155,
+          "cfo_held": -1530.316188718254
+        },
+        {
+          "left_id": "66099",
+          "right_id": "58826",
+          "cfo_train": -1956.1490203966468,
+          "cfo_held": -1567.0479267068447
+        },
+        {
+          "left_id": "66099",
+          "right_id": "67079",
+          "cfo_train": -3873.694932293258,
+          "cfo_held": -3432.64211755407
+        },
+        {
+          "left_id": "66099",
+          "right_id": "62183",
+          "cfo_train": -5483.673136934233,
+          "cfo_held": -5578.634363430295
+        },
+        {
+          "left_id": "60191",
+          "right_id": "67094",
+          "cfo_train": -15232.089973675176,
+          "cfo_held": -25853.341228066154
+        },
+        {
+          "left_id": "60191",
+          "right_id": "58826",
+          "cfo_train": -15288.740212122708,
+          "cfo_held": -25890.072966054744
+        },
+        {
+          "left_id": "60191",
+          "right_id": "67079",
+          "cfo_train": -17206.28612401932,
+          "cfo_held": -27755.66715690197
+        },
+        {
+          "left_id": "60191",
+          "right_id": "62183",
+          "cfo_train": -18816.264328660294,
+          "cfo_held": -29901.659402778198
+        }
+      ],
+      "cfo_only_probabilities": [
+        1.0,
+        2.4952498820625572e-25,
+        0.0,
+        0.0,
+        1.8825104799100588e-129,
+        4.697334052977102e-154,
+        0.0,
+        0.0,
+        1.863e-321,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "experiments": [
+        {
+          "kappa": 0.5,
+          "cfo_only_held_log_predictive": -1450.1995039129397,
+          "cfo_held_after_phase_training": -1450.1995039129397,
+          "cfo_held_gain": 0.0,
+          "phase_held_log_predictive_vs_uniform": 0.13410519856832082,
+          "joint_cfo_phase_held_log_predictive": -1450.0653987143714,
+          "posterior_probabilities": [
+            1.0,
+            2.4952498820625572e-25,
+            0.0,
+            0.0,
+            1.8825104799100588e-129,
+            4.697334052977102e-154,
+            0.0,
+            0.0,
+            1.863e-321,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "top_pair": {
+            "left_id": "59526",
+            "right_id": "67094",
+            "cfo_train": -1160.992241355123,
+            "cfo_held": -1450.1995039129397
+          }
+        },
+        {
+          "kappa": 1.0,
+          "cfo_only_held_log_predictive": -1450.1995039129397,
+          "cfo_held_after_phase_training": -1450.1995039129397,
+          "cfo_held_gain": 0.0,
+          "phase_held_log_predictive_vs_uniform": 0.4081585138763284,
+          "joint_cfo_phase_held_log_predictive": -1449.7913453990634,
+          "posterior_probabilities": [
+            1.0,
+            2.4952498820625572e-25,
+            0.0,
+            0.0,
+            1.8825104799100588e-129,
+            4.697334052977102e-154,
+            0.0,
+            0.0,
+            1.863e-321,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "top_pair": {
+            "left_id": "59526",
+            "right_id": "67094",
+            "cfo_train": -1160.992241355123,
+            "cfo_held": -1450.1995039129397
+          }
+        },
+        {
+          "kappa": 2.0,
+          "cfo_only_held_log_predictive": -1450.1995039129397,
+          "cfo_held_after_phase_training": -1450.1995039129397,
+          "cfo_held_gain": 0.0,
+          "phase_held_log_predictive_vs_uniform": 0.8575681908845381,
+          "joint_cfo_phase_held_log_predictive": -1449.341935722055,
+          "posterior_probabilities": [
+            1.0,
+            2.4952498820625572e-25,
+            0.0,
+            0.0,
+            1.8825104799100588e-129,
+            4.697334052977102e-154,
+            0.0,
+            0.0,
+            1.863e-321,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "top_pair": {
+            "left_id": "59526",
+            "right_id": "67094",
+            "cfo_train": -1160.992241355123,
+            "cfo_held": -1450.1995039129397
+          }
+        }
+      ]
+    }
+  ]
+}
