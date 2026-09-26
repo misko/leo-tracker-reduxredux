@@ -13,8 +13,10 @@ from leo.analysis.starlink.pilot_methods import (
 )
 from leo.analysis.starlink.pilot_search_geometry import (
     PilotSearchGeometryError,
+    canonicalize_pilot_cfo,
     compile_pilot_search_geometry,
 )
+from leo.analysis.starlink.seeded_acquisition import CFO_ALIAS_SPACING_HZ
 from leo.analysis.starlink.templates import FRAME_RATE_HZ, qin_edge_pilot_frame
 from leo.contracts.states import StarlinkEdge
 
@@ -118,6 +120,72 @@ def test_frequency_reference_uses_the_capture_lnb_frequency() -> None:
 
     assert geometry.pilot_if_center_frequency_hz == 958_687_500
     assert geometry.nominal_pilot_baseband_hz == -312_500
+
+
+@pytest.mark.parametrize(
+    ("edge", "tuned_center_frequency_hz", "nominal_baseband_hz"),
+    (
+        (StarlinkEdge.LOWER, 959_687_500, 0.0),
+        (StarlinkEdge.UPPER, 1_190_312_500, 0.0),
+        (StarlinkEdge.LOWER, 960_000_000, -312_500.0),
+        (StarlinkEdge.UPPER, 1_190_000_000, 312_500.0),
+        (StarlinkEdge.LOWER, 962_500_000, -2_812_500.0),
+        (StarlinkEdge.UPPER, 1_187_500_000, 2_812_500.0),
+    ),
+)
+@pytest.mark.parametrize("alias_lift", [-3, 0, 4])
+def test_pilot_cfo_canonicalization_removes_any_capture_center_and_alias_branch(
+    edge: StarlinkEdge,
+    tuned_center_frequency_hz: int,
+    nominal_baseband_hz: float,
+    alias_lift: int,
+) -> None:
+    physical_residual_hz = 21_250.0
+    raw_baseband_hz = (
+        nominal_baseband_hz + physical_residual_hz + alias_lift * CFO_ALIAS_SPACING_HZ
+    )
+
+    result = canonicalize_pilot_cfo(
+        raw_baseband_hz,
+        starlink_channel=1,
+        edge=edge,
+        tuned_center_frequency_hz=tuned_center_frequency_hz,
+    )
+
+    assert result.nominal_pilot_baseband_hz == nominal_baseband_hz
+    assert result.raw_residual_cfo_hz == pytest.approx(
+        physical_residual_hz + alias_lift * CFO_ALIAS_SPACING_HZ
+    )
+    assert result.canonical_residual_cfo_hz == pytest.approx(physical_residual_hz)
+    assert result.alias_lift == alias_lift
+
+
+@pytest.mark.parametrize(
+    ("edge", "tuned_center_frequency_hz", "rx0_hz", "rx1_hz", "expected_delta_hz"),
+    (
+        (StarlinkEdge.LOWER, 960_000_000, -524_145.0, 149_576.0, -8_097.181818),
+        (StarlinkEdge.UPPER, 1_190_000_000, 141_350.317, 801_623.116, -21_545.383909),
+    ),
+)
+def test_simultaneous_receiver_offsets_are_compared_in_one_canonical_alias(
+    edge: StarlinkEdge,
+    tuned_center_frequency_hz: int,
+    rx0_hz: float,
+    rx1_hz: float,
+    expected_delta_hz: float,
+) -> None:
+    canonical = tuple(
+        canonicalize_pilot_cfo(
+            value,
+            starlink_channel=1,
+            edge=edge,
+            tuned_center_frequency_hz=tuned_center_frequency_hz,
+        ).canonical_residual_cfo_hz
+        for value in (rx0_hz, rx1_hz)
+    )
+
+    assert canonical[1] - canonical[0] == pytest.approx(expected_delta_hz, abs=0.01)
+    assert abs(canonical[1] - canonical[0]) < CFO_ALIAS_SPACING_HZ / 2
 
 
 def test_native_10ms_glrt_recovers_a_pilot_outside_the_old_dc_centered_search() -> None:

@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 
 from leo.analysis.starlink.acquisition import ReceiverFrequencyCalibration
+from leo.analysis.starlink.seeded_acquisition import canonicalize_cfo_alias
 from leo.analysis.starlink.templates import edge_frequencies_hz
 from leo.contracts.digests import canonical_digest
 from leo.contracts.starlink_frequency import (
@@ -40,6 +41,63 @@ class PilotSearchGeometry:
     search_baseband_min_hz: float
     search_baseband_max_hz: float
     frequency_reference: ReceiverFrequencyCalibration
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalPilotCfo:
+    """One raw baseband CFO expressed in the pilot-relative alias coordinate."""
+
+    nominal_pilot_baseband_hz: float
+    raw_baseband_cfo_hz: float
+    raw_residual_cfo_hz: float
+    canonical_residual_cfo_hz: float
+    alias_lift: int
+
+
+def canonicalize_pilot_cfo(
+    raw_baseband_cfo_hz: float,
+    *,
+    starlink_channel: int,
+    edge: StarlinkEdge | str,
+    tuned_center_frequency_hz: int,
+    lnb_lo_hz: int = STARLINK_LNB_LO_HZ,
+) -> CanonicalPilotCfo:
+    """Remove capture tuning and choose a deterministic OFDM CFO alias.
+
+    Detector CFOs remain raw tuner-baseband coordinates because that is the
+    frequency needed to derotate source IQ.  Presentation and association must
+    instead compare the offset from the selected pilot's nominal baseband
+    position.  Canonicalizing only after that subtraction makes the result
+    independent of capture-center displacement and of the GLRT alias branch.
+    """
+
+    raw = float(raw_baseband_cfo_hz)
+    if not math.isfinite(raw):
+        raise ValueError("pilot CFO must be finite")
+    if (
+        isinstance(starlink_channel, bool)
+        or not isinstance(starlink_channel, int)
+        or isinstance(tuned_center_frequency_hz, bool)
+        or not isinstance(tuned_center_frequency_hz, int)
+        or isinstance(lnb_lo_hz, bool)
+        or not isinstance(lnb_lo_hz, int)
+        or min(tuned_center_frequency_hz, lnb_lo_hz) <= 0
+    ):
+        raise ValueError("pilot CFO requires positive integer capture geometry")
+    selected_edge = StarlinkEdge(edge)
+    pilot_if_hz = (
+        starlink_edge_rf_center_frequency_hz(starlink_channel, selected_edge) - lnb_lo_hz
+    )
+    nominal = float(pilot_if_hz - tuned_center_frequency_hz)
+    residual = raw - nominal
+    canonical, lift = canonicalize_cfo_alias(residual)
+    return CanonicalPilotCfo(
+        nominal_pilot_baseband_hz=nominal,
+        raw_baseband_cfo_hz=raw,
+        raw_residual_cfo_hz=residual,
+        canonical_residual_cfo_hz=canonical,
+        alias_lift=lift,
+    )
 
 
 def compile_pilot_search_geometry(
