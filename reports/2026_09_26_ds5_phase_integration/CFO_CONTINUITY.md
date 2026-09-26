@@ -1,5 +1,7 @@
 # CFO uncertainty and pilot continuity across DS5
 
+Follow-up: the [phase-episode experiment](PHASE_EPISODES.md) tests resets and finds that the smaller mode-1 flag lacks adequate extrapolation support. Treat the original flags below as diagnostic candidates, not confirmed discontinuities.
+
 The phase prototype has useful qualified measurements, but **does not yet improve association consistently**. This follow-up tests uncertainty choices and finds acquisition timing discontinuities worth addressing before a phase update is trusted across an entire track.
 
 This is real recorded DS5 data: the 09:50 scan `scan-fw-f7515a5fdb02cda5` and 12:00 scan `scan-fw-888fc1e1e005ded3`, extending the [three-scan replay](README.md). The 07:20 scan did not supply a qualifying long simultaneous pair. No new collection was made. Identity truth and surveyed baseline length remain unavailable; these are conditional predictive comparisons, not measured satellite identification accuracy.
