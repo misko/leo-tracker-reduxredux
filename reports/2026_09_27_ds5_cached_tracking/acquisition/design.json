@@ -1,0 +1,42 @@
+{
+  "schema": "org.leo.research.ds5-seeded-acquisition-design.v1",
+  "stage": "development_only_frozen_before_outcomes",
+  "dataset_cases_sha256": "sha256:4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+  "control_cases_sha256": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "tracking_sha256": "sha256:0597aaf35e53e3f7652d599fc870afa9358440c542509fd0ed4b4fdb462a990f",
+  "native_profile_sha256": "sha256:3c96186ad0e22b6e948f90ad9fd33a54508c94ae6e376b367064d36b804fc1a1",
+  "default_v4": {
+    "python_sha256": "sha256:c6d59173c5e6c856374c8c9f7b836b1d3d72ee52eb3ab46d26137b8613b6a03b",
+    "c_sha256": "sha256:df1b19988122acafc1934888d385878d8224438fc86996db202126dba69cdc00",
+    "header_sha256": "sha256:2b0460d8c3053c33c5e9cfb8fed60e270e6a9bf0dde4603a439136ba385c0c4b",
+    "binary_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+    "build_receipt_sha256": "sha256:5103c6ebfde2a95e0ecdeec3c2e5c5c3253cf04aaca15da2fda1b5b6c0d1ee3e"
+  },
+  "baseline": {
+    "ingress": "pack one recorded receiver to contiguous CI16 inside the timed call",
+    "detector": "NativeDwell maximum=1 seeded=false from the same candidate library"
+  },
+  "candidate": {
+    "ingress": "natural stride-4 recorded receiver view with no Python packing",
+    "detector": "NativeStridedBlindV4 maximum=1 seeded=true, 512-bin whole-dwell rank proposal passed directly to confirmation",
+    "timing_bins": null,
+    "automatic_fallback": false
+  },
+  "decision": {
+    "positive": "fractional_complete is true and exact_score - control_score is strictly greater than 0.025",
+    "retention": "tracking.reference_match against the independently timed packed unseeded baseline observation",
+    "extras": "every candidate-positive receiver-visit not associated by reference_match"
+  },
+  "timing": {
+    "warmups_per_receiver_visit": 1,
+    "repetitions": 3,
+    "order": "counterbalanced by case ordinal plus receiver plus repetition",
+    "scope": "thread CPU and monotonic wall around receiver selection/packing plus the complete detector call; file loading and hashes excluded"
+  },
+  "controls": {
+    "source": "previous fixed synthetic controls",
+    "rates_hz": [2500000, 5000000],
+    "kinds": ["pilot", "noise", "tone"],
+    "use": "run only after all development rows; report independently; never tune"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "org.leo.research.multitrack-design/v1",
+  "stage": "frozen_before_detector_outcomes",
+  "dataset_sha256": "b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845",
+  "strategy": {
+    "maximum_tracks_per_key": 3,
+    "key": ["session_id", "receiver", "channel", "edge", "rate_hz"],
+    "ttl_seconds": 2.0,
+    "global_discovery_interval": 32,
+    "track_order": "most recent accepted observation, then larger last margin, then lower monotonic track id",
+    "checks": "score every live supported prediction with fresh IQ and full-aperture known_state_v3; charge every check",
+    "selection": "among track-compatible positive checks choose largest current margin, then lower track id; record every accepted alternative",
+    "cache_acceptance_timing_seconds": 0.000004,
+    "scientific_identity_timing_seconds": 0.000002,
+    "cfo_identity_hz": 8000,
+    "fallback": "if no compatible positive cache check, execute natural-stride V4 blind fallback with maximum=3 and charge it",
+    "discovery": "retain every distinct positive fitted blind observation; strategy output remains blind rank-1 observation",
+    "distinctness": "same existing scientific 2us circular timing and 8kHz CFO identity",
+    "capacity_eviction": "oldest accepted observation, then smaller last margin, then larger track id",
+    "global_counter": "one increment per visit with a selected cache hit regardless of track; reset by every completed blind discovery even when it is negative; switching tracks cannot avoid discovery",
+    "merge": "identity-compatible observations merge into the lower track id; no reference result participates"
+  },
+  "native": {
+    "known_state": "known_state_v3 full aperture frame_limit=16",
+    "fallback": "blind_strided_v4 common FP64 profile",
+    "reference": "independent packed FP64 V4 maximum=1"
+  },
+  "timing": {
+    "warmups": 1,
+    "repetitions": 3,
+    "order": "alternate independent reference-first and complete-strategy-first by visit and receiver",
+    "boundary": "all cache checks, bank overhead, and actual fallback; IQ file load/hash excluded"
+  },
+  "controls": "24 supported constructed receiver-controls are isolated cold acquisitions; they do not test state continuity",
+  "promotion_gates": {
+    "new_data_reference_identity_matches": "129/129",
+    "additional_positive_cases": 0,
+    "control_decision_changes": 0,
+    "minimum_overall_cpu_speedup": 1.797,
+    "minimum_each_rate_cpu_speedup": 1.0,
+    "full_coverage": true
+  },
+  "excluded": [
+    "reference-fed state, selection, fallback, repair, or eviction",
+    "relaxed timing or CFO identity",
+    "skipped visits or copied stale detections",
+    "local timing recovery",
+    "partial-aperture checks",
+    "holdout, RF, ARM, and production changes",
+    "post-outcome tuning"
+  ]
+}

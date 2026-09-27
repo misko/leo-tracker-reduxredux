@@ -1,0 +1,55 @@
+{
+  "schema": "org.leo.research.ds5-acquisition-native-variants-design.v1",
+  "stage": "development_only_frozen_before_variant_outcomes",
+  "seeded_design_sha256": "sha256:258dbe7cd65302c67cba32cf0051613b108c567da024dea0291fc212db8203ef",
+  "dataset_cases_sha256": "sha256:4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+  "control_cases_sha256": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "tracking_sha256": "sha256:0597aaf35e53e3f7652d599fc870afa9358440c542509fd0ed4b4fdb462a990f",
+  "native_profile_sha256": "sha256:3c96186ad0e22b6e948f90ad9fd33a54508c94ae6e376b367064d36b804fc1a1",
+  "default_v4": {
+    "python_sha256": "sha256:c6d59173c5e6c856374c8c9f7b836b1d3d72ee52eb3ab46d26137b8613b6a03b",
+    "c_sha256": "sha256:df1b19988122acafc1934888d385878d8224438fc86996db202126dba69cdc00",
+    "header_sha256": "sha256:2b0460d8c3053c33c5e9cfb8fed60e270e6a9bf0dde4603a439136ba385c0c4b",
+    "binary_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+    "build_receipt_sha256": "sha256:5103c6ebfde2a95e0ecdeec3c2e5c5c3253cf04aaca15da2fda1b5b6c0d1ee3e"
+  },
+  "baseline": {
+    "library": "../native/libblind_strided_v4.so",
+    "library_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+    "ingress": "packed contiguous receiver inside timed call",
+    "detector": "stable common-profile NativeDwell maximum=1 seeded=false",
+    "invariant": "baseline library stays stable and independent of every candidate library"
+  },
+  "candidates": {
+    "builtin_fp32_fft": {
+      "library": "../fft32/libfft32.so",
+      "library_sha256": "sha256:158b15d538316edb42ec5daaf4bee9caf10d140d0d08c6370aa16d1fb46229fb",
+      "build_receipt_sha256": "sha256:c0b6ca3c27a4dc70dda43040dff169416edee4913a36dcf6b6dfffa564433af8",
+      "seeded": false
+    },
+    "fftw_fp32_fft": {
+      "library": "../fft32/libfft32_fftw.so",
+      "library_sha256": "sha256:3fcdefd955725d5501b4cd5e577511c0b305e808613f7a30c2b77b382357b8a0",
+      "build_receipt_sha256": "sha256:efce18893445d1cc1c7ac0ab22231a6c15200f4fd7c3e025a4c410f8e2fa3ce4",
+      "server_fftw_library": "/usr/lib/x86_64-linux-gnu/libfftw3f.so.3.6.10",
+      "server_fftw_library_sha256": "sha256:8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611",
+      "seeded": false
+    }
+  },
+  "decision": {
+    "positive": "fractional_complete is true and exact_score - control_score is strictly greater than 0.025",
+    "retention": "tracking.reference_match against stable packed FP64 baseline",
+    "score_drift": "report rank and paired-observation deltas without retuning"
+  },
+  "timing": {
+    "warmups_per_receiver_visit": 1,
+    "repetitions": 3,
+    "order": "counterbalanced by case ordinal plus receiver plus repetition",
+    "scope": "thread CPU and monotonic wall around ingress plus complete detector call"
+  },
+  "controls": {
+    "rates_hz": [2500000, 5000000],
+    "kinds": ["pilot", "noise", "tone"],
+    "use": "run after development; never tune"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "schema": "org.leo.research.tg11-diagnostic-design/v1",
+  "status": "frozen_before_detector_outcomes",
+  "dwell_ms": 120,
+  "rates_hz": [2500000, 5000000],
+  "splits": ["development", "validation"],
+  "materialize_splits": ["development"],
+  "array_layout": "sample_receiver_iq",
+  "dtype": "<i2",
+  "receiver_count": 2,
+  "noise_component_sigma": 520.0,
+  "colored_noise_ar1": 0.85,
+  "receiver_channel_phase_cycles": [0.03125, -0.109375],
+  "seed_formula": "split_base + rate_index*100000 + case_ordinal*10 + receiver",
+  "split_seed_base": {"development": 73000000, "validation": 97000000},
+  "rate_index": {"2500000": 0, "5000000": 1},
+  "source_counter_base": {
+    "development:2500000": 9100000000000000,
+    "development:5000000": 9200000000000000,
+    "validation:2500000": 9300000000000000,
+    "validation:5000000": 9400000000000000
+  },
+  "ladder_target_power_over_noise_db_by_receiver": [
+    [-30.0, -24.0],
+    [-18.0, -12.0],
+    [-6.0, 0.0],
+    [6.0, 12.0]
+  ],
+  "ladder": {
+    "development:2500000": {
+      "cfo_hz": [0.0, 125000.25, -275123.75, 399000.0],
+      "epoch_samples": [317.0, 701.49, 1193.125, 1667.375],
+      "phase_cycles_at_visit_start": [0.0625, -0.1875, 0.28125, -0.328125]
+    },
+    "validation:2500000": {
+      "cfo_hz": [0.0, -137500.5, 263333.25, -399000.0],
+      "epoch_samples": [223.25, 617.49, 1109.125, 1553.375],
+      "phase_cycles_at_visit_start": [-0.046875, 0.1640625, -0.2734375, 0.3828125]
+    },
+    "development:5000000": {
+      "cfo_hz": [0.0, -175000.25, 311111.75, -399000.0],
+      "epoch_samples": [613.0, 1301.49, 2417.125, 3301.375],
+      "phase_cycles_at_visit_start": [-0.09375, 0.171875, -0.265625, 0.3203125]
+    },
+    "validation:5000000": {
+      "cfo_hz": [0.0, 187500.5, -323333.25, 399000.0],
+      "epoch_samples": [419.25, 1211.49, 2303.125, 3197.375],
+      "phase_cycles_at_visit_start": [0.0546875, -0.1796875, 0.2890625, -0.3984375]
+    }
+  },
+  "stationary": {
+    "pilot_power_over_noise_db": 6.0,
+    "two_pilot_power_over_noise_db_each": 0.0,
+    "nuisance_power_over_noise_db": 18.0,
+    "single_tone_frequency_hz": 133333.25,
+    "multitone_frequencies_hz": [-311111.25, -144443.5, 73001.75, 219999.25, 347777.5],
+    "multitone_relative_amplitudes": [1.0, 0.7, 0.5, 0.35, 0.2],
+    "pilot_cfo_hz": -217333.5,
+    "pilot_epoch_fraction_of_period": 0.1378125,
+    "pilot_phase_cycles_at_visit_start": 0.2109375,
+    "second_pilot_cfo_hz": 146125.75,
+    "second_pilot_epoch_offset_seconds": 0.000025,
+    "second_pilot_phase_cycles_at_visit_start": -0.421875,
+    "tone_phase_cycles_at_visit_start": -0.0546875,
+    "multitone_phase_step_cycles": 0.1171875,
+    "validation_phase_offset_cycles": 0.3125
+  },
+  "sequence": {
+    "edge_by_cell": {
+      "development:2500000": "lower",
+      "validation:2500000": "upper",
+      "development:5000000": "upper",
+      "validation:5000000": "lower"
+    },
+    "channel": 1,
+    "rx0_initial_epoch_fraction_of_period": {"development": 0.0953125, "validation": 0.1684375},
+    "rx0_initial_cfo_hz": -120000.0,
+    "rx0_initial_phase_cycles_at_visit_start": {"development": 0.078125, "validation": -0.2265625},
+    "rx0_replacement_timing_jump_s": 0.000012,
+    "rx0_replacement_cfo_jump_hz": 40000.0,
+    "rx0_replacement_phase_cycles_at_visit_start": {"development": -0.296875, "validation": 0.1953125},
+    "rx1_initial_epoch_fraction_of_period": {"development": 0.2315625, "validation": 0.3146875},
+    "rx1_initial_cfo_hz": 95000.0,
+    "rx1_initial_phase_cycles_at_visit_start": {"development": -0.1328125, "validation": 0.2578125},
+    "rx1_per_visit_timing_drift_s": 0.000001,
+    "rx1_per_visit_cfo_drift_hz": 4000.0,
+    "rx1_replacement_timing_jump_s": 0.000012,
+    "rx1_replacement_cfo_jump_hz": 40000.0,
+    "rx1_replacement_phase_cycles_at_visit_start": {"development": 0.34375, "validation": -0.3515625},
+    "strong_pilot_power_over_noise_db": 6.0,
+    "faded_pilot_power_over_noise_db": -6.0,
+    "ambiguous_pilot_power_over_noise_db_each": 0.0
+  },
+  "symbol_regions": {
+    "early": [2, 66],
+    "late": [152, 216],
+    "symbol_duration_seconds": 0.0000044
+  },
+  "association": {
+    "margin_gate": 0.025,
+    "timing_tolerance_s": 0.000002,
+    "cfo_tolerance_hz": 8000.0,
+    "minimum_probe_start_gap_ms": 20
+  },
+  "bounded": {
+    "physical_cases": 52,
+    "materialized_development_cases": 26,
+    "maximum_materialized_bytes": 100000000,
+    "maximum_generation_seconds": 120
+  },
+  "outcomes_used_for_membership": false,
+  "detector_imports_allowed": false
+}

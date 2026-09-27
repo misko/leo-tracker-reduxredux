@@ -1,0 +1,63 @@
+{
+  "decision": "stop-before-implementation",
+  "existing_arm_exact_paths": {
+    "coarse_fold": "contiguous vld2, signed-16 power/lag products, each product widened before int64 cell accumulation",
+    "nuisance_lag": "contiguous vld2, signed-16 products accumulated into int64 lanes",
+    "rank_disassembly_crosscheck_only": {
+      "complex_imaginary_subtraction": "vsub.i64",
+      "exact_i64_accumulation": "vadd.i64",
+      "i64_accumulator_store": "vst1.64",
+      "sample_aligned_interleaved_load": "vld4.16",
+      "widen_product_to_i64": "vmovl.s32",
+      "widened_ci16_product": "vmull.s16"
+    },
+    "rank_fold": "sample-aligned vld4, signed-16 products, each product widened to int64 before complex add/sub"
+  },
+  "limitations": [
+    "The Cortex-A9 receipt proves generated instructions, not ARM runtime performance.",
+    "Server timings cannot be presented as ARM savings.",
+    "The physical ARM packing cost remains unknown and requires hardware measurement.",
+    "The packing bound comes from the fixed 16-receiver prefix and includes orchestration/timer residual.",
+    "No server candidate was built because the x86 projection gate failed before implementation."
+  ],
+  "no_material_candidates": {
+    "complex_helpers": "fcx-limited-range already active; libc cabs remains required by exact final GLRT ceilings",
+    "fftw_conversion": "compiler already emits packed SSE double/float conversions on the measured x86 server",
+    "runtime_integer_division_or_modulo": "confined to sparse bookkeeping; absent from dense rank/CI16 loops",
+    "selected_window_pack": "only uncovered ARM scalar loop; misses the x86 server projection gate, while physical ARM cost remains unknown"
+  },
+  "pinned_sha256": {
+    "/home/mouse9911/gits/leo-adaptive-position-deploy/src/leo/analysis/native_presence/ci16_fold.h": "afdd9a1476b04bf06a529438a504f28640daff486196f1b1a6b185c59478a288",
+    "/home/mouse9911/gits/leo-adaptive-position-deploy/src/leo/analysis/native_presence/ci16_lag.h": "9dc6642506fd9e68c2e7643b2aa2733638c542b0b17d7280fde131c8bae6a39c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/fft32/fft32_fftw.c": "47215be17a6c32d8f377871e44b03c7f8942b0f54b48947db9968a475bec7b14",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/fft32/libfft32_fftw.so.build.json": "efce18893445d1cc1c7ac0ab22231a6c15200f4fd7c3e025a4c410f8e2fa3ce4",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5.c": "181b7dc702c59fc52afe23ac571be6dc7ff4fcf12e1e89b7b3eca2c34d58ac7b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5_cortex_a9.build.json": "f355c06ff1d392043237c0c5a58fd4153843eeccf1b9b42b7763311cf1903268",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/libblind_aligned_v5.so.build.json": "0ddc880b77a17f6a25c0da32400d48beba96feede69abdec20a5c0b9e136ce4c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/scout/blind_cost_receipt.json": "935d89bcdf39f3b8414ffa81f280feeb7e0a826e7c555133ccc16ff37785fd78"
+  },
+  "projection_by_rate": {
+    "2500000": {
+      "dwell_cpu_median_ms": 0.970929999999953,
+      "packing_plus_orchestration_residual_max_ms": 0.007481999999981781,
+      "packing_plus_orchestration_residual_median_ms": 0.0017669999999725405,
+      "perfect_removal_fraction_of_gate": 0.07706013821781325,
+      "projection_gate_passed": false,
+      "receiver_visits": 16,
+      "ten_percent_projection_gate_ms": 0.09709299999999531
+    },
+    "5000000": {
+      "dwell_cpu_median_ms": 2.0554694999998446,
+      "packing_plus_orchestration_residual_max_ms": 0.040581999999858454,
+      "packing_plus_orchestration_residual_median_ms": 0.006373499999767773,
+      "perfect_removal_fraction_of_gate": 0.1974342115018565,
+      "projection_gate_passed": false,
+      "receiver_visits": 16,
+      "ten_percent_projection_gate_ms": 0.20554694999998446
+    }
+  },
+  "projection_context": "historical x86_64 server receipt only; not an ARM cost bound",
+  "reason": "material exact CI16 loops already have NEON; remaining scalar pack misses the x86 server projection gate even at perfect removal",
+  "schema": "org.leo.research.exact-loop-arm-audit/v1",
+  "scope": "read-only source/build/timing audit; no DSP replay, holdout, RF, or ARM timing"
+}

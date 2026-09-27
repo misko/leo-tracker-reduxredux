@@ -1,0 +1,42 @@
+{
+  "schema": "org.leo.research.known-state-profile/v1",
+  "base_profile": "reports/2026_09_26_ds5_server_eval/decision_band/native/decision_band_native.so.build.json",
+  "base_profile_sha256": "3839de7091fbcd6aaa5219a4e9f69af6f4cc546168710937292eb27fa5a0b979",
+  "deployment_commit": "8803d6a7b2bab4b1945e447238a14b30a887695e",
+  "rates_hz": [2500000, 5000000],
+  "window_ms": 20,
+  "cfo_innovation_trust_hz": 8000,
+  "flags": [
+    "-DLEO_PRESENCE_COARSE_FP32",
+    "-fno-unroll-loops",
+    "-fno-peel-loops",
+    "-fno-prefetch-loop-arrays",
+    "-fcx-limited-range",
+    "-DLEO_PRESENCE_POWER_PROPOSAL=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_PROPOSAL=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_LOCAL_RADIUS=0",
+    "-DLEO_PRESENCE_TONE_NUISANCE=1",
+    "-DLEO_PRESENCE_TONE_BLOCKED=1",
+    "-DLEO_PRESENCE_TONE_CI16=1",
+    "-DLEO_PRESENCE_ITERATIVE_FFT=1",
+    "-DLEO_PRESENCE_FAST_FINE_FFT=1",
+    "-DLEO_PRESENCE_FINE_ALL_SYMBOLS=1",
+    "-DLEO_PRESENCE_FINE_FRAMES=2",
+    "-DLEO_PRESENCE_EPOCH_FRAMES=2",
+    "-DLEO_PRESENCE_CONDITIONED_RADIUS=200",
+    "-DLEO_PRESENCE_CANDIDATES=1",
+    "-DLEO_PRESENCE_DIFFERENTIAL_CI16=1",
+    "-DLEO_PRESENCE_RANK_HYBRID_PROJECTION=1",
+    "-DLEO_PRESENCE_GLRT_SYMBOL_DIVERSITY=1",
+    "-DLEO_PRESENCE_RANK_AMPLITUDE_WEIGHTED=1",
+    "-DLEO_PRESENCE_BOUNDED_MAGNITUDE=1",
+    "-DLEO_PRESENCE_CONDITIONED_BLOCK_ROTATION=1",
+    "-DLEO_PRESENCE_ENERGY_SUPPORT=1",
+    "-DLEO_PRESENCE_ENERGY_SYMBOL_SUPPORT=1"
+  ],
+  "semantics": {
+    "fast_point": "caller-predicted fractional timing is scored, not fitted; one full-aperture final exact/control GLRT also returns fresh CFO innovation",
+    "local_timing": "three timing cells bracket the prediction and an interior log-parabolic fit is rescored; an edge maximum requires reacquisition",
+    "excluded": ["blind timing acquisition", "whole-dwell ranking", "tone nuisance fitting", "energy-based support selection"]
+  }
+}

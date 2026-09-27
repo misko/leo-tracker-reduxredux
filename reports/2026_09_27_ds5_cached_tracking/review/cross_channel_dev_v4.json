@@ -1,0 +1,41 @@
+{
+  "schema": "org.leo.research.ds5-cross-channel-raw-bound.v1",
+  "scope": "causal raw-prior audit; no drift or channel-CFO transform",
+  "interpretation": "Reference outcomes provide an optimistic diagnostic oracle only; they never seed the strategy and this is not a detector result.",
+  "input": "reports/2026_09_27_ds5_cached_tracking/dev_dual_cfo_v4.json",
+  "input_sha256": "6f46c25db42c37f1eb1684369ec0ff7410a5d327e8c8c133a310ea09123522a9",
+  "script_sha256": "c63bd7142d6541a2abeebd13fa19b93096b196debddaa1160531eb735d429389",
+  "maximum_age_seconds": 2.0,
+  "timing_threshold_seconds": 2e-06,
+  "cfo_threshold_hz": 8000.0,
+  "counts": {
+    "reference_positives": 36,
+    "with_any_prior_positive": 34,
+    "with_any_cross_channel_prior": 28,
+    "with_timing_compatible_prior": 16,
+    "with_cross_channel_timing_prior": 3,
+    "with_timing_and_cfo_prior": 13,
+    "with_cross_channel_timing_and_cfo_prior": 0
+  },
+  "prior_bank_size_histogram_on_positive_visits": {
+    "0": 2,
+    "1": 7,
+    "2": 3,
+    "3": 1,
+    "4": 2,
+    "5": 7,
+    "6": 10,
+    "7": 3,
+    "8": 1
+  },
+  "timing_candidate_count_histogram": {
+    "0": 20,
+    "1": 14,
+    "2": 2
+  },
+  "timing_and_cfo_candidate_count_histogram": {
+    "0": 23,
+    "1": 11,
+    "2": 2
+  }
+}

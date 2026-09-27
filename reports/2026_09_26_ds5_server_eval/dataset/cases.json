@@ -1,0 +1,4927 @@
+{
+  "schema": "org.leo.research.ds5-server-eval-cases.v1",
+  "dataset": "DS5 server-side evaluation cuts",
+  "source_dataset_manifest_sha256": "sha256:6c7cfbe0e91f6eb2d5f041295d453f44ab99910cd17ff63b0fb1f3096655fa35",
+  "selection_plan_sha256": "sha256:6241bcd33ae6f0ecefb973044e724a9310f432b7d21a1a5c05fa2533e06165ce",
+  "builder_sha256": "sha256:ce170a23647c08cbe1b34ad0ef131d9d92d4e93b4d126e82351e7007649a4e65",
+  "pilot_template_source_sha256": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+  "array_contract": {
+    "loader": "numpy.load(dataset_directory / raw_npy.path, allow_pickle=False)",
+    "dtype": "<i2",
+    "axes": [
+      "sample",
+      "receiver",
+      "component"
+    ],
+    "receiver_axis": [
+      "RX0",
+      "RX1"
+    ],
+    "component_axis": [
+      "I",
+      "Q"
+    ],
+    "real_shape": [
+      "rate_hz * dwell_ms // 1000",
+      2,
+      2
+    ]
+  },
+  "truth_contract": {
+    "real_cases": "unknown: a baseline positive is not ground truth and a baseline miss is not a negative",
+    "synthetic_controls": "constructed model truth only; not false-alarm or RF-specificity calibration",
+    "detector_outcomes_included": false,
+    "holdout_outcomes_included": false
+  },
+  "selection_contract": {
+    "session_disjoint": true,
+    "visits_per_rate_per_split": 8,
+    "both_receivers_grouped": true,
+    "causal_blocks": "eight consecutive source visit indices from one session",
+    "selection_independent_of_detector_outcomes": true
+  },
+  "counts": {
+    "real_cases": 96,
+    "synthetic_controls": 24,
+    "by_split": {
+      "dev": 32,
+      "validation": 32,
+      "holdout": 32,
+      "control": 24
+    }
+  },
+  "coverage_audit": {
+    "by_split": {
+      "dev": {
+        "real_visits": 32,
+        "sessions": [
+          "scan-fw-1a0e881391ba1d2f",
+          "scan-fw-247bd59bd5950cb1",
+          "scan-fw-3ec1c634e1f48f77",
+          "scan-fw-4fc9ccc9f49e637b"
+        ],
+        "rates_hz": [
+          2500000,
+          5000000,
+          7500000,
+          10000000
+        ],
+        "edges": [
+          "lower",
+          "upper"
+        ],
+        "channels": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "receivers": [
+          "RX0",
+          "RX1"
+        ],
+        "observed_rate_edge_pairs": [
+          [
+            2500000,
+            "lower"
+          ],
+          [
+            5000000,
+            "upper"
+          ],
+          [
+            7500000,
+            "lower"
+          ],
+          [
+            10000000,
+            "upper"
+          ]
+        ],
+        "missing_rate_edge_pairs": [
+          [
+            2500000,
+            "upper"
+          ],
+          [
+            5000000,
+            "lower"
+          ],
+          [
+            7500000,
+            "upper"
+          ],
+          [
+            10000000,
+            "lower"
+          ]
+        ]
+      },
+      "validation": {
+        "real_visits": 32,
+        "sessions": [
+          "scan-fw-4044d42d24b45da5",
+          "scan-fw-6c18112a5659116e",
+          "scan-fw-888fc1e1e005ded3",
+          "scan-fw-a3c516351c096460"
+        ],
+        "rates_hz": [
+          2500000,
+          5000000,
+          7500000,
+          10000000
+        ],
+        "edges": [
+          "lower",
+          "upper"
+        ],
+        "channels": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "receivers": [
+          "RX0",
+          "RX1"
+        ],
+        "observed_rate_edge_pairs": [
+          [
+            2500000,
+            "upper"
+          ],
+          [
+            5000000,
+            "lower"
+          ],
+          [
+            7500000,
+            "upper"
+          ],
+          [
+            10000000,
+            "lower"
+          ]
+        ],
+        "missing_rate_edge_pairs": [
+          [
+            2500000,
+            "lower"
+          ],
+          [
+            5000000,
+            "upper"
+          ],
+          [
+            7500000,
+            "lower"
+          ],
+          [
+            10000000,
+            "upper"
+          ]
+        ]
+      },
+      "holdout": {
+        "real_visits": 32,
+        "sessions": [
+          "scan-fw-202f59398ea68cef",
+          "scan-fw-32a202b6e55630ec",
+          "scan-fw-353a4f8831e99c5f",
+          "scan-fw-de73bee9d0c4412c"
+        ],
+        "rates_hz": [
+          2500000,
+          5000000,
+          7500000,
+          10000000
+        ],
+        "edges": [
+          "lower",
+          "upper"
+        ],
+        "channels": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "receivers": [
+          "RX0",
+          "RX1"
+        ],
+        "observed_rate_edge_pairs": [
+          [
+            2500000,
+            "lower"
+          ],
+          [
+            5000000,
+            "upper"
+          ],
+          [
+            7500000,
+            "lower"
+          ],
+          [
+            10000000,
+            "upper"
+          ]
+        ],
+        "missing_rate_edge_pairs": [
+          [
+            2500000,
+            "upper"
+          ],
+          [
+            5000000,
+            "lower"
+          ],
+          [
+            7500000,
+            "upper"
+          ],
+          [
+            10000000,
+            "lower"
+          ]
+        ]
+      }
+    },
+    "limitation": "Every split covers both edges overall, but each rate uses one single-edge session; rate-by-edge is not fully crossed. Each block is only eight consecutive visits (0.96 seconds of valid IQ), so it cannot establish long-track continuity, rare-event rates, or p99 latency."
+  },
+  "cases": [
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001706",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1706,
+      "source_start_counter": 460745596432,
+      "source_end_counter_exclusive": 460745896432,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001706.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e5642b3c4294d2768e8c2adf55300f04986d9f9d56e01debf59126a22ed13618",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001706.ci16.zst",
+        "compressed_sha256": "sha256:695e6aac1b93174c6ff1d0d56e453ff56a7bff38cce6c3a2cf95943164a27220",
+        "uncompressed_sha256": "sha256:6df56c2064800bef79008f6785059d599e7016058368047b6d4d4f6616d09da2",
+        "sample_start": 511800000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001707",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1707,
+      "source_start_counter": 460745947198,
+      "source_end_counter_exclusive": 460746247198,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001707.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:19118beb6f27173a94c590bd6ee3f852c08f63d8a27a7c43258f8787b5e59817",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001707.ci16.zst",
+        "compressed_sha256": "sha256:64b9ea473c02008e40f0e0d5a587cca4a62806f40768679e5eef155d23fe7e8b",
+        "uncompressed_sha256": "sha256:80d2e5134243a3d058aadd2bd4b7cef91a83088788e77aa6008e6efb985865ab",
+        "sample_start": 512100000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001708",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1708,
+      "source_start_counter": 460746298456,
+      "source_end_counter_exclusive": 460746598456,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001708.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:b261b403fb435579d92374d0e2509b9a617f78b493d6918e1c2b9830bd1dec83",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001708.ci16.zst",
+        "compressed_sha256": "sha256:87d8ca986b532cf4daefaf60139e12cc27c46b223eedd9209584e38f64040c43",
+        "uncompressed_sha256": "sha256:7fbcb6078a47849cd4f636c1b28ef2e5769b89345fd9ac7f940e69deab3ca90a",
+        "sample_start": 512400000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001709",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1709,
+      "source_start_counter": 460746598480,
+      "source_end_counter_exclusive": 460746898480,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001709.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e67962c327bf4da22473451d83c1b19c50515d86893cd177bbbe7b3a31720d96",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001709.ci16.zst",
+        "compressed_sha256": "sha256:3d7e3d49a179cc746f1d0550030539460f2eabf3bbb6e92208707e57c316ac61",
+        "uncompressed_sha256": "sha256:b7c4fe1c6873943259a17b0d6bb27bce2e9b498527da322cfd040c6968670c81",
+        "sample_start": 512700000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001710",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1710,
+      "source_start_counter": 460746949155,
+      "source_end_counter_exclusive": 460747249155,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001710.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:cc7385c9d716b1b9247e462dfe4cd5ee07c98cb0ece442430133720379cdb9db",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001710.ci16.zst",
+        "compressed_sha256": "sha256:e542b20164c5187264d79f36652e3da8b57f62d21300f0d0f7431e54451e6598",
+        "uncompressed_sha256": "sha256:73ea826fd69ac2c380a6ccfaaf695000ce032928cf4e4eeb4af5be1919448458",
+        "sample_start": 513000000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001711",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1711,
+      "source_start_counter": 460747299381,
+      "source_end_counter_exclusive": 460747599381,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001711.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:4014881c3a3e3c95715830e2d1cbf3f8bdf20e07b7658bc7caa0fafb288e599f",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001711.ci16.zst",
+        "compressed_sha256": "sha256:198937c6638fc12a32586b3fb0dcced5f144e59df91e438adc9e88dddd8799e7",
+        "uncompressed_sha256": "sha256:a771807d54aed249957eed20d08e83796fc0faf4f0528f5288e0facccf50c620",
+        "sample_start": 513300000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001712",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1712,
+      "source_start_counter": 460747649920,
+      "source_end_counter_exclusive": 460747949920,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001712.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:65c20bec504e4e3c1c611494d3005d344342f7e6dc9eb468c4a2556f14031678",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001712.ci16.zst",
+        "compressed_sha256": "sha256:d5b1a3b3ae1f53c345a75e9cb74e17986334f9b80c261faf64de264516232ae4",
+        "uncompressed_sha256": "sha256:fd551bc86fd541fc484e866d43c31f590ca422fd11f2a96e3cedb3bd5928bec7",
+        "sample_start": 513600000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001713",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "visit_index": 1713,
+      "source_start_counter": 460747951513,
+      "source_end_counter_exclusive": 460748251513,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001713.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a9241d2ecf674a1869e8e7928a214c006a916d454d6a2e705c7b0fcb95674155",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:453a35dc3acb7dc51f25f6e114570b7eaffe9803f168e54b6088b10b5c250292",
+        "recording_manifest_content_sha256": "sha256:6cae3554a67c405a1db6790212dfcdde8252689a49fd688951943f5a4a72f92e",
+        "relative_path": "iq-block-001713.ci16.zst",
+        "compressed_sha256": "sha256:70536fc34818e376eef043041650043056b350ed649c914b8303e2406bb3fa11",
+        "uncompressed_sha256": "sha256:0a014f20910e951a95a53d6b61ede3a2b02d8c749f34ccc6e3a21f092bd74e15",
+        "sample_start": 513900000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000474",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 474,
+      "source_start_counter": 302893101082,
+      "source_end_counter_exclusive": 302893701082,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000474.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:bc1cefb55a89058e79cd4083a7a12e49c53c74ff8a22dc78b3f593d2885be335",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000474.ci16.zst",
+        "compressed_sha256": "sha256:6b52fde7b8c674db7b8fb00b1ed54a91de46b90711d4d0488541c16b27d142a2",
+        "uncompressed_sha256": "sha256:a20a1135922a1c3de36b174b5434a85b198d081d89d54f159e55882b2a27f4e4",
+        "sample_start": 284400000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000475",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 475,
+      "source_start_counter": 302893804669,
+      "source_end_counter_exclusive": 302894404669,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000475.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:29aa5a99ca539ae037eea807cb8508a079e72eda89d7165f913b1aedcb0feeb1",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000475.ci16.zst",
+        "compressed_sha256": "sha256:7f91c01f493ccdbb59cf767a3344f331df8e6e6a71bc347c3d196f3c4d80f2a3",
+        "uncompressed_sha256": "sha256:463365c8fb52b7a7eb7167ed50a954687d8eda542f86a9eef54762b4673a6568",
+        "sample_start": 285000000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000476",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 476,
+      "source_start_counter": 302894507042,
+      "source_end_counter_exclusive": 302895107042,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000476.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:d4afc62c6166965c05e9f262d06e1b9af02102b798dbdd34df3109d0bb5d75ee",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000476.ci16.zst",
+        "compressed_sha256": "sha256:a0bbb397db82437fc4e4aef25f274f87c8ef353b096db3b5934c4515d2829bde",
+        "uncompressed_sha256": "sha256:23ce1524edc683c7f6c20e397e3569ed8ae79b71a062b450493192bb0ee3d55b",
+        "sample_start": 285600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000477",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 477,
+      "source_start_counter": 302895208157,
+      "source_end_counter_exclusive": 302895808157,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000477.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:207e14742dce01ab208c2fdb887c693dd05bcba20788930bc528328363e97a6f",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000477.ci16.zst",
+        "compressed_sha256": "sha256:ca2b0f2854898fd46abb2021ee5ce2b24db79baaa455c4c623ae1a917d61a1b2",
+        "uncompressed_sha256": "sha256:f2d978c454c09d1e9d086465623b7f8df6765704c27c48c995fde997a6f4b866",
+        "sample_start": 286200000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000478",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 478,
+      "source_start_counter": 302895810666,
+      "source_end_counter_exclusive": 302896410666,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000478.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:86368720145dd7eafc352c073c22e616612da7e19b7debc3c9632ad2c4d10a56",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000478.ci16.zst",
+        "compressed_sha256": "sha256:d24426989d7e3b7d940bddcda487fbf0397ce778621625c6d0e260116b37ed73",
+        "uncompressed_sha256": "sha256:3986661ea26b862d596c3b9c91dec6a4269381a68a24892438c6b90b1eeef5e6",
+        "sample_start": 286800000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000479",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 479,
+      "source_start_counter": 302896514345,
+      "source_end_counter_exclusive": 302897114345,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000479.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:b0fd2a39801583dc00f17f36798ac72a8004fc2c96677eb7387b0b119aa34c98",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000479.ci16.zst",
+        "compressed_sha256": "sha256:9bc94d1b9cc012ddaa5b1f400ed53038e49154b3612b6708a13a1ee765f6f739",
+        "uncompressed_sha256": "sha256:fb193c3e5df78628d6924bc184dd7762378053db38a3a802af062c59601070af",
+        "sample_start": 287400000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000480",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 480,
+      "source_start_counter": 302897114772,
+      "source_end_counter_exclusive": 302897714772,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000480.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e8eeba196683369ebdea5ffc654ec1c1bd8421b6667e1da2520264074c810bce",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000480.ci16.zst",
+        "compressed_sha256": "sha256:635e426f55d37181a7e6ad063c32220626e95cf179be57fdb07f1e790f2c8e4a",
+        "uncompressed_sha256": "sha256:c0b41c24bf65a054917d3b899e3fe867a4a847bb96da8c41a2f4bcabbbc636bb",
+        "sample_start": 288000000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000481",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "visit_index": 481,
+      "source_start_counter": 302897818664,
+      "source_end_counter_exclusive": 302898418664,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000481.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a6ed6e5640121c3ca930b99b9b6d86a37fbda42f52a5fe04c2eb5021abcebc8c",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:fcf4ed15398ad2057a69d576e08760fd3ce685626069d61ac69438ecd5284d04",
+        "recording_manifest_content_sha256": "sha256:6faf173ba56e27b04f6155716a988d0c6e1aef24d108cf2a0ec5dee33a490737",
+        "relative_path": "iq-block-000481.ci16.zst",
+        "compressed_sha256": "sha256:5e24932dc28f141e79b0d82861288685539a13ac048ea16ad3ed543aa70c6a95",
+        "uncompressed_sha256": "sha256:f7a1825b04982392d3986a70cf3c155d1ef88d84316537efe4b9ba855199ec35",
+        "sample_start": 288600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001452",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1452,
+      "source_start_counter": 450231133864,
+      "source_end_counter_exclusive": 450232033864,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001452.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:b3499a82ebf62f8364867683b368e202ceb3341d87036d23e65b9a57f75e3f31",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001452.ci16.zst",
+        "compressed_sha256": "sha256:6a3b6580d3c1dd32da0226a144520e3f19821ce547a188b732d0779bb7656332",
+        "uncompressed_sha256": "sha256:a1167fa9dd37cbbc56dd132acc8a77194d583049820216b679a0c4210faeb143",
+        "sample_start": 1306800000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001453",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1453,
+      "source_start_counter": 450232187050,
+      "source_end_counter_exclusive": 450233087050,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001453.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:dd6bdb2a5170242aaf328b5484c510541d642847ae66a82734a40c8ad84ab084",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001453.ci16.zst",
+        "compressed_sha256": "sha256:2230190fd3227a79c170076cf4161b3e68f334f1055e1ff639e3f08cc55ed483",
+        "uncompressed_sha256": "sha256:1d5e181c43f58674e512b755fed0de42f46b8cf93dc5c60ac2fbd5b1e61fbcbb",
+        "sample_start": 1307700000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001454",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1454,
+      "source_start_counter": 450233240382,
+      "source_end_counter_exclusive": 450234140382,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001454.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:9afab18228755c7b329dac1745a3cdb67ddf8424437c06b9977d12301330bd27",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001454.ci16.zst",
+        "compressed_sha256": "sha256:45b3f3747e679ad32495ab3e31a131c2b064b6a9bf8e5a314ff32796a9b9ed1f",
+        "uncompressed_sha256": "sha256:0801c9f59f86081c55492744793d80af2381ff632a173ac1a328d8c4456831f2",
+        "sample_start": 1308600000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001455",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1455,
+      "source_start_counter": 450234292401,
+      "source_end_counter_exclusive": 450235192401,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001455.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:d16c787e5c38e7b51b23ed4fcf538457fd5547b5413ad21faa805c2bd12220ae",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001455.ci16.zst",
+        "compressed_sha256": "sha256:cb394fb0804944071b17e30edbd6e284512dceb5b1c3704f72be2f554d4524fa",
+        "uncompressed_sha256": "sha256:4d23207ed687804da5b423b1f4d97324ebc083b298e2bf0e427f87cdb628f464",
+        "sample_start": 1309500000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001456",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1456,
+      "source_start_counter": 450235347975,
+      "source_end_counter_exclusive": 450236247975,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001456.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:fa00ffbec9e8e2a8c181568d761fa4b21c916a83f37e762633991899d206440b",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001456.ci16.zst",
+        "compressed_sha256": "sha256:4b332213955e6a821c266ceedbea2ec8b012f7cc73f3d32f6346e41d7e257439",
+        "uncompressed_sha256": "sha256:a463d13ec89acdbe4e7bbbebcc8380ebcadd81aa3cb64165b251352cb8a7e65d",
+        "sample_start": 1310400000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001457",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1457,
+      "source_start_counter": 450236399848,
+      "source_end_counter_exclusive": 450237299848,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001457.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c374c6e4cb7ebb936f4449d25aed74f0d20921708146b800707b4164705218e5",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001457.ci16.zst",
+        "compressed_sha256": "sha256:78acaef743d49c384275e7dd8bccf5f8dbc904f1262d3ec6258d4764918e53db",
+        "uncompressed_sha256": "sha256:a5e10c0346ad1d42bf06440145b4d51ff3825ec0aab94ff4fa9657141c13f2e5",
+        "sample_start": 1311300000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001458",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1458,
+      "source_start_counter": 450237299917,
+      "source_end_counter_exclusive": 450238199917,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001458.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3848d5f3ea79563de86c378f6dba66b2757fb03f86009d82eaef8a29cd8afdad",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001458.ci16.zst",
+        "compressed_sha256": "sha256:8836e32c5053682604a3531e083bd2e0b8241f223482b66161a68ceaa010f0b4",
+        "uncompressed_sha256": "sha256:ac705cf29f5d91768e79557513fb678c5759631386127d9e54aca3e71110b1ab",
+        "sample_start": 1312200000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001459",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-247bd59bd5950cb1",
+      "visit_index": 1459,
+      "source_start_counter": 450238353624,
+      "source_end_counter_exclusive": 450239253624,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r7500000-scan-fw-247bd59bd5950cb1-v001459.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e486480f21df5658a211089900731282c04a5c22fd25b4ec9c4e3ec76c38fe86",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ed1a413f97587943e23ab0d2b511547cd5159dbbb24a698f93f2045c0e280480",
+        "recording_manifest_content_sha256": "sha256:b5ac09279b9babcf7bbe1e75d28a7688d6e4dff7c0a53c2e08e8821c742fc6ee",
+        "relative_path": "iq-block-001459.ci16.zst",
+        "compressed_sha256": "sha256:755932014685a792ef6858f62cdc513784fdee379172a4ea61fc0f98300b1bcf",
+        "uncompressed_sha256": "sha256:6ad9c6c7f963e8ff08e479e517ad231f8b60538768788103b6b589fc624cbbbd",
+        "sample_start": 1313100000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001511",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1511,
+      "source_start_counter": 228478836257,
+      "source_end_counter_exclusive": 228480036257,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001511.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:88101a4b59ffd94c69b2877db66423b5245de827db2588e431102dbf64dcd657",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001511.ci16.zst",
+        "compressed_sha256": "sha256:e3f7b9ac13adc8d6df359c0882f1cb0b099091a5fd7989b62513be8220de42ba",
+        "uncompressed_sha256": "sha256:973612bdc22794b7ce88f3ddf29e8541de5e2e1adbfc6f6f19c96075cc30f5f0",
+        "sample_start": 1813200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001512",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1512,
+      "source_start_counter": 228480237336,
+      "source_end_counter_exclusive": 228481437336,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001512.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1e980a485e8cbcd772cedee1b9e963a38994ecbc7d90555c741535fe0e3008b0",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001512.ci16.zst",
+        "compressed_sha256": "sha256:c9cbc5430eae83d7f3f50cdfa01deea33716f8d8fb9c64fb3280acc44e82416f",
+        "uncompressed_sha256": "sha256:9d209c8211ec0c35161aa39b406788e683ce6744b40c0de55c767c628c8891cc",
+        "sample_start": 1814400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001513",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1513,
+      "source_start_counter": 228481445114,
+      "source_end_counter_exclusive": 228482645114,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001513.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6624e10f1c3fc23b3464490c3ab5bf33b2b8bbdd693ba9bb1a493cc9ef10456f",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001513.ci16.zst",
+        "compressed_sha256": "sha256:72235239ab77f501784519cae4a48149b462cb7436aa0961c6e02c6965774586",
+        "uncompressed_sha256": "sha256:7e7d5fbbfaf0827dba8f0b71e0e7cbafa9fb8f7b477b0bea9fbfc184acd31a1a",
+        "sample_start": 1815600000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001514",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1514,
+      "source_start_counter": 228482849136,
+      "source_end_counter_exclusive": 228484049136,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001514.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a6a6e5668a35c45eb08698384f4065f37109169488b5887179fd3a9eaa70aa51",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001514.ci16.zst",
+        "compressed_sha256": "sha256:3f539e53b5260e4ec00ac0b32d4a6fdcd22fb5f7aa54724529e292b91c6a8849",
+        "uncompressed_sha256": "sha256:7eced6b92830036fa048598062c80516b4cf85bf16bd9b39899ea14379e3dc53",
+        "sample_start": 1816800000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001515",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1515,
+      "source_start_counter": 228484050001,
+      "source_end_counter_exclusive": 228485250001,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001515.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3754d101b03af601f023189c3d8461da0a6ccd4f7275c4165630c23827bb85f9",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001515.ci16.zst",
+        "compressed_sha256": "sha256:61d404c41a56233b183ed0afccb055774fd98259f3fb8323cfbd33fbc1dce73b",
+        "uncompressed_sha256": "sha256:c2a2cdf81f79b17e4cd1d510c7a3c415258185a4caa49b375ad6b534431d9fc1",
+        "sample_start": 1818000000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001516",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1516,
+      "source_start_counter": 228485450424,
+      "source_end_counter_exclusive": 228486650424,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001516.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a3d10879423e934089eaa10d8b1c67441fe9d01d4e8ed284a011d234f860fd33",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001516.ci16.zst",
+        "compressed_sha256": "sha256:a2bd7b68f9df52eb0df69026ac69a6c5a8b5606470df7daad8db11fb08dac0d7",
+        "uncompressed_sha256": "sha256:e146da785411b84c88b04a99fef6f45cea2d1cb946298dae146d17cf1c4a85cf",
+        "sample_start": 1819200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001517",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1517,
+      "source_start_counter": 228486858493,
+      "source_end_counter_exclusive": 228488058493,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001517.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c8249a04a8a3b6b2b2ac11226a3043ac351c29c3cd128aa369d081f6f08e3597",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001517.ci16.zst",
+        "compressed_sha256": "sha256:584cfbe5ce6036661c1582d770dfd4e8edd0e5dc1f75dd476fd28ce7cca51139",
+        "uncompressed_sha256": "sha256:b89decd82b969d005409def3c84023f75bb9a862bea86e662af76e1735001ff9",
+        "sample_start": 1820400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001518",
+      "origin": "real_ds5",
+      "split": "dev",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-4fc9ccc9f49e637b",
+      "visit_index": 1518,
+      "source_start_counter": 228488061019,
+      "source_end_counter_exclusive": 228489261019,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/dev/real-dev-r10000000-scan-fw-4fc9ccc9f49e637b-v001518.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:f0c884fc4f8b7cebe2dc7bf97a4f390e04aaa427eadbf65e53f7d162569b3146",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:a0e386e8a7d6b18cb9b10c6db2107b74772d47a4a936c01675f796fd8d1abd19",
+        "recording_manifest_content_sha256": "sha256:526138253a3902ab3d87ebcae0d3cc7e7b30dc58a36d670169582aab68db7781",
+        "relative_path": "iq-block-001518.ci16.zst",
+        "compressed_sha256": "sha256:fda91bdb9f8eabe92ed65ef62a82a188706da9c3d3da7d28b23516bd7fc29283",
+        "uncompressed_sha256": "sha256:fed9cc51f22ab3a780fb8ee8d1ffc941d0cb20988b699f717c81d616f111bf11",
+        "sample_start": 1821600000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001407",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1407,
+      "source_start_counter": 273365325105,
+      "source_end_counter_exclusive": 273365625105,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001407.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5f2bf4e2ac2682e137b51d894c4c4941e08983cb0db553927aa1a66b6f35cccf",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001407.ci16.zst",
+        "compressed_sha256": "sha256:8586f27b37e6fdbe78c216f654db30eade92ad3af757268154872f1c269cafbb",
+        "uncompressed_sha256": "sha256:49d86fc47cff8a52632e5905605135dc7feb5dda1c4a88f35bc4478d8047d5ba",
+        "sample_start": 422100000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001408",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1408,
+      "source_start_counter": 273365675915,
+      "source_end_counter_exclusive": 273365975915,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001408.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:9215bf5c89b03ffaa009175d3432628089ebbc87a85558b2a9f99893833c67ef",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001408.ci16.zst",
+        "compressed_sha256": "sha256:8a4996d0487be06b7ea90290c4aca41990a8d8a06a7f1618deae6c0dcb3bba4c",
+        "uncompressed_sha256": "sha256:ae1c23d05db626b45b755008070722d0ea56a16467d45412b86fa31aae755fc4",
+        "sample_start": 422400000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001409",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1409,
+      "source_start_counter": 273366026546,
+      "source_end_counter_exclusive": 273366326546,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001409.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3006f722d4653c07da47707e017e2b650d7a7c7e5d843a58010c58d4835e507e",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001409.ci16.zst",
+        "compressed_sha256": "sha256:68ff88b34275c06877a427b7a3a7225ea7e51d6e2277cb261df719e578606cfe",
+        "uncompressed_sha256": "sha256:4957cc4bb9b21b2fdb2f2700b3eb86cf3fc26a3f8aea8fc0c1187a36563ae9aa",
+        "sample_start": 422700000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001410",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1410,
+      "source_start_counter": 273366377346,
+      "source_end_counter_exclusive": 273366677346,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001410.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:45eba86ce1d3de21ed649e9ae5bf6bfc9499ab03033192ee12575e1a4815cfd6",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001410.ci16.zst",
+        "compressed_sha256": "sha256:64f17361e0cf7b3df6a9d09b718b5f02c1353704c5b6c68f1bb5b0cf5412e024",
+        "uncompressed_sha256": "sha256:cf58d038e989d360c0e46fe352bd2b287e622a3e1a14f164850a075e0c485333",
+        "sample_start": 423000000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001411",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1411,
+      "source_start_counter": 273366678183,
+      "source_end_counter_exclusive": 273366978183,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001411.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0c0fe13be0d55021ca800b04ac5513aa4133012b4d901593830b7e847a7922c9",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001411.ci16.zst",
+        "compressed_sha256": "sha256:b07850566406e5452c6349e9b20c3828ccb74ac3718cb364aff86a8b6c711d02",
+        "uncompressed_sha256": "sha256:572000558a57db323f69e18c0be48f48199f8abe039dd3ab152c4627a35a5483",
+        "sample_start": 423300000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001412",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1412,
+      "source_start_counter": 273367029464,
+      "source_end_counter_exclusive": 273367329464,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001412.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5cc277084a7246e89f96543ace55181c2d5d73ccb2c39fedf7b26d3537d1530d",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001412.ci16.zst",
+        "compressed_sha256": "sha256:d267484b69bcdc525c649a30bb11330b021d74059f92780894bc1512f69cc5c7",
+        "uncompressed_sha256": "sha256:717d11825cabb809e4c8a52fcbfbca00126c8896599778dc095e45f4a2a3883b",
+        "sample_start": 423600000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001413",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1413,
+      "source_start_counter": 273367380389,
+      "source_end_counter_exclusive": 273367680389,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001413.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:ef2d3d85184c071440cf0dd5d87122d3bc330a02e2b12131bb9019f3e23d29ae",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001413.ci16.zst",
+        "compressed_sha256": "sha256:d5096e58ac7ef169478b0665a808ec7f8c3f70ab6ebeee38b11666934cff2ac2",
+        "uncompressed_sha256": "sha256:e106b2687870173705ed5305da7c54903c13cbd07deefa33ecbfcaf92893d7e4",
+        "sample_start": 423900000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r2500000-scan-fw-4044d42d24b45da5-v001414",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-4044d42d24b45da5",
+      "visit_index": 1414,
+      "source_start_counter": 273367730618,
+      "source_end_counter_exclusive": 273368030618,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r2500000-scan-fw-4044d42d24b45da5-v001414.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5d1c2e99ceb7723daff0384b0db8fdcb16aeaf7ab1895826a6a08f4ab3d14749",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b583c98e1128b157581b2cef48b51934f86a6a71a954f046d9a3812232aa2a34",
+        "recording_manifest_content_sha256": "sha256:e57234b54a6677184060921d34ece4801723322a785839b679a73a387402018f",
+        "relative_path": "iq-block-001414.ci16.zst",
+        "compressed_sha256": "sha256:4fdb1a7fe0f3fac4bb761b3f7bf4bed89cb2074e44fac4c19cd76198fff8e7fb",
+        "uncompressed_sha256": "sha256:5626d7defb4ab23ae8ba4ee75cce9013382a24e796d41009974c8ebaed5afe83",
+        "sample_start": 424200000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000375",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 375,
+      "source_start_counter": 152820064237,
+      "source_end_counter_exclusive": 152820664237,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000375.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2378564abdd6916ed45d1520ad00c6b3ebacd21b0d952f2fbf1b4904eee7420a",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000375.ci16.zst",
+        "compressed_sha256": "sha256:e0a1309e11640bfb0b5375f95b3f13b393edbdab0e3a5921fae727c47835e64e",
+        "uncompressed_sha256": "sha256:de6523684b3022966cd94136b533f61d892e21afc268da197f9c64eed77ee7a1",
+        "sample_start": 225000000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000376",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 376,
+      "source_start_counter": 152820765129,
+      "source_end_counter_exclusive": 152821365129,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000376.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8dee81b11e3ac73a17cce58f3cd9a71f2f02683f7016acf58a5fbf9ab8bbc748",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000376.ci16.zst",
+        "compressed_sha256": "sha256:8a2a054fffaebd1d21390abad3a06911a3f3dfd3949f5e98cbf79496ec3cb3b1",
+        "uncompressed_sha256": "sha256:417b38f3fa47281b537f4a91fbf620d8a22154c4f3560d6b3b86a8d46ff620b0",
+        "sample_start": 225600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000377",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 377,
+      "source_start_counter": 152821468482,
+      "source_end_counter_exclusive": 152822068482,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000377.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:17db3f0755d0f6c5fdbbde2dac5ca5c090e9ba78ee9981a621a9ca462cb25563",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000377.ci16.zst",
+        "compressed_sha256": "sha256:5b1d55d631a08656057d2fbe799b0f9a9c12a680c2931dc421364aa2ea78bebe",
+        "uncompressed_sha256": "sha256:86cf46bf60bf9e583b9433886bb8811849905ee281c9384421ce3d97639d5546",
+        "sample_start": 226200000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000378",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 378,
+      "source_start_counter": 152822171202,
+      "source_end_counter_exclusive": 152822771202,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000378.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e466c9f203a241b8f1a1a5644714e45b1948f1f1dfdf0e38f9af773d205690e4",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000378.ci16.zst",
+        "compressed_sha256": "sha256:91939ce49a6660429f45a91292ca45c05e8d46915abe1346f909397a9b9ebde8",
+        "uncompressed_sha256": "sha256:e08ba0a9129923c1f78ad003197add624614e363cb3a37e8b4beae85795592ee",
+        "sample_start": 226800000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000379",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 379,
+      "source_start_counter": 152822872394,
+      "source_end_counter_exclusive": 152823472394,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000379.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:59a39399b0acb1b181f1f267b0181bebf257f151fc9977b9c63762ceda05d2d4",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000379.ci16.zst",
+        "compressed_sha256": "sha256:de1323bea9b9b7753fd4623424c8f7ed217fda0d2425ccce65728379885ffefb",
+        "uncompressed_sha256": "sha256:99888751f1538b3441a92b89669c97c7c11c29f40a1b8d8641217556e7d8bd74",
+        "sample_start": 227400000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000380",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 380,
+      "source_start_counter": 152823475001,
+      "source_end_counter_exclusive": 152824075001,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000380.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:68546907bea4cdc58c2ad689fb604ce7fd94ac9150855a87ee4993bab4e49af2",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000380.ci16.zst",
+        "compressed_sha256": "sha256:77ef7ff5ccb5843078db92d2b8955ecfeabe36480a3fc49a6f078023db2336aa",
+        "uncompressed_sha256": "sha256:e79f87569bfea9a0cd889430d44aa2ca52ee731b8891356d9b663cd3c342f345",
+        "sample_start": 228000000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000381",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 381,
+      "source_start_counter": 152824175769,
+      "source_end_counter_exclusive": 152824775769,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000381.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:4cf66a8dca17b927922f4900d0d5b692d371062b7302400735da4c7d495e0f9b",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000381.ci16.zst",
+        "compressed_sha256": "sha256:d797adc8ae237f1d823b10004fe184e4d43bde0951ef0b312c0870b21031c7ad",
+        "uncompressed_sha256": "sha256:c0a6432a4c7aaea8358b26658325ae626bf62ca34665b8f0add73698146db57f",
+        "sample_start": 228600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r5000000-scan-fw-6c18112a5659116e-v000382",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-6c18112a5659116e",
+      "visit_index": 382,
+      "source_start_counter": 152824877981,
+      "source_end_counter_exclusive": 152825477981,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r5000000-scan-fw-6c18112a5659116e-v000382.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8f3967fba1b7d754eb1853c9d3a3a9da39d9d4611f145f7de6ea73b591d3958d",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b28e8a5a5d485b1d4d18f4d9a7fbd24cc759a8a180ad347084c2178d8a8ce08f",
+        "recording_manifest_content_sha256": "sha256:4a9d295c36ba9e9f9733cf2854461f4ebec9e0d77ee08b85f6b5364fa0eea15f",
+        "relative_path": "iq-block-000382.ci16.zst",
+        "compressed_sha256": "sha256:e82526a69f67896b15f36df44409be8f708556b6408f135032467362b0ca14bb",
+        "uncompressed_sha256": "sha256:fc584c826a42cbcaefbbedda37eed9bfe18d3b3b63916e44953c5c01f1649e78",
+        "sample_start": 229200000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000108",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 108,
+      "source_start_counter": 238724794305,
+      "source_end_counter_exclusive": 238725694305,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000108.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a1ddd93d2fdbe47e4be1d8eba8995cabce921537a8edfa70da03d8d0df0c301b",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000108.ci16.zst",
+        "compressed_sha256": "sha256:0a4bc0d2a7a0da3e59b515d89cd475645bd040dcca6f41a9f2cfa8804caa6b25",
+        "uncompressed_sha256": "sha256:83e52619c441f5a0c4c1565fdae9abe5099b461c33d7d4468abc6e7476297966",
+        "sample_start": 97200000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000109",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 109,
+      "source_start_counter": 238725846518,
+      "source_end_counter_exclusive": 238726746518,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000109.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e09a4ee4bf032c9fddad5b67725e35461ab39fd2a7a40b8eddc2625c5e75a897",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000109.ci16.zst",
+        "compressed_sha256": "sha256:2d5c29e5b74a2222419b681b1bc050754647cc5e6413fbacab1832655066d327",
+        "uncompressed_sha256": "sha256:e2138b9b5ac500401c29eec1e5ae349dc905366a671a7d25031d024a74ae7399",
+        "sample_start": 98100000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000110",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 110,
+      "source_start_counter": 238726751732,
+      "source_end_counter_exclusive": 238727651732,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000110.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:7e397ffb7b751781c8cd372da4da50971c4c40ef0229c1fc31a519893447fbcd",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000110.ci16.zst",
+        "compressed_sha256": "sha256:b4acbadbfec4769d6b1defbda15c3bf25361f919ab09f94096c77191d001da4b",
+        "uncompressed_sha256": "sha256:a855be5270787c09013891ca6e2d02f8083bdad59a9fdcbebbbd1693964e58e5",
+        "sample_start": 99000000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000111",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 111,
+      "source_start_counter": 238727806130,
+      "source_end_counter_exclusive": 238728706130,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000111.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1b04b109e10b51fd5ea57e8c275e7b662f38de64ad083f129ba53f49df57c282",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000111.ci16.zst",
+        "compressed_sha256": "sha256:904e1efd3cb29b8c738c468acdaa9b6b5efe6cf27131b6bb2fda3af0cc6e1f26",
+        "uncompressed_sha256": "sha256:cf6b40595e3a31d6df40f744b2c4ba0f32c4eb4c430273ebe8558d08bbd89601",
+        "sample_start": 99900000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000112",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 112,
+      "source_start_counter": 238728858038,
+      "source_end_counter_exclusive": 238729758038,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000112.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c691e95c332628eb4845eda98f2b8b1b2712cd8d62b76e4853cf953ca6c2023c",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000112.ci16.zst",
+        "compressed_sha256": "sha256:0243c64457457f40f8229a6909d4a2e02c6ce4cf08b08edcea12534b984c36dd",
+        "uncompressed_sha256": "sha256:aaa9428770d7361ac93fabb9e8910f8cc2c430f87fa0d1c467dc6e0c231bc0fa",
+        "sample_start": 100800000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000113",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 113,
+      "source_start_counter": 238729910907,
+      "source_end_counter_exclusive": 238730810907,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000113.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c07e57a02840a1336c990b8041f47305da221cd79f0f2bbd7a6879300771abc7",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000113.ci16.zst",
+        "compressed_sha256": "sha256:1d4eb223ed102e53ad0943b64f7c1bd25c6bae29f1add8534e4102f402f3ad68",
+        "uncompressed_sha256": "sha256:d779da2c18bcb437dac9712b456ca2f6ec57d39827ef6387b967c1463b17beab",
+        "sample_start": 101700000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000114",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 114,
+      "source_start_counter": 238730963666,
+      "source_end_counter_exclusive": 238731863666,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000114.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:87ff0f43e4a3c14f6130696f86ceae18b019c22b2e266e43e9d2954ba2ae08ca",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000114.ci16.zst",
+        "compressed_sha256": "sha256:88fe9805383f49cef03775a2fbbab57e85ddfe9b22c12a8a8575621cdc2e3865",
+        "uncompressed_sha256": "sha256:b78ad2ee3c5bac18b25b08f6bb8b485267e43aa83f0f29b69d5e41bd73ec8cbf",
+        "sample_start": 102600000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r7500000-scan-fw-a3c516351c096460-v000115",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-a3c516351c096460",
+      "visit_index": 115,
+      "source_start_counter": 238732019192,
+      "source_end_counter_exclusive": 238732919192,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r7500000-scan-fw-a3c516351c096460-v000115.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5949062afbeae50fa3ecc0a61005a87ed2e6633e90bde8f0b7adaea63549d117",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:2a20f3e741c499cf4ae5df8d81737f4a3aba8701e295bf09ecfa33ebdca39af3",
+        "recording_manifest_content_sha256": "sha256:dd067b6609f3ab768672724b2cf11a6d0f460ca0ec7b09de0e425a9a6b2e6c03",
+        "relative_path": "iq-block-000115.ci16.zst",
+        "compressed_sha256": "sha256:405781b924f4a4dbf2190811345b909fbf84a8a70c75e6e5027d0f04add46fb3",
+        "uncompressed_sha256": "sha256:ea704a26248d19a23ed1b2d080d2709d5187c520f87e6e39f5bec96dd98ef2f7",
+        "sample_start": 103500000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000690",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 690,
+      "source_start_counter": 471010067414,
+      "source_end_counter_exclusive": 471011267414,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000690.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:169a6cf642cace92ea586e5bb958665e9e51d6de8a6cdf9ca4e133753cf3c63f",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000690.ci16.zst",
+        "compressed_sha256": "sha256:beac408b7bb2e7716bedd56a50c2260040cc462b0e412fc7b910dce45dbfdf46",
+        "uncompressed_sha256": "sha256:340f422b5f99e2a8fb4cddb61a85dc96ebe3bab8a9309b2a86030e79ff163038",
+        "sample_start": 828000000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000691",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 691,
+      "source_start_counter": 471011471103,
+      "source_end_counter_exclusive": 471012671103,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000691.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a32a4ad0f1f207ce3c676dc7f4e702b20920ee0537c3ba7f43c3910bcd325c45",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000691.ci16.zst",
+        "compressed_sha256": "sha256:6f26e766c7e116b92d4a2a69092fad0b9019abd01e38a5b6b39cbb6e419352c0",
+        "uncompressed_sha256": "sha256:e2bab3e4b0492787cf557bc766fcf79687aaa246f818fae4ffad623ea54501a4",
+        "sample_start": 829200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000692",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 692,
+      "source_start_counter": 471012672487,
+      "source_end_counter_exclusive": 471013872487,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000692.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:ce23e21b14e2f1863c1832e3baaed10d05299d336bd5102458a1810cae970fd0",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000692.ci16.zst",
+        "compressed_sha256": "sha256:f4f4350b7cf1f3081d07b356ac9aaa6aec2caa8732d594c9c3a2bac7f1305c63",
+        "uncompressed_sha256": "sha256:33d916ef85dd369fff283300498f92c2bc100945b7ddbd474360d6f157fe1884",
+        "sample_start": 830400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000693",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 693,
+      "source_start_counter": 471014076618,
+      "source_end_counter_exclusive": 471015276618,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000693.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:dc93ade359919dd1d2520009888680c919eb636c733a17ac0e2c2c4e529e65a0",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000693.ci16.zst",
+        "compressed_sha256": "sha256:d1eeb0e21877a5a7e98927472dfa17c98c41e0024333f2c8c82c24e7eb5c1cce",
+        "uncompressed_sha256": "sha256:7132a8a793fc4640f7fbbe82abfdc6f461e20456e3aa0f4b874ffa36ea287e3f",
+        "sample_start": 831600000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000694",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 694,
+      "source_start_counter": 471015477737,
+      "source_end_counter_exclusive": 471016677737,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000694.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e1a76de51a479bf70904c1993c4897f3b131ab68b396cf78513874d729324f63",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000694.ci16.zst",
+        "compressed_sha256": "sha256:d05712aff2a1c86c24427ce72473a0fb28363cac99fd4cde811a81223fe08518",
+        "uncompressed_sha256": "sha256:37be6edbe75ad1462b10967ac0fb44f5c17a9defb918c2cdedecfb26cd4aba7a",
+        "sample_start": 832800000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000695",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 695,
+      "source_start_counter": 471016878123,
+      "source_end_counter_exclusive": 471018078123,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000695.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:09ef9faff9f7ea52e71fb01af26d4c73eba6d50664c723577c7bdc1c07a51188",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000695.ci16.zst",
+        "compressed_sha256": "sha256:2664faef2db46badbcf6844e59bf59a6a3365cc155b26887aaf2e28e56b244f1",
+        "uncompressed_sha256": "sha256:36644ac8299e7d8fb0d3d07c8f2f4ca6319aa70498fe38780ff6909bffa4bc63",
+        "sample_start": 834000000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000696",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 696,
+      "source_start_counter": 471018081657,
+      "source_end_counter_exclusive": 471019281657,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000696.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:eebf86e0c00797a4206094e3e358f4bf6427fb433d72c9d757977878507d2c28",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000696.ci16.zst",
+        "compressed_sha256": "sha256:ed6c6402b0cb67f1623035fbc6bd28674b86995f06e586f4989cbb417cecb4ed",
+        "uncompressed_sha256": "sha256:72c9179ccbf4f792ab5854a65c4d418a1df3dc81a793c25f6a3c6cb539a29964",
+        "sample_start": 835200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000697",
+      "origin": "real_ds5",
+      "split": "validation",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "visit_index": 697,
+      "source_start_counter": 471019486127,
+      "source_end_counter_exclusive": 471020686127,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/validation/real-validation-r10000000-scan-fw-888fc1e1e005ded3-v000697.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8abed071d57b6d0dbc41002d972bba78461e58e8dfe1c812d3cf88a273a8a364",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:ad6f4f42d3d83aaa57bc290843f799ba35c1e2d3418123500fb856b9bc79bd12",
+        "recording_manifest_content_sha256": "sha256:061b1d51800b495cbc60b1d2c701241806afd207412004faab7e864526d72b9b",
+        "relative_path": "iq-block-000697.ci16.zst",
+        "compressed_sha256": "sha256:d34311f29d558447c69c235ab11f5b2c01b636be4111d0aadde441ffbde19766",
+        "uncompressed_sha256": "sha256:aa29d1ec4843b7c22b020ca9fc01325c60bf7172826f662e821d4a5a53eb85b6",
+        "sample_start": 836400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000180",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 180,
+      "source_start_counter": 292729892409,
+      "source_end_counter_exclusive": 292730192409,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000180.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:43abf3457541066b0087d3a8c5c08f328499725a9a1881528cb94ea51dca6c70",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000180.ci16.zst",
+        "compressed_sha256": "sha256:bf2edaa760df02445c8c1af0d3e3a0ee7d2a9609ca199cb964154f7a71c5df85",
+        "uncompressed_sha256": "sha256:6c0a02a5d1733be63fef16f6e4b2554c3605239b51e1cccb8451f3b611178bd2",
+        "sample_start": 54000000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000181",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 181,
+      "source_start_counter": 292730243545,
+      "source_end_counter_exclusive": 292730543545,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000181.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:fd3fd24764ca0145d1a964d9892d319a8ed97dad33720e35c0bb532b3730493c",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000181.ci16.zst",
+        "compressed_sha256": "sha256:35085e49183ee5c32e692a188ceeb224922ec0ad21528f9ae9f0b0e08c89bbe9",
+        "uncompressed_sha256": "sha256:cb1c01196dbde1c0091efc5d2960194bfe43103994bff64c2b40f01d700be0e5",
+        "sample_start": 54300000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000182",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 182,
+      "source_start_counter": 292730594191,
+      "source_end_counter_exclusive": 292730894191,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000182.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:aaecaf0abed3c9b8352644bfbbbbc6ceac0fb7ec1a2094a7987b412cab04bccc",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000182.ci16.zst",
+        "compressed_sha256": "sha256:c414468ed6985cfd22cf2e9cceb9097577ac8aa5a8d3e3f38a98402de9808604",
+        "uncompressed_sha256": "sha256:2bd0412961566b85a00b371bd0fbc9a7342dc29a15972abaeed8cd9fe3335e39",
+        "sample_start": 54600000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000183",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 183,
+      "source_start_counter": 292730895307,
+      "source_end_counter_exclusive": 292731195307,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000183.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8a5b1b8ee690f7c3ebc64bd218e77fcad9c11cad02a6f42aeaf78defa6d84c94",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000183.ci16.zst",
+        "compressed_sha256": "sha256:fc688d1c3c98641a5ba81c959288de543c592ee4a6a5222952b7418bac44f33f",
+        "uncompressed_sha256": "sha256:a2480d2cd74fef5e3928375a1db633115fb95d2282ad1ec055c431862d33bb9d",
+        "sample_start": 54900000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000184",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 184,
+      "source_start_counter": 292731195923,
+      "source_end_counter_exclusive": 292731495923,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000184.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:4837dfca58ac4059b04a1239f79b88216c6bb17f2e2f8e8c0c6621ef192c176b",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000184.ci16.zst",
+        "compressed_sha256": "sha256:5f78a3d6963fcc2e9905583f7d18715675c448630196ac7b78aff7dad79adeab",
+        "uncompressed_sha256": "sha256:21a4d60936d5a334431dbf08630ca107238a555fce122133902ffbc699bf686b",
+        "sample_start": 55200000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000185",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 185,
+      "source_start_counter": 292731546270,
+      "source_end_counter_exclusive": 292731846270,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000185.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:a5648ac841dc31a7a79221de16d7d552ecc1da2e3fc225ad55bc4540c8853dad",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000185.ci16.zst",
+        "compressed_sha256": "sha256:1375db67b00f3582094dbddb347a1a8d3b527a50fd431c50b01b827be95344f0",
+        "uncompressed_sha256": "sha256:175c1141dff24267e4e00f2fe9ee9d4f8b69223d7c42d26f60ca9a27abba4129",
+        "sample_start": 55500000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000186",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 186,
+      "source_start_counter": 292731897558,
+      "source_end_counter_exclusive": 292732197558,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000186.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0dab4fa8c752c2a8efa9e9e6503c0c3d977508023d5ae6f639fc93fe25743d6d",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000186.ci16.zst",
+        "compressed_sha256": "sha256:a6fa5f5232a2640e6a9448c379f7fb3119bb9543db6283631693b7008e6dc2bb",
+        "uncompressed_sha256": "sha256:2e8e7865b4f5aa87ced356048c679766b541a1f5db61894fee6f44ab91684d50",
+        "sample_start": 55800000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000187",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-de73bee9d0c4412c",
+      "visit_index": 187,
+      "source_start_counter": 292732247733,
+      "source_end_counter_exclusive": 292732547733,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r2500000-scan-fw-de73bee9d0c4412c-v000187.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c00f2fccfedcb0f06756c0ef76e844ccfc8b5c042957fca77375d2aa772b5af8",
+        "bytes": 2400128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:b2ab203f063a4e592dda95de5524f79ad3b5f9d5e98b27dbfb067e943dc40944",
+        "recording_manifest_content_sha256": "sha256:960e7f89c06971be4b8da78189ec6ff0cb7d9a991efd95544321a8fda6f8807c",
+        "relative_path": "iq-block-000187.ci16.zst",
+        "compressed_sha256": "sha256:e182b2f0b07f896569a872fb1d7fd2d814cd09026c8c677ef2eec78f2c264a69",
+        "uncompressed_sha256": "sha256:aef96ab2055216bfe3e4f80319094f08f56f92784657cb5570fffa85486eb95a",
+        "sample_start": 56100000,
+        "sample_count": 300000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002096",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2096,
+      "source_start_counter": 186730347438,
+      "source_end_counter_exclusive": 186730947438,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002096.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1b03280b308f68d042c2ce3cb678d26d9f1b1e8fb853af3be5264ee3da56ded1",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002096.ci16.zst",
+        "compressed_sha256": "sha256:44a9563fff164cc804e32362cdbe4b1c7e35e66042d1b46d168b5209368a885a",
+        "uncompressed_sha256": "sha256:b3d4804e8ede8804c9314b475d2cab7ece0dbddff0cadd73a3cd1b632673f441",
+        "sample_start": 1257600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002097",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2097,
+      "source_start_counter": 186731050231,
+      "source_end_counter_exclusive": 186731650231,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002097.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:088a2fa2ca5cb6717202f6c824fdd750f9ddcccbc4ccbb655c4bbf052a3b47d4",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002097.ci16.zst",
+        "compressed_sha256": "sha256:d3c7b71dcdf0dde717d0b72d936bc68a8b94761b481dc79758bf0a4f680e7dea",
+        "uncompressed_sha256": "sha256:07327cc1f468ae59c68a111bd466fe2c272c6ef52ca2b9304b3326cf6b4ece8d",
+        "sample_start": 1258200000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002098",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2098,
+      "source_start_counter": 186731652671,
+      "source_end_counter_exclusive": 186732252671,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002098.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e77ecd0bd0ac8f600590084048467cf592f04a0536480eb2a6d5e203203ab2a3",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002098.ci16.zst",
+        "compressed_sha256": "sha256:dccdcaf414f2f58a6c37917542609bc7969746b65277f125b875c75cc17271d7",
+        "uncompressed_sha256": "sha256:c5120873069b427b6cc2d43808d1712729c0e66641f99b436bb206b3d360861e",
+        "sample_start": 1258800000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002099",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2099,
+      "source_start_counter": 186732352977,
+      "source_end_counter_exclusive": 186732952977,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002099.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:672c3569675e063f82a96f282d065dcbc3c6fb185bf607adc57c858e7758eaa1",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002099.ci16.zst",
+        "compressed_sha256": "sha256:ee62cbd7dcf89af2768503c71b487672c0182ceaa11f513a444e36075b67e146",
+        "uncompressed_sha256": "sha256:516479e8db85ca2d9a3f22da6274201f7ab0def9c21130c19750d26c8477a7c6",
+        "sample_start": 1259400000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002100",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2100,
+      "source_start_counter": 186732953892,
+      "source_end_counter_exclusive": 186733553892,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002100.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:42d4b0784a8611ad955d9d5de953624fb4ca635defffd8e5855e8507ba4c1dfa",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002100.ci16.zst",
+        "compressed_sha256": "sha256:ca56c67be871c6c80df601f29f07562e25341c1a8100df34839a82390d407938",
+        "uncompressed_sha256": "sha256:aeac2cde8c0fc36a4ef1db4290730202edd2b72ff464e1a2ca60aeaf1bf4b2d4",
+        "sample_start": 1260000000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002101",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2101,
+      "source_start_counter": 186733656229,
+      "source_end_counter_exclusive": 186734256229,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002101.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1c67bd611d9cb4dabe65451656590eeb6474c89a7255bdbdba33731da41602b5",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002101.ci16.zst",
+        "compressed_sha256": "sha256:d2978bf828ceadf4ef0a97cc8434db3805c12c46f6f04d38adc41d37fa7002a7",
+        "uncompressed_sha256": "sha256:255f28a9393cb15f1ff310414cb1179ef42238f97b89a2dd90080aa4836d1646",
+        "sample_start": 1260600000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002102",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2102,
+      "source_start_counter": 186734357782,
+      "source_end_counter_exclusive": 186734957782,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002102.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3c2ceda6f07d6fd73858f896f2c6b1d83b18854dbaec8d11689ca0262f14211d",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002102.ci16.zst",
+        "compressed_sha256": "sha256:742bce8647fa84006e023d55ece082176497abe7d41bfdd37c795d9c4faf214a",
+        "uncompressed_sha256": "sha256:a4ffcf364693c4ccf2278432a25cd8aeac8b558d55ada9bf416ba63ee4828e8d",
+        "sample_start": 1261200000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002103",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-353a4f8831e99c5f",
+      "visit_index": 2103,
+      "source_start_counter": 186735060267,
+      "source_end_counter_exclusive": 186735660267,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r5000000-scan-fw-353a4f8831e99c5f-v002103.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0e3e7046a30a8784b816a67351b2038860f4bcacde59d1303f69449e4362e92d",
+        "bytes": 4800128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:27e979cef8646e960f42ee8894fd50f97f0ccdb55b985cded5127f48032de2d0",
+        "recording_manifest_content_sha256": "sha256:fedec14a3bb54e66cf0dc48b0552e04dd3f24dd3917c87dc2bc7f07f1e0b8dea",
+        "relative_path": "iq-block-002103.ci16.zst",
+        "compressed_sha256": "sha256:e847f84123c46247323d3add78d6cecf257c99bedebfd78459cd6b3c638f9d3f",
+        "uncompressed_sha256": "sha256:cfdd09900f2519a0200f8321d5af38e313dd0132ceb28fb465dfb96e3efc26e3",
+        "sample_start": 1261800000,
+        "sample_count": 600000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000186",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 186,
+      "source_start_counter": 427642800233,
+      "source_end_counter_exclusive": 427643700233,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000186.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:71be196f0a631a9b6993e544d2cc7bb30a17df3b1b94f1440e550e03752d949c",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000186.ci16.zst",
+        "compressed_sha256": "sha256:e7021ead7e8c393b80c36bf7a155559caf590758d387b3b407e0487707b6cba8",
+        "uncompressed_sha256": "sha256:b7571405f85076f98a7fc4572a5f152130e21d06e63295c84cf5074ef6e53c82",
+        "sample_start": 167400000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000187",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 187,
+      "source_start_counter": 427643705594,
+      "source_end_counter_exclusive": 427644605594,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000187.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:532fbeea19e996cf621ae7fa9bdf9d05ae05a9d6460f33cb53b554acf174e8d9",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000187.ci16.zst",
+        "compressed_sha256": "sha256:1acb0bf884ab410c2748795557b40dfbd4eeaa92d38335a4190c8488299851da",
+        "uncompressed_sha256": "sha256:a5b74128cb487a9486392e27d6389fc0fde1adf6599c3503aceb8930ddc6be08",
+        "sample_start": 168300000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000188",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 188,
+      "source_start_counter": 427644757430,
+      "source_end_counter_exclusive": 427645657430,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000188.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:79ddf4a2abbd514a2b83b364577ccf866b0cede317ded4b084349795bcf59506",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000188.ci16.zst",
+        "compressed_sha256": "sha256:540b737dae8538fba4320dc93583245e2bf0f36bffaf8f770dab45d7b0ed7e47",
+        "uncompressed_sha256": "sha256:8f27cb7d6644b0468b5e4fa34358e6fbb630fb0b2878988da52b055cb84ec332",
+        "sample_start": 169200000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000189",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 3,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 189,
+      "source_start_counter": 427645658745,
+      "source_end_counter_exclusive": 427646558745,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000189.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5fc8c074f530796ec8522895b47f6432f4d720379e9cec965da602007b5e2421",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000189.ci16.zst",
+        "compressed_sha256": "sha256:8e1ee011d3309bc5ad1cba71d4318826e2d64942bd26212e1a4efc8a43d7ab08",
+        "uncompressed_sha256": "sha256:7c615a8e3616eaebba9f982b4732def8b15588bed0ab60599ab45e8848a1004e",
+        "sample_start": 170100000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000190",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 190,
+      "source_start_counter": 427646714790,
+      "source_end_counter_exclusive": 427647614790,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000190.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:87b53d8732c33f23ee56e1bcd55c3c6d29a7f453ef005ff8e2ee094deccb00d4",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000190.ci16.zst",
+        "compressed_sha256": "sha256:975e72444e472a78c83037312d1d67d0955b3093ef649e362dc61ba5f6924f85",
+        "uncompressed_sha256": "sha256:a0d12e7a9e0d953d60807c4223aa7adddee6fe00bcc2a642f035b8847b8296ad",
+        "sample_start": 171000000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000191",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 2,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 191,
+      "source_start_counter": 427647616517,
+      "source_end_counter_exclusive": 427648516517,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000191.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c24b659089d9c86e659124404b6b19906a10de5fb314badae8be5f5b3f77373b",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000191.ci16.zst",
+        "compressed_sha256": "sha256:6df7871990e1443a399070a5416bf6dda86287fe7c3546ea3596b84e3edf1556",
+        "uncompressed_sha256": "sha256:d9ed042dee4b577af151a7acc37ea389151ce31447fe1fe4eb098eebcd3af617",
+        "sample_start": 171900000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000192",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 4,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 192,
+      "source_start_counter": 427648667894,
+      "source_end_counter_exclusive": 427649567894,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000192.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2c492772d5d32b419763228a91c5fba2ec12ecbc7aa91a13bae7151fc29f4e43",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000192.ci16.zst",
+        "compressed_sha256": "sha256:2aaec9d17d725751505970e6b7e53ca6da4035aa4c48ab05a32d179d7ab852ad",
+        "uncompressed_sha256": "sha256:7c60de60c618662128fe3f4f8b031f9dabd8e44d1255447b7994c2ef1581b3d0",
+        "sample_start": 172800000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r7500000-scan-fw-202f59398ea68cef-v000193",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": "scan-fw-202f59398ea68cef",
+      "visit_index": 193,
+      "source_start_counter": 427649722502,
+      "source_end_counter_exclusive": 427650622502,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r7500000-scan-fw-202f59398ea68cef-v000193.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:83df605af62aa23036faa3f300caca9551e5e8c89f0f0aed91de9eb0413956de",
+        "bytes": 7200128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:3609513536f0208ae3153f68963d82bac3991a09f9f91cb2db1e5ecd849abbe3",
+        "recording_manifest_content_sha256": "sha256:f4ac93aaea37edbdf71e883e1108e14a48b01ea895f0b5395452fd94f9bf6239",
+        "relative_path": "iq-block-000193.ci16.zst",
+        "compressed_sha256": "sha256:76eadf0569d82585f3cb5db838f8add3037d48caca847170a8bd45e8a1c45ebd",
+        "uncompressed_sha256": "sha256:086ec0c4f38968d6fa500b1151d3538d945b9a7ee2a92510dc2a1a9860a96b5b",
+        "sample_start": 173700000,
+        "sample_count": 900000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000080",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 4,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 80,
+      "source_start_counter": 492253984465,
+      "source_end_counter_exclusive": 492255184465,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000080.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:f756df70a7a3b3ae9ba3b084b1cbd1da76f3ed69a7a95a8214c9cc3ede4fbafa",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000080.ci16.zst",
+        "compressed_sha256": "sha256:41c1c3db553c1716cc8b1418294239523ce46e0d6be703c40fec10c60b5cefdd",
+        "uncompressed_sha256": "sha256:f6f0c25893013e5f66041f698b13ad5d89bab9d8d3316bcf1444370788b952e4",
+        "sample_start": 96000000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000081",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 81,
+      "source_start_counter": 492255389546,
+      "source_end_counter_exclusive": 492256589546,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000081.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0c2ea30cecf898afccbc1b1f75b8b15314892584becaaf3dcaf4e599f97fe1cc",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000081.ci16.zst",
+        "compressed_sha256": "sha256:bf15b194e1c7dd07d1e52f4279b4584b41b77c5b79e740a73161de79629c8ee3",
+        "uncompressed_sha256": "sha256:b2c51d7a254533c57b15d77ac20344f9afbbe2e88a5bc6088dd7b83b3b8fe2f0",
+        "sample_start": 97200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000082",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 82,
+      "source_start_counter": 492256790698,
+      "source_end_counter_exclusive": 492257990698,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000082.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2ee1fe086a75b44ad6d42ba75d1a200b7ab2d1d6f116341532a14337e0c20a0a",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000082.ci16.zst",
+        "compressed_sha256": "sha256:d19e6d304bbcb2b319f985ba8a0c77630ffb9f4c89f8d8af139561b942d10a8e",
+        "uncompressed_sha256": "sha256:512365666a2dfc1767565a950c78c5b108356e2ff083986e2c2ff7bf384c2cb4",
+        "sample_start": 98400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000083",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 83,
+      "source_start_counter": 492258199756,
+      "source_end_counter_exclusive": 492259399756,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000083.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:45aae2352afe0aca58bcc2d207f8317d3564cc0df6b9502349e36bef157ae4ba",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000083.ci16.zst",
+        "compressed_sha256": "sha256:45d0a4a9d109b1c886f21c428da1d29d615fa36899e8b05929f644417ab439b0",
+        "uncompressed_sha256": "sha256:63df4d2ea1be58e05924b6b70ee70b396235acece5c86b16f6684e210c835cfc",
+        "sample_start": 99600000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000084",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 84,
+      "source_start_counter": 492259601063,
+      "source_end_counter_exclusive": 492260801063,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000084.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:b8f48060ec621d4c64f826cdcd18796c5ba6c758acaae5088e0d16db5e58273f",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000084.ci16.zst",
+        "compressed_sha256": "sha256:982b475332ebaa9174061b6cf1ddc8a7bbd3115155ea480e7680a8c0d468e40d",
+        "uncompressed_sha256": "sha256:866263591b1fc67ca6ccfe35fd0589f4c42f6e44bf21167ad6e907bff62251a2",
+        "sample_start": 100800000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000085",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 2,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 85,
+      "source_start_counter": 492260810015,
+      "source_end_counter_exclusive": 492262010015,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000085.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:bcfbf5f77dda32526a6b51a5066f4eb0802db1513389d0c22e84e7da0b5b9836",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000085.ci16.zst",
+        "compressed_sha256": "sha256:8f4962c66dc9868885ecfca0f019159ea1a0c486188b46ba5a454706a4937ffe",
+        "uncompressed_sha256": "sha256:eef0f0b8e2a7def5ffae4c1049c0aa1c12ea117ea9f441851c2dd1b29c2370f3",
+        "sample_start": 102000000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000086",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 3,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 86,
+      "source_start_counter": 492262213543,
+      "source_end_counter_exclusive": 492263413543,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000086.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1d0fff159d74f1c93e91d02f1149cec42d06aee93505a86499fa0246de27edfd",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000086.ci16.zst",
+        "compressed_sha256": "sha256:72e4ae3b59e109a8aaf577a8a3f0cb9339e90c72378c5db407056eb8523fc172",
+        "uncompressed_sha256": "sha256:fb8497b49c1a42d06237ac32665a52386f9933a335015f7b0c77d5811ab4c056",
+        "sample_start": 103200000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000087",
+      "origin": "real_ds5",
+      "split": "holdout",
+      "test_stratum": "real_unlabeled_causal_visit",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": "scan-fw-32a202b6e55630ec",
+      "visit_index": 87,
+      "source_start_counter": 492263615920,
+      "source_end_counter_exclusive": 492264815920,
+      "truth_status": "unknown",
+      "raw_npy": {
+        "path": "iq/holdout/real-holdout-r10000000-scan-fw-32a202b6e55630ec-v000087.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:183d2674e9e2490f201ab7d9ba59bd08fec064993de2c2987f12c5df3a667447",
+        "bytes": 9600128
+      },
+      "source": {
+        "recording_manifest_file_sha256": "sha256:e86f1f40e807f89fdf21f641909b7e3ecc54bc2a476ee7f6be808d14766b5bac",
+        "recording_manifest_content_sha256": "sha256:b381f62da5b5490e43790b69e2947919ad9fee6441b642ac04e7af1be487993a",
+        "relative_path": "iq-block-000087.ci16.zst",
+        "compressed_sha256": "sha256:c81b03f9e12b2c780ff938cb5fbbfe8f7380acbdfc1a091878f82a1a70083bc6",
+        "uncompressed_sha256": "sha256:ca3b0f9e1c52fcfe5422e334e38298b76925a1ba7c8a39c91046308a6194f504",
+        "sample_start": 104400000,
+        "sample_count": 1200000
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-s1901-1902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 1901,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 320,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 311603,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 1902,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 321,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 311232,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-s1901-1902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:507c070a6d436d35f0ba66a808e4c78a234cc893ed67dfd82ca7774b7f410bd1",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          1901,
+          1902
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-s1903-1904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 1903,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 322,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310861,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 1904,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 323,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310490,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-s1903-1904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:ff397ec84c0644da94b14c413e9e3acb0ccc296f0b0caa60388bc12dbb9cacff",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          1903,
+          1904
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-lower-s2901-2902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 2901,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 2902,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-s2901-2902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6cc8b3eb2ead7fd233aeadc64cd13e1b1baa1bc46b9b7259ae8e12f484d82a12",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          2901,
+          2902
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-upper-s2903-2904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 2903,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 2904,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-s2903-2904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:20c324d395bf2f86c38510630086e9a0724cdf2fb013f64daefbfc6538410a70",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          2903,
+          2904
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-lower-s3901-3902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 3901,
+            "carrier_hz": -172849,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 3902,
+            "carrier_hz": -172712,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-s3901-3902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2a277a84471683ccc9895fde46568e9123deac4d26802e5d3a5b33691eda4e1a",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          3901,
+          3902
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-upper-s3903-3904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 2500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 3903,
+            "carrier_hz": -172575,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 3904,
+            "carrier_hz": -172438,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-s3903-3904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0d5e2d4ef49cf30e66bd4243626797085137c25985f0963747b73fcd2be6bc65",
+        "bytes": 2400128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          3903,
+          3904
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-r5000000-s11901-11902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 11901,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 323,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 311232,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 11902,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 324,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310861,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-r5000000-s11901-11902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:12436a5220e43001e28c69b633b69ea33bfce7815bf2316decc2402b5fd51ae9",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          11901,
+          11902
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-r5000000-s11903-11904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 11903,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 325,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310490,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 11904,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 326,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310119,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-r5000000-s11903-11904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8ea8a9246bf884d388568d9c0b0d5404aeb5c1685c4c2d89ca068729ae8c2202",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          11903,
+          11904
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-lower-r5000000-s12901-12902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 12901,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 12902,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-r5000000-s12901-12902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5d936c16092821c8801dd32a54ee8007f8db9aef2537df59d09101641be74a9a",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          12901,
+          12902
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-upper-r5000000-s12903-12904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 12903,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 12904,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-r5000000-s12903-12904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:7388f15b3f416333528449cb3ad887d88b5ce9e517bfd24f2f3e3b310e7641ce",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          12903,
+          12904
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-lower-r5000000-s13901-13902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 13901,
+            "carrier_hz": -172301,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 13902,
+            "carrier_hz": -173123,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-r5000000-s13901-13902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e698102a7384cd68740303e18d3f6c5cb95ed05468291c8735244524942e8a1e",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          13901,
+          13902
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-upper-r5000000-s13903-13904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 5000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 13903,
+            "carrier_hz": -172986,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 13904,
+            "carrier_hz": -172849,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-r5000000-s13903-13904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6cdfb3684d2abf1f450f247328d6580f21c6e1f71332020d5c8282954d3cd77c",
+        "bytes": 4800128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          13903,
+          13904
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-r7500000-s21901-21902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 21901,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 326,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310861,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 21902,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 327,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310490,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-r7500000-s21901-21902.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3cc96610f4ca3a9755d97a3359a451bf70a308b5a4ef90d10152f5f968c4d039",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          21901,
+          21902
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-r7500000-s21903-21904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 21903,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 328,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310119,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 21904,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 329,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 309748,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-r7500000-s21903-21904.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:368a89300cc82f624fa5d040d0bdd19d619fb5e8592971ac123147a12b8bd1ac",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          21903,
+          21904
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-lower-r7500000-s22901-22902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 22901,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 22902,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-r7500000-s22901-22902.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:dca6e376bd8798238c8b71cb2a8dc9c32389eb7454bd4dba05e3d64394363b26",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          22901,
+          22902
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-upper-r7500000-s22903-22904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 22903,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 22904,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-r7500000-s22903-22904.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:9fcfcbf9df8b9490e7dbbf5641b4e2b69b4ef79ef95f57d1a7ed70d5762885eb",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          22903,
+          22904
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-lower-r7500000-s23901-23902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 23901,
+            "carrier_hz": -172712,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 23902,
+            "carrier_hz": -172575,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-r7500000-s23901-23902.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:428eb27c95e343aef69048b50a6fa9f14b9506ad7034643aca705649b3852708",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          23901,
+          23902
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-upper-r7500000-s23903-23904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 7500000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 23903,
+            "carrier_hz": -172438,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 23904,
+            "carrier_hz": -172301,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-r7500000-s23903-23904.npy",
+        "dtype": "<i2",
+        "shape": [
+          900000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2756e4436bb1655513d943423fbbbca49292a4c78619e691ddda151c6e5bfdf9",
+        "bytes": 7200128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          23903,
+          23904
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-r10000000-s31901-31902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 31901,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 329,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310490,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 31902,
+            "carrier_hz": null,
+            "window": 1,
+            "epoch_samples": 317,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 310119,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-r10000000-s31901-31902.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:7d0a4712a7482baffbc3fdf18076cb63813c0b0a5443d37463ce052fdd5c0985",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          31901,
+          31902
+        ]
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-r10000000-s31903-31904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_pilot",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "pilot",
+        "starlink_model_present": true,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 31903,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 318,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 309748,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 31904,
+            "carrier_hz": null,
+            "window": 4,
+            "epoch_samples": 319,
+            "fractional_delay_samples": 0.35,
+            "cfo_hz": 309377,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-r10000000-s31903-31904.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:3dd0b257f834b9c9a9d3558e6c173b03c6aeb380971d8dc00c62bd782d1cd071",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          31903,
+          31904
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-lower-r10000000-s32901-32902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 32901,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 32902,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-r10000000-s32901-32902.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:33523af6b5e14bbb49af9ce6a8a167fa2d33b82e7a0b2f0877604a499f8517c7",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          32901,
+          32902
+        ]
+      }
+    },
+    {
+      "case_id": "control-noise-upper-r10000000-s32903-32904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_noise",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "noise",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 32903,
+            "carrier_hz": null,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 32904,
+            "carrier_hz": null,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-r10000000-s32903-32904.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6b0ec6c4cd162fde479d2f4985679ea00daa117b40268ecd905cd9e3fa1c3afa",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          32903,
+          32904
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-lower-r10000000-s33901-33902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "lower",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 33901,
+            "carrier_hz": -173123,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 33902,
+            "carrier_hz": -172986,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-r10000000-s33901-33902.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:4797ca5229d31dc03aa4bb632f753d6dd425b47485c75801d3db91e1a45da044",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          33901,
+          33902
+        ]
+      }
+    },
+    {
+      "case_id": "control-tone-upper-r10000000-s33903-33904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "test_stratum": "synthetic_tone",
+      "rate_hz": 10000000,
+      "dwell_ms": 120,
+      "edge": "upper",
+      "channel": 1,
+      "session_id": null,
+      "visit_index": null,
+      "source_start_counter": null,
+      "source_end_counter_exclusive": null,
+      "truth_status": "constructed_control",
+      "truth": {
+        "kind": "tone",
+        "starlink_model_present": false,
+        "expected_detector_decision": null,
+        "receivers": [
+          {
+            "receiver": 0,
+            "seed": 33903,
+            "carrier_hz": -172849,
+            "clipped_components": 0
+          },
+          {
+            "receiver": 1,
+            "seed": 33904,
+            "carrier_hz": -172712,
+            "clipped_components": 0
+          }
+        ]
+      },
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-r10000000-s33903-33904.npy",
+        "dtype": "<i2",
+        "shape": [
+          1200000,
+          2,
+          2
+        ],
+        "sha256": "sha256:c7c3a4480b16eaba8e5cc26552a19dab722e9f616152aff68d6b27ccbc17e705",
+        "bytes": 9600128
+      },
+      "source": {
+        "generator": "build_dataset.py:control_receiver/v1",
+        "seeds": [
+          33903,
+          33904
+        ]
+      }
+    }
+  ]
+}

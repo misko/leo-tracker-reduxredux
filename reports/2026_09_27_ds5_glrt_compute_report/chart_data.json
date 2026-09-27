@@ -1,0 +1,102 @@
+{
+  "cpu_and_quality": [
+    {
+      "cohort": "Constructed validation",
+      "rate": 2500000,
+      "reference_cpu_ms": 1343.756721,
+      "candidate_cpu_ms": 32.937958153846154,
+      "speedup": 40.796600527682976,
+      "retained": 17,
+      "reference_positive": 18,
+      "source": "tone_validation/results.timing_adapter.json"
+    },
+    {
+      "cohort": "Constructed validation",
+      "rate": 5000000,
+      "reference_cpu_ms": 3624.719619153846,
+      "candidate_cpu_ms": 75.24921469230769,
+      "speedup": 48.16953418019366,
+      "retained": 18,
+      "reference_positive": 19,
+      "source": "tone_validation/results.timing_adapter.json"
+    },
+    {
+      "cohort": "Recorded development",
+      "rate": 2500000,
+      "reference_cpu_ms": 1259.192694875,
+      "candidate_cpu_ms": 53.46281084375,
+      "speedup": 23.552684099515584,
+      "retained": 36,
+      "reference_positive": 37,
+      "source": "native_tone_rescue/results.reporting_fix.real.json"
+    },
+    {
+      "cohort": "Recorded development",
+      "rate": 5000000,
+      "reference_cpu_ms": 3351.1813944375,
+      "candidate_cpu_ms": 158.68594884375,
+      "speedup": 21.118324708996372,
+      "retained": 42,
+      "reference_positive": 42,
+      "source": "native_tone_rescue/results.reporting_fix.real.json"
+    },
+    {
+      "cohort": "Recorded holdout",
+      "rate": 2500000,
+      "reference_cpu_ms": 1535.443141609375,
+      "candidate_cpu_ms": 79.945879875,
+      "speedup": 19.20603218089699,
+      "retained": 37,
+      "reference_positive": 43,
+      "source": "tone_recorded_holdout/results.2500000.json"
+    },
+    {
+      "cohort": "Recorded holdout",
+      "rate": 5000000,
+      "reference_cpu_ms": 4009.1837935,
+      "candidate_cpu_ms": 210.422084328125,
+      "speedup": 19.053056176595113,
+      "retained": 5,
+      "reference_positive": 6,
+      "source": "tone_recorded_holdout/results.5000000.json"
+    }
+  ],
+  "proposals": [
+    {
+      "cohort": "Recent development",
+      "recovered": [
+        11,
+        11,
+        11
+      ],
+      "unmatched": [
+        0,
+        0,
+        1
+      ],
+      "source": "distributed_proposal/results.json"
+    },
+    {
+      "cohort": "Expanded development",
+      "recovered": [
+        1,
+        0,
+        0
+      ],
+      "unmatched": [
+        0,
+        0,
+        1
+      ],
+      "source": "expanded_proposals/results.json"
+    }
+  ],
+  "sources_sha256": {
+    "distributed_proposal/results.json": "ac16031a684156eb94d2166d3b4501134c1a01d1ff047585a2550c2be5d42ec7",
+    "expanded_proposals/results.json": "c273a7217c3722754f5fd27c3451fa0a1b7b6bd34f146178a8b87e35598306c5",
+    "native_tone_rescue/results.reporting_fix.real.json": "696107cffed8f7de8d2f11d44d11e99f4c2663558a12489aa5e01e9c59139f81",
+    "tone_recorded_holdout/results.2500000.json": "e5e2c2687d588ce3d90aa5cfc99e6a983a59587ae931e799d31a145697e80311",
+    "tone_recorded_holdout/results.5000000.json": "5209d44800df47421039b62379e9776d1050c51dd33998f0aa539e50125be424",
+    "tone_validation/results.timing_adapter.json": "2a27ba4e69aee961e92800b8285fabe8ebff1ba8b1d578f0408a961b9dabd531"
+  }
+}

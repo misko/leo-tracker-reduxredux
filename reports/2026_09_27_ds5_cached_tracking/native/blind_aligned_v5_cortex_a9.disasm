@@ -1,0 +1,52 @@
+
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5_cortex_a9.o:     file format elf32-littlearm
+
+
+Disassembly of section .text:
+
+00000000 <leo_v5_neon_probe>:
+   0:	e3520000 	cmp	r2, #0
+   4:	f460404f 	vld4.16	{d20-d23}, [r0]
+   8:	e59d0000 	ldr	r0, [sp]
+   c:	f461c04f 	vld4.16	{d28-d31}, [r1]
+  10:	0a000022 	beq	a0 <leo_v5_neon_probe+0xa0>
+  14:	f26601b6 	vorr	d16, d22, d22
+  18:	f26781b7 	vorr	d24, d23, d23
+  1c:	f26e61be 	vorr	d22, d30, d30
+  20:	f26f11bf 	vorr	d17, d31, d31
+  24:	f2d82ca1 	vmull.s16	q9, d24, d17
+  28:	e1a01003 	mov	r1, r3
+  2c:	f2d04ca6 	vmull.s16	q10, d16, d22
+  30:	e1a02000 	mov	r2, r0
+  34:	f2d88ca6 	vmull.s16	q12, d24, d22
+  38:	f2d00ca1 	vmull.s16	q8, d16, d17
+  3c:	f463eadf 	vld1.64	{d30-d31}, [r3 :64]
+  40:	f2e0aa32 	vmovl.s32	q13, d18
+  44:	f2e06a34 	vmovl.s32	q11, d20
+  48:	f2e0ca33 	vmovl.s32	q14, d19
+  4c:	f27668ea 	vadd.i64	q11, q11, q13
+  50:	f2e04a35 	vmovl.s32	q10, d21
+  54:	f27668ee 	vadd.i64	q11, q11, q15
+  58:	f27448ec 	vadd.i64	q10, q10, q14
+  5c:	f2e02a30 	vmovl.s32	q9, d16
+  60:	f4416add 	vst1.64	{d22-d23}, [r1 :64]!
+  64:	f2e0aa38 	vmovl.s32	q13, d24
+  68:	f4616adf 	vld1.64	{d22-d23}, [r1 :64]
+  6c:	f27448e6 	vadd.i64	q10, q10, q11
+  70:	f37228ea 	vsub.i64	q9, q9, q13
+  74:	f2e00a31 	vmovl.s32	q8, d17
+  78:	f4414adf 	vst1.64	{d20-d21}, [r1 :64]
+  7c:	f2e08a39 	vmovl.s32	q12, d25
+  80:	f4604adf 	vld1.64	{d20-d21}, [r0 :64]
+  84:	f27228e4 	vadd.i64	q9, q9, q10
+  88:	f37008e8 	vsub.i64	q8, q8, q12
+  8c:	f4422add 	vst1.64	{d18-d19}, [r2 :64]!
+  90:	f4622adf 	vld1.64	{d18-d19}, [r2 :64]
+  94:	f27008e2 	vadd.i64	q8, q8, q9
+  98:	f4420adf 	vst1.64	{d16-d17}, [r2 :64]
+  9c:	e12fff1e 	bx	lr
+  a0:	f26401b4 	vorr	d16, d20, d20
+  a4:	f26581b5 	vorr	d24, d21, d21
+  a8:	f26c61bc 	vorr	d22, d28, d28
+  ac:	f26d11bd 	vorr	d17, d29, d29
+  b0:	eaffffdb 	b	24 <leo_v5_neon_probe+0x24>

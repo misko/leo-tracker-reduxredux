@@ -1,0 +1,56 @@
+{
+  "schema": "org.leo.research.lag3-proposal-design/v1",
+  "status": "frozen-before-outcomes",
+  "purpose": "Cost feasibility of an isolated lag-3 timing/CFO proposal primitive",
+  "scientific_review": {
+    "path": "../review/LAG3_SCIENTIFIC_REVIEW.md",
+    "sha256": "1b7ff1ad83fb76b39b2a42e5b736b05449506ce65bc28919d6d0dcb8fbba5fa6"
+  },
+  "inputs": {
+    "layout": "CI16 [sample,receiver,(I,Q)]",
+    "dwell_ms": 120,
+    "receivers": 2,
+    "rates_hz": [2500000, 5000000],
+    "windows": 6,
+    "window_ms": 20,
+    "natural_stride_int16": 4
+  },
+  "statistic": {
+    "lag_samples": 3,
+    "frame_starts": 15,
+    "frame_start_rule": "nearbyint(frame * rate_hz / 750.0)",
+    "fold": "exact int64 dense b*conj(a), divided by per-cell support",
+    "projection": "512 point-sampled linearly interpolated cells, FP64 centering and normalization, FP32 FFT",
+    "correlation": "IFFT(FFT(projected_visit) * conj(FFT(projected_lag3_template))) for peak selection; direct centered native-cell lag3 correlation for phase",
+    "peak_count": 3,
+    "peak_rule": "circular local maximum score>left and score>=right",
+    "tie_order": ["higher_score", "lower_window", "lower_projected_bin"],
+    "epoch_rule": "start at nearbyint(projected_bin * nearbyint(rate_hz/750) / 512), then maximize normalized native correlation over integer offsets [-ceil(n/(2*512)),+ceil(n/(2*512))] with lower signed offset winning exact ties",
+    "phase_cfo_rule": "arg(direct centered native-cell complex correlation) * rate_hz / (2*pi*3)",
+    "phase_valid_rule": "finite normalized native correlation magnitude >= 0.05",
+    "declared_cfo_range_hz": [-400000.0, 400000.0],
+    "local_cfo_offsets_hz": [],
+    "two_dimensional_grid": false
+  },
+  "timing_gate": {
+    "metric": "median caller thread CPU ms for complete natural-stride ingress plus proposal",
+    "warmups_per_receiver_case": 1,
+    "measured_repetitions_per_receiver_case": 3,
+    "receiver_order": "counterbalanced by case index and repetition",
+    "required_max_ms_at_each_rate": 0.080,
+    "dataset": "../new_data/cases.json",
+      "dataset_sha256": "b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845"
+  },
+  "constructed_controls": {
+    "manifest": "../lag3_controls/cases.json",
+    "manifest_sha256": "5bc58aab84ce75d3704d08a294333010745caec382da5f059b04c9e5a5473188",
+    "role": "proposal sign, support, ambiguity, and bias diagnostics; not detector outcomes"
+  },
+  "stop_rule": "If either rate misses 0.080 ms, stop before detector replay or GLRT integration; do not tune the statistic.",
+  "qualification_limits": [
+    "This is a new proposal statistic, not an exact optimization of blind acquisition.",
+    "A passing primitive cost does not establish a 0.260 ms detector.",
+    "Constructed pilot phase checks establish convention/sign only and do not establish unbiased CFO on real mixtures.",
+    "No holdout, RF, production, or ARM execution is permitted."
+  ]
+}

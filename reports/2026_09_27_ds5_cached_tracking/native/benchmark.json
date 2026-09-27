@@ -1,0 +1,123 @@
+{
+  "schema": "org.leo.research.known-state-synthetic-benchmark/v1",
+  "scope": "synthetic same-library microbenchmark; not causal replay or ARM timing",
+  "host": {
+    "system": "Linux",
+    "node": "gauss",
+    "release": "7.0.0-31-generic",
+    "version": "#31-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 04:26:38 UTC 2026",
+    "machine": "x86_64",
+    "processor": ""
+  },
+  "library_sha256": "dac8d5c4ccc03e36a8182646f561caf7866a61b895b1a3a21a4a73038b9c06b1",
+  "build_receipt_sha256": "eaeab3807c958bd89309c5957478042b4b2875702626fb98b0efc2e3d072ffdc",
+  "profile_sha256": "3c96186ad0e22b6e948f90ad9fd33a54508c94ae6e376b367064d36b804fc1a1",
+  "benchmark_source_sha256": "9258a657d28fd78dc8d637e2194bc301715934b785bf97dcbfba5f78fe115525",
+  "rows": [
+    {
+      "rate_hz": 2500000,
+      "repetitions": 300,
+      "selected_window": 3,
+      "fast_point": {
+        "total_cpu_ms": 0.09006350000004204,
+        "total_wall_ms": 0.08996796607971191
+      },
+      "local_timing_recovery": {
+        "total_cpu_ms": 0.6945295000000442,
+        "total_wall_ms": 0.6945345401763916
+      },
+      "blind_dwell": {
+        "total_cpu_ms": 0.9405670000002146,
+        "total_wall_ms": 0.9405384063720703
+      },
+      "blind_over_fast_cpu_ratio": 10.443376062442338,
+      "blind_over_fast_wall_ratio": 10.454147707849149,
+      "fast_example": {
+        "schema_version": 2,
+        "mode": 0,
+        "status": 0,
+        "scored_fractional": 1,
+        "timing_search_performed": 0,
+        "timing_bracketed": 0,
+        "support_frames": 15,
+        "glrt_evaluations": 1,
+        "valid_bounds": 1,
+        "epoch": 320,
+        "fractional_offset_samples": 0.0,
+        "predicted_epoch_samples": 320.0,
+        "predicted_cfo_hz": 65000.0,
+        "scored_cfo_hz": 65000.0,
+        "tracking_cfo_hz": 65000.0,
+        "cfo_innovation_hz": 0.0,
+        "exact_score": 0.9999971670942575,
+        "control_score": 0.06954704397847661,
+        "margin": 0.9304501231157809,
+        "conversion_cpu_ms": 0.026429000000007363,
+        "kernel_cpu_ms": 0.06476999999995314,
+        "total_cpu_ms": 0.09172199999989061,
+        "total_wall_ms": 0.09167003631591797,
+        "timing_semantics": "predicted_verified",
+        "cfo_innovation_within_8khz": true,
+        "needs_reacquisition": false,
+        "needs_reacquire": false,
+        "epoch_samples": 320.0,
+        "timing_bracket_status": "not_searched"
+      }
+    },
+    {
+      "rate_hz": 5000000,
+      "repetitions": 300,
+      "selected_window": 3,
+      "fast_point": {
+        "total_cpu_ms": 0.17069050000031893,
+        "total_wall_ms": 0.17061853408813477
+      },
+      "local_timing_recovery": {
+        "total_cpu_ms": 1.307166499999994,
+        "total_wall_ms": 1.3071259260177612
+      },
+      "blind_dwell": {
+        "total_cpu_ms": 2.043906499999821,
+        "total_wall_ms": 2.043881416320801
+      },
+      "blind_over_fast_cpu_ratio": 11.974342450200814,
+      "blind_over_fast_wall_ratio": 11.979246142538141,
+      "fast_example": {
+        "schema_version": 2,
+        "mode": 0,
+        "status": 0,
+        "scored_fractional": 1,
+        "timing_search_performed": 0,
+        "timing_bracketed": 0,
+        "support_frames": 15,
+        "glrt_evaluations": 1,
+        "valid_bounds": 1,
+        "epoch": 320,
+        "fractional_offset_samples": 0.0,
+        "predicted_epoch_samples": 320.0,
+        "predicted_cfo_hz": 65000.0,
+        "scored_cfo_hz": 65000.0,
+        "tracking_cfo_hz": 65000.0,
+        "cfo_innovation_hz": 0.0,
+        "exact_score": 0.9999986022366684,
+        "control_score": 0.0672715009297072,
+        "margin": 0.9327271013069611,
+        "conversion_cpu_ms": 0.1678750000000946,
+        "kernel_cpu_ms": 0.1293359999999666,
+        "total_cpu_ms": 0.2980299999999261,
+        "total_wall_ms": 0.2967050075531006,
+        "timing_semantics": "predicted_verified",
+        "cfo_innovation_within_8khz": true,
+        "needs_reacquisition": false,
+        "needs_reacquire": false,
+        "epoch_samples": 320.0,
+        "timing_bracket_status": "not_searched"
+      }
+    }
+  ],
+  "limitations": [
+    "known signal/window/state are supplied directly by the synthetic generator",
+    "aggregate speedup depends on causal hit rate and reacquisition cost",
+    "server x86 timing does not establish ARM timing"
+  ]
+}

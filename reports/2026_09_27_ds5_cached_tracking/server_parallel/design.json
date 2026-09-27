@@ -1,0 +1,65 @@
+{
+  "schema": "org.leo.research.server-parallel-design/v1",
+  "stage": "frozen_before_timing",
+  "scope": "Bounded server-only stateless blind-evaluation concurrency study on all 256 frozen new-development receiver visits.",
+  "inputs": {
+    "dataset_cases_sha256": "sha256:b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845",
+    "baseline_library_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+    "candidate_library_sha256": "sha256:3fcdefd955725d5501b4cd5e577511c0b305e808613f7a30c2b77b382357b8a0",
+    "runtime_fftw_sha256": "sha256:8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611"
+  },
+  "hardware_policy": {
+    "required_allowed_cpus": [0, 1, 2, 3, 4, 5, 6, 7],
+    "declared_core_class": "Intel Ultra 9 285K P-cores",
+    "main_thread_cpu": 0,
+    "worker_cpu_assignment": "worker index 0..7 maps to CPU 0..7",
+    "restore_original_main_thread_affinity": true,
+    "host_global_settings_changed": false
+  },
+  "workspace_policy": {
+    "private_workspace_per_worker_and_geometry": true,
+    "creation": "serial on the main thread before worker threads start",
+    "prewarm": "one untimed run for every worker/geometry workspace before worker threads start, including lazy plan creation",
+    "destruction": "serial on the main thread after all worker threads join",
+    "reason": "FFTW planning and destruction are not assumed thread-safe; only execution of distinct plans is concurrent"
+  },
+  "primary_visit_modes": {
+    "fp64_serial_pair": "packed stable FP64 runs RX0 then RX1 on CPU0",
+    "fp32_serial_pair": "strided FP32 FFTW runs RX0 then RX1 on CPU0",
+    "fp32_parallel_pair": "persistent two-worker pool runs only RX0 and RX1 of one physical visit, waits for both, then advances; no queued next visit"
+  },
+  "secondary_batch_modes": {
+    "workers": [1, 2, 4, 8],
+    "backend": "unchanged strided FP32 FFTW, unseeded, maximum=1",
+    "task_inventory": "all 256 receiver visits exactly once per batch",
+    "persistent_pool": true
+  },
+  "measurement": {
+    "warmups_per_mode": 1,
+    "timed_repetitions_per_mode": 3,
+    "mode_order": "counterbalanced across repetitions; case order forward, reverse, then deterministic rotation",
+    "batch_wall": "monotonic time from immediately before first direct call/task enqueue through final result compaction/collection",
+    "aggregate_process_cpu": "process CPU over the same batch boundary, including all worker threads",
+    "summed_task_cpu": "sum of thread CPU measured per task",
+    "task_latency": "per receiver view formation, native detector call, and scientific result compaction",
+    "pair_latency": "per physical visit boundary around two serial calls or two enqueue/result operations",
+    "included": ["receiver-view formation", "required FP64 packing", "task dispatch", "native detector", "result compaction", "future/result collection"],
+    "excluded": ["IQ I/O", "IQ hashing", "page warming", "workspace/planner initialization", "thread creation", "workspace destruction"],
+    "maximum_total_timed_seconds": 60
+  },
+  "validation": {
+    "reference": "stable packed FP64, maximum=1, seeded=false",
+    "candidate": "stable FP32 FFTW, maximum=1, seeded=false",
+    "all_parallel_signatures": "must exactly equal the serial FP32 signature for the same receiver visit",
+    "reference_gate": "all positive FP64/FP32 pairs must associate within circular timing <=2 us and CFO <=8 kHz; no lost or additional positives",
+    "fallback": false,
+    "cache": false,
+    "lookahead": false
+  },
+  "interpretation": [
+    "Batch throughput is not single-visit latency or a real-time guarantee.",
+    "Wall-throughput speedup is not aggregate-CPU speedup.",
+    "This stateless component benchmark is not an end-to-end pipeline speedup claim.",
+    "Server results do not establish ARM performance."
+  ]
+}

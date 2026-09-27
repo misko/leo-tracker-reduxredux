@@ -1,0 +1,60 @@
+{
+  "schema": "org.leo.research.scanner-application-profile-design/v1",
+  "status": "frozen_before_profile_outcomes",
+  "purpose": "Measure the repository scanner's actual GLRT-64 application call and locate dominant exact-compute stages.",
+  "selection": {
+    "dataset": "new_data/cases.json",
+    "split": "dev",
+    "rule": "first physical case at each of 2.5 and 5 Msps ordered by session_id, source_start_counter, visit_index, case_id",
+    "case_ids": [
+      "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077",
+      "newdev-r5000000-scan-fw-e76c229e9dc498b3-v001077"
+    ],
+    "outcomes_used_for_selection": false
+  },
+  "application_call": {
+    "function": "leo.scanner.detector.detect_first_glrt64",
+    "dwell_ms": 120,
+    "probe_ms": 20,
+    "probe_stride_ms": 10,
+    "scheduled_probes": 11,
+    "receivers": 2,
+    "maximum_acquisition_candidates": 10,
+    "edge": "case metadata",
+    "ci16_conversion": "recorded separately before the detector call"
+  },
+  "measurement": {
+    "affinity_cpu": 0,
+    "thread_environment_required": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "passes_per_case": [
+      "one uninstrumented actual application call for process CPU and wall time",
+      "one separately instrumented diagnostic call for nested stage counts/timing and exact-output comparison"
+    ],
+    "overall_timeout_seconds": 120,
+    "partial_receipt_on_timeout": true,
+    "warmups": 0,
+    "reason_no_warmup": "keep the two-rate real application profile bounded; each rate records first-use cache state"
+  },
+  "profiled_boundaries": [
+    "acquire_symbolwise",
+    "folded_anchor_score_grid",
+    "normalized_frame_scores",
+    "conditioned_frame_scores",
+    "normalized_frame_score",
+    "conditioned_glrt64_score",
+    "conditioned_correlation_workspace",
+    "glrt_pair"
+  ],
+  "exactness": "The diagnostic pass must exactly equal the uninstrumented DwellDetection serialized output. Future candidates must match the same serialized application output before timing claims.",
+  "interpretation": [
+    "Nested stage times are inclusive and must not be summed as exclusive time.",
+    "This profiles the repository scanner analysis workload on saved IQ; it does not establish that live deployed DS5 currently runs this path.",
+    "No holdout, RF, production edit, ARM claim, or threshold tuning is allowed."
+  ]
+}

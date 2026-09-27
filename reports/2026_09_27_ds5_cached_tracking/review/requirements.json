@@ -1,0 +1,38 @@
+{
+  "schema": "org.leo.research.cached-tracking-review-requirements/v1",
+  "scope": "requirements and algebra only; no held-out outcomes or ARM execution",
+  "target_all_visits_speedup": 10.0,
+  "cost_model": {
+    "normalized_cost": "f*c + (1-f)*h",
+    "required": "f*c + (1-f)*h <= 0.1",
+    "maximum_hit_fraction": "(0.1-f*c)/(1-f)"
+  },
+  "optimistic_64_visit_block": {
+    "channels": 4,
+    "receivers": 2,
+    "receiver_visits": 128,
+    "minimum_cold_calls": 8,
+    "minimum_cold_fraction": 0.0625,
+    "maximum_hit_cost_with_baseline_cost_cold": 0.04,
+    "minimum_hit_only_speedup": 25.0
+  },
+  "with_one_expiry_per_receiver": {
+    "blind_fraction": 0.078125,
+    "maximum_hit_cost_with_baseline_cost_blind": 0.02372881355932204,
+    "minimum_hit_only_speedup": 42.142857142857146
+  },
+  "classification": {
+    "skipped_or_outage": "unprocessed_unknown",
+    "low_rank_after_qualified_screen": "candidate_detector_negative_reference_relative",
+    "baseline_miss": "not_physical_absence",
+    "predicted_point_timing": "predicted_verified_not_fitted"
+  },
+  "arm_route": {
+    "mode": "serial-bound saved-IQ compute replay",
+    "new_rf_samples": 0,
+    "persistent_install": false,
+    "requires_lease_and_serial_lock": true,
+    "requires_before_after_tx_safe_idle_attestation": true,
+    "current_reachability_checked": false
+  }
+}

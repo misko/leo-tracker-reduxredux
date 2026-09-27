@@ -1,0 +1,44 @@
+{
+  "schema": "org.leo.research.application-compact-validation-design/v1",
+  "status": "frozen_before_real_case_outcomes",
+  "purpose": "Bounded full scanner analysis comparison of the compact GLRT-64 workspace against the current repository oracle",
+  "selection": {
+    "dataset": "new_data/cases.json",
+    "split": "dev",
+    "rule": "reuse the metadata-selected application_profile case at each of 2.5 and 5 Msps",
+    "case_ids": [
+      "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077",
+      "newdev-r5000000-scan-fw-e76c229e9dc498b3-v001077"
+    ],
+    "outcomes_used_for_selection": false
+  },
+  "application_call": {
+    "function": "leo.scanner.detector.analyze_glrt64_dwell",
+    "full_probe_and_candidate_responses_compared": true,
+    "dwell_ms": 120,
+    "probe_ms": 20,
+    "probe_stride_ms": 10,
+    "scheduled_probes": 11,
+    "receivers": 2,
+    "maximum_acquisition_candidates": 10,
+    "ci16_to_complex64_conversion_in_each_timed_call": true
+  },
+  "measurement": {
+    "affinity_cpu": 0,
+    "thread_environment_value": "1",
+    "warmups_per_method_per_case": 1,
+    "measured_repetitions_per_method_per_case": 3,
+    "measured_pair_order": ["baseline,candidate", "candidate,baseline", "baseline,candidate"],
+    "overall_timeout_seconds": 120
+  },
+  "gates": [
+    "every full serialized response is exactly equal to the baseline warmup response",
+    "raw input digest is unchanged",
+    "all frozen source and input metadata hashes match before and after execution"
+  ],
+  "interpretation": [
+    "Report complete conversion-plus-analysis CPU and wall time, not isolated workspace time.",
+    "This is a two-case development diagnostic and cannot qualify sensitivity or deployment.",
+    "No holdout, RF, production edit, ARM claim, or threshold tuning is allowed."
+  ]
+}

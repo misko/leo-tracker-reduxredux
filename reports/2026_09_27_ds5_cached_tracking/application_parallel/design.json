@@ -1,0 +1,17 @@
+{
+  "experiment": "parallel complete scanner analysis",
+  "scope": "full 11-probe dual-RX analysis, not batch throughput across future dwells",
+  "selection": "same two metadata-selected profile cases, known positive development evidence",
+  "rates": [2500000, 5000000],
+  "workers": [8, 22],
+  "cores": "8 workers on CPUs0..7; 22 on CPUs0..21, including efficiency cores",
+  "baseline": "current repository analyze_glrt64_dwell, ten retained candidates, CPU0",
+  "science": "exact complete serialized response on every warmup and measured call",
+  "timing": "CI16 conversion, one dwell shared-memory upload/create/close/unlink, per-worker probe copying, descriptor/result IPC, worker execution and serial fold included; persistent pool setup/shutdown and response validation excluded",
+  "repetitions": 3,
+  "warmup_calls_per_rate_variant": 1,
+  "order": "cyclic three-way order per repetition",
+  "budget_seconds": 120,
+  "interpretation": "wall latency improvement uses more cores and does not imply CPU-work savings; two cases are not qualification",
+  "excluded": ["RF", "holdout", "production modifications", "threshold changes", "future visit queuing"]
+}

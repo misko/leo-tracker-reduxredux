@@ -1,0 +1,51 @@
+{
+  "schema": "org.leo.research.blind-aligned-v5-arm-crosscheck/v1",
+  "status": "cross_compiled_and_disassembled_not_executed_or_timed",
+  "target": {
+    "cpu": "cortex-a9",
+    "fpu": "neon",
+    "float_abi": "softfp"
+  },
+  "source_sha256": "181b7dc702c59fc52afe23ac571be6dc7ff4fcf12e1e89b7b3eca2c34d58ac7b",
+  "compiler": "/usr/bin/arm-none-eabi-gcc",
+  "compiler_sha256": "72c508281a31264cd142e72537d9b5836f6460ab62d221d02f805ebca997933a",
+  "compiler_version": "arm-none-eabi-gcc (15:14.2.rel1-1) 14.2.1 20241119\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "objdump": "/usr/bin/arm-none-eabi-objdump",
+  "objdump_sha256": "4d618bda2a5734b8ca0b3ef721c2b26a15f77cdd71c0d8489d13fdc557b8eb07",
+  "compile_command": [
+    "/usr/bin/arm-none-eabi-gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-mcpu=cortex-a9",
+    "-mfpu=neon",
+    "-mfloat-abi=softfp",
+    "-DLEO_V5_NEON_PROBE_ONLY=1",
+    "-c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5.c",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5_cortex_a9.o"
+  ],
+  "objdump_command": [
+    "/usr/bin/arm-none-eabi-objdump",
+    "-d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds5_cached_tracking/native/blind_aligned_v5_cortex_a9.o"
+  ],
+  "object_sha256": "177870741d23e884cfc8f51fe6d7f49f03ecd240e5a11d5f21ec065a4dd62085",
+  "disassembly_sha256": "6bab20b13fc114fe76c119b3fc8ead767e05f074a1725a375ec01495161b0bc1",
+  "verified_instruction_fragments": {
+    "sample_aligned_interleaved_load": "vld4.16",
+    "widened_ci16_product": "vmull.s16",
+    "widen_product_to_i64": "vmovl.s32",
+    "exact_i64_accumulation": "vadd.i64",
+    "complex_imaginary_subtraction": "vsub.i64",
+    "i64_accumulator_store": "vst1.64"
+  },
+  "limitations": [
+    "the helper was not executed on ARM hardware",
+    "disassembly proves code generation, not speed or memory-system behavior",
+    "the production ARM application's ingress and compiler flags were not measured"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "org.leo.research.ds5-cached-scout-design.v1",
+  "stage": "development_only",
+  "dataset_cases_sha256": "sha256:4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+  "reference_results_sha256": "sha256:1d16f3cc441e357cb983ca44d015878a34232c3e355031d5061ae1254cfbdc0f",
+  "control_cases_sha256": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "native_profile_path": "../native/profile.json",
+  "native_profile_sha256": "sha256:3c96186ad0e22b6e948f90ad9fd33a54508c94ae6e376b367064d36b804fc1a1",
+  "screen": {
+    "primitive": "existing_native_window_rank_and_sparse_ci16_lag3",
+    "bins": 512,
+    "description": "whole-dwell lag-four differential pilot proposal; approximate CFO-tolerant proposal evidence, not physical absence evidence"
+  },
+  "variants": [
+    {
+      "name": "rank_max_score",
+      "statistic": "maximum of six native rank scores"
+    },
+    {
+      "name": "sparse_lag3_power",
+      "statistic": "root-mean-square across the six independently normalized three-frame-lag correlation magnitudes",
+      "lag_samples": "rate_hz / 250",
+      "stride_by_rate": {"2500000": 8, "5000000": 16},
+      "pairs_per_window": 5000
+    }
+  ],
+  "development_threshold_rule": "For each statistic, choose the inclusive minimum among the 36 development reference-positive receiver-visits, then report every routed receiver-visit. Do not use synthetic controls to choose or alter the threshold.",
+  "reference_positive_gate": {
+    "fractional_complete_or_supported": true,
+    "margin_strictly_greater_than": 0.025,
+    "expected_count": 36
+  },
+  "timing": {
+    "warmups_per_geometry": 1,
+    "repetitions": 5,
+    "scope": "thread CPU and monotonic wall around RX selection/contiguous packing plus one complete screen call; input hashing, file loading, and file hash verification excluded"
+  },
+  "controls": {
+    "rates_hz": [2500000, 5000000],
+    "kinds": ["pilot", "noise", "tone"],
+    "use": "report independently after development thresholds are fixed; never tune thresholds from controls"
+  },
+  "interpretation": {
+    "routed": "screen-potential/reference-relative work requiring downstream measurement",
+    "not_routed": "measured-screen-negative only; never confirmed absence, noise truth, or completed processing",
+    "five_ms_transfer": "unverified because development has no 5 MS/s reference positives"
+  }
+}

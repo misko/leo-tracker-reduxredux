@@ -1,0 +1,42 @@
+{
+  "schema": "org.leo.research.fft32-adversarial-transfer-design/v1",
+  "stage": "frozen_before_outcomes",
+  "scope": "One science-only comparison on the frozen lag3 proposal challenge; no timing, tuning, fallback, holdout, RF, or ARM claim.",
+  "inputs": {
+    "challenge_cases_sha256": "sha256:5bc58aab84ce75d3704d08a294333010745caec382da5f059b04c9e5a5473188",
+    "challenge_design_sha256": "sha256:44b8be72b3c925128e02086dec8da025a6f53ad3c0074a5661d7ad78cfab3544",
+    "challenge_source_lock_sha256": "sha256:7c236660617e1f512da82397bd8959c872d894759765c371a084d338879dcfe4",
+    "challenge_builder_sha256": "sha256:d0b8c8a9fd87a22e40796910780ddafcfc90f29f57fc64547606d4397282e3ee",
+    "baseline_library_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+    "baseline_build_receipt_sha256": "sha256:5103c6ebfde2a95e0ecdeec3c2e5c5c3253cf04aaca15da2fda1b5b6c0d1ee3e",
+    "candidate_library_sha256": "sha256:3fcdefd955725d5501b4cd5e577511c0b305e808613f7a30c2b77b382357b8a0",
+    "candidate_build_receipt_sha256": "sha256:efce18893445d1cc1c7ac0ab22231a6c15200f4fd7c3e025a4c410f8e2fa3ce4",
+    "runtime_fftw_sha256": "sha256:8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611"
+  },
+  "methods": {
+    "reference": "stable packed V4 FP64, maximum=1, seeded=false",
+    "candidate": "strided V4 with unchanged FP32 FFTW binary, maximum=1, seeded=false",
+    "automatic_fallback": false,
+    "calls_per_receiver_method": 1
+  },
+  "decision": {
+    "positive": "fractional_complete and exact_score-control_score strictly greater than 0.025",
+    "reference_retention": "positive candidate associated to positive reference within circular timing <=2 us and CFO <=8 kHz",
+    "extra": "candidate positive not associated to a positive reference",
+    "identity_gate": "retain all reference positives, add no positives, and change neither selected window nor rank order",
+    "no_retuning": true
+  },
+  "constructed_truth": {
+    "association": "each proposal compared independently with every injected pilot within circular timing <=2 us and CFO <=8 kHz",
+    "report": "raw coordinate and fractional-complete coordinate matches for reference and candidate, separately from detector labels",
+    "negative_semantics": "noise/tone have no coordinate target; proposals are not called false alarms",
+    "positive_semantics": "injected pilot presence does not require a detector-positive result",
+    "limitations": "constructed pilot-only Qin controls are not physical ground truth outside their injected components"
+  },
+  "inventory": {
+    "physical_cases": 20,
+    "receiver_cases": 40,
+    "rates_hz": [2500000, 5000000],
+    "group_by": ["rate_hz", "kind"]
+  }
+}

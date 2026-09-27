@@ -1,0 +1,48 @@
+{
+  "schema": "org.leo.research.server-simd-design/v1",
+  "status": "frozen-before-dataset-outcomes",
+  "purpose": "Exact integer SIMD acceleration of the stable FP32 FFTW blind dwell on x86 servers",
+  "scientific_profile": "identical to fft32/libfft32_fftw.so",
+  "changes": [
+    "natural dual-RX lag-4 rank fold: runtime-dispatched SSSE3/SSE4.1",
+    "selected-window natural-stride packing: runtime-dispatched SSE2",
+    "packed selected-window power/differential fold: runtime-dispatched SSSE3/SSE4.1",
+    "packed selected-window nuisance energy/lag sums: runtime-dispatched SSSE3/SSE4.1"
+  ],
+  "integer_semantics": {
+    "input": "signed CI16",
+    "product": "each signed int16 multiply produces one signed int32 product",
+    "complex_add": "each individual int32 product is sign-extended to int64 before rr+ii or ri-ir",
+    "accumulation": "int64, no overflow for declared dwell bounds",
+    "downstream": "unchanged FP32 FFTW, FP64 reductions, starts, support, tie rules, nuisance, and GLRT"
+  },
+  "dispatch": {
+    "required_x86_features": ["SSSE3", "SSE4.1"],
+    "detection": "CPUID leaf 1",
+    "modes": ["auto", "forced_scalar", "forced_simd"],
+    "force_scope": "thread-local; mode cannot race with other caller threads",
+    "hardware_cache": "C11 atomic one-time CPUID state",
+    "fallback": "original scalar arithmetic"
+  },
+  "component_gate": {
+    "required_scientific_equality": "exact rank/order/epochs/candidates and all non-timing result fields",
+    "required_inputs": ["both rates", "both receivers", "random CI16", "CI16 extrema", "terminal vector remainders"],
+    "required_complete_call_cpu_speedup_each_rate": 1.10,
+    "timing": "P-core 0 when permitted, one warmup and at least 9 counterbalanced scalar/SIMD repetitions"
+  },
+  "dataset_run_if_component_gate_passes": {
+    "new_development_receiver_visits": 256,
+    "old_constructed_control_receiver_visits": 24,
+    "new_adversarial_control_receiver_visits": 40,
+    "warmups": 1,
+    "repetitions": 3,
+    "order": "counterbalanced",
+    "comparators": ["stable FP32 FFTW strided", "original packed FP64"],
+    "timing": "complete caller thread CPU and wall latency; no multiplied ratios"
+  },
+  "stop_rules": [
+    "Stop before dataset replay if exact component equality or either per-rate 1.10x complete-call gate fails.",
+    "Reject promotion on any scientific identity/control change.",
+    "No threshold/statistic tuning, holdout, RF, production, or ARM claim."
+  ]
+}

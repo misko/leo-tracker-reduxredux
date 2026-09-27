@@ -1,0 +1,54 @@
+{
+  "schema": "org.leo.research.lag3-proposal-control-design/v1",
+  "status": "frozen_before_iq_materialization",
+  "purpose": "Adversarial synthetic inputs for proposal-kernel evaluation; this design contains no detector outcomes.",
+  "dwell_ms": 120,
+  "array_layout": "sample_receiver_iq",
+  "dtype": "<i2",
+  "receiver_count": 2,
+  "generator_contract": {
+    "pilot": "leo.analysis.starlink.templates.qin_edge_pilot_frame",
+    "frame_rate_hz": 750,
+    "frame_lattice": "epoch_relative_samples + k * rate_hz / 750; each frame is bandlimited-shifted by its signed distance from the nearest sample",
+    "cfo_phase": "continuous exp(j*2*pi*(phase_cycles_at_counter_zero + cfo_hz*(source_start_counter+n)/rate_hz)); never reset at a frame or window",
+    "channel": "flat complex scalar per receiver",
+    "unknown_data": "absent; these are pilot-only proposal controls, not full Starlink downlink simulations",
+    "quantization": "round real and imaginary independently, clip to signed CI16"
+  },
+  "interpretation": {
+    "truth_scope": "constructed proposal hypotheses only",
+    "expected_proposal_present": "true/false/null is a construction category, not a required detector decision",
+    "ambiguity": "single means one pilot hypothesis; either means either listed pilot is acceptable; invalid means no unique pilot identity is required",
+    "association_gates": {
+      "cfo_tolerance_hz": 8000,
+      "circular_timing_tolerance_s": 0.000002
+    }
+  },
+  "receiver_model": [
+    {"receiver": 0, "noise_scale": 1.0, "channel_amplitude": 1.0, "channel_phase_cycles": 0.03125},
+    {"receiver": 1, "noise_scale": 1.12, "channel_amplitude": 0.82, "channel_phase_cycles": -0.109375}
+  ],
+  "cases": [
+    {"case_id": "lag3-r2500000-pilot-cfo0-int", "rate_hz": 2500000, "edge": "lower", "source_start_counter": 9000000000, "seed": 610001, "kind": "pilot", "epoch_relative_samples": 317.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 0.0, "phase_cycles_at_counter_zero": 0.0625}]},
+    {"case_id": "lag3-r2500000-pilot-cfop399k-int", "rate_hz": 2500000, "edge": "upper", "source_start_counter": 9000301000, "seed": 610011, "kind": "pilot", "epoch_relative_samples": 421.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 399000.0, "phase_cycles_at_counter_zero": -0.1875}]},
+    {"case_id": "lag3-r2500000-pilot-cfom399k-int", "rate_hz": 2500000, "edge": "lower", "source_start_counter": 9000602000, "seed": 610021, "kind": "pilot", "epoch_relative_samples": 193.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": -399000.0, "phase_cycles_at_counter_zero": 0.28125}]},
+    {"case_id": "lag3-r2500000-pilot-cfop399k-fracp49", "rate_hz": 2500000, "edge": "upper", "source_start_counter": 9000903000, "seed": 610031, "kind": "pilot", "epoch_relative_samples": 281.49, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 399000.0, "phase_cycles_at_counter_zero": 0.390625}]},
+    {"case_id": "lag3-r2500000-pilot-cfom399k-fracm49", "rate_hz": 2500000, "edge": "lower", "source_start_counter": 9001204000, "seed": 610041, "kind": "pilot", "epoch_relative_samples": 366.51, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": -399000.0, "phase_cycles_at_counter_zero": -0.328125}]},
+    {"case_id": "lag3-r2500000-pilot-offgrid", "rate_hz": 2500000, "edge": "upper", "source_start_counter": 9001505000, "seed": 610051, "kind": "pilot", "epoch_relative_samples": 509.271, "components": [{"type": "pilot", "amplitude": 3200, "cfo_hz": 173421.25, "phase_cycles_at_counter_zero": 0.1484375}]},
+    {"case_id": "lag3-r2500000-noise", "rate_hz": 2500000, "edge": "lower", "source_start_counter": 9001806000, "seed": 610061, "kind": "noise", "epoch_relative_samples": null, "components": []},
+    {"case_id": "lag3-r2500000-tone", "rate_hz": 2500000, "edge": "upper", "source_start_counter": 9002107000, "seed": 610071, "kind": "tone", "epoch_relative_samples": null, "components": [{"type": "tone", "amplitude": 7000, "frequency_hz": 133333.25, "phase_cycles_at_counter_zero": -0.234375}]},
+    {"case_id": "lag3-r2500000-two-pilot", "rate_hz": 2500000, "edge": "lower", "source_start_counter": 9002408000, "seed": 610081, "kind": "two_pilot", "epoch_relative_samples": 233.125, "components": [{"type": "pilot", "trajectory_id": "a", "amplitude": 3000, "cfo_hz": -145250.25, "epoch_offset_samples": 0.0, "phase_cycles_at_counter_zero": 0.078125}, {"type": "pilot", "trajectory_id": "b", "amplitude": 3000, "cfo_hz": 146125.75, "epoch_offset_samples": 1.375, "phase_cycles_at_counter_zero": -0.421875}]},
+    {"case_id": "lag3-r2500000-pilot-strong-tone", "rate_hz": 2500000, "edge": "upper", "source_start_counter": 9002709000, "seed": 610091, "kind": "pilot_tone", "epoch_relative_samples": 457.375, "components": [{"type": "pilot", "trajectory_id": "pilot", "amplitude": 3000, "cfo_hz": -217333.5, "phase_cycles_at_counter_zero": 0.2109375}, {"type": "tone", "trajectory_id": "interferer", "amplitude": 6500, "frequency_hz": 92001.75, "phase_cycles_at_counter_zero": -0.0546875}]},
+
+    {"case_id": "lag3-r5000000-pilot-cfo0-int", "rate_hz": 5000000, "edge": "upper", "source_start_counter": 12000000000, "seed": 620001, "kind": "pilot", "epoch_relative_samples": 613.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 0.0, "phase_cycles_at_counter_zero": -0.09375}]},
+    {"case_id": "lag3-r5000000-pilot-cfop399k-int", "rate_hz": 5000000, "edge": "lower", "source_start_counter": 12000601000, "seed": 620011, "kind": "pilot", "epoch_relative_samples": 829.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 399000.0, "phase_cycles_at_counter_zero": 0.171875}]},
+    {"case_id": "lag3-r5000000-pilot-cfom399k-int", "rate_hz": 5000000, "edge": "upper", "source_start_counter": 12001202000, "seed": 620021, "kind": "pilot", "epoch_relative_samples": 397.0, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": -399000.0, "phase_cycles_at_counter_zero": -0.265625}]},
+    {"case_id": "lag3-r5000000-pilot-cfop399k-fracp49", "rate_hz": 5000000, "edge": "lower", "source_start_counter": 12001803000, "seed": 620031, "kind": "pilot", "epoch_relative_samples": 571.49, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": 399000.0, "phase_cycles_at_counter_zero": -0.3828125}]},
+    {"case_id": "lag3-r5000000-pilot-cfom399k-fracm49", "rate_hz": 5000000, "edge": "upper", "source_start_counter": 12002404000, "seed": 620041, "kind": "pilot", "epoch_relative_samples": 746.51, "components": [{"type": "pilot", "amplitude": 4200, "cfo_hz": -399000.0, "phase_cycles_at_counter_zero": 0.3203125}]},
+    {"case_id": "lag3-r5000000-pilot-offgrid", "rate_hz": 5000000, "edge": "lower", "source_start_counter": 12003005000, "seed": 620051, "kind": "pilot", "epoch_relative_samples": 1013.729, "components": [{"type": "pilot", "amplitude": 3200, "cfo_hz": -211337.75, "phase_cycles_at_counter_zero": -0.15625}]},
+    {"case_id": "lag3-r5000000-noise", "rate_hz": 5000000, "edge": "upper", "source_start_counter": 12003606000, "seed": 620061, "kind": "noise", "epoch_relative_samples": null, "components": []},
+    {"case_id": "lag3-r5000000-tone", "rate_hz": 5000000, "edge": "lower", "source_start_counter": 12004207000, "seed": 620071, "kind": "tone", "epoch_relative_samples": null, "components": [{"type": "tone", "amplitude": 7000, "frequency_hz": -266667.25, "phase_cycles_at_counter_zero": 0.2421875}]},
+    {"case_id": "lag3-r5000000-two-pilot", "rate_hz": 5000000, "edge": "upper", "source_start_counter": 12004808000, "seed": 620081, "kind": "two_pilot", "epoch_relative_samples": 467.125, "components": [{"type": "pilot", "trajectory_id": "a", "amplitude": 3000, "cfo_hz": -288750.25, "epoch_offset_samples": 0.0, "phase_cycles_at_counter_zero": -0.0703125}, {"type": "pilot", "trajectory_id": "b", "amplitude": 3000, "cfo_hz": 289625.75, "epoch_offset_samples": 2.625, "phase_cycles_at_counter_zero": 0.4296875}]},
+    {"case_id": "lag3-r5000000-pilot-strong-tone", "rate_hz": 5000000, "edge": "lower", "source_start_counter": 12005409000, "seed": 620091, "kind": "pilot_tone", "epoch_relative_samples": 917.375, "components": [{"type": "pilot", "trajectory_id": "pilot", "amplitude": 3000, "cfo_hz": 317333.5, "phase_cycles_at_counter_zero": -0.203125}, {"type": "tone", "trajectory_id": "interferer", "amplitude": 6500, "frequency_hz": -184001.75, "phase_cycles_at_counter_zero": 0.046875}]}
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "schema": "org.leo.research.ten-x-remaining-budget/v1",
+  "scope": "frozen server receipts; not ARM timing or a detector qualification",
+  "v6": {
+    "source_sha256": "b339bc15a7102f0405af9a9b340b3b4acaea3c18d3bb327053ba208514a365f9",
+    "receiver_visits": 256,
+    "reasons": {
+      "cache_hit": {
+        "count": 74,
+        "cpu_ms": 21.318272,
+        "mean_cpu_ms": 0.28808475675675677
+      },
+      "cold": {
+        "count": 95,
+        "cpu_ms": 169.168198,
+        "mean_cpu_ms": 1.7807178736842106
+      },
+      "expired": {
+        "count": 35,
+        "cpu_ms": 63.581388,
+        "mean_cpu_ms": 1.8166110857142856
+      },
+      "failed_prediction": {
+        "count": 52,
+        "cpu_ms": 116.468642,
+        "mean_cpu_ms": 2.239781576923077
+      }
+    },
+    "cache_attempts_by_rate": {
+      "2500000": 59,
+      "5000000": 67
+    },
+    "baseline_cpu_ms": 665.671828,
+    "candidate_cpu_ms": 370.5365,
+    "observed_speedup": 1.7965081118864135,
+    "ten_x_budget_cpu_ms": 66.5671828,
+    "blind_calls": 182,
+    "accepted_hit_cpu_ms": 21.318272,
+    "nonhit_cpu_ms": 349.218228,
+    "maximum_speedup_if_accepted_hits_were_free": 1.9061772113453368,
+    "nonhit_budget_with_observed_hit_cost_ms": 45.2489108,
+    "required_mean_nonhit_cpu_ms": 0.24862038901098898,
+    "observed_mean_nonhit_cpu_ms": 1.9187814725274726,
+    "required_nonhit_reduction_factor": 7.717715671511811
+  },
+  "partial2": {
+    "source_sha256": "46b6a9f2a63e680fe4a24bcc0bab16269cf11edc40cfa8cc73b2913a5e1c5860",
+    "receiver_visits": 256,
+    "reasons": {
+      "cache_hit": {
+        "count": 69,
+        "cpu_ms": 5.756664,
+        "mean_cpu_ms": 0.08342991304347826
+      },
+      "cold": {
+        "count": 95,
+        "cpu_ms": 219.445176,
+        "mean_cpu_ms": 2.309949221052632
+      },
+      "expired": {
+        "count": 35,
+        "cpu_ms": 87.895602,
+        "mean_cpu_ms": 2.5113029142857144
+      },
+      "failed_prediction": {
+        "count": 57,
+        "cpu_ms": 154.271931,
+        "mean_cpu_ms": 2.706525105263158
+      }
+    },
+    "cache_attempts_by_rate": {
+      "2500000": 59,
+      "5000000": 67
+    },
+    "baseline_cpu_ms": 624.193355,
+    "candidate_cpu_ms": 467.369373,
+    "observed_speedup": 1.3355461248848242,
+    "ten_x_budget_cpu_ms": 62.4193355,
+    "blind_calls": 187,
+    "accepted_hit_cpu_ms": 5.756664,
+    "nonhit_cpu_ms": 461.612709,
+    "maximum_speedup_if_accepted_hits_were_free": 1.3522014078689502,
+    "nonhit_budget_with_observed_hit_cost_ms": 56.6626715,
+    "required_mean_nonhit_cpu_ms": 0.3030089385026738,
+    "observed_mean_nonhit_cpu_ms": 2.4685171604278073,
+    "required_nonhit_reduction_factor": 8.146680994382695
+  },
+  "v6_cold_expiry_bound": {
+    "calls": 130,
+    "cpu_ms": 232.749586,
+    "mean_cpu_ms": 1.7903814307692307,
+    "maximum_speedup_if_every_other_action_were_free": 2.8600344234339476,
+    "mean_budget_if_failed_predictions_free_and_hit_cost_preserved_ms": 0.3480685446153846
+  },
+  "v6_rate_matched_gate_proxy": {
+    "warning": "Accepted-hit means proxy failed-check cost; this is a budget model, not measured stage decomposition.",
+    "cache_gate_cpu_ms": 36.585789250000005,
+    "current_blind_acquisition_proxy_mean_cpu_ms": 1.8235212978442321,
+    "required_blind_acquisition_mean_cpu_ms": 0.16473293159340655,
+    "required_acquisition_reduction_factor": 11.069561381600634
+  },
+  "uniform_full_coverage_engine": {
+    "receiver_visits": 256,
+    "ten_x_mean_cpu_budget_ms": 0.2600280578125,
+    "qualified_fp32_blind_mean_cpu_ms": 1.91766413671875,
+    "remaining_reduction_factor_from_fp32_blind": 7.374835442187288,
+    "fp32_transfer_receipt_sha256": "368018a0e5a612e4542f8c57aa87b6ff0f90385c9be7e8ea3abc0d4f1f0d5f39",
+    "fp32_stage_profile": {
+      "reference": {
+        "native_cpu_ms": 483.2767419999959,
+        "rank_cpu_ms": 123.43053099999747,
+        "confirmation_cpu_ms": 359.06686899999977,
+        "rank_fraction": 0.2554034164549109,
+        "confirmation_fraction": 0.7429839630064441
+      },
+      "candidate": {
+        "native_cpu_ms": 491.8102770000007,
+        "rank_cpu_ms": 179.89997399999356,
+        "confirmation_cpu_ms": 302.582807,
+        "rank_fraction": 0.3657914086248208,
+        "confirmation_fraction": 0.6152429527209728
+      }
+    }
+  },
+  "runner_sha256": "b07c2f75f8e146926e2f2aa8f7bd6dc9f9ef9d1010ac4f467db210d7c8475256"
+}
