@@ -1,5 +1,7 @@
 # Sequential quality prediction on two additional DS5 scans
 
+Follow-up: the [offset-mixture correction](QUALITY_MIXTURE.md) fixes the demonstrated short-case failure but still finds substantial real-track resolution sensitivity. The legacy scores below remain provisional and should not be used as validated gains.
+
 **The new scans show promising adaptive-uncertainty scores, but the filter fails its numerical accuracy gate. These gains are provisional and must not be promoted to a validated association result.** The pilot-timing trigger adds no gain over generic quality changes in either scan under this approximate implementation.
 
 This continues the [boundary-control experiment](BOUNDARY_CONTROLS.md) with two additional real DS5 recordings. No new collection or raw-IQ extraction was needed; the prototype uses persisted acquisition CFO and pilot timing.
