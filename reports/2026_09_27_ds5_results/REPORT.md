@@ -1,5 +1,11 @@
 # DS5 positioning results and DS6 transfer shortlist
 
+The [complete model catalogue](MODELS.md) describes all 24 registered methods,
+their fitted parameters, prototype experiments, historical exclusions, and the
+DS6 results available so far. The [complete numerical table](comparison-table.md)
+contains all 18 completed point/surface/portable methods, with exact and geometry
+coverage reported separately below.
+
 The completed DS5 comparison does **not demonstrate sub-kilometre positioning**.
 The lowest full42 error among the completed families is **1.459 km**, obtained
 by inverse-RF-RMS-squared averaging of per-scan positions. The lowest group8
