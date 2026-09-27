@@ -1,7 +1,9 @@
 import io
+from dataclasses import replace
 
 import numpy as np
 import pytest
+from matplotlib.colors import to_hex
 from matplotlib.image import imread
 from PIL import Image
 
@@ -12,6 +14,46 @@ from leo.presentation.adaptive_hop_analysis import (
 )
 from leo.scanner.adaptive_hop_presentation import OVERVIEW_ARTIFACTS
 from tests.presentation.adaptive_overview_fixtures import full_overview_fixture, overview_fixture
+
+
+@pytest.mark.parametrize("edges", [(0,), (1,), (0, 1)])
+def test_cfo_receivers_have_distinct_consistent_marker_legend_and_track_colors(monkeypatch, edges):
+    import leo.presentation.adaptive_hop_analysis as presentation
+
+    binding, manifest, products = overview_fixture(monkeypatch, count=30)
+    data = project_adaptive_overview(binding, manifest, iter(products))
+    data = replace(
+        data,
+        passed=np.concatenate(
+            [data.passed[data.passed[:, 0] < 4] + [4 * edge, 0, 0, 0] for edge in edges]
+        ),
+        observations={
+            (target + 4 * edge, rx): rows
+            for edge in edges
+            for (target, rx), rows in data.observations.items()
+            if target < 4
+        },
+    )
+    figures = []
+    monkeypatch.setattr(presentation, "project_adaptive_overview", lambda *args: data)
+    monkeypatch.setattr(presentation, "_save", lambda figure, *args: figures.append(figure) or b"")
+    rendered = render_adaptive_hop_overview(binding, manifest, iter(products))
+    assert rendered.association_count > 0
+    colors_by_label = {}
+    line_colors = set()
+    for axis in figures[-1].axes:
+        for collection in axis.collections:
+            label = collection.get_label()
+            color = to_hex(collection.get_facecolors()[0])
+            assert colors_by_label.setdefault(label, color) == color
+        legend = axis.get_legend()
+        if legend is not None:
+            for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True):
+                assert to_hex(handle.get_facecolors()[0]) == colors_by_label[text.get_text()]
+        line_colors.update(to_hex(line.get_color()) for line in axis.lines)
+    assert len(colors_by_label) == 2 * len(edges)
+    assert len(set(colors_by_label.values())) == len(colors_by_label)
+    assert line_colors == set(colors_by_label.values())
 
 
 @pytest.mark.parametrize("gate", [0.025, 0.05])
