@@ -42,9 +42,6 @@ export function AdaptiveHopBrowser({ selectedId, onSelect, autoSelectFirst = fal
         if (active) {
           setPage(value);
           setError(null);
-          if (autoSelectFirst && selectedId === null && value?.items[0]) {
-            onSelect(value.items[0].session_id);
-          }
         }
       } catch (failure) {
         if (active) setError(failure instanceof Error ? failure.message : "Adaptive history is unavailable");
@@ -54,6 +51,11 @@ export function AdaptiveHopBrowser({ selectedId, onSelect, autoSelectFirst = fal
     const timer = window.setInterval(() => { void refresh(); }, 30000);
     return () => { active = false; controller.abort(); window.clearInterval(timer); };
   }, [cursor]);
+  useEffect(() => {
+    if (autoSelectFirst && selectedId === null && page?.items[0]) {
+      onSelect(page.items[0].session_id);
+    }
+  }, [autoSelectFirst, selectedId, page, onSelect]);
   return <section className="persistent-hop-history adaptive-history" aria-label="Adaptive hop history">
     <header><div><span>ADAPTIVE / SHADOW</span><h3>300-second captures</h3></div>
       <strong>{loading ? "Loading…" : page ? `${page.total} sessions` : "Unavailable"}</strong></header>
