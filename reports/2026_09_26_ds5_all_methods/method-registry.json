@@ -1,0 +1,370 @@
+{
+  "schema": "ds5-position-method-registry/v1",
+  "dataset": "DS5",
+  "status": "execution_plan_waiting_for_sealed_dataset_manifest",
+  "scientific_contract": {
+    "inference_is_truth_blind": true,
+    "reference_position_phase": "post-seal scoring only",
+    "common_membership_required": true,
+    "within_track_holdout_policy": "method-defined; never use held observations to fit identities or nuisance parameters when the method is cross-fitted",
+    "comparison_scopes": {
+      "single": "every admitted scan, reported individually and summarized by recorded sample/capture rate",
+      "group8": "chronological, back-to-back, non-overlapping groups of exactly eight; remainder excluded from group8 summaries",
+      "full": "all admitted DS5 scans",
+      "rate_full": "all admitted scans at each recorded sample/capture rate, with no rate mixing"
+    },
+    "primary_metrics": [
+      "qualified post-seal horizontal error km",
+      "terminal qualification disposition",
+      "single-scan median and p90 error by rate",
+      "group8 median and p90 error overall and by homogeneous-rate group",
+      "full and rate-full error",
+      "track, observation, occupied-second and scan support",
+      "objective margin, geographic and nuisance boundary state",
+      "runtime and peak memory"
+    ]
+  },
+  "methods": [
+    {
+      "method_id": "selected-point-equal-spherical-mean",
+      "family": "selected_point_aggregation",
+      "classification": "primary_fast_benchmark",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["sealed DS5 membership", "sealed per-scan scanner-adaptive-tle-position-v2 Sacramento-selected result"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native after DS5 membership binding", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds after per-scan V2 products exist",
+      "parallel_family": "fast_aggregates",
+      "qualification": "frozen estimator; report numerical support and post-seal error"
+    },
+    {
+      "method_id": "selected-point-inverse-rf-rms2-mean",
+      "family": "selected_point_aggregation",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["same as selected-point equal mean"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native after binding", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds",
+      "parallel_family": "fast_aggregates",
+      "qualification": "RF RMS has not been a stable accuracy proxy; retain as an ablation"
+    },
+    {
+      "method_id": "selected-point-lowest-rf-rms-75pct",
+      "family": "selected_point_aggregation",
+      "classification": "frozen_confirmatory_candidate",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["same as selected-point equal mean"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native; degenerates to the scan point", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds",
+      "parallel_family": "fast_aggregates",
+      "qualification": "75% rule was frozen before DS5; short-unit stability remains a gate"
+    },
+    {
+      "method_id": "selected-point-spatial-trimmed-75pct",
+      "family": "selected_point_aggregation",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["same as selected-point equal mean"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds",
+      "parallel_family": "fast_aggregates",
+      "qualification": "diagnostic robustness arm"
+    },
+    {
+      "method_id": "selected-point-geometric-median",
+      "family": "selected_point_aggregation",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["same as selected-point equal mean"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds",
+      "parallel_family": "fast_aggregates",
+      "qualification": "diagnostic robustness arm"
+    },
+    {
+      "method_id": "selected-point-iterative-huber",
+      "family": "selected_point_aggregation",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration1/run.py",
+      "required_inputs": ["same as selected-point equal mean"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "seconds",
+      "parallel_family": "fast_aggregates",
+      "qualification": "diagnostic robustness arm"
+    },
+    {
+      "method_id": "surface-fusion-raw-capped-mse",
+      "family": "objective_surface_fusion",
+      "classification": "primary_fast_method",
+      "runner": "reports/2026_09_25_ds3_ds4_surface_fusion/run.py",
+      "required_inputs": ["sealed DS5 membership", "complete sealed per-scan 400-point Sacramento V2 objective surfaces"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native after binding", "group8": "native after binding", "full": "native after binding", "rate_full": "native after binding"},
+      "expected_compute": "roughly 10 seconds per prior 147-scan corpus; minutes for all DS5 units",
+      "parallel_family": "fast_surfaces",
+      "qualification": "positive curvature, full-rank local fit, R2 >= 0.80, interior discrete winner and stationary point inside support/prior"
+    },
+    {
+      "method_id": "surface-fusion-delta-mse",
+      "family": "objective_surface_fusion",
+      "classification": "invariance_control",
+      "runner": "reports/2026_09_25_ds3_ds4_surface_fusion/run.py",
+      "required_inputs": ["same as raw surface fusion"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "seconds to minutes",
+      "parallel_family": "fast_surfaces",
+      "qualification": "must match raw-MSE location bit-for-bit"
+    },
+    {
+      "method_id": "surface-fusion-iqr-scaled-delta-mse",
+      "family": "objective_surface_fusion",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_surface_fusion/run.py",
+      "required_inputs": ["same as raw surface fusion"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "seconds to minutes",
+      "parallel_family": "fast_surfaces",
+      "qualification": "same numerical gates as primary surface fusion"
+    },
+    {
+      "method_id": "surface-fusion-fractional-rank",
+      "family": "objective_surface_fusion",
+      "classification": "ablation",
+      "runner": "reports/2026_09_25_ds3_ds4_surface_fusion/run.py",
+      "required_inputs": ["same as raw surface fusion"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "seconds to minutes",
+      "parallel_family": "fast_surfaces",
+      "qualification": "same numerical gates as primary surface fusion"
+    },
+    {
+      "method_id": "portable-baseline-doppler",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_control",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["DS5-local prepared raw-track cache", "causal TLE receipts", "sealed unit task"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native arbitrary session list", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "historically 20-45 CPU-min per full-corpus task after cache; singles fan out independently",
+      "parallel_family": "portable_timing",
+      "qualification": "fresh association and interior geographic result or explicit unqualified terminal"
+    },
+    {
+      "method_id": "portable-shared-global-time",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_timing_method",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["same DS5-local cache as portable baseline"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "20-45 CPU-min per full task after cache",
+      "parallel_family": "portable_timing",
+      "qualification": "global tau and geographic winner must be interior"
+    },
+    {
+      "method_id": "portable-regularized-per-scan-time",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_timing_method",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["same DS5-local cache as portable baseline"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native but equivalent to shared time", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "30-75 CPU-min per full task after cache",
+      "parallel_family": "portable_timing",
+      "qualification": "common and per-scan timing deltas plus geographic winner must satisfy bounds"
+    },
+    {
+      "method_id": "portable-independent-per-track-time",
+      "family": "portable_joint_raw_track",
+      "classification": "overfit_diagnostic",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["same DS5-local cache as portable baseline"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "30-75 CPU-min per full task after cache",
+      "parallel_family": "portable_timing",
+      "qualification": "report degrees of freedom and active timing bounds; never rank as primary without held support"
+    },
+    {
+      "method_id": "portable-causal-per-norad-orbit-rate",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_orbit_method",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["DS5-local prepared cache", "causal TLE archive", "per-NORAD chronological support"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native but often insufficient causal history", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "60-120 CPU-min per full task; NORAD workers can fan out",
+      "parallel_family": "portable_orbit_soft",
+      "qualification": "causal rates pass exact SGP4 and active-bound checks; insufficient-history units explicitly abstain"
+    },
+    {
+      "method_id": "portable-global-time-plus-per-norad-rate",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_orbit_method",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["same as causal per-NORAD rate"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native but often insufficient history", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "60-120 CPU-min per full task; NORAD workers can fan out",
+      "parallel_family": "portable_orbit_soft",
+      "qualification": "global tau, causal rates and geographic winner interior; exact replay passes"
+    },
+    {
+      "method_id": "portable-soft-identity-mixture",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_soft_association_candidate",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["DS5-local candidate-state cache with multiple candidates per track"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "90-180 CPU-min per full task after cache",
+      "parallel_family": "portable_orbit_soft",
+      "qualification": "ESS, candidate influence, temperature stability, support and geographic gates"
+    },
+    {
+      "method_id": "portable-soft-identity-plus-global-time",
+      "family": "portable_joint_raw_track",
+      "classification": "primary_soft_association_candidate",
+      "runner": "reports/2026_09_24_ds2_portable_evaluation/run_portable.py",
+      "required_inputs": ["same as soft identity mixture"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "native", "group8": "native", "full": "native", "rate_full": "native"},
+      "expected_compute": "90-180 CPU-min per full task after cache",
+      "parallel_family": "portable_orbit_soft",
+      "qualification": "soft-association gates plus interior global tau"
+    },
+    {
+      "method_id": "cell-batched-reselected-selection-score",
+      "family": "exact_cell_batched",
+      "classification": "diagnostic_selection_objective",
+      "runner": "reports/2026_09_25_ds4_position_iterations/cell_batched_position/run_v2.py",
+      "required_inputs": ["DS5 sealed manifest/units binding", "streamed DS5 raw-track/candidate states", "truth-blind initializer"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "scientifically supported; current CLI needs arbitrary-unit binding", "group8": "current CLI supports one group; DS5 adapter must generalize", "full": "native after DS5 binding", "rate_full": "needs arbitrary-unit binding"},
+      "expected_compute": "hours for a multi-level full search; cells and units shard independently",
+      "parallel_family": "cell_batched_selection",
+      "qualification": "diagnostic because the selected objective is not the clean cross-fit geographic score"
+    },
+    {
+      "method_id": "cell-batched-crossfit-heldout",
+      "family": "exact_cell_batched",
+      "classification": "primary_exact_candidate",
+      "runner": "reports/2026_09_25_ds4_position_iterations/cell_batched_position/run_crossfit_exact.py",
+      "required_inputs": ["same DS5 streamed inputs as selection-score method", "randomized training/held masks"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "possible but weak/expensive; needs arbitrary-unit binding", "group8": "supported after DS5 binding", "full": "supported after DS5 binding", "rate_full": "needs arbitrary-unit binding"},
+      "expected_compute": "hours for each full multi-level search; candidate/cell shards run independently",
+      "parallel_family": "cell_batched_crossfit",
+      "qualification": "train-only identity/CFO/shared-tau freeze, held geographic score, exact replay, interior winner and nuisance state"
+    },
+    {
+      "method_id": "geometry-fixed-hard-cone",
+      "family": "geometry_cone",
+      "classification": "diagnostic_until_qualified",
+      "runner": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/adapter.py",
+      "required_inputs": ["capture-time receiver geometry binding", "DS5-local geometry summary", "raw-track parent"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "conditional on geometry binding", "group8": "conditional", "full": "conditional", "rate_full": "conditional"},
+      "expected_compute": "15-35 CPU-min per full geometry-eligible corpus after adapter port",
+      "parallel_family": "geometry",
+      "qualification": "blocked until DS5 geometry eligibility is measured and a position qualification gate is sealed"
+    },
+    {
+      "method_id": "geometry-learned-cone-quantiles",
+      "family": "geometry_cone",
+      "classification": "no_position_diagnostic",
+      "runner": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/adapter.py",
+      "required_inputs": ["capture-time receiver geometry binding", "DS5-local geometry summary"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "conditional", "group8": "conditional", "full": "conditional", "rate_full": "conditional"},
+      "expected_compute": "20-50 CPU-min",
+      "parallel_family": "geometry",
+      "qualification": "support/pointing diagnostic only; no position output"
+    },
+    {
+      "method_id": "geometry-staged-full-fov-cone-sweep",
+      "family": "geometry_cone",
+      "classification": "no_position_diagnostic",
+      "runner": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/adapter.py",
+      "required_inputs": ["capture-time receiver geometry binding", "DS5-local geometry summary"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "conditional", "group8": "conditional", "full": "conditional", "rate_full": "conditional"},
+      "expected_compute": "30-75 CPU-min",
+      "parallel_family": "geometry",
+      "qualification": "diagnostic unless followed by a sealed geographic selector"
+    },
+    {
+      "method_id": "geometry-local-fitted-full-fov-cone-position",
+      "family": "geometry_cone",
+      "classification": "position_diagnostic_until_qualified",
+      "runner": "reports/2026_09_25_ds3_all_iterations_backfill/batch-d/adapter.py",
+      "required_inputs": ["capture-time receiver geometry binding", "DS5-local geometry summary", "DS5 raw-track parent"],
+      "truth_blind_inference": true,
+      "scope_support": {"single": "conditional", "group8": "conditional", "full": "conditional", "rate_full": "conditional"},
+      "expected_compute": "60-120 CPU-min",
+      "parallel_family": "geometry",
+      "qualification": "joint cone/position closure, held support and interior gates required"
+    }
+  ],
+  "excluded_from_fair_ds5_execution": [
+    {
+      "family": "numbered DS1 iterations 1 and 3-31 not represented above",
+      "reason": "missing historical implementation, fixed-coordinate diagnostic, nonportable legacy optimizer, superseded numerical surrogate, preflight-only arm, or a hard-coded parent chain rather than an independent DS5 method",
+      "audit_source": "reports/2026_09_25_ds1_ds3_all_methods/method-registry.json"
+    },
+    {
+      "method": "DS3-to-DS4 sequential prior",
+      "reason": "uses a historical DS3 learned position prior and answers a continuing-station question; exclude from standalone DS5 comparison unless separately labelled cross-dataset transfer",
+      "runner": "reports/2026_09_25_ds3_ds4_position_iteration2_sequential_prior/run.py"
+    },
+    {
+      "method": "I15 historical information-weighted",
+      "reason": "invalidated by the corrected I19 rate-bound audit"
+    },
+    {
+      "method": "I26 quartic rate-marginal surrogate",
+      "reason": "numerically superseded by exact phase/cache work and prohibited as a portable scientific result"
+    }
+  ],
+  "parallel_execution_waves": [
+    {
+      "wave": 1,
+      "families": ["fast_aggregates", "fast_surfaces"],
+      "prerequisite": "sealed DS5 manifest plus complete V2 products",
+      "parallelism": "two independent family jobs; unit calculations may fan out"
+    },
+    {
+      "wave": 2,
+      "families": ["portable_timing", "portable_orbit_soft"],
+      "prerequisite": "one shared DS5-local prepared cache; no DS1/DS3/DS4 cache reuse",
+      "parallelism": "fan out methods and units, with single-thread math per worker and host load gate"
+    },
+    {
+      "wave": 3,
+      "families": ["cell_batched_selection", "cell_batched_crossfit"],
+      "prerequisite": "DS5 dataset-binding adapter and streamed candidate states",
+      "parallelism": "independent receiver-cell shards and separate unit jobs; do not share output writers"
+    },
+    {
+      "wave": 4,
+      "families": ["geometry"],
+      "prerequisite": "measured DS5 capture-time geometry coverage and DS5-local adapter",
+      "parallelism": "geometry arms run independently after common eligibility audit"
+    }
+  ],
+  "blockers": [
+    "Do not launch inference until the DS5 manifest and evaluation-unit digests are sealed.",
+    "The portable raw-track family needs a DS5-local prepared cache; prior-dataset cache states are forbidden.",
+    "The current point/surface runners contain DS3/DS4 membership constants and need a narrow DS5 membership binding before execution.",
+    "The current cell-batched CLIs are DS4-bound and do not expose arbitrary single, all-group8, or rate-full units; a tested binding adapter is required.",
+    "Geometry methods are conditional on capture-time geometry bindings; absent bindings must yield explicit not_applicable rows, not dropped scans."
+  ]
+}
