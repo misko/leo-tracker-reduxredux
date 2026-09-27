@@ -1,0 +1,42 @@
+{
+  "complete": true,
+  "inference": {
+    "path": "/srv/bulk/leo/experiments/ds5-exact-summary/inference.json",
+    "sha256": "sha256:47ae6f059485a1be8402ce44f5bc8a4fa408ddcd0c9c7b6d833ded3884ac7ab4"
+  },
+  "limitations": [
+    "Both winners lie on the 2 km grid boundary, so the reported errors are truncated coarse-grid results.",
+    "DS5 is development data, not an independent final test set.",
+    "Cell and crossfit objectives use different weighting and selection rules and their numeric losses are not directly comparable."
+  ],
+  "reference": {
+    "latitude_deg": 37.84903264307456,
+    "longitude_deg": -122.4856541910174
+  },
+  "reference_used_postseal_only": true,
+  "results": [
+    {
+      "east_km": 4.0,
+      "horizontal_error_km": 4.910113290443516,
+      "latitude_deg": 37.84863062115202,
+      "longitude_deg": -122.4297347259264,
+      "method": "cell",
+      "north_km": 0.0,
+      "objective_name": "weighted_mse_hz2",
+      "objective_value": 32658.357835745726,
+      "winner_on_edge": true
+    },
+    {
+      "east_km": -2.0,
+      "horizontal_error_km": 4.103653715027848,
+      "latitude_deg": 37.88461001517468,
+      "longitude_deg": -122.49808027765701,
+      "method": "crossfit",
+      "north_km": 4.0,
+      "objective_name": "heldout_equal_session_mse_hz2",
+      "objective_value": 101678.63429608832,
+      "winner_on_edge": true
+    }
+  ],
+  "schema": "ds5-exact-full42-postseal/v1"
+}
