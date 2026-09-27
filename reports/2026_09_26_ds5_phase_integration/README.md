@@ -30,6 +30,8 @@ The [offset-mixture correction](QUALITY_MIXTURE.md) passes expanded exact short-
 
 ## Recording selection and coverage
 
+The [offset-panel reference](OFFSET_PANEL_REFERENCE.md) subsequently resolves the numerical discrepancy on twelve selected real hypotheses, with exact-history and prefix-isolation checks. It identifies inaccurate offset quadrature as a concrete issue to fix before reevaluating phase-assisted association. Full-bank replacement remains outstanding.
+
 The [physical-phase, shared-rate and direct-integration checks](DIRECT_CHECKS.md) add an independent synthetic RF propagation oracle and real replays. Sharing the within-window receiver rate has mixed repeatability and negligible candidate-score impact. Direct offset integration continues to expose numerical sensitivity in adaptive CFO inference. The report specifies how qualified phase can enter tracking while preserving geometry and neutral fallback; production association improvement remains unproven.
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.
