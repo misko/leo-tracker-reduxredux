@@ -1,0 +1,56 @@
+{
+  "residual_hz": [
+    0.0,
+    3.0,
+    1.0,
+    60.0,
+    40.0,
+    15.0
+  ],
+  "scales_hz": [
+    5.0,
+    50.0
+  ],
+  "times_s": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+  ],
+  "flags": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+  ],
+  "required_tolerance_nats": 0.05,
+  "comparisons": [
+    {
+      "model": "stationary",
+      "exact_log_evidence": -41.093250366578694,
+      "approximate_log_evidence": -41.093250366578694,
+      "error_nats": 0.0,
+      "accuracy_gate_passed": true
+    },
+    {
+      "model": "generic",
+      "exact_log_evidence": -39.94767629537065,
+      "approximate_log_evidence": -40.120213797115326,
+      "error_nats": -0.17253750174467797,
+      "accuracy_gate_passed": false
+    },
+    {
+      "model": "timing_informed",
+      "exact_log_evidence": -38.01629730035604,
+      "approximate_log_evidence": -38.39538675877809,
+      "error_nats": -0.379089458422051,
+      "accuracy_gate_passed": false
+    }
+  ],
+  "overall_accuracy_gate_passed": false,
+  "meaning": "An accuracy failure blocks treating real-data approximate gains as validated inference. This small case is not an error bound for longer real tracks."
+}
