@@ -1,0 +1,32 @@
+{
+  "source_sha256": "1bd3d3872f6d5d33e3b21293b27d102721f66796eb08f858df776913bcea10ea",
+  "observer_from_other_scan_cfo": [
+    37.856249999999996,
+    -122.484375
+  ],
+  "timing_s": [
+    -5.0,
+    -4.0,
+    -3.0,
+    -2.0,
+    -1.0,
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+  ],
+  "proposal_budgets": [
+    256,
+    512,
+    1024
+  ],
+  "proposal": "At each integer scan time, enumerate every training-visible catalogue pair via an exact profiled SSE matrix. Top 1024 SSE proposals are retained, then rescored by frozen Student-t4 likelihood. This is not exhaustive robust-likelihood marginalization.",
+  "selection": "Only paired training CFO values and training visibility select proposals. Phase and held measurements do not select candidates.",
+  "control": "Old absolute-CFO candidate unions re-evaluated on this same integer timing grid; same paired visits, same differential scale, same phase observations",
+  "prior": "Uniform over the full labelled-Starlink Cartesian catalogue before visibility/proposal restriction; selected-bank posterior is approximate",
+  "validation": "Compare 256/512/1024 proposals; report retained conditional mass and held phase/differential-CFO changes without selecting a winner by held score",
+  "source_epochs": "Each mode retains its own support-centre epochs; only common constant receiver offsets cancel exactly",
+  "scope": "Conditional development test on two scans, not a geographic search or verified satellite identification"
+}
