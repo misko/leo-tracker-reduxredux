@@ -56,6 +56,10 @@ site knowledge remains unresolved.
 
 ## All panels and individual recordings
 
+See also the [DS7 performance table by dwell time and sample rate](prior-aggregation/README.md),
+with separate Reno and Sacramento prior-search median, mean, and P90 errors.
+These are published per-recording prior searches, separate from the joint model below.
+
 ![All eleven chronological panels, four frozen methods](figures/group-comparison.png)
 
 All 11 joint panels converged away from bounds, but only **3 / 11** were below
