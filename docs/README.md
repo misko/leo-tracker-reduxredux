@@ -44,6 +44,7 @@ Solution, Method—so it remains understandable when read alone.
 | How is a normal recording processed? | [Standard analysis pipeline](pipelines/standard-analysis.md) |
 | How should a scientific question be investigated? | [Research analysis pipeline](pipelines/research-analysis.md) |
 | Which reports support each conclusion? | [Research evidence ledger](research/evidence-ledger.md) |
+| What did the complete DS7 benchmark achieve? | [DS7 results, visualizations, and ablation comparisons](../reports/2026_09_27_ds7_publication/README.md) |
 | How should another page be written? | [Documentation standard](contributing/documentation.md) |
 | How is production operated? | [Operator runbook](operations/runbook.md) |
 | How is a release qualified? | [Release qualification](operations/release-qualification.md) |
