@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -282,6 +283,57 @@ def test_combined_history_orders_backfills_by_capture_time_not_publication_time(
     assert [item.session_id for item in page.items] == [newer.session_id, older.session_id]
     assert page.items[0].captured_at > page.items[1].captured_at
     assert page.items[1].recorded_at > page.items[0].recorded_at
+
+
+def test_history_reuses_summaries_across_pages_and_discovers_new_publications(
+    tmp_path, monkeypatch
+):
+    publish_capture(tmp_path, count=3, session_id="first")
+    publish_capture(tmp_path, count=3, session_id="second")
+    presentation = AdaptiveHopPresentationStore(tmp_path)
+    original = AdaptiveHopIqStore.inspect
+    inspected = []
+
+    def inspect(store, key):
+        inspected.append(key)
+        return original(store, key)
+
+    monkeypatch.setattr(AdaptiveHopIqStore, "inspect", inspect)
+    first = presentation.page_v2(cursor=0, limit=1)
+    second = presentation.page_v2(cursor=1, limit=1)
+    assert len(inspected) == 2
+    assert presentation.page_v2(cursor=0, limit=2).items == first.items + second.items
+    assert len(inspected) == 2
+    publish_capture(tmp_path, count=3, session_id="third")
+    inspected.clear()
+    assert presentation.page_v2(cursor=0, limit=3).total == 3
+    assert inspected == ["third"]
+
+
+def test_history_cache_detects_corruption_even_with_preserved_mtime(tmp_path):
+    capture = publish_capture(tmp_path, count=3)
+    presentation = AdaptiveHopPresentationStore(tmp_path)
+    presentation.page_v2(cursor=0, limit=1)
+    path = tmp_path / "scanner-adaptive-recordings" / capture.session_id / "manifest.json"
+    before = path.stat()
+    payload = path.read_bytes()
+    path.write_bytes(b"!" + payload[1:])
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    with pytest.raises(BundleCorruptionError):
+        presentation.page_v2(cursor=0, limit=1)
+
+
+def test_history_accepts_capture_published_during_index_refresh(tmp_path, monkeypatch):
+    publish_capture(tmp_path, count=3, session_id="first")
+    original = AdaptiveHopIqStore.history_index
+
+    def history_index(store):
+        publish_capture(tmp_path, count=3, session_id="concurrent")
+        return original(store)
+
+    monkeypatch.setattr(AdaptiveHopIqStore, "history_index", history_index)
+    page = AdaptiveHopPresentationStore(tmp_path).page_v2(cursor=0, limit=10)
+    assert {item.session_id for item in page.items} == {"first", "concurrent"}
 
 
 @pytest.mark.parametrize("cursor,limit", [(-1, 1), (True, 1), (0, 0), (0, 21), (0, True)])
