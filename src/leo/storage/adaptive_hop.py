@@ -921,6 +921,12 @@ class AdaptiveHopIqStore:
 
     def publication_index(self) -> tuple[tuple[int, str], ...]:
         """Return newest-first immutable manifest mtimes without reading manifests."""
+        return tuple(
+            sorted(((stamp[3], name) for name, stamp in self.manifest_fingerprints()), reverse=True)
+        )
+
+    def manifest_fingerprints(self) -> tuple[tuple[str, tuple[int, ...]], ...]:
+        """Stat verified regular manifests for invalidating bounded presentation caches."""
         try:
             os.stat(_NAMESPACE, dir_fd=self._root.fileno(), follow_symlinks=False)
         except FileNotFoundError:
@@ -949,8 +955,19 @@ class AdaptiveHopIqStore:
                     or not 0 < manifest.st_size <= _MAX_MANIFEST_BYTES
                 ):
                     raise BundleCorruptionError("adaptive manifest index entry is invalid")
-                index.append((manifest.st_mtime_ns, name))
-            return tuple(sorted(index, reverse=True))
+                index.append(
+                    (
+                        name,
+                        (
+                            manifest.st_dev,
+                            manifest.st_ino,
+                            manifest.st_size,
+                            manifest.st_mtime_ns,
+                            manifest.st_ctime_ns,
+                        ),
+                    )
+                )
+            return tuple(sorted(index))
         finally:
             namespace.close()
 

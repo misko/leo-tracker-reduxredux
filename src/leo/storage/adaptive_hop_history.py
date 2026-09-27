@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
@@ -201,6 +203,12 @@ class AdaptiveHopPresentationStore:
 
     def __init__(self, root: Path):
         self._root = root
+        self._page_lock = RLock()
+        self._fingerprints: tuple[tuple[str, tuple[int, ...]], ...] | None = None
+        self._history: tuple[tuple[int, str], ...] = ()
+        self._summaries: OrderedDict[tuple[str, tuple[int, ...]], AdaptiveHopHistoryItemV1] = (
+            OrderedDict()
+        )
 
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
         return self._page(cursor=cursor, limit=limit, include_host=False)
@@ -232,13 +240,29 @@ class AdaptiveHopPresentationStore:
         return result
 
     def _page(self, *, cursor: int, limit: int, include_host: bool) -> AdaptiveHopHistoryPageV1:
+        # Share immutable summaries across cursors and concurrent browser polls.
+        with self._page_lock:
+            return self._page_locked(cursor=cursor, limit=limit, include_host=include_host)
+
+    def _page_locked(
+        self, *, cursor: int, limit: int, include_host: bool
+    ) -> AdaptiveHopHistoryPageV1:
         if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError("adaptive history pagination is out of bounds")
         store = AdaptiveHopIqStore(self._root, read_only=True)
         try:
+            fingerprints = store.manifest_fingerprints() if include_host else ()
+            if include_host and fingerprints != self._fingerprints:
+                history = store.history_index()
+                self._history = history
+                self._fingerprints = fingerprints
+                valid = set(fingerprints)
+                self._summaries = OrderedDict(
+                    (key, value) for key, value in self._summaries.items() if key in valid
+                )
             # Keep only ordering keys, not every scan's up-to-2,500-event manifest.
             sessions = (
-                list(store.history_index())
+                list(self._history)
                 if include_host
                 else [
                     (s.manifest.finalized_utc_ns, s.session_id)
@@ -249,9 +273,21 @@ class AdaptiveHopPresentationStore:
                 ]
             )
             sessions.sort(reverse=True)
-            items = tuple(
-                _summary(store.inspect(key)) for _, key in sessions[cursor : cursor + limit]
-            )
+            stamps = dict(fingerprints)
+            items_list = []
+            for _, key in sessions[cursor : cursor + limit]:
+                # A capture can be published between the fingerprint and ordering reads.
+                cache_key = (key, stamps[key]) if include_host and key in stamps else None
+                item = self._summaries.get(cache_key) if cache_key is not None else None
+                if item is None:
+                    item = _summary(store.inspect(key))
+                if cache_key is not None:
+                    self._summaries[cache_key] = item
+                    self._summaries.move_to_end(cache_key)
+                    while len(self._summaries) > 128:
+                        self._summaries.popitem(last=False)
+                items_list.append(item)
+            items = tuple(items_list)
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
