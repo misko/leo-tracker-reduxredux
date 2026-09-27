@@ -1,0 +1,30 @@
+{
+  "scans": [
+    "scan-fw-4fc9ccc9f49e637b",
+    "scan-fw-382ca32cddbfdc6a"
+  ],
+  "selection": "Longest RX1 production-input track with >=24 observed second bins, tie by track ID; first64 bins maximum. Track membership and availability selected retrospectively; conditional prediction is causal.",
+  "warmup_blocks": 8,
+  "proposal": "Full catalogue using first8 CFO blocks only: coarse 5s orbit-time grid, retain union top8 at mixture/100Hz/400Hz; fine .2s propagated then .05s interpolation",
+  "scales_hz": [
+    3.125,
+    6.25,
+    12.5,
+    25,
+    50,
+    100,
+    200,
+    400,
+    800,
+    1600
+  ],
+  "models": [
+    "stationary",
+    "generic",
+    "timing_informed"
+  ],
+  "transition": "Generic scale redraw hazard 1-exp(-dt/20s); previous-block supported pilot timing flag adds independent .5 redraw probability. Shared static CFO intercept and fixed identity/orbit-time hypotheses.",
+  "timing_flag": "Five past epoch points, extrapolation <=past span, 44 samples threshold at10MS/s; only prior-block flags can affect next prediction.",
+  "approximation": "Gaussian moment matching of intercept conditional on each identity, orbit time and scale; not exact path enumeration",
+  "meaning": "Additional scans for frozen-parameter development comparison; offline track selection and candidate membership prevent claiming end-to-end online association or identity truth"
+}

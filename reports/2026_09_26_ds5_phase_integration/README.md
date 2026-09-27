@@ -24,6 +24,8 @@ The [separate-episode catalogue experiment](SEGMENT_ASSOCIATION.md) re-searches 
 
 The [boundary-control experiment](BOUNDARY_CONTROLS.md) qualifies that result: ordinary time splits also improve the problematic track, and a generic boundary mixture outperforms the pilot-triggered mixture there. Pilot timing avoids unnecessary splits on smooth controls, but its unique predictive value remains unproven. The next validation needs causal quality-state comparisons on additional tracks.
 
+The [causal quality prototype](CAUSAL_QUALITY.md) adds 08:20 and 10:50 scans and predicts subsequent blocks from earlier data. Generic adaptive uncertainty gives promising scores, but its Gaussian approximation fails a bounded exact-history accuracy gate. The timing trigger does not add a provisional gain. Numerical inference must be corrected before promoting these results.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.
