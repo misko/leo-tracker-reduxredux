@@ -1,0 +1,79 @@
+{
+  "seed": 2026092711,
+  "inventory_sha256": "16ccf9cb17dd34c16dffbc5406fa316d68adc2310ab728c0a769fba0cefddaa0",
+  "prior_phase_plan_sha256": "c1f1d0f86dfface9b585d4df46451587db70bde734cb02e4b170848099ce2425",
+  "selection": "One hash-selected scan per rate from completed DS6 scans outside the prior ten-scan phase replay; no replacements",
+  "source_sha256": {
+    "2026_09_27_ds6_position_linked_phase/common_rate.py": "57f6fe6184ac3e16836725edae30376ee33bc8878fc2fab320b7ebcc7c411ead",
+    "2026_09_27_latest_ten_phase/phase.py": "32d37f493d7263a8807529a5d5686c065b22fc056243fd02848b9d5fa84c15ed",
+    "2026_09_27_ds6_dwell_phase/experiment.py": "57804ecb6147398c43261a72f26e0501cf216838d9257656899d518f93121433"
+  },
+  "selected": [
+    {
+      "session_id": "scan-fw-5eaaa2a8f8c995b3",
+      "capture_start_utc": "2026-09-27T00:30:02+00:00",
+      "capture_end_utc": "2026-09-27T00:35:04+00:00",
+      "sample_rate_msps": 2.5,
+      "visits": 2218,
+      "manifest_sha256": "sha256:897997c39b508e3dad3bd2ffa0a95eb98189f4b72afad49f55b3731e6552bb87",
+      "binding_digest": "sha256:7cf14722e3699c85879c359f807ee678eee035f4f6ab24375362236bf6a84638",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-c78fb2dba2465361",
+      "capture_start_utc": "2026-09-27T00:10:23+00:00",
+      "capture_end_utc": "2026-09-27T00:15:24+00:00",
+      "sample_rate_msps": 5.0,
+      "visits": 2216,
+      "manifest_sha256": "sha256:73300cad07d873e824639e22f8677e9a7f97df97a3688b2f784dab214cec7240",
+      "binding_digest": "sha256:4d3fa614c8b67a60a48ae5ac5cc488540c97a34dbcf2a5c24921b63bdf160243",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-c7e37f65ae9e08b0",
+      "capture_start_utc": "2026-09-27T00:20:02+00:00",
+      "capture_end_utc": "2026-09-27T00:25:03+00:00",
+      "sample_rate_msps": 7.5,
+      "visits": 2211,
+      "manifest_sha256": "sha256:9536762453094ede46ef25c1cb1bc0897ea16ae978c0a09043718a4b45282b87",
+      "binding_digest": "sha256:35ad4fbe281d8d328b937761487770fddffa1d0fb52d719bc7fec5f718cf623d",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-3221795d82a1c7ec",
+      "capture_start_utc": "2026-09-26T23:40:01+00:00",
+      "capture_end_utc": "2026-09-26T23:45:03+00:00",
+      "sample_rate_msps": 10.0,
+      "visits": 2214,
+      "manifest_sha256": "sha256:4607fd8b278713742b9195920bdc437de11349e2e2a687fe78486d37f15d6fb3",
+      "binding_digest": "sha256:65ba7c1ffc330ca6463c55b1a06f993b6b6040abb6b6d32cbdade4a2edb8567d",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    }
+  ],
+  "starts_ms": [
+    0,
+    21,
+    42,
+    63,
+    84,
+    105
+  ],
+  "width_ms": 7,
+  "visit_selection": "Up to two disjoint exact positioning-track pairs ranked by eligible metadata visits, two hash-selected whole visits per existing hash partition",
+  "primary": "For each scan, mean squared held pilot phase prediction error averaged first within window then equally across qualified windows. Compare frozen shared rate against unit-phasor independent rates.",
+  "decision": "Promote only if at least three of four scans are evaluable and improve, and the equal-scan mean squared error improves. Otherwise retain as experimental.",
+  "diagnostics": [
+    "Within-dwell circular coherence; single-window dwell excluded from median",
+    "Train/evaluation DD disagreement",
+    "RX1 roll173us control on first window of every selected dwell"
+  ],
+  "limitations": "Four scans from same capture night; validation of extraction only, no satellite IDs or position accuracy. Prior analyses other than this phase replay may have used these recordings."
+}
