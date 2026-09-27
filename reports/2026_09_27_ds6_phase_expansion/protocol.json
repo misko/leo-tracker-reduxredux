@@ -1,0 +1,95 @@
+{
+  "seed": 2026092720,
+  "visit_partition_seed": 2026092711,
+  "inventory_sha256": "16ccf9cb17dd34c16dffbc5406fa316d68adc2310ab728c0a769fba0cefddaa0",
+  "exclusion_sources": {
+    "2026_09_27_latest_ten_phase/plan.json": "c1f1d0f86dfface9b585d4df46451587db70bde734cb02e4b170848099ce2425",
+    "2026_09_27_ds6_common_rate_validation/protocol.json": "eeddd63256e8b36a4641825cd6f1c21b1151fa1e160f59e157d0f15e0c2bad95"
+  },
+  "excluded": [
+    "scan-fw-00ff81dc09fc738a",
+    "scan-fw-11c47d46643182d3",
+    "scan-fw-3221795d82a1c7ec",
+    "scan-fw-3ebf3526172258af",
+    "scan-fw-40ebc07665464c7d",
+    "scan-fw-4c56320fb5ca6994",
+    "scan-fw-5eaaa2a8f8c995b3",
+    "scan-fw-609d7a8d9861f3db",
+    "scan-fw-851486cc2a1acd99",
+    "scan-fw-898b709fcf3dd978",
+    "scan-fw-c78fb2dba2465361",
+    "scan-fw-c7e37f65ae9e08b0",
+    "scan-fw-da2858f6cd2521b7",
+    "scan-fw-f147dd8a5bc99346"
+  ],
+  "selection": "One hash-selected previously excluded-from-phase-cohort scan per sample rate, using frozen inventory readiness; no replacements",
+  "selected": [
+    {
+      "session_id": "scan-fw-aa9770c66396e928",
+      "capture_start_utc": "2026-09-27T02:21:45+00:00",
+      "capture_end_utc": "2026-09-27T02:26:47+00:00",
+      "sample_rate_msps": 2.5,
+      "visits": 2220,
+      "manifest_sha256": "sha256:6c4ef3f50d19ca0ac154de4d9eaca34aef45c69eb35bddeef784a8c17f6fd3c2",
+      "binding_digest": "sha256:2b4efa6136376aac663a4675042d5e5ca79d6b436680fc2d8a439fd2cc254987",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-e76c229e9dc498b3",
+      "capture_start_utc": "2026-09-27T04:21:55+00:00",
+      "capture_end_utc": "2026-09-27T04:26:56+00:00",
+      "sample_rate_msps": 5.0,
+      "visits": 2218,
+      "manifest_sha256": "sha256:0b66bba5b89a80308b5cd1e51728727093704ec8f980168d3f8439e6fa55cc40",
+      "binding_digest": "sha256:0988b67fc46ee0cc817dd49c3d1504f6aadff62f2c35a753ce5d1711d338f3d8",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-b5604c3d838fa7ed",
+      "capture_start_utc": "2026-09-27T03:32:25+00:00",
+      "capture_end_utc": "2026-09-27T03:37:27+00:00",
+      "sample_rate_msps": 7.5,
+      "visits": 2216,
+      "manifest_sha256": "sha256:fd0556656478f4405dd02f09a6b25acb3d1817075faf7be6d88334beb1cb6e9d",
+      "binding_digest": "sha256:917a46d596b2ec837f49ab6d5a4e4e2614bf0faa19d76ca6264fe5f857a68d67",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    },
+    {
+      "session_id": "scan-fw-c559f436d578c9bd",
+      "capture_start_utc": "2026-09-27T02:07:37+00:00",
+      "capture_end_utc": "2026-09-27T02:12:39+00:00",
+      "sample_rate_msps": 10.0,
+      "visits": 2217,
+      "manifest_sha256": "sha256:d612f8677b76918d922a0e12ddc33c7391adb57f19b598dac4803d0313131699",
+      "binding_digest": "sha256:e6ea76cd93a275ae80b74f0428a88bcb3f1e529a6b2979fb4fa13053181de23a",
+      "source_span_attested": true,
+      "analysis": "figures_ready",
+      "tracking": "complete"
+    }
+  ],
+  "source_sha256": {
+    "2026_09_27_ds6_position_linked_phase/common_rate.py": "57f6fe6184ac3e16836725edae30376ee33bc8878fc2fab320b7ebcc7c411ead",
+    "2026_09_27_latest_ten_phase/phase.py": "32d37f493d7263a8807529a5d5686c065b22fc056243fd02848b9d5fa84c15ed",
+    "2026_09_27_ds6_dwell_phase/experiment.py": "57804ecb6147398c43261a72f26e0501cf216838d9257656899d518f93121433",
+    "2026_09_27_ds6_common_rate_validation/plan.py": "34c59cc42f33cdad1210246249f769c25ebddcddcb83f9ce01abe2cb2e73bafa"
+  },
+  "starts_ms": [
+    0,
+    21,
+    42,
+    63,
+    84,
+    105
+  ],
+  "width_ms": 7,
+  "visit_selection": "Unchanged prior metadata planner: two disjoint exact positioning-track pairs, two whole visits per original partition; at most eight visits per scan",
+  "primary": "Frozen shared-rate versus independent-rate unit-phasor extraction; all original jointly qualified windows; equal-window MSE within each scan",
+  "decision": "Require at least three evaluable scans, lower shared-rate MSE in at least three, and lower equal-scan mean MSE before promoting extraction",
+  "scope": "Bounded four-scan extraction expansion, at most 32 existing dwells; no new RF or geographic success claim; record unavailable cases"
+}
