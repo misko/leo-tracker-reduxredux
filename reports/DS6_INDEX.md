@@ -15,7 +15,8 @@ not surveyed ground truth; numerical centimetre changes are not physical accurac
 | [Stationary offset validation](2026_09_27_ds6_fast_offsets/README.md) | Corrects the unconverged frequency-offset profiler and validates its replacement. |
 | [Phase opportunity replay](2026_09_27_ds6_phase_opportunity/README.md) | Four additional scans selected; two had eligible pairs. One pair retained both training endpoints across an 18.3-second span. |
 | [Geometry versus response drift](2026_09_27_ds6_long_phase_geometry/README.md) | Latest phase mechanism comparison: geometry predicts held phase better than a constant, but equally well as slow linear response drift. No unique geometric attribution. |
-| [Additional pair census](2026_09_27_ds6_pair_catalogue/README.md) | New metadata-only inventory: 12 eligible pairs, 250 visits in five of ten additional scans. Curvature ranking and IQ replay remain pending. |
+| [Additional pair census](2026_09_27_ds6_pair_catalogue/README.md) | Metadata-only inventory: 12 eligible pairs, 250 visits in five of ten additional scans. Curvature ranking remains pending; a descriptive subset replay is now available below. |
+| [Long-track phase plots](2026_09_27_ds6_long_phase_plots/README.md) | Three pairs spanning 24.7–37.0 seconds; phase recovered in all 48 sampled visits, 221/288 qualified windows, 0/48 shifted controls. Individual RX phase and receiver-common-cancelled double differences are plotted without smoothing. |
 
 Earlier [pooled results](2026_09_27_ds6_cohort_phase/README.md) used the old
 offset profiler and are retained as historical experiments. Use the corrected
