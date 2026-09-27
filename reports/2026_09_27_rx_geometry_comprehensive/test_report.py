@@ -59,7 +59,7 @@ class ReportTests(unittest.TestCase):
             self.assertGreater((HERE / 'figures' / filename).stat().st_size, 1000)
 
     def test_portable_report_links(self):
-        for filename in ('README.md', 'EXPERIMENT_LOG.md', 'sources/INDEX.md'):
+        for filename in ('README.md', 'EXPERIMENT_LOG.md', 'FOLLOW_UP.md', 'sources/INDEX.md'):
             source = HERE / filename
             for target in re.findall(r'\]\(([^)]+)\)', source.read_text()):
                 if '://' in target or target.startswith('#'):

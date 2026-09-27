@@ -10,9 +10,12 @@ We tested whether Doppler, uncertain satellite associations, historical TLE corr
 - **TLE-aware timing and joint association improve fit and some known-site rankings.** They do not establish better geographic accuracy by themselves. Flexible polynomial residual corrections can erase the Doppler information needed to distinguish satellites.
 - **Receiver direction predicts reception.** Accounting for shared track-level noise improves reception likelihood substantially. But those improvements have not translated into a consistent reduction in geographic error.
 - **Best observed matched-grid mean:** the original geometry model achieved **3.954 km**, versus **4.124 km** for Doppler alone, on four already-unblinded DS6 recordings. The newest dual-shared model achieved **4.194 km**, slightly worse than Doppler. These are development results, not a demonstrated resolution improvement.
-- **Latest association-transfer diagnostic is mixed/negative:** RX updates worsened subsequent frequency prediction in one temporal direction and gave only a tiny improvement in the reverse direction. This does not justify another geographic search with the unchanged model.
+- **Latest recording-disjoint test fails its consistency gate:** after matched geometry-free regularization and grouped refitting, average predictive gains are positive, but only 2/4 new recordings improve in X→Y (required: 3/4). This does not justify another geographic search with the unchanged model.
+- **New source-continuity finding:** two same-receiver, different-channel tracks agree to 28–31 Hz RMS after one constant, while selected orbit fits have much larger residuals. This motivates shared-trajectory diagnostics; it does not prove satellite identity or improved location accuracy.
 
 The [chronological experiment log](EXPERIMENT_LOG.md) records the tried methods, outcomes, rejected approaches, and caveats. [Source snapshots](sources/INDEX.md), [plot data](plot_data.json), and [figure provenance](figure_manifest.json) accompany this report.
+
+The [detailed follow-up](FOLLOW_UP.md) adds conservative mixtures, geometry-free controls, randomized grouped rebuilding, the frozen four-recording test, regression attribution, source continuity, and two new figures. Sections below retain the original experiment chronology; the follow-up contains the latest decision.
 
 ## 1. What was measured—and what was not
 
@@ -29,6 +32,8 @@ For the roof experiments the reference is the operator-supplied coordinate **37.
 | Second geographic confirmation | 4 different DS6 recordings | Outcome-blind primary result; subsequent local grids were posthoc |
 | Current six-model exact-grid comparison | Same 4 second-cohort recordings × 2 priors | Matched development comparison; eight cases are not eight independent recordings |
 | Shared-effect calibration / transfer | 6 calibration recordings, 344 tracks | Conditional predictive diagnostics, not geographic validation |
+| Grouped, refitted development replay | 259/344 supported tracks on those 6 recordings | Incremental RX signal beyond matched uniform regularization; global calibration remains conditional |
+| Frozen recording-disjoint follow-up | 4 additional RX-test recordings; 179/241 supported tracks | Failed progression gate; no new geographic search |
 
 Calibration folds exclude the held recording from RX coefficient fitting, but frequency hyperparameters were calibrated using all six recordings. Thus these are **conditional leave-one-recording-out results, not fully nested end-to-end validation**. The temporal association-transfer diagnostic is exploratory; it does not satisfy the current repository requirement for reproducible random grouped validation. No historical result is relabeled as randomized.
 
@@ -156,13 +161,14 @@ The most useful current outcome is a clearer diagnosis: large errors can be sear
 
 ## 10. Reproduction and audit trail
 
-The bundle contains eight figures in PNG and SVG, compact exact plotting data, an experiment log, archival source reports/results, and checksummed provenance. Raw RF, pickled working caches, and large per-location search shards are deliberately not republished. Source snapshots preserve historical wording and may refer to local research artifacts outside this bundle; they are evidence archives, not portable full experiment runners.
+The bundle contains ten figures in PNG and SVG (eight original, two follow-up), compact exact plotting data, an experiment log, a detailed follow-up, archival source reports/results, and checksummed provenance. Raw RF, pickled working caches, and large per-location search shards are deliberately not republished. Source snapshots preserve historical wording and may refer to local research artifacts outside this bundle; they are evidence archives, not portable full experiment runners.
 
 From this directory, with Python, NumPy, and Matplotlib installed:
 
 ```bash
 python build_figures.py
-python -m unittest discover -s . -p 'test_report.py'
+python build_followup_figures.py
+python -m unittest discover -s . -p 'test_*.py'
 sha256sum -c SHA256SUMS
 ```
 
