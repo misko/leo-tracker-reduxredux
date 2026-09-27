@@ -332,3 +332,23 @@ The following evidence accompanies this log:
   [association transfer](sources/2026_09_27_roof_balanced_confirmation/association-transfer-summary.json)
   with source-shard hashes retained in the summary. The six larger original
   shard files are not duplicated in this report bundle.
+
+## Follow-up experiments after the initial publication
+
+These stages are detailed in [FOLLOW_UP.md](FOLLOW_UP.md), with exact receipts in the [follow-up source manifest](followup_sources/manifest.json). No stage below adds a geographic-error result or changes the six-model location ranking.
+
+| Stage | Design and result | Decision / limitation |
+|---|---|---|
+| Transfer concentration | 344 tracks; only 12 MAP changes per direction; unchanged-MAP alternatives explain substantial loss | A stable winning ID is not a safe acceptance rule; exploratory temporal attribution |
+| Conservative RX posterior mixture | 50/50 blend gains +0.002103/+0.008979; 25% and 75% sensitivity checks also positive | Support preservation helps, but does not isolate geometry |
+| Geometry-free controls | Uniform-shortlist blend gains +0.088390/+0.097273, much larger than RX | Controls added posthoc; subsequent comparisons must match regularization |
+| Grouped split feasibility | Three-part support 98/344; two-part support 259/344 | Use fixed two-part, session-wide connected groups; disclose unsupported tracks |
+| Rebuilt grouped development replay | Refit catalogue shortlist/CFO per partition; matched uniform support; gains +0.004056/+0.000994; reversal negative | Some conditional incremental signal; global frequency/pair calibration still uses the six development recordings |
+| Frozen recording-disjoint test | Four selected from seven metadata-eligible captures; 179/241 tracks; gains +0.000157/+0.001178 | **Failed:** X→Y improves only 2/4, below predeclared 3/4; no geographic promotion |
+| Reporting correction | V2 ignores signed null roundoff within 1e−10 when counting improvements | Scores and normal/reversed counts unchanged; both summaries retained |
+| Regression attribution | Both MAP switches and unchanged-MAP probability shifts hurt; both detection and ratio can favour poor predictors | Posthoc mechanism analysis, not identity truth |
+| Held-CFO diagnostic | Large CFO shifts and remaining slope; robust held refit can increase RMS | Uses held outcomes; not predictive validation or proof of oscillator drift |
+| Source continuity | Four tracks have no RF/channel transitions; alias arithmetic matches | Does not certify alias/path identity; frequency changes across gaps are not instant jumps |
+| Cross-channel comparison | Same RX, two RF channels; 28.378/31.254 Hz RMS after one constant and bounded interpolation | Shared observed shape merits investigation; no proven location gain, clock cause, or satellite ID |
+
+Verification at publication: 23 transfer/rebuild tests and 12 disjoint/diagnostic tests passed. An invalid all-evaluation extraction mask failed before results and was replaced by complementary valid masks; a toy-test arithmetic expectation was corrected. These development failures did not produce the successful experiment receipts. The next experiments proposed in the follow-up are recommendations, not completed results.
