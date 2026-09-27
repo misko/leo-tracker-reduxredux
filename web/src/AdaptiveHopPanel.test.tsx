@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
 import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
@@ -8,6 +9,33 @@ const respond = (value: unknown, status = 200) => ({ ok: status === 200, status,
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
+  it("preserves the open scan when history polling publishes a newer capture", async () => {
+    vi.useFakeTimers();
+    let page = adaptivePageFixture();
+    const fetcher = vi.fn(async () => respond(page));
+    vi.stubGlobal("fetch", fetcher);
+    const onSelect = vi.fn();
+    function Browser() {
+      const [selectedId, setSelectedId] = useState<string | null>(null);
+      return <AdaptiveHopBrowser selectedId={selectedId} autoSelectFirst onSelect={id => {
+        onSelect(id); setSelectedId(id);
+      }} />;
+    }
+    render(<Browser />);
+    await act(async () => {});
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith("adaptive-test");
+    page = adaptivePageFixture(adaptiveDetailFixture("newest"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+    expect(screen.getByText("newest")).toBeInTheDocument();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /newest/ }));
+    expect(onSelect).toHaveBeenLastCalledWith("newest");
+    page = adaptivePageFixture(adaptiveDetailFixture("even-newer"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+    expect(onSelect).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
   it("accepts the schema-8 page and schema-9 four-rate adaptive detail", async () => {
     const legacy = adaptiveDetailFixture("four-rate-test", 3);
     const origin = BigInt(legacy.source_origin_counter!);
