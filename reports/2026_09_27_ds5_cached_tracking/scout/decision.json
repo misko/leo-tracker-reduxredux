@@ -1,0 +1,17 @@
+{
+  "schema": "org.leo.research.ds5-cached-scout-decision.v1",
+  "results_sha256": "sha256:e21e363e28dba103c9336fad411b59c71700282647ef9089d9b18b9821795e18",
+  "decision": "do_not_promote_either_scout_to_fresh_holdout",
+  "reason": "At the inclusive development threshold required to retain all 36 reference positives, rank routes 222/256 receiver-visits and sparse lag-3 routes 231/256. Even a zero-cost scout therefore has speedup ceilings of only 1.191x and 1.129x, respectively. Measured packing plus call makes both paths slower than the baseline under the declared routing model.",
+  "thresholds_frozen_from_development": {
+    "rank_max_score": 187.41337733606045,
+    "sparse_lag3_power": 0.010046591838504431
+  },
+  "reference_relative_retention": {
+    "rank_max_score": "36/36",
+    "sparse_lag3_power": "36/36"
+  },
+  "synthetic_controls": "Reported after threshold selection. Both variants route all pilot, noise, and tone receiver-controls at both rates, so these controls provide no support for a selective negative screen at the frozen thresholds.",
+  "fresh_holdout_opened": false,
+  "interpretation": "Nonroutes are measured-screen-negative only. They are neither confirmed signal absence nor physical negatives. The 5 MS/s threshold transfer remains unverified because development contains no 5 MS/s reference positives."
+}

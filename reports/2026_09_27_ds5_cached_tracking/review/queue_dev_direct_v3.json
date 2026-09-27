@@ -1,0 +1,260 @@
+{
+  "schema": "org.leo.research.cached-tracking-queue-summary/v1",
+  "scope": "development server replay; not ARM or production realtime qualification",
+  "source": {
+    "replay_path": "dev_direct_v3.json",
+    "replay_sha256": "77e5213283d9eb4dbb10032cce8e8673054c5ec4c3c3b76b49fcd312ac054c6e",
+    "dataset_sha256": "4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+    "script_sha256": "ab0f48e1f917af6085d3c154bdcd4da2daae5ebd97035ee906f8a2995d61cffd"
+  },
+  "accounting": {
+    "expected_physical_visits": 128,
+    "processed_physical_visits": 128,
+    "processed_receiver_visits": 256,
+    "skipped_unknown_physical_visits": 0,
+    "skipped": [],
+    "arrival_definition": "source_end_counter_exclusive/rate_hz; queue resets per session",
+    "capture_duration_excluded_from_processing_service": true
+  },
+  "queue": {
+    "baseline": {
+      "cpu": {
+        "model": "one serialized server worker; both receiver medians summed per physical visit",
+        "clock": "cpu",
+        "processing_service_ms": {
+          "p50": 4.2375335,
+          "p95": 6.568238249999999,
+          "p99": 6.937569020000001,
+          "maximum": 7.106553999999999,
+          "mean": 4.5105391875
+        },
+        "queue_wait_backlog_ms": {
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        },
+        "capture_complete_to_decision_ms": {
+          "p50": 4.237533500000001,
+          "p95": 6.568238249999836,
+          "p99": 6.937569020000218,
+          "maximum": 7.106554000000043,
+          "mean": 4.510539187499983
+        },
+        "capture_complete_interarrival_ms": {
+          "p50": 140.19360000020242,
+          "p95": 140.64669999788748,
+          "p99": 140.77049999650626,
+          "maximum": 140.8060000030673,
+          "mean": 135.23850158734214
+        },
+        "next_arrival_deadline_misses": 0,
+        "eligible_next_arrival_deadlines": 126,
+        "sessions": [
+          {
+            "session_id": "scan-fw-1a0e881391ba1d2f",
+            "rate_hz": 2500000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.497508400003426,
+            "serialized_service_seconds": 0.19020534400000003,
+            "service_to_arrival_horizon": 0.022383660603374437
+          },
+          {
+            "session_id": "scan-fw-3ec1c634e1f48f77",
+            "rate_hz": 5000000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.542542800001684,
+            "serialized_service_seconds": 0.38714367199999994,
+            "service_to_arrival_horizon": 0.04531948871241519
+          }
+        ]
+      },
+      "wall": {
+        "model": "one serialized server worker; both receiver medians summed per physical visit",
+        "clock": "wall",
+        "processing_service_ms": {
+          "p50": 4.2607505,
+          "p95": 6.5666419,
+          "p99": 6.9360013,
+          "maximum": 7.105232,
+          "mean": 4.51345415625
+        },
+        "queue_wait_backlog_ms": {
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        },
+        "capture_complete_to_decision_ms": {
+          "p50": 4.260750499999855,
+          "p95": 6.566641900000247,
+          "p99": 6.936001300000143,
+          "maximum": 7.105232000000017,
+          "mean": 4.513454156250018
+        },
+        "capture_complete_interarrival_ms": {
+          "p50": 140.19360000020242,
+          "p95": 140.64669999788748,
+          "p99": 140.77049999650626,
+          "maximum": 140.8060000030673,
+          "mean": 135.23850158734214
+        },
+        "next_arrival_deadline_misses": 0,
+        "eligible_next_arrival_deadlines": 126,
+        "sessions": [
+          {
+            "session_id": "scan-fw-1a0e881391ba1d2f",
+            "rate_hz": 2500000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.497508400003426,
+            "serialized_service_seconds": 0.19043088199999994,
+            "service_to_arrival_horizon": 0.02241020226586927
+          },
+          {
+            "session_id": "scan-fw-3ec1c634e1f48f77",
+            "rate_hz": 5000000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.542542800001684,
+            "serialized_service_seconds": 0.38729125,
+            "service_to_arrival_horizon": 0.04533676436481227
+          }
+        ]
+      }
+    },
+    "candidate": {
+      "cpu": {
+        "model": "one serialized server worker; both receiver medians summed per physical visit",
+        "clock": "cpu",
+        "processing_service_ms": {
+          "p50": 4.3516354999999995,
+          "p95": 6.6305049,
+          "p99": 7.078890850000001,
+          "maximum": 7.1838180000000005,
+          "mean": 4.46720996875
+        },
+        "queue_wait_backlog_ms": {
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        },
+        "capture_complete_to_decision_ms": {
+          "p50": 4.351635499999951,
+          "p95": 6.630504899999812,
+          "p99": 7.078890849999749,
+          "maximum": 7.183817999999675,
+          "mean": 4.4672099687500015
+        },
+        "capture_complete_interarrival_ms": {
+          "p50": 140.19360000020242,
+          "p95": 140.64669999788748,
+          "p99": 140.77049999650626,
+          "maximum": 140.8060000030673,
+          "mean": 135.23850158734214
+        },
+        "next_arrival_deadline_misses": 0,
+        "eligible_next_arrival_deadlines": 126,
+        "sessions": [
+          {
+            "session_id": "scan-fw-1a0e881391ba1d2f",
+            "rate_hz": 2500000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.497508400003426,
+            "serialized_service_seconds": 0.18043707399999995,
+            "service_to_arrival_horizon": 0.021234115402572265
+          },
+          {
+            "session_id": "scan-fw-3ec1c634e1f48f77",
+            "rate_hz": 5000000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.542542800001684,
+            "serialized_service_seconds": 0.391365802,
+            "service_to_arrival_horizon": 0.04581373616295172
+          }
+        ]
+      },
+      "wall": {
+        "model": "one serialized server worker; both receiver medians summed per physical visit",
+        "clock": "wall",
+        "processing_service_ms": {
+          "p50": 4.3510775,
+          "p95": 6.63433375,
+          "p99": 7.079394810000002,
+          "maximum": 7.183744,
+          "mean": 4.469400937500001
+        },
+        "queue_wait_backlog_ms": {
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0
+        },
+        "capture_complete_to_decision_ms": {
+          "p50": 4.351077499999967,
+          "p95": 6.634333750000043,
+          "p99": 7.07939480999972,
+          "maximum": 7.18374399999977,
+          "mean": 4.469400937500003
+        },
+        "capture_complete_interarrival_ms": {
+          "p50": 140.19360000020242,
+          "p95": 140.64669999788748,
+          "p99": 140.77049999650626,
+          "maximum": 140.8060000030673,
+          "mean": 135.23850158734214
+        },
+        "next_arrival_deadline_misses": 0,
+        "eligible_next_arrival_deadlines": 126,
+        "sessions": [
+          {
+            "session_id": "scan-fw-1a0e881391ba1d2f",
+            "rate_hz": 2500000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.497508400003426,
+            "serialized_service_seconds": 0.18048541799999993,
+            "service_to_arrival_horizon": 0.021239804599655018
+          },
+          {
+            "session_id": "scan-fw-3ec1c634e1f48f77",
+            "rate_hz": 5000000,
+            "physical_visits": 64,
+            "arrival_horizon_seconds": 8.542542800001684,
+            "serialized_service_seconds": 0.39159790200000005,
+            "service_to_arrival_horizon": 0.045840906059015925
+          }
+        ]
+      }
+    }
+  },
+  "ten_x_fast_gate_bounds": {
+    "formula_replacement": "f <= (0.1-h)/(1-h), for fast-or-blind normalized hit cost h",
+    "formula_additive": "r <= 0.1-h, when every visit pays fast gate h and routed visits add one baseline cost",
+    "rate_matched": {
+      "2500000": {
+        "reference_receiver_mean_cpu_ms": 1.48597925,
+        "observed_accepted_fast_receiver_cases": 12,
+        "paired_accepted_fast_reference_cpu_ms": 18.599243,
+        "paired_accepted_fast_candidate_cpu_ms": 2.350774,
+        "paired_hit_normalized_cost": 0.12639084289613292,
+        "maximum_baseline_cost_route_fraction_if_fast_replaces_blind": null,
+        "maximum_downstream_blind_route_fraction_if_fast_runs_on_every_visit": 0.0,
+        "ten_x_feasible_with_observed_full_aperture_fast_cost": false
+      },
+      "5000000": {
+        "reference_receiver_mean_cpu_ms": 3.0245599375,
+        "observed_accepted_fast_receiver_cases": 0,
+        "paired_accepted_fast_reference_cpu_ms": null,
+        "paired_accepted_fast_candidate_cpu_ms": null,
+        "paired_hit_normalized_cost": null,
+        "maximum_baseline_cost_route_fraction_if_fast_replaces_blind": null,
+        "maximum_downstream_blind_route_fraction_if_fast_runs_on_every_visit": null,
+        "ten_x_feasible_with_observed_full_aperture_fast_cost": false
+      }
+    },
+    "warning": "No 5 MS/s accepted fast cases exist in this development replay; do not transfer the 2.5 MS/s cost ratio."
+  }
+}

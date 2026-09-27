@@ -1,0 +1,51 @@
+{
+  "schema": "org.leo.research.application-early-exit-design/v1",
+  "status": "frozen_before_timed_real_calls",
+  "purpose": "Measure an exact decision-only early return after the complete confirming probe",
+  "scope": {
+    "candidate_function": "application_early_exit.prototype.detect_first_glrt64_early",
+    "oracle_function": "leo.scanner.detector.detect_first_glrt64",
+    "full_analysis_unchanged": true,
+    "exact_contract": "DwellDetection(first, best_margin, reason)"
+  },
+  "real_selection": {
+    "dataset": "new_data/cases.json",
+    "split": "dev",
+    "case_ids": [
+      "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077",
+      "newdev-r5000000-scan-fw-e76c229e9dc498b3-v001077"
+    ],
+    "outcome_informed": true,
+    "known_property": "both cases established a decision after probe 2 in the prior application profile",
+    "interpretation": "positive-path cost diagnostic only; not an unbiased sensitivity or prevalence sample"
+  },
+  "constructed_controls": {
+    "kinds": ["all-zero"],
+    "rates_hz": [2500000, 5000000],
+    "purpose": "exercise the complete no-result schedule without treating recorded quiet visits as physical negatives",
+    "timing_repetitions_per_method": 1
+  },
+  "measurement": {
+    "affinity_cpu": 0,
+    "thread_environment_value": "1",
+    "real_warmups_per_method_per_case": 1,
+    "real_measured_repetitions_per_method_per_case": 3,
+    "real_pair_order": ["baseline,candidate", "candidate,baseline", "baseline,candidate"],
+    "timed_boundary": "detect function only on preformed immutable complex64 dual-RX dwell; serialization, IQ loading, hashing, and diagnostics excluded",
+    "diagnostic": "one untimed candidate call records acquisition and scored-candidate counts",
+    "overall_timeout_seconds": 120
+  },
+  "gates": [
+    "every warmup, timed call, control call, and diagnostic DwellDetection exactly equals its oracle response",
+    "candidate completes both receivers and all candidates of its confirming probe",
+    "negative controls complete all 11 probes",
+    "each recorded positive-path case must achieve at least 3.0x median process-CPU speedup; both rates must pass for promotion",
+    "negative-control speed is report-only and has no acceptance threshold",
+    "source lock and frozen-manifest IQ hashes match before execution"
+  ],
+  "limitations": [
+    "The outcome-informed real cases measure the earliest possible confirmation path and cannot estimate average traffic speedup.",
+    "All-zero controls validate a constructed no-result path, not absence of a physical signal.",
+    "This is saved-IQ server analysis, not deployment, RF, ARM, or full-response analysis evidence."
+  ]
+}

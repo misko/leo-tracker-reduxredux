@@ -1,0 +1,336 @@
+{
+  "schema": "org.leo.research.arm-stateless-probe-plan/v1",
+  "selection": "metadata-only first two dev visits per supported rate plus all matching controls",
+  "holdout_excluded": true,
+  "methods": [
+    "packed_builtin_fp64",
+    "packed_fftw_fp64",
+    "aligned_v5_fftw_fp32"
+  ],
+  "warmups": 1,
+  "repetitions": 3,
+  "max_confirmations": 1,
+  "seeded": false,
+  "cases": [
+    {
+      "case_id": "seq-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001678",
+      "origin": "real_ds5",
+      "split": "dev",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_27_ds5_cached_tracking/dataset",
+      "dataset_manifest_sha256": "4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+      "raw_npy": {
+        "path": "iq/dev/seq-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001678.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:1e53fe589a07eafd0cee678fedccc81ba262460d6fd8335ead7da422b563fd72",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "seq-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001679",
+      "origin": "real_ds5",
+      "split": "dev",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_27_ds5_cached_tracking/dataset",
+      "dataset_manifest_sha256": "4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+      "raw_npy": {
+        "path": "iq/dev/seq-dev-r2500000-scan-fw-1a0e881391ba1d2f-v001679.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:74e6736d7212a03010a08f087d77f8d305da6a9d0418afb6b70ddaee09909c7b",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "seq-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000446",
+      "origin": "real_ds5",
+      "split": "dev",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_27_ds5_cached_tracking/dataset",
+      "dataset_manifest_sha256": "4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+      "raw_npy": {
+        "path": "iq/dev/seq-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000446.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:10e553bb81822a67993b3a4c099bea76ef41d37f5df52aba45cc28d959b84d29",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "seq-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000447",
+      "origin": "real_ds5",
+      "split": "dev",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_27_ds5_cached_tracking/dataset",
+      "dataset_manifest_sha256": "4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+      "raw_npy": {
+        "path": "iq/dev/seq-dev-r5000000-scan-fw-3ec1c634e1f48f77-v000447.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:df81048fdc3f7bce25b2e94c436a6810f106cc65253d5276fa2b08e6c208597b",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-s1901-1902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-s1901-1902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:507c070a6d436d35f0ba66a808e4c78a234cc893ed67dfd82ca7774b7f410bd1",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-s1903-1904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-s1903-1904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:ff397ec84c0644da94b14c413e9e3acb0ccc296f0b0caa60388bc12dbb9cacff",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-noise-lower-s2901-2902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-s2901-2902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6cc8b3eb2ead7fd233aeadc64cd13e1b1baa1bc46b9b7259ae8e12f484d82a12",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-noise-upper-s2903-2904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-s2903-2904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:20c324d395bf2f86c38510630086e9a0724cdf2fb013f64daefbfc6538410a70",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-tone-lower-s3901-3902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-s3901-3902.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:2a277a84471683ccc9895fde46568e9123deac4d26802e5d3a5b33691eda4e1a",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-tone-upper-s3903-3904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-s3903-3904.npy",
+        "dtype": "<i2",
+        "shape": [
+          300000,
+          2,
+          2
+        ],
+        "sha256": "sha256:0d5e2d4ef49cf30e66bd4243626797085137c25985f0963747b73fcd2be6bc65",
+        "bytes": 2400128
+      }
+    },
+    {
+      "case_id": "control-pilot-lower-r5000000-s11901-11902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-lower-r5000000-s11901-11902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:12436a5220e43001e28c69b633b69ea33bfce7815bf2316decc2402b5fd51ae9",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-pilot-upper-r5000000-s11903-11904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-pilot-upper-r5000000-s11903-11904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:8ea8a9246bf884d388568d9c0b0d5404aeb5c1685c4c2d89ca068729ae8c2202",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-noise-lower-r5000000-s12901-12902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-noise-lower-r5000000-s12901-12902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:5d936c16092821c8801dd32a54ee8007f8db9aef2537df59d09101641be74a9a",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-noise-upper-r5000000-s12903-12904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-noise-upper-r5000000-s12903-12904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:7388f15b3f416333528449cb3ad887d88b5ce9e517bfd24f2f3e3b310e7641ce",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-tone-lower-r5000000-s13901-13902",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-tone-lower-r5000000-s13901-13902.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:e698102a7384cd68740303e18d3f6c5cb95ed05468291c8735244524942e8a1e",
+        "bytes": 4800128
+      }
+    },
+    {
+      "case_id": "control-tone-upper-r5000000-s13903-13904",
+      "origin": "synthetic_control",
+      "split": "control",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "dataset_dir": "reports/2026_09_26_ds5_server_eval/dataset",
+      "dataset_manifest_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+      "raw_npy": {
+        "path": "iq/controls/control-tone-upper-r5000000-s13903-13904.npy",
+        "dtype": "<i2",
+        "shape": [
+          600000,
+          2,
+          2
+        ],
+        "sha256": "sha256:6cdfb3684d2abf1f450f247328d6580f21c6e1f71332020d5c8282954d3cd77c",
+        "bytes": 4800128
+      }
+    }
+  ]
+}

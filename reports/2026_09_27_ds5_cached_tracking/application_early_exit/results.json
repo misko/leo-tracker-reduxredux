@@ -1,0 +1,323 @@
+{
+  "schema": "org.leo.research.application-early-exit-result/v1",
+  "status": "complete",
+  "error": null,
+  "fresh_holdout_opened": false,
+  "source_lock": {
+    "schema": "org.leo.research.application-early-exit-source-lock/v1",
+    "stage": "frozen_before_timed_real_calls",
+    "files": {
+      "design": "sha256:b114f3f363974bda0de9e68edd5d4b4b30b5d13e37e8dbe83f434e2162195341",
+      "prototype": "sha256:b1cbd73249058f22bebafea288416c06fbdc6c29bd7badf340317f155a2817b2",
+      "prototype_tests": "sha256:c39ea4a55bd99e4758ff784d1520b8b868ecb74f6af4512d631a05c589f076e9",
+      "runner": "sha256:6c9240bd3dccf9e2e35aa6e6a6d7135cfd2d1e88d65e843d28d66a8ae399d9c9",
+      "runner_tests": "sha256:4b14124812db0bb212df919e9ce3f4a5afff41d40992773059da81c4db33a35e",
+      "dataset_cases": "sha256:b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845",
+      "detector": "sha256:01c21e7b138bc66c84efc341fff94d7938d18ed04ef9961286d4cabe73879270",
+      "acquisition": "sha256:b4891b7ceb7f60a8d23c7e8127b836159a48aa5a2e2f0245e25ac26bd96d3742",
+      "pilot_methods": "sha256:d6a599d7eb9cb4d6de5f7e6781cb6ea3ce65de422723d94ebfec9ea0a1fa4193",
+      "scanner_models": "sha256:6342bd529953d7340dcaf3403472d85ee04d03aecdb735b4b95d04cb59d83732",
+      "native_acquisition": "sha256:76b30e56abae7be1e201636034d9407e103835b34b2a275edfebbff7f28c494f"
+    }
+  },
+  "source_lock_stable": true,
+  "thread_environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1"
+  },
+  "affinity_cpu": 0,
+  "affinity_restored": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "elapsed_wall_ms": 41496.76794,
+  "rows": [
+    {
+      "case_id": "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077",
+      "origin": "recorded_development_outcome_informed_positive_path",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "raw_sha256": "sha256:8450d0ed987d2bb729d4de4d80bb85aecba4b71f689399c67db0205129248b87",
+      "response": {
+        "first": {
+          "receiver_id": 0,
+          "probe_index": 0,
+          "probe_start_ms": 0,
+          "candidate_rank": 0,
+          "epoch_sample": 1116,
+          "acquired_cfo_hz": -82578.3477967341,
+          "residual_cfo_hz": 0.0,
+          "tracking_cfo_hz": -82578.3477967341,
+          "exact_score": 0.6756582090905197,
+          "control_score": 0.05066163190353884,
+          "margin": 0.6249965771869808
+        },
+        "best_margin": 0.6377290243342233,
+        "reason": "two same-receiver non-overlapping 20 ms GLRT-64 probes passed the margin gate within 8 kHz CFO"
+      },
+      "response_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c",
+      "all_responses_exact": true,
+      "candidate_diagnostic_counts": {
+        "receiver_probe_acquisitions": 6,
+        "candidate_scores": 60
+      },
+      "schedule": [
+        {
+          "pair_index": 0,
+          "call_index": 0,
+          "method": "baseline",
+          "process_cpu_ms": 1482.106501,
+          "wall_ms": 1485.56172,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        },
+        {
+          "pair_index": 0,
+          "call_index": 1,
+          "method": "candidate",
+          "process_cpu_ms": 365.983758,
+          "wall_ms": 365.99278,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        },
+        {
+          "pair_index": 1,
+          "call_index": 0,
+          "method": "candidate",
+          "process_cpu_ms": 424.737812,
+          "wall_ms": 427.133637,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        },
+        {
+          "pair_index": 1,
+          "call_index": 1,
+          "method": "baseline",
+          "process_cpu_ms": 1417.667641,
+          "wall_ms": 1417.823436,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        },
+        {
+          "pair_index": 2,
+          "call_index": 0,
+          "method": "baseline",
+          "process_cpu_ms": 1340.052984,
+          "wall_ms": 1340.102694,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        },
+        {
+          "pair_index": 2,
+          "call_index": 1,
+          "method": "candidate",
+          "process_cpu_ms": 364.689343,
+          "wall_ms": 364.709172,
+          "output_sha256": "sha256:68d451d2e5db1ae4432c24b3329bb20ad524638ec12341fe9ac5613571b4254c"
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "repetitions": 3,
+          "median_process_cpu_ms": 1417.667641,
+          "median_wall_ms": 1417.823436
+        },
+        "candidate": {
+          "repetitions": 3,
+          "median_process_cpu_ms": 365.983758,
+          "median_wall_ms": 365.99278
+        },
+        "cpu_speedup": 3.8735807532748487,
+        "wall_speedup": 3.873910944363438,
+        "positive_path_cpu_gate": 3.0,
+        "positive_path_cpu_gate_pass": true
+      }
+    },
+    {
+      "case_id": "newdev-r5000000-scan-fw-e76c229e9dc498b3-v001077",
+      "origin": "recorded_development_outcome_informed_positive_path",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "raw_sha256": "sha256:4388f335bbe7f74b23a8ef478c6aaf4d70e7c869580da3927c7404df99895412",
+      "response": {
+        "first": {
+          "receiver_id": 1,
+          "probe_index": 0,
+          "probe_start_ms": 0,
+          "candidate_rank": 0,
+          "epoch_sample": 5638,
+          "acquired_cfo_hz": -27565.96094649356,
+          "residual_cfo_hz": 443.8920454545565,
+          "tracking_cfo_hz": -27122.068901039005,
+          "exact_score": 0.32598525076520496,
+          "control_score": 0.03673699395815341,
+          "margin": 0.2892482568070516
+        },
+        "best_margin": 0.37159237772823217,
+        "reason": "two same-receiver non-overlapping 20 ms GLRT-64 probes passed the margin gate within 8 kHz CFO"
+      },
+      "response_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c",
+      "all_responses_exact": true,
+      "candidate_diagnostic_counts": {
+        "receiver_probe_acquisitions": 12,
+        "candidate_scores": 120
+      },
+      "schedule": [
+        {
+          "pair_index": 0,
+          "call_index": 0,
+          "method": "baseline",
+          "process_cpu_ms": 3764.18911,
+          "wall_ms": 3764.540216,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        },
+        {
+          "pair_index": 0,
+          "call_index": 1,
+          "method": "candidate",
+          "process_cpu_ms": 2183.03401,
+          "wall_ms": 2183.20522,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        },
+        {
+          "pair_index": 1,
+          "call_index": 0,
+          "method": "candidate",
+          "process_cpu_ms": 2137.389445,
+          "wall_ms": 2137.485097,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        },
+        {
+          "pair_index": 1,
+          "call_index": 1,
+          "method": "baseline",
+          "process_cpu_ms": 3567.73215,
+          "wall_ms": 3570.937838,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        },
+        {
+          "pair_index": 2,
+          "call_index": 0,
+          "method": "baseline",
+          "process_cpu_ms": 3844.513933,
+          "wall_ms": 3844.743588,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        },
+        {
+          "pair_index": 2,
+          "call_index": 1,
+          "method": "candidate",
+          "process_cpu_ms": 2104.426482,
+          "wall_ms": 2104.594911,
+          "output_sha256": "sha256:26c6067d91ea0a690757f210fa066f727050758426369105c0984a115a6d3c1c"
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "repetitions": 3,
+          "median_process_cpu_ms": 3764.18911,
+          "median_wall_ms": 3764.540216
+        },
+        "candidate": {
+          "repetitions": 3,
+          "median_process_cpu_ms": 2137.389445,
+          "median_wall_ms": 2137.485097
+        },
+        "cpu_speedup": 1.7611152327927773,
+        "wall_speedup": 1.7612006845257548,
+        "positive_path_cpu_gate": 3.0,
+        "positive_path_cpu_gate_pass": false
+      }
+    },
+    {
+      "case_id": "constructed-zero-r2500000",
+      "origin": "constructed_all_zero_no_result_control",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "input_sha256": "sha256:58db5d87ffe2173badb59360da4e636ae85862569d4aae0097c7083cabf9763a",
+      "response": {
+        "first": null,
+        "best_margin": null,
+        "reason": "all 11 overlapping 20 ms probes completed without a confirmed same-receiver CFO-consistent pair"
+      },
+      "response_sha256": "sha256:af86af9bde7ff73b6854f6ae87036f3c6f3dac52e64ebdfbafee3a76a1392d49",
+      "all_responses_exact": true,
+      "candidate_diagnostic_counts": {
+        "receiver_probe_acquisitions": 22,
+        "candidate_scores": 0
+      },
+      "schedule": [
+        {
+          "method": "baseline",
+          "process_cpu_ms": 525.900668,
+          "wall_ms": 525.910089
+        },
+        {
+          "method": "candidate",
+          "process_cpu_ms": 502.105886,
+          "wall_ms": 502.144541
+        }
+      ]
+    },
+    {
+      "case_id": "constructed-zero-r5000000",
+      "origin": "constructed_all_zero_no_result_control",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "input_sha256": "sha256:357f2e9f18332520964ad74d3ea22adff3f72a709b6a9307269da018a095abd3",
+      "response": {
+        "first": null,
+        "best_margin": null,
+        "reason": "all 11 overlapping 20 ms probes completed without a confirmed same-receiver CFO-consistent pair"
+      },
+      "response_sha256": "sha256:af86af9bde7ff73b6854f6ae87036f3c6f3dac52e64ebdfbafee3a76a1392d49",
+      "all_responses_exact": true,
+      "candidate_diagnostic_counts": {
+        "receiver_probe_acquisitions": 22,
+        "candidate_scores": 0
+      },
+      "schedule": [
+        {
+          "method": "baseline",
+          "process_cpu_ms": 2233.904849,
+          "wall_ms": 2234.017047
+        },
+        {
+          "method": "candidate",
+          "process_cpu_ms": 2268.796783,
+          "wall_ms": 2268.879202
+        }
+      ]
+    }
+  ],
+  "qualification": {
+    "positive_path_cpu_gate": 3.0,
+    "both_recorded_rates_pass": false,
+    "negative_control_speed_gate": null
+  },
+  "limitations": [
+    "The outcome-informed real cases measure the earliest possible confirmation path and cannot estimate average traffic speedup.",
+    "All-zero controls validate a constructed no-result path, not absence of a physical signal.",
+    "This is saved-IQ server analysis, not deployment, RF, ARM, or full-response analysis evidence."
+  ]
+}

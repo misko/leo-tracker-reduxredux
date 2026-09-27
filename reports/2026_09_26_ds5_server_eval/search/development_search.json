@@ -1,0 +1,36 @@
+{
+  "schema": "org.leo.research.ds5-server-search-config/v1",
+  "stage": "development_search",
+  "screen_bins": 512,
+  "maximum_confirmations": 1,
+  "warmups": 1,
+  "timed_repetitions": 3,
+  "gate": {
+    "fractional_complete": true,
+    "margin_strictly_greater_than": 0.025
+  },
+  "identity_match": {
+    "maximum_cfo_difference_hz": 8000,
+    "maximum_circular_epoch_difference_us": 2,
+    "require_same_window": true,
+    "status": "diagnostic_not_calibrated"
+  },
+  "timing_bins_by_rate": {
+    "2500000": [2048, 4096],
+    "5000000": [4096, 8192]
+  },
+  "variants": [
+    {"name": "baseline_blind_512", "steps": ["blind"]},
+    {"name": "seed_512", "steps": ["seed_512"]},
+    {"name": "multires_low", "steps": ["seed_low"]},
+    {"name": "multires_high", "steps": ["seed_high"]},
+    {"name": "multi_seed_512_low_high", "steps": ["seed_512", "seed_low", "seed_high"]},
+    {"name": "high_seed_blind_fallback", "steps": ["seed_high", "blind_if_no_gate"]},
+    {"name": "multi_seed_blind_fallback", "steps": ["seed_512", "seed_low", "seed_high", "blind_if_no_gate"]}
+  ],
+  "supported_rates_hz": [2500000, 5000000],
+  "unsupported_rates_hz": [7500000, 10000000],
+  "unsupported_rate_reason": "existing native research binding rejects these rates; no rate snapping or unvalidated resampling",
+  "selection_rule": "Among candidates with 100% identity retention of development blind positives, select the lowest median native CPU time; if none retain all positives, select the highest retention then lowest median CPU. Freeze before validation.",
+  "scope": "saved DS5 visits only; no live RF, production, classifier recall, or absence claim"
+}

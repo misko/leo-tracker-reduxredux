@@ -1,0 +1,43 @@
+{
+  "schema": "org.leo.research.application-coarse-alternatives-design/v1",
+  "status": "frozen_before_timing_outcomes",
+  "purpose": "Measure concrete NumPy short-correlation and FFT alternatives to the production AVX2/FMA folded-anchor coarse grid.",
+  "source_profile": {
+    "application_results_sha256": "sha256:87abd4ed4e461693392b5782117579e3057796e1fb5dc1383aa2b75d3455680e",
+    "measured_coarse_cpu_ms_per_22_calls": {"2500000": 682.643, "5000000": 3065.480},
+    "production_backend": "avx2_fma"
+  },
+  "variants": {
+    "numpy_correlate": "np.correlate valid short FIR for every rounded-template symbol/CFO kernel, then vectorized unchanged frame/epoch folding",
+    "numpy_fft": "one probe FFT plus one symbol-at-a-time bank of 12 kernel FFTs and inverse transforms, then the same folding"
+  },
+  "science": {
+    "cfo_rows": 11,
+    "coefficients": "actual rounded complex128 Qin template samples",
+    "anchor_symbols": "production DEFAULT_ANCHOR_SYMBOLS",
+    "map_maximum_absolute_error": 1e-10,
+    "required_peak_indexes": "exact for every CFO row",
+    "full_candidate_gate_if_promoted": "no acquisition candidate identity or scanner decision change on the two frozen application-profile cases"
+  },
+  "fixtures": ["seeded complex128 random", "all zero", "injected exact Qin pilot"],
+  "rates_hz": [2500000, 5000000],
+  "component_timing": {
+    "affinity_cpu": 0,
+    "thread_environment": "all numerical thread variables fixed to one",
+    "warmups": 1,
+    "repetitions": 3,
+    "order": "cyclic counterbalance production, numpy_correlate, numpy_fft",
+    "scope": "one complete 20 ms receiver coarse grid on seeded random input"
+  },
+  "promotion_gate": {
+    "minimum_stage_cpu_speedup_each_rate": 10.0,
+    "science_gates_must_pass": true,
+    "action_on_failure": "stop before saved-IQ full application calls and report rejection"
+  },
+  "bounds": {
+    "timeout_seconds": 120,
+    "maximum_variants": 2,
+    "split": "component synthetic only unless promotion gate passes",
+    "excluded": ["holdout", "RF", "production edits", "tone approximation", "threshold tuning"]
+  }
+}

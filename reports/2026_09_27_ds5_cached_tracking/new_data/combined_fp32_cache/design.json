@@ -1,0 +1,50 @@
+{
+  "schema": "org.leo.research.ds5-newdata-combined-fp32-cache-design.v1",
+  "stage": "newdevelopment_only_frozen_before_combined_outcomes",
+  "dataset_cases_sha256": "sha256:b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845",
+  "v6_config_sha256": "sha256:dc0cde3ccd59f4c9dc99ed88737bde6c7201e322657870e44abe8eb9485224e1",
+  "v6_replay_sha256": "sha256:e05caafa18cea8808e38038fa0fe8b056ca4c4c87a0dab0f3eef61be71ff3dea",
+  "tracking_sha256": "sha256:0597aaf35e53e3f7652d599fc870afa9358440c542509fd0ed4b4fdb462a990f",
+  "stress_sha256": "sha256:99b3b1306719a9a6f0ced500e3a814a17c2c705edbf918f62fdb6c41de9dea60",
+  "known_state_v3_python_sha256": "sha256:b8bb15445fd10952352b02844fc0ec1383504351080be6bea18bffe0a96bae5d",
+  "blind_strided_v4_python_sha256": "sha256:c6d59173c5e6c856374c8c9f7b836b1d3d72ee52eb3ab46d26137b8613b6a03b",
+  "fp64_library_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+  "fp64_build_receipt_sha256": "sha256:5103c6ebfde2a95e0ecdeec3c2e5c5c3253cf04aaca15da2fda1b5b6c0d1ee3e",
+  "fp32_fftw_library_sha256": "sha256:3fcdefd955725d5501b4cd5e577511c0b305e808613f7a30c2b77b382357b8a0",
+  "fp32_fftw_build_receipt_sha256": "sha256:efce18893445d1cc1c7ac0ab22231a6c15200f4fd7c3e025a4c410f8e2fa3ce4",
+  "server_fftw_library_sha256": "sha256:8fae0bc5d15b6caf5bb843f6a9328d2b08cd5440bef97722401cffdebc553611",
+  "candidate": {
+    "cache": "unchanged V6 full-aperture known_state_v3 using stable FP64 V4 library",
+    "blind_fallback": "unchanged unseeded strided V4 using FP32 FFTW library",
+    "automatic_fallback": true,
+    "local_recovery": false
+  },
+  "policy": {
+    "max_age_seconds": 2.0,
+    "discovery_interval": 32,
+    "maximum_cfo_innovation_hz": 8000.0,
+    "maximum_cfo_rate_hz_per_s": 5000.0,
+    "maximum_timing_innovation_seconds": 0.000004,
+    "maximum_clock_error_ppm": 50.0,
+    "learning_cfo_slack_hz": 2000.0,
+    "use_cfo_rate": true
+  },
+  "known_state": {
+    "frame_limit": 16,
+    "full_aperture": true
+  },
+  "decision": {
+    "positive": "fractional_complete is true and exact_score - control_score is strictly greater than 0.025",
+    "reference_match": "both positive, circular timing error <=2 us, and CFO error <=8 kHz",
+    "identity_gate": "retain every packed FP64 reference positive and add no candidate positives",
+    "expected_reference_positives_from_prior_frozen_v6": 129,
+    "future_reference_state_use_forbidden": true
+  },
+  "timing": {
+    "warmups_per_action": 1,
+    "repetitions": 3,
+    "reference_order": "counterbalanced by visit index plus receiver",
+    "candidate_cost": "state overhead plus actual cache or FP32 blind-fallback calls",
+    "scope": "process CPU and monotonic wall; IQ loading and hashing excluded"
+  }
+}

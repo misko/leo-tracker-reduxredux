@@ -1,0 +1,297 @@
+{
+  "schema": "org.leo.research.application-coarse-alternatives-result/v1",
+  "fresh_holdout_opened": false,
+  "source_lock": {
+    "schema": "org.leo.research.application-coarse-alternatives-source-lock/v1",
+    "stage": "frozen_before_timing_outcomes",
+    "files": {
+      "design": "sha256:14a4211410b98895d6765173eb7bb41da663d06fca8e7753946b78ff5cc55535",
+      "alternatives": "sha256:1ec1834020b53a6a2f38be218cdca69389f6b3df45ca2d9a084781da162b5e2c",
+      "runner": "sha256:7cd697138c6a82cee8c4deaa25af84422d6e9e3a97bbcd26771d0c93a21a2c18",
+      "acquisition": "sha256:b4891b7ceb7f60a8d23c7e8127b836159a48aa5a2e2f0245e25ac26bd96d3742",
+      "native_source": "sha256:60f7a8eeba46513ae58fa1c6bbca75388e8f95130655cdfcabde52edadcbc076",
+      "native_grid": "sha256:3913e30cd95afda624a872649df14d1ce087ae7c020c706dc712496aa6e074c8",
+      "native_binary": "sha256:76b30e56abae7be1e201636034d9407e103835b34b2a275edfebbff7f28c494f"
+    }
+  },
+  "native_backend": "avx2_fma",
+  "science": {
+    "2500000": {
+      "random": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 2.7755575615628914e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 3.3306690738754696e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      },
+      "zero": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 0.0,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 0.0,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      },
+      "pilot": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 2.7755575615628914e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 3.3306690738754696e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      }
+    },
+    "5000000": {
+      "random": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 1.6653345369377348e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 2.498001805406602e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      },
+      "zero": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 0.0,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 0.0,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      },
+      "pilot": {
+        "numpy_correlate": {
+          "shape_match": true,
+          "maximum_absolute_error": 5.551115123125783e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        },
+        "numpy_fft": {
+          "shape_match": true,
+          "maximum_absolute_error": 7.771561172376096e-16,
+          "peak_indexes_exact": true,
+          "finite": true
+        }
+      }
+    }
+  },
+  "science_pass": {
+    "numpy_correlate": true,
+    "numpy_fft": true
+  },
+  "timing": {
+    "2500000": {
+      "samples": {
+        "production_avx2": [
+          {
+            "process_cpu_ms": 26.011968,
+            "wall_ms": 26.012878
+          },
+          {
+            "process_cpu_ms": 79.551854,
+            "wall_ms": 79.582991
+          },
+          {
+            "process_cpu_ms": 26.071602,
+            "wall_ms": 26.07323
+          }
+        ],
+        "numpy_correlate": [
+          {
+            "process_cpu_ms": 95.117285,
+            "wall_ms": 95.125747
+          },
+          {
+            "process_cpu_ms": 98.588689,
+            "wall_ms": 98.59336
+          },
+          {
+            "process_cpu_ms": 92.609996,
+            "wall_ms": 92.613546
+          }
+        ],
+        "numpy_fft": [
+          {
+            "process_cpu_ms": 283.855029,
+            "wall_ms": 283.864182
+          },
+          {
+            "process_cpu_ms": 290.062612,
+            "wall_ms": 290.071042
+          },
+          {
+            "process_cpu_ms": 286.941453,
+            "wall_ms": 286.961569
+          }
+        ]
+      },
+      "medians": {
+        "production_avx2": {
+          "process_cpu_ms": 26.071602,
+          "wall_ms": 26.07323
+        },
+        "numpy_correlate": {
+          "process_cpu_ms": 95.117285,
+          "wall_ms": 95.125747
+        },
+        "numpy_fft": {
+          "process_cpu_ms": 286.941453,
+          "wall_ms": 286.961569
+        }
+      },
+      "speedup_vs_production": {
+        "numpy_correlate": {
+          "process_cpu": 0.2740995182947032,
+          "wall": 0.2740922497039629
+        },
+        "numpy_fft": {
+          "process_cpu": 0.09086035401096264,
+          "wall": 0.09085965793558927
+        }
+      }
+    },
+    "5000000": {
+      "samples": {
+        "production_avx2": [
+          {
+            "process_cpu_ms": 104.627974,
+            "wall_ms": 104.639492
+          },
+          {
+            "process_cpu_ms": 102.402148,
+            "wall_ms": 102.405623
+          },
+          {
+            "process_cpu_ms": 99.731459,
+            "wall_ms": 99.73481
+          }
+        ],
+        "numpy_correlate": [
+          {
+            "process_cpu_ms": 231.64661,
+            "wall_ms": 231.653261
+          },
+          {
+            "process_cpu_ms": 218.998895,
+            "wall_ms": 219.013933
+          },
+          {
+            "process_cpu_ms": 219.196214,
+            "wall_ms": 219.202887
+          }
+        ],
+        "numpy_fft": [
+          {
+            "process_cpu_ms": 618.557428,
+            "wall_ms": 618.577971
+          },
+          {
+            "process_cpu_ms": 567.999629,
+            "wall_ms": 568.019916
+          },
+          {
+            "process_cpu_ms": 530.892357,
+            "wall_ms": 530.911666
+          }
+        ]
+      },
+      "medians": {
+        "production_avx2": {
+          "process_cpu_ms": 102.402148,
+          "wall_ms": 102.405623
+        },
+        "numpy_correlate": {
+          "process_cpu_ms": 219.196214,
+          "wall_ms": 219.202887
+        },
+        "numpy_fft": {
+          "process_cpu_ms": 567.999629,
+          "wall_ms": 568.019916
+        }
+      },
+      "speedup_vs_production": {
+        "numpy_correlate": {
+          "process_cpu": 0.46717115287401817,
+          "wall": 0.4671727840883775
+        },
+        "numpy_fft": {
+          "process_cpu": 0.18028558958794672,
+          "wall": 0.1802852683778081
+        }
+      }
+    }
+  },
+  "promotion_gate_speedup": 10.0,
+  "promoted_variants": [],
+  "saved_iq_application_calls_run": false,
+  "status": "rejected_at_component_gate",
+  "limitations": [
+    "NumPy correlation and FFT reductions are numerical variants, not bit-exact execution.",
+    "No saved-IQ full application call is run unless a candidate passes the frozen 10x stage gate."
+  ],
+  "thread_environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1"
+  },
+  "affinity_cpu": 0,
+  "affinity_restored": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "elapsed_wall_ms": 9322.008655
+}

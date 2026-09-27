@@ -1,0 +1,45 @@
+{
+  "schema": "org.leo.research.tg11-extra-diagnostic-config/v1",
+  "phase1_result_sha256": "7877fdd40972a9bc70c705b434bbc33207f735bd3d8a78f93767ea1cd5b1f38f",
+  "cases": [
+    {
+      "role": "retained_known_positive_anchor",
+      "case_id": "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077",
+      "receiver": 0,
+      "coordinates": [
+        {"probe_index": 0, "local_epoch_sample": 1116.338125172264, "scoring_cfo_hz": -82662.49194302227, "receipt_margin": 0.646764614002191},
+        {"probe_index": 2, "local_epoch_sample": 1116.6617577028305, "scoring_cfo_hz": -82668.13402087314, "receipt_margin": 0.6205168700577823}
+      ]
+    },
+    {
+      "role": "unadjudicated_additional_tg11_pair",
+      "case_id": "newdev-r2500000-scan-fw-40ebc07665464c7d-v001078",
+      "receiver": 0,
+      "coordinates": [
+        {"probe_index": 4, "local_epoch_sample": 6.976932380375004, "scoring_cfo_hz": -86074.63285260726, "receipt_margin": 0.09575656360041279},
+        {"probe_index": 10, "local_epoch_sample": 9.150282753001854, "scoring_cfo_hz": -86087.53053328201, "receipt_margin": 0.1141121537610027}
+      ]
+    }
+  ],
+  "integer_cells": "unique floor, nearest ties-to-even via Python round, and ceil of the receipt fractional epoch",
+  "native_variants": [
+    "blind rerun matched to receipt coordinate",
+    "guided exact fractional",
+    "guided each frozen integer cell"
+  ],
+  "python_variant": "current checkout conditioned_glrt64_score at each frozen integer cell and receipt scoring CFO",
+  "known_statistic_difference": "native profile alternates symbols 2..65 and 152..215 by frame; current Python conditioned_glrt64_score uses symbols 2..65 on every frame",
+  "known_path_differences": [
+    "native blind acquisition may apply tone nuisance conditioning",
+    "native guided scoring uses raw strided support without a new nuisance fit",
+    "native blind and guided support fractional interpolation; Python diagnostic cells are integer-only"
+  ],
+  "decision_margin_gate": 0.025,
+  "identity_timing_seconds": 0.000002,
+  "identity_cfo_hz": 8000,
+  "timing": "one warmup plus three repetitions for exact native guided and nearest-integer Python score only",
+  "timeout_seconds": 60,
+  "affinity_cpu": 0,
+  "threads": 1,
+  "holdout": false
+}

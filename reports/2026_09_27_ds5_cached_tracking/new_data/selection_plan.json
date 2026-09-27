@@ -1,0 +1,65 @@
+{
+  "schema": "org.leo.research.ds5-new-development-selection.v1",
+  "frozen_as_of_utc": "2026-09-27T04:34:59Z",
+  "purpose": "bounded new development data for causal cached-tracking replay",
+  "selection_rule": {
+    "session": "latest completed eligible session at each supported rate by summary created_at",
+    "block": "64 consecutive visits starting at floor((complete_visit_count - 64) / 2)",
+    "required_geometry": "120 ms ci16_le sample_receiver_iq, both receivers, one chunk per visit",
+    "required_channel_coverage": "every channel 1 through 4 occurs at least 8 times",
+    "outcome_independent": true
+  },
+  "split_contract": {
+    "split": "dev",
+    "cohort": "newdevelopment",
+    "evaluation_role": "newdevelopment",
+    "is_holdout": false
+  },
+  "limits": {
+    "block_visits": 64,
+    "materialized_bytes_max": 512000000,
+    "extraction_deadline_seconds": 180
+  },
+  "blocks": [
+    {
+      "block_id": "newdev-r2500000-scan-fw-40ebc07665464c7d-v001077-v001140",
+      "session_id": "scan-fw-40ebc07665464c7d",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "first_visit_index": 1077,
+      "visit_count": 64,
+      "source_summary_path": "/srv/bulk/leo/v052-adaptive-live/adaptive-seven-minute-428bdd25e4a5-20260927T035700Z-2m-scan-fw-40ebc07665464c7d.json",
+      "source_summary_sha256": "sha256:ae423781e91f5141454608202ca1427931baa914ba4537a248e7e3c1be8beb09",
+      "source_summary_created_at": "2026-09-27T04:05:42.423282+00:00",
+      "recording_manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-40ebc07665464c7d/manifest.json",
+      "recording_manifest_file_sha256": "sha256:3658c75c5e9c9c201830b94f71a3786be4b0e0bfababde0994733a0d2a3f714e",
+      "recording_manifest_content_sha256": "sha256:f3926aef7b54d3a8f7bfe9e92c8388a1fdfaf2fef72c079dedaee7d339ff1a1e",
+      "channel_counts": {
+        "1": 16,
+        "2": 21,
+        "3": 11,
+        "4": 16
+      }
+    },
+    {
+      "block_id": "newdev-r5000000-scan-fw-e76c229e9dc498b3-v001077-v001140",
+      "session_id": "scan-fw-e76c229e9dc498b3",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "first_visit_index": 1077,
+      "visit_count": 64,
+      "source_summary_path": "/srv/bulk/leo/v052-adaptive-live/adaptive-seven-minute-428bdd25e4a5-20260927T041800Z-5m-scan-fw-e76c229e9dc498b3.json",
+      "source_summary_sha256": "sha256:f98abf0cfb88eb9d25aa0979d85f617e732110b1bc28fc5e4b6c3da57fab2eb1",
+      "source_summary_created_at": "2026-09-27T04:26:56.493837+00:00",
+      "recording_manifest_path": "/srv/bulk/leo/scanner-adaptive-recordings/scan-fw-e76c229e9dc498b3/manifest.json",
+      "recording_manifest_file_sha256": "sha256:0751bbd7657bf8a4e82dda52a61b9c8de6467d83f11facac6cd6826ff185a56c",
+      "recording_manifest_content_sha256": "sha256:0b66bba5b89a80308b5cd1e51728727093704ec8f980168d3f8439e6fa55cc40",
+      "channel_counts": {
+        "1": 12,
+        "2": 21,
+        "3": 15,
+        "4": 16
+      }
+    }
+  ]
+}

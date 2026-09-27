@@ -1,0 +1,38 @@
+{
+  "schema": "org.leo.research.ds5-glrt-cfo-oracle-design.v1",
+  "stage": "development_oracle_diagnostic_frozen_before_scores",
+  "reference_results_sha256": "sha256:6e6934137b2a76e7e697c94eaeb6c6faf71a3fde94c43e894cbc3192e040c518",
+  "dataset_cases_sha256": "sha256:4874540dfe94bd5ced2d5496d6c53635de22c8f5d59d8edf0a159c62a899d401",
+  "control_cases_sha256": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "known_state_v3": {
+    "python_sha256": "sha256:b8bb15445fd10952352b02844fc0ec1383504351080be6bea18bffe0a96bae5d",
+    "c_sha256": "sha256:02cb1aeedeab5195a60bec0c700d2c7ce8514bd7c4597cc6e5c4aabe62416fa0",
+    "header_sha256": "sha256:68201509a5cf64826f1038dc875e19776bd8bc29ce7142d6eb4fa82dc9127e8b",
+    "binary_sha256": "sha256:8250b58f6619ca63f2340c5f34e5dee893acc7cebc2946029f76df8395be323b",
+    "build_receipt_sha256": "sha256:888f6a55ba1356a9966cc1d8fad35578cd46b93cc715c7533bba5b7a1082b328"
+  },
+  "blind_library_sha256": "sha256:8cdc21362e8cb98a21550b0ba2024674881ca106706d9c799b33e5d4f5a7e614",
+  "variants": [
+    {
+      "name": "four_centers",
+      "centers_hz": [-300000, -100000, 100000, 300000]
+    },
+    {
+      "name": "eight_centers",
+      "centers_hz": [-350000, -250000, -150000, -50000, 50000, 150000, 250000, 350000]
+    }
+  ],
+  "selection": "36 development receiver-visits positive under the packed unseeded reference; fixed controls evaluated independently afterward",
+  "oracle_timing": "use the reference-selected 20 ms window and floor(reference fitted epoch_samples); this supplies detector outcome timing and is not an acquisition result",
+  "center_score": "NativeKnownStateV3 frame_limit=2, recover_timing=false, expected_physical_cfo_hz equal to scoring center; rank centers by exact_score-control_score with declared center order as tie break",
+  "physical_cfo_proposal": "selected center plus the returned GLRT residual, represented by tracking_cfo_hz",
+  "success": "selected margin strictly greater than 0.025 and proposed physical CFO within 8000 Hz of the packed reference CFO",
+  "timing": {
+    "warmups": 1,
+    "repetitions": 3,
+    "candidate_scope": "natural-stride selected 20 ms view plus every declared center call",
+    "comparison": "same-case packed unseeded maximum=1 blind confirmation fine_cpu_ms"
+  },
+  "stopping_rule": "do not promote if either variant proposes wrong CFO for reference positives, changes fixed control decisions, or total center cost dominates the measured fine stage",
+  "interpretation": "truth-supplied timing feasibility diagnostic only; it does not establish blind acquisition, physical identity, or absence"
+}

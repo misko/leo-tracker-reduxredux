@@ -1,0 +1,78 @@
+{
+  "schema": "org.leo.research.ds5-cached-tracking-selection.v1",
+  "dataset_seed": "ds5-cached-tracking-v1",
+  "source_dataset_manifest": "/home/mouse9911/gits/leo-adaptive-position-deploy/reports/2026_09_26_ds5_since_local_midnight/manifest.json",
+  "source_dataset_manifest_sha256": "sha256:6c7cfbe0e91f6eb2d5f041295d453f44ab99910cd17ff63b0fb1f3096655fa35",
+  "prior_suite_manifest": "reports/2026_09_26_ds5_server_eval/dataset/cases.json",
+  "prior_suite_manifest_sha256": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "selection_basis": [
+    "Only the frozen source inventory, capture metadata, target edge/channel metadata, and SHA-256 ranks were used.",
+    "No detector result, candidate score, or inferred signal label was inspected.",
+    "Development expands the two prior-suite native-rate development sessions to 64 visits centered around their earlier eight-visit cuts.",
+    "Fresh holdout uses two previously unselected whole sessions. The lowest SHA-256-ranked eligible session in each predeclared rate/edge stratum was selected.",
+    "A SHA-256-derived block start is accepted when its 64 consecutive visits contain at least eight visits for every channel.",
+    "All prior-suite sessions and both earlier speed-probe sessions were ineligible for fresh holdout."
+  ],
+  "blocks": [
+    {
+      "block_id": "dev-r2500000-lower",
+      "cohort": "cached_tracking_main",
+      "split": "dev",
+      "rate_hz": 2500000,
+      "edge": "lower",
+      "session_id": "scan-fw-1a0e881391ba1d2f",
+      "first_visit_index": 1678,
+      "visit_count": 64,
+      "selection_role": "expanded_exposed_development"
+    },
+    {
+      "block_id": "dev-r5000000-upper",
+      "cohort": "cached_tracking_main",
+      "split": "dev",
+      "rate_hz": 5000000,
+      "edge": "upper",
+      "session_id": "scan-fw-3ec1c634e1f48f77",
+      "first_visit_index": 446,
+      "visit_count": 64,
+      "selection_role": "expanded_exposed_development"
+    },
+    {
+      "block_id": "holdout-r2500000-upper",
+      "cohort": "cached_tracking_main",
+      "split": "holdout",
+      "rate_hz": 2500000,
+      "edge": "upper",
+      "session_id": "scan-fw-79bcb2c18a4740f3",
+      "first_visit_index": 1955,
+      "visit_count": 64,
+      "selection_role": "fresh_metadata_selected"
+    },
+    {
+      "block_id": "holdout-r5000000-lower",
+      "cohort": "cached_tracking_main",
+      "split": "holdout",
+      "rate_hz": 5000000,
+      "edge": "lower",
+      "session_id": "scan-fw-25440731d17d68fd",
+      "first_visit_index": 555,
+      "visit_count": 64,
+      "selection_role": "fresh_metadata_selected"
+    }
+  ],
+  "sessions_forbidden_in_fresh_holdout": [
+    "scan-fw-03f629ba67a8af0b",
+    "scan-fw-1a0e881391ba1d2f",
+    "scan-fw-202f59398ea68cef",
+    "scan-fw-247bd59bd5950cb1",
+    "scan-fw-3159ec54906a6800",
+    "scan-fw-32a202b6e55630ec",
+    "scan-fw-353a4f8831e99c5f",
+    "scan-fw-3ec1c634e1f48f77",
+    "scan-fw-4044d42d24b45da5",
+    "scan-fw-4fc9ccc9f49e637b",
+    "scan-fw-6c18112a5659116e",
+    "scan-fw-888fc1e1e005ded3",
+    "scan-fw-a3c516351c096460",
+    "scan-fw-de73bee9d0c4412c"
+  ]
+}

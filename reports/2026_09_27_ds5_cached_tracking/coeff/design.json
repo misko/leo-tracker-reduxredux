@@ -1,0 +1,29 @@
+{
+  "schema": "org.leo.research.coefficient-glrt-design/v1",
+  "stage": "pre_control_and_real_oracle",
+  "variant": "actual_fraction_pattern_cache_within_invocation",
+  "scope": "fractional full-aperture final GLRT only",
+  "tolerances": {
+    "maximum_correlation_relative_error": 5e-12,
+    "maximum_ceiling_relative_error": 5e-12,
+    "maximum_exact_score_absolute_error": 5e-12,
+    "maximum_control_score_absolute_error": 5e-12,
+    "require_exact_peak_bin": true,
+    "require_exact_residual_cfo": true,
+    "require_identical_margin_gate": true
+  },
+  "performance_rule": "stop if per-invocation coefficient construction plus scoring is not cheaper than unchanged V2 full-aperture scoring",
+  "timing": {
+    "warmups": 5,
+    "repetitions": 50,
+    "aggregation": "median internal process CPU and monotonic wall per receiver-case"
+  },
+  "excluded": [
+    "integer-path changes",
+    "partial-frame GLRT",
+    "persistent cross-visit coefficient caches",
+    "blind acquisition and ranking",
+    "holdout IQ",
+    "ARM performance claims"
+  ]
+}

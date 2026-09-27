@@ -1,0 +1,36 @@
+{
+  "schema": "org.leo.research.phase-cfo-design/v1",
+  "stage": "frozen_before_build_or_outcomes",
+  "variant": "existing_lag4_phase_aliases_with_three_conditioned_cells",
+  "phase_lag_samples": 4,
+  "carrier_bounds_hz": [-400000, 400000],
+  "conditioned_offsets_hz": [-100, 0, 100],
+  "fallback": "no candidate or fractional-incomplete phase result invokes an independent packed FP64 V4 blind call; attempt and fallback are both charged; a complete margin-negative is final",
+  "timing": {
+    "warmups": 1,
+    "repetitions": 5,
+    "order": "alternate independent reference-first and complete-strategy-first per repetition",
+    "aggregation": "per-case median thread CPU and monotonic wall; totals sum per-case medians"
+  },
+  "scientific_gates": {
+    "matched_reference_positives": 36,
+    "maximum_cfo_error_hz": 8000,
+    "maximum_circular_timing_error_seconds": 0.000002,
+    "require_matched_fractional_complete_and_valid_support": true,
+    "require_no_supported_control_decision_changes": true
+  },
+  "cost_gates": {
+    "minimum_fine_stage_speedup_each_rate": 2.0,
+    "minimum_full_caller_cpu_speedup_each_rate": 1.05
+  },
+  "scope": [
+    "all 256 development receiver-visits",
+    "24 constructed receiver-controls at 2.5 and 5 Msps"
+  ],
+  "excluded": [
+    "holdout IQ or outcomes",
+    "threshold or alias-offset tuning after outcomes",
+    "FP32 baseline multiplication",
+    "ARM or production claims"
+  ]
+}

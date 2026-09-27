@@ -1,0 +1,45 @@
+{
+  "schema": "org.leo.research.server-simd-validation-design/v1",
+  "status": "frozen_before_validation_outcomes",
+  "decision_context": {
+    "outcome_informed": true,
+    "reason": "The unchanged exact-SIMD candidate produced a repeatable approximately 6.5 percent complete-call component benefit. General compute improvement is useful even though the original 1.10x planning gate failed.",
+    "original_component_gate_passed": false,
+    "original_component_result_sha256": "sha256:4f1abd221b530cb7953a9a0cee9f09f98a9e9f3250cdb137f348ae87aa99ea61",
+    "candidate_changes_after_component_result": "none",
+    "candidate_binary_sha256": "sha256:1364b352d661df932716781dbf5b022bde738a76dceb73141b64fe35d43371ad",
+    "candidate_build_receipt_sha256": "sha256:666d4df0f64583734a9d22a9e8d4194d6f7a47260da75f930feea3d8f5538af7",
+    "interpretation": "Validation quantifies the unchanged candidate; it does not retroactively pass the original planning gate and defines no replacement minimum speed gate."
+  },
+  "inventories": {
+    "new_development": {"physical_cases": 128, "receiver_cases": 256},
+    "old_constructed_controls": {"physical_cases": 12, "receiver_cases": 24},
+    "new_adversarial_controls": {"physical_cases": 20, "receiver_cases": 40}
+  },
+  "variants": {
+    "original_fp64_packed": "native/libblind_strided_v4.so through NativeDwell, including caller packing",
+    "stable_fp32_fftw": "fft32/libfft32_fftw.so through the natural-stride V4 port",
+    "unchanged_server_simd": "server_simd/libserver_simd.so forced SSSE3/SSE4.1"
+  },
+  "timing": {
+    "affinity_cpu": 0,
+    "warmups_per_variant_receiver_case": 1,
+    "repetitions": 3,
+    "order": "three-way cyclic counterbalance by receiver-case ordinal and repetition",
+    "scope": "complete caller thread CPU and wall time; original FP64 includes np.ascontiguousarray receiver packing",
+    "aggregation": "sum of per-receiver medians, reported directly without multiplying ratios"
+  },
+  "scientific_gates": {
+    "simd_vs_stable_fp32": "every non-timing DwellResult field must be exactly equal on every receiver case and repeat",
+    "stable_and_simd_vs_original_fp64": "no lost or additional positive top result under the frozen 2 us circular timing and 8 kHz CFO identity rule",
+    "repeatability": "each variant must return an identical non-timing result across all three repetitions",
+    "input": "all IQ file hashes verified and memory unchanged"
+  },
+  "reporting": [
+    "Report total original-FP64-to-SIMD and incremental stable-FP32-to-SIMD CPU/wall gains.",
+    "Report results overall, by inventory, and by rate.",
+    "Keep the failed original 1.10x planning gate explicit.",
+    "Make no 10x, ARM, production, RF, or physical-ground-truth claim."
+  ],
+  "excluded": ["holdout", "threshold tuning", "candidate retuning", "ratio multiplication", "RF collection"]
+}

@@ -1,0 +1,104 @@
+{
+  "schema": "org.leo.research.tg11-dataset-design/v1",
+  "status": "frozen_before_tg11_outcomes",
+  "governing_design": {
+    "path": "../application_coarse_alternatives/TRACK_GUIDED_DESIGN.md",
+    "sha256": "sha256:0cce858a57bbe2ce54bb407a96f989bfbdfd6ed8a387b230549fba9916482ebb"
+  },
+  "run_protocol": {
+    "path": "RUN_PROTOCOL.md",
+    "sha256": "sha256:c65233ef1a248e0eeda61dad41d2026a6dd65bb6ed612b369d1d1cfda2d45f29"
+  },
+  "source_manifests": {
+    "../new_data/cases.json": "sha256:b1a7a557a58de5adfe0af87e034ddde4737df18d917fc6536331146bff62a845",
+    "../../2026_09_26_ds5_server_eval/dataset/cases.json": "sha256:ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+    "../lag3_controls/cases.json": "sha256:5bc58aab84ce75d3704d08a294333010745caec382da5f059b04c9e5a5473188"
+  },
+  "membership": {
+    "sha256": "sha256:41c3e268e52a7c8295c64ec0e137e28d153d99bf1a232e9517c5958dc7ededb7",
+    "real_rule": "first 32 manifest-ordered split=dev physical visits at each of 2500000 and 5000000 samples/s",
+    "real_physical_cases": 64,
+    "real_receiver_streams": 128,
+    "timing_rule": "first two selected physical visits per rate",
+    "timing_physical_cases": 4,
+    "control_rule": "all 12 original synthetic physical cases at 2.5/5 Msps plus all 20 lag3 adversarial physical cases",
+    "control_physical_cases": 32,
+    "control_receiver_streams": 64,
+    "outcomes_used_for_membership": false,
+    "holdout_opened": false
+  },
+  "application_comparator": {
+    "function": "leo.scanner.detector.analyze_glrt64_dwell",
+    "maximum_acquisition_candidates": 10,
+    "scheduled_probes": 11,
+    "receivers": [0, 1],
+    "margin_gate": 0.025,
+    "pair_minimum_probe_start_gap_ms": 20,
+    "pair_maximum_tracking_cfo_difference_hz": 8000,
+    "inventory": "every qualifying pair in the full response, not only returned first"
+  },
+  "association": {
+    "coordinate": "within-dwell probe_start_sample + local_epoch_sample; source counters remain integer",
+    "circular_timing_tolerance_seconds": 0.000002,
+    "tracking_cfo_tolerance_hz": 8000,
+    "same_receiver_required": true,
+    "both_pair_members_must_match_one_reference_or_injected_trajectory": true,
+    "injected_temporal_support": "each member's actual 20 ms probe must contain at least two injected frames with complete GLRT symbols 2..65",
+    "original_finite_pilot_supported_pairs": {
+      "lower": [1, 3],
+      "upper": [7, 9]
+    },
+    "circular_phase_alone_is_insufficient": true
+  },
+  "control_sequences": [
+    {
+      "id": "quiet-to-pilot",
+      "base_case_ids": [
+        "lag3-r2500000-noise",
+        "lag3-r2500000-noise",
+        "lag3-r2500000-pilot-cfo0-int"
+      ],
+      "virtual_start_counter": 20000000000,
+      "counter_step_samples": 300000,
+      "gate": "first pilot-bearing visit routes blind and finds the injected pilot"
+    },
+    {
+      "id": "pilot-dropout",
+      "base_case_ids": [
+        "lag3-r2500000-pilot-cfo0-int",
+        "lag3-r2500000-pilot-cfo0-int",
+        "lag3-r2500000-noise",
+        "control-tone-lower-s3901-3902"
+      ],
+      "virtual_start_counter": 21000000000,
+      "counter_step_samples": 300000,
+      "gate": "noise and tone visits after establishment remain inactive"
+    },
+    {
+      "id": "changed-pilot",
+      "base_case_ids": [
+        "lag3-r2500000-pilot-cfo0-int",
+        "lag3-r2500000-pilot-cfo0-int",
+        "lag3-r2500000-pilot-cfom399k-fracm49"
+      ],
+      "virtual_start_counter": 22000000000,
+      "counter_step_samples": 300000,
+      "gate": "changed timing/CFO routes blind and associates to the current injected pilot"
+    }
+  ],
+  "sequence_mapping": {
+    "arrays_modified": false,
+    "counter_step_reason": "120 ms equals exactly 90 Starlink frame periods at 2.5 Msps, so repeated-array frame timing phase is preserved",
+    "raw_and_virtual_counter_origins_recorded": true,
+    "frame_lattice_phase_offset_recorded": true,
+    "carrier_phase_offset_cycles_recorded_per_component": true,
+    "carrier_phase_reset": "true for every virtual occurrence; sequences test routing/state semantics and do not claim continuous RF carrier phase"
+  },
+  "stage_order": [
+    "component tests",
+    "all 64 constructed control receiver rows and fixed sequences",
+    "paired timing on four selected physical visits only if all science controls pass",
+    "all 64 real physical visits and full comparator inventories only if cost gates pass"
+  ],
+  "stopping_rule": "Record the complete planned stage and all failures, then stop before the next stage on any gate failure; no subset is a pass."
+}

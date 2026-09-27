@@ -1,0 +1,53 @@
+{
+  "schema": "org.leo.research.ds5-server-search-config/v1",
+  "stage": "frozen_validation",
+  "frozen_before_validation": true,
+  "frozen_dataset_cases_sha256": "ce3a22f10abefca4623affe006331b770dad5d3788d99aa44bdad93d2f75af48",
+  "development_evidence": {
+    "development_search_config_sha256": "b1796bfb3d98d0687f3287134562fb96ea906a42078de68226aac002ab380ae9",
+    "dev_results_sha256": "a84a45ba5842225821bc21ef4fce21c8a9449698bf0dd1bc4b3ed9c22c8d79f0",
+    "control_results_sha256": "e027830a30ec83c4e9fa93c656b6d962b6e4e95a2a439ddedaa3bbcfc878db18",
+    "experiment_script_sha256": "80dd3a94daf60f7362ba3e26bece8f7a0d21a471e3e6569191f8691ecbbb664b",
+    "native_binary_sha256": "f9c346ad103c68e837f36d4db70e8250df4887496df90fc7eba725a3ff4f97ba",
+    "native_build_receipt_sha256": "b48dda05e52614476bbc1c305d8084a5a61f235bbec54d6f019c35a278c30fff"
+  },
+  "screen_bins": 512,
+  "maximum_confirmations": 1,
+  "warmups": 1,
+  "timed_repetitions": 3,
+  "gate": {
+    "fractional_complete": true,
+    "margin_strictly_greater_than": 0.025
+  },
+  "identity_match": {
+    "maximum_cfo_difference_hz": 8000,
+    "maximum_circular_epoch_difference_us": 2,
+    "require_same_window": true,
+    "status": "diagnostic_not_calibrated"
+  },
+  "timing_bins_by_rate": {
+    "2500000": [2048, 4096],
+    "5000000": [4096, 8192]
+  },
+  "variants": [
+    {"name": "baseline_blind_512", "steps": ["blind"]},
+    {"name": "high_seed_blind_fallback", "steps": ["seed_high", "blind_if_no_gate"]}
+  ],
+  "supported_rates_hz": [2500000, 5000000],
+  "unsupported_rates_hz": [7500000, 10000000],
+  "unsupported_rate_reason": "existing native research binding rejects these rates; no rate snapping or unvalidated resampling",
+  "selection": {
+    "result": "no development candidate met both fidelity and compute-benefit promotion rules",
+    "baseline": "exact control",
+    "candidate": "high_seed_blind_fallback",
+    "candidate_reason": "only single-seed candidate with complete development real reference retention and no additional supported noise/tone control gates; frozen to test fidelity generalization, despite development median CPU being slower than blind",
+    "rejected": {
+      "seed_512": "retained 1/6 development real baseline positives",
+      "multires_low": "retained 3/6 development real baseline positives",
+      "multires_high": "retained 4/6 development real baseline positives",
+      "multi_seed_512_low_high": "retained 4/6 and was slower than blind",
+      "multi_seed_blind_fallback": "retained 6/6 but was slower than the simpler fallback"
+    }
+  },
+  "scope": "saved DS5 visits only; no live RF, production, classifier recall, or absence claim"
+}
