@@ -24,7 +24,9 @@ def read(name):
 
 def save(fig, name):
     fig.savefig(FIGURES / f"{name}.png", dpi=170, bbox_inches="tight")
-    fig.savefig(FIGURES / f"{name}.svg", bbox_inches="tight")
+    svg = FIGURES / f"{name}.svg"
+    fig.savefig(svg, bbox_inches="tight")
+    svg.write_text("\n".join(line.rstrip() for line in svg.read_text().splitlines()) + "\n")
     plt.close(fig)
 
 
