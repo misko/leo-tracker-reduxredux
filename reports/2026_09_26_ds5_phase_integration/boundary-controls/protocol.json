@@ -1,0 +1,20 @@
+{
+  "controls": "Fixed acquisition-time quantiles .25,.375,.5,.625,.75; no CFO values or phase select control boundaries; minimum 3 train and 3 held blocks per side",
+  "models": "One identity, orbit time and CFO intercept, independent residual scales across each tested boundary versus one shared scale",
+  "tau_step_s": 0.025,
+  "scales_hz": [
+    3.125,
+    6.25,
+    12.5,
+    25,
+    50,
+    100,
+    200,
+    400,
+    800,
+    1600
+  ],
+  "selection": "Fixed candidate bank for all boundaries within a track/fold; mode0 12:00 uses prior segment proposal union; other tracks use prior original banks. No new candidate search.",
+  "meaning": "Retrospective negative controls, not unseen-scan validation or calibrated significance test",
+  "followup_model_mixture": "After reviewing boundary controls: half prior on stationary uncertainty, half equally across eligible proposed boundaries. Compare acquisition-triggered proposals against ordinary quantiles; weights from training evidence only. Exploratory follow-up, not a preregistered validation."
+}

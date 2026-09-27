@@ -1,0 +1,711 @@
+{
+  "protocol": {
+    "controls": "Fixed acquisition-time quantiles .25,.375,.5,.625,.75; no CFO values or phase select control boundaries; minimum 3 train and 3 held blocks per side",
+    "models": "One identity, orbit time and CFO intercept, independent residual scales across each tested boundary versus one shared scale",
+    "tau_step_s": 0.025,
+    "scales_hz": [
+      3.125,
+      6.25,
+      12.5,
+      25,
+      50,
+      100,
+      200,
+      400,
+      800,
+      1600
+    ],
+    "selection": "Fixed candidate bank for all boundaries within a track/fold; mode0 12:00 uses prior segment proposal union; other tracks use prior original banks. No new candidate search.",
+    "meaning": "Retrospective negative controls, not unseen-scan validation or calibrated significance test",
+    "followup_model_mixture": "After reviewing boundary controls: half prior on stationary uncertainty, half equally across eligible proposed boundaries. Compare acquisition-triggered proposals against ordinary quantiles; weights from training evidence only. Exploratory follow-up, not a preregistered validation."
+  },
+  "results": [
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "fold": 0,
+      "mode": 0,
+      "base_held_predictive": -70.10413397753182,
+      "base_log_train": -118.82714742617041,
+      "base_log_full": -188.93128140370223,
+      "candidates": 8,
+      "trials": [
+        {
+          "eligible": true,
+          "counts": [
+            4,
+            17,
+            5,
+            11
+          ],
+          "log_train": -120.66679221380856,
+          "log_full": -191.1708586731417,
+          "held_predictive": -70.50406645933315,
+          "kind": "control",
+          "cut_s": 11.84601708475,
+          "gain_nats": -0.39993248180132923
+        },
+        {
+          "eligible": true,
+          "counts": [
+            5,
+            16,
+            8,
+            8
+          ],
+          "log_train": -120.6926192691761,
+          "log_full": -191.09724635309746,
+          "held_predictive": -70.40462708392135,
+          "kind": "control",
+          "cut_s": 15.595048268625,
+          "gain_nats": -0.3004931063895384
+        },
+        {
+          "eligible": true,
+          "counts": [
+            7,
+            14,
+            10,
+            6
+          ],
+          "log_train": -120.43213468429963,
+          "log_full": -191.00652145973396,
+          "held_predictive": -70.57438677543433,
+          "kind": "control",
+          "cut_s": 20.9120715115,
+          "gain_nats": -0.4702527979025177
+        },
+        {
+          "eligible": true,
+          "counts": [
+            11,
+            10,
+            12,
+            4
+          ],
+          "log_train": -119.89241515866344,
+          "log_full": -191.05913253238288,
+          "held_predictive": -71.16671737371944,
+          "kind": "control",
+          "cut_s": 27.359255176999998,
+          "gain_nats": -1.0625833961876197
+        },
+        {
+          "eligible": true,
+          "counts": [
+            14,
+            7,
+            13,
+            3
+          ],
+          "log_train": -119.43197794858197,
+          "log_full": -190.6331536586946,
+          "held_predictive": -71.20117571011262,
+          "kind": "control",
+          "cut_s": 31.368759478999998,
+          "gain_nats": -1.0970417325808057
+        }
+      ],
+      "control_mixture_gain_nats": -0.7740204102641712,
+      "generic_model_mixture_gain_nats": -0.12582020138822259,
+      "pilot_model_mixture_gain_nats": 0.0
+    },
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "fold": 0,
+      "mode": 1,
+      "base_held_predictive": -40.39646470464783,
+      "base_log_train": -48.01034066153368,
+      "base_log_full": -88.40680536618152,
+      "candidates": 8,
+      "trials": [
+        {
+          "eligible": false,
+          "counts": [
+            1,
+            7,
+            4,
+            5
+          ],
+          "kind": "control",
+          "cut_s": 9.889833765
+        },
+        {
+          "eligible": true,
+          "counts": [
+            3,
+            5,
+            4,
+            5
+          ],
+          "log_train": -49.1404701038578,
+          "log_full": -90.02172954971785,
+          "held_predictive": -40.881259445860046,
+          "kind": "control",
+          "cut_s": 11.725587970500001,
+          "gain_nats": -0.48479474121221244
+        },
+        {
+          "eligible": true,
+          "counts": [
+            3,
+            5,
+            5,
+            4
+          ],
+          "log_train": -49.1404701038578,
+          "log_full": -89.76415910421699,
+          "held_predictive": -40.623689000359185,
+          "kind": "control",
+          "cut_s": 13.079937449,
+          "gain_nats": -0.22722429571135194
+        },
+        {
+          "eligible": true,
+          "counts": [
+            4,
+            4,
+            6,
+            3
+          ],
+          "log_train": -48.54159847769361,
+          "log_full": -90.13876746980802,
+          "held_predictive": -41.597168992114405,
+          "kind": "control",
+          "cut_s": 15.48996518725,
+          "gain_nats": -1.2007042874665714
+        },
+        {
+          "eligible": false,
+          "counts": [
+            4,
+            4,
+            8,
+            1
+          ],
+          "kind": "control",
+          "cut_s": 17.785323702
+        }
+      ],
+      "control_mixture_gain_nats": -0.6671326950462628,
+      "generic_model_mixture_gain_nats": -0.1530019983091222,
+      "pilot_model_mixture_gain_nats": 0.0
+    },
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "fold": 1,
+      "mode": 0,
+      "base_held_predictive": -103.07696490690788,
+      "base_log_train": -85.85431649679435,
+      "base_log_full": -188.93128140370223,
+      "candidates": 8,
+      "trials": [
+        {
+          "eligible": true,
+          "counts": [
+            5,
+            11,
+            4,
+            17
+          ],
+          "log_train": -86.97010137550215,
+          "log_full": -191.17085867314395,
+          "held_predictive": -104.2007572976418,
+          "kind": "control",
+          "cut_s": 11.84601708475,
+          "gain_nats": -1.1237923907339251
+        },
+        {
+          "eligible": true,
+          "counts": [
+            8,
+            8,
+            5,
+            16
+          ],
+          "log_train": -87.59511470944275,
+          "log_full": -191.0972463530982,
+          "held_predictive": -103.50213164365545,
+          "kind": "control",
+          "cut_s": 15.595048268625,
+          "gain_nats": -0.42516673674757044
+        },
+        {
+          "eligible": true,
+          "counts": [
+            10,
+            6,
+            7,
+            14
+          ],
+          "log_train": -87.58502884087899,
+          "log_full": -191.0065214597346,
+          "held_predictive": -103.42149261885562,
+          "kind": "control",
+          "cut_s": 20.9120715115,
+          "gain_nats": -0.3445277119477481
+        },
+        {
+          "eligible": true,
+          "counts": [
+            12,
+            4,
+            11,
+            10
+          ],
+          "log_train": -87.5888526294525,
+          "log_full": -191.05913253238094,
+          "held_predictive": -103.47027990292844,
+          "kind": "control",
+          "cut_s": 27.359255176999998,
+          "gain_nats": -0.39331499602056397
+        },
+        {
+          "eligible": true,
+          "counts": [
+            13,
+            3,
+            14,
+            7
+          ],
+          "log_train": -87.42910851549993,
+          "log_full": -190.6331536586941,
+          "held_predictive": -103.20404514319418,
+          "kind": "control",
+          "cut_s": 31.368759478999998,
+          "gain_nats": -0.12708023628630372
+        }
+      ],
+      "control_mixture_gain_nats": -0.49548521743685114,
+      "generic_model_mixture_gain_nats": -0.07100510662537829,
+      "pilot_model_mixture_gain_nats": 0.0
+    },
+    {
+      "session_id": "scan-fw-f7515a5fdb02cda5",
+      "fold": 1,
+      "mode": 1,
+      "base_held_predictive": -34.86677502694106,
+      "base_log_train": -53.54003033924045,
+      "base_log_full": -88.40680536618152,
+      "candidates": 10,
+      "trials": [
+        {
+          "eligible": false,
+          "counts": [
+            4,
+            5,
+            1,
+            7
+          ],
+          "kind": "control",
+          "cut_s": 9.889833765
+        },
+        {
+          "eligible": true,
+          "counts": [
+            4,
+            5,
+            3,
+            5
+          ],
+          "log_train": -54.32586500887171,
+          "log_full": -90.02172954971697,
+          "held_predictive": -35.69586454084526,
+          "kind": "control",
+          "cut_s": 11.725587970500001,
+          "gain_nats": -0.8290895139041936
+        },
+        {
+          "eligible": true,
+          "counts": [
+            5,
+            4,
+            3,
+            5
+          ],
+          "log_train": -54.160259791126144,
+          "log_full": -89.76415910421655,
+          "held_predictive": -35.6038993130904,
+          "kind": "control",
+          "cut_s": 13.079937449,
+          "gain_nats": -0.7371242861493386
+        },
+        {
+          "eligible": true,
+          "counts": [
+            6,
+            3,
+            4,
+            4
+          ],
+          "log_train": -54.967680391359444,
+          "log_full": -90.13876746981018,
+          "held_predictive": -35.17108707845073,
+          "kind": "control",
+          "cut_s": 15.48996518725,
+          "gain_nats": -0.3043120515096689
+        },
+        {
+          "eligible": false,
+          "counts": [
+            8,
+            1,
+            4,
+            4
+          ],
+          "kind": "control",
+          "cut_s": 17.785323702
+        }
+      ],
+      "control_mixture_gain_nats": -0.6667956028775919,
+      "generic_model_mixture_gain_nats": -0.1529037730491396,
+      "pilot_model_mixture_gain_nats": 0.0
+    },
+    {
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "fold": 0,
+      "mode": 0,
+      "base_held_predictive": -123.48482350562674,
+      "base_log_train": -117.37738182821778,
+      "base_log_full": -240.8622053338445,
+      "candidates": 25,
+      "trials": [
+        {
+          "eligible": true,
+          "counts": [
+            4,
+            15,
+            6,
+            13
+          ],
+          "log_train": -118.7562741107654,
+          "log_full": -230.0742661241375,
+          "held_predictive": -111.31799201337209,
+          "kind": "control",
+          "cut_s": 228.947540393,
+          "gain_nats": 12.166831492254644
+        },
+        {
+          "eligible": true,
+          "counts": [
+            7,
+            12,
+            7,
+            12
+          ],
+          "log_train": -118.5876257247611,
+          "log_full": -232.7766208015807,
+          "held_predictive": -114.1889950768196,
+          "kind": "control",
+          "cut_s": 234.483632514,
+          "gain_nats": 9.295828428807141
+        },
+        {
+          "eligible": true,
+          "counts": [
+            8,
+            11,
+            12,
+            7
+          ],
+          "log_train": -118.13536075447517,
+          "log_full": -232.79613995479954,
+          "held_predictive": -114.66077920032437,
+          "kind": "control",
+          "cut_s": 243.968888741,
+          "gain_nats": 8.824044305302365
+        },
+        {
+          "eligible": true,
+          "counts": [
+            10,
+            9,
+            15,
+            4
+          ],
+          "log_train": -115.24686558885305,
+          "log_full": -232.23496054613315,
+          "held_predictive": -116.9880949572801,
+          "kind": "control",
+          "cut_s": 249.364895508,
+          "gain_nats": 6.496728548346638
+        },
+        {
+          "eligible": false,
+          "counts": [
+            12,
+            7,
+            17,
+            2
+          ],
+          "kind": "control",
+          "cut_s": 253.896894478
+        },
+        {
+          "eligible": true,
+          "counts": [
+            7,
+            12,
+            8,
+            11
+          ],
+          "log_train": -118.5876257247611,
+          "log_full": -233.0822134446824,
+          "held_predictive": -114.4945877199213,
+          "kind": "pilot_break",
+          "cut_s": 234.764299748,
+          "gain_nats": 8.990235785705437
+        }
+      ],
+      "control_mixture_gain_nats": 8.764793099312712,
+      "generic_model_mixture_gain_nats": 8.411510748173285,
+      "pilot_model_mixture_gain_nats": 7.519489241445797
+    },
+    {
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "fold": 0,
+      "mode": 1,
+      "base_held_predictive": -46.32200178167607,
+      "base_log_train": -55.57964769034046,
+      "base_log_full": -101.90164947201653,
+      "candidates": 9,
+      "trials": [
+        {
+          "eligible": false,
+          "counts": [
+            1,
+            6,
+            4,
+            5
+          ],
+          "kind": "control",
+          "cut_s": 243.126126313
+        },
+        {
+          "eligible": true,
+          "counts": [
+            3,
+            4,
+            5,
+            4
+          ],
+          "log_train": -56.36979412246087,
+          "log_full": -103.01229170080357,
+          "held_predictive": -46.642497578342706,
+          "kind": "control",
+          "cut_s": 246.736837472,
+          "gain_nats": -0.3204957966666342
+        },
+        {
+          "eligible": false,
+          "counts": [
+            3,
+            4,
+            8,
+            1
+          ],
+          "kind": "control",
+          "cut_s": 249.484869392
+        },
+        {
+          "eligible": false,
+          "counts": [
+            4,
+            3,
+            9,
+            0
+          ],
+          "kind": "control",
+          "cut_s": 252.533964647
+        },
+        {
+          "eligible": false,
+          "counts": [
+            5,
+            2,
+            9,
+            0
+          ],
+          "kind": "control",
+          "cut_s": 253.61691506
+        }
+      ],
+      "control_mixture_gain_nats": -0.3204957966666342,
+      "generic_model_mixture_gain_nats": -0.08947779327501593,
+      "pilot_model_mixture_gain_nats": 0.0
+    },
+    {
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "fold": 1,
+      "mode": 0,
+      "base_held_predictive": -108.98036341532142,
+      "base_log_train": -131.8818419185231,
+      "base_log_full": -240.8622053338445,
+      "candidates": 26,
+      "trials": [
+        {
+          "eligible": true,
+          "counts": [
+            6,
+            13,
+            4,
+            15
+          ],
+          "log_train": -128.28389721010893,
+          "log_full": -230.07426612413778,
+          "held_predictive": -101.79036891402885,
+          "kind": "control",
+          "cut_s": 228.947540393,
+          "gain_nats": 7.189994501292574
+        },
+        {
+          "eligible": true,
+          "counts": [
+            7,
+            12,
+            7,
+            12
+          ],
+          "log_train": -129.2706458278841,
+          "log_full": -232.7766208015815,
+          "held_predictive": -103.50597497369739,
+          "kind": "control",
+          "cut_s": 234.483632514,
+          "gain_nats": 5.474388441624029
+        },
+        {
+          "eligible": true,
+          "counts": [
+            12,
+            7,
+            8,
+            11
+          ],
+          "log_train": -131.55448720757988,
+          "log_full": -232.79613995479747,
+          "held_predictive": -101.24165274721759,
+          "kind": "control",
+          "cut_s": 243.968888741,
+          "gain_nats": 7.738710668103835
+        },
+        {
+          "eligible": true,
+          "counts": [
+            15,
+            4,
+            10,
+            9
+          ],
+          "log_train": -133.093613211625,
+          "log_full": -232.23496054613398,
+          "held_predictive": -99.14134733450896,
+          "kind": "control",
+          "cut_s": 249.364895508,
+          "gain_nats": 9.839016080812456
+        },
+        {
+          "eligible": false,
+          "counts": [
+            17,
+            2,
+            12,
+            7
+          ],
+          "kind": "control",
+          "cut_s": 253.896894478
+        },
+        {
+          "eligible": true,
+          "counts": [
+            8,
+            11,
+            7,
+            12
+          ],
+          "log_train": -130.1328487554412,
+          "log_full": -233.0822134446816,
+          "held_predictive": -102.94936468924041,
+          "kind": "pilot_break",
+          "cut_s": 234.764299748,
+          "gain_nats": 6.030998726081009
+        }
+      ],
+      "control_mixture_gain_nats": 7.0616752765086375,
+      "generic_model_mixture_gain_nats": 6.987390070422691,
+      "pilot_model_mixture_gain_nats": 5.871043380534218
+    },
+    {
+      "session_id": "scan-fw-888fc1e1e005ded3",
+      "fold": 1,
+      "mode": 1,
+      "base_held_predictive": -35.259175360627154,
+      "base_log_train": -66.64247406067084,
+      "base_log_full": -101.90164942129799,
+      "candidates": 9,
+      "trials": [
+        {
+          "eligible": false,
+          "counts": [
+            4,
+            5,
+            1,
+            6
+          ],
+          "kind": "control",
+          "cut_s": 243.126126313
+        },
+        {
+          "eligible": true,
+          "counts": [
+            5,
+            4,
+            3,
+            4
+          ],
+          "log_train": -67.47343693582793,
+          "log_full": -103.01229164582352,
+          "held_predictive": -35.53885470999559,
+          "kind": "control",
+          "cut_s": 246.736837472,
+          "gain_nats": -0.2796793493684362
+        },
+        {
+          "eligible": false,
+          "counts": [
+            8,
+            1,
+            3,
+            4
+          ],
+          "kind": "control",
+          "cut_s": 249.484869392
+        },
+        {
+          "eligible": false,
+          "counts": [
+            9,
+            0,
+            4,
+            3
+          ],
+          "kind": "control",
+          "cut_s": 252.533964647
+        },
+        {
+          "eligible": false,
+          "counts": [
+            9,
+            0,
+            5,
+            2
+          ],
+          "kind": "control",
+          "cut_s": 253.61691506
+        }
+      ],
+      "control_mixture_gain_nats": -0.2796793493684362,
+      "generic_model_mixture_gain_nats": -0.07691538899486261,
+      "pilot_model_mixture_gain_nats": 0.0
+    }
+  ],
+  "elapsed_s": 21.32819169317372
+}

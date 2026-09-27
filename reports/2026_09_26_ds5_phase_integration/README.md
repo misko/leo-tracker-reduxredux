@@ -22,6 +22,8 @@ The [phase-reference episode trial](PHASE_EPISODES.md) tests timing-triggered ph
 
 The [separate-episode catalogue experiment](SEGMENT_ASSOCIATION.md) re-searches all 11,116 candidates around the surviving timing break. Its strongest result keeps one identity and offset but allows different residual uncertainty: held CFO prediction improves in both existing folds. This is retrospective quality-model evidence, not confirmed satellite identity accuracy or carrier-phase benefit.
 
+The [boundary-control experiment](BOUNDARY_CONTROLS.md) qualifies that result: ordinary time splits also improve the problematic track, and a generic boundary mixture outperforms the pilot-triggered mixture there. Pilot timing avoids unnecessary splits on smooth controls, but its unique predictive value remains unproven. The next validation needs causal quality-state comparisons on additional tracks.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.

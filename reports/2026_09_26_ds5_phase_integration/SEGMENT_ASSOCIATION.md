@@ -1,5 +1,7 @@
 # DS5 association across a pilot-timing discontinuity
 
+Follow-up: [ordinary-boundary and smooth-track controls](BOUNDARY_CONTROLS.md) show that the predictive gain is not unique to the pilot-timing boundary. Read that comparison before attributing the gain specifically to the timing cue.
+
 **The supported timing break is more useful as a measurement-quality boundary than as evidence of a satellite switch.** A model that keeps one catalogue identity and one CFO offset, but allows different residual uncertainty before and after the break, improves held CFO prediction in both existing folds. This is a promising retrospective tracking result. It is not yet verified satellite identity accuracy or an independent validation of phase-assisted association.
 
 This experiment uses the real 12:00 DS5 recording `scan-fw-888fc1e1e005ded3`, following the [phase-episode trial](PHASE_EPISODES.md). It retains the complete first-mode CFO track across the supported acquisition timing discontinuity at visit 1728, 234.764 s. The second simultaneous mode provides the existing phase reference. No capture was added and no difficult observations were removed.
