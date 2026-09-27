@@ -26,6 +26,8 @@ The [boundary-control experiment](BOUNDARY_CONTROLS.md) qualifies that result: o
 
 The [causal quality prototype](CAUSAL_QUALITY.md) adds 08:20 and 10:50 scans and predicts subsequent blocks from earlier data. Generic adaptive uncertainty gives promising scores, but its Gaussian approximation fails a bounded exact-history accuracy gate. The timing trigger does not add a provisional gain. Numerical inference must be corrected before promoting these results.
 
+The [offset-mixture correction](QUALITY_MIXTURE.md) passes expanded exact short-history checks and substantially changes the real-data scores. Four-to-eight-component differences still fail the real-track consistency threshold. An independent direct-offset integration prototype is now available for the next numerical reference replay; association improvement remains unverified.
+
 ## Recording selection and coverage
 
 DS5 contains 42 scans with 2.5, 5, 7.5 and 10 MS/s captures. This bounded replay selects three additional 10 MS/s scans spread across the capture period, maintaining the earlier extractor's sample rate. The previously examined 12:20 scan is excluded. These three scans are not a random sample of all DS5, and the result does not establish performance at other sample rates.
