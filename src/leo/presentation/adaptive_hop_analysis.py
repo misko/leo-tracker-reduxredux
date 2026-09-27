@@ -55,6 +55,9 @@ from leo.scanner.host_adaptive_products import (
 )
 
 _EDGE_COLORS = ("#287da1", "#bd3653")
+# Keep receiver colors distinct even when a scan contains only one edge.
+# Rows are lower/upper edges; columns are RX0/RX1.
+_CFO_COLORS = (("#287da1", "#b56c13"), ("#8b5fbf", "#16866b"))
 _MARKERS = ("o", "x")
 TestData = Literal["synthetic", "saved-rx1"]
 _TEST_LABELS = {
@@ -483,7 +486,7 @@ def _render_overview(
                             s=12,
                             alpha=0.7,
                             marker=_MARKERS[rx],
-                            color=_EDGE_COLORS[edge],
+                            color=_CFO_COLORS[edge][rx],
                             linewidths=0.8,
                             label=f"{'LU'[edge]} RX{rx}",
                             rasterized=True,
@@ -495,7 +498,7 @@ def _render_overview(
                             axis.plot(
                                 times,
                                 track.frequency_hz(times),
-                                color=_EDGE_COLORS[edge],
+                                color=_CFO_COLORS[edge][rx],
                                 linewidth=1.1,
                                 linestyle="--",
                                 alpha=0.8,
