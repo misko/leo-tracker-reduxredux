@@ -46,6 +46,33 @@ it("rejects a product belonging to another capture", async () => {
   expect(screen.queryByRole("img")).not.toBeInTheDocument();
 });
 
+it("shows the longest 16 reviews regardless of artifact order and keeps every overview", async () => {
+  const reviews = Array.from({ length: 24 }, (_, i) => ({
+    artifact_name: `tle-review-${String(i + 1).padStart(2, "0")}`,
+    tracklet_id: `track-${i}`, start_s: 50, end_s: 51 + i, observation_count: 30,
+  }));
+  const artifacts = [
+    ...product.artifacts.filter(a => !a.name.startsWith("tle-review-")),
+    { name: "position-diagnostic", sha256: "position" },
+    ...reviews.map(review => ({ name: review.artifact_name, sha256: review.tracklet_id })),
+  ];
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+    session_id: "scan-test", state: "complete", phase: "complete",
+    product: { ...product, artifacts, track_reviews: reviews },
+  }) }));
+  render(<ScannerTrackingPanel sessionId="scan-test" />);
+  expect(await screen.findByText("Showing the 16 longest of 24 published per-track reviews.")).toBeInTheDocument();
+  const images = screen.getAllByRole("img");
+  expect(images).toHaveLength(19);
+  expect(images.slice(3).map(image => image.getAttribute("alt"))).toEqual(
+    reviews.slice(8).reverse().map(review => `${review.artifact_name} for scan-test`),
+  );
+  expect(screen.getByRole("img", { name: "trajectory for scan-test" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "trajectory-tle for scan-test" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "position-diagnostic for scan-test" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Open tle-review-08 PNG" })).not.toBeInTheDocument();
+});
+
 it("keeps the measured PNG visible while matching is pending", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ session_id: "scan-test", state: "running", phase: "tle-matching", product: { ...product, tle_state: "pending", artifacts: [product.artifacts[0]] } }) }));
   render(<ScannerTrackingPanel sessionId="scan-test" />);

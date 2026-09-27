@@ -11,6 +11,8 @@ type Product = {
   deferred_group_count: number;
   review_limit?: number; review_eligible_count?: number; review_count?: number;
   deferred_review_count?: number; review_selection_policy?: string;
+  track_reviews?: Array<{ artifact_name: string; tracklet_id: string;
+    start_s: number; end_s: number; observation_count: number }>;
   catalogue_exclusions: Array<{ catalog_number: number; name: string; reason: string }>;
   unscored_groups: Array<{ physical_group_id: string; reason: string }>;
   tle_candidates: Array<{ physical_group_id: string; leading_catalog_number: number | null;
@@ -33,6 +35,23 @@ type Product = {
   }>;
 };
 type Status = { session_id: string; state: string; phase: string; failure_summary: string | null; product: Product | null };
+
+export function longestTrackReviewArtifacts(product: Product, limit = 16) {
+  const reviews = new Map(product.track_reviews?.map(review => [review.artifact_name, review]));
+  return product.artifacts.filter(artifact => artifact.name.startsWith("tle-review-"))
+    .sort((a, b) => {
+      const left = reviews.get(a.name), right = reviews.get(b.name);
+      if (left && right) {
+        return (right.end_s - right.start_s) - (left.end_s - left.start_s)
+          || right.observation_count - left.observation_count
+          || left.tracklet_id.localeCompare(right.tracklet_id)
+          || a.name.localeCompare(b.name);
+      }
+      if (left || right) return left ? -1 : 1;
+      // Older products without review metadata retain their published review rank.
+      return Number(a.name.slice(11)) - Number(b.name.slice(11));
+    }).slice(0, limit);
+}
 
 function artifactCaption(name: Product["artifacts"][number]["name"]): string {
   if (name === "trajectory") return "Measured trajectories";
@@ -65,6 +84,11 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
     return () => { active = false; controller.abort(); clearInterval(timer); };
   }, [base, sessionId, inputDigest]);
   const p = status?.product;
+  const reviewFigures = p ? longestTrackReviewArtifacts(p) : [];
+  const reviewFigureCount = p?.artifacts.filter(a => a.name.startsWith("tle-review-")).length ?? 0;
+  const visibleFigures = p ? [
+    ...p.artifacts.filter(a => !a.name.startsWith("tle-review-")), ...reviewFigures,
+  ] : [];
   return <><section className="scanner-artifact-panel" aria-label="Shared satellite trajectory tracking">
     <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Sausalito-assisted tracking and positioning</h3></div>
       <small>{p ? `${p.sample_rate_hz / 1e6} MS/s · trajectories: ${p.trajectory_state} · TLE: ${p.tle_state}` : status?.phase ?? "Loading tracking status…"}</small></header>
@@ -100,8 +124,9 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
           : `Position diagnostic ${p.position_diagnostic.state}: ${p.position_diagnostic.reasons.join(", ")}.`}</p>
         <p>{p.position_diagnostic.fit_observation_count} fit and {p.position_diagnostic.evaluation_observation_count} evaluation observations from {p.position_diagnostic.track_count} tracks. Conditional on site-assisted identity; no position fix is claimed.</p>
       </section>}
-      {p.artifacts.length > 0 && <div className="scanner-artifact-gallery" aria-label="Trajectory figures">
-        {p.artifacts.map(artifact => {
+      {reviewFigureCount > 16 && <p>Showing the 16 longest of {reviewFigureCount} published per-track reviews.</p>}
+      {visibleFigures.length > 0 && <div className="scanner-artifact-gallery" aria-label="Trajectory figures">
+        {visibleFigures.map(artifact => {
           const artifactUrl = `${base}/${artifact.name}.png?sha256=${encodeURIComponent(artifact.sha256)}`;
           return <figure key={`${artifact.name}:${artifact.sha256}`}>
             <figcaption>{artifactCaption(artifact.name)}</figcaption>
