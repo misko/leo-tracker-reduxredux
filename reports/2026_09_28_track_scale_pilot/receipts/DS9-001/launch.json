@@ -1,0 +1,41 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_track_scale_pilot/receipts/DS9-001/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "240s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_track_scale_pilot/run.py",
+    "DS9-001"
+  ],
+  "sha256": {
+    "reports/2026_09_28_track_scale_pilot/launch.py": "285eb1a5798426b17ab3f325a708aaf9d23e7aa6a099c69315100b91291524aa",
+    "reports/2026_09_28_track_scale_pilot/run.py": "b2656c73cb7b771db53338867fb883d93e12949aea11ec8a8e526fccf5b7d436",
+    "reports/2026_09_28_track_scale_pilot/PROTOCOL.md": "5946707d52d527d59f589e9819d14e1bac4f61fd02e6d36cf3a2bded44e1e815",
+    "reports/2026_09_28_track_scale_pilot/plan.json": "75a64bc27beae0caf0958bd5be36bca0e14a84a21c2c79abd3c6cb934fe247f0",
+    "reports/2026_09_28_ds89_baseline_transfer/solver/DS9-001/request.json": "20683666639fe83a315a3e58cfcdc1bff8ca01884b98f84f7c3df18db4cb1b46",
+    "reports/2026_09_28_ds89_baseline_transfer/solver/DS9-001/response.json": "8d619683ad81bdc0759ca5e7cfdb026d06e6d6fef149679983a18e6dc3c924d3",
+    "tools/ds7_track_scale_mixture.py": "e859a07cf05eea693ddce64c932cc5e163ef16185e1564bfb5c79f171161382a",
+    "tools/ds7_fast_baseline_adapter.py": "ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+    "tools/ds7_baseline_adapter.py": "221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "tools/ds7_shared_slope_shadow.py": "023a234f13932c5b3161e8c79b98668cb8c2826b60e488f801638f4ba2166ed7",
+    "tests/research/test_ds7_track_scale_mixture.py": "8826edf0ed9989ca90e925bf561bc5be145232c9c302c173e7c86ff167033c00",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS9-001/observations.json": "4eba42469a036f841b1c3934e0d1eb3ec7e0f5fbef58f26f695d7bdbc6ff39e4",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS9-001/banks/manifest.json": "f2bcff853ad338e343ef14f61e4af2d4f5ca069d78bfcbc79d3839478be0eaa2",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS9-001/banks/banks.npz": "f0814b398ced32027ace1231ff43fd1efe7acdfc0b1ff960c916a736ad90dc9e"
+  }
+}
