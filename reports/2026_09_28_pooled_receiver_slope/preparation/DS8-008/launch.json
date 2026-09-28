@@ -1,0 +1,37 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pooled_receiver_slope/preparation/DS8-008/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "240s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pooled_receiver_slope/prepare_ds8.py"
+  ],
+  "sha256": {
+    "reports/2026_09_28_pooled_receiver_slope/launch_preparation.py": "dedd4b1c68135713c905275307773a71935561e25f9cd1ee6737bfc261bed9e2",
+    "reports/2026_09_28_pooled_receiver_slope/prepare_ds8.py": "6d5c45e7d06c82d5a1f3ef58e57c0dc6abaf825c952383cb6ea3067d26f78e14",
+    "reports/2026_09_28_pooled_receiver_slope/DS8-PREPARATION.md": "10e8b5c4613769a8b87575794b86e307e44095d5a10f751e1a66e8cc874c41ae",
+    "tools/ds7_export_baseline.py": "4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4",
+    "tools/ds7_fast_baseline_adapter.py": "ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+    "tools/ds7_baseline_adapter.py": "221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "reports/2026_09_28_ds89_baseline_transfer/plan.json": "c584020d554e07b421cce4a039d604f19b09b63d5df9ed82a9c3daa2f9fdead6",
+    "reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/request.json": "67d4594465871910ce7599ba59d44eea664218a0935228e8fd3b3840acd65468",
+    "reports/2026_09_28_ds89_baseline_panel/exports/DS8-008/observations.json": "59356ec272e95d0b4ba4760f7a7fc75e1af5807d7e1ab731e6b74f3d93462ffd",
+    "reports/2026_09_28_ds89_baseline_panel/solver/DS8-008/fit-seal.json": "972b814ed06e215b843160261d308dddf71011cc9706783c97677304f2018052",
+    "reports/2026_09_28_ds8_post_ds7/manifest.json": "33689ed731c176bff865d703ea0aaa2e5f2ef60168f3f150276ffc125fbbbc9b"
+  }
+}
