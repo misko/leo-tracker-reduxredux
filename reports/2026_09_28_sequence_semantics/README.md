@@ -1,5 +1,8 @@
 # Interpreting the extra bits: a cyclic-phase representation
 
+[Follow-up: pilot-referenced headers, expanded reference checks, and scrambler
+ambiguity](PILOT_HEADER_FOLLOWUP.md). The header's field meanings remain unresolved.
+
 2026-09-28. **Progress: an exact generator has been identified for our recovered
 60-bit vocabulary. The protocol meaning of its phase choice remains unresolved.**
 No satellite ID, absolute time, position, orbit message or user payload is claimed.
