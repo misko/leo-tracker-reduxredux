@@ -1,0 +1,133 @@
+{
+  "unit_id": "DS9-V10",
+  "session_id": "scan-fw-ca35f3507031add4",
+  "dataset_id": "DS9",
+  "request": {
+    "config": {
+      "altitude_km": 0,
+      "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+      "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+      "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+      "geographic_prior_center_deg": [
+        37.856249999999996,
+        -122.484375
+      ],
+      "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+      "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+      "partition_seed": 2026092711,
+      "position_bounds_km": [
+        -12,
+        12
+      ],
+      "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+      "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+      "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+      "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+      "student_t_dof": 4,
+      "student_t_scale_hz": 100,
+      "timing_bounds_s": [
+        -5,
+        5
+      ],
+      "timing_grid_s": [
+        -5,
+        -4.75,
+        -4.5,
+        -4.25,
+        -4,
+        -3.75,
+        -3.5,
+        -3.25,
+        -3,
+        -2.75,
+        -2.5,
+        -2.25,
+        -2,
+        -1.75,
+        -1.5,
+        -1.25,
+        -1,
+        -0.75,
+        -0.5,
+        -0.25,
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1,
+        1.25,
+        1.5,
+        1.75,
+        2,
+        2.25,
+        2.5,
+        2.75,
+        3,
+        3.25,
+        3.5,
+        3.75,
+        4,
+        4.25,
+        4.5,
+        4.75,
+        5
+      ],
+      "timing_starts_s": [
+        0,
+        -2,
+        2
+      ]
+    },
+    "inputs": [
+      {
+        "session_id": "scan-fw-ca35f3507031add4",
+        "manifest_sha256": "sha256:1db2bcce9801271a0413ee9cc2ccdf227dbf19ce86c8bb6bda0e39d09568e7ea",
+        "artifacts": [
+          {
+            "kind": "observations",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_outside_union_inputs/exports/DS9-V10/observations.json",
+            "sha256": "sha256:5c02da62170366318aa126ee4d2f579aed505bbbf446c1aeeea4fa094097f427"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_outside_union_inputs/exports/DS9-V10/banks/manifest.json",
+            "sha256": "sha256:939f71c1a9cf1f0252b4d71136081160c5d0a9563ec8a3620e67fcd756a8cb9e"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_outside_union_inputs/exports/DS9-V10/banks/banks.npz",
+            "sha256": "sha256:727026fdb84aba252ee503cafde04b78d02a85e3743d02566cafae372b14191e"
+          }
+        ]
+      }
+    ]
+  },
+  "tracks": 58,
+  "eligibility_exclusions": [
+    {
+      "track_id": "sha256:0056b7777fd2743fbf6e3bcbf5681e40428e96d6d4eb118ecc848dfcae4ec93a",
+      "training_observations": 1,
+      "held_out_observations": 5,
+      "reasons": [
+        "fewer_than_2_training_observations"
+      ]
+    }
+  ],
+  "training_observations": 1466,
+  "held_observations": 984,
+  "analysis_manifest_sha256": "sha256:9131fc9b4cae4e94f96adeb0340b4d1fad299c0006e4661da838b169d76d309b",
+  "mint_glrt_metrics_match": true,
+  "sample_rate_hz": 2500000,
+  "provider_sources": [
+    {
+      "provider": "huggingface",
+      "collected_utc_ns": 1790582696583285777,
+      "snapshot_sha256": "sha256:c84ee6d218b9b0596de80dc3ab2f2997cca2a5e4144483281d0a7d8e565676ce"
+    },
+    {
+      "provider": "space-track",
+      "collected_utc_ns": 1790582694543355198,
+      "snapshot_sha256": "sha256:fe79abddb2bd69597256854029bd234456a3da36defff9844123d027c34c69cb"
+    }
+  ]
+}
