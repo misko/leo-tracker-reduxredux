@@ -11,6 +11,12 @@ sys.path.insert(0, str(HARNESS))
 import arm_cohort
 
 SELECT_FOUR = arm_cohort.select_four
+REMOTE = arm_cohort.remote
+
+
+def remote_with_unit_budget(command, timeout=15):
+    # This all-rate boundary unit needs the same 120 s allowance as arm_unit.py.
+    return REMOTE(command, timeout=max(timeout, 120) if './test_screen' in command else timeout)
 
 
 def selection(rows, dataset):
@@ -51,6 +57,7 @@ def run(inputs, baseline, output, dataset, method):
     arm_cohort.INPUTS = inputs
     arm_cohort.BASELINE = baseline
     arm_cohort.select_four = lambda rows: selected
+    arm_cohort.remote = remote_with_unit_budget
     arm_cohort.run(binary, unit, output)
     provenance = dict(dataset_id=dataset, method=method,
         wrapper_sha256=arm_cohort.sha(Path(__file__)),

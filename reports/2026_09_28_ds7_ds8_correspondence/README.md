@@ -8,6 +8,11 @@ three likely satellites. A recurring T-code is therefore not a unique satellite
 identifier under these orbital assignments. No position, UTC, ephemeris or
 satellite-ID field has been parsed from the signal.
 
+**Repeat-pass follow-up:** lower-edge mapping is now validated against UT's
+published symbols. Two additional DS7 visits yielded nine verified words from
+the likely STARLINK-31567 signal. Three exact words recur in DS8 roughly five
+hours later. See [the follow-up](LOWER_EDGE_FOLLOWUP.md) for controls and results.
+
 ## Dataset and scope
 
 [DS8](../2026_09_28_ds8_post_ds7/README.md) is frozen at
@@ -61,12 +66,14 @@ low-elevation candidate crossing the horizon during a track.
 
 ## Decoded bits and correspondence
 
-The qualified upper-edge decoder recovered **38 new DS8 codeword observations**,
-in addition to 38 prior DS7 observations: **76 observations, 26 code families**.
+The decoder recovered **38 DS8 codeword observations**, 38 original DS7
+observations and nine additional lower-edge DS7 observations:
+**85 observations, 27 code families**.
 Each accepted word agrees on all 60 bits across independently fitted receivers
 and passes the existing held-out correlation and 1,000 wrong-code controls.
 No even-parity constraint or satellite label enters the decoder. Of the 38 DS8
-observations, 28 belong to families already observed in DS7. Families normalize
+observations, 28 belong to the original DS7 families, and 34 belong to the
+expanded DS7 family set after the repeat-pass follow-up. Families normalize
 cyclic rotation and global polarity; the eight exact-word collisions require
 neither normalization.
 
@@ -77,7 +84,7 @@ One exact shared word is:
 ```
 
 It appears under likely NORAD IDs **57526, 59199 and 59250**. Across all accepted
-words there are ten cross-identity family collisions. This rejects a simple
+words there are eleven cross-identity family collisions. This rejects a simple
 lookup from a T-code or its normalized family to a unique satellite. It does
 not rule out information encoded in a longer sequence, another header region,
 or a combination of fields not yet decoded.
@@ -88,14 +95,13 @@ families shared between visits. Thus one likely satellite changes codes within
 a pass while reusing some code families. A third planned visit (1074) lacked a
 qualified epoch-matched second-receiver detection and was excluded explicitly.
 
-The cross-dataset STARLINK-31567 pair was actually extracted and attempted:
-DS7 visit 786 is a lower-edge recording, while DS8 visit 1246 is upper-edge.
-The DS7 excerpt produced **no validated codewords**. Experimental lower-edge
-mapping also failed its clean UT control, so lower-edge estimates are excluded
-from the decoded-bit CSV and every identity conclusion. We therefore do **not**
-yet have validated bit-to-bit repeat-pass evidence for this satellite across
-DS7 and DS8. The other repeated identities have narrower DS7 recordings that
-were not decoded in this bounded pass.
+The first cross-dataset attempt, DS7 lower-edge visit 786, produced no validated
+words. Follow-up corrected the lower-edge mapping and decoded DS7 visits
+1014 and 857: 4/8 and 5/8 accepted frames. Those nine words span six families;
+three exact words recur in the thirteen DS8 words. This is now validated
+bit-to-bit repeat-pass evidence, conditional on the independent orbital labels.
+The other repeated identities have narrower DS7 recordings that were not
+decoded in this bounded pass. Rejected decoding trials remain excluded.
 
 The 24 observed signs of header symbol 4 can repeat across receivers and split
 time windows in some excerpts. Other excerpts, including the two repeated
@@ -111,7 +117,7 @@ ground truth. No time/orbit fields were interpreted.
 
 - `local/joint-results.json`: counts, exact collisions, per-excerpt header checks
   and complete independent labels.
-- `local/decoded-bits.csv`: all 76 validated raw words, frame/visit provenance,
+- `local/decoded-bits.csv`: all 85 validated raw words, frame/visit provenance,
   conditional identity and receiver validation. No rejected lower-edge bits.
 - `local/repeat-candidates.json`: all five repeat candidates, timestamps,
   geometry, validation residuals and recording IDs.
@@ -134,9 +140,12 @@ The installed reader/propagator release is pinned in DS8's manifest. Source
 reader commands require that runtime and storage access; summaries/tests run
 locally with NumPy and decoder tests also need SciPy. To regenerate numerical
 summaries and the plot, run `summarize.py`, then `plot.py` (Matplotlib required).
-The upper-edge mapping is unchanged by the opt-in experimental lower-edge
-extension. Its tests explicitly verify this for all payload symbols. Lower-edge
-model trials in `lower_control.py` remain diagnostic, not a qualified decoder.
+The upper-edge mapping is unchanged by the lower-edge extension. Its tests
+explicitly verify this for all payload symbols. `check_lower_reference.py`
+validates the periodic mapping against independently selected upper-edge UT
+codewords; `audit_ut_demod.py` checks held-out known pilots in the raw UT IQ.
+The initial `lower_control.py` search remains a diagnostic negative result;
+those raw frames were unsuitable positive controls for long T-code blocks.
 
 Validation: **19 decoder tests + 4 joint-analysis tests passed**, Ruff checks
 passed, and the DS8 offline verifier passed. Initial survey outputs from a
@@ -144,7 +153,6 @@ track-configuration identifier mismatch are retained as `.invalid-config.json`
 for audit and excluded from every summary; the corrected code asserts that
 reconstructed and numerical track identifiers agree.
 
-The next useful experiment is to qualify lower-edge demodulation against UT,
-then retry the already-selected cross-dataset repeat pair. It should retain
-independent orbital labels and require both-receiver agreement before testing
-whether a header field stays constant across passes.
+The next useful experiment is recovery of stable header fields across more
+repeat passes, retaining independent orbital labels. The demonstrated T-code
+recurrence alone does not establish identity, timing or position semantics.

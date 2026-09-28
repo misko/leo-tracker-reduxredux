@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ds89_validation/run_arm.py", line 71, in <module>
+    run(a.inputs, a.baseline, a.output, a.dataset, a.method)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ds89_validation/run_arm.py", line 54, in run
+    arm_cohort.run(binary, unit, output)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_full_optimization/arm_cohort.py", line 162, in run
+    unit_output = remote(
+                  ^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_full_optimization/arm_cohort.py", line 42, in remote
+    return subprocess.check_output(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 2116, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1253, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['sudo', '-n', 'sshpass', '-f', '/home/mouse9911/gits/plutosdr-fw-glrt-deployment-review/artifacts/device-tool-glrt-ethernet/artifacts/native-lnb-20-20260910/ssh-password', 'ssh', '-o', 'LogLevel=ERROR', '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=/tmp/leo-static-arm-access/known_hosts', 'root@192.168.1.15', 'cd /mnt/glrtbench/arm-full-opt-cohort-1790607415 && chmod 755 cohort test_screen && ./test_screen']' timed out after 30 seconds
