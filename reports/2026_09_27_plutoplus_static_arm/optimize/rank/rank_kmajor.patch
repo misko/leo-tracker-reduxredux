@@ -1,0 +1,140 @@
+--- frozen/blind_aligned_v5.c
++++ candidate/blind_aligned_v5_rank_kmajor.c
+@@ -3,8 +3,10 @@
+ 
+ #if defined(__ARM_NEON) && !defined(LEO_PRESENCE_RANK_FORCE_SCALAR)
+ #include <arm_neon.h>
+-static inline void v5_neon_fold_group(const int16_t *a_iq, const int16_t *b_iq,
+-    uint32_t receiver, int64_t *sum_real, int64_t *sum_imag)
++static inline __attribute__((always_inline)) void v5_neon_accumulate_group(
++    const int16_t *a_iq, const int16_t *b_iq, uint32_t receiver,
++    int64x2_t *sum_real0, int64x2_t *sum_real1,
++    int64x2_t *sum_imag0, int64x2_t *sum_imag1)
+ {
+     int16x4x4_t a=vld4_s16(a_iq), b=vld4_s16(b_iq);
+     int16x4_t ar=receiver ? a.val[2] : a.val[0];
+@@ -17,10 +19,24 @@
+     int64x2_t re1=vaddq_s64(vmovl_s32(vget_high_s32(rr)),vmovl_s32(vget_high_s32(ii)));
+     int64x2_t im0=vsubq_s64(vmovl_s32(vget_low_s32(ri)),vmovl_s32(vget_low_s32(ir)));
+     int64x2_t im1=vsubq_s64(vmovl_s32(vget_high_s32(ri)),vmovl_s32(vget_high_s32(ir)));
+-    vst1q_s64(sum_real,vaddq_s64(vld1q_s64(sum_real),re0));
+-    vst1q_s64(sum_real+2,vaddq_s64(vld1q_s64(sum_real+2),re1));
+-    vst1q_s64(sum_imag,vaddq_s64(vld1q_s64(sum_imag),im0));
+-    vst1q_s64(sum_imag+2,vaddq_s64(vld1q_s64(sum_imag+2),im1));
++    *sum_real0=vaddq_s64(*sum_real0,re0);
++    *sum_real1=vaddq_s64(*sum_real1,re1);
++    *sum_imag0=vaddq_s64(*sum_imag0,im0);
++    *sum_imag1=vaddq_s64(*sum_imag1,im1);
++}
++
++static inline __attribute__((always_inline)) void v5_neon_fold_group(
++    const int16_t *a_iq, const int16_t *b_iq, uint32_t receiver,
++    int64_t *sum_real, int64_t *sum_imag)
++{
++    int64x2_t real0=vld1q_s64(sum_real), real1=vld1q_s64(sum_real+2);
++    int64x2_t imag0=vld1q_s64(sum_imag), imag1=vld1q_s64(sum_imag+2);
++    v5_neon_accumulate_group(a_iq,b_iq,receiver,
++        &real0,&real1,&imag0,&imag1);
++    vst1q_s64(sum_real,real0);
++    vst1q_s64(sum_real+2,real1);
++    vst1q_s64(sum_imag,imag0);
++    vst1q_s64(sum_imag+2,imag1);
+ }
+ #endif
+ 
+@@ -43,41 +59,68 @@
+ static void v5_fold(leo_presence_rank_workspace *w, const int16_t *raw,
+     uint32_t receiver)
+ {
+-#if !RANK_FULL_FOLD
+-    size_t group_cursor=0;
++#if RANK_FULL_FOLD
++    size_t k=0;
++#if defined(__ARM_NEON) && !defined(LEO_PRESENCE_RANK_FORCE_SCALAR)
++    size_t full_valid=w->n;
++    for (size_t frame=0; frame<15; ++frame) {
++        size_t valid=w->window-w->starts[frame]-4;
++        if (valid<full_valid) full_valid=valid;
++    }
++    for (; k+3<full_valid; k+=4) {
++        int64x2_t real0=vdupq_n_s64(0), real1=vdupq_n_s64(0);
++        int64x2_t imag0=vdupq_n_s64(0), imag1=vdupq_n_s64(0);
++        for (size_t frame=0; frame<15; ++frame) {
++            size_t start=w->starts[frame];
++            /* Keep all four complex int64 sums live across the 15 frames.
++             * Each load begins at RX0 I on a sample boundary. */
++            v5_neon_accumulate_group(raw+4*(start+k),
++                raw+4*(start+k+4),receiver,
++                &real0,&real1,&imag0,&imag1);
++        }
++        vst1q_s64(w->sum_real+k,real0);
++        vst1q_s64(w->sum_real+k+2,real1);
++        vst1q_s64(w->sum_imag+k,imag0);
++        vst1q_s64(w->sum_imag+k+2,imag1);
++    }
+ #endif
++    for (; k<w->n; ++k) {
++        int64_t sum_real=0, sum_imag=0;
++        for (size_t frame=0; frame<15; ++frame) {
++            size_t start=w->starts[frame], valid=w->window-start-4;
++            if (valid>w->n) valid=w->n;
++            if (k>=valid) continue;
++            size_t offset=4*(start+k)+2*receiver;
++            int64_t ar=raw[offset], ai=raw[offset+1];
++            int64_t br=raw[offset+16], bi=raw[offset+17];
++            sum_real+=ar*br+ai*bi;
++            sum_imag+=ar*bi-ai*br;
++        }
++        w->sum_real[k]=sum_real;
++        w->sum_imag[k]=sum_imag;
++    }
++#else
++    size_t group_cursor=0;
+     for (size_t block=0; block<w->n; block+=256) {
+         size_t end=block+256<w->n ? block+256 : w->n;
+-#if !RANK_FULL_FOLD
+         size_t first_group=group_cursor;
+         while (group_cursor<w->group_count && w->groups[group_cursor]<end) ++group_cursor;
+-#endif
+         memset(w->sum_real+block,0,(end-block)*sizeof(*w->sum_real));
+         memset(w->sum_imag+block,0,(end-block)*sizeof(*w->sum_imag));
+         for (size_t frame=0; frame<15; ++frame) {
+             size_t start=w->starts[frame], valid=w->window-start-4;
+             if (valid>end) valid=end;
+-#if RANK_FULL_FOLD
+-            size_t k=block, stop=valid;
+-#else
+             for (size_t group=first_group; group<group_cursor; ++group) {
+                 size_t k=w->groups[group];
+                 size_t stop=k+4<valid ? k+4 : valid;
+-#endif
+ #if defined(__ARM_NEON) && !defined(LEO_PRESENCE_RANK_FORCE_SCALAR)
+-#if RANK_FULL_FOLD
+-            for (; k+3<valid; k+=4) {
+-#else
+             if (k+3<valid) {
+-#endif
+                 /* Both loads begin at RX0 I on a real sample boundary. The
+                  * second consumes samples k+4..k+7; the fold validity rule
+                  * proves k+7 is inside this 20 ms interval. */
+                 v5_neon_fold_group(raw+4*(start+k),raw+4*(start+k+4),receiver,
+                     w->sum_real+k,w->sum_imag+k);
+-#if !RANK_FULL_FOLD
+                 k+=4;
+-#endif
+             }
+ #endif
+             for (; k<stop; ++k) {
+@@ -87,11 +130,10 @@
+                 w->sum_real[k]+=ar*br+ai*bi;
+                 w->sum_imag[k]+=ar*bi-ai*br;
+             }
+-#if !RANK_FULL_FOLD
+             }
+-#endif
+         }
+     }
++#endif
+     for (size_t k=0; k<w->n; ++k) {
+         if (!w->needed[k]) continue;
+         double support=w->support[k] ? w->support[k] : 1;

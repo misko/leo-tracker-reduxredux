@@ -1,0 +1,98 @@
+{
+  "arms": {
+    "M0": {
+      "adjacent_gap_seconds": {
+        "maximum": 13.541336059570312,
+        "median": 0.962679386138916,
+        "minimum": 0.11999821662902832,
+        "p90": 3.008942890167236
+      },
+      "adjacent_identity_adjusted_standardized_covariance_ratio": 0.7513566434625536,
+      "adjacent_pairs": 6034,
+      "adjacent_raw_standardized_covariance_ratio": 0.7513566434625536,
+      "rows": 6378,
+      "track_residual_sum_dispersion_ratio": 11.906160422979502,
+      "tracks": 344
+    },
+    "mean": {
+      "adjacent_gap_seconds": {
+        "maximum": 13.541336059570312,
+        "median": 0.962679386138916,
+        "minimum": 0.11999821662902832,
+        "p90": 3.008942890167236
+      },
+      "adjacent_identity_adjusted_standardized_covariance_ratio": 0.5757394655077384,
+      "adjacent_pairs": 6034,
+      "adjacent_raw_standardized_covariance_ratio": 0.5757394655077384,
+      "rows": 6378,
+      "track_residual_sum_dispersion_ratio": 8.989422375790234,
+      "tracks": 344
+    },
+    "mixture": {
+      "adjacent_gap_seconds": {
+        "maximum": 13.541336059570312,
+        "median": 0.962679386138916,
+        "minimum": 0.11999821662902832,
+        "p90": 3.008942890167236
+      },
+      "adjacent_identity_adjusted_standardized_covariance_ratio": 0.659578373040233,
+      "adjacent_pairs": 6034,
+      "adjacent_raw_standardized_covariance_ratio": 0.6754297752216305,
+      "rows": 6378,
+      "track_residual_sum_dispersion_ratio": 8.673042127030605,
+      "tracks": 344
+    }
+  },
+  "caveats": [
+    "Candidate IDs are frequency-model associations, not decoded satellite identities.",
+    "Frequency candidate priors were estimated using all six calibration sessions; only reception coefficients are leave-one-session-out.",
+    "Adjacent rows are ordered by reception timestamp and can differ in receiver/channel; this is not a pure stationary time-series estimand.",
+    "Ratios are excluded because conditioning on matched reception and shared identity requires a distinct joint posterior diagnostic.",
+    "No reference distribution or cluster bootstrap is asserted; values are descriptive misspecification diagnostics."
+  ],
+  "estimand": {
+    "adjacent_identity_adjusted": "raw product minus covariance implied by one frequency-prior candidate shared by the track, with the same aggregate denominator",
+    "adjacent_raw": "sum adjacent residual products divided by sum Bernoulli standard-deviation products",
+    "track_dispersion": "sum squared track residual sums divided by their model-implied variance"
+  },
+  "fold_counts": {
+    "scan-fw-39ac2b14d1bb5f0f": {
+      "rows": 1169,
+      "tracks": 62
+    },
+    "scan-fw-4c56320fb5ca6994": {
+      "rows": 1174,
+      "tracks": 60
+    },
+    "scan-fw-9d7b6a0db558703a": {
+      "rows": 986,
+      "tracks": 57
+    },
+    "scan-fw-aa9770c66396e928": {
+      "rows": 1007,
+      "tracks": 55
+    },
+    "scan-fw-c559f436d578c9bd": {
+      "rows": 961,
+      "tracks": 52
+    },
+    "scan-fw-da2858f6cd2521b7": {
+      "rows": 1081,
+      "tracks": 58
+    }
+  },
+  "scope": "calibration_only_conditional_loso_detection_temporal_diagnostic",
+  "source_hashes": {
+    "calibration_directions_data.json": "sha256:80af5b02e71501cb9db0ef7c590adf0b3a655bac00f8520d15c5e259333ed429",
+    "calibration_temporal_diagnostic.py": "sha256:8789f10e116d6079c1ced2bcf91525f3b43b6b1e6f81d0869fdb2bfcc0d6abc5",
+    "mixture-calibration-polished-fold-scan-fw-39ac2b14d1bb5f0f.json": "sha256:e1a3919abebd7cf14f15887252393c805492aedfe855375daa9a1f306f15f1f8",
+    "mixture-calibration-polished-fold-scan-fw-4c56320fb5ca6994.json": "sha256:8adf72d0d58346b8b16b0ab41296a2813c11cde5b5e8fabd431fd950ac5a9543",
+    "mixture-calibration-polished-fold-scan-fw-9d7b6a0db558703a.json": "sha256:3b2388c5925be98be4b02b7f26b9828e7da921c422e5715e7b98cfdc489cbb06",
+    "mixture-calibration-polished-fold-scan-fw-aa9770c66396e928.json": "sha256:cad21b2d7223dc30cfa12d046015dac2b245ab539555a0ffeb0e43dedac06f6d",
+    "mixture-calibration-polished-fold-scan-fw-c559f436d578c9bd.json": "sha256:ed4ee45231083b285bf4efade352a645c47bc56f80d24d49b382a412e37f7e6c",
+    "mixture-calibration-polished-fold-scan-fw-da2858f6cd2521b7.json": "sha256:52bab4db5ccb9bc71e4207dc7a53c9ddff76dc357dcb3ce9edd3c10fff38a87f",
+    "mixture_calibration_inputs.py": "sha256:0219be8716fd988737a1c21eadd475af33a594409954c0db5fc7afaaee5fd9f6",
+    "mixture_reception_core.py": "sha256:de8deb01f368c71fa1e5ae88a78df7cd72592f47f1d881076b9de258b5e69b01",
+    "model_rows.json": "sha256:3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554"
+  }
+}

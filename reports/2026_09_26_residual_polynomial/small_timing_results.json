@@ -1,0 +1,3273 @@
+{
+  "source_sha256": "fb1c7f69ce2469c3727c35bcc652abf382a02996d079730d3096fe9f1bb78635",
+  "runner_sha256": "f78f492e67431401b5c6e8da5813caf85a378d2d8cf700675f050e17f388f4f5",
+  "core_sha256": "9972cace13b6f782f6d19294882b4261c8be0cf261ba7ae0cb7d938a89b73071",
+  "protocol": "Fixed branch-specific training-zero IDs and fixed locations. Per-track OLS constant profiled at each tau. One tau per satellite per scan per site, minimizing sum training SSE across all assigned tracks, uniform grid -1..+1s step0.1; ties prefer smallest abs(tau). No drift or reassignment. Evaluation RMS uncapped. Equal-track aggregation sqrt(mean(track MSE)); size weights total observations (training+evaluation), same fits for both aggregates. All39/51 tracks primary; prior plot subset sensitivity uses same all-track-fitted timings. Retrospective reused masks and selected sites, not fresh validation or localization.",
+  "scans": [
+    {
+      "session_id": "scan-fw-3228d496423f0b3d",
+      "utc": "08:10",
+      "tracks": 39,
+      "evidence_sha256": "sha256:cc3360e9a9c75c2a3bc0c5b099a92d9436fb32e9ee6656bfcd1a60be640f1093",
+      "snapshot_digest": "sha256:123c76799869ac7a36c548df6e25719a282ab39c0f95d202a4051f759727fa37",
+      "zero_parity_max_hz": 3.312834451207891e-10,
+      "sites": {
+        "reference": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 370.5589300445698,
+              "size_weighted_rms_hz": 402.7033021928358
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 309.4418087346195,
+              "size_weighted_rms_hz": 323.5875648930627
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 370.5589300445698,
+              "size_weighted_rms_hz": 402.7033021928358
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 309.4418087346195,
+              "size_weighted_rms_hz": 323.5875648930627
+            }
+          },
+          "satellite_count": 15,
+          "boundary_satellites": 11,
+          "timing_by_satellite": {
+            "100036": -1.0,
+            "100047": 1.0,
+            "48684": 1.0,
+            "52487": -1.0,
+            "59580": 0.2,
+            "60339": 1.0,
+            "60342": 1.0,
+            "62309": -1.0,
+            "62495": 1.0,
+            "62569": 0.1,
+            "63119": -1.0,
+            "63657": -1.0,
+            "64791": -0.2,
+            "66278": -1.0,
+            "66462": 0.2
+          },
+          "rows": [
+            {
+              "track_id": "sha256:051124978d4521086e974799257b61e9c49d8f79045e784919bf1d88f75a24fc",
+              "satellite_id": "59580",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 34948.739579628236,
+              "corrected_mse": 29989.88023699989,
+              "zero_offset_hz": -711193.4865197659,
+              "corrected_offset_hz": -710518.0234149963
+            },
+            {
+              "track_id": "sha256:09bc160e04c39d0ab01c3dca87138581d8b7a0f27acf5adb4510adafe4e0f901",
+              "satellite_id": "100036",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 531747.3059913052,
+              "corrected_mse": 336124.1223251389,
+              "zero_offset_hz": -709700.3794712735,
+              "corrected_offset_hz": -713520.5001186354
+            },
+            {
+              "track_id": "sha256:0f279cfe9183cc3c5e01028810a0da6b9063ffe1e6914b9b4d5b5b947d25dd07",
+              "satellite_id": "52487",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 13546.978962346982,
+              "corrected_mse": 2329.2027179184724,
+              "zero_offset_hz": -25059.170700711595,
+              "corrected_offset_hz": -27943.05723157052
+            },
+            {
+              "track_id": "sha256:1b4ba90cc7ab33aaad66aa5b2bef5be65926a09afa6c7ba364e7197c4fb77f9d",
+              "satellite_id": "59580",
+              "observations": 51,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 3164.9383109645432,
+              "corrected_mse": 2784.693977123523,
+              "zero_offset_hz": -275760.97930696077,
+              "corrected_offset_hz": -275082.89359796856
+            },
+            {
+              "track_id": "sha256:1e99689345087f79a0f19d835e239f54e3dff875e691eaba21374c4f0e617818",
+              "satellite_id": "100047",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 38755.550698838815,
+              "corrected_mse": 19462.863009607234,
+              "zero_offset_hz": -29112.77202752693,
+              "corrected_offset_hz": -26084.254245434964
+            },
+            {
+              "track_id": "sha256:2502988d7c1cc16f6e67dcee66faf292b88a7322c6c27e8ad6f8fbdb3dbbfdba",
+              "satellite_id": "48684",
+              "observations": 63,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 313473.3070848737,
+              "corrected_mse": 206094.28896234807,
+              "zero_offset_hz": -750197.3996837422,
+              "corrected_offset_hz": -746569.24517455
+            },
+            {
+              "track_id": "sha256:28678065fb0a13b794f8ec85e2d133d8d4651ee3451584bf5bc54075c4d26058",
+              "satellite_id": "59580",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 1585.8706569677145,
+              "corrected_mse": 2031.500077407253,
+              "zero_offset_hz": -711349.7618585178,
+              "corrected_offset_hz": -710656.1016834418
+            },
+            {
+              "track_id": "sha256:2b660f560c0966f4ae39a047028a855b61f4bc5e49b4d9af87d21210a88c2430",
+              "satellite_id": "64791",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 76903.1326672284,
+              "corrected_mse": 76031.1886680498,
+              "zero_offset_hz": -272102.38238191046,
+              "corrected_offset_hz": -272625.1295977601
+            },
+            {
+              "track_id": "sha256:30eac5b497e350745fe3c19fd8895b74e789b12a49be37e7378db61bf2e11342",
+              "satellite_id": "66278",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 184977.11679737578,
+              "corrected_mse": 156228.41099748877,
+              "zero_offset_hz": -477957.80894091446,
+              "corrected_offset_hz": -481587.3069493767
+            },
+            {
+              "track_id": "sha256:4187b650771eed86e6e8ff685bccdfce7ba7c15fb98a72da9b21c2bbf73b5bbc",
+              "satellite_id": "60342",
+              "observations": 31,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 6163.213966830191,
+              "corrected_mse": 2729.850451316826,
+              "zero_offset_hz": -269379.10079873464,
+              "corrected_offset_hz": -265404.7602703765
+            },
+            {
+              "track_id": "sha256:4785008920779b89970b6620c97791542575b2fa01ca9c05a36e2a9e4bf5ba4f",
+              "satellite_id": "100047",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 30840.736820940772,
+              "corrected_mse": 17903.917105325916,
+              "zero_offset_hz": -29811.687420715716,
+              "corrected_offset_hz": -26838.410204455344
+            },
+            {
+              "track_id": "sha256:4afcd2cb4462d363ff87f1802a24b25c0ce544eb075241d7644dd4da53c5bc84",
+              "satellite_id": "62569",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 1527.67282419763,
+              "corrected_mse": 1786.7560785692272,
+              "zero_offset_hz": -950910.3360907048,
+              "corrected_offset_hz": -950545.0768422482
+            },
+            {
+              "track_id": "sha256:4cfb481d9aa9d998a9b4d547f15dedc434af162f63c2bf43129ef8d7eeb4722d",
+              "satellite_id": "64791",
+              "observations": 54,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 13558.342319453885,
+              "corrected_mse": 11388.088054679372,
+              "zero_offset_hz": -269151.95369722066,
+              "corrected_offset_hz": -269778.33111953654
+            },
+            {
+              "track_id": "sha256:572051354ba4863a9dadd563a8d1e2484ed56cb68eefc72bac7f4400a39fb946",
+              "satellite_id": "62569",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 12653.382091228554,
+              "corrected_mse": 12441.337327864625,
+              "zero_offset_hz": -953976.4268041782,
+              "corrected_offset_hz": -953613.2536579656
+            },
+            {
+              "track_id": "sha256:572dfe74d6fe2ff5d329b1db12eb0878553cd8ef2c6ab34427a2e49b42fb1310",
+              "satellite_id": "63657",
+              "observations": 97,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 197796.87364028147,
+              "corrected_mse": 90689.61698538276,
+              "zero_offset_hz": -38496.86288483902,
+              "corrected_offset_hz": -41963.09003638699
+            },
+            {
+              "track_id": "sha256:5ca82bbb72f63b0d8dc705d4594d6a303351bb6cc4dc4a608bb45ced6539317d",
+              "satellite_id": "59580",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 276440.121596828,
+              "corrected_mse": 266085.9918497664,
+              "zero_offset_hz": -697788.0596119049,
+              "corrected_offset_hz": -697103.1502054702
+            },
+            {
+              "track_id": "sha256:5d358230c11539b4cc2495102640675315243146a0f42fe94f6ae88b53d5e3a3",
+              "satellite_id": "63657",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 61083.07351213269,
+              "corrected_mse": 43986.83331174846,
+              "zero_offset_hz": -39151.009321240825,
+              "corrected_offset_hz": -42734.388804970564
+            },
+            {
+              "track_id": "sha256:6bdb0117a0ac9d094147bef12377efff501e14ba99aaab2fd526e87eb7d89914",
+              "satellite_id": "52487",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 24067.003339594216,
+              "corrected_mse": 44440.69638944243,
+              "zero_offset_hz": -27856.997201591537,
+              "corrected_offset_hz": -30792.397436297946
+            },
+            {
+              "track_id": "sha256:6f3aa13d422b6e2ac146ad4296377866df020594788578964b94dc29739b1ff5",
+              "satellite_id": "66278",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 660743.6826013967,
+              "corrected_mse": 546025.9278172969,
+              "zero_offset_hz": -713056.6812455282,
+              "corrected_offset_hz": -716701.7397253913
+            },
+            {
+              "track_id": "sha256:716b4aa7198223e1d623a6ae8c009fbd55971486207585298d23e74333633ae7",
+              "satellite_id": "63657",
+              "observations": 75,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 203336.20706786125,
+              "corrected_mse": 84572.2494874928,
+              "zero_offset_hz": -36290.75353737576,
+              "corrected_offset_hz": -39813.498466089215
+            },
+            {
+              "track_id": "sha256:828b13ae6b585c6800e50bc024982d459f0af2d6743acdfc2bb73b3709cf3be2",
+              "satellite_id": "60342",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 58044.78134692618,
+              "corrected_mse": 12180.85177929477,
+              "zero_offset_hz": 188210.8033690249,
+              "corrected_offset_hz": 192071.74985323698
+            },
+            {
+              "track_id": "sha256:8d6f47d8337248c9d8eac9c21e353d0afa6e1ef3fcf721ebf509567c59ef5cb8",
+              "satellite_id": "63657",
+              "observations": 105,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 180517.13961974028,
+              "corrected_mse": 62066.51696193233,
+              "zero_offset_hz": -35731.884582437924,
+              "corrected_offset_hz": -39168.708969207124
+            },
+            {
+              "track_id": "sha256:9a0854ecfd2d6871cb7878cf8010d7ee81a8f1ee020619ad1277b5183f0342a0",
+              "satellite_id": "64791",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 10028.329273905909,
+              "corrected_mse": 10790.501978735705,
+              "zero_offset_hz": 189438.10062346977,
+              "corrected_offset_hz": 188803.52084785528
+            },
+            {
+              "track_id": "sha256:9e6a49599b96bcaa5424b71af46bf6c8b75ff4c5e10f08bd55b1566d97f31cf8",
+              "satellite_id": "62569",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 15413.238622318753,
+              "corrected_mse": 17290.909048766298,
+              "zero_offset_hz": -933270.4107839878,
+              "corrected_offset_hz": -932923.9669588886
+            },
+            {
+              "track_id": "sha256:9f6cec5416f77fdaeda086d6d17d1934e01fbaa473b335535b1adff31c6bf46d",
+              "satellite_id": "59580",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 27927.668941841017,
+              "corrected_mse": 24040.643795711854,
+              "zero_offset_hz": -743430.0538253336,
+              "corrected_offset_hz": -742748.3591680886
+            },
+            {
+              "track_id": "sha256:a737794bc68f2c21d669268301e712760b9620c8602bb1238b7f0ccebaefe8ec",
+              "satellite_id": "60339",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 44732.8952895759,
+              "corrected_mse": 48747.76479812478,
+              "zero_offset_hz": -600924.8963012355,
+              "corrected_offset_hz": -597240.7406150482
+            },
+            {
+              "track_id": "sha256:ab17c6c1a9b8cc39c600afd6f9d6d3f19c17a4f7cf4849dbb48808cfc1eba029",
+              "satellite_id": "63657",
+              "observations": 15,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 18373.861322815927,
+              "corrected_mse": 17621.289483918434,
+              "zero_offset_hz": -39126.89579241358,
+              "corrected_offset_hz": -42111.99542154646
+            },
+            {
+              "track_id": "sha256:adc66df391857c68bedf1da90a7233902d596fb6c7caf0abd0c96b476a0c0314",
+              "satellite_id": "60342",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 4380.351726634144,
+              "corrected_mse": 2732.4906091608404,
+              "zero_offset_hz": -272362.2447941797,
+              "corrected_offset_hz": -268380.5346816528
+            },
+            {
+              "track_id": "sha256:b7dfe1ba03a3cf2ee6253b454eb815e99ee990c613c36f9f6b960b9e44c16616",
+              "satellite_id": "66462",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 3797.171549977529,
+              "corrected_mse": 3126.4238033617657,
+              "zero_offset_hz": -43932.771147651096,
+              "corrected_offset_hz": -43222.79742247127
+            },
+            {
+              "track_id": "sha256:c85a5e176414fcebf41ab3b4ac012a588f5096e4cdc9930a38ee7bafede88013",
+              "satellite_id": "100036",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1463834.0474804859,
+              "corrected_mse": 927241.7790539529,
+              "zero_offset_hz": -706355.0033620836,
+              "corrected_offset_hz": -710249.2400196088
+            },
+            {
+              "track_id": "sha256:ce76442c0763a755059fbdd853f8452679d9a71db97c8ebaf6c801be321f6423",
+              "satellite_id": "62569",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 8052.924738423525,
+              "corrected_mse": 7894.649800574914,
+              "zero_offset_hz": -930362.4515425854,
+              "corrected_offset_hz": -930008.7364223805
+            },
+            {
+              "track_id": "sha256:dc2d15b305f10f5f6013547e34c6867e8c04e7dc29363f2d6451c6d3c61ccd5d",
+              "satellite_id": "62309",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 58234.96606891826,
+              "corrected_mse": 53453.06414347247,
+              "zero_offset_hz": 90476.6800119211,
+              "corrected_offset_hz": 87610.09447133646
+            },
+            {
+              "track_id": "sha256:dc6b6843a01225f39eeee42d9a8e053ea581fa14079e6ebbc67bcaa5abf31834",
+              "satellite_id": "62569",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 6530.065041878041,
+              "corrected_mse": 6647.267237976694,
+              "zero_offset_hz": -975548.5895175666,
+              "corrected_offset_hz": -975213.42130314
+            },
+            {
+              "track_id": "sha256:e0f6b331c366fe4a61b0691f405886c4ed576d6ab42be104a0ff89d3eb3582f0",
+              "satellite_id": "63119",
+              "observations": 65,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 671980.2897782901,
+              "corrected_mse": 503749.86117552407,
+              "zero_offset_hz": -926291.9967127254,
+              "corrected_offset_hz": -929894.3934397524
+            },
+            {
+              "track_id": "sha256:e4040b1f209c4357f906a09f74338956492dfaf78bfb632caf1996e782aa027b",
+              "satellite_id": "64791",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 21454.33652782998,
+              "corrected_mse": 23828.47329981683,
+              "zero_offset_hz": -272147.2200317535,
+              "corrected_offset_hz": -272767.57696033415
+            },
+            {
+              "track_id": "sha256:e666fae9815e5133701c37b68bdf72b18e6b9665072ad54044eb496ec0edcc82",
+              "satellite_id": "62569",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 5504.919491606716,
+              "corrected_mse": 5062.281634643351,
+              "zero_offset_hz": -507978.95535310166,
+              "corrected_offset_hz": -507633.7548953261
+            },
+            {
+              "track_id": "sha256:e66d005d026de0fc436c6b257a5093496485deddcd5763b7638804085aaa4509",
+              "satellite_id": "62495",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 59803.1041862147,
+              "corrected_mse": 46486.47474730837,
+              "zero_offset_hz": -491838.90226038784,
+              "corrected_offset_hz": -488436.6784583272
+            },
+            {
+              "track_id": "sha256:ecffe9a1addfabd8caf32ec92102a3a05486b0da0fcd6d2b382e2ae90480fa12",
+              "satellite_id": "59580",
+              "observations": 43,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 4668.51391440858,
+              "corrected_mse": 4303.596571316569,
+              "zero_offset_hz": -708313.6431668672,
+              "corrected_offset_hz": -707627.0228646621
+            },
+            {
+              "track_id": "sha256:ffa66fa05a46ffc3beaffeadce9234776714a3ee5e63743429541ab936cbbb1e",
+              "satellite_id": "64791",
+              "observations": 41,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 4651.049343212316,
+              "corrected_mse": 4022.830970599643,
+              "zero_offset_hz": -278167.80252987094,
+              "corrected_offset_hz": -278798.99806258193
+            }
+          ]
+        },
+        "sacramento": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 343.6988181066866,
+              "size_weighted_rms_hz": 353.9970373489257
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 285.8325337427862,
+              "size_weighted_rms_hz": 289.6659595444854
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 343.6988181066866,
+              "size_weighted_rms_hz": 353.9970373489257
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 285.8325337427862,
+              "size_weighted_rms_hz": 289.6659595444854
+            }
+          },
+          "satellite_count": 12,
+          "boundary_satellites": 6,
+          "timing_by_satellite": {
+            "100036": -1.0,
+            "48684": -1.0,
+            "52487": -0.8,
+            "59580": 0.5,
+            "60342": 1.0,
+            "62319": -0.2,
+            "62495": 1.0,
+            "62569": 0.9,
+            "63119": -1.0,
+            "63657": -0.9,
+            "64791": 0.3,
+            "66278": -1.0
+          },
+          "rows": [
+            {
+              "track_id": "sha256:051124978d4521086e974799257b61e9c49d8f79045e784919bf1d88f75a24fc",
+              "satellite_id": "59580",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 46062.742862690706,
+              "corrected_mse": 29697.371246292616,
+              "zero_offset_hz": -713803.3897464043,
+              "corrected_offset_hz": -712117.433412382
+            },
+            {
+              "track_id": "sha256:09bc160e04c39d0ab01c3dca87138581d8b7a0f27acf5adb4510adafe4e0f901",
+              "satellite_id": "100036",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 401190.9496102165,
+              "corrected_mse": 230805.5792681568,
+              "zero_offset_hz": -711994.8871238414,
+              "corrected_offset_hz": -715794.900169442
+            },
+            {
+              "track_id": "sha256:0f279cfe9183cc3c5e01028810a0da6b9063ffe1e6914b9b4d5b5b947d25dd07",
+              "satellite_id": "52487",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 2955.0928811013023,
+              "corrected_mse": 3691.1130585831947,
+              "zero_offset_hz": -26513.598702342428,
+              "corrected_offset_hz": -28800.40999772855
+            },
+            {
+              "track_id": "sha256:1b4ba90cc7ab33aaad66aa5b2bef5be65926a09afa6c7ba364e7197c4fb77f9d",
+              "satellite_id": "59580",
+              "observations": 51,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 12597.463789597234,
+              "corrected_mse": 7246.607069386477,
+              "zero_offset_hz": -278328.0844811377,
+              "corrected_offset_hz": -276630.9012406419
+            },
+            {
+              "track_id": "sha256:1e99689345087f79a0f19d835e239f54e3dff875e691eaba21374c4f0e617818",
+              "satellite_id": "63657",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 43271.254232205654,
+              "corrected_mse": 21733.473550246756,
+              "zero_offset_hz": -39041.74262580499,
+              "corrected_offset_hz": -41707.89734949316
+            },
+            {
+              "track_id": "sha256:2502988d7c1cc16f6e67dcee66faf292b88a7322c6c27e8ad6f8fbdb3dbbfdba",
+              "satellite_id": "63119",
+              "observations": 63,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 261429.71643668192,
+              "corrected_mse": 192879.16636882196,
+              "zero_offset_hz": -698924.3880619439,
+              "corrected_offset_hz": -702531.751503692
+            },
+            {
+              "track_id": "sha256:28678065fb0a13b794f8ec85e2d133d8d4651ee3451584bf5bc54075c4d26058",
+              "satellite_id": "59580",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 969.6254240283025,
+              "corrected_mse": 814.3751572750534,
+              "zero_offset_hz": -713921.2686893415,
+              "corrected_offset_hz": -712180.2354868182
+            },
+            {
+              "track_id": "sha256:2b660f560c0966f4ae39a047028a855b61f4bc5e49b4d9af87d21210a88c2430",
+              "satellite_id": "64791",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 75891.15433355927,
+              "corrected_mse": 76533.02395528162,
+              "zero_offset_hz": -272804.54544432607,
+              "corrected_offset_hz": -272021.68776616437
+            },
+            {
+              "track_id": "sha256:30eac5b497e350745fe3c19fd8895b74e789b12a49be37e7378db61bf2e11342",
+              "satellite_id": "66278",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 204189.26290046299,
+              "corrected_mse": 170498.83589012627,
+              "zero_offset_hz": -480123.37259451585,
+              "corrected_offset_hz": -483758.9054424293
+            },
+            {
+              "track_id": "sha256:4187b650771eed86e6e8ff685bccdfce7ba7c15fb98a72da9b21c2bbf73b5bbc",
+              "satellite_id": "60342",
+              "observations": 31,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 8196.985727442816,
+              "corrected_mse": 3552.959546340948,
+              "zero_offset_hz": -271964.70770606014,
+              "corrected_offset_hz": -267987.03395761666
+            },
+            {
+              "track_id": "sha256:4785008920779b89970b6620c97791542575b2fa01ca9c05a36e2a9e4bf5ba4f",
+              "satellite_id": "63657",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 9664.436767336712,
+              "corrected_mse": 15898.063156234823,
+              "zero_offset_hz": -39861.033999061394,
+              "corrected_offset_hz": -42485.865477450636
+            },
+            {
+              "track_id": "sha256:4afcd2cb4462d363ff87f1802a24b25c0ce544eb075241d7644dd4da53c5bc84",
+              "satellite_id": "62569",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 370.93805358876534,
+              "corrected_mse": 1343.781500839239,
+              "zero_offset_hz": -953758.7195861565,
+              "corrected_offset_hz": -950479.5309047227
+            },
+            {
+              "track_id": "sha256:4cfb481d9aa9d998a9b4d547f15dedc434af162f63c2bf43129ef8d7eeb4722d",
+              "satellite_id": "64791",
+              "observations": 54,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 10988.523298167325,
+              "corrected_mse": 11074.367253033672,
+              "zero_offset_hz": -270094.83388035727,
+              "corrected_offset_hz": -269156.68614629144
+            },
+            {
+              "track_id": "sha256:572051354ba4863a9dadd563a8d1e2484ed56cb68eefc72bac7f4400a39fb946",
+              "satellite_id": "62569",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 16366.523530688573,
+              "corrected_mse": 13002.542666192392,
+              "zero_offset_hz": -956803.2235198778,
+              "corrected_offset_hz": -953543.6709921882
+            },
+            {
+              "track_id": "sha256:572dfe74d6fe2ff5d329b1db12eb0878553cd8ef2c6ab34427a2e49b42fb1310",
+              "satellite_id": "63657",
+              "observations": 97,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 85822.7825946085,
+              "corrected_mse": 43808.64196068475,
+              "zero_offset_hz": -41157.4223325257,
+              "corrected_offset_hz": -44276.35148750817
+            },
+            {
+              "track_id": "sha256:5ca82bbb72f63b0d8dc705d4594d6a303351bb6cc4dc4a608bb45ced6539317d",
+              "satellite_id": "59580",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 291868.97602786525,
+              "corrected_mse": 263301.44504695124,
+              "zero_offset_hz": -700425.9233307553,
+              "corrected_offset_hz": -698715.6513896439
+            },
+            {
+              "track_id": "sha256:5d358230c11539b4cc2495102640675315243146a0f42fe94f6ae88b53d5e3a3",
+              "satellite_id": "63657",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 35074.10432697513,
+              "corrected_mse": 38108.09168841807,
+              "zero_offset_hz": -41893.556353052656,
+              "corrected_offset_hz": -45121.00103372444
+            },
+            {
+              "track_id": "sha256:6bdb0117a0ac9d094147bef12377efff501e14ba99aaab2fd526e87eb7d89914",
+              "satellite_id": "63657",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 9919.589725099662,
+              "corrected_mse": 17119.009637181618,
+              "zero_offset_hz": -42295.44095265939,
+              "corrected_offset_hz": -44963.31545402164
+            },
+            {
+              "track_id": "sha256:6f3aa13d422b6e2ac146ad4296377866df020594788578964b94dc29739b1ff5",
+              "satellite_id": "66278",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 704195.4339778116,
+              "corrected_mse": 574913.0009881506,
+              "zero_offset_hz": -715217.354458717,
+              "corrected_offset_hz": -718869.8669635925
+            },
+            {
+              "track_id": "sha256:716b4aa7198223e1d623a6ae8c009fbd55971486207585298d23e74333633ae7",
+              "satellite_id": "63657",
+              "observations": 75,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 87925.38348936892,
+              "corrected_mse": 35482.07550689923,
+              "zero_offset_hz": -38986.431256408345,
+              "corrected_offset_hz": -42159.258757954936
+            },
+            {
+              "track_id": "sha256:828b13ae6b585c6800e50bc024982d459f0af2d6743acdfc2bb73b3709cf3be2",
+              "satellite_id": "60342",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 132422.04237256714,
+              "corrected_mse": 44043.86221037439,
+              "zero_offset_hz": 185715.25860610302,
+              "corrected_offset_hz": 189587.3715455685
+            },
+            {
+              "track_id": "sha256:8d6f47d8337248c9d8eac9c21e353d0afa6e1ef3fcf721ebf509567c59ef5cb8",
+              "satellite_id": "63657",
+              "observations": 105,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 71472.67564077422,
+              "corrected_mse": 24919.594454407576,
+              "zero_offset_hz": -38357.42863759286,
+              "corrected_offset_hz": -41454.36865775673
+            },
+            {
+              "track_id": "sha256:9a0854ecfd2d6871cb7878cf8010d7ee81a8f1ee020619ad1277b5183f0342a0",
+              "satellite_id": "64791",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 8605.56442610008,
+              "corrected_mse": 8722.420705366914,
+              "zero_offset_hz": 188426.43162733817,
+              "corrected_offset_hz": 189377.16145946385
+            },
+            {
+              "track_id": "sha256:9e6a49599b96bcaa5424b71af46bf6c8b75ff4c5e10f08bd55b1566d97f31cf8",
+              "satellite_id": "62569",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 35000.618693833676,
+              "corrected_mse": 16211.332279808244,
+              "zero_offset_hz": -935944.8240130679,
+              "corrected_offset_hz": -932838.8231336708
+            },
+            {
+              "track_id": "sha256:9f6cec5416f77fdaeda086d6d17d1934e01fbaa473b335535b1adff31c6bf46d",
+              "satellite_id": "59580",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 45150.57855186908,
+              "corrected_mse": 25033.18940231691,
+              "zero_offset_hz": -746029.2120206611,
+              "corrected_offset_hz": -744324.6074288157
+            },
+            {
+              "track_id": "sha256:a737794bc68f2c21d669268301e712760b9620c8602bb1238b7f0ccebaefe8ec",
+              "satellite_id": "48684",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 95648.96036017414,
+              "corrected_mse": 93648.59703872791,
+              "zero_offset_hz": -536925.2685542086,
+              "corrected_offset_hz": -540710.5904081427
+            },
+            {
+              "track_id": "sha256:ab17c6c1a9b8cc39c600afd6f9d6d3f19c17a4f7cf4849dbb48808cfc1eba029",
+              "satellite_id": "63657",
+              "observations": 15,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 17156.526799837367,
+              "corrected_mse": 20760.561284915086,
+              "zero_offset_hz": -41490.381747664964,
+              "corrected_offset_hz": -44150.43625681109
+            },
+            {
+              "track_id": "sha256:adc66df391857c68bedf1da90a7233902d596fb6c7caf0abd0c96b476a0c0314",
+              "satellite_id": "60342",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 5017.967698851042,
+              "corrected_mse": 2677.850376671671,
+              "zero_offset_hz": -274947.6734818625,
+              "corrected_offset_hz": -270959.8615756945
+            },
+            {
+              "track_id": "sha256:b7dfe1ba03a3cf2ee6253b454eb815e99ee990c613c36f9f6b960b9e44c16616",
+              "satellite_id": "62319",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": -0.2,
+              "zero_mse": 4229.484704959193,
+              "corrected_mse": 3054.9046423228083,
+              "zero_offset_hz": -41998.095461158904,
+              "corrected_offset_hz": -42707.25494032131
+            },
+            {
+              "track_id": "sha256:c85a5e176414fcebf41ab3b4ac012a588f5096e4cdc9930a38ee7bafede88013",
+              "satellite_id": "100036",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1107482.4449874829,
+              "corrected_mse": 636282.9449257319,
+              "zero_offset_hz": -708697.0653052018,
+              "corrected_offset_hz": -712574.0361254314
+            },
+            {
+              "track_id": "sha256:ce76442c0763a755059fbdd853f8452679d9a71db97c8ebaf6c801be321f6423",
+              "satellite_id": "62569",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 16907.172485837124,
+              "corrected_mse": 8146.28251302673,
+              "zero_offset_hz": -933100.0469137634,
+              "corrected_offset_hz": -929927.8913006217
+            },
+            {
+              "track_id": "sha256:dc2d15b305f10f5f6013547e34c6867e8c04e7dc29363f2d6451c6d3c61ccd5d",
+              "satellite_id": "52487",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 35114.1748793322,
+              "corrected_mse": 39562.05620692205,
+              "zero_offset_hz": -25783.881748611173,
+              "corrected_offset_hz": -28088.114372919663
+            },
+            {
+              "track_id": "sha256:dc6b6843a01225f39eeee42d9a8e053ea581fa14079e6ebbc67bcaa5abf31834",
+              "satellite_id": "62569",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 35361.056258242534,
+              "corrected_mse": 6577.882179892038,
+              "zero_offset_hz": -978121.2414695297,
+              "corrected_offset_hz": -975118.550536914
+            },
+            {
+              "track_id": "sha256:e0f6b331c366fe4a61b0691f405886c4ed576d6ab42be104a0ff89d3eb3582f0",
+              "satellite_id": "63119",
+              "observations": 65,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 536832.5606449898,
+              "corrected_mse": 391694.64071397507,
+              "zero_offset_hz": -929135.0391884508,
+              "corrected_offset_hz": -932743.9859684375
+            },
+            {
+              "track_id": "sha256:e4040b1f209c4357f906a09f74338956492dfaf78bfb632caf1996e782aa027b",
+              "satellite_id": "64791",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 32476.72100601053,
+              "corrected_mse": 25835.44897499097,
+              "zero_offset_hz": -273074.78298419516,
+              "corrected_offset_hz": -272145.6640392115
+            },
+            {
+              "track_id": "sha256:e666fae9815e5133701c37b68bdf72b18e6b9665072ad54044eb496ec0edcc82",
+              "satellite_id": "62569",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 15328.47688618538,
+              "corrected_mse": 5411.672741015643,
+              "zero_offset_hz": -510637.3473084246,
+              "corrected_offset_hz": -507543.6615224079
+            },
+            {
+              "track_id": "sha256:e66d005d026de0fc436c6b257a5093496485deddcd5763b7638804085aaa4509",
+              "satellite_id": "62495",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 86770.45547484071,
+              "corrected_mse": 66896.90886659134,
+              "zero_offset_hz": -494445.49086666206,
+              "corrected_offset_hz": -491054.4246370242
+            },
+            {
+              "track_id": "sha256:ecffe9a1addfabd8caf32ec92102a3a05486b0da0fcd6d2b382e2ae90480fa12",
+              "satellite_id": "59580",
+              "observations": 43,
+              "plot_eligible": true,
+              "tau_s": 0.5,
+              "zero_mse": 12660.00393580097,
+              "corrected_mse": 8938.045883223811,
+              "zero_offset_hz": -710899.502822461,
+              "corrected_offset_hz": -709179.7775658291
+            },
+            {
+              "track_id": "sha256:ffa66fa05a46ffc3beaffeadce9234776714a3ee5e63743429541ab936cbbb1e",
+              "satellite_id": "64791",
+              "observations": 41,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 4437.799352211304,
+              "corrected_mse": 6387.536571641063,
+              "zero_offset_hz": -279181.2977658295,
+              "corrected_offset_hz": -278235.5841649586
+            }
+          ]
+        },
+        "reno": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 433.0345369425208,
+              "size_weighted_rms_hz": 554.178842609959
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 367.8634642573739,
+              "size_weighted_rms_hz": 471.6459247537432
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 433.0345369425208,
+              "size_weighted_rms_hz": 554.178842609959
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 367.8634642573739,
+              "size_weighted_rms_hz": 471.6459247537432
+            }
+          },
+          "satellite_count": 16,
+          "boundary_satellites": 10,
+          "timing_by_satellite": {
+            "100047": -1.0,
+            "48464": 0.2,
+            "50831": 1.0,
+            "59084": 1.0,
+            "61068": 1.0,
+            "61669": 1.0,
+            "62088": -1.0,
+            "63018": -1.0,
+            "63646": 0.2,
+            "64012": -1.0,
+            "64187": -1.0,
+            "64252": -0.5,
+            "64459": 1.0,
+            "65832": -0.6,
+            "67182": -0.6,
+            "67497": 0.8
+          },
+          "rows": [
+            {
+              "track_id": "sha256:051124978d4521086e974799257b61e9c49d8f79045e784919bf1d88f75a24fc",
+              "satellite_id": "64012",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 13934.17770919587,
+              "corrected_mse": 33250.87393011803,
+              "zero_offset_hz": -715986.5343599106,
+              "corrected_offset_hz": -719362.7352687711
+            },
+            {
+              "track_id": "sha256:09bc160e04c39d0ab01c3dca87138581d8b7a0f27acf5adb4510adafe4e0f901",
+              "satellite_id": "64459",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 388205.5430014417,
+              "corrected_mse": 183171.08484405166,
+              "zero_offset_hz": -736615.4446792683,
+              "corrected_offset_hz": -733023.619186797
+            },
+            {
+              "track_id": "sha256:0f279cfe9183cc3c5e01028810a0da6b9063ffe1e6914b9b4d5b5b947d25dd07",
+              "satellite_id": "65832",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 20782.39275032972,
+              "corrected_mse": 8212.580625714223,
+              "zero_offset_hz": -53998.65434008241,
+              "corrected_offset_hz": -55729.46696610458
+            },
+            {
+              "track_id": "sha256:1b4ba90cc7ab33aaad66aa5b2bef5be65926a09afa6c7ba364e7197c4fb77f9d",
+              "satellite_id": "64012",
+              "observations": 51,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 120314.70812466521,
+              "corrected_mse": 110967.72207071073,
+              "zero_offset_hz": -280225.9727400818,
+              "corrected_offset_hz": -283645.6431662826
+            },
+            {
+              "track_id": "sha256:1e99689345087f79a0f19d835e239f54e3dff875e691eaba21374c4f0e617818",
+              "satellite_id": "62088",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 20472.01676646006,
+              "corrected_mse": 26585.88371525506,
+              "zero_offset_hz": -36931.92722866503,
+              "corrected_offset_hz": -39942.167337065526
+            },
+            {
+              "track_id": "sha256:2502988d7c1cc16f6e67dcee66faf292b88a7322c6c27e8ad6f8fbdb3dbbfdba",
+              "satellite_id": "64252",
+              "observations": 63,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 24641.696512756513,
+              "corrected_mse": 18921.658662879905,
+              "zero_offset_hz": -722966.0187383739,
+              "corrected_offset_hz": -724785.4284984317
+            },
+            {
+              "track_id": "sha256:28678065fb0a13b794f8ec85e2d133d8d4651ee3451584bf5bc54075c4d26058",
+              "satellite_id": "64012",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 17763.451052505323,
+              "corrected_mse": 24777.79065974601,
+              "zero_offset_hz": -715562.7438748832,
+              "corrected_offset_hz": -719093.3908855851
+            },
+            {
+              "track_id": "sha256:2b660f560c0966f4ae39a047028a855b61f4bc5e49b4d9af87d21210a88c2430",
+              "satellite_id": "61068",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 163941.594382275,
+              "corrected_mse": 118309.27741893541,
+              "zero_offset_hz": -278149.99393121246,
+              "corrected_offset_hz": -275631.8531733303
+            },
+            {
+              "track_id": "sha256:30eac5b497e350745fe3c19fd8895b74e789b12a49be37e7378db61bf2e11342",
+              "satellite_id": "64252",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 15934.109902699489,
+              "corrected_mse": 8149.883648257756,
+              "zero_offset_hz": -507335.96657271124,
+              "corrected_offset_hz": -509102.83254469314
+            },
+            {
+              "track_id": "sha256:4187b650771eed86e6e8ff685bccdfce7ba7c15fb98a72da9b21c2bbf73b5bbc",
+              "satellite_id": "50831",
+              "observations": 31,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 57967.838966607655,
+              "corrected_mse": 33078.2580060154,
+              "zero_offset_hz": -288855.252040848,
+              "corrected_offset_hz": -284885.8960230363
+            },
+            {
+              "track_id": "sha256:4785008920779b89970b6620c97791542575b2fa01ca9c05a36e2a9e4bf5ba4f",
+              "satellite_id": "62088",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 16762.697523284816,
+              "corrected_mse": 27447.884462432266,
+              "zero_offset_hz": -37703.14108630377,
+              "corrected_offset_hz": -40666.58196051923
+            },
+            {
+              "track_id": "sha256:4afcd2cb4462d363ff87f1802a24b25c0ce544eb075241d7644dd4da53c5bc84",
+              "satellite_id": "67182",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 17450.56507665624,
+              "corrected_mse": 11495.86103073245,
+              "zero_offset_hz": -953444.7073478022,
+              "corrected_offset_hz": -955661.1272719649
+            },
+            {
+              "track_id": "sha256:4cfb481d9aa9d998a9b4d547f15dedc434af162f63c2bf43129ef8d7eeb4722d",
+              "satellite_id": "61068",
+              "observations": 54,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 448492.9181322016,
+              "corrected_mse": 278644.06085215305,
+              "zero_offset_hz": -277480.1696933466,
+              "corrected_offset_hz": -274412.37620871596
+            },
+            {
+              "track_id": "sha256:572051354ba4863a9dadd563a8d1e2484ed56cb68eefc72bac7f4400a39fb946",
+              "satellite_id": "63646",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 63927.89794295945,
+              "corrected_mse": 69608.48256422048,
+              "zero_offset_hz": -879690.0886590224,
+              "corrected_offset_hz": -878971.2278117996
+            },
+            {
+              "track_id": "sha256:572dfe74d6fe2ff5d329b1db12eb0878553cd8ef2c6ab34427a2e49b42fb1310",
+              "satellite_id": "62088",
+              "observations": 97,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 673782.8079419734,
+              "corrected_mse": 683719.5379627935,
+              "zero_offset_hz": -40871.996652215814,
+              "corrected_offset_hz": -44398.20063962222
+            },
+            {
+              "track_id": "sha256:5ca82bbb72f63b0d8dc705d4594d6a303351bb6cc4dc4a608bb45ced6539317d",
+              "satellite_id": "67497",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 37229.007562767736,
+              "corrected_mse": 32639.559947348065,
+              "zero_offset_hz": -695779.1475488127,
+              "corrected_offset_hz": -692954.3327840042
+            },
+            {
+              "track_id": "sha256:5d358230c11539b4cc2495102640675315243146a0f42fe94f6ae88b53d5e3a3",
+              "satellite_id": "62088",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 388078.33914649795,
+              "corrected_mse": 346893.38985033706,
+              "zero_offset_hz": -41440.587080464,
+              "corrected_offset_hz": -45089.3333662219
+            },
+            {
+              "track_id": "sha256:6bdb0117a0ac9d094147bef12377efff501e14ba99aaab2fd526e87eb7d89914",
+              "satellite_id": "65832",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 6747.799690186804,
+              "corrected_mse": 11560.042988532101,
+              "zero_offset_hz": -56796.95030750405,
+              "corrected_offset_hz": -58573.1569490551
+            },
+            {
+              "track_id": "sha256:6f3aa13d422b6e2ac146ad4296377866df020594788578964b94dc29739b1ff5",
+              "satellite_id": "64252",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 45198.71732507247,
+              "corrected_mse": 31147.40834485618,
+              "zero_offset_hz": -742572.027045515,
+              "corrected_offset_hz": -744355.3157345529
+            },
+            {
+              "track_id": "sha256:716b4aa7198223e1d623a6ae8c009fbd55971486207585298d23e74333633ae7",
+              "satellite_id": "59084",
+              "observations": 75,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 591910.8334905787,
+              "corrected_mse": 335989.19673587725,
+              "zero_offset_hz": -57513.497174687705,
+              "corrected_offset_hz": -53994.49257881202
+            },
+            {
+              "track_id": "sha256:828b13ae6b585c6800e50bc024982d459f0af2d6743acdfc2bb73b3709cf3be2",
+              "satellite_id": "50831",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 1120504.9543290325,
+              "corrected_mse": 910206.8862051521,
+              "zero_offset_hz": 169270.2336268361,
+              "corrected_offset_hz": 173189.10772822594
+            },
+            {
+              "track_id": "sha256:8d6f47d8337248c9d8eac9c21e353d0afa6e1ef3fcf721ebf509567c59ef5cb8",
+              "satellite_id": "59084",
+              "observations": 105,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 973991.0441684278,
+              "corrected_mse": 521703.220087596,
+              "zero_offset_hz": -56448.36198496178,
+              "corrected_offset_hz": -53001.4782523502
+            },
+            {
+              "track_id": "sha256:9a0854ecfd2d6871cb7878cf8010d7ee81a8f1ee020619ad1277b5183f0342a0",
+              "satellite_id": "61068",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 15504.709234384309,
+              "corrected_mse": 26469.20632511092,
+              "zero_offset_hz": 180422.44191621264,
+              "corrected_offset_hz": 183568.2659368644
+            },
+            {
+              "track_id": "sha256:9e6a49599b96bcaa5424b71af46bf6c8b75ff4c5e10f08bd55b1566d97f31cf8",
+              "satellite_id": "67182",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 49374.37997741171,
+              "corrected_mse": 14855.736516312314,
+              "zero_offset_hz": -936051.2882222643,
+              "corrected_offset_hz": -938142.4824847115
+            },
+            {
+              "track_id": "sha256:9f6cec5416f77fdaeda086d6d17d1934e01fbaa473b335535b1adff31c6bf46d",
+              "satellite_id": "64012",
+              "observations": 40,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 156312.24842756777,
+              "corrected_mse": 170630.87185593144,
+              "zero_offset_hz": -748040.2480507968,
+              "corrected_offset_hz": -751467.9707020918
+            },
+            {
+              "track_id": "sha256:a737794bc68f2c21d669268301e712760b9620c8602bb1238b7f0ccebaefe8ec",
+              "satellite_id": "64252",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 6532.939582223567,
+              "corrected_mse": 6643.867761579558,
+              "zero_offset_hz": -506999.20406715455,
+              "corrected_offset_hz": -508829.77851317264
+            },
+            {
+              "track_id": "sha256:ab17c6c1a9b8cc39c600afd6f9d6d3f19c17a4f7cf4849dbb48808cfc1eba029",
+              "satellite_id": "65832",
+              "observations": 15,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 18612.822411175253,
+              "corrected_mse": 21979.530639684832,
+              "zero_offset_hz": -56008.273392668154,
+              "corrected_offset_hz": -57777.84772815727
+            },
+            {
+              "track_id": "sha256:adc66df391857c68bedf1da90a7233902d596fb6c7caf0abd0c96b476a0c0314",
+              "satellite_id": "50831",
+              "observations": 16,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 27403.97370745107,
+              "corrected_mse": 16332.258357754983,
+              "zero_offset_hz": -291884.66275130655,
+              "corrected_offset_hz": -287887.35292800283
+            },
+            {
+              "track_id": "sha256:b7dfe1ba03a3cf2ee6253b454eb815e99ee990c613c36f9f6b960b9e44c16616",
+              "satellite_id": "61669",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 135321.51035557772,
+              "corrected_mse": 54635.753578755655,
+              "zero_offset_hz": -39021.92888572431,
+              "corrected_offset_hz": -35454.9912265858
+            },
+            {
+              "track_id": "sha256:c85a5e176414fcebf41ab3b4ac012a588f5096e4cdc9930a38ee7bafede88013",
+              "satellite_id": "64459",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 791641.1135633513,
+              "corrected_mse": 325851.179690108,
+              "zero_offset_hz": -733910.0763094279,
+              "corrected_offset_hz": -730218.1366796164
+            },
+            {
+              "track_id": "sha256:ce76442c0763a755059fbdd853f8452679d9a71db97c8ebaf6c801be321f6423",
+              "satellite_id": "48464",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 14913.3268139666,
+              "corrected_mse": 18431.428448044328,
+              "zero_offset_hz": -949675.9758246086,
+              "corrected_offset_hz": -948965.8718467186
+            },
+            {
+              "track_id": "sha256:dc2d15b305f10f5f6013547e34c6867e8c04e7dc29363f2d6451c6d3c61ccd5d",
+              "satellite_id": "63018",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 43780.82617828396,
+              "corrected_mse": 44378.87777990741,
+              "zero_offset_hz": 51225.21548702674,
+              "corrected_offset_hz": 48339.62530871062
+            },
+            {
+              "track_id": "sha256:dc6b6843a01225f39eeee42d9a8e053ea581fa14079e6ebbc67bcaa5abf31834",
+              "satellite_id": "67182",
+              "observations": 25,
+              "plot_eligible": true,
+              "tau_s": -0.6,
+              "zero_mse": 15684.550553321387,
+              "corrected_mse": 6307.232335389772,
+              "zero_offset_hz": -978443.3628031072,
+              "corrected_offset_hz": -980460.4105334037
+            },
+            {
+              "track_id": "sha256:e0f6b331c366fe4a61b0691f405886c4ed576d6ab42be104a0ff89d3eb3582f0",
+              "satellite_id": "64252",
+              "observations": 65,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 28167.634383228884,
+              "corrected_mse": 30079.671669018404,
+              "zero_offset_hz": -953197.0854850962,
+              "corrected_offset_hz": -955019.1938094584
+            },
+            {
+              "track_id": "sha256:e4040b1f209c4357f906a09f74338956492dfaf78bfb632caf1996e782aa027b",
+              "satellite_id": "64187",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 537305.3139140464,
+              "corrected_mse": 464064.811369016,
+              "zero_offset_hz": -235002.01554979937,
+              "corrected_offset_hz": -238071.47628265875
+            },
+            {
+              "track_id": "sha256:e666fae9815e5133701c37b68bdf72b18e6b9665072ad54044eb496ec0edcc82",
+              "satellite_id": "48464",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 15428.179010388734,
+              "corrected_mse": 11465.105646986975,
+              "zero_offset_hz": -527310.3438924941,
+              "corrected_offset_hz": -526624.8496371479
+            },
+            {
+              "track_id": "sha256:e66d005d026de0fc436c6b257a5093496485deddcd5763b7638804085aaa4509",
+              "satellite_id": "100047",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 72222.13721418516,
+              "corrected_mse": 64626.913585967675,
+              "zero_offset_hz": -509363.7341948081,
+              "corrected_offset_hz": -512828.7884298716
+            },
+            {
+              "track_id": "sha256:ecffe9a1addfabd8caf32ec92102a3a05486b0da0fcd6d2b382e2ae90480fa12",
+              "satellite_id": "64012",
+              "observations": 43,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 117195.91924298723,
+              "corrected_mse": 123802.98391309331,
+              "zero_offset_hz": -712748.6087724284,
+              "corrected_offset_hz": -716219.4867055374
+            },
+            {
+              "track_id": "sha256:ffa66fa05a46ffc3beaffeadce9234776714a3ee5e63743429541ab936cbbb1e",
+              "satellite_id": "61068",
+              "observations": 41,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 39800.80114778648,
+              "corrected_mse": 50581.63099563715,
+              "zero_offset_hz": -287209.5478680464,
+              "corrected_offset_hz": -284075.32629305817
+            }
+          ]
+        }
+      }
+    },
+    {
+      "session_id": "scan-fw-fadea8b51ac3a4f7",
+      "utc": "10:30",
+      "tracks": 51,
+      "evidence_sha256": "sha256:0f44bab89b7ebe04b99915689a135fe6a964451a25939a357147c7f0aed11578",
+      "snapshot_digest": "sha256:23bff45940e66b3fc052df33bf604d6650b39478e60d17cdd95c9b247235f2e5",
+      "zero_parity_max_hz": 1.5717205315013416e-10,
+      "sites": {
+        "reference": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 584.0445902780838,
+              "size_weighted_rms_hz": 769.6388897981155
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 494.48356757454934,
+              "size_weighted_rms_hz": 644.3744721644081
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 589.003508400117,
+              "size_weighted_rms_hz": 771.5232761326411
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 496.229686200584,
+              "size_weighted_rms_hz": 645.5928222997192
+            }
+          },
+          "satellite_count": 21,
+          "boundary_satellites": 15,
+          "timing_by_satellite": {
+            "52098": 1.0,
+            "55289": -0.9,
+            "55467": 0.8,
+            "55471": 0.0,
+            "55491": 1.0,
+            "57255": -1.0,
+            "58437": -1.0,
+            "59466": 0.7,
+            "59553": -1.0,
+            "59670": -1.0,
+            "59676": -1.0,
+            "60431": -0.1,
+            "61201": 1.0,
+            "63712": -0.5,
+            "63717": -1.0,
+            "63766": -1.0,
+            "66007": -1.0,
+            "66616": -1.0,
+            "67313": -1.0,
+            "67317": -1.0,
+            "68399": -1.0
+          },
+          "rows": [
+            {
+              "track_id": "sha256:06d088370ca6ff1e9aa8c9a98bb4b787fd194c329174fc180ce2afac4f65845b",
+              "satellite_id": "55471",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": 0.0,
+              "zero_mse": 3827.534017405941,
+              "corrected_mse": 3827.534017405941,
+              "zero_offset_hz": -798182.4491960907,
+              "corrected_offset_hz": -798182.4491960907
+            },
+            {
+              "track_id": "sha256:212cadd139ba1f8078d24e6c9c6f459962721086fdc086dbaac90d426f3567c8",
+              "satellite_id": "63717",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 341086.4811315528,
+              "corrected_mse": 207803.50347618118,
+              "zero_offset_hz": -111665.10176902369,
+              "corrected_offset_hz": -115542.328148305
+            },
+            {
+              "track_id": "sha256:216cca8083e8fc8970770f6c2cea18fd9473dfb525597e5af47e87c8ef88808a",
+              "satellite_id": "58437",
+              "observations": 74,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 3329619.960915039,
+              "corrected_mse": 2429349.1890595653,
+              "zero_offset_hz": -329096.81375777326,
+              "corrected_offset_hz": -332466.9247224895
+            },
+            {
+              "track_id": "sha256:228f251eac5c242a61f187979936ec49552f25dacfcf44dd0ae7ceacf6cb257d",
+              "satellite_id": "59466",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": 0.7,
+              "zero_mse": 34615.74359902376,
+              "corrected_mse": 7334.070883093142,
+              "zero_offset_hz": -128045.51875938337,
+              "corrected_offset_hz": -125885.36929650632
+            },
+            {
+              "track_id": "sha256:260829d2c9270b0638c81105b2b2a82e0dfc21a752434588b1e22c363f5583ce",
+              "satellite_id": "66007",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 36637.98146886532,
+              "corrected_mse": 7609.161030153888,
+              "zero_offset_hz": -129637.04646381052,
+              "corrected_offset_hz": -132634.25254147453
+            },
+            {
+              "track_id": "sha256:30002582786e1205e0fb7cb8c16efc94784dad421a90278d891a1239b6297a19",
+              "satellite_id": "63766",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 570901.4406357966,
+              "corrected_mse": 362844.4784026823,
+              "zero_offset_hz": -354906.07393031404,
+              "corrected_offset_hz": -358140.2405907609
+            },
+            {
+              "track_id": "sha256:3052eecfda6c4f83eb29b69c01cf3620c56f0e4a1ae5939ba90042057ab55acc",
+              "satellite_id": "58437",
+              "observations": 68,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 2000588.4503248741,
+              "corrected_mse": 1534514.5045338124,
+              "zero_offset_hz": -313777.7971771093,
+              "corrected_offset_hz": -317234.1760378086
+            },
+            {
+              "track_id": "sha256:36d6fb669552f459460b5fab6065423f6ded2c9a5367ad937ecf1c7830401819",
+              "satellite_id": "55467",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 67457.27480594435,
+              "corrected_mse": 91754.2897882622,
+              "zero_offset_hz": -12259.196892349588,
+              "corrected_offset_hz": -9471.004144064562
+            },
+            {
+              "track_id": "sha256:38c5c85780e020833134352b7f348ebd9b6969a0eb8ba45e4e904316fe5bffd2",
+              "satellite_id": "59553",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 207534.0974977053,
+              "corrected_mse": 166736.74017488543,
+              "zero_offset_hz": -388395.49378597364,
+              "corrected_offset_hz": -391069.52171747305
+            },
+            {
+              "track_id": "sha256:4e48b1c289802962ef9aae2fc0a2ebbcc320dd53b74dbc632f26fecf2c2bb70a",
+              "satellite_id": "59670",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 851384.024924862,
+              "corrected_mse": 507721.62474780926,
+              "zero_offset_hz": -579979.8834241596,
+              "corrected_offset_hz": -583494.6899428249
+            },
+            {
+              "track_id": "sha256:516dd063010471b6b838bd22a76731c5b7957818092c5e3aafd3e42728fbc09e",
+              "satellite_id": "55491",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 7198.623682433487,
+              "corrected_mse": 3522.594375994251,
+              "zero_offset_hz": -106254.03588406996,
+              "corrected_offset_hz": -103924.53449982325
+            },
+            {
+              "track_id": "sha256:55fb0bd0b1cfaf9480d83d916339befbd9490848bbf2aca08789f2af720b6b58",
+              "satellite_id": "67313",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 29730.021280310855,
+              "corrected_mse": 21030.241816150938,
+              "zero_offset_hz": -355436.8022905581,
+              "corrected_offset_hz": -358946.0549618002
+            },
+            {
+              "track_id": "sha256:5f63051515b74d06aa4cdccafc52312b0f15e36ca54eeb9745f0fa44ea1ed8ba",
+              "satellite_id": "55471",
+              "observations": 34,
+              "plot_eligible": true,
+              "tau_s": 0.0,
+              "zero_mse": 4703.40317783809,
+              "corrected_mse": 4703.40317783809,
+              "zero_offset_hz": -796276.9637942868,
+              "corrected_offset_hz": -796276.9637942868
+            },
+            {
+              "track_id": "sha256:616fa3d12e0e7fc99c485e5e82890ec493de4a71a5dedcf3811f782fe5c08014",
+              "satellite_id": "55491",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 14310.612860570574,
+              "corrected_mse": 22595.63601678093,
+              "zero_offset_hz": -60883.98841425323,
+              "corrected_offset_hz": -57998.48110234253
+            },
+            {
+              "track_id": "sha256:68aa69e63f945bc4a76a335ffe50fdc90a7a9746bbeaf7fd8d923b4905728b65",
+              "satellite_id": "59670",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 8538.62109308839,
+              "corrected_mse": 46115.483635678815,
+              "zero_offset_hz": -567883.4982368897,
+              "corrected_offset_hz": -571008.2821685594
+            },
+            {
+              "track_id": "sha256:726522e27788f3d88bc87072c1d87379a16cc891659e8afa23f6e29389152284",
+              "satellite_id": "67317",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 356356.07024835167,
+              "corrected_mse": 179174.009719067,
+              "zero_offset_hz": -576030.6401513584,
+              "corrected_offset_hz": -579406.5746359917
+            },
+            {
+              "track_id": "sha256:763925e0a409656e60e7fe6563e79ea8eb0c6e044e87be9d1cb1d6faeddf643d",
+              "satellite_id": "59670",
+              "observations": 73,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 714256.1055363587,
+              "corrected_mse": 463445.6047407633,
+              "zero_offset_hz": -759491.3211819535,
+              "corrected_offset_hz": -763112.0253501222
+            },
+            {
+              "track_id": "sha256:8471cb365af63c3923a1d83f7861db940e4fc19eadb0211479043badbb189a7e",
+              "satellite_id": "59466",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.7,
+              "zero_mse": 125372.24132261246,
+              "corrected_mse": 73111.31328495106,
+              "zero_offset_hz": -126504.94315427612,
+              "corrected_offset_hz": -124110.09968768335
+            },
+            {
+              "track_id": "sha256:8512c8b441fac6ad793526be058377032151bbdf89d13d58623f8c6accbbac18",
+              "satellite_id": "66007",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": -1.0,
+              "zero_mse": 356837.91611120704,
+              "corrected_mse": 376911.56448122655,
+              "zero_offset_hz": -224646.3342575496,
+              "corrected_offset_hz": -227657.63950487095
+            },
+            {
+              "track_id": "sha256:87b3d213dfeaf896213b40eb10dd7f94c00bc7e29ebfbda7abdaf01e28304fba",
+              "satellite_id": "58437",
+              "observations": 72,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1857967.6281903386,
+              "corrected_mse": 1352813.4135635518,
+              "zero_offset_hz": -330277.2876151541,
+              "corrected_offset_hz": -333753.56221062684
+            },
+            {
+              "track_id": "sha256:8d8dc879ae0e336a517b0374eebc0b6d08cf98f4b4bb48a9fac7d3ebb0f286d0",
+              "satellite_id": "55467",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 15906.166720301311,
+              "corrected_mse": 39614.21126226254,
+              "zero_offset_hz": 105268.93622058762,
+              "corrected_offset_hz": 108123.48507133684
+            },
+            {
+              "track_id": "sha256:956712eecf7ccc9583188c8bb249f1b6b5e4e20f02635dc9af71d959f0c0d893",
+              "satellite_id": "59676",
+              "observations": 88,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 160875.06157161106,
+              "corrected_mse": 65153.76435722928,
+              "zero_offset_hz": 103118.55559530461,
+              "corrected_offset_hz": 99614.05010463862
+            },
+            {
+              "track_id": "sha256:a21a925da6bda6098a55b7475de372f18e41ce932f0fa97da8c7e75397c67f2a",
+              "satellite_id": "63717",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 275727.0511256249,
+              "corrected_mse": 168453.45294734047,
+              "zero_offset_hz": -113511.87661039743,
+              "corrected_offset_hz": -117385.88632700367
+            },
+            {
+              "track_id": "sha256:a335187a276d565da34cf0c1f7202a445348c3b31772366aceb812521e02adfb",
+              "satellite_id": "59670",
+              "observations": 76,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 783280.1623641116,
+              "corrected_mse": 551867.6917987949,
+              "zero_offset_hz": -761348.083770996,
+              "corrected_offset_hz": -764984.2914234984
+            },
+            {
+              "track_id": "sha256:a52f928b14ce95cc20c933ccefcba195f9823c96e0008e333d989275e721220c",
+              "satellite_id": "60431",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -0.1,
+              "zero_mse": 2315.4671612291395,
+              "corrected_mse": 997.097165589805,
+              "zero_offset_hz": -563233.1489507344,
+              "corrected_offset_hz": -563529.6182268255
+            },
+            {
+              "track_id": "sha256:a67c37ef508a6209e09d8f2f8e6f2c0566c65621e1d903b0a0fedb9544e88610",
+              "satellite_id": "63766",
+              "observations": 48,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 297321.1675165369,
+              "corrected_mse": 197789.7456698695,
+              "zero_offset_hz": -337326.9073643079,
+              "corrected_offset_hz": -340585.2968442799
+            },
+            {
+              "track_id": "sha256:a8bce66522d4e3585f5c07a1e642505070909b591de1a1d82a88c6fa51fe4e04",
+              "satellite_id": "55491",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 272445.8369452087,
+              "corrected_mse": 201788.3575343572,
+              "zero_offset_hz": -75980.48766876366,
+              "corrected_offset_hz": -73174.28428614918
+            },
+            {
+              "track_id": "sha256:ad21dd951218108964a965cf1961a0a2a36760896431d7c2ce3927f1a4495fe0",
+              "satellite_id": "55289",
+              "observations": 33,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 103204.48974073472,
+              "corrected_mse": 59546.7070387238,
+              "zero_offset_hz": -532564.2457829264,
+              "corrected_offset_hz": -535059.6946693677
+            },
+            {
+              "track_id": "sha256:b23224261a29f9c0d2d04f86f0de00300c8cf4333e3b78b0d5d24380810a4430",
+              "satellite_id": "63766",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 346073.16513256665,
+              "corrected_mse": 223824.43405674206,
+              "zero_offset_hz": -339344.82128847565,
+              "corrected_offset_hz": -342549.192559735
+            },
+            {
+              "track_id": "sha256:b561c9b02be0c5db5006d2f761877b0d08ed3f55255630939ed2e1b1ac65751a",
+              "satellite_id": "59670",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 11775.325071631236,
+              "corrected_mse": 6280.983369221558,
+              "zero_offset_hz": -813687.7520579679,
+              "corrected_offset_hz": -817400.7408487854
+            },
+            {
+              "track_id": "sha256:b73f5e9682557b1730c79332b3b10f10ea42df3225995b75d9de946efe4f113b",
+              "satellite_id": "68399",
+              "observations": 20,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 645284.2377115564,
+              "corrected_mse": 613137.0409682702,
+              "zero_offset_hz": -423254.8233118285,
+              "corrected_offset_hz": -426784.49908235297
+            },
+            {
+              "track_id": "sha256:b90b6104db243da8f42025331340028a744958144639c6dade6c745cea6baac8",
+              "satellite_id": "67317",
+              "observations": 10,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 373.86698533830383,
+              "corrected_mse": 1786.0757307548247,
+              "zero_offset_hz": -581109.9759900694,
+              "corrected_offset_hz": -584322.0581861545
+            },
+            {
+              "track_id": "sha256:b925c002066b1c22faabbbb7b4142db54353ee0ad2dec9b7ba020fabec5a96a3",
+              "satellite_id": "58437",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1059572.1677014823,
+              "corrected_mse": 874311.7480397546,
+              "zero_offset_hz": -315355.8988638974,
+              "corrected_offset_hz": -318835.57897521916
+            },
+            {
+              "track_id": "sha256:c1d460ca635a978e74925fdb3452cad9d06894528b79740c318583d7793cc831",
+              "satellite_id": "67317",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 24786.05389003904,
+              "corrected_mse": 13941.12114091508,
+              "zero_offset_hz": -573960.5240264053,
+              "corrected_offset_hz": -577353.8820170318
+            },
+            {
+              "track_id": "sha256:ca28403c3fba41c1f6597516661e5e645a47d37c6bca54f0da7d6909386db381",
+              "satellite_id": "63766",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 262176.7528669371,
+              "corrected_mse": 158570.79308978468,
+              "zero_offset_hz": -331591.2385515788,
+              "corrected_offset_hz": -334890.4903524932
+            },
+            {
+              "track_id": "sha256:caaf8b206ef7c15cdf89e9b150b923ad4e4cfff3bf7583a054eae28dd5d6272b",
+              "satellite_id": "63712",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 1132.5374198278737,
+              "corrected_mse": 1107.7502068076801,
+              "zero_offset_hz": -124222.34014670095,
+              "corrected_offset_hz": -126190.02615180521
+            },
+            {
+              "track_id": "sha256:cce68c6d4a42208e37427bd1417574dda96476e6be91d61529d83acf2f053762",
+              "satellite_id": "63712",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 7375.487926670049,
+              "corrected_mse": 6066.830946046648,
+              "zero_offset_hz": -122465.64913884457,
+              "corrected_offset_hz": -124429.61374698581
+            },
+            {
+              "track_id": "sha256:cf887e0c26caf226389809e3e2fee1c2f95875b023df5ed41c0bed063f861234",
+              "satellite_id": "66616",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 22421.47442946728,
+              "corrected_mse": 17807.628401374554,
+              "zero_offset_hz": -150818.82722927773,
+              "corrected_offset_hz": -152799.14861946512
+            },
+            {
+              "track_id": "sha256:d136a4662c84a7e6857d84363d8a41654d1a246dc33fa99a7259061de492dfbc",
+              "satellite_id": "55467",
+              "observations": 28,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 51424.40626970921,
+              "corrected_mse": 44406.870392261706,
+              "zero_offset_hz": 106811.91280296414,
+              "corrected_offset_hz": 109674.53191970805
+            },
+            {
+              "track_id": "sha256:d640bc97ab6cd9efcb660b83cf148494c337a10a8bad2badebf3fa65b1dedf61",
+              "satellite_id": "55491",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 14480.788626117823,
+              "corrected_mse": 9276.747781127648,
+              "zero_offset_hz": -83787.94752725241,
+              "corrected_offset_hz": -81057.3908342759
+            },
+            {
+              "track_id": "sha256:d671b84fa4f7efc7ef4b316fd041c5c7131184419d971e9852fae305267e740a",
+              "satellite_id": "52098",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": 1.0,
+              "zero_mse": 40342.82650193622,
+              "corrected_mse": 27351.192312948173,
+              "zero_offset_hz": -255531.9309313964,
+              "corrected_offset_hz": -251898.49133654768
+            },
+            {
+              "track_id": "sha256:db2a98e8dfe43d0c50436c1933e817478954b56697b453479ce64623dc2194f7",
+              "satellite_id": "63766",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 511093.9301519311,
+              "corrected_mse": 336615.0265789421,
+              "zero_offset_hz": -353003.9899747734,
+              "corrected_offset_hz": -356247.4886124487
+            },
+            {
+              "track_id": "sha256:de97e31dfbfb2e307de1a7ffd5cd0c3fb8f34951b0c0e793d029af71c01db3b8",
+              "satellite_id": "67313",
+              "observations": 27,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 8322.092230288068,
+              "corrected_mse": 3309.798284523992,
+              "zero_offset_hz": -353571.7763604033,
+              "corrected_offset_hz": -357081.2060945216
+            },
+            {
+              "track_id": "sha256:e59513eb73b43b7577126f14f1e7262855f9309df212df15f7bb822413f89e77",
+              "satellite_id": "57255",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 107013.10885564107,
+              "corrected_mse": 106719.68300169092,
+              "zero_offset_hz": -483628.21362352,
+              "corrected_offset_hz": -486234.63737723883
+            },
+            {
+              "track_id": "sha256:e5ec2a13ddae3853673ae9604fbdd4f3a489a1c9207a985d498d6f931b70d132",
+              "satellite_id": "55467",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 43419.40383365791,
+              "corrected_mse": 34123.7946172144,
+              "zero_offset_hz": -13929.85691765264,
+              "corrected_offset_hz": -11124.93925881561
+            },
+            {
+              "track_id": "sha256:e75fc1a75ede376b46ebdd4c858c44821532f0ba12a7da94f9c0bda185887200",
+              "satellite_id": "59676",
+              "observations": 102,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 333761.9487894608,
+              "corrected_mse": 125849.83200862636,
+              "zero_offset_hz": 104617.18790455445,
+              "corrected_offset_hz": 101189.57998685233
+            },
+            {
+              "track_id": "sha256:e88c85ca0cec871182b24d8bcc6e5746b76893bd8b95513356e1ab5a612530f0",
+              "satellite_id": "58437",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 201088.40277594567,
+              "corrected_mse": 182450.8766472431,
+              "zero_offset_hz": -321710.10007006134,
+              "corrected_offset_hz": -325352.960781921
+            },
+            {
+              "track_id": "sha256:ed888d75d8d33d02deeb7920d63d4129811f3ea7a14706a97ee2d32893cb2ed2",
+              "satellite_id": "67317",
+              "observations": 39,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 184735.6630479247,
+              "corrected_mse": 105466.79888867073,
+              "zero_offset_hz": -589192.4021796788,
+              "corrected_offset_hz": -592560.638411369
+            },
+            {
+              "track_id": "sha256:ef93be635b084690efcc4b77aed9b538c97ab8f978f913c97a47f876a5ad6bd4",
+              "satellite_id": "61201",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 658744.3384856067,
+              "corrected_mse": 401676.2678020352,
+              "zero_offset_hz": -338470.1319871937,
+              "corrected_offset_hz": -336571.35553978395
+            },
+            {
+              "track_id": "sha256:f8949d1ab540c347674afe1161d57bd0bba8af28ff4c11f7e62fc3351eabc6bc",
+              "satellite_id": "63712",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": -0.5,
+              "zero_mse": 2957.4916801315185,
+              "corrected_mse": 3314.6878957212766,
+              "zero_offset_hz": -192168.88332079988,
+              "corrected_offset_hz": -194027.65140114343
+            },
+            {
+              "track_id": "sha256:f9b7cf141623735143cafdf27d4e482a95c752329e00aed3e6777d32d251d3c2",
+              "satellite_id": "63766",
+              "observations": 19,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 28157.148734429484,
+              "corrected_mse": 24688.557803248612,
+              "zero_offset_hz": -329744.56587778387,
+              "corrected_offset_hz": -333061.09384873393
+            }
+          ]
+        },
+        "sacramento": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 441.92876163596685,
+              "size_weighted_rms_hz": 534.5972668135275
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 368.84517670644044,
+              "size_weighted_rms_hz": 438.4242538330257
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 442.92811386172866,
+              "size_weighted_rms_hz": 535.3703992713802
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 367.20226484512347,
+              "size_weighted_rms_hz": 438.64745422201037
+            }
+          },
+          "satellite_count": 22,
+          "boundary_satellites": 15,
+          "timing_by_satellite": {
+            "53639": 0.8,
+            "55467": 0.3,
+            "55471": 1.0,
+            "55491": 1.0,
+            "57231": 1.0,
+            "58437": -1.0,
+            "59466": -1.0,
+            "59553": -1.0,
+            "59670": -1.0,
+            "59676": 0.3,
+            "60050": 1.0,
+            "60992": -1.0,
+            "63146": -1.0,
+            "63717": -1.0,
+            "63766": -1.0,
+            "64256": 1.0,
+            "64269": -0.9,
+            "66007": 1.0,
+            "66393": 0.1,
+            "66616": -0.4,
+            "67313": -1.0,
+            "67317": -0.8
+          },
+          "rows": [
+            {
+              "track_id": "sha256:06d088370ca6ff1e9aa8c9a98bb4b787fd194c329174fc180ce2afac4f65845b",
+              "satellite_id": "55471",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 96182.91366680156,
+              "corrected_mse": 44222.22432721582,
+              "zero_offset_hz": -806751.2038382636,
+              "corrected_offset_hz": -803237.0585278317
+            },
+            {
+              "track_id": "sha256:212cadd139ba1f8078d24e6c9c6f459962721086fdc086dbaac90d426f3567c8",
+              "satellite_id": "63717",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 132490.66275649468,
+              "corrected_mse": 63934.2346083089,
+              "zero_offset_hz": -119222.50823759015,
+              "corrected_offset_hz": -123119.44576441121
+            },
+            {
+              "track_id": "sha256:216cca8083e8fc8970770f6c2cea18fd9473dfb525597e5af47e87c8ef88808a",
+              "satellite_id": "58437",
+              "observations": 74,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1251042.1362837842,
+              "corrected_mse": 803257.5596024602,
+              "zero_offset_hz": -337250.62127013406,
+              "corrected_offset_hz": -340672.56783818157
+            },
+            {
+              "track_id": "sha256:228f251eac5c242a61f187979936ec49552f25dacfcf44dd0ae7ceacf6cb257d",
+              "satellite_id": "66393",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 3498.1343538727147,
+              "corrected_mse": 2730.8162371049566,
+              "zero_offset_hz": -132004.07316438627,
+              "corrected_offset_hz": -131694.72295460888
+            },
+            {
+              "track_id": "sha256:260829d2c9270b0638c81105b2b2a82e0dfc21a752434588b1e22c363f5583ce",
+              "satellite_id": "66007",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 85654.51429076362,
+              "corrected_mse": 35602.27682187749,
+              "zero_offset_hz": -134629.15600921874,
+              "corrected_offset_hz": -131683.43765427326
+            },
+            {
+              "track_id": "sha256:30002582786e1205e0fb7cb8c16efc94784dad421a90278d891a1239b6297a19",
+              "satellite_id": "63766",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 322307.61817724287,
+              "corrected_mse": 151350.8224385043,
+              "zero_offset_hz": -362884.8964983826,
+              "corrected_offset_hz": -366101.8875399251
+            },
+            {
+              "track_id": "sha256:3052eecfda6c4f83eb29b69c01cf3620c56f0e4a1ae5939ba90042057ab55acc",
+              "satellite_id": "58437",
+              "observations": 68,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 1050314.2660025929,
+              "corrected_mse": 789339.0401748589,
+              "zero_offset_hz": -322221.33087434946,
+              "corrected_offset_hz": -325690.26837883925
+            },
+            {
+              "track_id": "sha256:36d6fb669552f459460b5fab6065423f6ded2c9a5367ad937ecf1c7830401819",
+              "satellite_id": "64269",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -0.9,
+              "zero_mse": 64725.96455781608,
+              "corrected_mse": 20401.082397096132,
+              "zero_offset_hz": 115852.40953663104,
+              "corrected_offset_hz": 112721.5578691782
+            },
+            {
+              "track_id": "sha256:38c5c85780e020833134352b7f348ebd9b6969a0eb8ba45e4e904316fe5bffd2",
+              "satellite_id": "59553",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 97241.35792257491,
+              "corrected_mse": 71790.81296166917,
+              "zero_offset_hz": -395225.77464558696,
+              "corrected_offset_hz": -397969.2049053343
+            },
+            {
+              "track_id": "sha256:4e48b1c289802962ef9aae2fc0a2ebbcc320dd53b74dbc632f26fecf2c2bb70a",
+              "satellite_id": "59670",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 216056.9757419795,
+              "corrected_mse": 104122.04092250904,
+              "zero_offset_hz": -588836.3482826988,
+              "corrected_offset_hz": -592415.8481596642
+            },
+            {
+              "track_id": "sha256:516dd063010471b6b838bd22a76731c5b7957818092c5e3aafd3e42728fbc09e",
+              "satellite_id": "66393",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 1254.9861001377985,
+              "corrected_mse": 2310.704684404727,
+              "zero_offset_hz": -132034.59864920325,
+              "corrected_offset_hz": -131799.6340924528
+            },
+            {
+              "track_id": "sha256:55fb0bd0b1cfaf9480d83d916339befbd9490848bbf2aca08789f2af720b6b58",
+              "satellite_id": "67313",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 30573.55949798806,
+              "corrected_mse": 26769.924408334744,
+              "zero_offset_hz": -364019.04668649874,
+              "corrected_offset_hz": -367524.82255287515
+            },
+            {
+              "track_id": "sha256:5f63051515b74d06aa4cdccafc52312b0f15e36ca54eeb9745f0fa44ea1ed8ba",
+              "satellite_id": "55471",
+              "observations": 34,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 81871.17132111413,
+              "corrected_mse": 38645.26577774771,
+              "zero_offset_hz": -804904.6753091908,
+              "corrected_offset_hz": -801368.9562046538
+            },
+            {
+              "track_id": "sha256:616fa3d12e0e7fc99c485e5e82890ec493de4a71a5dedcf3811f782fe5c08014",
+              "satellite_id": "55467",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 1247.6074745418857,
+              "corrected_mse": 620.6017850855675,
+              "zero_offset_hz": 100966.47238987045,
+              "corrected_offset_hz": 101823.1950718301
+            },
+            {
+              "track_id": "sha256:68aa69e63f945bc4a76a335ffe50fdc90a7a9746bbeaf7fd8d923b4905728b65",
+              "satellite_id": "67317",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 27617.9005941485,
+              "corrected_mse": 9085.340855171791,
+              "zero_offset_hz": -583029.9605313775,
+              "corrected_offset_hz": -585482.0966009784
+            },
+            {
+              "track_id": "sha256:726522e27788f3d88bc87072c1d87379a16cc891659e8afa23f6e29389152284",
+              "satellite_id": "67317",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 151999.92980234983,
+              "corrected_mse": 111257.55993517295,
+              "zero_offset_hz": -584339.6637322239,
+              "corrected_offset_hz": -587045.5562078784
+            },
+            {
+              "track_id": "sha256:763925e0a409656e60e7fe6563e79ea8eb0c6e044e87be9d1cb1d6faeddf643d",
+              "satellite_id": "59670",
+              "observations": 73,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 204532.64324058767,
+              "corrected_mse": 91809.83354536472,
+              "zero_offset_hz": -768545.2211116798,
+              "corrected_offset_hz": -772182.7521936576
+            },
+            {
+              "track_id": "sha256:8471cb365af63c3923a1d83f7861db940e4fc19eadb0211479043badbb189a7e",
+              "satellite_id": "66393",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 18209.90236072157,
+              "corrected_mse": 15502.454921342067,
+              "zero_offset_hz": -130225.12580888896,
+              "corrected_offset_hz": -129880.18090191798
+            },
+            {
+              "track_id": "sha256:8512c8b441fac6ad793526be058377032151bbdf89d13d58623f8c6accbbac18",
+              "satellite_id": "66007",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": 1.0,
+              "zero_mse": 291784.33423756046,
+              "corrected_mse": 283941.79604830913,
+              "zero_offset_hz": -230530.2456395386,
+              "corrected_offset_hz": -227552.5766224692
+            },
+            {
+              "track_id": "sha256:87b3d213dfeaf896213b40eb10dd7f94c00bc7e29ebfbda7abdaf01e28304fba",
+              "satellite_id": "58437",
+              "observations": 72,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 749539.0769458355,
+              "corrected_mse": 513595.89252650127,
+              "zero_offset_hz": -338737.9309547677,
+              "corrected_offset_hz": -342244.3236780065
+            },
+            {
+              "track_id": "sha256:8d8dc879ae0e336a517b0374eebc0b6d08cf98f4b4bb48a9fac7d3ebb0f286d0",
+              "satellite_id": "59676",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 6832.574505700682,
+              "corrected_mse": 3827.3795876505724,
+              "zero_offset_hz": 92473.05783016367,
+              "corrected_offset_hz": 93543.76720042074
+            },
+            {
+              "track_id": "sha256:956712eecf7ccc9583188c8bb249f1b6b5e4e20f02635dc9af71d959f0c0d893",
+              "satellite_id": "59676",
+              "observations": 88,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 63291.001679631816,
+              "corrected_mse": 65290.47551265028,
+              "zero_offset_hz": 94585.77465395966,
+              "corrected_offset_hz": 95642.37160257893
+            },
+            {
+              "track_id": "sha256:a21a925da6bda6098a55b7475de372f18e41ce932f0fa97da8c7e75397c67f2a",
+              "satellite_id": "63717",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 108637.08457600523,
+              "corrected_mse": 48526.773382298124,
+              "zero_offset_hz": -121072.90497056491,
+              "corrected_offset_hz": -124939.90153418212
+            },
+            {
+              "track_id": "sha256:a335187a276d565da34cf0c1f7202a445348c3b31772366aceb812521e02adfb",
+              "satellite_id": "59670",
+              "observations": 76,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 256585.41133762707,
+              "corrected_mse": 123236.27429280806,
+              "zero_offset_hz": -770416.0417342708,
+              "corrected_offset_hz": -774051.5071657158
+            },
+            {
+              "track_id": "sha256:a52f928b14ce95cc20c933ccefcba195f9823c96e0008e333d989275e721220c",
+              "satellite_id": "60050",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 211003.5953076873,
+              "corrected_mse": 238340.80648042765,
+              "zero_offset_hz": -482232.05963590957,
+              "corrected_offset_hz": -479285.38341173343
+            },
+            {
+              "track_id": "sha256:a67c37ef508a6209e09d8f2f8e6f2c0566c65621e1d903b0a0fedb9544e88610",
+              "satellite_id": "63766",
+              "observations": 48,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 229241.73839002676,
+              "corrected_mse": 124451.91341943669,
+              "zero_offset_hz": -345256.67805193533,
+              "corrected_offset_hz": -348516.9857212749
+            },
+            {
+              "track_id": "sha256:a8bce66522d4e3585f5c07a1e642505070909b591de1a1d82a88c6fa51fe4e04",
+              "satellite_id": "59466",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 111641.41700806792,
+              "corrected_mse": 32986.65557594642,
+              "zero_offset_hz": -102281.20066088288,
+              "corrected_offset_hz": -105224.96866145723
+            },
+            {
+              "track_id": "sha256:ad21dd951218108964a965cf1961a0a2a36760896431d7c2ce3927f1a4495fe0",
+              "satellite_id": "67317",
+              "observations": 33,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 14882.575040554566,
+              "corrected_mse": 44852.84909293019,
+              "zero_offset_hz": -550064.6739505432,
+              "corrected_offset_hz": -552276.5279675742
+            },
+            {
+              "track_id": "sha256:b23224261a29f9c0d2d04f86f0de00300c8cf4333e3b78b0d5d24380810a4430",
+              "satellite_id": "63766",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 206690.8962830737,
+              "corrected_mse": 102635.32360506474,
+              "zero_offset_hz": -347243.26812415593,
+              "corrected_offset_hz": -350432.0796227721
+            },
+            {
+              "track_id": "sha256:b561c9b02be0c5db5006d2f761877b0d08ed3f55255630939ed2e1b1ac65751a",
+              "satellite_id": "59670",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 2745.9194249557813,
+              "corrected_mse": 1532.5950772119597,
+              "zero_offset_hz": -822984.4895366633,
+              "corrected_offset_hz": -826723.7360239368
+            },
+            {
+              "track_id": "sha256:b73f5e9682557b1730c79332b3b10f10ea42df3225995b75d9de946efe4f113b",
+              "satellite_id": "64256",
+              "observations": 20,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 1385701.2167518674,
+              "corrected_mse": 1233623.0909002349,
+              "zero_offset_hz": -484261.26516342006,
+              "corrected_offset_hz": -480829.19831206836
+            },
+            {
+              "track_id": "sha256:b90b6104db243da8f42025331340028a744958144639c6dade6c745cea6baac8",
+              "satellite_id": "64256",
+              "observations": 10,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 4076.738028926771,
+              "corrected_mse": 3141.0389666152278,
+              "zero_offset_hz": -427412.58325384883,
+              "corrected_offset_hz": -424195.5027373513
+            },
+            {
+              "track_id": "sha256:b925c002066b1c22faabbbb7b4142db54353ee0ad2dec9b7ba020fabec5a96a3",
+              "satellite_id": "58437",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 785413.0502596297,
+              "corrected_mse": 648851.3166052892,
+              "zero_offset_hz": -323864.5498098699,
+              "corrected_offset_hz": -327353.1162037828
+            },
+            {
+              "track_id": "sha256:c1d460ca635a978e74925fdb3452cad9d06894528b79740c318583d7793cc831",
+              "satellite_id": "67317",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 12481.960955010747,
+              "corrected_mse": 7741.169682110049,
+              "zero_offset_hz": -582386.5319146025,
+              "corrected_offset_hz": -585117.0554583358
+            },
+            {
+              "track_id": "sha256:ca28403c3fba41c1f6597516661e5e645a47d37c6bca54f0da7d6909386db381",
+              "satellite_id": "63766",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 151888.6233937383,
+              "corrected_mse": 61950.24826891671,
+              "zero_offset_hz": -339659.48716874194,
+              "corrected_offset_hz": -342953.5961408948
+            },
+            {
+              "track_id": "sha256:caaf8b206ef7c15cdf89e9b150b923ad4e4cfff3bf7583a054eae28dd5d6272b",
+              "satellite_id": "53639",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 788.3543520788722,
+              "corrected_mse": 291.06773338522765,
+              "zero_offset_hz": -134267.16312149828,
+              "corrected_offset_hz": -131125.70998494935
+            },
+            {
+              "track_id": "sha256:cce68c6d4a42208e37427bd1417574dda96476e6be91d61529d83acf2f053762",
+              "satellite_id": "53639",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 2976.3282532189005,
+              "corrected_mse": 3463.4552419117704,
+              "zero_offset_hz": -132485.33159670944,
+              "corrected_offset_hz": -129351.4209030855
+            },
+            {
+              "track_id": "sha256:cf887e0c26caf226389809e3e2fee1c2f95875b023df5ed41c0bed063f861234",
+              "satellite_id": "66616",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -0.4,
+              "zero_mse": 6099.721147429909,
+              "corrected_mse": 5365.800902476389,
+              "zero_offset_hz": -154871.43853216263,
+              "corrected_offset_hz": -155676.60722593934
+            },
+            {
+              "track_id": "sha256:d136a4662c84a7e6857d84363d8a41654d1a246dc33fa99a7259061de492dfbc",
+              "satellite_id": "59676",
+              "observations": 28,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 5734.74315012124,
+              "corrected_mse": 3150.187013292651,
+              "zero_offset_hz": 94124.32212957066,
+              "corrected_offset_hz": 95194.57619884153
+            },
+            {
+              "track_id": "sha256:d640bc97ab6cd9efcb660b83cf148494c337a10a8bad2badebf3fa65b1dedf61",
+              "satellite_id": "55491",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 122700.72326311609,
+              "corrected_mse": 72269.08349258376,
+              "zero_offset_hz": -89512.28562160386,
+              "corrected_offset_hz": -86861.43647628231
+            },
+            {
+              "track_id": "sha256:d671b84fa4f7efc7ef4b316fd041c5c7131184419d971e9852fae305267e740a",
+              "satellite_id": "58437",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": -1.0,
+              "zero_mse": 55487.82577218724,
+              "corrected_mse": 47405.52524953833,
+              "zero_offset_hz": -328506.91035777464,
+              "corrected_offset_hz": -332173.99478867877
+            },
+            {
+              "track_id": "sha256:db2a98e8dfe43d0c50436c1933e817478954b56697b453479ce64623dc2194f7",
+              "satellite_id": "63766",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 319310.52238358813,
+              "corrected_mse": 164504.9144176435,
+              "zero_offset_hz": -360962.0994073856,
+              "corrected_offset_hz": -364196.1393572194
+            },
+            {
+              "track_id": "sha256:de97e31dfbfb2e307de1a7ffd5cd0c3fb8f34951b0c0e793d029af71c01db3b8",
+              "satellite_id": "67313",
+              "observations": 27,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 7830.645990602076,
+              "corrected_mse": 5583.675663924085,
+              "zero_offset_hz": -362149.6671378953,
+              "corrected_offset_hz": -365654.64713644516
+            },
+            {
+              "track_id": "sha256:e59513eb73b43b7577126f14f1e7262855f9309df212df15f7bb822413f89e77",
+              "satellite_id": "67317",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 5391.370007321922,
+              "corrected_mse": 10352.42787078437,
+              "zero_offset_hz": -587981.7737423092,
+              "corrected_offset_hz": -590063.0118541681
+            },
+            {
+              "track_id": "sha256:e5ec2a13ddae3853673ae9604fbdd4f3a489a1c9207a985d498d6f931b70d132",
+              "satellite_id": "60992",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 34991.43833985743,
+              "corrected_mse": 21521.4429469758,
+              "zero_offset_hz": 87803.38402975876,
+              "corrected_offset_hz": 84365.73513889624
+            },
+            {
+              "track_id": "sha256:e75fc1a75ede376b46ebdd4c858c44821532f0ba12a7da94f9c0bda185887200",
+              "satellite_id": "59676",
+              "observations": 102,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 49877.19041236611,
+              "corrected_mse": 43723.479164839584,
+              "zero_offset_hz": 96288.80300100397,
+              "corrected_offset_hz": 97323.27685091099
+            },
+            {
+              "track_id": "sha256:e88c85ca0cec871182b24d8bcc6e5746b76893bd8b95513356e1ab5a612530f0",
+              "satellite_id": "58437",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 179092.13754154678,
+              "corrected_mse": 150516.84080653978,
+              "zero_offset_hz": -330670.95829954447,
+              "corrected_offset_hz": -334294.87323921523
+            },
+            {
+              "track_id": "sha256:ed888d75d8d33d02deeb7920d63d4129811f3ea7a14706a97ee2d32893cb2ed2",
+              "satellite_id": "67317",
+              "observations": 39,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 123649.5075274714,
+              "corrected_mse": 95488.43052351061,
+              "zero_offset_hz": -597421.1038468237,
+              "corrected_offset_hz": -600112.5269553663
+            },
+            {
+              "track_id": "sha256:ef93be635b084690efcc4b77aed9b538c97ab8f978f913c97a47f876a5ad6bd4",
+              "satellite_id": "63146",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 588809.5640280374,
+              "corrected_mse": 366511.5794413767,
+              "zero_offset_hz": -316908.8370912073,
+              "corrected_offset_hz": -318950.4461715452
+            },
+            {
+              "track_id": "sha256:f8949d1ab540c347674afe1161d57bd0bba8af28ff4c11f7e62fc3351eabc6bc",
+              "satellite_id": "66393",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": 0.1,
+              "zero_mse": 3812.738354722661,
+              "corrected_mse": 3845.5918475590006,
+              "zero_offset_hz": -132379.9285280769,
+              "corrected_offset_hz": -132010.54670151864
+            },
+            {
+              "track_id": "sha256:f9b7cf141623735143cafdf27d4e482a95c752329e00aed3e6777d32d251d3c2",
+              "satellite_id": "57231",
+              "observations": 19,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 24540.279620982412,
+              "corrected_mse": 23113.285614896657,
+              "zero_offset_hz": -318256.5683811485,
+              "corrected_offset_hz": -314941.7761332952
+            }
+          ]
+        },
+        "reno": {
+          "all_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 369.3542800736406,
+              "size_weighted_rms_hz": 433.2374818889826
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 300.5758640606626,
+              "size_weighted_rms_hz": 338.3347136478893
+            }
+          },
+          "previous_plot_tracks": {
+            "zero_mse": {
+              "equal_track_rms_hz": 376.42938365520956,
+              "size_weighted_rms_hz": 434.77159724757433
+            },
+            "corrected_mse": {
+              "equal_track_rms_hz": 306.0476484919614,
+              "size_weighted_rms_hz": 339.48212316726574
+            }
+          },
+          "satellite_count": 21,
+          "boundary_satellites": 13,
+          "timing_by_satellite": {
+            "47733": 0.3,
+            "47788": 1.0,
+            "52296": 0.0,
+            "53276": -1.0,
+            "53480": -0.1,
+            "55612": -1.0,
+            "57255": -1.0,
+            "57663": -0.8,
+            "57983": 1.0,
+            "62314": -1.0,
+            "63644": 1.0,
+            "63684": -1.0,
+            "63717": 0.9,
+            "64073": 0.6,
+            "66494": -1.0,
+            "66509": -1.0,
+            "66570": 1.0,
+            "67044": 0.8,
+            "67871": 1.0,
+            "67877": -1.0,
+            "68508": 0.2
+          },
+          "rows": [
+            {
+              "track_id": "sha256:06d088370ca6ff1e9aa8c9a98bb4b787fd194c329174fc180ce2afac4f65845b",
+              "satellite_id": "57983",
+              "observations": 36,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 100600.26615889721,
+              "corrected_mse": 69321.21545868035,
+              "zero_offset_hz": -789343.0904183959,
+              "corrected_offset_hz": -785827.6645162042
+            },
+            {
+              "track_id": "sha256:212cadd139ba1f8078d24e6c9c6f459962721086fdc086dbaac90d426f3567c8",
+              "satellite_id": "47788",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 131936.12958187066,
+              "corrected_mse": 69873.50964081747,
+              "zero_offset_hz": -130948.45324233644,
+              "corrected_offset_hz": -127079.71205913051
+            },
+            {
+              "track_id": "sha256:216cca8083e8fc8970770f6c2cea18fd9473dfb525597e5af47e87c8ef88808a",
+              "satellite_id": "47733",
+              "observations": 74,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 8223.146580302926,
+              "corrected_mse": 5562.13629219551,
+              "zero_offset_hz": -360419.5507122316,
+              "corrected_offset_hz": -359377.20744280523
+            },
+            {
+              "track_id": "sha256:228f251eac5c242a61f187979936ec49552f25dacfcf44dd0ae7ceacf6cb257d",
+              "satellite_id": "66570",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 347194.1964045427,
+              "corrected_mse": 189021.14509639624,
+              "zero_offset_hz": -110805.06565558987,
+              "corrected_offset_hz": -107762.20389232626
+            },
+            {
+              "track_id": "sha256:260829d2c9270b0638c81105b2b2a82e0dfc21a752434588b1e22c363f5583ce",
+              "satellite_id": "63684",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 39134.961980319174,
+              "corrected_mse": 9121.003075472185,
+              "zero_offset_hz": -141680.68170729716,
+              "corrected_offset_hz": -144688.64377369924
+            },
+            {
+              "track_id": "sha256:30002582786e1205e0fb7cb8c16efc94784dad421a90278d891a1239b6297a19",
+              "satellite_id": "63717",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 115109.98104086552,
+              "corrected_mse": 137333.04540818953,
+              "zero_offset_hz": -351615.7627062187,
+              "corrected_offset_hz": -348776.93874180235
+            },
+            {
+              "track_id": "sha256:3052eecfda6c4f83eb29b69c01cf3620c56f0e4a1ae5939ba90042057ab55acc",
+              "satellite_id": "47733",
+              "observations": 68,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 7834.706403362892,
+              "corrected_mse": 4483.23148478482,
+              "zero_offset_hz": -345282.7366239171,
+              "corrected_offset_hz": -344255.6595078767
+            },
+            {
+              "track_id": "sha256:36d6fb669552f459460b5fab6065423f6ded2c9a5367ad937ecf1c7830401819",
+              "satellite_id": "52296",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 0.0,
+              "zero_mse": 4122.114342085913,
+              "corrected_mse": 4122.114342085913,
+              "zero_offset_hz": 80266.29494848844,
+              "corrected_offset_hz": 80266.29494848844
+            },
+            {
+              "track_id": "sha256:38c5c85780e020833134352b7f348ebd9b6969a0eb8ba45e4e904316fe5bffd2",
+              "satellite_id": "47733",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 13409.59787961123,
+              "corrected_mse": 8912.73207228027,
+              "zero_offset_hz": -360064.55227420793,
+              "corrected_offset_hz": -359179.6912783455
+            },
+            {
+              "track_id": "sha256:4e48b1c289802962ef9aae2fc0a2ebbcc320dd53b74dbc632f26fecf2c2bb70a",
+              "satellite_id": "63644",
+              "observations": 26,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 131163.38786787487,
+              "corrected_mse": 101427.40391478878,
+              "zero_offset_hz": -607679.0572840199,
+              "corrected_offset_hz": -604039.0478661362
+            },
+            {
+              "track_id": "sha256:516dd063010471b6b838bd22a76731c5b7957818092c5e3aafd3e42728fbc09e",
+              "satellite_id": "67044",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": 0.8,
+              "zero_mse": 19882.629833647778,
+              "corrected_mse": 12505.448724024014,
+              "zero_offset_hz": -71011.77452254912,
+              "corrected_offset_hz": -69164.89733279505
+            },
+            {
+              "track_id": "sha256:55fb0bd0b1cfaf9480d83d916339befbd9490848bbf2aca08789f2af720b6b58",
+              "satellite_id": "66494",
+              "observations": 30,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 52565.06170830471,
+              "corrected_mse": 43398.73083001951,
+              "zero_offset_hz": -360952.17847188324,
+              "corrected_offset_hz": -364443.3777170446
+            },
+            {
+              "track_id": "sha256:5f63051515b74d06aa4cdccafc52312b0f15e36ca54eeb9745f0fa44ea1ed8ba",
+              "satellite_id": "57255",
+              "observations": 34,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 62940.65455707709,
+              "corrected_mse": 59196.19417433529,
+              "zero_offset_hz": -753977.9804038171,
+              "corrected_offset_hz": -757607.705188072
+            },
+            {
+              "track_id": "sha256:616fa3d12e0e7fc99c485e5e82890ec493de4a71a5dedcf3811f782fe5c08014",
+              "satellite_id": "67877",
+              "observations": 12,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 2507.0028650876156,
+              "corrected_mse": 644.5199689323924,
+              "zero_offset_hz": 71976.91805064185,
+              "corrected_offset_hz": 69154.02063644635
+            },
+            {
+              "track_id": "sha256:68aa69e63f945bc4a76a335ffe50fdc90a7a9746bbeaf7fd8d923b4905728b65",
+              "satellite_id": "66509",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 122317.96664789735,
+              "corrected_mse": 51501.69271018957,
+              "zero_offset_hz": -576700.3763624463,
+              "corrected_offset_hz": -579716.6434225682
+            },
+            {
+              "track_id": "sha256:726522e27788f3d88bc87072c1d87379a16cc891659e8afa23f6e29389152284",
+              "satellite_id": "66509",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 262642.7976679793,
+              "corrected_mse": 117416.52174630434,
+              "zero_offset_hz": -577623.5538767935,
+              "corrected_offset_hz": -581005.7822829728
+            },
+            {
+              "track_id": "sha256:763925e0a409656e60e7fe6563e79ea8eb0c6e044e87be9d1cb1d6faeddf643d",
+              "satellite_id": "63644",
+              "observations": 73,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 215894.134868227,
+              "corrected_mse": 118149.03049485564,
+              "zero_offset_hz": -787229.4419749983,
+              "corrected_offset_hz": -783611.9493868519
+            },
+            {
+              "track_id": "sha256:8471cb365af63c3923a1d83f7861db940e4fc19eadb0211479043badbb189a7e",
+              "satellite_id": "57663",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -0.8,
+              "zero_mse": 381057.8712790077,
+              "corrected_mse": 372463.30076465476,
+              "zero_offset_hz": -84200.90409812347,
+              "corrected_offset_hz": -86954.17633363797
+            },
+            {
+              "track_id": "sha256:8512c8b441fac6ad793526be058377032151bbdf89d13d58623f8c6accbbac18",
+              "satellite_id": "47733",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": 0.3,
+              "zero_mse": 6868.721905613176,
+              "corrected_mse": 10932.237572129845,
+              "zero_offset_hz": -354294.0770329686,
+              "corrected_offset_hz": -353419.71092885575
+            },
+            {
+              "track_id": "sha256:87b3d213dfeaf896213b40eb10dd7f94c00bc7e29ebfbda7abdaf01e28304fba",
+              "satellite_id": "47733",
+              "observations": 72,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 5657.502478380018,
+              "corrected_mse": 3997.012940535173,
+              "zero_offset_hz": -362216.85389298364,
+              "corrected_offset_hz": -361167.4095374946
+            },
+            {
+              "track_id": "sha256:8d8dc879ae0e336a517b0374eebc0b6d08cf98f4b4bb48a9fac7d3ebb0f286d0",
+              "satellite_id": "55612",
+              "observations": 13,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 309299.1034195794,
+              "corrected_mse": 159746.87392336503,
+              "zero_offset_hz": 104226.00159461945,
+              "corrected_offset_hz": 100731.96730999711
+            },
+            {
+              "track_id": "sha256:956712eecf7ccc9583188c8bb249f1b6b5e4e20f02635dc9af71d959f0c0d893",
+              "satellite_id": "55612",
+              "observations": 88,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 322722.6840051315,
+              "corrected_mse": 164237.88184763544,
+              "zero_offset_hz": 106449.654563564,
+              "corrected_offset_hz": 102955.55289303839
+            },
+            {
+              "track_id": "sha256:a21a925da6bda6098a55b7475de372f18e41ce932f0fa97da8c7e75397c67f2a",
+              "satellite_id": "47788",
+              "observations": 59,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 155896.2955120869,
+              "corrected_mse": 79878.86233240354,
+              "zero_offset_hz": -132472.91129786166,
+              "corrected_offset_hz": -128659.1767465204
+            },
+            {
+              "track_id": "sha256:a335187a276d565da34cf0c1f7202a445348c3b31772366aceb812521e02adfb",
+              "satellite_id": "63644",
+              "observations": 76,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 419231.8046947112,
+              "corrected_mse": 213098.18870051266,
+              "zero_offset_hz": -788925.6328791105,
+              "corrected_offset_hz": -785338.530108902
+            },
+            {
+              "track_id": "sha256:a52f928b14ce95cc20c933ccefcba195f9823c96e0008e333d989275e721220c",
+              "satellite_id": "64073",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.6,
+              "zero_mse": 400398.8374108252,
+              "corrected_mse": 182925.48365536353,
+              "zero_offset_hz": -616820.37132087,
+              "corrected_offset_hz": -615050.1408775457
+            },
+            {
+              "track_id": "sha256:a67c37ef508a6209e09d8f2f8e6f2c0566c65621e1d903b0a0fedb9544e88610",
+              "satellite_id": "63717",
+              "observations": 48,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 225527.57078050254,
+              "corrected_mse": 215455.33328041775,
+              "zero_offset_hz": -334561.48928527354,
+              "corrected_offset_hz": -331713.72857247107
+            },
+            {
+              "track_id": "sha256:a8bce66522d4e3585f5c07a1e642505070909b591de1a1d82a88c6fa51fe4e04",
+              "satellite_id": "53480",
+              "observations": 23,
+              "plot_eligible": true,
+              "tau_s": -0.1,
+              "zero_mse": 43742.40999818908,
+              "corrected_mse": 47524.59156689039,
+              "zero_offset_hz": -115734.06169905208,
+              "corrected_offset_hz": -116020.71745945039
+            },
+            {
+              "track_id": "sha256:ad21dd951218108964a965cf1961a0a2a36760896431d7c2ce3927f1a4495fe0",
+              "satellite_id": "66509",
+              "observations": 33,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 342278.7034193577,
+              "corrected_mse": 116701.26193429127,
+              "zero_offset_hz": -545071.0798355081,
+              "corrected_offset_hz": -547915.5148142262
+            },
+            {
+              "track_id": "sha256:b23224261a29f9c0d2d04f86f0de00300c8cf4333e3b78b0d5d24380810a4430",
+              "satellite_id": "63717",
+              "observations": 44,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 114508.63480978427,
+              "corrected_mse": 129315.35020911045,
+              "zero_offset_hz": -336119.8192753335,
+              "corrected_offset_hz": -333305.83623403497
+            },
+            {
+              "track_id": "sha256:b561c9b02be0c5db5006d2f761877b0d08ed3f55255630939ed2e1b1ac65751a",
+              "satellite_id": "63644",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 2634.5931242993156,
+              "corrected_mse": 2745.1694692130204,
+              "zero_offset_hz": -842254.7095630441,
+              "corrected_offset_hz": -838525.9878685318
+            },
+            {
+              "track_id": "sha256:b73f5e9682557b1730c79332b3b10f10ea42df3225995b75d9de946efe4f113b",
+              "satellite_id": "47733",
+              "observations": 20,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 5168.527400863901,
+              "corrected_mse": 1595.8844453100435,
+              "zero_offset_hz": -352606.84886703413,
+              "corrected_offset_hz": -351584.26163212646
+            },
+            {
+              "track_id": "sha256:b90b6104db243da8f42025331340028a744958144639c6dade6c745cea6baac8",
+              "satellite_id": "66509",
+              "observations": 10,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 650.2358266903304,
+              "corrected_mse": 3510.113769297249,
+              "zero_offset_hz": -582639.7158138545,
+              "corrected_offset_hz": -585837.942037584
+            },
+            {
+              "track_id": "sha256:b925c002066b1c22faabbbb7b4142db54353ee0ad2dec9b7ba020fabec5a96a3",
+              "satellite_id": "47733",
+              "observations": 62,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 8432.498697671268,
+              "corrected_mse": 5524.281622580553,
+              "zero_offset_hz": -347009.80319158913,
+              "corrected_offset_hz": -345980.2025259932
+            },
+            {
+              "track_id": "sha256:c1d460ca635a978e74925fdb3452cad9d06894528b79740c318583d7793cc831",
+              "satellite_id": "68508",
+              "observations": 7,
+              "plot_eligible": true,
+              "tau_s": 0.2,
+              "zero_mse": 5434.502643097309,
+              "corrected_mse": 5688.65908322409,
+              "zero_offset_hz": -541867.0956406558,
+              "corrected_offset_hz": -541180.5399621642
+            },
+            {
+              "track_id": "sha256:ca28403c3fba41c1f6597516661e5e645a47d37c6bca54f0da7d6909386db381",
+              "satellite_id": "63717",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 36499.417142560116,
+              "corrected_mse": 14677.764288450391,
+              "zero_offset_hz": -328596.0777517078,
+              "corrected_offset_hz": -325711.6861287118
+            },
+            {
+              "track_id": "sha256:caaf8b206ef7c15cdf89e9b150b923ad4e4cfff3bf7583a054eae28dd5d6272b",
+              "satellite_id": "47788",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 90173.23568920781,
+              "corrected_mse": 164364.1817999997,
+              "zero_offset_hz": -96472.82135202782,
+              "corrected_offset_hz": -92589.09409129145
+            },
+            {
+              "track_id": "sha256:cce68c6d4a42208e37427bd1417574dda96476e6be91d61529d83acf2f053762",
+              "satellite_id": "47788",
+              "observations": 22,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 99841.85665517865,
+              "corrected_mse": 153294.73892135895,
+              "zero_offset_hz": -94755.32354525337,
+              "corrected_offset_hz": -90869.57664426604
+            },
+            {
+              "track_id": "sha256:cf887e0c26caf226389809e3e2fee1c2f95875b023df5ed41c0bed063f861234",
+              "satellite_id": "62314",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 27623.66113617367,
+              "corrected_mse": 22580.20036104056,
+              "zero_offset_hz": -152069.74643741458,
+              "corrected_offset_hz": -154042.1651692817
+            },
+            {
+              "track_id": "sha256:d136a4662c84a7e6857d84363d8a41654d1a246dc33fa99a7259061de492dfbc",
+              "satellite_id": "55612",
+              "observations": 28,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 276679.4773734259,
+              "corrected_mse": 144755.7799464854,
+              "zero_offset_hz": 105918.40136687274,
+              "corrected_offset_hz": 102417.71236238543
+            },
+            {
+              "track_id": "sha256:d640bc97ab6cd9efcb660b83cf148494c337a10a8bad2badebf3fa65b1dedf61",
+              "satellite_id": "53480",
+              "observations": 14,
+              "plot_eligible": true,
+              "tau_s": -0.1,
+              "zero_mse": 5753.915756629937,
+              "corrected_mse": 4592.2066184188925,
+              "zero_offset_hz": -123825.33300158737,
+              "corrected_offset_hz": -124099.92057778714
+            },
+            {
+              "track_id": "sha256:d671b84fa4f7efc7ef4b316fd041c5c7131184419d971e9852fae305267e740a",
+              "satellite_id": "47733",
+              "observations": 6,
+              "plot_eligible": false,
+              "tau_s": 0.3,
+              "zero_mse": 7428.109665965269,
+              "corrected_mse": 7113.121048880093,
+              "zero_offset_hz": -352611.648951418,
+              "corrected_offset_hz": -351544.5090489748
+            },
+            {
+              "track_id": "sha256:db2a98e8dfe43d0c50436c1933e817478954b56697b453479ce64623dc2194f7",
+              "satellite_id": "63717",
+              "observations": 50,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 85940.82788588275,
+              "corrected_mse": 96940.23275283292,
+              "zero_offset_hz": -349925.53116532724,
+              "corrected_offset_hz": -347083.47942026367
+            },
+            {
+              "track_id": "sha256:de97e31dfbfb2e307de1a7ffd5cd0c3fb8f34951b0c0e793d029af71c01db3b8",
+              "satellite_id": "66494",
+              "observations": 27,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 23935.277982268253,
+              "corrected_mse": 16473.114665768884,
+              "zero_offset_hz": -359081.04398489883,
+              "corrected_offset_hz": -362571.80525171943
+            },
+            {
+              "track_id": "sha256:e59513eb73b43b7577126f14f1e7262855f9309df212df15f7bb822413f89e77",
+              "satellite_id": "67871",
+              "observations": 9,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 94792.78536084731,
+              "corrected_mse": 32734.772655658424,
+              "zero_offset_hz": -570113.2440226779,
+              "corrected_offset_hz": -567540.2021247011
+            },
+            {
+              "track_id": "sha256:e5ec2a13ddae3853673ae9604fbdd4f3a489a1c9207a985d498d6f931b70d132",
+              "satellite_id": "52296",
+              "observations": 18,
+              "plot_eligible": true,
+              "tau_s": 0.0,
+              "zero_mse": 7751.731933795478,
+              "corrected_mse": 7751.731933795478,
+              "zero_offset_hz": 78490.00565050547,
+              "corrected_offset_hz": 78490.00565050547
+            },
+            {
+              "track_id": "sha256:e75fc1a75ede376b46ebdd4c858c44821532f0ba12a7da94f9c0bda185887200",
+              "satellite_id": "55612",
+              "observations": 102,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 742195.208834931,
+              "corrected_mse": 382766.1239199985,
+              "zero_offset_hz": 107864.62482782433,
+              "corrected_offset_hz": 104448.9839385664
+            },
+            {
+              "track_id": "sha256:e88c85ca0cec871182b24d8bcc6e5746b76893bd8b95513356e1ab5a612530f0",
+              "satellite_id": "47733",
+              "observations": 11,
+              "plot_eligible": true,
+              "tau_s": 0.3,
+              "zero_mse": 44505.8524133943,
+              "corrected_mse": 42103.69539072504,
+              "zero_offset_hz": -354352.8369371774,
+              "corrected_offset_hz": -353307.3699552345
+            },
+            {
+              "track_id": "sha256:ed888d75d8d33d02deeb7920d63d4129811f3ea7a14706a97ee2d32893cb2ed2",
+              "satellite_id": "66509",
+              "observations": 39,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 141820.34014771236,
+              "corrected_mse": 77813.3202247471,
+              "zero_offset_hz": -590783.2107464746,
+              "corrected_offset_hz": -594155.5431324212
+            },
+            {
+              "track_id": "sha256:ef93be635b084690efcc4b77aed9b538c97ab8f978f913c97a47f876a5ad6bd4",
+              "satellite_id": "53276",
+              "observations": 37,
+              "plot_eligible": true,
+              "tau_s": -1.0,
+              "zero_mse": 642171.5714287863,
+              "corrected_mse": 458626.0434697682,
+              "zero_offset_hz": -305919.8524558947,
+              "corrected_offset_hz": -307956.7639485412
+            },
+            {
+              "track_id": "sha256:f8949d1ab540c347674afe1161d57bd0bba8af28ff4c11f7e62fc3351eabc6bc",
+              "satellite_id": "47788",
+              "observations": 8,
+              "plot_eligible": true,
+              "tau_s": 1.0,
+              "zero_mse": 102285.18995210082,
+              "corrected_mse": 117515.9102921059,
+              "zero_offset_hz": -165598.70983274552,
+              "corrected_offset_hz": -161649.24383761652
+            },
+            {
+              "track_id": "sha256:f9b7cf141623735143cafdf27d4e482a95c752329e00aed3e6777d32d251d3c2",
+              "satellite_id": "63717",
+              "observations": 19,
+              "plot_eligible": true,
+              "tau_s": 0.9,
+              "zero_mse": 141164.1014919802,
+              "corrected_mse": 146205.25200518896,
+              "zero_offset_hz": -327188.34757997445,
+              "corrected_offset_hz": -324298.85382761474
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

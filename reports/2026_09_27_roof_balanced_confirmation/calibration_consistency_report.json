@@ -1,0 +1,114 @@
+{
+  "scope": "Read-only comparison of the original Gaussian-top-3 reception-calibration associations with the topology-filtered robust Student-t fixed-point associations on the same six calibration sessions. Confirmation and development outcomes are not inputs.",
+  "artifacts": {
+    "original_model_rows": {
+      "path": "reports/2026_09_27_roof_direction_subset/model_rows.json",
+      "sha256": "sha256:3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554"
+    },
+    "topology_frequency_fixedpoint": {
+      "path": "reports/2026_09_27_roof_location_geometry/topology_frequency_fixedpoint.json",
+      "sha256": "sha256:e3bd824c8017889ec27fdee7d95dfe8cd7f684aa417b5a6dbea2ce77e091ce48"
+    },
+    "calibration_topology_audit": {
+      "path": "reports/2026_09_27_roof_geometry_confirmation/audit_source_topology.json",
+      "sha256": "sha256:1e25da8198b46a41207a91bb876c5e5f63f29cb692c9f63d7470cb4ce0268d8b"
+    },
+    "topology_reception_calibration": {
+      "path": "reports/2026_09_27_roof_geometry_confirmation/topology_calibration.json",
+      "sha256": "sha256:41a139043f12abb76abe17f2f41208c267032ff3229db7f1f681137753244ebd"
+    }
+  },
+  "binding_checks": {
+    "frequency_topology_audit_sha256_matches": true,
+    "reception_topology_audit_sha256_matches": true,
+    "reception_source_model_rows_sha256_matches": true,
+    "frequency_converged": true,
+    "calibration_sessions_match": true
+  },
+  "population": {
+    "original_calibration_tracks": 354,
+    "topology_removed_tracks": 10,
+    "retained_original_tracks": 344,
+    "robust_final_tracks": 344,
+    "joined_tracks": 344,
+    "missing_from_original_after_filter": 0,
+    "missing_from_robust": 0,
+    "original_reception_rows_on_joined_tracks": 6378,
+    "total_occupied_second_weight": 7850.0,
+    "old_track_candidate_signature_conflicts": 0
+  },
+  "definitions": {
+    "map": "The first candidate_id in each artifact's normalized top-3 shortlist.",
+    "unweighted": "Each retained calibration track has weight one.",
+    "weighted": "Each track is weighted by topology_frequency_fixedpoint.final_tracks[].weight_seconds.",
+    "total_variation": "One half the L1 distance between normalized candidate probabilities on the union of candidate IDs; absent candidates have probability zero.",
+    "ordered_shortlist": "All three candidate IDs agree in rank order.",
+    "shortlist_set": "The unordered top-3 candidate-ID sets agree."
+  },
+  "summary": {
+    "map_agreement": {
+      "tracks": 324,
+      "tracks_total": 344,
+      "unweighted_fraction": 0.9418604651162791,
+      "occupied_second_weighted_fraction": 0.9447133757961783
+    },
+    "ordered_shortlist_agreement": {
+      "tracks": 164,
+      "unweighted_fraction": 0.47674418604651164,
+      "occupied_second_weighted_fraction": 0.4532484076433121
+    },
+    "shortlist_set_agreement": {
+      "tracks": 202,
+      "unweighted_fraction": 0.5872093023255814,
+      "occupied_second_weighted_fraction": 0.5664968152866242
+    },
+    "old_map_present_in_robust_top3": {
+      "unweighted_fraction": 0.9854651162790697,
+      "occupied_second_weighted_fraction": 0.9870063694267516
+    },
+    "robust_map_present_in_old_top3": {
+      "unweighted_fraction": 0.9825581395348837,
+      "occupied_second_weighted_fraction": 0.9845859872611465
+    },
+    "top3_overlap_track_counts": {
+      "0": 3,
+      "1": 8,
+      "2": 131,
+      "3": 202
+    },
+    "top3_overlap_occupied_second_weight_fractions": {
+      "0": 0.008662420382165605,
+      "1": 0.01898089171974522,
+      "2": 0.40585987261146494,
+      "3": 0.5664968152866242
+    },
+    "total_variation": {
+      "unweighted_mean": 0.06997084320456502,
+      "occupied_second_weighted_mean": 0.06309139489111877,
+      "unweighted_p10": 3.9268156905146727e-73,
+      "unweighted_median": 3.9346784598479226e-11,
+      "unweighted_p90": 0.09790790401031552,
+      "same_map_unweighted_mean": 0.014166180574222823,
+      "changed_map_unweighted_mean": 0.9740063778161103,
+      "changed_map_occupied_second_weighted_mean": 0.9777768224748191
+    }
+  },
+  "by_session": [
+    {"session_id": "scan-fw-39ac2b14d1bb5f0f", "retained_tracks": 62, "map_agree_tracks": 58, "map_agree_occupied_second_weighted_fraction": 0.9374565670604587, "total_variation_unweighted_mean": 0.08151501510084655, "total_variation_occupied_second_weighted_mean": 0.07277064193007027},
+    {"session_id": "scan-fw-4c56320fb5ca6994", "retained_tracks": 60, "map_agree_tracks": 55, "map_agree_occupied_second_weighted_fraction": 0.9156626506024096, "total_variation_unweighted_mean": 0.09017822330907219, "total_variation_occupied_second_weighted_mean": 0.08932968902427453},
+    {"session_id": "scan-fw-9d7b6a0db558703a", "retained_tracks": 57, "map_agree_tracks": 56, "map_agree_occupied_second_weighted_fraction": 0.9776357827476039, "total_variation_unweighted_mean": 0.03196977892701885, "total_variation_occupied_second_weighted_mean": 0.031453853670500485},
+    {"session_id": "scan-fw-aa9770c66396e928", "retained_tracks": 55, "map_agree_tracks": 55, "map_agree_occupied_second_weighted_fraction": 1.0, "total_variation_unweighted_mean": 0.010110559469954813, "total_variation_occupied_second_weighted_mean": 0.0051821848755706015},
+    {"session_id": "scan-fw-c559f436d578c9bd", "retained_tracks": 52, "map_agree_tracks": 46, "map_agree_occupied_second_weighted_fraction": 0.8934142114384749, "total_variation_unweighted_mean": 0.13726317727965617, "total_variation_occupied_second_weighted_mean": 0.12501562012112993},
+    {"session_id": "scan-fw-da2858f6cd2521b7", "retained_tracks": 58, "map_agree_tracks": 54, "map_agree_occupied_second_weighted_fraction": 0.9437689969604863, "total_variation_unweighted_mean": 0.07050521274730762, "total_variation_occupied_second_weighted_mean": 0.056409743357469705}
+  ],
+  "direction_feature_comparison": {
+    "status": "not_identifiable_from_frozen_artifacts",
+    "reason": "model_rows.json stores only the old probability-marginalized east/up feature per reception observation. topology_frequency_fixedpoint.json stores robust candidate IDs and weights but no candidate-specific east/up values or observation-time identifiers. Therefore a robust-weighted direction feature cannot be computed or compared without new candidate propagation.",
+    "minimum_missing_fields": [
+      "For every retained track and reception observation: a stable observation_id or observation_utc_ns aligned to the reception row.",
+      "For every robust shortlist candidate at each aligned observation: candidate-specific east and up components at the known calibration site.",
+      "An explicit convention confirming that the stored robust shortlist weights are the weights to marginalize those candidate-specific directions."
+    ]
+  },
+  "interpretation": "The robust refit changes the MAP satellite for 20 of 344 retained tracks (5.81%; 5.53% by occupied seconds). Most tracks retain the same MAP and have nearly identical mass, but shortlist membership is less stable: only 58.72% have the same unordered top three. This establishes a real association-model inconsistency for a minority of calibration tracks, especially c559, but does not quantify its effect on reception direction coefficients because the required component directions were not frozen."
+}

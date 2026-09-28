@@ -1,0 +1,152 @@
+Linux pluto 5.15.0-counter-rx-v1 #1 SMP PREEMPT Sun Sep 20 08:34:30 PM UTC 2026 armv7l GNU/Linux
+processor	: 0
+model name	: ARMv7 Processor rev 0 (v7l)
+BogoMIPS	: 333.33
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpd32 
+CPU implementer	: 0x41
+CPU architecture: 7
+CPU variant	: 0x3
+CPU part	: 0xc09
+CPU revision	: 0
+
+processor	: 1
+model name	: ARMv7 Processor rev 0 (v7l)
+BogoMIPS	: 333.33
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpd32 
+CPU implementer	: 0x41
+CPU architecture: 7
+CPU variant	: 0x3
+CPU part	: 0xc09
+CPU revision	: 0
+
+Hardware	: Xilinx Zynq Platform
+Revision	: 0003
+Serial		: 0000000000000000
+MemTotal:         506568 kB
+MemFree:          417608 kB
+MemAvailable:     435232 kB
+Buffers:            7828 kB
+Cached:            63040 kB
+SwapCached:            0 kB
+Active:             7928 kB
+Inactive:          18040 kB
+Active(anon):        108 kB
+Inactive(anon):     2864 kB
+Active(file):       7820 kB
+Inactive(file):    15176 kB
+Unevictable:       47776 kB
+Mlocked:               0 kB
+HighTotal:             0 kB
+HighFree:              0 kB
+LowTotal:         506568 kB
+LowFree:          417608 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                28 kB
+Writeback:             0 kB
+AnonPages:          2880 kB
+Mapped:             4064 kB
+Shmem:                96 kB
+KReclaimable:       5032 kB
+Slab:               9596 kB
+SReclaimable:       5032 kB
+SUnreclaim:         4564 kB
+KernelStack:         592 kB
+PageTables:          336 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:      253284 kB
+Committed_AS:      33396 kB
+VmallocTotal:     507904 kB
+VmallocUsed:         368 kB
+VmallocChunk:          0 kB
+Percpu:              176 kB
+CmaTotal:         221184 kB
+CmaFree:          212912 kB
+0.62 0.22 0.08 1/72 1476
+none / rootfs rw 0 0
+devtmpfs /dev devtmpfs rw,relatime,size=138680k,nr_inodes=34670,mode=755 0 0
+proc /proc proc rw,relatime 0 0
+devpts /dev/pts devpts rw,relatime,gid=5,mode=620,ptmxmode=000 0 0
+tmpfs /dev/shm tmpfs rw,relatime,mode=777 0 0
+tmpfs /tmp tmpfs rw,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,relatime,mode=755 0 0
+sysfs /sys sysfs rw,relatime 0 0
+mtd2 /mnt/jffs2 jffs2 rw,noatime 0 0
+none /sys/kernel/debug debugfs rw,relatime 0 0
+pstore /sys/fs/pstore pstore rw,relatime 0 0
+configfs /sys/kernel/config configfs rw,relatime 0 0
+iio_ffs /dev/iio_ffs functionfs rw,relatime 0 0
+sdr_gadget_ffs /dev/sdr_gadget_ffs functionfs rw,relatime 0 0
+/dev/mmcblk0p1 /mnt/glrtbench ext2 rw,noatime 0 0
+PID   USER     COMMAND
+    1 root     init
+    2 root     [kthreadd]
+    3 root     [rcu_gp]
+    4 root     [rcu_par_gp]
+    6 root     [kworker/0:0H-kb]
+    7 root     [kworker/u4:0-lo]
+    8 root     [mm_percpu_wq]
+    9 root     [rcu_tasks_kthre]
+   10 root     [ksoftirqd/0]
+   11 root     [rcu_preempt]
+   12 root     [migration/0]
+   13 root     [cpuhp/0]
+   14 root     [cpuhp/1]
+   15 root     [migration/1]
+   16 root     [ksoftirqd/1]
+   19 root     [kdevtmpfs]
+   20 root     [inet_frag_wq]
+   21 root     [kworker/1:1-eve]
+   22 root     [kworker/0:1-mm_]
+   23 root     [khungtaskd]
+   24 root     [oom_reaper]
+   25 root     [writeback]
+   37 root     [kblockd]
+   38 root     [watchdogd]
+   39 root     [kworker/1:1H-kb]
+   40 root     [cfg80211]
+   42 root     [kswapd0]
+   44 root     [spi0]
+   45 root     [spi1]
+   46 root     [kworker/u4:2-fl]
+   49 root     [ci_otg]
+   50 root     [irq/55-41600000]
+   51 root     [kworker/u5:0]
+   52 root     [sdhci]
+   53 root     [irq/36-mmc0]
+   54 root     [mmc_complete]
+   55 root     [kworker/0:1H-mm]
+   57 root     [kworker/1:2-mm_]
+   67 root     [jffs2_gcd_mtd2]
+   79 root     /sbin/syslogd -n
+   83 root     /sbin/klogd -n
+  106 root     watchdog -t 5 -T 10 /dev/watchdog
+  215 root     {iiod_supervisor} /bin/sh /usr/sbin/iiod_supervisor.sh -D -n 3 -F /dev/iio_ffs --rw-cpu-affinity 1
+  218 root     {sdr_usb_gadget_} /bin/sh /usr/sbin/sdr_usb_gadget_supervisor.sh /dev/sdr_gadget_ffs
+  220 root     /usr/sbin/iiod -D -n 3 -F /dev/iio_ffs --rw-cpu-affinity 1
+  221 root     /usr/sbin/sdr_usb_gadget /dev/sdr_gadget_ffs
+  227 root     [file-storage]
+  241 dbus     dbus-daemon --system
+  313 root     /usr/sbin/udhcpd /etc/udhcpd.conf
+  316 root     httpd -h /www
+  361 root     /bin/sh /sbin/update.sh
+  367 avahi    avahi-daemon: running [pluto.local]
+  375 root     /usr/sbin/dropbear -R
+  380 root     /usr/sbin/sdr_ip_gadget
+  389 root     input-event-daemon
+  390 root     /sbin/getty -L ttyPS0 0 vt100
+  391 root     /sbin/getty -L ttyGS0 0 vt100
+  624 root     /usr/sbin/dropbear -R -2 8
+  634 root     -sh
+  940 root     [kworker/1:2H]
+ 1044 root     [kworker/0:2-eve]
+ 1355 root     [kworker/0:0-eve]
+ 1410 root     [kworker/1:0H-kb]
+ 1423 root     [kworker/u4:1]
+ 1438 root     [ext4-rsv-conver]
+ 1439 root     [ext4lazyinit]
+ 1441 root     [kworker/0:2H]
+ 1471 root     /usr/sbin/dropbear -R -2 8
+ 1472 root     ps

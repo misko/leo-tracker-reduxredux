@@ -1,0 +1,13 @@
+# Fixed-grid location test of shared detection and ratio effects
+
+The ratio-offset experiment passed its calibration-only conditional-LOSO gate. Test the accepted full-calibration dual-effect model on the same four development recordings and exact 289-point saved grids per independent prior. This cohort is already unblinded; do not describe the result as disjoint confirmation.
+
+Variants: old (original geometry coefficients with no shared effects), detection (mixture coefficients with accepted shared detection sigma and ratio tau zero), and dual (same mixture coefficients and detection sigma plus accepted full-mixture ratio tau). Load parameters from bound accepted calibration artifacts. No learning, coefficient changes, variance rescaling, track exclusion, timing changes, new coordinates, or outcome-based weights are allowed.
+
+At each coordinate compute the full-catalogue train-only frequency shortlist/CFO independently for that prior and point, once for all three variants. One candidate remains shared across all frequency/reception evidence for a track. The two latent effects are independent conditional on that candidate. Integrate the detection effect with accepted 64-point mode-centered quadrature and verify 128-point agreement <=0.001 candidate-track log-likelihood units for normal and reversed orientation; integrate the ratio effect analytically with its normalization intact. Preserve full reserve counts and occupied-second track weights. No proposals or fitted candidates are shared between priors or points.
+
+Old and detection scores must reproduce the completed shared-geometry replay's old and shared arms, respectively, at every saved coordinate within absolute 1e-7. Doppler-only scores must be identical across variants within 1e-12. Select each minimum joint score with deterministic east/north tie breaking. Report all grid/prior boundary winners.
+
+Bind completed source replay/report and original local grid, both accepted uncertainty-model aggregates/full/folds and coefficient calibration, input/cache/evidence/snapshot/topology/contract, protocol, and code. Refuse output overwrite and freeze imports before any job starts. Compute no new reference distances until all four recordings and all eight prior branches pass validation.
+
+Report every case and Sacramento/Reno/combined mean and median errors versus Doppler-only, original geometry, and detection-only geometry. The reference is operator-supplied, not surveyed. Improvement versus a previously regressed geometry variant alone is insufficient to establish the goal. If the model does not improve development location error over Doppler-only, retain the untouched confirmation recordings. No new RF or production changes.

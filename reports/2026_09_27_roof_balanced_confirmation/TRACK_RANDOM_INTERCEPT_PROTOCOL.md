@@ -1,0 +1,15 @@
+# Calibration-only detection random-intercept prototype
+
+Motivation: the completed conditional-LOSO diagnostic found substantial within-track detection residual dependence beyond that induced by shared satellite identity. This experiment tests a shared detection offset, not a geography-selected reception weight.
+
+For each track, one satellite candidate K and one latent offset u are shared by every reception row. Conditional detection probability is sigmoid(existing candidate logit + u), with u ~ Normal(0, sigma_track^2). Integrate u before marginalizing candidate K. Existing Gaussian matched-ratio likelihood, candidate IDs/logweights, frequency fit, feature schemas, and reception coefficients stay frozen. The effect is independent across tracks. This simple effect does not yet represent opposite receiver gain shifts or correlated ratio errors.
+
+Fit only sigma_track, separately for each existing M0, mean-direction, and mixture arm. Use the original objective: sum over training tracks of negative marginalized joint reception log likelihood divided by that track's full row count. No new coefficient penalty is needed because coefficients do not change. Sigma zero must reproduce the original likelihood exactly.
+
+For each of the six conditional-LOSO folds, use its already-frozen reception coefficients and train-only feature schema; select sigma using only the other five sessions, then score its held session once. Also fit a final full-calibration scale using the full-calibration frozen coefficients. Frequency priors remain all-six; this is conditional reception validation, not a fully nested location test.
+
+Bounded scalar search: sigma in [0,8] logit units, fixed coarse grid [0,.25,.5,1,2,4,8], then bounded minimization between the neighboring grid values around the best grid point. Retain the best of zero, all grid points, and the refinement. Report upper-bound selection as an inadequate fitted range, not acceptance. Do not expand it based on geographic outcomes.
+
+Use 128-point Gauss-Hermite quadrature for fitting. Re-evaluate every selected-scale training and held candidate detection likelihood at 256 points; require maximum absolute difference <=0.001 natural-log units per candidate track before accepting the numerical result. Numerical failure is a failure of this implementation, not evidence against the scientific model. No location evaluation until numerical acceptance.
+
+Report held joint NLL/track and detection NLL/track for zero versus fitted sigma in all three arms, all six folds, pooled, and the full fit. The model advances only if mixture pooled joint NLL improves, at least four of six folds improve, and the pooled improvement remains positive after removing its largest-gain fold. All fitted scales must pass quadrature checks and avoid the upper boundary. Calibration success alone does not prove location improvement; independent-prior geographic validation remains required. No tuning to roof distances, candidate sharing, track removal, new RF, or production changes.

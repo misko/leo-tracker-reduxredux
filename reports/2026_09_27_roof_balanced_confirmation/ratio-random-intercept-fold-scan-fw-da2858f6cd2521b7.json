@@ -1,0 +1,489 @@
+{
+  "kind": "ratio_random_intercept_loso",
+  "fit_index": 5,
+  "held_session": "scan-fw-da2858f6cd2521b7",
+  "training_sessions": [
+    "scan-fw-39ac2b14d1bb5f0f",
+    "scan-fw-4c56320fb5ca6994",
+    "scan-fw-9d7b6a0db558703a",
+    "scan-fw-aa9770c66396e928",
+    "scan-fw-c559f436d578c9bd"
+  ],
+  "calibration_sessions": [
+    "scan-fw-39ac2b14d1bb5f0f",
+    "scan-fw-4c56320fb5ca6994",
+    "scan-fw-9d7b6a0db558703a",
+    "scan-fw-aa9770c66396e928",
+    "scan-fw-c559f436d578c9bd",
+    "scan-fw-da2858f6cd2521b7"
+  ],
+  "training_track_count": 286,
+  "held_track_count": 58,
+  "models": {
+    "M0": {
+      "arm": "M0",
+      "feature_names": {
+        "detection": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1",
+          "log_anchor_margin"
+        ],
+        "ratio": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1"
+        ]
+      },
+      "detection_sigma": 4.140703283210368,
+      "independent_ratio_variance": 0.22795645456651503,
+      "tau_selection": {
+        "tau": 0.3613002600751359,
+        "objective": 193.94688746264816,
+        "grid": [
+          {
+            "tau": 0.0,
+            "objective": 215.77560749124297
+          },
+          {
+            "tau": 0.0625,
+            "objective": 210.32137348048045
+          },
+          {
+            "tau": 0.125,
+            "objective": 202.3857760167028
+          },
+          {
+            "tau": 0.25,
+            "objective": 195.07522374027886
+          },
+          {
+            "tau": 0.5,
+            "objective": 194.75200480828107
+          },
+          {
+            "tau": 1.0,
+            "objective": 200.61791461396214
+          },
+          {
+            "tau": 2.0,
+            "objective": 209.4685184242958
+          },
+          {
+            "tau": 4.0,
+            "objective": 219.326831408957
+          }
+        ],
+        "refinement": {
+          "bounds": [
+            0.25,
+            1.0
+          ],
+          "tau": 0.3613002600751359,
+          "objective": 193.94688746264816,
+          "success": true,
+          "message": "Solution found.",
+          "evaluations": 14
+        },
+        "finite": true,
+        "upper_boundary": false
+      },
+      "tau_zero_parity": {
+        "parts": {
+          "training": {
+            "differences": {
+              "joint": 1.4210854715202004e-13,
+              "detection": 4.263256414560601e-14
+            },
+            "track_count": 286
+          },
+          "held": {
+            "differences": {
+              "joint": 1.4210854715202004e-14,
+              "detection": 3.552713678800501e-15
+            },
+            "track_count": 58
+          }
+        },
+        "tolerance": 1e-10,
+        "passed": true
+      },
+      "training": {
+        "zero": {
+          "track_count": 286,
+          "joint_nll_sum": 215.77560749124297,
+          "detection_nll_sum": 107.49588644180842,
+          "conditional_ratio_nll_sum": 108.27972104943454,
+          "joint_nll_per_track": 0.7544601660532971,
+          "detection_nll_per_track": 0.37585974280352596,
+          "conditional_ratio_nll_per_track": 0.3786004232497711
+        },
+        "fitted": {
+          "track_count": 286,
+          "joint_nll_sum": 193.94688746264816,
+          "detection_nll_sum": 107.49588644180842,
+          "conditional_ratio_nll_sum": 86.45100102083974,
+          "joint_nll_per_track": 0.6781359701491194,
+          "detection_nll_per_track": 0.37585974280352596,
+          "conditional_ratio_nll_per_track": 0.3022762273455935
+        }
+      },
+      "held": {
+        "zero": {
+          "track_count": 58,
+          "joint_nll_sum": 44.25864201772076,
+          "detection_nll_sum": 20.34940735691319,
+          "conditional_ratio_nll_sum": 23.90923466080757,
+          "joint_nll_per_track": 0.763080034788289,
+          "detection_nll_per_track": 0.35085185098126187,
+          "conditional_ratio_nll_per_track": 0.4122281838070271
+        },
+        "fitted": {
+          "track_count": 58,
+          "joint_nll_sum": 38.75860225907649,
+          "detection_nll_sum": 20.34940735691319,
+          "conditional_ratio_nll_sum": 18.4091949021633,
+          "joint_nll_per_track": 0.6682517630875257,
+          "detection_nll_per_track": 0.35085185098126187,
+          "conditional_ratio_nll_per_track": 0.3173999121062638
+        }
+      },
+      "numerically_accepted": true
+    },
+    "mean": {
+      "arm": "mean",
+      "feature_names": {
+        "detection": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1",
+          "log_anchor_margin",
+          "signed_east"
+        ],
+        "ratio": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1",
+          "east"
+        ]
+      },
+      "detection_sigma": 3.2342333598845587,
+      "independent_ratio_variance": 0.16843945888186768,
+      "tau_selection": {
+        "tau": 0.3039527974235288,
+        "objective": 156.2657196894284,
+        "grid": [
+          {
+            "tau": 0.0,
+            "objective": 178.47014826343985
+          },
+          {
+            "tau": 0.0625,
+            "objective": 171.42020494296443
+          },
+          {
+            "tau": 0.125,
+            "objective": 162.73437812782223
+          },
+          {
+            "tau": 0.25,
+            "objective": 156.59266956302213
+          },
+          {
+            "tau": 0.5,
+            "objective": 158.1245782992905
+          },
+          {
+            "tau": 1.0,
+            "objective": 165.06225769331837
+          },
+          {
+            "tau": 2.0,
+            "objective": 174.30347928067303
+          },
+          {
+            "tau": 4.0,
+            "objective": 184.27293764418485
+          }
+        ],
+        "refinement": {
+          "bounds": [
+            0.125,
+            0.5
+          ],
+          "tau": 0.3039527974235288,
+          "objective": 156.2657196894284,
+          "success": true,
+          "message": "Solution found.",
+          "evaluations": 12
+        },
+        "finite": true,
+        "upper_boundary": false
+      },
+      "tau_zero_parity": {
+        "parts": {
+          "training": {
+            "differences": {
+              "joint": 5.684341886080802e-14,
+              "detection": 2.842170943040401e-14
+            },
+            "track_count": 286
+          },
+          "held": {
+            "differences": {
+              "joint": 1.4210854715202004e-14,
+              "detection": 3.552713678800501e-15
+            },
+            "track_count": 58
+          }
+        },
+        "tolerance": 1e-10,
+        "passed": true
+      },
+      "training": {
+        "zero": {
+          "track_count": 286,
+          "joint_nll_sum": 178.47014826343985,
+          "detection_nll_sum": 94.29375619438072,
+          "conditional_ratio_nll_sum": 84.17639206905913,
+          "joint_nll_per_track": 0.6240214974246149,
+          "detection_nll_per_track": 0.3296984482321004,
+          "conditional_ratio_nll_per_track": 0.29432304919251445
+        },
+        "fitted": {
+          "track_count": 286,
+          "joint_nll_sum": 156.2657196894284,
+          "detection_nll_sum": 94.29375619438072,
+          "conditional_ratio_nll_sum": 61.97196349504769,
+          "joint_nll_per_track": 0.5463836352777217,
+          "detection_nll_per_track": 0.3296984482321004,
+          "conditional_ratio_nll_per_track": 0.21668518704562129
+        }
+      },
+      "held": {
+        "zero": {
+          "track_count": 58,
+          "joint_nll_sum": 35.494196666012996,
+          "detection_nll_sum": 18.700500279813962,
+          "conditional_ratio_nll_sum": 16.793696386199034,
+          "joint_nll_per_track": 0.6119689080347068,
+          "detection_nll_per_track": 0.3224224186174821,
+          "conditional_ratio_nll_per_track": 0.2895464894172247
+        },
+        "fitted": {
+          "track_count": 58,
+          "joint_nll_sum": 32.08172727155613,
+          "detection_nll_sum": 18.700500279813962,
+          "conditional_ratio_nll_sum": 13.381226991742171,
+          "joint_nll_per_track": 0.5531332288199333,
+          "detection_nll_per_track": 0.3224224186174821,
+          "conditional_ratio_nll_per_track": 0.2307108102024512
+        }
+      },
+      "numerically_accepted": true
+    },
+    "mixture": {
+      "arm": "mixture",
+      "feature_names": {
+        "detection": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1",
+          "log_anchor_margin",
+          "signed_east"
+        ],
+        "ratio": [
+          "intercept",
+          "channel_edge=1:upper",
+          "channel_edge=2:lower",
+          "channel_edge=2:upper",
+          "channel_edge=3:lower",
+          "channel_edge=3:upper",
+          "channel_edge=4:lower",
+          "channel_edge=4:upper",
+          "sample_rate_hz=2500000",
+          "sample_rate_hz=7500000",
+          "receiver=rx1",
+          "east"
+        ]
+      },
+      "detection_sigma": 2.3504227595107254,
+      "independent_ratio_variance": 0.10773072247124751,
+      "tau_selection": {
+        "tau": 0.2372318378087883,
+        "objective": 131.57589922283367,
+        "grid": [
+          {
+            "tau": 0.0,
+            "objective": 145.03869154421827
+          },
+          {
+            "tau": 0.0625,
+            "objective": 138.94803963183074
+          },
+          {
+            "tau": 0.125,
+            "objective": 133.4343777263021
+          },
+          {
+            "tau": 0.25,
+            "objective": 131.59253863770024
+          },
+          {
+            "tau": 0.5,
+            "objective": 134.94437157134251
+          },
+          {
+            "tau": 1.0,
+            "objective": 142.33205969108317
+          },
+          {
+            "tau": 2.0,
+            "objective": 151.62921881465888
+          },
+          {
+            "tau": 4.0,
+            "objective": 161.60864048960747
+          }
+        ],
+        "refinement": {
+          "bounds": [
+            0.125,
+            0.5
+          ],
+          "tau": 0.2372318378087883,
+          "objective": 131.57589922283367,
+          "success": true,
+          "message": "Solution found.",
+          "evaluations": 14
+        },
+        "finite": true,
+        "upper_boundary": false
+      },
+      "tau_zero_parity": {
+        "parts": {
+          "training": {
+            "differences": {
+              "joint": 0.0,
+              "detection": 0.0
+            },
+            "track_count": 286
+          },
+          "held": {
+            "differences": {
+              "joint": 3.552713678800501e-15,
+              "detection": 3.552713678800501e-15
+            },
+            "track_count": 58
+          }
+        },
+        "tolerance": 1e-10,
+        "passed": true
+      },
+      "training": {
+        "zero": {
+          "track_count": 286,
+          "joint_nll_sum": 145.03869154421827,
+          "detection_nll_sum": 88.7506179759191,
+          "conditional_ratio_nll_sum": 56.28807356829917,
+          "joint_nll_per_track": 0.5071282921126513,
+          "detection_nll_per_track": 0.3103168460696472,
+          "conditional_ratio_nll_per_track": 0.19681144604300407
+        },
+        "fitted": {
+          "track_count": 286,
+          "joint_nll_sum": 131.57589922283367,
+          "detection_nll_sum": 88.7506179759191,
+          "conditional_ratio_nll_sum": 42.82528124691457,
+          "joint_nll_per_track": 0.4600555916882296,
+          "detection_nll_per_track": 0.3103168460696472,
+          "conditional_ratio_nll_per_track": 0.14973874561858241
+        }
+      },
+      "held": {
+        "zero": {
+          "track_count": 58,
+          "joint_nll_sum": 31.378671911694802,
+          "detection_nll_sum": 18.76085987801728,
+          "conditional_ratio_nll_sum": 12.617812033677524,
+          "joint_nll_per_track": 0.5410115846843931,
+          "detection_nll_per_track": 0.3234631013451255,
+          "conditional_ratio_nll_per_track": 0.21754848333926766
+        },
+        "fitted": {
+          "track_count": 58,
+          "joint_nll_sum": 27.38410820306254,
+          "detection_nll_sum": 18.76085987801728,
+          "conditional_ratio_nll_sum": 8.62324832504526,
+          "joint_nll_per_track": 0.47213979660452654,
+          "detection_nll_per_track": 0.3234631013451255,
+          "conditional_ratio_nll_per_track": 0.14867669525940103
+        }
+      },
+      "numerically_accepted": true
+    }
+  },
+  "all_numerically_accepted": true,
+  "calibration_sha256": "sha256:968de9d961645919737e604c080bc03658d1eb568716b71617d4a1307fd87139",
+  "detection_random_effect_sha256": "sha256:7131312fff85fe2ce30ad5d9356a0486d809ff54a668c0f4736ac355c0be9c4d",
+  "detection_shard_sha256": "sha256:43b8a86747b4b035d45d5912b9b3f895fde4b40540e28a51a1005a56c38ca5c6",
+  "input_source_hashes": {
+    "model_rows": "sha256:3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554",
+    "calibration_directions_data": "sha256:80af5b02e71501cb9db0ef7c590adf0b3a655bac00f8520d15c5e259333ed429",
+    "topology_frequency_fixedpoint": "sha256:e3bd824c8017889ec27fdee7d95dfe8cd7f684aa417b5a6dbea2ce77e091ce48",
+    "topology_audit": "sha256:1e25da8198b46a41207a91bb876c5e5f63f29cb692c9f63d7470cb4ce0268d8b",
+    "design": "sha256:a78b828419515b85d4a2d7b7fd97545d55f3c565e9db4baf43989c029845a078"
+  },
+  "protocol_sha256": "sha256:aee975746b86b9236f1a831c9b39ecf86fd866d1284b47add83f5221fede0efb",
+  "code_sha256": {
+    "run_ratio_random_intercept.py": "sha256:c67a5f8a446684f5a8d21a674eed0278a468904510a6117b54991ee0e356917f",
+    "ratio_random_intercept.py": "sha256:4275d34495304943676bfac733fd56e3da5c9bb959d40e8047b442b310465368",
+    "detection_random_intercept_refined.py": "sha256:b007c210ecf8a31e2e05622f47b97cc68660805796c03dc1d51f45cf306194e6",
+    "run_track_random_intercept_refined.py": "sha256:7b180c6c1ee26f29c380060663dc0589aa1dbc0025ee2ac61a3f1d06c9ae2d5f",
+    "run_track_random_intercept.py": "sha256:a7dffec77887a305c6a4dd50408832fdd2d55659e9edec836600c51da3530a9e",
+    "mixture_calibration_inputs.py": "sha256:0219be8716fd988737a1c21eadd475af33a594409954c0db5fc7afaaee5fd9f6",
+    "mixture_reception_core.py": "sha256:de8deb01f368c71fa1e5ae88a78df7cd72592f47f1d881076b9de258b5e69b01"
+  },
+  "elapsed_s": 1.4899201239459217,
+  "scope": "Calibration-only analytic shared ratio offset; all coefficients, detection scales, independent ratio variance, identities, and schemas frozen."
+}

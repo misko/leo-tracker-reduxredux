@@ -1,0 +1,385 @@
+{
+  "scope": "Posthoc continuity diagnostic. Alias arithmetic parity does not prove chosen alias/path physically correct; interpolation is not a drift estimator.",
+  "source_sha256": {
+    "source-audit-scan-fw-127d8fc36e804ae2.json": "77e647ef63023ed578efec4869c55132633cff10dedb407f691b1c53cff508a5",
+    "source-audit-scan-fw-8f4f960d9db67798.json": "96f6150779e1d5c64f479f3c3d16402532de9dda3897945e57d6201b1bf10c6b"
+  },
+  "code_sha256": {
+    "summarize_source_audit.py": "8c6ca84b372bc2c4d12563aa4782f2e5e6a71a0839c02eb770a2a763033e00bb",
+    "source_continuity_math.py": "59f65ef36a657e79a7ec1a3541510b02bce4088a0e2e2629a2040fd36db3209b"
+  },
+  "results": {
+    "scan-fw-127d8fc36e804ae2": {
+      "tracks": [
+        {
+          "track_id": "sha256:0eb46864685652f672a8108f88c98a5bbe3824b18bab0512f1c74c523680819f",
+          "observations": 57,
+          "span_s": 35.240145262,
+          "channel_edge_counts": {
+            "2:lower": 57
+          },
+          "rf_transitions": 0,
+          "largest_gap_s": 3.126651545,
+          "alias_indices": [
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            0,
+            0,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "maximum_integer_discrepancy": 0.0,
+          "alias_changes": 4
+        },
+        {
+          "track_id": "sha256:d9e09279fdc3a526d1c4eec037ac8b145dd9d88b363a31a83343c58aa94c1d54",
+          "observations": 36,
+          "span_s": 23.915879057,
+          "channel_edge_counts": {
+            "2:lower": 36
+          },
+          "rf_transitions": 0,
+          "largest_gap_s": 3.469311632,
+          "alias_indices": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ],
+          "maximum_integer_discrepancy": 0.0,
+          "alias_changes": 0
+        }
+      ]
+    },
+    "scan-fw-8f4f960d9db67798": {
+      "tracks": [
+        {
+          "track_id": "sha256:2603aa086cd1e8fba49be300af084fc4dd2a8a7c464939ce74a349135a215eb0",
+          "observations": 23,
+          "span_s": 11.796055406,
+          "channel_edge_counts": {
+            "2:lower": 23
+          },
+          "rf_transitions": 0,
+          "largest_gap_s": 1.482683115,
+          "alias_indices": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "maximum_integer_discrepancy": 0.0,
+          "alias_changes": 0
+        },
+        {
+          "track_id": "sha256:6b6a58007c5aa2780a7d863f34c1e32d690a68c0b39132346b34b04d2c6e12fc",
+          "observations": 20,
+          "span_s": 13.801525852,
+          "channel_edge_counts": {
+            "3:lower": 20
+          },
+          "rf_transitions": 0,
+          "largest_gap_s": 2.868027299,
+          "alias_indices": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "maximum_integer_discrepancy": 4.440892098500626e-16,
+          "alias_changes": 0
+        }
+      ],
+      "cross_channel": {
+        "left_track": "sha256:2603aa086cd1e8fba49be300af084fc4dd2a8a7c464939ce74a349135a215eb0",
+        "right_track": "sha256:6b6a58007c5aa2780a7d863f34c1e32d690a68c0b39132346b34b04d2c6e12fc",
+        "left_to_right": {
+          "supported": true,
+          "points": 14,
+          "constant_difference_hz": -8190.474675710552,
+          "difference_rms_after_constant_hz": 28.378437666604086,
+          "max_bracket_gap_s": 1.464014818,
+          "pairs": [
+            {
+              "utc_ns": 1790473722381254579,
+              "difference_hz": -8202.791648562503,
+              "bracket_gap_s": 0.682057603
+            },
+            {
+              "utc_ns": 1790473722501255981,
+              "difference_hz": -8181.62295938225,
+              "bracket_gap_s": 0.682057603
+            },
+            {
+              "utc_ns": 1790473723203930959,
+              "difference_hz": -8178.647493119672,
+              "bracket_gap_s": 0.982678101
+            },
+            {
+              "utc_ns": 1790473723625269218,
+              "difference_hz": -8174.9750142507255,
+              "bracket_gap_s": 0.982678101
+            },
+            {
+              "utc_ns": 1790473724187942390,
+              "difference_hz": -8175.061324405746,
+              "bracket_gap_s": 0.422641817
+            },
+            {
+              "utc_ns": 1790473726874639244,
+              "difference_hz": -8149.694839785487,
+              "bracket_gap_s": 0.944010202
+            },
+            {
+              "utc_ns": 1790473726995783480,
+              "difference_hz": -8194.884395317378,
+              "bracket_gap_s": 0.944010202
+            },
+            {
+              "utc_ns": 1790473728218653735,
+              "difference_hz": -8268.701655005047,
+              "bracket_gap_s": 0.821342057
+            },
+            {
+              "utc_ns": 1790473728759992799,
+              "difference_hz": -8174.82681941404,
+              "bracket_gap_s": 0.422671084
+            },
+            {
+              "utc_ns": 1790473729181330536,
+              "difference_hz": -8211.399100915529,
+              "bracket_gap_s": 0.561339135
+            },
+            {
+              "utc_ns": 1790473729602668213,
+              "difference_hz": -8225.95081298289,
+              "bracket_gap_s": 1.464014818
+            },
+            {
+              "utc_ns": 1790473729724002795,
+              "difference_hz": -8175.4343422537495,
+              "bracket_gap_s": 1.464014818
+            },
+            {
+              "utc_ns": 1790473730124006878,
+              "difference_hz": -8170.974639636988,
+              "bracket_gap_s": 1.464014818
+            },
+            {
+              "utc_ns": 1790473734177309985,
+              "difference_hz": -8181.680414915725,
+              "bracket_gap_s": 0.542481169
+            }
+          ]
+        },
+        "right_to_left": {
+          "supported": true,
+          "points": 16,
+          "constant_difference_hz": 8193.250316286945,
+          "difference_rms_after_constant_hz": 31.253634194270518,
+          "max_bracket_gap_s": 1.482683115,
+          "pairs": [
+            {
+              "utc_ns": 1790473722783239059,
+              "difference_hz": 8201.589418232063,
+              "bracket_gap_s": 0.702674978
+            },
+            {
+              "utc_ns": 1790473723063909024,
+              "difference_hz": 8172.612750390923,
+              "bracket_gap_s": 0.702674978
+            },
+            {
+              "utc_ns": 1790473724046587125,
+              "difference_hz": 8179.269540283189,
+              "bracket_gap_s": 0.562673172
+            },
+            {
+              "utc_ns": 1790473724469228942,
+              "difference_hz": 8191.977323095693,
+              "bracket_gap_s": 0.682674479
+            },
+            {
+              "utc_ns": 1790473726193277975,
+              "difference_hz": 8143.603980984219,
+              "bracket_gap_s": 1.482683115
+            },
+            {
+              "utc_ns": 1790473726473281036,
+              "difference_hz": 8185.029482521495,
+              "bracket_gap_s": 1.482683115
+            },
+            {
+              "utc_ns": 1790473726593282368,
+              "difference_hz": 8152.01112767859,
+              "bracket_gap_s": 1.482683115
+            },
+            {
+              "utc_ns": 1790473727537292570,
+              "difference_hz": 8217.947744421748,
+              "bracket_gap_s": 1.222870255
+            },
+            {
+              "utc_ns": 1790473728358634627,
+              "difference_hz": 8273.718325968279,
+              "bracket_gap_s": 0.541339064
+            },
+            {
+              "utc_ns": 1790473728478635912,
+              "difference_hz": 8194.097136307159,
+              "bracket_gap_s": 0.541339064
+            },
+            {
+              "utc_ns": 1790473728901306996,
+              "difference_hz": 8188.064749416284,
+              "bracket_gap_s": 0.421337737
+            },
+            {
+              "utc_ns": 1790473729462646131,
+              "difference_hz": 8230.987901790999,
+              "bracket_gap_s": 0.421337677
+            },
+            {
+              "utc_ns": 1790473730926660949,
+              "difference_hz": 8198.833293040429,
+              "bracket_gap_s": 1.444746815
+            },
+            {
+              "utc_ns": 1790473731046662137,
+              "difference_hz": 8157.269406352396,
+              "bracket_gap_s": 1.444746815
+            },
+            {
+              "utc_ns": 1790473731167996662,
+              "difference_hz": 8220.792852684623,
+              "bracket_gap_s": 1.444746815
+            },
+            {
+              "utc_ns": 1790473734036023961,
+              "difference_hz": 8184.200027423038,
+              "bracket_gap_s": 0.702603714
+            }
+          ]
+        }
+      }
+    }
+  }
+}

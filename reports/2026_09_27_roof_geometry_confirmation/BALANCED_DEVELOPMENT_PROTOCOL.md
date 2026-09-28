@@ -1,0 +1,11 @@
+# Depth-balanced search development experiment
+
+Motivation: the completed reference diagnostics show that large selected-location errors often have worse loss than the roof reference under the same frozen model. Original best-first search spends many evaluations at the finest level while other coarse cells remain unexpanded. This is evidence for testing allocation across spatial scales, not for changing calibration to favor known coordinates.
+
+The new search cycles deterministically through refinable depths, choosing the lowest measured-priority cell within each depth. Initial coarse coverage, boundary representatives, halving grid levels, point budgets and selection by best evaluated score remain unchanged. All queued cells must have a measured score. No unmeasured cell gets an artificial priority. This is a heuristic, not a global-optimum guarantee.
+
+Run all four now-unblinded roof recordings, each with independent Sacramento and Reno priors and D versus D+geometry. Each objective gets160 evaluations, exactly matching the completed topology confirmation. Keep the same filtered observations, training/reserve masks, frozen calibration, zero timing, top3 association marginalization, track weights and reception inputs. Do not import truth/reference coordinates, other-prior positions or satellite assignments into a search. Common orbit prediction banks are allowed; fitted candidate identities are recomputed at each coordinate.
+
+Compare all8 cases against their existing matched best-first results, then compare D and geometry within the new search. Report both changes separately: improved search coverage is not itself evidence of better RX geometry. Also report the already-frozen secondary rule selecting D only over J-arm evaluated points. Do not use the union as a budget-matched result.
+
+Use separate `balanced-development-*` artifacts; never overwrite or relabel original confirmation outputs. The cohort is now development data and cannot provide untouched validation of this changed search. Successful development requires subsequent frozen evaluation on disjoint recordings, including the reception dependence sensitivity and local-bias assessment, before making a general resolution claim.

@@ -1,0 +1,11 @@
+# Numerical refinement after the initial full-calibration fit
+
+The initial `mixture-calibration-full.json` completed in 23.19 seconds. All three arms failed only the predeclared absolute-gradient gate. Across nine deterministic-start solutions, maximum gradient magnitudes ranged from 2.87e-5 to 1.46e-4, above 1e-6. Multistart objective spreads were below 1.7e-10, prediction differences below 3.1e-6, and minimum Hessian eigenvalues were positive (1.53–2.20). L-BFGS relative objective stopping is therefore insufficient for the prescribed gradient check. This is numerical inconclusiveness, not proof of non-identifiability.
+
+Preserve the initial artifact and its implementation files unchanged. Before conditional LOSO, create a separate numerical-refinement implementation and output. Start from each of the nine saved solutions, not new reception-model choices or location-dependent initializations. Reconstruct the exact same calibration objective and verify its value agrees with the original saved result before proceeding.
+
+Use at most eight Newton polishing steps with a symmetric numerical Hessian, descent checking, and backtracking line search. Target maximum absolute gradient 1e-8. Reject nonfinite values, non-descent directions, failed line search, or unsupported curvature; record the stop reason and original/final objective and gradient. Preserve the original starts and their raw results through an explicit artifact binding.
+
+The acceptance thresholds remain unchanged: each final gradient <=1e-6, total multistart objective range <=1e-7, prediction differences <=1e-4, and minimum Hessian eigenvalue >1e-7. Solver precision is being improved, not the evidentiary threshold relaxed. Failure remains visible and cannot be labeled geographic improvement.
+
+Do not change input membership, candidate identities/log probabilities, direction features, fold scaling, track weights, ridge, variance parameterization, or model arms. No heldout location errors enter this work. First refine only the existing full-six descriptive fit; conditional LOSO awaits numerical review. Bind the original full artifact, original code/input hashes, refinement code, and this protocol in a new no-overwrite result.

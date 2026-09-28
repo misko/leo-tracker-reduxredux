@@ -176,6 +176,17 @@ retunes, and dropped measurement records must remain observable.
 
 ## What has already worked on FPGA
 
+**Follow-up correction:** Implementation work on radio `.20` subsequently
+located and independently re-read a stronger historical host-assisted native
+feedback journal: 10,463 measurements, 10,431 supported, about 14 seconds before
+support loss, with complete drain and no late/expired jobs. This qualifies the
+scope of the 192-job checkpoint below: it is not the latest integration evidence.
+The new `.20` saved-IQ ARM run still produced only three fresh handoffs from
+eight accepted candidates and did not deploy an autonomous receiver.
+See the [radio qualification report](2026_09_12_radio20_tracking_qualification.md)
+for the distinction between historical hardware evidence and newly executed
+ARM qualification.
+
 The September branch review is the strongest local hardware starting point.
 It reports 192 scheduled native-pilot hardware jobs at 60 MS/s and 750 Hz,
 including three exact-IQ manual numerical comparisons. It explicitly leaves
