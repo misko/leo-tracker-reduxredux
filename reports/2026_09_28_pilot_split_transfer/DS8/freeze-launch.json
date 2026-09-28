@@ -1,0 +1,34 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pilot_split_transfer/DS8/freeze-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "90s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pilot_split_transfer/run.py",
+    "DS8",
+    "freeze"
+  ],
+  "sha256": {
+    "reports/2026_09_28_pilot_split_transfer/PROTOCOL.md": "1555fbacca112a289fea63ffbf90b2d4ad8ea20c29c139e927d3ddb5408615f8",
+    "reports/2026_09_28_pilot_split_transfer/run.py": "0acaa6dea174cd82e046cf0c1bc26b1c3b55b344c834fc5bd2fa729163c79d77",
+    "reports/2026_09_28_pilot_split_transfer/launch.py": "9976ef9bc02f5470ab034f40909e2b011e7fabfecf39b8ec4e30949e0ce1f639",
+    "tools/ds789_pilot_split.py": "9ceb28a4f8a2bf0529717f9af362d4fe95ddf17bfa0c2eea9739529e76c4a121",
+    "tools/ds7_cfo_wave2_freeze.py": "7c22a796a5d65b87240e2af4a524ff847ed6fb0400e24088eca766edb1b2b02c",
+    "tests/research/test_ds789_pilot_split.py": "e7e3de99f8b2d9cdfef721d4251055bd3beb1e3c8c8d28d660549fd585034f29"
+  }
+}
