@@ -1,0 +1,96 @@
+--- original/presence.c
++++ experiment/presence.c
+@@ -161,7 +161,7 @@
+     leo_presence_nuisance nuisance;
+ #if defined(LEO_PRESENCE_COARSE_FP32)
+     float *float_samples, *float_accumulated;
+-    float float_reference_real[12*23*12], float_reference_imag[12*23*12];
++    float float_reference_real[12*45*12], float_reference_imag[12*45*12];
+     double float_reference_energy[12];
+ #endif
+ };
+@@ -307,23 +307,25 @@
+ leo_presence_workspace *leo_presence_create(uint32_t rate,
+     const leo_presence_complex *exact, const leo_presence_complex *control, size_t n)
+ {
+-    if (fegetround() != FE_TONEAREST || (rate != 2500000 && rate != 5000000) || !exact || !control ||
++    if (fegetround() != FE_TONEAREST || (rate != 2500000 && rate != 5000000 && rate != 7500000 && rate != 10000000) || !exact || !control ||
+         n != (size_t)nearbyint(rate / 750.0)) return NULL;
+     leo_presence_workspace *w = calloc(1, sizeof(*w));
+     if (!w) return NULL;
+     w->rate = rate; w->n = n; w->max_samples = rate / 50;
++    size_t input_capacity=rate/500;
++    if (LEO_PRESENCE_FAST_FINE_FFT) { input_capacity=2; while(input_capacity<n) input_capacity*=2; }
+ #define ALLOC(field, count) do { \
+     w->field = calloc((count), sizeof(*w->field)); \
+     if (!w->field) { leo_presence_destroy(w); return NULL; } \
+ } while (0)
+     ALLOC(exact, n); ALLOC(control, n); ALLOC(samples, w->max_samples);
+-    ALLOC(input, rate / 500); ALLOC(weighted, n); ALLOC(base, n);
++    ALLOC(input, input_capacity); ALLOC(weighted, n); ALLOC(base, n);
+     ALLOC(conditioned_offsets, CONDITIONED_TABLES * n); ALLOC(prefix, w->max_samples + 1);
+ #if LEO_PRESENCE_PRECOMPUTE
+     ALLOC(glrt_rotations, n);
+ #endif
+     ALLOC(grid, CFO_COUNT * n); ALLOC(accumulated, CFO_COUNT * n); ALLOC(support, n);
+-    ALLOC(rotated_real, CFO_COUNT * 23); ALLOC(rotated_imag, CFO_COUNT * 23);
++    ALLOC(rotated_real, CFO_COUNT * 45); ALLOC(rotated_imag, CFO_COUNT * 45);
+ #if defined(LEO_PRESENCE_COARSE_FP32)
+     ALLOC(float_samples, 2*w->max_samples); ALLOC(float_accumulated, CFO_COUNT*n);
+ #endif
+@@ -347,6 +349,7 @@
+         while (fine_size<n) fine_size*=2;
+     }
+     w->fine_step_hz=(double)rate/fine_size;
++    if (ceil(800000.0/w->fine_step_hz)+2 > 2048) { leo_presence_destroy(w); return NULL; }
+     if (leo_fft_init(&w->fine_fft, fine_size) ||
+         leo_fft_init(&w->short_fft, 128) || leo_fft_init(&w->glrt_fft, 512)) {
+         leo_presence_destroy(w); return NULL;
+@@ -366,6 +369,7 @@
+     for (int k = 0; k < 12; ++k) {
+         w->starts[k] = (npy_intp)nearbyint((2 + k * 26) * rate * SYMBOL_S);
+         w->stops[k] = (npy_intp)nearbyint((3 + k * 26) * rate * SYMBOL_S);
++        if (w->stops[k]-w->starts[k] > 45) { leo_presence_destroy(w); return NULL; }
+         w->frequencies[k] = -400000.0 + k * 80000.0;
+     }
+     for (int k = 0; k < 16; ++k)
+@@ -834,7 +838,7 @@
+ #if LEO_PRESENCE_ENERGY_SUPPORT
+         w->profile.local_coarse_cpu_ms += clock_ms(CLOCK_PROCESS_CPUTIME_ID)-stage_started;
+ #endif
+-        double frequencies[1602], scores[1602], coarse_cfo=w->frequencies[f];
++        double frequencies[2048], scores[2048], coarse_cfo=w->frequencies[f];
+         double lower=fmax(-400000,coarse_cfo-80000), upper=fmin(400000,coarse_cfo+80000);
+         if (LEO_PRESENCE_POWER_PROPOSAL || proposal_epoch>=0) { lower=-400000; upper=400000; }
+         if (LEO_PRESENCE_FAST_FINE_FFT) {
+--- original/coarse_fp32.h
++++ experiment/coarse_fp32.h
+@@ -61,7 +61,7 @@
+             for (int f=0; f<CFO_COUNT; ++f) {
+                 double angle=TAU*w->frequencies[f]*k/w->rate;
+                 double cosine=cos(angle), sine=sin(angle);
+-                int index=symbol*23*12+12*k+f;
++                int index=symbol*45*12+12*k+f;
+                 w->float_reference_real[index]=(float)(creal(reference)*cosine-cimag(reference)*sine);
+                 w->float_reference_imag[index]=(float)(creal(reference)*sine+cimag(reference)*cosine);
+             }
+@@ -80,7 +80,7 @@
+         float inverse=(float)(1.0/denominator);
+         if (!isfinite(inverse)) return -1;
+         coarse_float_add(w->float_samples+2*position,
+-            w->float_reference_real+symbol*23*12, w->float_reference_imag+symbol*23*12,
++            w->float_reference_real+symbol*45*12, w->float_reference_imag+symbol*45*12,
+             taps,inverse,w->float_accumulated+12*epoch);
+     }
+     ++w->support[epoch];
+--- original/window_rank.c
++++ experiment/window_rank.c
+@@ -156,7 +156,7 @@
+ leo_presence_rank_workspace *leo_presence_rank_create(uint32_t rate,
+     const leo_presence_complex *exact, size_t n, uint32_t bins)
+ {
+-    if (fegetround()!=FE_TONEAREST || (rate!=2500000 && rate!=5000000) || !exact ||
++    if (fegetround()!=FE_TONEAREST || (rate!=2500000 && rate!=5000000 && rate!=7500000 && rate!=10000000) || !exact ||
+         n!=(size_t)nearbyint(rate/750.0) || bins<512 || bins>8192 || (bins&(bins-1))) return NULL;
+     for (size_t k=0; k<n; ++k)
+         if (!isfinite(exact[k].re) || !isfinite(exact[k].im) ||

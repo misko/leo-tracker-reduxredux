@@ -1,0 +1,111 @@
+{
+  "scope": "Calibration-only direction movement from original Gaussian top-3 weights/components to the frozen topology robust Student-t top-3 weights/components; no refit or evaluation locations.",
+  "source_hashes": {
+    "calibration_directions_data": "sha256:80af5b02e71501cb9db0ef7c590adf0b3a655bac00f8520d15c5e259333ed429",
+    "topology_frequency_fixedpoint": "sha256:e3bd824c8017889ec27fdee7d95dfe8cd7f684aa417b5a6dbea2ce77e091ce48",
+    "topology_frequency_parameters": "sha256:367503d3cc5719d3393a6bb9e4278559a6ad6821d6f8039197eef113149b3b57",
+    "summary_code": "sha256:4731afc816c60ee35d5e2adc10a8c9737607e117a661540f8d8714ea1b74ea50"
+  },
+  "binding_checks": {
+    "frozen_parameter_extraction_hash_matches": true,
+    "frozen_parameter_values_match": true,
+    "frozen_parameter_converged": true,
+    "retained_track_count": 344,
+    "shared_candidate_direction_comparisons": 16155,
+    "shared_candidate_east_up_max_absolute_difference": 8.881784197001252e-16,
+    "shared_candidate_tau_seconds": 0.0
+  },
+  "definitions": {
+    "movement": "Per reception observation, hypot(robust_mean_east-old_mean_east, robust_mean_up-old_mean_up).",
+    "observation_equal": "Every reception row has weight one; reported because dense tracks contribute more under this descriptive view.",
+    "track_equal": "First average observations within each track, then give every track weight one.",
+    "occupied_second_weighted": "First average observations within each track, then weight tracks by frozen weight_seconds."
+  },
+  "all": {
+    "tracks": 344,
+    "reception_rows": 6378,
+    "occupied_second_weight": 7850.0,
+    "observation_equal": {
+      "mean_delta_east": 0.004286529442155901,
+      "mean_delta_up": -0.0011025519103117012,
+      "mean_absolute_delta_east": 0.025536622937072512,
+      "mean_absolute_delta_up": 0.007653192118664306,
+      "mean_east_up_movement": 0.027495202932392538,
+      "max_east_up_movement": 1.2357891786082886
+    },
+    "track_equal": {
+      "mean_delta_east": 0.0014767281784888399,
+      "mean_delta_up": -0.0012277197170629253,
+      "mean_absolute_delta_east": 0.027468707783501,
+      "mean_absolute_delta_up": 0.008355347502654629,
+      "mean_east_up_movement": 0.02962916222220607,
+      "mean_track_max_east_up_movement": 0.034725350159479425
+    },
+    "occupied_second_weighted": {
+      "mean_delta_east": 0.004206066372743036,
+      "mean_delta_up": -0.0008501485803563089,
+      "mean_absolute_delta_east": 0.02434022500715417,
+      "mean_absolute_delta_up": 0.0074302151145551635,
+      "mean_east_up_movement": 0.02627779377079728,
+      "mean_track_max_east_up_movement": 0.032070231547831125
+    }
+  },
+  "map_changed": {
+    "tracks": 20,
+    "reception_rows": 358,
+    "occupied_second_weight": 434.0,
+    "observation_equal": {
+      "mean_delta_east": 0.06904275506712303,
+      "mean_delta_up": -0.0055815207131435915,
+      "mean_absolute_delta_east": 0.4149867180097442,
+      "mean_absolute_delta_up": 0.11305322071590349,
+      "mean_east_up_movement": 0.4394612484076318,
+      "max_east_up_movement": 1.2357891786082886
+    },
+    "track_equal": {
+      "mean_delta_east": 0.015381026978553402,
+      "mean_delta_up": -0.0024928084422434884,
+      "mean_absolute_delta_east": 0.4070197473844326,
+      "mean_absolute_delta_up": 0.11063823429029114,
+      "mean_east_up_movement": 0.430517772533201,
+      "mean_track_max_east_up_movement": 0.5101793217954593
+    },
+    "occupied_second_weighted": {
+      "mean_delta_east": 0.06806732132554832,
+      "mean_delta_up": -0.0013362950453264682,
+      "mean_absolute_delta_east": 0.3970335801544168,
+      "mean_absolute_delta_up": 0.11064873302542869,
+      "mean_east_up_movement": 0.4217230083049076,
+      "mean_track_max_east_up_movement": 0.5180091312244376
+    }
+  },
+  "map_unchanged": {
+    "tracks": 324,
+    "reception_rows": 6020,
+    "occupied_second_weight": 7416.0,
+    "observation_equal": {
+      "mean_delta_east": 0.000435577818611346,
+      "mean_delta_up": -0.0008361946293459504,
+      "mean_absolute_delta_east": 0.002376633894544862,
+      "mean_absolute_delta_up": 0.001385216996104234,
+      "mean_east_up_movement": 0.002996225477220501,
+      "max_east_up_movement": 0.20825847330568434
+    },
+    "track_equal": {
+      "mean_delta_east": 0.0006184381291021381,
+      "mean_delta_up": -0.0011496278204468414,
+      "mean_absolute_delta_east": 0.004039631264924976,
+      "mean_absolute_delta_up": 0.0020415890589733634,
+      "mean_east_up_movement": 0.004882951709181693,
+      "mean_track_max_east_up_movement": 0.005376339564665844
+    },
+    "occupied_second_weighted": {
+      "mean_delta_east": 0.00046877070802924046,
+      "mean_delta_up": -0.0008216982613437622,
+      "mean_absolute_delta_east": 0.002529421860725911,
+      "mean_absolute_delta_up": 0.0013896492066103007,
+      "mean_east_up_movement": 0.0031355037077169276,
+      "mean_track_max_east_up_movement": 0.003632059695127894
+    }
+  }
+}

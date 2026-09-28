@@ -1,0 +1,4627 @@
+{
+  "source_sha256": "fb1c7f69ce2469c3727c35bcc652abf382a02996d079730d3096fe9f1bb78635",
+  "calibration_sha256": "fe988b91fc7b5481a4325da26d02765bdaf0cdbab463dc19fcce1e30627fa32f",
+  "core_sha256": "2da4238f215afe13739bec80fe2a8479da2934010cb62660f50f7742e017a866",
+  "runner_sha256": "21f199d7156f4ce6638c5ef7b26c6759129dd990c0bf9f0282df9e0ad880bb45",
+  "requested_sessions": [
+    "scan-fw-edb6aeddc6e8a278"
+  ],
+  "protocol": "Fixed scans/sites, independent shortlist top3+original from prior training-only coarse search. One-second averages within each original partition; cross-partition/receiver dependence remains. Gaussian block noise100/200Hz, track constant integrated N(0,1MHz). Identity prior10% broad null (Gaussian3000Hz constant-only), remaining uniform among retained IDs. Satellite delta marginalized against signed historical prior conditioned on +/-120s, step0.1. Scan clock N(0,1s) truncated +/-3s step0.5, uncalibrated sensitivity not metadata-derived. Collapsed Gibbs2chains80burn160draws, original/null starts; zero-clock control1chain. Score sums per-track joint predictive log densities / test blocks; composite, not full joint test evidence. No production mutations, no geographic search, no calibrated association/location probabilities.",
+  "scans": [
+    {
+      "session_id": "scan-fw-edb6aeddc6e8a278",
+      "capture_start_utc": "2026-09-26T12:10:02.695297Z",
+      "track_count": 26,
+      "evidence_sha256": "sha256:7c813a89d14f6dcb07dd017c814cc10c6df92d70e741d9a4ea1786ff6c354e28",
+      "snapshot_digest": "sha256:8ec59d89b68d7802b1342d6db6d7fa518c07f02df2036676eecded131a7a3796",
+      "shortlist_sha256": "9c80cad2fc27f643ee77d3cf37bd81a16a86af05dc51efd97e207aae20ea5201",
+      "train_eval_shared_second_bins_count": 136,
+      "max_prior_mass_outside_support": 0.02649000517634237,
+      "results": {
+        "reference": {
+          "100.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.610806831936589,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 5.294120740362417e-87,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.729838955172355,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -152.39784132152255,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.95796861239708,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -179.3061096087802,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.978125,
+                    "63644": 0.01875,
+                    "53995": 0.003125
+                  },
+                  "entropy_nats": 0.11422050999865882,
+                  "predictive_log_score": -35.79157404783098,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.62544016427702,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.411922164891536,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -24.628505695007142,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.984375,
+                    "67993": 0.00625,
+                    "66569": 0.009375
+                  },
+                  "entropy_nats": 0.0910006443650265,
+                  "predictive_log_score": -17.28351656906484,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -71.47251251928151,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 0.996875,
+                    "63644": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -27.490813358874092,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.154072059299075,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.928125,
+                    "63441": 0.071875
+                  },
+                  "entropy_nats": 0.258462207697609,
+                  "predictive_log_score": -31.796924329236212,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -60.531185935750386,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.098740049645258,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.946875,
+                    "100410": 0.053125
+                  },
+                  "entropy_nats": 0.20761578667410185,
+                  "predictive_log_score": -23.95650566856223,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.856145643193184,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 0.996875,
+                    "59702": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -74.7271280685388,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.74717521706782,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 0.990625,
+                    "62587": 0.009375
+                  },
+                  "entropy_nats": 0.05310943584032762,
+                  "predictive_log_score": -18.29073824263167,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.644250017924726,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.914295378446,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -157.07949574341146,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.946875,
+                    "47844": 0.053125
+                  },
+                  "entropy_nats": 0.20761578667410185,
+                  "predictive_log_score": -51.233513746285695,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -116.50443813607954,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.161950503477823,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.718880261164095,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -152.39938627979717,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.9101623153866,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -179.35458012079215,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -35.80676853612584,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.6280142143165,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.40653091684192,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.570872065831615,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.27637613470145,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -71.44458202197475,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -27.487180852118506,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.15284555211585,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -31.85043663939393,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -60.584178771388835,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.086754385775137,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -24.079964723251887,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.857152885655623,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.72613208946741,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.747222411207744,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -18.31031047277649,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.635973999014045,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.9072021110275,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -157.07859815500225,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -51.88769388693107,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -59.13082880809151,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -116.42070028017277,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.60846853540076,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 1.5561216308635981e-89,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.71884202609255,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -152.39918200234607,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.90998424378665,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -179.35473506367606,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.95,
+                    "63644": 0.04375,
+                    "53995": 0.00625
+                  },
+                  "entropy_nats": 0.21735375140869442,
+                  "predictive_log_score": -35.858061313243816,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.6280142143165,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.40653091684192,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -24.20997046887078,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "67993": 0.00625,
+                    "66569": 0.00625
+                  },
+                  "entropy_nats": 0.07586122011969715,
+                  "predictive_log_score": -17.28202040144874,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -71.44458202197475,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 0.99375,
+                    "63644": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -27.49344890502107,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.15284165147925,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.9375,
+                    "63441": 0.0625
+                  },
+                  "entropy_nats": 0.2337916587064593,
+                  "predictive_log_score": -31.660374180746473,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -60.58456488606103,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.086754385775137,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.95,
+                    "100410": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -23.954498870592303,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.857162472318095,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.72613208946741,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.747222411207744,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 0.99375,
+                    "62587": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -18.31658004441914,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.63597399901404,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.9072021110275,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -157.0787741783262,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.9375,
+                    "47844": 0.0625
+                  },
+                  "entropy_nats": 0.2337916587064593,
+                  "predictive_log_score": -51.197894201773174,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -116.42070028017277,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.6091663517905115,
+              6.613964401264222
+            ],
+            "max_chain_assignment_total_variation": 0.03125,
+            "mean_chain_assignment_total_variation": 0.003846153846153846,
+            "clock_mean_s": 0.4359375,
+            "clock_edge_fraction": 0.0
+          },
+          "200.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.422567379778618,
+              "mean_null_probability": 0.0001201923076923077,
+              "ambiguous_tracks_maxprob_below_0_8": 1,
+              "max_endpoint_mass": 1.254458131150649e-24,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 0.99375,
+                    "54007": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -38.43731483770401,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.0456413774445,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.37301062918192,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -180.58844210347922,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.80625,
+                    "63644": 0.159375,
+                    "53995": 0.034375
+                  },
+                  "entropy_nats": 0.5821849702328348,
+                  "predictive_log_score": -38.90015541089304,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.02584365510103,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 0.996875,
+                    "59573": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -19.130894527653467,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -22.24206035083225,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.975,
+                    "67993": 0.015625,
+                    "__null__": 0.003125,
+                    "66569": 0.00625
+                  },
+                  "entropy_nats": 0.13941325041924446,
+                  "predictive_log_score": -19.182175001765962,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.14278254140214,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 0.909375,
+                    "53995": 0.015625,
+                    "63644": 0.075
+                  },
+                  "entropy_nats": 0.3456411450518174,
+                  "predictive_log_score": -26.534040629545494,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 0.99375,
+                    "54007": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -43.845194823892065,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.934375,
+                    "63441": 0.065625
+                  },
+                  "entropy_nats": 0.24217224693125,
+                  "predictive_log_score": -28.938570301122123,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -63.8774558348493,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 0.99375,
+                    "66638": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -25.514277604805635,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.975,
+                    "100410": 0.025
+                  },
+                  "entropy_nats": 0.11690684913753106,
+                  "predictive_log_score": -25.991308820884576,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.251142932874583,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 0.996875,
+                    "59702": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -81.94720777087781,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.25229035334844,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 0.984375,
+                    "62587": 0.015625
+                  },
+                  "entropy_nats": 0.08048483706800685,
+                  "predictive_log_score": -19.340218388132925,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 0.99375,
+                    "63642": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -25.361057376661577,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.26027555943631,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -165.35369114638286,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.928125,
+                    "47844": 0.071875
+                  },
+                  "entropy_nats": 0.258462207697609,
+                  "predictive_log_score": -56.819408467188566,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.675,
+                    "47844": 0.04375,
+                    "64004": 0.275,
+                    "57983": 0.00625
+                  },
+                  "entropy_nats": 0.7889495185762867,
+                  "predictive_log_score": -54.14153632015433,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.68125245771215,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.419153681954646,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.42769352849207,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.04704000316144,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.33470527160668,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -180.62853491694338,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.799473552996474,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.02641793463643,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.125207657407188,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.11416275803071,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.172123744864496,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.12178504237703,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.44891234746702,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -43.84346726478033,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.73146159291512,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -63.91841236173027,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.50158270794203,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.988903338531017,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.251926849718377,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.94860157325856,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.25232372115949,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.347448815216026,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.34842721900231,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.255777774688724,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -165.35169003965044,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -56.88103001827082,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -53.81652090541413,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.61971164012883,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.421960103753735,
+              "mean_null_probability": 0.0002403846153846154,
+              "ambiguous_tracks_maxprob_below_0_8": 2,
+              "max_endpoint_mass": 2.8783807384821805e-25,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "54007": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -38.42949612079242,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.0467931758425,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.33491557739097,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -180.62834479598413,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.7375,
+                    "63644": 0.21875,
+                    "53995": 0.04375
+                  },
+                  "entropy_nats": 0.69392794721842,
+                  "predictive_log_score": -39.08657751776641,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.02641793463643,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.125207657407188,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -22.10694232909872,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.975,
+                    "67993": 0.0125,
+                    "__null__": 0.00625,
+                    "66569": 0.00625
+                  },
+                  "entropy_nats": 0.142899868408529,
+                  "predictive_log_score": -19.184232523652334,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.12178504237703,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "66193": 0.875,
+                    "53995": 0.025,
+                    "63644": 0.1
+                  },
+                  "entropy_nats": 0.4393204641987103,
+                  "predictive_log_score": -26.56808846083728,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "54007": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -43.844974475030604,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.9125,
+                    "63441": 0.0875
+                  },
+                  "entropy_nats": 0.2967152565836348,
+                  "predictive_log_score": -28.793822333059637,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -63.918711671681166,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.50249388752426,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.95625,
+                    "100410": 0.04375
+                  },
+                  "entropy_nats": 0.1796839838811405,
+                  "predictive_log_score": -25.95613108667103,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.25193227114464,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.94860157325856,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.25232372115949,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66632": 0.9875,
+                    "62587": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -19.35956304695997,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 0.99375,
+                    "63642": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -25.35317145791292,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.255777774688724,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -165.35332668803858,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.91875,
+                    "47844": 0.08125
+                  },
+                  "entropy_nats": 0.28181174083711313,
+                  "predictive_log_score": -56.84300538642061,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.725,
+                    "47844": 0.04375,
+                    "64004": 0.23125
+                  },
+                  "entropy_nats": 0.7086625903615658,
+                  "predictive_log_score": -54.109438411491716,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.61971164012883,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.422874205006998,
+              6.422271176607424
+            ],
+            "max_chain_assignment_total_variation": 0.06874999999999999,
+            "mean_chain_assignment_total_variation": 0.011057692307692307,
+            "clock_mean_s": 0.3578125,
+            "clock_edge_fraction": 0.0
+          }
+        },
+        "sacramento": {
+          "100.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.6037666920157685,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 1,
+              "max_endpoint_mass": 3.659457613872638e-264,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.00705582539419,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -153.04596091923275,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -158.91484358696763,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.71604311609227,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -35.53843002984567,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.64098087091438,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.35847454563119,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -24.65889977968867,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.971875,
+                    "67993": 0.00625,
+                    "53412": 0.021875
+                  },
+                  "entropy_nats": 0.14306080488049439,
+                  "predictive_log_score": -17.29538730624684,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.52448307737168,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 0.99375,
+                    "63644": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -28.963859357343495,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.158019455730994,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.978125,
+                    "63441": 0.021875
+                  },
+                  "entropy_nats": 0.10524921553609987,
+                  "predictive_log_score": -31.900594662887634,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -60.40182057653148,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.10771862862255,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.2125,
+                    "100411": 0.784375,
+                    "100410": 0.003125
+                  },
+                  "entropy_nats": 0.5376484593123565,
+                  "predictive_log_score": -23.91793846031585,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.83161251997073,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 0.996875,
+                    "59702": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -74.60231600295558,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.996875,
+                    "52569": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -22.80929606967202,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.96875,
+                    "62587": 0.03125
+                  },
+                  "entropy_nats": 0.13906079845474112,
+                  "predictive_log_score": -21.098559141967478,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.649841693268876,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.8557925999426,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.79985622683517,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.946875,
+                    "47844": 0.053125
+                  },
+                  "entropy_nats": 0.20761578667410185,
+                  "predictive_log_score": -51.15503034114462,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.87556063886689,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.15499850256486,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.01241803935295,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -153.04545096363762,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -158.9409411834979,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.6910847484336,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -35.53959322315024,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.64292132760119,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.359927467766674,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.437257192674892,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.276688405711617,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.54550697377776,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.942235678127222,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.15692255770233,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -32.11674824002094,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -60.41485416349997,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.112904744007118,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -24.042388203135484,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.830429280478185,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.6028212966723,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.80825061854181,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -21.2644553316943,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.65352702304726,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.85890668812379,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.80076133974077,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -51.857812352380215,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -58.80462867307832,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.92018094074962,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.60334756186631,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 1,
+              "max_endpoint_mass": 6.552204598307857e-270,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.01239499804099,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -153.04545096363762,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -158.94082243702735,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.69118669058975,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -35.533762502597355,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.64292135668437,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.3599270270025,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -24.22333564875695,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "67993": 0.00625,
+                    "53412": 0.00625
+                  },
+                  "entropy_nats": 0.07586122011969715,
+                  "predictive_log_score": -17.28421815312752,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.54550697377776,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 0.9875,
+                    "63644": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -28.954561849680623,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.15692750330827,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.98125,
+                    "63441": 0.01875
+                  },
+                  "entropy_nats": 0.09313363832327264,
+                  "predictive_log_score": -32.03248527058785,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -60.328263569123514,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.112904744007118,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.2625,
+                    "100411": 0.73125,
+                    "100410": 0.00625
+                  },
+                  "entropy_nats": 0.6116958506135837,
+                  "predictive_log_score": -23.918302851516984,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.831337982664238,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.6028212966723,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.99375,
+                    "52569": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -22.810320119986805,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.975,
+                    "62587": 0.025
+                  },
+                  "entropy_nats": 0.11690684913753106,
+                  "predictive_log_score": -21.2897665470958,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.65352702304726,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.85890668812379,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -159.80076133974077,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -51.17048363763282,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.92018094074962,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.601883997181176,
+              6.607112819283685
+            ],
+            "max_chain_assignment_total_variation": 0.04375000000000003,
+            "mean_chain_assignment_total_variation": 0.00552884615384615,
+            "clock_mean_s": -0.2640625,
+            "clock_edge_fraction": 0.0
+          },
+          "200.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.419770140695104,
+              "mean_null_probability": 0.0001201923076923077,
+              "ambiguous_tracks_maxprob_below_0_8": 2,
+              "max_endpoint_mass": 6.427031707401665e-71,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 0.99375,
+                    "54007": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -38.25820701861823,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.20811570536577,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.1092837678539,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -178.18697360689086,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -38.407641462533995,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.03126649643396,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 0.996875,
+                    "59573": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -19.119431277030873,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -21.96302533933681,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.846875,
+                    "53412": 0.134375,
+                    "67993": 0.015625,
+                    "__null__": 0.003125
+                  },
+                  "entropy_nats": 0.49346788643317024,
+                  "predictive_log_score": -19.276523505170434,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.92629420802416,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 0.975,
+                    "63644": 0.025
+                  },
+                  "entropy_nats": 0.11690684913753106,
+                  "predictive_log_score": -27.073715968870296,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 0.99375,
+                    "54007": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -43.847326888878314,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.95625,
+                    "63441": 0.04375
+                  },
+                  "entropy_nats": 0.1796839838811405,
+                  "predictive_log_score": -29.16401600126329,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -63.86188932431393,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.51732462535612,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.353125,
+                    "100411": 0.640625,
+                    "100410": 0.00625
+                  },
+                  "entropy_nats": 0.6845767345469345,
+                  "predictive_log_score": -25.884861163585615,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.24530952011787,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 0.996875,
+                    "59702": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -81.9162108468045,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.990625,
+                    "52569": 0.009375
+                  },
+                  "entropy_nats": 0.05310943584032762,
+                  "predictive_log_score": -25.269733604846827,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.9625,
+                    "62587": 0.0375
+                  },
+                  "entropy_nats": 0.15991595531465677,
+                  "predictive_log_score": -19.964666515311542,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.35777529560388,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.24793937140589,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -166.03308517550755,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -56.83384116775251,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.659375,
+                    "49418": 0.1125,
+                    "64004": 0.228125
+                  },
+                  "entropy_nats": 0.8575325984447018,
+                  "predictive_log_score": -54.17485581469054,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.58184234637912,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.419477000969674,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.26300245367737,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.20763843474245,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.14197231583663,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -178.15574766306187,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.374119372435445,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.03708484383205,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.120113419053325,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.100089775880107,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.17246210528622,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.95344635567591,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.99766632299505,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -43.84525270461328,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -29.319805666674384,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -63.826058105022476,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.526055335700253,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.033956025148896,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.244284934058594,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.91966941440495,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.267565496075033,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -20.050919368106914,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.36386910244756,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.25364263079379,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -166.0343282143024,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -56.832822489691175,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -53.70095312409353,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.6435865746269,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.42130652192916,
+              "mean_null_probability": 0.0002403846153846154,
+              "ambiguous_tracks_maxprob_below_0_8": 2,
+              "max_endpoint_mass": 6.427031707401665e-71,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "54007": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -38.266479098017186,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.20763843474245,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.14165641908605,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -178.15616918154234,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -38.379910457638736,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.03708508519186,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.120113310927117,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -22.0934763813275,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.88125,
+                    "53412": 0.10625,
+                    "__null__": 0.00625,
+                    "67993": 0.00625
+                  },
+                  "entropy_nats": 0.4130502440320932,
+                  "predictive_log_score": -19.255028728894338,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.95344635567591,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 0.96875,
+                    "63644": 0.03125
+                  },
+                  "entropy_nats": 0.13906079845474112,
+                  "predictive_log_score": -27.023302397769186,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 0.9875,
+                    "54007": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -43.84678352167676,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 0.96875,
+                    "63441": 0.03125
+                  },
+                  "entropy_nats": 0.13906079845474112,
+                  "predictive_log_score": -29.333365296636828,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -63.820294782534816,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.52605533570025,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.4125,
+                    "100411": 0.58125,
+                    "100410": 0.00625
+                  },
+                  "entropy_nats": 0.7123677787525964,
+                  "predictive_log_score": -25.897929862105443,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.244707171906192,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.91966941440495,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.99375,
+                    "52569": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -25.269000943462537,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.96875,
+                    "62587": 0.03125
+                  },
+                  "entropy_nats": 0.13906079845474112,
+                  "predictive_log_score": -20.079827666411802,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.36386910244756,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.25364263079379,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -166.0343282143024,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -56.79853374676281,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.625,
+                    "49418": 0.10625,
+                    "64004": 0.26875
+                  },
+                  "entropy_nats": 0.885091000092652,
+                  "predictive_log_score": -54.18856949927922,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.6435865746269,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.419634536148815,
+              6.419912436041881
+            ],
+            "max_chain_assignment_total_variation": 0.06250000000000001,
+            "mean_chain_assignment_total_variation": 0.011057692307692305,
+            "clock_mean_s": -0.371875,
+            "clock_edge_fraction": 0.0
+          }
+        },
+        "reno": {
+          "100.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.606519674403751,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 3,
+              "max_endpoint_mass": 8.613717211355485e-193,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.162250807499035,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.93909971381188,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.54205389971196,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -168.4503656154085,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -35.56044984998244,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.61221549331461,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.37920292296888,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -24.621045711844168,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.959375,
+                    "53412": 0.028125,
+                    "66584": 0.003125,
+                    "54007": 0.009375
+                  },
+                  "entropy_nats": 0.20203000650846029,
+                  "predictive_log_score": -17.3051783262068,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -73.57822663226715,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.934851348721164,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.13270217118722,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "52569": 0.315625,
+                    "100410": 0.684375
+                  },
+                  "entropy_nats": 0.6235276175725819,
+                  "predictive_log_score": -28.938221452933426,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -60.39069839074533,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "61579": 0.725,
+                    "58628": 0.275
+                  },
+                  "entropy_nats": 0.5881687773541907,
+                  "predictive_log_score": -23.19303619423828,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.353125,
+                    "100411": 0.59375,
+                    "100410": 0.053125
+                  },
+                  "entropy_nats": 0.8330271705627018,
+                  "predictive_log_score": -23.82006267049919,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.830518500327884,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.52496956850797,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.78305824454084,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.971875,
+                    "62587": 0.028125
+                  },
+                  "entropy_nats": 0.12816281803199786,
+                  "predictive_log_score": -21.273319432203046,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "61579": 0.99375,
+                    "63642": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -23.083797687433517,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.80209451557546,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -164.54413510245038,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -51.17606715322979,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.955517519156,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.66027453262905,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.167153393722785,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.93885038802034,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.56476773836033,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -168.4279746184077,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -35.602041254029444,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.61318521815107,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.380032969816117,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.41738668120391,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.27653436690028,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -73.59531753347083,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.84308709848307,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.13224039572427,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -32.30945872027326,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -178.63504016923113,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.225070855015066,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -24.064625180996046,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.97652873867979,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.5257323292312,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.783052629770722,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -23.381030157962098,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "63642": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.203569315613276,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.806391743878585,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -164.54566165152616,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -51.8384998302972,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -58.78358846621588,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.99345890805608,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.6057132087604264,
+              "mean_null_probability": 0.038461538461538464,
+              "ambiguous_tracks_maxprob_below_0_8": 2,
+              "max_endpoint_mass": 1.0229270024764835e-186,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -36.16707277585435,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.93885038802034,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -156.56435878359943,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -168.42831351833252,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -35.602041254029444,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -84.61318521815107,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -17.380032969816117,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -24.225952792059438,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.9625,
+                    "54007": 0.01875,
+                    "53412": 0.0125,
+                    "66584": 0.00625
+                  },
+                  "entropy_nats": 0.19784361524118246,
+                  "predictive_log_score": -17.301996539451018,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -73.59531753347083,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -28.843087098483068,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -39.132249073750785,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "52569": 0.4125,
+                    "100410": 0.5875
+                  },
+                  "entropy_nats": 0.6777555495642991,
+                  "predictive_log_score": -28.648425716457517,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -60.34080815403475,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "61579": 0.85625,
+                    "58628": 0.14375
+                  },
+                  "entropy_nats": 0.41171285395367974,
+                  "predictive_log_score": -23.18901071008053,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.4125,
+                    "100411": 0.51875,
+                    "100410": 0.06875
+                  },
+                  "entropy_nats": 0.8898123688485533,
+                  "predictive_log_score": -23.80821111263051,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.83049329690536,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -74.5257323292312,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -22.783052629770722,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.9875,
+                    "62587": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -21.757489491264494,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "61579": 0.9875,
+                    "63642": 0.0125
+                  },
+                  "entropy_nats": 0.06719688036269783,
+                  "predictive_log_score": -23.087262612209457,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -44.806391743878585,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -164.54566165152616,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -51.21822741900982,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "__null__": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -175.73589772259547,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -115.99345890805608,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.604185643568371,
+              6.610297699215477
+            ],
+            "max_chain_assignment_total_variation": 0.08124999999999996,
+            "mean_chain_assignment_total_variation": 0.010817307692307692,
+            "clock_mean_s": -0.4859375,
+            "clock_edge_fraction": 0.0
+          },
+          "200.0": {
+            "joint": {
+              "composite_nll_per_test_block": 6.422293207188568,
+              "mean_null_probability": 0.0001201923076923077,
+              "ambiguous_tracks_maxprob_below_0_8": 3,
+              "max_endpoint_mass": 9.89256313300477e-49,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.29675739163068,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.9252702975848,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.525268204434,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -177.86337370589908,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.39734728406296,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.02425113001178,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 0.996875,
+                    "59573": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -19.12499950150373,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.996875,
+                    "57532": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -21.573522297395883,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.8375,
+                    "53412": 0.14375,
+                    "__null__": 0.003125,
+                    "54007": 0.0125,
+                    "66584": 0.003125
+                  },
+                  "entropy_nats": 0.5181735193566237,
+                  "predictive_log_score": -19.28343091642469,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.69047973526409,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -27.03758182659825,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 0.996875,
+                    "54007": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -43.84023362243708,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "52569": 0.4125,
+                    "100410": 0.584375,
+                    "100411": 0.003125
+                  },
+                  "entropy_nats": 0.6972361047524952,
+                  "predictive_log_score": -28.07757936537493,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.996875,
+                    "47844": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -63.846504302202426,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 0.91875,
+                    "61579": 0.08125
+                  },
+                  "entropy_nats": 0.28181174083711313,
+                  "predictive_log_score": -25.678029729858743,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.44375,
+                    "100411": 0.5125,
+                    "100410": 0.04375
+                  },
+                  "entropy_nats": 0.8400324365526436,
+                  "predictive_log_score": -25.867127008429748,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.244880811078872,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 0.996875,
+                    "59702": 0.003125
+                  },
+                  "entropy_nats": 0.021146115205130343,
+                  "predictive_log_score": -81.89743800799504,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.99375,
+                    "100410": 0.003125,
+                    "52569": 0.003125
+                  },
+                  "entropy_nats": 0.04228243415597148,
+                  "predictive_log_score": -25.26226542420515,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.959375,
+                    "62587": 0.040625
+                  },
+                  "entropy_nats": 0.16992537030543003,
+                  "predictive_log_score": -20.010390847483443,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "63642": 0.88125,
+                    "61579": 0.11875
+                  },
+                  "entropy_nats": 0.36442703306205126,
+                  "predictive_log_score": -26.57195000613121,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.23447116040074,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -167.21484255731147,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.946875,
+                    "47844": 0.053125
+                  },
+                  "entropy_nats": 0.20761578667410185,
+                  "predictive_log_score": -56.82168497786451,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.640625,
+                    "49418": 0.1,
+                    "64004": 0.259375
+                  },
+                  "entropy_nats": 0.8655573549810143,
+                  "predictive_log_score": -54.19234918102697,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.6050317476632,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "frozen_no_clock": {
+              "composite_nll_per_test_block": 6.546476398797808,
+              "mean_null_probability": 0.0,
+              "ambiguous_tracks_maxprob_below_0_8": 0,
+              "max_endpoint_mass": 0.0,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.304856388033755,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.92578790457497,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.56479350774202,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -177.83066789627105,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.3969061110122,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.03006808848957,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.125637622816644,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -21.7724439563377,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.17249779315604,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.7209613856748,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.90707400105778,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -43.83911718917773,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "100410": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -29.530572464634368,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -93.36077004305362,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.746216221560314,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.032226616055663,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.313399128365727,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.9025810414773,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.26125686692785,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -20.55558326818747,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "63642": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.960361951516056,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.2431244727685,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -167.21670136942888,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -56.81734313186005,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -53.68798743857375,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.67902223348513,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "joint_no_clock": {
+              "composite_nll_per_test_block": 6.422365472206399,
+              "mean_null_probability": 0.0002403846153846154,
+              "ambiguous_tracks_maxprob_below_0_8": 4,
+              "max_endpoint_mass": 1.3216053300668379e-83,
+              "tracks": [
+                {
+                  "track_id": "sha256:0d3335b3f777b05deed2a3da795e4cbf9b7d627dac078a09e33f1a876134c94c",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.30478666339023,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:1849c9b4adbb5e9dc7b49fd0a7d7f70ebcc9754685767641733b72f7b9a39602",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -169.92578790457497,
+                  "test_blocks": 27
+                },
+                {
+                  "track_id": "sha256:19a28989bbb767dd14e4d46a93bdb34dc183cc7e021a24c2fa419cfb000c5d07",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -155.56445579782374,
+                  "test_blocks": 24
+                },
+                {
+                  "track_id": "sha256:2f0b569690dd1109c12c2d11fdb49d77b9ef266b498c9037c92a65e879900ddb",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -177.83101398670092,
+                  "test_blocks": 28
+                },
+                {
+                  "track_id": "sha256:53948bf60634ba7e5fd14752957234953590f779f2f226005161cab6df9666c7",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -38.3969061110122,
+                  "test_blocks": 6
+                },
+                {
+                  "track_id": "sha256:5ab7c7520b82c5b755945b7dcc9ebf3d171a570a340188ae85d2987605295ce3",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -94.0300683881065,
+                  "test_blocks": 15
+                },
+                {
+                  "track_id": "sha256:698ce4b3ee30d1c73184789b57eeb57e84176b3954afc13eabc48ff793f1b834",
+                  "probabilities": {
+                    "64020": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -19.12563753544847,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:6d13adcec8a37680792c5da6b9141f550ee4788b0075bc9e24901b0d32bd1ba5",
+                  "probabilities": {
+                    "56914": 0.99375,
+                    "57532": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -21.769657608544954,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:717d119f17770187bfeb0ddd3f7ea685a1b498fc49b62087190303f3278ad33a",
+                  "probabilities": {
+                    "58369": 0.8625,
+                    "53412": 0.125,
+                    "__null__": 0.00625,
+                    "54007": 0.00625
+                  },
+                  "entropy_nats": 0.45095097759148894,
+                  "predictive_log_score": -19.266618664259973,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:804fa51870a37a6e5deb795ca338f89cbd1fad8403fa2938228e6a421ee9a1d0",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -76.7209613856748,
+                  "test_blocks": 12
+                },
+                {
+                  "track_id": "sha256:8512a1b1f6c954d209a1f2d55b36f3a5609db826ef07d4f882e1525d1b42e044",
+                  "probabilities": {
+                    "57983": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -26.90707400105778,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:8ca4b729e969fe7ed1d3b7cac8569f6d8f7fe74444d0aed98c2c613f59efd3c3",
+                  "probabilities": {
+                    "58369": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -43.83912639002443,
+                  "test_blocks": 7
+                },
+                {
+                  "track_id": "sha256:a57de2cc0805f552c9c210deea9aac285f707131654c6e8d0a06193b9a2863c4",
+                  "probabilities": {
+                    "52569": 0.525,
+                    "100410": 0.4625,
+                    "100411": 0.0125
+                  },
+                  "entropy_nats": 0.7497005504771594,
+                  "predictive_log_score": -27.767641914829333,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:b09893e8922dec7d89cc0e755384bd2921c7b803a5ec31baee20c4f8a572bf09",
+                  "probabilities": {
+                    "66632": 0.99375,
+                    "47844": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -63.811205128726854,
+                  "test_blocks": 10
+                },
+                {
+                  "track_id": "sha256:b27bbc3b5c5f8cc5b0e210319cf0d011aaa23852d20ffbaa3ca50952b719cbd0",
+                  "probabilities": {
+                    "58628": 0.8,
+                    "61579": 0.2
+                  },
+                  "entropy_nats": 0.5004024235381879,
+                  "predictive_log_score": -25.697507394942228,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:ba9b1707d8919924126369b5dc83b5e7e8daab0cc8eba56e16f5808a0e690f82",
+                  "probabilities": {
+                    "52569": 0.625,
+                    "100411": 0.33125,
+                    "100410": 0.04375
+                  },
+                  "entropy_nats": 0.7966496836059596,
+                  "predictive_log_score": -25.903220286866173,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c658e283ee7d2d224519b685cf150a8ffe407b6e8ad72cbdf7e52ffd8e344f66",
+                  "probabilities": {
+                    "66632": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -25.244344022620012,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:c8b4aee02a506c4ff8b54d8d53729198b0baa2e1735c4f2953468544f679c4ef",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -81.9025810414773,
+                  "test_blocks": 13
+                },
+                {
+                  "track_id": "sha256:ce0551a905571b0293f530a3f4a3ea4fc5e1549d392991109f60545e96a56c49",
+                  "probabilities": {
+                    "64020": 0.99375,
+                    "100410": 0.00625
+                  },
+                  "entropy_nats": 0.03795026427747182,
+                  "predictive_log_score": -25.261793452865412,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:d390b7056310b346f4f2006ea20d0990eda6aa82c49e04fccac379e9374258f5",
+                  "probabilities": {
+                    "66638": 0.975,
+                    "62587": 0.025
+                  },
+                  "entropy_nats": 0.11690684913753106,
+                  "predictive_log_score": -20.30023232034306,
+                  "test_blocks": 3
+                },
+                {
+                  "track_id": "sha256:d6299e2d9b98cd8528ef44724859ed0c5789d1fd00ac0e14cd8291f333964406",
+                  "probabilities": {
+                    "63642": 0.76875,
+                    "61579": 0.23125
+                  },
+                  "entropy_nats": 0.540782324742304,
+                  "predictive_log_score": -26.373561765457573,
+                  "test_blocks": 4
+                },
+                {
+                  "track_id": "sha256:dc823f3894bc8d4f2e878120f4315508f680def0004f898bb5c2fe5106638815",
+                  "probabilities": {
+                    "58008": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -50.2431244727685,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:eceae03d9a581a3f6720336d0dbbf359a3e5a7755bab879418739d7b8de2eada",
+                  "probabilities": {
+                    "66193": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -167.21670136942888,
+                  "test_blocks": 26
+                },
+                {
+                  "track_id": "sha256:f186525048d6930d35f00acf5ef2b3075874d979086ff49329e541ef34303fe4",
+                  "probabilities": {
+                    "63503": 0.95,
+                    "47844": 0.05
+                  },
+                  "entropy_nats": 0.1985152433458726,
+                  "predictive_log_score": -56.80847428910377,
+                  "test_blocks": 9
+                },
+                {
+                  "track_id": "sha256:f8e1880fee0e811ce85b57d8854c8b795f2b5e8d8c16033f36534b1802300f3f",
+                  "probabilities": {
+                    "63503": 0.59375,
+                    "49418": 0.09375,
+                    "64004": 0.3125
+                  },
+                  "entropy_nats": 0.894922515296378,
+                  "predictive_log_score": -54.234056755305,
+                  "test_blocks": 8
+                },
+                {
+                  "track_id": "sha256:fbec1bed65626cf740667b258f8bc5e07d8c1e9f855a357e1bbe00530ade9622",
+                  "probabilities": {
+                    "66494": 1.0
+                  },
+                  "entropy_nats": -0.0,
+                  "predictive_log_score": -111.67902223348513,
+                  "test_blocks": 17
+                }
+              ]
+            },
+            "chain_nll": [
+              6.421698981213066,
+              6.422940638708069
+            ],
+            "max_chain_assignment_total_variation": 0.10000000000000002,
+            "mean_chain_assignment_total_variation": 0.013461538461538457,
+            "clock_mean_s": -0.70625,
+            "clock_edge_fraction": 0.0
+          }
+        }
+      }
+    }
+  ]
+}

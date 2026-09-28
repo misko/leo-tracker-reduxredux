@@ -1,0 +1,27 @@
+{
+  "schema": "offline_joint_location_group_protocol_v1",
+  "random_seed": 20260926,
+  "selection": "Python random.Random(20260926).sample(['G0200','G0230','G0300'], 2); first validation, second test. Metadata-only selection before inspecting these groups' location outcomes. No model tuning authorized from either group.",
+  "limitations": "Diagnostic groups are deliberately selected failures. Validation/test are randomly assigned whole nonoverlapping 3-scan groups, not chronological holdouts. Historical published location seeds were evaluation-selected, so all results remain conditional retrospective proposal-reranking evidence, NOT independent end-to-end validation. Nearby groups may remain environmentally correlated.",
+  "candidate_pool": {
+    "G0200": ["scan-fw-a72774e77275c387", "scan-fw-aa2f55b7da300ff7", "scan-fw-bd221ce4f4d9a5b6"],
+    "G0230": ["scan-fw-e2b1b7a2feea24ac", "scan-fw-4fc9bf00e5b69e7d", "scan-fw-4d7b998480732a95"],
+    "G0300": ["scan-fw-49326435a9328166", "scan-fw-82fd5865983608dc", "scan-fw-9185595fb1ae0858"]
+  },
+  "groups": [
+    {"group_id": "D0850", "role": "diagnostic", "sessions": ["scan-fw-abc47b11b1e6d3a2", "scan-fw-dc1153010e57ac76", "scan-fw-4044d42d24b45da5"]},
+    {"group_id": "D1250", "role": "diagnostic", "sessions": ["scan-fw-f162323ae95a3bec", "scan-fw-d86e8f23c0624bac", "scan-fw-b7bc9aede397d560"]},
+    {"group_id": "G0200", "role": "validation", "sessions": ["scan-fw-a72774e77275c387", "scan-fw-aa2f55b7da300ff7", "scan-fw-bd221ce4f4d9a5b6"]},
+    {"group_id": "G0300", "role": "test", "sessions": ["scan-fw-49326435a9328166", "scan-fw-82fd5865983608dc", "scan-fw-9185595fb1ae0858"]}
+  ],
+  "frozen_policy": {
+    "location_proposals": "union of exact published Sacramento/Reno winners within each group; no truth-derived points or local refinement",
+    "penalties_hz2_per_s2": [0, 100, 1000, 10000],
+    "hard_shared_clock_control": true,
+    "primary_group_aggregation": "equal scan mean squared loss; occupied-second weighting within each scan",
+    "sensitivity": "pooled occupied-second weighting",
+    "ranking": "training only; reserved score descriptive; all original evidence stays in fixed denominator, missing at 800 Hz cap",
+    "top_hypotheses": 5,
+    "production_changes": false
+  }
+}
