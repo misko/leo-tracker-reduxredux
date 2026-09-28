@@ -58,6 +58,8 @@ site knowledge remains unresolved.
 
 See also the [DS7 performance table by dwell time and sample rate](prior-aggregation/README.md),
 with separate Reno and Sacramento prior-search median, mean, and P90 errors.
+The corrected table groups by active dwell (120 / 240 / 360 ms); the initial
+version mistakenly grouped by the separate 120 ms `valid_visit_ms` field.
 These are published per-recording prior searches, separate from the joint model below.
 
 ![All eleven chronological panels, four frozen methods](figures/group-comparison.png)
