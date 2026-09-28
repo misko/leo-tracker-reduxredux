@@ -1,0 +1,27 @@
+{
+  "name": "combined-irq1",
+  "candidate": "rankunroll",
+  "capture": true,
+  "irq1": true,
+  "core": 0,
+  "rx": 2,
+  "jobs": 500,
+  "period": 120,
+  "seconds": 75,
+  "capture_seconds": 45,
+  "capture_rate": 2500000,
+  "validate_only": false,
+  "phase_name": "opt-rankunroll-combined-irq1",
+  "target_directory": "/mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1",
+  "target_executable": "opt-worker-c4eecb6148addfab",
+  "command": "mkdir /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1 && cd /mnt/glrtbench/leo-static-glrt.4jwvdm && (./opt-worker-c4eecb6148addfab cases-2500000.txt 2500000 500 120 0 2 > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1/glrt.jsonl 2> /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1/glrt.stderr & gpid=$!; echo $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1/glrt.pid; ./monitor-arm 75 220 $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1/cpu.jsonl; wait $gpid; echo $? > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-rankunroll-combined-irq1/glrt.exit)",
+  "source_hashes": {
+    "worker": "c4eecb6148addfab2338ef4e9fd93aea731c7e5b1b22ae67dbc76bbef9aa7b7f",
+    "worker_build_receipt": "460d9987c69b175e3cab5c09109256a228710e25ac2f7b8b13ca25fb1588207f",
+    "runner": "c1644d3ae6bb503d06767a7cd77baa40740572ce5327084517896c4442205455",
+    "monitor.c": "e416d99124f1aeee717258b5a273272d37586d83237315b553725d05b2482771",
+    "monitor-arm": "237400a427b7161bd85afcd3e91197debb7be04d9e0d8749ff225d7bd2515bd0",
+    "capture.py": "0b2b6a77bd5c9efc2d79ff9266fe3e0ca623dcd9d95802363abd9be1fded5b0d",
+    "cases-2500000.txt": "e729acca5bc0f76f901af26480f1723221afdbd8305ef4ce22c7032f5ba94f93"
+  }
+}

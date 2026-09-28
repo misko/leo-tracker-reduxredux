@@ -1,0 +1,45 @@
+{
+  "schema": "arm-coarse-compiler-audit/v1",
+  "variant": "-fno-prefetch-loop-arrays, no source algorithm change; adding -fno-peel-loops produced an identical binary",
+  "rates_hz": [2500000, 5000000, 7500000, 10000000],
+  "probes_per_rate": 4,
+  "coarse_grid_bytes_identical": true,
+  "canonical_candidate_json_identical": true,
+  "candidate_count": 128,
+  "per_rate_mean_ms": {
+    "2500000": {
+      "total_variant": 1700.2348905,
+      "total_baseline": 1996.2329985,
+      "total_speedup": 1.1740924796,
+      "coarse_variant": 896.5845195,
+      "coarse_baseline": 1213.601058,
+      "coarse_speedup": 1.3535824360
+    },
+    "5000000": {
+      "total_variant": 4709.4316395,
+      "total_baseline": 5928.3061365,
+      "total_speedup": 1.2588156258,
+      "coarse_variant": 3033.5625,
+      "coarse_baseline": 4299.062571,
+      "coarse_speedup": 1.4171663089
+    },
+    "7500000": {
+      "total_variant": 8960.903286,
+      "total_baseline": 11754.2051865,
+      "total_speedup": 1.3117210187,
+      "coarse_variant": 6399.3816465,
+      "coarse_baseline": 9248.700381,
+      "coarse_speedup": 1.4452490712
+    },
+    "10000000": {
+      "total_variant": 14567.2175295,
+      "total_baseline": 19122.119832,
+      "total_speedup": 1.3126816973,
+      "coarse_variant": 11001.9700875,
+      "coarse_baseline": 15654.8904135,
+      "coarse_speedup": 1.4229170130
+    }
+  },
+  "archive": "compiler-results/SHA256SUMS.json",
+  "hardware_run_owner": "root; independently audited here without hardware access"
+}

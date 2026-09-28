@@ -1,0 +1,76 @@
+{
+  "mapped_tracks": 30,
+  "verified_training_points": 903,
+  "verified_training_calibration_votes": 5458,
+  "calibration_lanes": 40,
+  "qualified_calibration_lanes": 40,
+  "mapped_tracks_with_qualified_transfer": 30,
+  "receiver_hypothesis_rows": 159534,
+  "status_counts_by_role": {
+    "reception": {
+      "out_of_scope": 59460,
+      "ambiguous_hypothesis": 3433,
+      "no_matching_candidate": 16167,
+      "unique_hit": 131,
+      "ambiguous_candidate": 549
+    },
+    "held_frequency": {
+      "out_of_scope": 59346,
+      "no_matching_candidate": 20153,
+      "ambiguous_candidate": 153,
+      "ambiguous_hypothesis": 93,
+      "unique_hit": 49
+    }
+  },
+  "distinct_unique_raw_hits": 180,
+  "exclusion_reasons": {
+    "lane_mismatch": 118806
+  },
+  "sequences": 180,
+  "recorded_orders": {
+    "unavailable_or_tied": 179,
+    "rx0_then_rx1": 1
+  },
+  "endpoint_censoring": {
+    "right": 298,
+    "earlier_ambiguity": 38,
+    "observed": 24
+  },
+  "lag_sequences": [
+    {
+      "candidate_rank": 1,
+      "catalog_number": 69338,
+      "conditional_top3_probability": 1.0,
+      "endpoint_name": "first candidate-consistent detector hit",
+      "hypothesis_id": "scan-fw-3ebf3526172258af/sha256:63ff372b6b7576958b17979f4df3643e630da7782260ffe3fbef656c741fff1c/69338",
+      "opportunity_row_count": 886,
+      "opportunity_status_counts": {
+        "ambiguous_candidate": 18,
+        "no_matching_candidate": 184,
+        "out_of_scope": 662,
+        "unique_hit": 22
+      },
+      "receivers": {
+        "rx0": {
+          "censoring": "observed",
+          "earlier_ambiguous_or_missing": false,
+          "first_hit_utc_ns": 1790478857736223861,
+          "first_hit_window_id": "rx-source-window/v1:sha256:6a186a70b29b21fb0af2d1c1ec9c65d66cd2a035832e1463349c866e8ad72f72"
+        },
+        "rx1": {
+          "censoring": "observed",
+          "earlier_ambiguous_or_missing": false,
+          "first_hit_utc_ns": 1790478867079370461,
+          "first_hit_window_id": "rx-source-window/v1:sha256:42acc9ff19a93e71b359901281fb8e8c089dc2f7cda09715754955a59525987e"
+        }
+      },
+      "recorded_proxy_order": "rx0_then_rx1",
+      "role": "reception",
+      "same_window_tie": false,
+      "session_id": "scan-fw-3ebf3526172258af",
+      "track_id": "sha256:63ff372b6b7576958b17979f4df3643e630da7782260ffe3fbef656c741fff1c",
+      "uncensored_lag_rx1_minus_rx0_s": 9.3431466
+    }
+  ],
+  "checks_passed": true
+}

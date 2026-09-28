@@ -1,0 +1,59 @@
+{
+  "schema": "rx-grouped-partition-independent-audit/v1",
+  "inputs": {
+    "reports/2026_09_28_rx_training_forecast/partitions.json": "sha256:c3dc180371f6d91f64fbb01274fcb72f29d330e050eca938bb238cb95a218bd6",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities/opportunities.jsonl": "sha256:1f46102d99b3b4febfeaad31c16c7a9b8516ace2bdfcdcada2a6f3b5855759a4",
+    "reports/2026_09_28_rx_tracking_evidence/held-frequency.json": "sha256:86091410edc54c792f699c14316c6bdc66793df0cdff0b02caef3133e50b75f1",
+    "reports/2026_09_27_roof_direction_subset/source_links.json": "sha256:b3d63f900a009882c229610caf1bc2f9d876ba0650ae31d590b46368fa643d98"
+  },
+  "inventory": {
+    "partition_windows": 22155,
+    "opportunity_windows": 22155,
+    "paired_receiver_windows": 22155,
+    "raw_candidate_supports": 81390,
+    "legacy_frequency_observations_joined": 25323
+  },
+  "separation": {
+    "cross_role_time_window_overlap_pairs": 0,
+    "cross_role_raw_candidate_support_overlap_pairs": 0,
+    "cross_role_legacy_source_overlap_pairs": 0,
+    "legacy_original_train_held_overlap_pairs": 1421,
+    "all_legacy_overlap_pairs_by_new_role": {
+      "held_frequency|held_frequency": 403,
+      "reception|reception": 538,
+      "train|train": 2048
+    },
+    "old_train_held_overlap_pairs_by_new_role": {
+      "held_frequency|held_frequency": 185,
+      "reception|reception": 265,
+      "train|train": 971
+    }
+  },
+  "coverage": {
+    "windows_by_rate_and_role": {
+      "2500000|held_frequency": 1329,
+      "2500000|reception": 1331,
+      "2500000|train": 3986,
+      "5000000|held_frequency": 890,
+      "5000000|reception": 886,
+      "5000000|train": 2660,
+      "7500000|held_frequency": 442,
+      "7500000|reception": 444,
+      "7500000|train": 1330,
+      "10000000|embargo": 1,
+      "10000000|held_frequency": 1772,
+      "10000000|reception": 1769,
+      "10000000|train": 5315
+    },
+    "recordings_by_rate_and_split": {
+      "2500000|calibration": 2,
+      "2500000|evaluation": 1,
+      "5000000|calibration": 1,
+      "5000000|evaluation": 1,
+      "7500000|calibration": 1,
+      "10000000|calibration": 2,
+      "10000000|evaluation": 2
+    }
+  },
+  "conclusion": "All independently enumerated overlapping time, raw-candidate-support, and legacy source-support pairs remain within one new temporal role."
+}

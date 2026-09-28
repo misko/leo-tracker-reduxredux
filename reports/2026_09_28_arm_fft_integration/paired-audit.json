@@ -1,0 +1,46 @@
+{
+  "schema": "fft-coarse-host-paired-audit/v1",
+  "candidate_path": "reports/2026_09_28_arm_fft_integration/host704-v1",
+  "baseline_path": "reports/2026_09_28_arm_conditioned_czt/host704-v2",
+  "original_baseline_path": "reports/2026_09_28_ds7_large_arm/baseline-01/rows.jsonl",
+  "comparison": {
+    "candidate_object_comparison": "exact JSON object equality by receiver_id and probe_index",
+    "positive_margin_gate": 0.025,
+    "baseline_rows_sha256": "8f2adf1216f841a07734a499e9f3ac96e6cc26c4bad061f2c95d374ac7b9fb9f",
+    "candidate_rows_sha256": "517f70e0d518966937fd2bbb1cfd190210de5ca351f2298c0acc0b43a6b8532d"
+  },
+  "totals": {
+    "dwells": 704,
+    "windows": 15488,
+    "candidate_objects": 123904,
+    "conditioned_czt_object_mismatch_candidates": 0,
+    "conditioned_czt_object_mismatch_windows": 0,
+    "baseline_positive_windows": 7007,
+    "candidate_positive_windows": 7007,
+    "baseline_positive_hits": 19581,
+    "candidate_positive_hits": 19581,
+    "recovered_positive_hits": 19581,
+    "added_positive_hits": 0,
+    "direct_fallback_windows": 0,
+    "repaired_epochs_total": 272122,
+    "original_ordered_mismatch_windows": 1,
+    "original_ordered_mismatch_candidates": 4
+  },
+  "by_rate_hz": {
+    "2500000": {"dwells": 152, "windows": 3344, "candidate_objects": 26752, "positive_windows": 1682, "positive_hits": 4573, "object_mismatch_candidates": 0},
+    "5000000": {"dwells": 216, "windows": 4752, "candidate_objects": 38016, "positive_windows": 1874, "positive_hits": 5466, "object_mismatch_candidates": 0},
+    "7500000": {"dwells": 184, "windows": 4048, "candidate_objects": 32384, "positive_windows": 1933, "positive_hits": 5186, "object_mismatch_candidates": 0, "original_ordered_mismatch_candidates": 4},
+    "10000000": {"dwells": 152, "windows": 3344, "candidate_objects": 26752, "positive_windows": 1518, "positive_hits": 4356, "object_mismatch_candidates": 0}
+  },
+  "original_ordered_mismatch_attribution": {
+    "ordinal": 306,
+    "session_id": "scan-fw-43e84176a367910b",
+    "visit_index": 693,
+    "receiver_id": 0,
+    "probe_index": 3,
+    "candidate_ranks": [1, 2, 3, 4],
+    "positive_margin_gate_crossings": 0,
+    "attribution": "The conditioned-CZT oracle has the same low-margin FP32-coarse ordering divergence relative to the original baseline; this FFT result equals that oracle exactly."
+  },
+  "conclusion": "The FFT integration preserved every conditioned-CZT candidate object and all original-baseline positive hits in this host cohort. This is empirical host evidence, not a formal numerical-equivalence proof."
+}

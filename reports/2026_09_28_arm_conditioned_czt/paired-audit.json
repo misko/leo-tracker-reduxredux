@@ -1,0 +1,60 @@
+{
+  "schema": "conditioned-czt-host-paired-audit/v1",
+  "revised_path": "reports/2026_09_28_arm_conditioned_czt/host704-v2",
+  "scoped_reference_path": "/var/tmp/leo-host-coarse-scoped/cohort704",
+  "original_baseline_path": "reports/2026_09_28_ds7_large_arm/baseline-01/rows.jsonl",
+  "comparison": {
+    "candidate_object_fields": [
+      "coarse_epoch", "coarse_bin", "refined_epoch", "frame_support",
+      "glrt_complete", "coarse_cfo_hz", "fine_cfo_hz", "conditioned_cfo_hz",
+      "epoch", "acquired_cfo_hz", "tracking_cfo_hz", "exact_score",
+      "control_score", "margin", "acquire_score", "verify_score",
+      "verify_control_score", "conditioned_score", "coarse_score"
+    ],
+    "positive_margin_gate": 0.025,
+    "hit_epoch_tolerance_samples": 2,
+    "hit_tracking_cfo_tolerance_hz": 8000.0,
+    "original_ordered_tolerances": {
+      "epoch_samples": 0,
+      "acquired_cfo_hz": 0.000002,
+      "tracking_cfo_hz": 0.000002,
+      "exact_score": 0.000000002,
+      "control_score": 0.000000002,
+      "margin": 0.000000002
+    }
+  },
+  "totals": {
+    "dwells": 704,
+    "windows": 15488,
+    "candidate_objects": 123904,
+    "scoped_reference_object_mismatch_windows": 0,
+    "scoped_reference_object_mismatch_candidates": 0,
+    "missing_windows": 0,
+    "original_reference_positive_windows": 7007,
+    "revised_positive_windows": 7007,
+    "recovered_positive_windows": 7007,
+    "original_reference_positive_hits": 19581,
+    "revised_positive_hits": 19581,
+    "recovered_positive_hits": 19581,
+    "added_positive_hits": 0,
+    "original_ordered_mismatch_windows": 1,
+    "original_ordered_mismatch_candidates": 4
+  },
+  "by_rate_hz": {
+    "2500000": {"dwells": 152, "windows": 3344, "candidate_objects": 26752, "scoped_reference_object_mismatch_candidates": 0, "original_reference_positive_windows": 1682, "revised_positive_windows": 1682, "original_reference_positive_hits": 4573, "revised_positive_hits": 4573, "recovered_positive_hits": 4573, "added_positive_hits": 0, "original_ordered_mismatch_candidates": 0},
+    "5000000": {"dwells": 216, "windows": 4752, "candidate_objects": 38016, "scoped_reference_object_mismatch_candidates": 0, "original_reference_positive_windows": 1874, "revised_positive_windows": 1874, "original_reference_positive_hits": 5466, "revised_positive_hits": 5466, "recovered_positive_hits": 5466, "added_positive_hits": 0, "original_ordered_mismatch_candidates": 0},
+    "7500000": {"dwells": 184, "windows": 4048, "candidate_objects": 32384, "scoped_reference_object_mismatch_candidates": 0, "original_reference_positive_windows": 1933, "revised_positive_windows": 1933, "original_reference_positive_hits": 5186, "revised_positive_hits": 5186, "recovered_positive_hits": 5186, "added_positive_hits": 0, "original_ordered_mismatch_candidates": 4},
+    "10000000": {"dwells": 152, "windows": 3344, "candidate_objects": 26752, "scoped_reference_object_mismatch_candidates": 0, "original_reference_positive_windows": 1518, "revised_positive_windows": 1518, "original_reference_positive_hits": 4356, "revised_positive_hits": 4356, "recovered_positive_hits": 4356, "added_positive_hits": 0, "original_ordered_mismatch_candidates": 0}
+  },
+  "original_baseline_ordered_mismatch_attribution": {
+    "ordinal": 306,
+    "session_id": "scan-fw-43e84176a367910b",
+    "visit_index": 693,
+    "receiver_id": 0,
+    "probe_index": 3,
+    "candidate_ranks": [1, 2, 3, 4],
+    "positive_margin_gate_crossings": 0,
+    "attribution": "This is the same low-margin FP32-coarse ordering divergence already present in the scoped reference relative to the original baseline. The revised CZT candidate objects are exactly identical to the scoped reference, so it is not attributable to CZT."
+  },
+  "conclusion": "The revised CZT host run preserves every scoped-reference candidate object and every original-baseline positive hit in this sealed 704-dwell cohort. This is empirical host evidence, not a universal floating-point equivalence proof."
+}

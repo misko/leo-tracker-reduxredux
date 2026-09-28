@@ -1,0 +1,40 @@
+{
+  "frozen_at_utc": "2026-09-28T02:20:01.544964+00:00",
+  "argv": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "reports/2026_09_28_rx_tracking_evidence/opportunity-resources.txt",
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "NUMEXPR_NUM_THREADS=1",
+    "PYTHONHASHSEED=0",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "tools/rx_paired_opportunities.py",
+    "--inventory",
+    "reports/2026_09_27_roof_direction_subset/evaluation_inventory.json",
+    "--output-dir",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities"
+  ],
+  "source_hashes": {
+    "tools/rx_paired_opportunities.py": "7537f04880333afd4fad45ff989723e0bea1b9ebeda39b93fb5d3d6d7122b90d",
+    "tests/tools/test_rx_paired_opportunities.py": "1633a273391ae3f8d0213dbc47b93f94103e966f02a56fa05ce77014091d2020",
+    "reports/2026_09_28_rx_tracking_evidence/PROTOCOL.md": "fff206fddc5bc6d095b77d3664408d5ca2c78524bdf9276dca46e0281b6cb853",
+    "reports/2026_09_28_rx_tracking_evidence/runtime-binding.json": "cec9582fd57872243f6c8a68797b6c36f9f3b7bbefdd881eb75535322deca9df",
+    "reports/2026_09_27_roof_direction_subset/evaluation_inventory.json": "dd404460c9b9eb163db6bfee14f0f7cb78c56cbea060e4c96eb0a5f4a013a832"
+  },
+  "purpose": "paired recorded probe export; unassigned satellite identity"
+}

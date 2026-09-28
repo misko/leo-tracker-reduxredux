@@ -1,0 +1,22 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "tools.rx_background_audit",
+    "--population",
+    "unconditional",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_confirmation/dataset.json",
+    "--output",
+    "reports/2026_09_28_rx_presence_geometry/unconditional-background-audit.json"
+  ],
+  "limits": {"cpu_threads": 1, "wall_seconds": 30, "inputs": "existing JSON only"},
+  "sha256": {
+    "tools/rx_background_audit.py": "d08912f64f70c3ef4d88fffbcf32accff8a7639c253d702d41d7bc1902249649",
+    "tests/research/test_rx_background_audit.py": "bd77e3a70a3c588db90f3bb506c456bbfe09982a3b34b81930ab4723d4ac7bad",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_geometry_confirmation/dataset.json": "99e4e42fac6341d26f6ebd29cbae905cf52a3fb9f8faf2af989683f2ee8b9968"
+  }
+}

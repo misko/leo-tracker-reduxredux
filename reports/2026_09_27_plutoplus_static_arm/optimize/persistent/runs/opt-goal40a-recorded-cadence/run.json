@@ -1,0 +1,29 @@
+{
+  "name": "cadence",
+  "candidate": "goal40a",
+  "capture": true,
+  "irq1": true,
+  "recorded_arrivals": true,
+  "core": 0,
+  "rx": 2,
+  "jobs": 330,
+  "period": 120,
+  "seconds": 60,
+  "capture_seconds": 45,
+  "capture_rate": 2500000,
+  "validate_only": false,
+  "phase_name": "opt-goal40a-recorded-cadence",
+  "target_directory": "/mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence",
+  "target_executable": "opt-worker-a38926626dedbfea",
+  "command": "mkdir /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence && cd /mnt/glrtbench/leo-static-glrt.4jwvdm && (./opt-worker-a38926626dedbfea cases-2500000.txt 2500000 330 120 0 2 arrival-offsets.txt > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence/glrt.jsonl 2> /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence/glrt.stderr & gpid=$!; echo $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence/glrt.pid; ./monitor-arm 60 220 $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence/cpu.jsonl; wait $gpid; echo $? > /mnt/glrtbench/leo-static-glrt.4jwvdm/optimize-opt-goal40a-recorded-cadence/glrt.exit)",
+  "source_hashes": {
+    "worker": "a38926626dedbfea3ac8fb3f49756bbce511a7af7c425d8550670ab4b4049424",
+    "worker_build_receipt": "0c371553a496498115db8c9fc4f90f8a7d521545a730aa9b1d8fea8f4a4ab007",
+    "runner": "6a6186609dd5e9c7a83b91c0746a8174d4e5c44ea83430277d69e8a683364d58",
+    "monitor.c": "e416d99124f1aeee717258b5a273272d37586d83237315b553725d05b2482771",
+    "monitor-arm": "237400a427b7161bd85afcd3e91197debb7be04d9e0d8749ff225d7bd2515bd0",
+    "capture.py": "0b2b6a77bd5c9efc2d79ff9266fe3e0ca623dcd9d95802363abd9be1fded5b0d",
+    "cases-2500000.txt": "e729acca5bc0f76f901af26480f1723221afdbd8305ef4ce22c7032f5ba94f93",
+    "arrival-offsets.txt": "efbce3688e89378121429114e285166a0f98e7bf1a265c759afd771bb4e85cc4"
+  }
+}

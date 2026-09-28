@@ -1,0 +1,34 @@
+{
+  "command": [
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_paired_direction_support/partial_arc-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "60s",
+    "prlimit",
+    "--as=1073741824",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+    "-m",
+    "tools.rx_partial_arc_support",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_paired_direction_support/partial_arc.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_paired_direction_support/launch.py": "b6148ad773ed5b0e9fd897781c0483bea3ef28e15fb386c6bfeaa01a2c957100",
+    "reports/2026_09_28_rx_paired_direction_support/PROTOCOL.md": "f03883ac9bf1625ab23ea41186bc948958b8904a6b3a4ecde4001daf3ef67693",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "tools/rx_partial_arc_support.py": "4b08e1d1bcf97028d61563e6e47ebb28ca84f95e7053ee0cffa56d307ea8a29f",
+    "tests/research/test_rx_partial_arc_support.py": "a30728bfcf860db363b45c7c025f10036ecec5873b7ca16666498c0c1e0ac165"
+  }
+}

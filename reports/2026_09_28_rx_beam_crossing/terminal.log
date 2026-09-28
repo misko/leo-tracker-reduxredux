@@ -1,0 +1,38 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_beam_crossing_eval.py", line 553, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_beam_crossing_eval.py", line 547, in main
+    result = run(args.contract, args.output)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_beam_crossing_eval.py", line 473, in run
+    fits[arm] = fit_arm(arm, train)
+                ~~~~~~~^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_beam_crossing_eval.py", line 325, in fit_arm
+    result = minimize(
+        objective,
+    ...<4 lines>...
+        options={"maxiter": MAXITER, "maxfun": MAXFUN},
+    )
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/optimize/_minimize.py", line 784, in minimize
+    res = _minimize_lbfgsb(fun, x0, args, jac, bounds,
+                           callback=callback, **options)
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/optimize/_lbfgsb_py.py", line 362, in _minimize_lbfgsb
+    sf = _prepare_scalar_function(fun, x0, jac=jac, args=args, epsilon=eps,
+                                  bounds=bounds,
+                                  finite_diff_rel_step=finite_diff_rel_step,
+                                  workers=workers)
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/optimize/_optimize.py", line 310, in _prepare_scalar_function
+    sf = ScalarFunction(fun, x0, args, grad, hess,
+                        finite_diff_rel_step, bounds, epsilon=epsilon,
+                        workers=workers)
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/optimize/_differentiable_functions.py", line 283, in __init__
+    self._update_fun()
+    ~~~~~~~~~~~~~~~~^^
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/optimize/_differentiable_functions.py", line 362, in _update_fun
+    fx = self._wrapped_fun(self.x)
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/scipy/_lib/_util.py", line 544, in __call__
+    fx = self.f(np.copy(x), *self.args)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_beam_crossing_eval.py", line 282, in objective
+    theta, temporal, penalized = _arm_theta(arm, np.asarray(free, dtype=float))
+                                                 ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: 'static_ou'

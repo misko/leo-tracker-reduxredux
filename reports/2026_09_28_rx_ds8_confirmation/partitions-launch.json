@@ -1,0 +1,39 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/partitions-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "180s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_grouped_partitions",
+    "--opportunities",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/opportunities/opportunities.jsonl",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/partitions.json",
+    "--evaluation-only"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_ds8_confirmation/launch.py": "a51b843eb4d34e145a5ceae0e084a5b8e40b6910065ae53329536bdfd5fc4398",
+    "reports/2026_09_28_rx_ds8_confirmation/PROTOCOL.md": "a8320db1a54024eaad50a09c5860fc8f91f7f171949b2878ab86ed51e616001d",
+    "reports/2026_09_28_rx_causal_refit/evidence-sha256.json": "58438ee9391e25564205acc8a0bed87fb5455896fd9969eeb50de97b9b4c643c",
+    "tools/rx_grouped_partitions.py": "4b123ad79a4df20d74bfced1d83d8eb279996081fd32d255ee3dbe824885e715",
+    "tests/research/test_rx_grouped_partitions.py": "2e98c482b231e1e59cdbb1d5009b2be3befc18cb03684163633f2da344f0d860",
+    "reports/2026_09_28_rx_ds8_confirmation/opportunities/opportunities.jsonl": "d255fb9b53dba1bfaf78403765e2ff7bcb807b9197c64c01a5a49ec58a444e1c"
+  }
+}

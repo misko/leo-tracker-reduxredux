@@ -1,0 +1,734 @@
+{
+  "host_sanitizers": {
+    "additional_candidate_positives_per_mode": 0,
+    "categorical_mismatches_per_mode": 0,
+    "categorical_values_checked_per_mode": 847,
+    "decision_equality_per_mode": true,
+    "identity_failures_per_mode": 0,
+    "lost_reference_positives_per_mode": 0,
+    "max_abs_score_delta": {
+      "control": 2.2898349882893854e-16,
+      "exact": 2.3314683517128287e-15,
+      "margin": 2.3314683517128287e-15
+    },
+    "max_cfo_error_hz": 0.0,
+    "max_other_numerical_delta": {
+      "coarse_score": 7.466053233984304e-08,
+      "conditioned_score": 3.4196763309957134e-08,
+      "fractional_offset_samples": 8.482103908136196e-14,
+      "rank_or_screen_score": 0.02301479590823874,
+      "screen_contrast": 2.3436694518430556e-07
+    },
+    "max_timing_error_us": 0.0,
+    "receiver_cases_per_mode": 16,
+    "reference_positives_per_mode": 9,
+    "same_binary_isolated_vs_concurrent_science_bit_exact": {
+      "D": true,
+      "goal40mag": true
+    },
+    "scope": "two saved cases per rate, both isolated and concurrent modes"
+  },
+  "limitations": [
+    "This reduced native rank6/confirm1 workload does not measure full-server 11-window/eight-candidate individual-positive recovery or its 80%/90% targets.",
+    "Scientific comparisons exclude all embedded and outer timer fields.",
+    "The RAM harness does not model DMA, IIO, RF, interrupts, or live adaptive feedback."
+  ],
+  "per_rate": {
+    "10000000": {
+      "deep_unique": {
+        "categorical_mismatches": {},
+        "categorical_values_checked": 416,
+        "numerical_maxima": {
+          "acquired_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 208687.3923966582,
+            "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+            "reference": 208687.3923966582
+          },
+          "coarse_score": {
+            "absolute_delta": 7.466053233984304e-08,
+            "candidate": 0.12156127328540442,
+            "path": "result.confirmations[0].candidates[0].coarse_score",
+            "reference": 0.12156134794593676
+          },
+          "conditioned_score": {
+            "absolute_delta": 1.914131447788847e-08,
+            "candidate": 0.14938967958797222,
+            "path": "result.confirmations[0].candidates[0].conditioned_score",
+            "reference": 0.1493896987292867
+          },
+          "contrast": {
+            "absolute_delta": 2.3074458699312572e-07,
+            "candidate": 1.0487186024795283,
+            "path": "screens.contrast[0]",
+            "reference": 1.0487183717349413
+          },
+          "control_grid": {
+            "absolute_delta": 1.970645868709653e-15,
+            "candidate": 0.10454320766040626,
+            "path": "result.confirmations[0].candidates[0].control_grid[3]",
+            "reference": 0.10454320766040823
+          },
+          "control_score": {
+            "absolute_delta": 2.2898349882893854e-16,
+            "candidate": 0.036667961781153204,
+            "path": "result.confirmations[0].candidates[0].control_score",
+            "reference": 0.03666796178115343
+          },
+          "exact_grid": {
+            "absolute_delta": 3.1086244689504383e-15,
+            "candidate": 0.5937029110680145,
+            "path": "result.confirmations[0].candidates[0].exact_grid[1]",
+            "reference": 0.5937029110680176
+          },
+          "exact_score": {
+            "absolute_delta": 2.3314683517128287e-15,
+            "candidate": 0.5948347576089728,
+            "path": "result.confirmations[0].candidates[0].exact_score",
+            "reference": 0.5948347576089704
+          },
+          "fractional_offset_samples": {
+            "absolute_delta": 8.482103908136196e-14,
+            "candidate": -1.371133769764326,
+            "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+            "reference": -1.3711337697644108
+          },
+          "margin": {
+            "absolute_delta": 2.3314683517128287e-15,
+            "candidate": 0.5537615703938911,
+            "path": "result.confirmations[0].candidates[0].margin",
+            "reference": 0.5537615703938887
+          },
+          "scores": {
+            "absolute_delta": 0.02301479590823874,
+            "candidate": 93610.97652291566,
+            "path": "result.rank.scores[0]",
+            "reference": 93610.99953771157
+          },
+          "spectral_fraction": {
+            "absolute_delta": 0.0,
+            "candidate": 0.0007776193391310465,
+            "path": "result.nuisances[0].spectral_fraction",
+            "reference": 0.0007776193391310465
+          },
+          "tracking_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 208687.3923966582,
+            "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+            "reference": 208687.3923966582
+          }
+        },
+        "numerical_values_checked": 312
+      },
+      "gate_unique": {
+        "additional_candidate_positives": 0,
+        "all_identity_gates_pass": true,
+        "candidate_positives": 4,
+        "decision_equality": true,
+        "identity_failures": 0,
+        "lost_reference_positives": 0,
+        "max_abs_score_delta": {
+          "control": 2.2898349882893854e-16,
+          "exact": 2.3314683517128287e-15,
+          "margin": 2.3314683517128287e-15
+        },
+        "max_cfo_error_hz": 0.0,
+        "max_timing_error_us": 0.0,
+        "receiver_cases": 8,
+        "reference_positives": 4,
+        "retained_reference_positives": 4
+      },
+      "receiver_observations": 24,
+      "three_cycle_science_bit_exact": {
+        "D": true,
+        "goal40mag": true
+      },
+      "unique_cases": 4,
+      "unique_receiver_cases": 8
+    },
+    "2500000": {
+      "deep_unique": {
+        "categorical_mismatches": {},
+        "categorical_values_checked": 1699,
+        "numerical_maxima": {
+          "acquired_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": -203155.26025138065,
+            "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+            "reference": -203155.26025138065
+          },
+          "coarse_score": {
+            "absolute_delta": 1.0040255021825928e-07,
+            "candidate": 0.39632625278000333,
+            "path": "result.confirmations[0].candidates[0].coarse_score",
+            "reference": 0.39632635318255355
+          },
+          "conditioned_score": {
+            "absolute_delta": 5.092566976450108e-08,
+            "candidate": 0.2041957260669014,
+            "path": "result.confirmations[0].candidates[0].conditioned_score",
+            "reference": 0.20419577699257116
+          },
+          "contrast": {
+            "absolute_delta": 2.6716656043035414e-07,
+            "candidate": 1.00911294567786,
+            "path": "screens.contrast[0]",
+            "reference": 1.0091132128444205
+          },
+          "control_grid": {
+            "absolute_delta": 2.4147350785597155e-15,
+            "candidate": 0.08551673281679756,
+            "path": "result.confirmations[0].candidates[0].control_grid[1]",
+            "reference": 0.08551673281679514
+          },
+          "control_score": {
+            "absolute_delta": 2.220446049250313e-16,
+            "candidate": 0.03560617125333884,
+            "path": "result.confirmations[0].candidates[0].control_score",
+            "reference": 0.03560617125333862
+          },
+          "exact_grid": {
+            "absolute_delta": 8.881784197001252e-15,
+            "candidate": 0.7733816928200264,
+            "path": "result.confirmations[0].candidates[0].exact_grid[1]",
+            "reference": 0.7733816928200353
+          },
+          "exact_score": {
+            "absolute_delta": 1.7763568394002505e-15,
+            "candidate": 0.5692220356921364,
+            "path": "result.confirmations[0].candidates[0].exact_score",
+            "reference": 0.5692220356921346
+          },
+          "fractional_offset_samples": {
+            "absolute_delta": 2.7478019859472624e-14,
+            "candidate": 0.44765247309523465,
+            "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+            "reference": 0.44765247309520717
+          },
+          "margin": {
+            "absolute_delta": 1.887379141862766e-15,
+            "candidate": 0.5352514082614068,
+            "path": "result.confirmations[0].candidates[0].margin",
+            "reference": 0.5352514082614049
+          },
+          "scores": {
+            "absolute_delta": 0.021115358191309497,
+            "candidate": 126373.08599752601,
+            "path": "result.rank.scores[1]",
+            "reference": 126373.06488216782
+          },
+          "spectral_fraction": {
+            "absolute_delta": 0.0,
+            "candidate": 0.0028085838849326175,
+            "path": "result.nuisances[0].spectral_fraction",
+            "reference": 0.0028085838849326175
+          },
+          "tracking_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": -203155.26025138065,
+            "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+            "reference": -203155.26025138065
+          }
+        },
+        "numerical_values_checked": 1213
+      },
+      "gate_unique": {
+        "additional_candidate_positives": 0,
+        "all_identity_gates_pass": true,
+        "candidate_positives": 20,
+        "decision_equality": true,
+        "identity_failures": 0,
+        "lost_reference_positives": 0,
+        "max_abs_score_delta": {
+          "control": 2.220446049250313e-16,
+          "exact": 1.7763568394002505e-15,
+          "margin": 1.887379141862766e-15
+        },
+        "max_cfo_error_hz": 0.0,
+        "max_timing_error_us": 9.094947017729282e-14,
+        "receiver_cases": 32,
+        "reference_positives": 20,
+        "retained_reference_positives": 20
+      },
+      "receiver_observations": 96,
+      "three_cycle_science_bit_exact": {
+        "D": true,
+        "goal40mag": true
+      },
+      "unique_cases": 16,
+      "unique_receiver_cases": 32
+    },
+    "5000000": {
+      "deep_unique": {
+        "categorical_mismatches": {},
+        "categorical_values_checked": 421,
+        "numerical_maxima": {
+          "acquired_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 180639.7852055682,
+            "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+            "reference": 180639.7852055682
+          },
+          "coarse_score": {
+            "absolute_delta": 1.1302834873605505e-07,
+            "candidate": 0.3937309664254298,
+            "path": "result.confirmations[0].candidates[0].coarse_score",
+            "reference": 0.39373107945377855
+          },
+          "conditioned_score": {
+            "absolute_delta": 3.4196763309957134e-08,
+            "candidate": 0.2497124501074015,
+            "path": "result.confirmations[0].candidates[0].conditioned_score",
+            "reference": 0.24971248430416482
+          },
+          "contrast": {
+            "absolute_delta": 3.4355854960921306e-07,
+            "candidate": 1.0009701052188489,
+            "path": "screens.contrast[0]",
+            "reference": 1.0009704487773985
+          },
+          "control_grid": {
+            "absolute_delta": 1.0130785099704553e-15,
+            "candidate": 0.07116432310481882,
+            "path": "result.confirmations[0].candidates[0].control_grid[4]",
+            "reference": 0.07116432310481781
+          },
+          "control_score": {
+            "absolute_delta": 2.220446049250313e-16,
+            "candidate": 0.04133943669728244,
+            "path": "result.confirmations[0].candidates[0].control_score",
+            "reference": 0.04133943669728266
+          },
+          "exact_grid": {
+            "absolute_delta": 4.773959005888173e-15,
+            "candidate": 0.4258768706599635,
+            "path": "result.confirmations[0].candidates[0].exact_grid[0]",
+            "reference": 0.4258768706599587
+          },
+          "exact_score": {
+            "absolute_delta": 1.6653345369377348e-15,
+            "candidate": 0.7256738907756937,
+            "path": "result.confirmations[0].candidates[0].exact_score",
+            "reference": 0.7256738907756953
+          },
+          "fractional_offset_samples": {
+            "absolute_delta": 5.717648576819556e-14,
+            "candidate": 0.9709698571091461,
+            "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+            "reference": 0.9709698571092032
+          },
+          "margin": {
+            "absolute_delta": 1.4432899320127035e-15,
+            "candidate": 0.6843344540784112,
+            "path": "result.confirmations[0].candidates[0].margin",
+            "reference": 0.6843344540784126
+          },
+          "scores": {
+            "absolute_delta": 0.01800622533482965,
+            "candidate": 72158.96521781714,
+            "path": "screens.scores[0][1]",
+            "reference": 72158.98322404247
+          },
+          "spectral_fraction": {
+            "absolute_delta": 0.0,
+            "candidate": 0.0014912486708551559,
+            "path": "result.nuisances[0].spectral_fraction",
+            "reference": 0.0014912486708551559
+          },
+          "tracking_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 180639.7852055682,
+            "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+            "reference": 180639.7852055682
+          }
+        },
+        "numerical_values_checked": 307
+      },
+      "gate_unique": {
+        "additional_candidate_positives": 0,
+        "all_identity_gates_pass": true,
+        "candidate_positives": 4,
+        "decision_equality": true,
+        "identity_failures": 0,
+        "lost_reference_positives": 0,
+        "max_abs_score_delta": {
+          "control": 2.220446049250313e-16,
+          "exact": 1.6653345369377348e-15,
+          "margin": 1.4432899320127035e-15
+        },
+        "max_cfo_error_hz": 0.0,
+        "max_timing_error_us": 9.094947017729282e-14,
+        "receiver_cases": 8,
+        "reference_positives": 4,
+        "retained_reference_positives": 4
+      },
+      "receiver_observations": 24,
+      "three_cycle_science_bit_exact": {
+        "D": true,
+        "goal40mag": true
+      },
+      "unique_cases": 4,
+      "unique_receiver_cases": 8
+    },
+    "7500000": {
+      "deep_unique": {
+        "categorical_mismatches": {},
+        "categorical_values_checked": 426,
+        "numerical_maxima": {
+          "acquired_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 137934.7141460049,
+            "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+            "reference": 137934.7141460049
+          },
+          "coarse_score": {
+            "absolute_delta": 3.036948370560566e-08,
+            "candidate": 0.12281718232608047,
+            "path": "result.confirmations[0].candidates[0].coarse_score",
+            "reference": 0.12281721269556417
+          },
+          "conditioned_score": {
+            "absolute_delta": 9.051198374132596e-09,
+            "candidate": 0.1480892108921157,
+            "path": "result.confirmations[0].candidates[0].conditioned_score",
+            "reference": 0.1480892199433141
+          },
+          "contrast": {
+            "absolute_delta": 2.489663120108787e-07,
+            "candidate": 1.1697257068691451,
+            "path": "screens.contrast[0]",
+            "reference": 1.1697259558354571
+          },
+          "control_grid": {
+            "absolute_delta": 2.4980018054066022e-15,
+            "candidate": 0.09334935988396863,
+            "path": "result.confirmations[0].candidates[0].control_grid[2]",
+            "reference": 0.09334935988397113
+          },
+          "control_score": {
+            "absolute_delta": 2.220446049250313e-16,
+            "candidate": 0.03966169893781898,
+            "path": "result.confirmations[0].candidates[0].control_score",
+            "reference": 0.0396616989378192
+          },
+          "exact_grid": {
+            "absolute_delta": 2.3314683517128287e-15,
+            "candidate": 0.4378091083435058,
+            "path": "result.confirmations[0].candidates[0].exact_grid[1]",
+            "reference": 0.43780910834350345
+          },
+          "exact_score": {
+            "absolute_delta": 8.604228440844963e-16,
+            "candidate": 0.2295633767353398,
+            "path": "result.confirmations[0].candidates[0].exact_score",
+            "reference": 0.22956337673533894
+          },
+          "fractional_offset_samples": {
+            "absolute_delta": 3.26405569239796e-14,
+            "candidate": 1.3200213009373163,
+            "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+            "reference": 1.3200213009372836
+          },
+          "margin": {
+            "absolute_delta": 8.326672684688674e-16,
+            "candidate": 0.18335473892517148,
+            "path": "result.confirmations[0].candidates[0].margin",
+            "reference": 0.18335473892517065
+          },
+          "scores": {
+            "absolute_delta": 0.01614986172353383,
+            "candidate": 76184.81112307042,
+            "path": "screens.scores[0][0]",
+            "reference": 76184.82727293215
+          },
+          "spectral_fraction": {
+            "absolute_delta": 0.0,
+            "candidate": 0.000711754570322989,
+            "path": "result.nuisances[0].spectral_fraction",
+            "reference": 0.000711754570322989
+          },
+          "tracking_cfo_hz": {
+            "absolute_delta": 0.0,
+            "candidate": 137934.7141460049,
+            "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+            "reference": 137934.7141460049
+          }
+        },
+        "numerical_values_checked": 302
+      },
+      "gate_unique": {
+        "additional_candidate_positives": 0,
+        "all_identity_gates_pass": true,
+        "candidate_positives": 3,
+        "decision_equality": true,
+        "identity_failures": 0,
+        "lost_reference_positives": 0,
+        "max_abs_score_delta": {
+          "control": 2.220446049250313e-16,
+          "exact": 8.604228440844963e-16,
+          "margin": 8.326672684688674e-16
+        },
+        "max_cfo_error_hz": 0.0,
+        "max_timing_error_us": 0.0,
+        "receiver_cases": 8,
+        "reference_positives": 3,
+        "retained_reference_positives": 3
+      },
+      "receiver_observations": 24,
+      "three_cycle_science_bit_exact": {
+        "D": true,
+        "goal40mag": true
+      },
+      "unique_cases": 4,
+      "unique_receiver_cases": 8
+    }
+  },
+  "provenance": {
+    "accounting_capabilities": "run01/accounting-capabilities.txt",
+    "accounting_capabilities_sha256": "b5c4c274638a67d917e329155f280c155246c606f2027c240690de9be8692b3b",
+    "inherited_assessor": "../2026_09_27_ds5_cached_tracking/review/arm_probe/assess.py",
+    "inherited_assessor_sha256": "0caccb9453cea685603664417da70150c20027de404ccb30ce8c04f53f4636dd",
+    "run_complete": true,
+    "run_receipt": "run01/run.json",
+    "run_receipt_sha256": "13e7e5e4147e6abc4cb03e83300e5da561a8279e3ad9c71068b02a13cc1321f9",
+    "staged_binary_sha256": {
+      "D": "00870bbe6d9031025091c0ac0f95b65b39603a462da38649f7bee0db1609b28b",
+      "goal40mag": "e818b9bc28f1ee29f1bf049aaf08e5e562cc00e1f30c83b3463c5122be678251"
+    },
+    "worker_sha256": "077dd2c46d75cb25f21607a5cfa40669f83b08735591f27f96457549e5ed4213"
+  },
+  "repeated_observations": {
+    "cycles_per_case": 3,
+    "deep": {
+      "categorical_mismatches": {},
+      "categorical_values_checked": 8886,
+      "numerical_maxima": {
+        "acquired_cfo_hz": {
+          "absolute_delta": 0.0,
+          "candidate": -203155.26025138065,
+          "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+          "reference": -203155.26025138065
+        },
+        "coarse_score": {
+          "absolute_delta": 1.1302834873605505e-07,
+          "candidate": 0.3937309664254298,
+          "path": "result.confirmations[0].candidates[0].coarse_score",
+          "reference": 0.39373107945377855
+        },
+        "conditioned_score": {
+          "absolute_delta": 5.092566976450108e-08,
+          "candidate": 0.2041957260669014,
+          "path": "result.confirmations[0].candidates[0].conditioned_score",
+          "reference": 0.20419577699257116
+        },
+        "contrast": {
+          "absolute_delta": 3.4355854960921306e-07,
+          "candidate": 1.0009701052188489,
+          "path": "screens.contrast[0]",
+          "reference": 1.0009704487773985
+        },
+        "control_grid": {
+          "absolute_delta": 2.4980018054066022e-15,
+          "candidate": 0.09334935988396863,
+          "path": "result.confirmations[0].candidates[0].control_grid[2]",
+          "reference": 0.09334935988397113
+        },
+        "control_score": {
+          "absolute_delta": 2.2898349882893854e-16,
+          "candidate": 0.036667961781153204,
+          "path": "result.confirmations[0].candidates[0].control_score",
+          "reference": 0.03666796178115343
+        },
+        "exact_grid": {
+          "absolute_delta": 8.881784197001252e-15,
+          "candidate": 0.7733816928200264,
+          "path": "result.confirmations[0].candidates[0].exact_grid[1]",
+          "reference": 0.7733816928200353
+        },
+        "exact_score": {
+          "absolute_delta": 2.3314683517128287e-15,
+          "candidate": 0.5948347576089728,
+          "path": "result.confirmations[0].candidates[0].exact_score",
+          "reference": 0.5948347576089704
+        },
+        "fractional_offset_samples": {
+          "absolute_delta": 8.482103908136196e-14,
+          "candidate": -1.371133769764326,
+          "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+          "reference": -1.3711337697644108
+        },
+        "margin": {
+          "absolute_delta": 2.3314683517128287e-15,
+          "candidate": 0.5537615703938911,
+          "path": "result.confirmations[0].candidates[0].margin",
+          "reference": 0.5537615703938887
+        },
+        "scores": {
+          "absolute_delta": 0.02301479590823874,
+          "candidate": 93610.97652291566,
+          "path": "result.rank.scores[0]",
+          "reference": 93610.99953771157
+        },
+        "spectral_fraction": {
+          "absolute_delta": 0.0,
+          "candidate": 0.0028085838849326175,
+          "path": "result.nuisances[0].spectral_fraction",
+          "reference": 0.0028085838849326175
+        },
+        "tracking_cfo_hz": {
+          "absolute_delta": 0.0,
+          "candidate": -203155.26025138065,
+          "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+          "reference": -203155.26025138065
+        }
+      },
+      "numerical_values_checked": 6402
+    },
+    "dwell_observations": 84,
+    "receiver_observations": 168
+  },
+  "schema": "org.leo.research.arm-ram-pipeline-sol-science-audit/v1",
+  "scope": "ARM isolated fixed-period D versus goal40mag; native rank6/confirm1 only",
+  "source_directory": "reports/2026_09_28_arm_ram_pipeline/run01",
+  "source_files": {
+    "10000000-D-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63812,
+      "sha256": "aa8e8f6c697db9b55444da4fbe4aa805720147a2b1dbc70e4a90b219bfae37fd"
+    },
+    "10000000-goal40mag-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63802,
+      "sha256": "b3c89457747c5f48f1fb1a9cb859480841a609d5a3700a0e468a3968a76aeb2f"
+    },
+    "2500000-D-isolated-fixed-period-r0.jsonl": {
+      "bytes": 244570,
+      "sha256": "143848871c9e96a036c678f3635ab5e4280decda3e527d002adceb813379ae2d"
+    },
+    "2500000-goal40mag-isolated-fixed-period-r0.jsonl": {
+      "bytes": 244450,
+      "sha256": "c464b048abb7e3443ce7f0ae99e89509deb9e079728709b852a53e29a64fb9ab"
+    },
+    "5000000-D-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63355,
+      "sha256": "80134572e978e35570f73c7f71642120e59097229cd9e546879029739f6e5329"
+    },
+    "5000000-goal40mag-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63282,
+      "sha256": "30799121d9e3c122a51d25368efe6bd42a77c6e42518eb2129a4f586d2142d53"
+    },
+    "7500000-D-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63094,
+      "sha256": "05207bfb3ebdaed9bde049b533de427176004fff9b4a2ce1643dda759e83e83a"
+    },
+    "7500000-goal40mag-isolated-fixed-period-r0.jsonl": {
+      "bytes": 63010,
+      "sha256": "50ec8c62dfa17862ebf5d8542a93eacc89b7007b62a08119107c505497e31a32"
+    }
+  },
+  "unique": {
+    "deep": {
+      "categorical_mismatches": {},
+      "categorical_values_checked": 2962,
+      "numerical_maxima": {
+        "acquired_cfo_hz": {
+          "absolute_delta": 0.0,
+          "candidate": -203155.26025138065,
+          "path": "result.confirmations[0].candidates[0].acquired_cfo_hz",
+          "reference": -203155.26025138065
+        },
+        "coarse_score": {
+          "absolute_delta": 1.1302834873605505e-07,
+          "candidate": 0.3937309664254298,
+          "path": "result.confirmations[0].candidates[0].coarse_score",
+          "reference": 0.39373107945377855
+        },
+        "conditioned_score": {
+          "absolute_delta": 5.092566976450108e-08,
+          "candidate": 0.2041957260669014,
+          "path": "result.confirmations[0].candidates[0].conditioned_score",
+          "reference": 0.20419577699257116
+        },
+        "contrast": {
+          "absolute_delta": 3.4355854960921306e-07,
+          "candidate": 1.0009701052188489,
+          "path": "screens.contrast[0]",
+          "reference": 1.0009704487773985
+        },
+        "control_grid": {
+          "absolute_delta": 2.4980018054066022e-15,
+          "candidate": 0.09334935988396863,
+          "path": "result.confirmations[0].candidates[0].control_grid[2]",
+          "reference": 0.09334935988397113
+        },
+        "control_score": {
+          "absolute_delta": 2.2898349882893854e-16,
+          "candidate": 0.036667961781153204,
+          "path": "result.confirmations[0].candidates[0].control_score",
+          "reference": 0.03666796178115343
+        },
+        "exact_grid": {
+          "absolute_delta": 8.881784197001252e-15,
+          "candidate": 0.7733816928200264,
+          "path": "result.confirmations[0].candidates[0].exact_grid[1]",
+          "reference": 0.7733816928200353
+        },
+        "exact_score": {
+          "absolute_delta": 2.3314683517128287e-15,
+          "candidate": 0.5948347576089728,
+          "path": "result.confirmations[0].candidates[0].exact_score",
+          "reference": 0.5948347576089704
+        },
+        "fractional_offset_samples": {
+          "absolute_delta": 8.482103908136196e-14,
+          "candidate": -1.371133769764326,
+          "path": "result.confirmations[0].candidates[0].fractional_offset_samples",
+          "reference": -1.3711337697644108
+        },
+        "margin": {
+          "absolute_delta": 2.3314683517128287e-15,
+          "candidate": 0.5537615703938911,
+          "path": "result.confirmations[0].candidates[0].margin",
+          "reference": 0.5537615703938887
+        },
+        "scores": {
+          "absolute_delta": 0.02301479590823874,
+          "candidate": 93610.97652291566,
+          "path": "result.rank.scores[0]",
+          "reference": 93610.99953771157
+        },
+        "spectral_fraction": {
+          "absolute_delta": 0.0,
+          "candidate": 0.0028085838849326175,
+          "path": "result.nuisances[0].spectral_fraction",
+          "reference": 0.0028085838849326175
+        },
+        "tracking_cfo_hz": {
+          "absolute_delta": 0.0,
+          "candidate": -203155.26025138065,
+          "path": "result.confirmations[0].candidates[0].tracking_cfo_hz",
+          "reference": -203155.26025138065
+        }
+      },
+      "numerical_values_checked": 2134
+    },
+    "dwell_cases": 28,
+    "gate": {
+      "additional_candidate_positives": 0,
+      "all_identity_gates_pass": true,
+      "candidate_positives": 31,
+      "decision_equality": true,
+      "identity_failures": 0,
+      "lost_reference_positives": 0,
+      "max_abs_score_delta": {
+        "control": 2.2898349882893854e-16,
+        "exact": 2.3314683517128287e-15,
+        "margin": 2.3314683517128287e-15
+      },
+      "max_cfo_error_hz": 0.0,
+      "max_timing_error_us": 9.094947017729282e-14,
+      "receiver_cases": 56,
+      "reference_positives": 31,
+      "retained_reference_positives": 31
+    },
+    "receiver_cases": 56
+  }
+}

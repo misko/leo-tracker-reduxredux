@@ -1,0 +1,81 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_receiver_order/mapping-resources.txt",
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "NUMEXPR_NUM_THREADS=1",
+    "PYTHONHASHSEED=0",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_training_alias_mapping",
+    "--inventory",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_roof_direction_subset/evaluation_inventory.json",
+    "--partitions",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_training_forecast/partitions.json",
+    "--candidate-bank",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_training_forecast/candidate-bank.json",
+    "--protocol",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_receiver_order/PROTOCOL.md",
+    "--protocol-sha256",
+    "sha256:422bedd5fdec9cb44b0af7a396cbfb8a58e1b6994ef09e8fd4d69ddd6cac2a41",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_receiver_order/alias-mapping.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_receiver_order/PROTOCOL.md": "sha256:422bedd5fdec9cb44b0af7a396cbfb8a58e1b6994ef09e8fd4d69ddd6cac2a41",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_training_alias_mapping.py": "sha256:4d25977acd414cac75470de3a85d977e78cb12f701aec99ada8ef1e5eb1bba77",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tests/research/test_rx_training_alias_mapping.py": "sha256:e1e3f37cfcfcb1c24e53240b45d87722504ffc22e64cc73ca841e5c97ed46f14",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_receiver_order/launch_stage.py": "sha256:36146e963fa6f01a5f9498e81e264c0541637b11c71fc75bd147c9ee6ffe0789",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_training_candidate_bank.py": "sha256:a0e229800ebccd8796e396c8ccbf12145c218469081c26fa4e70d5d14a99a694",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_roof_direction_subset/evaluation_inventory.json": "sha256:dd404460c9b9eb163db6bfee14f0f7cb78c56cbea060e4c96eb0a5f4a013a832",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_training_forecast/candidate-bank.json": "sha256:9caaf5117d004c2fbb049bfd20d413d6b415512cb9921ce64ef9735cecbcb58d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_training_forecast/partitions.json": "sha256:c3dc180371f6d91f64fbb01274fcb72f29d330e050eca938bb238cb95a218bd6"
+  },
+  "runtime": {
+    "leo.analysis.adaptive_tle_prediction": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/analysis/adaptive_tle_prediction.py",
+      "sha256": "b55e38ed27a0cd5f14fe8066307702a1fe19d56ba17b73c01fe138f0433dfcc0"
+    },
+    "leo.operations.adaptive_tle_position_inputs": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/operations/adaptive_tle_position_inputs.py",
+      "sha256": "2b2c68c2eab3bd26d60c9d366fa6b1dc8cc580b3b7b77ca549f8cf2383fdd477"
+    },
+    "leo.analysis.persistent_hop_trajectory": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/analysis/persistent_hop_trajectory.py",
+      "sha256": "1951ba2c0843c7e23a94390257d611fa255dc5251f3c5bfde487ba2069ea80a8"
+    },
+    "leo.application.scanner_trajectory": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/application/scanner_trajectory.py",
+      "sha256": "844f23c068af8c6f6a0477f1a0ce2997e1066b2585d4cbca24781f62ab8c3e7b"
+    },
+    "leo.sky.frames": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/sky/frames.py",
+      "sha256": "b6c98c11d25957c8f535d09a4f4cc47f3f82745b63ca57c61f9e8d5949fbb8e0"
+    },
+    "leo.sky.propagation": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/sky/propagation.py",
+      "sha256": "238f45112bacd3b14b37f296fb17f056d66a860e469363cca44d876514ac544f"
+    },
+    "leo.operations.tle_archive": {
+      "path": "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/operations/tle_archive.py",
+      "sha256": "4197f5e8cbbe43018df88318872746dfbec253aac1285a7971290c7439024da1"
+    }
+  }
+}

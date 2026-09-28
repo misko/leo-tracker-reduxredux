@@ -1,0 +1,38 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/models-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "180s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_causal_full_calibration",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/models.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_ds8_confirmation/launch.py": "a51b843eb4d34e145a5ceae0e084a5b8e40b6910065ae53329536bdfd5fc4398",
+    "reports/2026_09_28_rx_ds8_confirmation/PROTOCOL.md": "a8320db1a54024eaad50a09c5860fc8f91f7f171949b2878ab86ed51e616001d",
+    "reports/2026_09_28_rx_causal_refit/evidence-sha256.json": "58438ee9391e25564205acc8a0bed87fb5455896fd9969eeb50de97b9b4c643c",
+    "tools/rx_causal_full_calibration.py": "b7b49e12519bf3e12048d9e041e889c86c0bf74397e718fae0374b4240e18d33",
+    "tests/research/test_rx_causal_full_calibration.py": "c592e1f521ce3f267bba80c4e499a964184779dbe7fab3a83108627c6aea687c",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7"
+  }
+}

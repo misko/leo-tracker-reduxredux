@@ -1,0 +1,18 @@
+{
+  "pytest": {
+    "command": "PYTHONPATH=src .venv/bin/pytest -q reports/2026_09_28_arm_full_search",
+    "passed": 7
+  },
+  "native_tests": [
+    "stable candidate retention and all-previous separation",
+    "FP64 radix-3 direct DFT, impulse and tone including15000 bins"
+  ],
+  "sanitizers": {
+    "build": "/var/tmp/leo-arm-full-search-asan-v4/build.json",
+    "run": "results/fp64-allrates-asan/run.json",
+    "probes": 16,
+    "passed": true
+  },
+  "ruff": "passed",
+  "git_diff_check": "passed"
+}

@@ -1,0 +1,32 @@
+{
+  "command": [
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "reports/2026_09_28_rx_sequence_followup/leverage-resources.txt",
+    "/usr/bin/timeout",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    ".venv/bin/python",
+    "-m",
+    "tools.rx_candidate_leverage",
+    "--candidate-bank",
+    "reports/2026_09_28_rx_training_forecast/candidate-bank.json",
+    "--partitions",
+    "reports/2026_09_28_rx_training_forecast/partitions.json",
+    "--output",
+    "reports/2026_09_28_rx_sequence_followup/candidate-leverage.json"
+  ],
+  "sha256": {
+    "tools/rx_candidate_leverage.py": "1a645f6f112c929007c29cb2504b4aa7aa6fc306ddbc83a793ac1f6df0b74fe4",
+    "tests/research/test_rx_candidate_leverage.py": "ef7e041c540256357947683200b1ef5c647d3644fc7c97ab6c123f9536d87489",
+    "reports/2026_09_28_rx_sequence_followup/PROTOCOL.md": "33f2439bd687bbd140a9ad6ae7fb347d3e0eaf5932433a1f67792798dd71451e",
+    "reports/2026_09_28_rx_training_forecast/candidate-bank.json": "9caaf5117d004c2fbb049bfd20d413d6b415512cb9921ce64ef9735cecbcb58d",
+    "reports/2026_09_28_rx_training_forecast/partitions.json": "c3dc180371f6d91f64fbb01274fcb72f29d330e050eca938bb238cb95a218bd6"
+  }
+}

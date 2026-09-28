@@ -1,0 +1,42 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_track_competition/ds8-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_track_competition",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/dataset.json",
+    "--mapping",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/alias-mapping.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_track_competition/ds8.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_track_competition/launch.py": "7eb043e7e969b92ba722e8a99acb92a314accd41188127565eb382c6f6705542",
+    "reports/2026_09_28_rx_track_competition/PROTOCOL.md": "0b74080f3cb86af36cba61ed1b3c3fadfd18bd65751e6cf9ee4b3f8454b926c3",
+    "reports/2026_09_28_rx_ds8_alignment/evidence-sha256.json": "8dca702d5b50763153f4bac2efb5f879823f5a0105e94cd68f6ae25bb1696e82",
+    "reports/2026_09_28_rx_ds8_confirmation/dataset.json": "a4af171d012a6d211958baba756f2cd164ad3c418c3ead8a3a9277185b50b538",
+    "reports/2026_09_28_rx_ds8_confirmation/alias-mapping.json": "6bc163b270ff846b5b0d09d7b23ae1c379fe1473609601513f727e196fd44116",
+    "tools/rx_track_competition.py": "7b786a722836d12fa3beb6a8a9fddf231d3149e2efd437d75b941514f58b3e6c",
+    "tests/research/test_rx_track_competition.py": "a73da29754df08fb094edf5228eb85b0ed4163dad285414520b5e17755bf96c9",
+    "tools/rx_residual_trajectories.py": "3227f9923d5c39176b0c1a557ff183898ab314b58e9b5c32f62a186749c3acfb"
+  }
+}

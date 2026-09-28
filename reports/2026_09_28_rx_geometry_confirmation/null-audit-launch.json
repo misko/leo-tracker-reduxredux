@@ -1,0 +1,21 @@
+{
+  "status": "frozen-before-execution",
+  "scope": "post-fit no-refit clutter, elevation ablation, fixed-prior and concentration audit",
+  "command": [
+    "/usr/bin/timeout", "--kill-after=5s", "30s",
+    "/usr/bin/env", "OPENBLAS_NUM_THREADS=1", "OMP_NUM_THREADS=1", "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "reports/2026_09_28_rx_geometry_confirmation/null_audit.py",
+    "--dataset", "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--results", "reports/2026_09_28_rx_geometry_association/results.json",
+    "--decomposition", "reports/2026_09_28_rx_geometry_association/decomposition.json",
+    "--output", "reports/2026_09_28_rx_geometry_confirmation/null-audit.json"
+  ],
+  "sha256": {
+    "null_audit.py": "817ec1144d3b757312236162b967ef4380dc2ab3cf0653f1aed4d6280cd6a474",
+    "test_null_audit.py": "4c976162f97ab3be532cac0ad3df52c6eaef2b65cc0b0eaab41c87bc1933bb97",
+    "dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "results.json": "aeb6b79d4030644bde28c74be8609e406205df81bf6e351c9d5a2cab21169d8b",
+    "decomposition.json": "a0e259953e404b31368b45c60807c6b0bd85ccc9b3cb71e5baafeebc5c3474b0"
+  }
+}

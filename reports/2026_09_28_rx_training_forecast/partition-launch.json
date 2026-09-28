@@ -1,0 +1,38 @@
+{
+  "frozen_at_utc": "2026-09-28T02:41:33.670850+00:00",
+  "argv": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "reports/2026_09_28_rx_training_forecast/partition-resources.txt",
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "NUMEXPR_NUM_THREADS=1",
+    "PYTHONHASHSEED=0",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "tools/rx_grouped_partitions.py",
+    "--opportunities",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities/opportunities.jsonl",
+    "--output",
+    "reports/2026_09_28_rx_training_forecast/partitions.json"
+  ],
+  "sha256": {
+    "tools/rx_grouped_partitions.py": "6e458286da767f08732a9805ca493335d530807658257c57b445288bcf0d3606",
+    "tests/research/test_rx_grouped_partitions.py": "a188714f27857f33e14ef0663c4eeb0f7236f14d32412086fd7ddfd7a1a78e1a",
+    "reports/2026_09_28_rx_training_forecast/PROTOCOL.md": "7eec8d179a9faa3a4cde5d85650be3841f2cef3811892e6cd38f12f80e002cd4",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities/opportunities.jsonl": "1f46102d99b3b4febfeaad31c16c7a9b8516ace2bdfcdcada2a6f3b5855759a4"
+  }
+}

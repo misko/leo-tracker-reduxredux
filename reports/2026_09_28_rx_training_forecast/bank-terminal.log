@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_training_candidate_bank.py", line 563, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_training_candidate_bank.py", line 331, in main
+    tracks = select_training_tracks(prepared.tracks)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_training_candidate_bank.py", line 142, in select_training_tracks
+    dataclasses.replace(row, training_mask=np.ones(len(row.times_s), dtype=bool))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/dataclasses.py", line 1770, in replace
+    return _replace(obj, **changes)
+  File "/usr/lib/python3.14/dataclasses.py", line 1804, in _replace
+    return self.__class__(**changes)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "<string>", line 8, in __init__
+  File "/opt/leo-tracker/current-api/.venv/lib/python3.14/site-packages/leo/analysis/adaptive_tle_prediction.py", line 50, in __post_init__
+    raise ValueError("fixed training and evaluation rows required")
+ValueError: fixed training and evaluation rows required

@@ -1,0 +1,20 @@
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ram_pipeline/ram_pipeline.c: In function ‘producer_main’:
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ram_pipeline/ram_pipeline.c:151:50: error: ‘generation’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
+     if (slot_index >= ring->slot_count ||
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~         
+         ring->slots[slot_index].state != SLOT_FILLING ||
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         ring->slots[slot_index].job_id != job_id ||
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+         ring->slots[slot_index].generation != generation) {
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ram_pipeline/ram_pipeline.c:568:18: note: ‘generation’ was declared here
+         uint64_t generation;
+                  ^~~~~~~~~~
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ram_pipeline/ram_pipeline.c:150:20: error: ‘slot_index’ may be used uninitialized in this function [-Werror=maybe-uninitialized]
+         ring->slots[slot_index].state != SLOT_FILLING ||
+                    ^
+/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_arm_ram_pipeline/ram_pipeline.c:567:18: note: ‘slot_index’ was declared here
+         unsigned slot_index;
+                  ^~~~~~~~~~
+cc1: all warnings being treated as errors
