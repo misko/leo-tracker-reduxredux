@@ -1,0 +1,124 @@
+{
+  "unit_id": "DS8-F055",
+  "session_id": "scan-fw-a229f5cb2f4f975c",
+  "dataset_id": "DS8",
+  "request": {
+    "config": {
+      "altitude_km": 0,
+      "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+      "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+      "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+      "geographic_prior_center_deg": [
+        37.856249999999996,
+        -122.484375
+      ],
+      "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+      "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+      "partition_seed": 2026092711,
+      "position_bounds_km": [
+        -12,
+        12
+      ],
+      "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+      "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+      "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+      "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+      "student_t_dof": 4,
+      "student_t_scale_hz": 100,
+      "timing_bounds_s": [
+        -5,
+        5
+      ],
+      "timing_grid_s": [
+        -5,
+        -4.75,
+        -4.5,
+        -4.25,
+        -4,
+        -3.75,
+        -3.5,
+        -3.25,
+        -3,
+        -2.75,
+        -2.5,
+        -2.25,
+        -2,
+        -1.75,
+        -1.5,
+        -1.25,
+        -1,
+        -0.75,
+        -0.5,
+        -0.25,
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1,
+        1.25,
+        1.5,
+        1.75,
+        2,
+        2.25,
+        2.5,
+        2.75,
+        3,
+        3.25,
+        3.5,
+        3.75,
+        4,
+        4.25,
+        4.5,
+        4.75,
+        5
+      ],
+      "timing_starts_s": [
+        0,
+        -2,
+        2
+      ]
+    },
+    "inputs": [
+      {
+        "session_id": "scan-fw-a229f5cb2f4f975c",
+        "manifest_sha256": "sha256:f405aa2516bd63d66223b609c5d0975ad1c4e2998fa5fc77e8927083db1aa459",
+        "artifacts": [
+          {
+            "kind": "observations",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_temporal_coverage_inputs/exports/DS8-T07/observations.json",
+            "sha256": "sha256:2c9db119317ecd42f36aef3cdc46547b64c0ef7dd93c3b2a7ac02dc0ffa4889e"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_temporal_coverage_inputs/exports/DS8-T07/banks/manifest.json",
+            "sha256": "sha256:d0261296fb166c8a4f341f8f25da53fd642f61e8e7901c227e1e78273eea5293"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_temporal_coverage_inputs/exports/DS8-T07/banks/banks.npz",
+            "sha256": "sha256:1038d3ce969b652af48a7debc9d4427f8d59f8f43898a67eda41fdb649e7e74c"
+          }
+        ]
+      }
+    ]
+  },
+  "tracks": 64,
+  "eligibility_exclusions": [],
+  "training_observations": 1611,
+  "held_observations": 1152,
+  "analysis_manifest_sha256": "sha256:6e79c61f42aa8a268313a78b2b0580020414d0848fb3e31146dcd6be3c4d4bdb",
+  "mint_glrt_metrics_match": null,
+  "sample_rate_hz": 7500000,
+  "provider_sources": [
+    {
+      "provider": "huggingface",
+      "collected_utc_ns": 1790535776401375890,
+      "snapshot_sha256": "sha256:c84ee6d218b9b0596de80dc3ab2f2997cca2a5e4144483281d0a7d8e565676ce"
+    },
+    {
+      "provider": "space-track",
+      "collected_utc_ns": 1790542947291637780,
+      "snapshot_sha256": "sha256:69d3190cfb07a295ca5e59e91e39866506902bb9a6f28a951a38776513bc7dd9"
+    }
+  ]
+}

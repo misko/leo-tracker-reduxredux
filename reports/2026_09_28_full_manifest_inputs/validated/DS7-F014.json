@@ -1,0 +1,126 @@
+{
+  "unit_id": "DS7-F014",
+  "session_id": "scan-fw-18dfd83dc4498c15",
+  "dataset_id": "DS7",
+  "request": {
+    "config": {
+      "altitude_km": 0,
+      "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+      "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+      "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+      "geographic_prior_center_deg": [
+        37.856249999999996,
+        -122.484375
+      ],
+      "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+      "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+      "partition_seed": 2026092711,
+      "position_bounds_km": [
+        -12,
+        12
+      ],
+      "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+      "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+      "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+      "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+      "student_t_dof": 4,
+      "student_t_scale_hz": 100,
+      "timing_bounds_s": [
+        -5,
+        5
+      ],
+      "timing_grid_s": [
+        -5,
+        -4.75,
+        -4.5,
+        -4.25,
+        -4,
+        -3.75,
+        -3.5,
+        -3.25,
+        -3,
+        -2.75,
+        -2.5,
+        -2.25,
+        -2,
+        -1.75,
+        -1.5,
+        -1.25,
+        -1,
+        -0.75,
+        -0.5,
+        -0.25,
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1,
+        1.25,
+        1.5,
+        1.75,
+        2,
+        2.25,
+        2.5,
+        2.75,
+        3,
+        3.25,
+        3.5,
+        3.75,
+        4,
+        4.25,
+        4.5,
+        4.75,
+        5
+      ],
+      "timing_starts_s": [
+        0,
+        -2,
+        2
+      ]
+    },
+    "inputs": [
+      {
+        "artifacts": [
+          {
+            "kind": "observations",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave4/inputs/scan-fw-18dfd83dc4498c15-tracks.json",
+            "sha256": "sha256:d23f18071cf88060294fa7ddf928f15efbd583ab0d6b8e9981bb8108568fd0ce"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_full_manifest_inputs/exports/DS7-F014/banks/manifest.json",
+            "sha256": "sha256:a037e6b5acecc8f1d4187d2673b2d2df72076b1e585a634b3c107dbafeab5989"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_full_manifest_inputs/exports/DS7-F014/banks/banks.npz",
+            "sha256": "sha256:e59f1e90e967a5cd3193e299002523d6e1a5ce021fb5ff0be269e63fd104ee52"
+          }
+        ],
+        "manifest_sha256": "sha256:e7734b7ae7666e724c4f964ac6b4056768f916c20cd437e7eddfcf880fb5e891",
+        "reason": null,
+        "session_id": "scan-fw-18dfd83dc4498c15",
+        "state": "ready"
+      }
+    ]
+  },
+  "tracks": 54,
+  "eligibility_exclusions": [],
+  "training_observations": 1222,
+  "held_observations": 963,
+  "analysis_manifest_sha256": "sha256:543f3d6c219d5893e5196e5845b6aefb70897a83d4d5e4aebd8b14996ed651e3",
+  "mint_glrt_metrics_match": null,
+  "sample_rate_hz": 10000000,
+  "provider_sources": [
+    {
+      "provider": "huggingface",
+      "collected_utc_ns": 1790488910957668654,
+      "snapshot_sha256": "sha256:23bff45940e66b3fc052df33bf604d6650b39478e60d17cdd95c9b247235f2e5"
+    },
+    {
+      "provider": "space-track",
+      "collected_utc_ns": 1790492522871309512,
+      "snapshot_sha256": "sha256:0ae50e66de2f39462e4554caa76c35fd94c8f9757e26d3e8c44ea9c2b81e23d4"
+    }
+  ]
+}
