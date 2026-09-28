@@ -1,0 +1,39 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "180s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+    "--request",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/request.json",
+    "--response",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/response.json"
+  ],
+  "sha256": {
+    "reports/2026_09_28_ds89_baseline_transfer/launch_fit.py": "02b61c4392b831e0573530ab030d9218e808e09f841e59c74fabd831f7daf51f",
+    "reports/2026_09_28_ds89_baseline_transfer/FIT-PROTOCOL.md": "3e631345ecd87d121008aedd08084f6b7fe31a3eb49a0bb0d660cae6220a7693",
+    "reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/request.json": "67d4594465871910ce7599ba59d44eea664218a0935228e8fd3b3840acd65468",
+    "reports/2026_09_28_ds89_baseline_transfer/solver/DS8-001/input-validation.json": "a65cd3f9bc325db164be08239d252a49448e7b5c67553002599f42b45a6906ab",
+    "tools/ds7_fast_baseline_adapter.py": "ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+    "tools/ds7_baseline_adapter.py": "221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS8-001/observations.json": "d42c5216e8dbf6d97f34dc883804a6f8dbbae3aa18ca5a3ad06e52aca1fbbb42",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS8-001/banks/manifest.json": "2938bb8b0dbc0f9d3fcc5fa5a24844deea57017d83569f18c54df3286f1158c3",
+    "reports/2026_09_28_ds89_baseline_transfer/exports/DS8-001/banks/banks.npz": "f33f6b676afaeec938eae3c8474e2acb8f9d5b6ce2f937a25ae80f74110ed60d"
+  }
+}
