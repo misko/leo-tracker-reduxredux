@@ -1,0 +1,123 @@
+{
+  "schema": "ds7-request/v1",
+  "dataset_sha256": "sha256:ac208acf413462178e88073857ced0de4cae49ebde35a7338781459865c97f0d",
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "unit": {
+    "kind": "single",
+    "unit_id": "DS9-005",
+    "session_ids": [
+      "scan-fw-237e4e5d4ce58dd7"
+    ]
+  },
+  "captures": [
+    {
+      "unit_id": "DS9-005",
+      "dataset_id": "DS9",
+      "session_id": "scan-fw-237e4e5d4ce58dd7",
+      "manifest_sha256": "sha256:43736331c5a2f2344f7eff789cd4f5604d3d780e24df717a33bb11107635b3db",
+      "capture_start_utc_ns": 1790556300304441004,
+      "sample_rate_hz": 10000000,
+      "mint_analysis_evidence_sha256": "sha256:f18bcedd94681bcfa79abea26af8fb205bbff1912d7a5d5c7c360d6a294b484a"
+    }
+  ],
+  "inputs": [
+    {
+      "session_id": "scan-fw-237e4e5d4ce58dd7",
+      "manifest_sha256": "sha256:43736331c5a2f2344f7eff789cd4f5604d3d780e24df717a33bb11107635b3db",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-005/observations.json",
+          "sha256": "sha256:e94ab43c9b8377234fcca42aa360116a8bb3e0afdbaea0d5d7f333526d36338a"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-005/banks/manifest.json",
+          "sha256": "sha256:c7cca4375f05b80c1282ddb2364aa2ed0673ee967cee7c2b289c6bb0d9e8ac5a"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-005/banks/banks.npz",
+          "sha256": "sha256:57ae57d5d1517ee5ad797301b7dd586ed14a0e3a283a0aad604c6991a5e58a8c"
+        }
+      ]
+    }
+  ],
+  "plan_sha256": "sha256:c584020d554e07b421cce4a039d604f19b09b63d5df9ed82a9c3daa2f9fdead6",
+  "inputs_sha256": "sha256:af099ced2ebed0b20c67ab145cba16a86d69dbccda71c64f304135abaede39e1"
+}

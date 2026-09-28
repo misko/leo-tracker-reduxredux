@@ -1,0 +1,123 @@
+{
+  "schema": "ds7-request/v1",
+  "dataset_sha256": "sha256:ac208acf413462178e88073857ced0de4cae49ebde35a7338781459865c97f0d",
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "unit": {
+    "kind": "single",
+    "unit_id": "DS9-002",
+    "session_ids": [
+      "scan-fw-779025cb04154412"
+    ]
+  },
+  "captures": [
+    {
+      "unit_id": "DS9-002",
+      "dataset_id": "DS9",
+      "session_id": "scan-fw-779025cb04154412",
+      "manifest_sha256": "sha256:5bef6190123b146902abdd145f3939a0272a591ef727c2a1a49803fcbd270b7c",
+      "capture_start_utc_ns": 1790555028783391077,
+      "sample_rate_hz": 2500000,
+      "mint_analysis_evidence_sha256": "sha256:e4bb670a5283847bf34f21f9d0dd4f601c64c086c03f0f34088eef8efa583a8a"
+    }
+  ],
+  "inputs": [
+    {
+      "session_id": "scan-fw-779025cb04154412",
+      "manifest_sha256": "sha256:5bef6190123b146902abdd145f3939a0272a591ef727c2a1a49803fcbd270b7c",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-002/observations.json",
+          "sha256": "sha256:2cb56524bcdb8b23b1189f7f2da053c08c891980a69a724951171e179541564c"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-002/banks/manifest.json",
+          "sha256": "sha256:20cce9134d549b6eb99e40ab2eaf42c8433f9b9d63463659e4313361474d63ad"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_ds89_baseline_panel/exports/DS9-002/banks/banks.npz",
+          "sha256": "sha256:d3e30ee03cb74f295a0d77597a19258ab2b312ee9b71be2f57b38ef5904c72b2"
+        }
+      ]
+    }
+  ],
+  "plan_sha256": "sha256:c584020d554e07b421cce4a039d604f19b09b63d5df9ed82a9c3daa2f9fdead6",
+  "inputs_sha256": "sha256:82396431b96a11314ed42093ec9daca945b689c4b4db04c12bd3df39f9738656"
+}
