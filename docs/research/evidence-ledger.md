@@ -79,6 +79,19 @@ shadow product while its physical interpretation remains candidate-only.
 
 ## Evidence synthesis by topic
 
+### DS7–DS8 recurring-code study (28 September 2026)
+
+The [illustrated repeat-pass report](../../reports/2026-09-28-ds7-ds8-signal-structure.md)
+([PDF](../../reports/2026-09-28-ds7-ds8-signal-structure.pdf)) records 85
+receiver-agreed 60-bit observations, including three exact words shared across
+two passes conditionally assigned to STARLINK-31567. Eight exact words collide
+across different likely identities. This is **exploratory structural evidence**,
+not promotion of spacecraft identity, payload decoding, or navigation fields.
+DS8's historical chronological holdout is explicitly distinguished from current
+randomized-group validation requirements. Raw and numerical datasets are not
+included in the publication; the report supplies illustrations, aggregate
+tables, input hashes and a renderer for an authorized local evidence workspace.
+
 ### Waveform specificity and acquisition geometry
 
 Independent acquisition was the decisive methodological improvement. Earlier
