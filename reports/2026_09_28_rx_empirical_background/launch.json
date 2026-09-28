@@ -1,0 +1,42 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_empirical_background/resources.txt",
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "120s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "NUMEXPR_NUM_THREADS=1",
+    "PYTHONHASHSEED=0",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_background_crossvalidation",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_empirical_background/results.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_empirical_background/PROTOCOL.md": "9122f02ac9c539b5f350b967e78bb25fd7ca5df7ced7f678fc8a113a56abeb9b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_empirical_background/launch.py": "7e8cfb26de7edb76c73d339c6c00c7ac1eeffa2a38b8ffcc0c23b88b28f4cd90",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_empirical_background.py": "92778ab09ee1ef8e086e09d18d97677f13145fa18d65d61d1be6293fa9dc5ae0",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tests/research/test_rx_empirical_background.py": "b7f985b7522d2690d7552bf3dafd31cacd7dd9ab1b0f5259ef746b3fcf3711e9",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_background_crossvalidation.py": "5267d8d2ace631ea64e24f997c11c7ba40db2946fcb5a7ee9f95e9f0715a5428",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tests/research/test_rx_background_crossvalidation.py": "e7b3a7bd533cf38a931b46dec67cd90bca5ac39512dc4c8e42576aa43ea3a6e5"
+  }
+}

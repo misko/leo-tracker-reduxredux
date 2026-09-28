@@ -1,0 +1,40 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "reports/2026_09_28_rx_geometry_association/decomposition-resources.txt",
+    "/usr/bin/timeout",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_geometry_score_decomposition",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--results",
+    "reports/2026_09_28_rx_geometry_association/results.json",
+    "--output",
+    "reports/2026_09_28_rx_geometry_association/decomposition.json"
+  ],
+  "sha256": {
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_geometry_association/results.json": "aeb6b79d4030644bde28c74be8609e406205df81bf6e351c9d5a2cab21169d8b",
+    "reports/2026_09_28_rx_geometry_association/DECOMPOSITION.md": "53ab8af2c340cd21195aef25366317f9ee865ac373d1968b8b06997dab5dfab3",
+    "tools/rx_geometry_fit.py": "855b9499e087ece0d2fbb0237e55f64d109f217b5e7fb1cf436f24db980d2fff",
+    "tools/rx_geometry_likelihood.py": "812760d50ce18fcf40b49b99b6276a6eadb23817ff2a9f784cc9bb40afc88c56",
+    "tools/rx_geometry_score_decomposition.py": "36f0e7c06eba90a11b60d36d0eb1a43f598d24a56eea543d88b3fab8d02cabe9",
+    "tests/research/test_rx_geometry_score_decomposition.py": "41096722e1ec7eea20865d0c181d16899c82468c7d52a539000fe87c4456ecc4"
+  }
+}

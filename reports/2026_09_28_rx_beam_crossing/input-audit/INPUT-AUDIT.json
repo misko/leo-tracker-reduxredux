@@ -1,0 +1,67 @@
+{
+  "schema": "rx-beam-crossing-input-audit/v1",
+  "status": "conditional-roof10-cohort-available; full-four-class-target-labeling-not-available",
+  "recommended_reusable_cohort": {
+    "selection": "The already frozen readiness-only roof10 cohort: first six chronological sessions calibration and final four holdout. It was selected before reception scoring.",
+    "evaluation_manifest": {
+      "path": "reports/2026_09_27_roof_direction_subset/evaluation_manifest.json",
+      "sha256": "sha256:d2731064e3471cecfa730232ce80248757a885228db56c39cbc0eb499de69010"
+    },
+    "evaluation_inventory": {
+      "path": "reports/2026_09_27_roof_direction_subset/evaluation_inventory.json",
+      "sha256": "sha256:dd404460c9b9eb163db6bfee14f0f7cb78c56cbea060e4c96eb0a5f4a013a832"
+    },
+    "sessions": 10,
+    "calibration_sessions": 6,
+    "holdout_sessions": 4,
+    "complete_visits": 22155,
+    "simultaneous_receiver_probes": 44310,
+    "per_session_probe_geometry": "Each visit has one receiver-0 and one receiver-1 TrackingProbe with common visit_index, probe_index, probe_start_ms, channel, edge, and valid_start_counter. Every cached input reports probe_ms=20 and probe_start_ms=0.",
+    "cache_validation": "All 10 immutable cache SHA-256 values match evaluation_inventory; every TrackingInput and timing receipt is qualified; all receiver counterparts and their common lane/start counter were present."
+  },
+  "same_target_evidence": {
+    "pairing_summary": {
+      "path": "reports/2026_09_27_roof_direction_subset/pairing_summary.json",
+      "sha256": "sha256:919e2f67a89ebd34f845a53771b35ebdcd6427c806d67bddd1329e47460bd9ce",
+      "rule": "existing fixed 2.2 microsecond modulo-frame tolerance plus 10 kHz alias-aware CFO tolerance, after a calibration-only 2380.1434201757074 Hz receiver CFO bias",
+      "both_compatible_probe_windows": 8929
+    },
+    "model_rows": {
+      "path": "reports/2026_09_27_roof_direction_subset/model_rows.json",
+      "sha256": "sha256:3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554",
+      "rows": 10369,
+      "tracks": 599,
+      "reciprocal_same_physical_pair_windows": 242,
+      "rows_in_reciprocal_windows": 484,
+      "limitation": "These rows are detection-selected anchors. physical_pair_key and observation_utc_ns identify conditional paired observations, but a null physical_pair_key is common and does not identify an absent target."
+    },
+    "calibration_temporal_diagnostic": {
+      "path": "reports/2026_09_27_roof_balanced_confirmation/calibration_temporal_diagnostic.json",
+      "sha256": "sha256:e22f6a4e6084cce0d057b2a14fc1c2b390fad74e24633677376725cfbe1bf6f4",
+      "calibration_tracks": 344,
+      "rows": 6378,
+      "consecutive_within_track_pairs": 6034,
+      "time_gap_seconds": {"minimum": 0.11999821662902832, "median": 0.962679386138916, "p90": 3.008942890167236, "maximum": 13.541336059570312}
+    }
+  },
+  "interfaces": {
+    "local_reuse": "pickle protocol-5 TrackingInput caches listed in evaluation_inventory; the cache is a frozen local analysis artifact, not a portable public contract.",
+    "public_source_ports_used_to_make_cache": ["leo.storage.scanner_tracking_source.ScannerTrackingInputStore", "leo.storage.adaptive_hop.AdaptiveHopIqStore(read_only=True)"],
+    "relevant_contract_fields": ["TrackingInput.qualified", "TrackingInput.timing.qualified", "TrackingInput.probe_ms", "TrackingInput.capture_start_utc_ns", "TrackingProbe.visit_index", "TrackingProbe.receiver_id", "TrackingProbe.probe_index", "TrackingProbe.probe_start_ms", "TrackingProbe.channel", "TrackingProbe.edge", "TrackingProbe.valid_start_counter", "TrackingProbe.candidates[*].fractional_margin"]
+  },
+  "geometry_and_calibration": {
+    "authority": "gauss-r20-roof-20260926-v1; one radio, nominal 0.08 m mount separation, nominal 10 degree outward tilt, RX0=physical RX1 west/270 degrees and RX1=physical RX2 east/90 degrees.",
+    "provisional": ["Software-to-physical RX mapping is explicitly provisional, not a cable trace.", "RF phase centers, directed baseline, elevation, world tilt, and surveyed altitude are unknown.", "Operator WGS84 roof coordinates are not a survey."],
+    "interpretation": "A fitted temporal crossing can test conditional consistency under this nominal mapping. It cannot calibrate a physical beam pattern, establish an absolute azimuth, or support blind location validation."
+  },
+  "four_class_feasibility": {
+    "complete_receiver_opportunities": true,
+    "same_target_labels_for_both": "available only for candidate pairs meeting the frozen CFO/epoch compatibility rule",
+    "same_target_labels_for_rx0_only_or_rx1_only": "conditional only: the detected anchor is known, while its counterpart is absent or incompatible in that same receiver-paired probe",
+    "same_target_labels_for_neither": false,
+    "blocking_reason": "A raw paired probe with no compatible candidates supplies an opportunity but no target identity. Existing persistent tracks and model_rows begin from detections and do not trace a named target through a missing window. Assigning neither to a track would require source-specific identity association; using all outcomes to construct it would leak test outcomes.",
+    "training_only_frequency_cfo_rule": "Not available as a sealed reusable labeling artifact. The existing frequency/CFO graph is detection-conditioned, and no stored contract assigns target identities to raw no-detection windows using only training data."
+  },
+  "permitted_next_use": "A bounded conditional temporal model may use detected-anchor tracks, their observation_utc_ns, receiver identity, positive fractional margins, and same-probe counterpart outcomes. It must label receiver-missing outcomes as conditional-on-anchor and omit neither. A full four-class target model is blocked pending a frozen training-only association/forecast artifact that maps target opportunities before held outcomes are inspected.",
+  "prohibited_claims": ["full DS7 or new-blind validation", "unconditional detection probability", "physical beam calibration", "absolute geometry or location improvement"]
+}

@@ -1,0 +1,1223 @@
+{
+  "scope": "Unique saved dwells; one window is one receiver x 20ms interval. Repeated executions excluded. Full original server baseline vs reduced ARM search. No new DSP execution.",
+  "matching": "Same case, receiver and window start; both positive; epoch difference <=2us and tracking CFO difference <=8kHz. Count each window once regardless of candidate count.",
+  "source_sha256": {
+    "reports/2026_09_28_ds7_glrt_benchmark/run-01/rows.jsonl": "61edf942f96c03aeda0f4f3c9356c4e011dfc4d6f737903ad092ae177d9759e8",
+    "reports/2026_09_28_arm_ram_pipeline/run01/2500000-D-isolated-fixed-period-r0.jsonl": "143848871c9e96a036c678f3635ab5e4280decda3e527d002adceb813379ae2d",
+    "reports/2026_09_28_arm_ram_pipeline/run01/2500000-goal40mag-isolated-fixed-period-r0.jsonl": "c464b048abb7e3443ce7f0ae99e89509deb9e079728709b852a53e29a64fb9ab",
+    "reports/2026_09_28_arm_ram_pipeline/run01/5000000-D-isolated-fixed-period-r0.jsonl": "80134572e978e35570f73c7f71642120e59097229cd9e546879029739f6e5329",
+    "reports/2026_09_28_arm_ram_pipeline/run01/5000000-goal40mag-isolated-fixed-period-r0.jsonl": "30799121d9e3c122a51d25368efe6bd42a77c6e42518eb2129a4f586d2142d53",
+    "reports/2026_09_28_arm_ram_pipeline/run01/7500000-D-isolated-fixed-period-r0.jsonl": "05207bfb3ebdaed9bde049b533de427176004fff9b4a2ce1643dda759e83e83a",
+    "reports/2026_09_28_arm_ram_pipeline/run01/7500000-goal40mag-isolated-fixed-period-r0.jsonl": "50ec8c62dfa17862ebf5d8542a93eacc89b7007b62a08119107c505497e31a32",
+    "reports/2026_09_28_arm_ram_pipeline/run01/10000000-D-isolated-fixed-period-r0.jsonl": "aa8e8f6c697db9b55444da4fbe4aa805720147a2b1dbc70e4a90b219bfae37fd",
+    "reports/2026_09_28_arm_ram_pipeline/run01/10000000-goal40mag-isolated-fixed-period-r0.jsonl": "b3c89457747c5f48f1fb1a9cb859480841a609d5a3700a0e468a3968a76aeb2f"
+  },
+  "per_rate": [
+    {
+      "rate_hz": 2500000,
+      "original_windows_run": 352,
+      "original_positive_windows": 323,
+      "D": {
+        "windows_ranked": 192,
+        "windows_glrt_run": 32,
+        "positive_windows": 20,
+        "baseline_positive_windows_evaluated": 29,
+        "baseline_positive_windows_positive_again": 19,
+        "baseline_positive_windows_identity_recovered": 16
+      },
+      "goal40mag": {
+        "windows_ranked": 192,
+        "windows_glrt_run": 32,
+        "positive_windows": 20,
+        "baseline_positive_windows_evaluated": 29,
+        "baseline_positive_windows_positive_again": 19,
+        "baseline_positive_windows_identity_recovered": 16
+      }
+    },
+    {
+      "rate_hz": 5000000,
+      "original_windows_run": 88,
+      "original_positive_windows": 45,
+      "D": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 4,
+        "baseline_positive_windows_evaluated": 4,
+        "baseline_positive_windows_positive_again": 4,
+        "baseline_positive_windows_identity_recovered": 4
+      },
+      "goal40mag": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 4,
+        "baseline_positive_windows_evaluated": 4,
+        "baseline_positive_windows_positive_again": 4,
+        "baseline_positive_windows_identity_recovered": 4
+      }
+    },
+    {
+      "rate_hz": 7500000,
+      "original_windows_run": 88,
+      "original_positive_windows": 25,
+      "D": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 3,
+        "baseline_positive_windows_evaluated": 2,
+        "baseline_positive_windows_positive_again": 2,
+        "baseline_positive_windows_identity_recovered": 2
+      },
+      "goal40mag": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 3,
+        "baseline_positive_windows_evaluated": 2,
+        "baseline_positive_windows_positive_again": 2,
+        "baseline_positive_windows_identity_recovered": 2
+      }
+    },
+    {
+      "rate_hz": 10000000,
+      "original_windows_run": 88,
+      "original_positive_windows": 44,
+      "D": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 4,
+        "baseline_positive_windows_evaluated": 4,
+        "baseline_positive_windows_positive_again": 4,
+        "baseline_positive_windows_identity_recovered": 4
+      },
+      "goal40mag": {
+        "windows_ranked": 48,
+        "windows_glrt_run": 8,
+        "positive_windows": 4,
+        "baseline_positive_windows_evaluated": 4,
+        "baseline_positive_windows_positive_again": 4,
+        "baseline_positive_windows_identity_recovered": 4
+      }
+    }
+  ],
+  "window_details": [
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1108",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1108",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1109",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1109",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1110",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1110",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1111",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1111",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1112",
+      "receiver": 0,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1112",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1113",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1113",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1114",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1114",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1115",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1115",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1116",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1116",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1117",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1117",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1118",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1118",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1119",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1119",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1120",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1120",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1121",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1121",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1122",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1122",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1123",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1123",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1108",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1108",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1109",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1109",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1110",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1110",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1111",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1111",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1112",
+      "receiver": 0,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1112",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1113",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1113",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1114",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1114",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1115",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1115",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1116",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1116",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1117",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1117",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1118",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1118",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1119",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1119",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1120",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1120",
+      "receiver": 1,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1121",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1121",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1122",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1122",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1123",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 2500000,
+      "case_id": "ds7-scan-fw-1a8fada20483c159-v1123",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1107",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1107",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1108",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1108",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1109",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1109",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1110",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1110",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1107",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1107",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1108",
+      "receiver": 0,
+      "start_ms": 80,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1108",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1109",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1109",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1110",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 5000000,
+      "case_id": "ds7-scan-fw-c8c8eac794484395-v1110",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1106",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1106",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1107",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1107",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1108",
+      "receiver": 0,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1108",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1109",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1109",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1106",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1106",
+      "receiver": 1,
+      "start_ms": 0,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1107",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": true,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1107",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1108",
+      "receiver": 0,
+      "start_ms": 60,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1108",
+      "receiver": 1,
+      "start_ms": 40,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1109",
+      "receiver": 0,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 7500000,
+      "case_id": "ds7-scan-fw-5f7bf896e4552887-v1109",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1106",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1106",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1107",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1107",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1108",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1108",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1109",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "D",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1109",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1106",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1106",
+      "receiver": 1,
+      "start_ms": 20,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1107",
+      "receiver": 0,
+      "start_ms": 0,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1107",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1108",
+      "receiver": 0,
+      "start_ms": 40,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1108",
+      "receiver": 1,
+      "start_ms": 60,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1109",
+      "receiver": 0,
+      "start_ms": 100,
+      "baseline_positive": true,
+      "arm_positive": true,
+      "identity_recovered": true
+    },
+    {
+      "method": "goal40mag",
+      "rate_hz": 10000000,
+      "case_id": "ds7-scan-fw-a40658642d9ade6a-v1109",
+      "receiver": 1,
+      "start_ms": 80,
+      "baseline_positive": false,
+      "arm_positive": false,
+      "identity_recovered": false
+    }
+  ]
+}

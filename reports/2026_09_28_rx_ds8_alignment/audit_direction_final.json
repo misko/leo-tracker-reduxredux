@@ -1,0 +1,78 @@
+{
+  "schema": "rx-direction-support-independent-audit/v1",
+  "status": "passed",
+  "source_sha256": "9def1cb100040fd5d63d7c360ad597c8e43849a6077d262ce272a08e6961995a",
+  "forbidden_outcome_field_references": [],
+  "panels": {
+    "pilot": {
+      "dataset_sha256": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+      "result_sha256": "553711cb9cbedfe465fc65707eada04582e42403e993f8eecb18a057034d3147",
+      "lanes": 19,
+      "nominees": 90,
+      "available_order_counts": {
+        "rx0_before_rx1": 25,
+        "rx1_before_rx0": 0
+      },
+      "independently_reconstructed_crossing_event_counts": {
+        "zero": 36,
+        "one": 54,
+        "multiple": 0
+      },
+      "independently_reconstructed_unavailable_reasons": {
+        "boundary_scheduled_peak": 29,
+        "no_unique_linear_zero_crossing": 36
+      },
+      "unavailable_with_nonzero_endpoint_secant": 65,
+      "endpoint_secant_interpretation": "A nonzero endpoint q secant remains descriptive when the full peak/crossing order is censored; it was not promoted to an available order."
+    },
+    "ds8": {
+      "dataset_sha256": "a4af171d012a6d211958baba756f2cd164ad3c418c3ead8a3a9277185b50b538",
+      "result_sha256": "a62a73e602bc2f47de4a5c39a5f3bc4375a89c317e4e62ee404f6268205f67c3",
+      "lanes": 8,
+      "nominees": 36,
+      "available_order_counts": {
+        "rx0_before_rx1": 2,
+        "rx1_before_rx0": 0
+      },
+      "independently_reconstructed_crossing_event_counts": {
+        "zero": 28,
+        "one": 8,
+        "multiple": 0
+      },
+      "independently_reconstructed_unavailable_reasons": {
+        "no_unique_linear_zero_crossing": 28,
+        "boundary_scheduled_peak": 6
+      },
+      "unavailable_with_nonzero_endpoint_secant": 34,
+      "endpoint_secant_interpretation": "A nonzero endpoint q secant remains descriptive when the full peak/crossing order is censored; it was not promoted to an available order."
+    }
+  },
+  "partial_secant_summary_audit": {
+    "summary_sha256": "656b5c3bb5bfdd31204e6f7135082febd02110353a3cd5aec3ccb382b6515893",
+    "panels": {
+      "pilot": {
+        "source_sha256": "553711cb9cbedfe465fc65707eada04582e42403e993f8eecb18a057034d3147",
+        "lanes": 19,
+        "maximum_partial_secant_disagreement_mass": 4.392801151298571e-12,
+        "maximum_lane": {
+          "actual_rf_hz": 11190000000.0,
+          "channel": 2,
+          "edge": "upper",
+          "session_id": "scan-fw-898b709fcf3dd978"
+        }
+      },
+      "ds8": {
+        "source_sha256": "a62a73e602bc2f47de4a5c39a5f3bc4375a89c317e4e62ee404f6268205f67c3",
+        "lanes": 8,
+        "maximum_partial_secant_disagreement_mass": 0.5,
+        "maximum_lane": {
+          "actual_rf_hz": 11440312496.0,
+          "channel": 3,
+          "edge": "upper",
+          "session_id": "scan-fw-226485b45dd0d0cf"
+        }
+      }
+    },
+    "interpretation": "Endpoint-secants describe the sampled partial arc only. Agreement, disagreement, or absence of opposite secants neither establishes nor rules out full crossing-order support beyond the scheduled geometry."
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "arm-fine-fft-screen-validation/v2",
+  "qualified": true,
+  "qualification": "64 metadata-balanced saved dwells, all four rates; strict original ordered-field comparison",
+  "guard": "empirical 256*FLT_EPSILON; not a formal bound",
+  "totals": {
+    "dwells": 64,
+    "windows": 1408,
+    "reference_positive": 1669,
+    "native_positive": 1669,
+    "matched_positive": 1669,
+    "ordered_field_errors": 0
+  },
+  "maximum_difference_vs_qualified_full_search": {
+    "epoch_samples": 0,
+    "acquired_cfo_hz": 4.598405212163925e-09,
+    "tracking_cfo_hz": 4.598405212163925e-09,
+    "exact_score": 7.527312106958561e-14,
+    "control_score": 6.8209327075408055e-15,
+    "margin": 7.077671781985373e-14
+  },
+  "per_rate": {
+    "2500000": {
+      "dwells": 16,
+      "windows": 352,
+      "reference_positive": 485,
+      "native_positive": 485,
+      "matched_positive": 485,
+      "ordered_field_errors": 0,
+      "mean_fine_cpu_ms_per_window": 3.477626397727263
+    },
+    "5000000": {
+      "dwells": 16,
+      "windows": 352,
+      "reference_positive": 259,
+      "native_positive": 259,
+      "matched_positive": 259,
+      "ordered_field_errors": 0,
+      "mean_fine_cpu_ms_per_window": 6.187571414772733
+    },
+    "7500000": {
+      "dwells": 16,
+      "windows": 352,
+      "reference_positive": 448,
+      "native_positive": 448,
+      "matched_positive": 448,
+      "ordered_field_errors": 0,
+      "mean_fine_cpu_ms_per_window": 10.684589559659065
+    },
+    "10000000": {
+      "dwells": 16,
+      "windows": 352,
+      "reference_positive": 477,
+      "native_positive": 477,
+      "matched_positive": 477,
+      "ordered_field_errors": 0,
+      "mean_fine_cpu_ms_per_window": 13.931901673295448
+    }
+  },
+  "bug_fixed": "FP64 verifier energy includes complete selected-symbol support even where exact template cells are zero",
+  "prior_buggy_evidence": "results/buggy-cohort64-rows.jsonl.gz"
+}

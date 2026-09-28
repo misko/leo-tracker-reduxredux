@@ -1,0 +1,7 @@
+# Prediction API integration correction
+
+The first candidate-bank invocation exited 1 after 16.36 seconds, before constructing a catalogue prediction bank or ranking any satellite. The installed `AdaptiveTrackInput` requires a mixed internal mask; replacing it with an all-true mask raised `ValueError: fixed training and evaluation rows required`. No candidate-bank output was produced. The original launch receipt, traceback and resource receipt remain intact.
+
+The adapter now retains the valid internal mask on tracks reconstructed entirely from the new training prefix. The explicit ranking routine continues to fit **all prefix observations**, irrespective of that internal mask. Thus no later-period observations are introduced and the statistical objective is unchanged. A prediction-only input for future timestamps also uses the API-required mixed placeholder mask with zero placeholder measurements; neither values nor mask participate in target ranking or evaluation. This is interface metadata, not a redefinition of the frozen temporal roles.
+
+An installed-runtime integration check must validate both constructions before one corrected invocation. This engineering amendment changes no recording, partition, track cap/order, catalogue, objective, parameter, destination, or runtime limit. It permits no numerical search retry. The corrected receipt binds revised code and separate logs; the output path was absent after the failed invocation.

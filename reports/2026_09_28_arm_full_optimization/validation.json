@@ -1,0 +1,32 @@
+{
+  "python_tests": {
+    "count": 5,
+    "passed": true,
+    "command": "PYTHONPATH=src .venv/bin/pytest -q reports/2026_09_28_arm_full_optimization"
+  },
+  "ruff": {
+    "passed": true,
+    "scope": "top-level maintained Python sources; immutable executed snapshot excluded"
+  },
+  "diff_check": true,
+  "native_host_tests": [
+    "retention ordering/separation",
+    "full FFT analytic fixtures",
+    "pruned FFT range fixtures all four sizes",
+    "blocked-dot cancellation/dynamic-range/block boundaries"
+  ],
+  "arm_unit_test": "arm-cohort-02/unit.stdout; exit zero enforced by executed runner",
+  "asan_ubsan": {
+    "probes": 16,
+    "process_errors": 0,
+    "stderr_diagnostics": 0,
+    "reference_positive_hits": 22,
+    "recovered_positive_hits": 22,
+    "strict_coarse_parity": false,
+    "note": "FP32 coarse scores/grids intentionally exceed strict FP64 tolerances; all compared downstream fields pass"
+  },
+  "prior_sealed_report": {
+    "files": 46,
+    "hash_mismatches": 0
+  }
+}

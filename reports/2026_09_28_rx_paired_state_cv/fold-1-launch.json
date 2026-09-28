@@ -1,0 +1,43 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_paired_state_cv/fold-1-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_paired_state_cv",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--fold",
+    "1",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_paired_state_cv/fold-1.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_paired_state_cv/launch.py": "f4d4e69c54a2c5d23157b574e33fb62e0cfae9552367dc16bc2947e5858e62f4",
+    "reports/2026_09_28_rx_paired_state_cv/PROTOCOL.md": "87ed830721fa69cd05eb99a1ba6632bf6d4dc2d34d9db7150470b49930f6da99",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_paired_direction_support/evidence-sha256.json": "78b72001a133ad0ce5af7d82114ee79a64c9ee0238e178fc9e14c721810d4cfb",
+    "tools/rx_paired_state_model.py": "63a95995b2ec1d403de827f0180d4f97d05c34a5b5da1a1432b394017244e1ae",
+    "tools/rx_paired_state_cv.py": "96e0d1ffcf367b3fa34054d86c1f5054a7f072b5f359ddb5f05e70da0ba927cb",
+    "tools/rx_presence_filter.py": "4b1edc247ba7560a2beacff6c92d85b3889849fddc84d8d5f97ae9f50ae77516",
+    "tests/research/test_rx_paired_state_model.py": "4415c4f2fe758bef102920fdc79b2c75404731d4e96fd549aada8cc41b68f123",
+    "tests/research/test_rx_paired_state_cv.py": "931913754905f521ce06fd36af7c63f59c5fdd373d126e039be77222405eb3b8"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "command": [
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "reports/2026_09_28_rx_sequence_followup/cases-resources.txt",
+    "/usr/bin/timeout",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    ".venv/bin/python",
+    "-m",
+    "tools.rx_sequence_case_audit",
+    "--sequences",
+    "reports/2026_09_28_rx_receiver_order/sequences.json",
+    "--matched",
+    "reports/2026_09_28_rx_receiver_order/matched-opportunities.jsonl",
+    "--opportunities",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities/opportunities.jsonl",
+    "--output",
+    "reports/2026_09_28_rx_sequence_followup/cases.json"
+  ],
+  "sha256": {
+    "tools/rx_sequence_case_audit.py": "c3ce63fcf6e473d195356cc410be04c911779fa6673980c4e9ade64745445423",
+    "tests/research/test_rx_sequence_case_audit.py": "d3e6f21f6138927113f0390cd5e5b0cb915d3e43d4e0bdc382aa8ba60a8d3b95",
+    "reports/2026_09_28_rx_sequence_followup/PROTOCOL.md": "33f2439bd687bbd140a9ad6ae7fb347d3e0eaf5932433a1f67792798dd71451e",
+    "reports/2026_09_28_rx_receiver_order/sequences.json": "b77b55fe5019e563e437aabf2238b4a818d6a03ff38fefbd28425cac644a5187",
+    "reports/2026_09_28_rx_receiver_order/matched-opportunities.jsonl": "d7a8be22921df1bdd862cd683ee11f81d30194cd81a6d0393bd75d2e4d9e2d8c",
+    "reports/2026_09_28_rx_tracking_evidence/opportunities/opportunities.jsonl": "1f46102d99b3b4febfeaad31c16c7a9b8516ace2bdfcdcada2a6f3b5855759a4"
+  }
+}

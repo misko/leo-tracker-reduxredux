@@ -1,0 +1,56 @@
+{
+  "schema": "arm-full-search-coarse32-audit/v1",
+  "scope": "completed ARM four-probe frozen-oracle comparison; no RF and no reduced search",
+  "source": {
+    "directory": "/var/tmp/leo-arm-full-search-coarse32-arm/run",
+    "results_sha256": "8e76311a01b9df3c386604c0bff0e95494fd669ad94e1951c17b3bb2a04160de",
+    "build_sha256": "dc7a0f3cf79ae007fcf49768c2a6b1127eaf6640d4114ddceaedb397ee716267",
+    "run_sha256": "855d796ea4baae5b34545620ac1584224372d4666c1aa1fcad9011567e1cdcd6",
+    "probe_sha256": "1ca9d63db866116c5474fdfbedfb9b0a90b9f0f52494b2d09cf9507ee7ad0fde"
+  },
+  "inventory": {
+    "probe_records": 4,
+    "ordered_candidates": 32,
+    "candidate_identity_exact": true,
+    "final_glrt_within_tolerance": true
+  },
+  "tolerance_failures": {
+    "coarse_grids": {
+      "count": 4,
+      "total": 4,
+      "maximum_absolute_difference": 2.8363340270898263e-07,
+      "tolerance": 2e-11
+    },
+    "coarse_score": {
+      "count": 31,
+      "total": 32,
+      "maximum_absolute_difference": 1.4219198551934653e-07,
+      "tolerance": 2e-09
+    },
+    "all_other_compared_fields_within_tolerance": true
+  },
+  "maximum_deltas": {
+    "non_coarse_score": 2.0261570199409107e-15,
+    "conditioned_or_acquired_cfo_hz": 5.820766091346741e-11,
+    "tracking_cfo_hz": 2.837623469531536e-09,
+    "final_exact_score": 8.881784197001252e-16,
+    "final_control_score": 4.510281037539698e-16,
+    "final_margin": 7.216449660063518e-16
+  },
+  "margin_gate_hits": {
+    "reference": 2,
+    "native": 2,
+    "one_to_one_matched": 2,
+    "missed": 0,
+    "added": 0
+  },
+  "runtime_ms": {
+    "mean_reported_cpu": 3337.589109,
+    "mean_stage_cpu": {
+      "total": 3338.1209130000007,
+      "coarse": 1213.5051900000005,
+      "acquisition": 2070.7254465,
+      "glrt": 37.37017050000031
+    }
+  }
+}

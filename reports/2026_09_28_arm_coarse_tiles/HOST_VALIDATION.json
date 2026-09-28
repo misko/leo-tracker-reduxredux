@@ -1,0 +1,32 @@
+{
+  "schema": "arm-coarse-tiles-host-validation/v1",
+  "qualified": true,
+  "qualification_scope": "scientific parity on tested inputs; tile variants rejected for ARM runtime",
+  "performance_selected": false,
+  "tile": "4 adjacent epochs x 4 CFOs, three CFO blocks",
+  "kernel_parity": {
+    "tap_counts": [1, 2, 3, 4, 11, 17, 22, 33, 44, 45],
+    "zero_energy_lanes": true,
+    "comparison": "bit exact"
+  },
+  "full_grid_parity": {
+    "rates_hz": [2500000, 5000000, 7500000, 10000000],
+    "cases_per_rate": ["full 20 ms", "partial tail 2*n+17", "zero IQ"],
+    "comparison": "bit exact"
+  },
+  "saved_iq_cohort": {
+    "dwells": 64,
+    "windows": 1408,
+    "reference_positive": 1669,
+    "native_positive": 1669,
+    "matched_positive": 1669,
+    "ordered_field_errors": 0
+  },
+  "arm": {
+    "built": true,
+    "executed": true,
+    "hardware_receipts": "arm-results/",
+    "default_build": "/var/tmp/leo-arm-coarse-tile-arm-b",
+    "no_prefetch_build": "/var/tmp/leo-arm-coarse-tile-arm-noprefetch-b"
+  }
+}

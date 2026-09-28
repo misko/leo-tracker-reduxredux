@@ -1,0 +1,36 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/timeout",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_geometry_frozen_score",
+    "--model",
+    "reports/2026_09_28_rx_geometry_association/results.json",
+    "--training-dataset",
+    "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_confirmation/replay-evaluation-dataset.json",
+    "--allow-overlap",
+    "--output",
+    "reports/2026_09_28_rx_geometry_confirmation/replay-results.json"
+  ],
+  "sha256": {
+    "tools/rx_geometry_frozen_score.py": "466c0285603761f9fdc1adce0bebc179d042a2220775d3b970456e0a4af0cb58",
+    "tools/rx_geometry_fit.py": "855b9499e087ece0d2fbb0237e55f64d109f217b5e7fb1cf436f24db980d2fff",
+    "tools/rx_geometry_likelihood.py": "812760d50ce18fcf40b49b99b6276a6eadb23817ff2a9f784cc9bb40afc88c56",
+    "reports/2026_09_28_rx_geometry_association/results.json": "aeb6b79d4030644bde28c74be8609e406205df81bf6e351c9d5a2cab21169d8b",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_geometry_confirmation/replay-evaluation-dataset.json": "2be2dd75bff6c95c7f28be715e9580b0569050dcc09f459392f1808c7a327b3f"
+  }
+}

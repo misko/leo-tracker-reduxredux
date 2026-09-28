@@ -1,0 +1,38 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_alignment/direction-ds8-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_direction_support",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_confirmation/dataset.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_ds8_alignment/direction-ds8.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_ds8_alignment/launch_direction.py": "d488b24109b32cb9fef305d7f3525952325a26ff2a3627beb3d04f94c685eb68",
+    "reports/2026_09_28_rx_ds8_alignment/DIRECTION-SUPPORT-PROTOCOL.md": "ac3d136c87f4c1afe03b520e36dd7819eba9359ebaaf21d2ec7a6429c9498940",
+    "reports/2026_09_28_rx_ds8_confirmation/evidence-sha256.json": "f7e42224354d5135f7e6227f9ee916358c5fb3ab9f5e16745bb8dc4628b24d58",
+    "reports/2026_09_28_rx_ds8_confirmation/dataset.json": "a4af171d012a6d211958baba756f2cd164ad3c418c3ead8a3a9277185b50b538",
+    "tools/rx_direction_support.py": "9def1cb100040fd5d63d7c360ad597c8e43849a6077d262ce272a08e6961995a",
+    "tests/research/test_rx_direction_support.py": "63f8356daf3b444a23c4b11ce45035ac5da4614103eb1efa9393c6df72c99f4b"
+  }
+}

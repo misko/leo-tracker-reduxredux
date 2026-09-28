@@ -1,0 +1,84 @@
+{
+  "schema": "rx-beam-crossing-conditional-input-contract/v1",
+  "status": "ready_for_bounded_conditional_reception_test",
+  "cohort": {
+    "manifest_path": "reports/2026_09_27_roof_direction_subset/evaluation_manifest.json",
+    "manifest_sha256": "sha256:d2731064e3471cecfa730232ce80248757a885228db56c39cbc0eb499de69010",
+    "inventory_path": "reports/2026_09_27_roof_direction_subset/evaluation_inventory.json",
+    "inventory_sha256": "sha256:dd404460c9b9eb163db6bfee14f0f7cb78c56cbea060e4c96eb0a5f4a013a832",
+    "sessions": 10,
+    "original_split": "six calibration and four holdout sessions; this existing split is research-exposed and is not a new blind split",
+    "opportunities": {"visits": 22155, "paired_receiver_probes": 44310, "probe_duration_ms": 20, "probe_offset_ms": 0}
+  },
+  "conditional_endpoint_rows": {
+    "path": "reports/2026_09_27_roof_direction_subset/model_rows.json",
+    "sha256": "sha256:3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554",
+    "rows": 10369,
+    "tracks": 599,
+    "meaning": "One row per detection-selected, frequency-held graph observation that has a resolved raw candidate anchor. matched is a same-probe compatible candidate counterpart outcome conditional on that anchor.",
+    "fields": {
+      "identity_time": ["session_id", "track_id", "observation_id", "observation_utc_ns", "anchor_key", "physical_pair_key"],
+      "conditional_outcome": ["receiver_id", "anchor_margin", "matched", "compatible_candidate_count", "counterpart_rank", "log_margin_ratio_rx1_rx0"],
+      "nuisance": ["channel", "edge", "sample_rate_hz", "source_track_span_s"],
+      "old_rowwise_geometry": ["east", "up", "east_variance"],
+      "frozen_frequency_summary": ["candidate_ids", "candidate_probabilities", "candidate_training_rms_hz"]
+    },
+    "old_rowwise_geometry_ready": true,
+    "four_class_target_endpoint_ready": false
+  },
+  "candidate_temporal_los": {
+    "path": "reports/2026_09_27_roof_direction_subset/associations.json",
+    "sha256": "sha256:3de2afd15dc6c2db1f3d191fdf1551d9357c3cc49c331dda87c06702ee3a414a",
+    "rows": 25323,
+    "sessions": 10,
+    "arrays_per_row": 3,
+    "fields": ["session_id (branch)", "track_id", "projected_observation_id", "observation_utc_ns", "support_center_utc_ns", "propagation_utc_ns", "training", "stream_id", "candidate_ids[3]", "candidate_probabilities[3]", "candidate_training_rms_hz[3]", "candidate_azimuth_deg[3]", "candidate_elevation_deg[3]"],
+    "time_alignment": "All 25,323 rows have observation_utc_ns = support_center_utc_ns = propagation_utc_ns. The product validates propagation/support delta within 1 microsecond.",
+    "join_to_conditional_rows": ["session_id", "track_id", "model_rows.observation_id = associations.projected_observation_id"],
+    "temporal_feature_ready": "Yes. Sort within track by observation_utc_ns and use candidate-specific azimuth/elevation trajectories or posterior-weighted direction changes. No LOS regeneration is required for this conditional test."
+  },
+  "frequency_information": {
+    "available": "Per-track fixed top-3 candidate IDs, training-only Doppler soft weights, and candidate training RMS are materialized in both inputs. associations.training marks the source observation mask: 14,954 training rows and 10,369 held rows.",
+    "not_materialized": "Per-held-observation frequency log likelihood and an ID-keyed table of raw fractional_tracking_cfo_hz are not present in these compact JSON files.",
+    "minimal_read_only_derivation_if_cfo_is_required": "Load only the ten caches named by evaluation_inventory and run the existing source_links.py resolution path: project_scanner_candidates, reconstruct_persistent_hop_trajectories, then persistent_hop_tracklet_graph. Join by its documented source provenance tuple plus normalized CFO. This is graph projection/resolution, not a reception fit; preserve the existing association masks and freeze the result before scoring.",
+    "implication": "The compact launch can compare old posterior-mean rowwise direction against explicit candidate-specific temporal LOS features for the conditional matched-counterpart endpoint. It cannot report a new held-frequency predictive metric unless separate frequency likelihood extraction is frozen."
+  },
+  "required_mask_policy": {
+    "existing_masks": "associations.training is the pre-existing per-observation frequency mask. Candidate probabilities were made from its training residuals and reception outcomes were not used to select identities.",
+    "new_comparison_masks": "Freeze a whole-recording calibration/evaluation assignment and keep each track's paired receivers/source-overlap group together. Do not derive it from matched outcome, crossing availability, or reception margin."
+  },
+  "independent_association_join_audit": {
+    "associations_rows": 25323,
+    "model_rows": 10369,
+    "association_held_rows": 10369,
+    "exact_key": ["session_id", "track_id", "projected_observation_id = observation_id"],
+    "result": "The model-row key set equals the associations.training=false key set exactly. No duplicate key, candidate-ID mismatch, candidate-weight mismatch, candidate-RMS mismatch, or timestamp mismatch was found.",
+    "per_track_candidate_invariant": "All 599 tracks retain exactly three distinct candidate IDs, the same ordered weights, and the same ordered candidate training RMS across their association rows. All weights are finite, nonnegative, and sum to one within 1e-12.",
+    "los_units_and_time": "candidate_azimuth_deg is in [0.002511489336122541, 359.98407940954945] and candidate_elevation_deg is in [16.072919078641455, 89.69734209978672]; all values are finite. Every association row has observation_utc_ns = support_center_utc_ns = propagation_utc_ns.",
+    "source_point_reference": ["source_group_id", "source_sample_start", "source_sample_end", "support_center_utc_ns", "stream_id"],
+    "receipt_path": "reports/2026_09_28_rx_beam_crossing/input-audit/ASSOCIATION-JOIN-ADDENDUM.md"
+  },
+  "ratio_deduplication": {
+    "eligible_rows": 6285,
+    "key": "physical_pair_key, which sorts both complete anchor keys session_id:visit_index:probe_index:receiver_id:candidate_rank",
+    "rule": "Keep one row per non-null physical_pair_key; where reciprocal anchor rows exist, prefer receiver_id=rx0, then lexical anchor_key. Preserve singleton matched keys.",
+    "retained_rows": 6043,
+    "removed_reciprocal_rows": 242,
+    "retained_tracks": 485,
+    "retained_sessions": 10,
+    "retained_receiver_anchors": {"rx0": 3072, "rx1": 2971},
+    "ratio_available_for_all_retained_rows": true
+  },
+  "new_seeded_split_exposure": {
+    "status": "not an untouched validation cohort",
+    "old_cfo_bias": "The existing matched endpoint uses a 2380.1434201757074 Hz CFO bias estimated from the old six-session calibration partition. Reusing it after a different seeded 6/4 assignment leaks the old partition into newly assigned evaluation recordings. Recompute a replacement using only the new calibration recordings or treat the result as exposed.",
+    "track_and_association": "Persistent graph tracks, source-link resolution, and the current held model rows were constructed before the new seeded assignment from detection-gated observations across their whole recordings. They cannot provide an unbiased first/last detection or neither target outcome, and should be described as conditional/exposed support.",
+    "frequency_weights": "associations.training prevents reception outcomes from selecting the stored candidate weights, but it is an old within-track frequency mask rather than the new whole-recording 6/4 assignment. The association branch also used the known roof position as a truth diagnostic. Do not call a new seeded split blind frequency validation without rebuilding and freezing its association inputs under the new mask."
+  },
+  "limitations": [
+    "All endpoints are conditional on a detected anchor; neither-receiver target events and first/last detection order are unavailable.",
+    "Candidate identities are frequency-model associations, not decoded target truth.",
+    "The associations branch uses the known roof position as a truth diagnostic, so its LOS supports a conditional geometry feasibility test only.",
+    "The nominal receiver axes are +/-10 degrees with provisional software-to-physical mapping and unmeasured phase centers."
+  ]
+}

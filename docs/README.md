@@ -144,6 +144,11 @@ The new hierarchy does not discard the repository's detailed material:
 
 ## Maintenance rule
 
+The [2026-09-28 report publication inventory](../reports/2026_09_28_publication_inventory/README.md)
+indexes the receiver-geometry, DS7/DS8 and ARM research backlog, including
+visualizations, archived local variants and checksum-verified evidence restoration.
+It preserves negative results and distinguishes protocols from completed experiments.
+
 A change that affects a public product, detector meaning, pipeline stage,
 scientific gate, CLI workflow, or operator action must update its canonical
 page. New pages follow the [documentation standard](contributing/documentation.md).

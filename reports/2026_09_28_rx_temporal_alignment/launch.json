@@ -1,0 +1,41 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "nice",
+    "-n",
+    "19",
+    "prlimit",
+    "--as=4294967296",
+    "--",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_temporal_alignment/resources.txt",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_temporal_alignment",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--transfer-results",
+    "reports/2026_09_28_rx_temporal_transfer/results.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_temporal_alignment/results.json"
+  ],
+  "sha256": {
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_temporal_transfer/results.json": "7e32bb8f965d4286fa8e6a41f4dcc58df3680c518bb2630ae3ff2de4559ab8d8",
+    "reports/2026_09_28_rx_temporal_transfer/evidence-sha256.json": "7d54b5f8d9f3f625d3abb8d0f6504ff8ab32dd37ee94678d3fb8f1effdbd8c7d",
+    "tools/rx_temporal_alignment.py": "8d41f8d104169b3dc9bc80c82fcc7a014065a12a3e52fad1ba8579aebf953df5",
+    "tests/research/test_rx_temporal_alignment.py": "a8138b617e3e6441ac06bc416680d0c98d670fe639ba1cfb9595484fa3dc8dd1",
+    "reports/2026_09_28_rx_temporal_alignment/PROTOCOL.md": "30be878403d130e59ffc835b40618323370591b7a5c1ca7da1190dc8df6328a9",
+    "reports/2026_09_28_rx_temporal_alignment/launch.py": "bb3d73e8444a10d97ad6f7c129c650a3d50d0fd01e96a1eab95a45a14eac9338"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "glrt-after",
+  "capture": false,
+  "core": 0,
+  "rx": 2,
+  "jobs": 120,
+  "period": 120,
+  "seconds": 20,
+  "capture_seconds": 45,
+  "capture_rate": 2500000,
+  "recorded_arrivals": false,
+  "sd_write": false,
+  "target_directory": "/mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after",
+  "command": "mkdir /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after && cd /mnt/glrtbench/leo-static-glrt.4jwvdm && (./paced-arm cases-2500000.txt 2500000 120 120 0 2 > /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after/glrt.jsonl 2> /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after/glrt.stderr & gpid=$!; echo $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after/glrt.pid; ./monitor-arm 20 220 $gpid > /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after/cpu.jsonl; wait $gpid; echo $? > /mnt/glrtbench/leo-static-glrt.4jwvdm/concurrent-glrt-after/glrt.exit)",
+  "source_hashes": {
+    "paced_v1.c": "aed747bfedccd5858deec76aee71c7da5f22e3dce358b42e6f92a2dadea61c3c",
+    "paced-arm": "b1536af9427937c5bf77d214c982ea3cd371980596767989e506f8e4aa398f99",
+    "monitor.c": "e416d99124f1aeee717258b5a273272d37586d83237315b553725d05b2482771",
+    "monitor-arm": "237400a427b7161bd85afcd3e91197debb7be04d9e0d8749ff225d7bd2515bd0",
+    "capture.py": "0b2b6a77bd5c9efc2d79ff9266fe3e0ca623dcd9d95802363abd9be1fded5b0d",
+    "run_phase.py": "a22d5e2638486b8da3f145d1c9f55fc11eac47bc6d76f965663c559e640f2d48",
+    "cases-2500000.txt": "e729acca5bc0f76f901af26480f1723221afdbd8305ef4ce22c7032f5ba94f93"
+  }
+}

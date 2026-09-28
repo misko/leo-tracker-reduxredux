@@ -1,0 +1,63 @@
+{
+  "schema": "rx-ds8-confirmation-readiness/v1",
+  "status": "derived-inputs-available-cache-export-not-run",
+  "selection_rule": "Earliest DS8 capture_start_utc_ns, then session_id, independently at each supported sample rate; no candidate or outcome field used.",
+  "selected": [
+    {
+      "session_id": "scan-fw-aadcd44b66085469",
+      "sample_rate_hz": 7500000,
+      "capture_start_utc_ns": 1790525329519835170,
+      "capture_end_utc_ns": 1790525631374771026,
+      "input_manifest_sha256": "sha256:570571d8a5f1257ee40a541700803117da753d9379837d9c4410a8fdbde01e2f",
+      "analysis_manifest_sha256": "sha256:6f7d19047de974b8bf65e956a73962fac55978dc5f481adc137495f756aacffd",
+      "pose_revision": "gauss-r20-roof-20260926-v1",
+      "pose_binding_digest": "sha256:26c9890f1e32c0ecfa0ad3c65d6f8473971ecdd5e552392e1e2f289df11a9911",
+      "tracking_contract": "leo.contracts.scanner_tracking.TrackingInput",
+      "probes": 4438,
+      "historical_exposure": "DS8 rate-validation recording; previously analyzed"
+    },
+    {
+      "session_id": "scan-fw-ac05824a99b22ffd",
+      "sample_rate_hz": 5000000,
+      "capture_start_utc_ns": 1790525754014558201,
+      "capture_end_utc_ns": 1790526055018009517,
+      "input_manifest_sha256": "sha256:780afc9cceea90d1ff639bb36caad5598f995d28f18125846ecc6e2d6904978d",
+      "analysis_manifest_sha256": "sha256:7ccd790f00bc352b007d4063658db4ed6082d02d834800c1f9f254637db11752",
+      "pose_revision": "gauss-r20-roof-20260926-v1",
+      "pose_binding_digest": "sha256:dd39ce82156a67b3f04d0d1e5a4b05b20af07ceeeb0ccd2e346176acd836becf",
+      "tracking_contract": "leo.contracts.scanner_tracking.TrackingInput",
+      "probes": 4430,
+      "historical_exposure": "DS8 corpus member; no claim of being historically uninspected"
+    },
+    {
+      "session_id": "scan-fw-226485b45dd0d0cf",
+      "sample_rate_hz": 2500000,
+      "capture_start_utc_ns": 1790526179074988475,
+      "capture_end_utc_ns": 1790526480512927133,
+      "input_manifest_sha256": "sha256:128d9f1ce063663b1b89e633585760a66d995b8f896a01968691b6a3630cc49f",
+      "analysis_manifest_sha256": "sha256:0c7bef77b8900acce3be3df7f34e2d05f8b1e8f7242bfd65852f122b1c9676cf",
+      "pose_revision": "gauss-r20-roof-20260926-v1",
+      "pose_binding_digest": "sha256:9b3188a46afac877e5f05c3d142badf0d582cbfda6d05d40f78ec1a2a6df1418",
+      "tracking_contract": "leo.contracts.scanner_tracking.TrackingInput",
+      "probes": 4430,
+      "historical_exposure": "DS8 corpus member; no claim of being historically uninspected"
+    },
+    {
+      "session_id": "scan-fw-9c5f3143152db63d",
+      "sample_rate_hz": 10000000,
+      "capture_start_utc_ns": 1790527027918045168,
+      "capture_end_utc_ns": 1790527329560617397,
+      "input_manifest_sha256": "sha256:a42d90a95f0d66dbbe7b108fd2af5242063d1c64eade68deb77033cb52e61850",
+      "analysis_manifest_sha256": "sha256:085c831fbb136f3d9ebd567c4d06d72f1270c237f492c75a5bbe158b3482302d",
+      "pose_revision": "gauss-r20-roof-20260926-v1",
+      "pose_binding_digest": "sha256:3b201b76cffe9bf79fc462cb5cd4282652be6901de4435b052ecbd281f2a7b56",
+      "tracking_contract": "leo.contracts.scanner_tracking.TrackingInput",
+      "probes": 4430,
+      "historical_exposure": "DS8 10 Msps tracking population was metadata-screened in the correspondence study; no blind claim"
+    }
+  ],
+  "missing_stage": "Serialize the four existing TrackingInput objects with pickle protocol 5 into exclusive local cache paths, hash them, validate qualification/complete visits/paired receivers, and emit ready evaluation inventory plus pose/snapshot authority. No new detector or GLRT is required.",
+  "source_sha256": {
+    "ds8_manifest": "33689ed731c176bff865d703ea0aaa2e5f2ef60168f3f150276ffc125fbbbc9b"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/opportunities-resources.txt",
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/prlimit",
+    "--as=4294967296",
+    "/usr/bin/nice",
+    "-n",
+    "19",
+    "/usr/bin/env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "NUMEXPR_NUM_THREADS=1",
+    "PYTHONHASHSEED=0",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_paired_opportunities",
+    "--inventory",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/selected-inventory.json",
+    "--output-dir",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/opportunities"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/PROTOCOL.md": "ce662426dd3a04813584c2745aec5369e15bb02afb6abce89786b32c1a1da6de",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/launch.py": "9feb6da76300d291d9981ace7a9c990e55b9023be229a24f7d8f915dd59bc0d5",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_paired_opportunities.py": "7537f04880333afd4fad45ff989723e0bea1b9ebeda39b93fb5d3d6d7122b90d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_confirmation/selected-inventory.json": "62cd81a8f8eb47d9e9b430c43804d0455b268f116c555866fab363220dd82351"
+  }
+}

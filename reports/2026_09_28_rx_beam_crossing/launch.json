@@ -1,0 +1,54 @@
+{
+  "frozen_at_utc": "2026-09-28T01:28:45.126636+00:00",
+  "attempt": 1,
+  "status": "pre_fit_frozen",
+  "command": "bash reports/2026_09_28_rx_beam_crossing/run-pilot.sh",
+  "files": {
+    "tools/ds7_beam_crossing.py": "5810182d4cb7625cb5ff80d27f9222d7833ffe6a9ac279ad33cd6a9ac607c038",
+    "tools/ds7_beam_crossing_eval.py": "72d72b436c856e5b53a25189f4fa26997bc30ea24a55360dd78fc75e81815f40",
+    "tests/research/test_ds7_beam_crossing.py": "d305e4de7061e47875bf0feb4b35b64f898bd7ff7500ff9f6fe1a480f4962edc",
+    "tests/research/test_ds7_beam_crossing_eval.py": "b95edcd895671d0e6f0abf84a6a62b7eaf5eae29514355ff0625eba4af6ae3a2",
+    "reports/2026_09_28_rx_beam_crossing/PROTOCOL.md": "610d091bf25c56a94e70e895677ad7d31974bca1ad4dd5e3d5d4e59aae7f8bc3",
+    "reports/2026_09_28_rx_beam_crossing/run-pilot.sh": "62f030c795c81f869b8f5b2bbae66e4cd830f1f1b106903fb71655e88d167dd1",
+    "reports/2026_09_28_rx_beam_crossing/input-audit/CONDITIONAL-INPUT-CONTRACT.json": "c52baf157dbc8f7e17b622bc48aabd5c4b05a34213bd6132d86140d0d59e8119",
+    "reports/2026_09_27_roof_direction_subset/model_rows.json": "3b5ea2646eaaadbb084aca45e1443c980b4e9be0b458a30de1c25aa423d0a554",
+    "reports/2026_09_27_roof_direction_subset/associations.json": "3de2afd15dc6c2db1f3d191fdf1551d9357c3cc49c331dda87c06702ee3a414a"
+  },
+  "validation": "21 tests passed; Ruff clean",
+  "prelaunch_limitation": "5 MHz occurs only in evaluation, so nuisance support gate fails by design; descriptive result only",
+  "optimizer": {
+    "method": "L-BFGS-B",
+    "maxiter_per_start": 300,
+    "maxfun_per_start": 5000,
+    "starts": "training residual median intercept shifted by 0,-0.5,+0.5; slope1; derivative0; logtau0; logsigma log(max(training residual std,0.05))",
+    "bounds": {
+      "intercept": [
+        -10,
+        10
+      ],
+      "contrast_slope": [
+        0,
+        50
+      ],
+      "derivative_slope": [
+        -50,
+        50
+      ],
+      "log_tau": [
+        -4,
+        10
+      ],
+      "log_sigma": [
+        -6,
+        4
+      ]
+    }
+  },
+  "resources": {
+    "wall_seconds": 300,
+    "termination_grace_seconds": 5,
+    "address_space_bytes": 4294967296,
+    "threads": 1,
+    "nice": 19
+  }
+}

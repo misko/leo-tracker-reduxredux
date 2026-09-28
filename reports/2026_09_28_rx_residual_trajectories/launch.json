@@ -1,0 +1,39 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_residual_trajectories/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.rx_residual_trajectories",
+    "--dataset",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--output",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_rx_residual_trajectories/results.json"
+  ],
+  "cwd": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "sha256": {
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_residual_trajectories/launch.py": "b985742592d1b2d49ff4db1f4f76f1b85afec7b6835eb7a8a92fa6cd02398b9b",
+    "reports/2026_09_28_rx_residual_trajectories/PROTOCOL.md": "d749d2b045b37035c862938e7596e18ffeee5f59c5e2b02beb88babb64b51097",
+    "reports/2026_09_28_rx_temporal_alignment/evidence-sha256.json": "684559382de9729b613cc9fd9dafa680f1f9975ab7e8bbad1ddac5b542c9939f",
+    "reports/2026_09_28_rx_temporal_alignment/launch.json": "51cfc6034e383198f73656de5ade156fa7a17ac22d0de6f4a1c6d1349da5fb9f",
+    "tools/rx_residual_trajectories.py": "3227f9923d5c39176b0c1a557ff183898ab314b58e9b5c32f62a186749c3acfb",
+    "tests/research/test_rx_residual_trajectories.py": "7cdcd525d4101767d9a9f6f31b8da7cd4b33e84177c67eb95eeb1230e72bd35a"
+  }
+}

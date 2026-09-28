@@ -1,0 +1,24 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "tools.rx_background_audit",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_association/dataset.json",
+    "--dataset",
+    "reports/2026_09_28_rx_geometry_confirmation/dataset.json",
+    "--output",
+    "reports/2026_09_28_rx_presence_geometry/background-audit.json"
+  ],
+  "limits": {
+    "cpu_threads": 1,
+    "wall_seconds": 30,
+    "inputs": "existing JSON only"
+  },
+  "sha256": {
+    "tools/rx_background_audit.py": "b79cf815a4ce170ad7624220be1d2433c4ed3007932fc204d08ddf76da695958",
+    "tests/research/test_rx_background_audit.py": "050257ab7b4461e3f523a4e2ef3ef891ca6f222d45faf86f83c6b5f8a2dbbaf5",
+    "reports/2026_09_28_rx_geometry_association/dataset.json": "7680b762edc3c3599b65494156f53bb1d60fc9a9edfd7d6fc1914a04a78628f7",
+    "reports/2026_09_28_rx_geometry_confirmation/dataset.json": "99e4e42fac6341d26f6ebd29cbae905cf52a3fb9f8faf2af989683f2ee8b9968"
+  }
+}

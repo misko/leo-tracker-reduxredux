@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_nominal_beam_cv.py", line 200, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_nominal_beam_cv.py", line 193, in main
+    result = run_fold(json.loads(payload), args.fold)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_nominal_beam_cv.py", line 80, in run_fold
+    prepared = prepare_families(restricted)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_causal_full_calibration.py", line 46, in prepare_families
+    rows = calibration_rows(document)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/rx_background_crossvalidation.py", line 59, in calibration_rows
+    raise ValueError(f"expected {expected_records} calibration recordings")
+ValueError: expected 6 calibration recordings

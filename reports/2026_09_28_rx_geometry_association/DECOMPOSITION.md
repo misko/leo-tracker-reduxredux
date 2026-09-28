@@ -1,0 +1,9 @@
+# Post-fit diagnostic: frequency versus count contributions
+
+The primary frozen score is the complete candidate-set predictive log density. It includes both detection counts and frequencies. After observing the primary contrasts, decompose this score to determine whether the static gain reflects count prediction, frequency prediction given counts, or both. This is a descriptive post-fit diagnostic, not a newly prespecified primary endpoint or an additional fitted comparison.
+
+Do not refit coefficients, width, clutter, prior weights or calibration transforms. For each held window, retain the full-observation-history component posterior from the original model. Compute the complete-set predictive score and the count-only predictive score under that same posterior. Their difference is the conditional frequency score, up to the common choice of unordered-set reference measure. Update the posterior with the complete raw observation only, exactly as in the primary scoring. A separately count-conditioned history would not be this decomposition.
+
+With n candidates and clutter intensity lambda, the single-receiver count PMF conditional on detection probability p is Poisson(n;lambda) times [(1-p) + p*n/lambda]. Integrate both receivers jointly over the same shared normal state. In the existing paired kernel, replace the signal sums by n, then add sum_r[n_r*log(alias_period)-log(n_r!)] to remove circle-frequency units and restore the Poisson count normalization.
+
+Evaluate all D/S/T/swap/reverse variants using the same held windows and posterior paths. Verify full=count+conditional and that full totals reproduce the original results. Record per-record and equal-record contrasts. Freeze diagnostic source/input hashes before execution; one numerical thread, 4 GiB, 300 seconds. No reported diagnostic improvement changes the failure of the original tilt control gate.
