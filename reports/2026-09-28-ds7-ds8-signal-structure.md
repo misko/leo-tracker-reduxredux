@@ -1,5 +1,8 @@
 # Recurring 60-bit Structure in Narrowband Starlink Recordings: A DS7–DS8 Repeat-Pass Study
 
+Follow-up: [An exact cyclic-phase generator and additional short-region recovery](2026_09_28_sequence_semantics/README.md)
+explains the 60-word vocabulary and reports further full-band UT decoding checks.
+
 ## Motivation
 
 Publicly described Starlink synchronization sequences and edge pilots make it
