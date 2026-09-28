@@ -1,0 +1,70 @@
+{
+  "arm_sha256": "sha256:228a745c8301b60cbb9a015411bdca3a1aa6f37356ccba27eda65b839bfbf039",
+  "code": [
+    {
+      "path": "/usr/bin/sudo",
+      "sha256": "sha256:2eb5d31f91a12d75a2a05b54b7f79775e5565898af0b3263414fcabaad922afb"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py",
+      "sha256": "sha256:6e8981fa407b5610c2143b85ba8c12a52144e5e2cdeed63df8b47a32e8ad30f1"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 0.5960276280529797,
+  "inputs_sha256": "sha256:4d83dfdf15973a4ba3a4eedc51b8a37ee4e1719e79153ed866a42c681fa9d449",
+  "max_seconds": 60.0,
+  "model_id": "ds7-association-multibasin-matched-budget-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.12.14",
+  "resolved_command": [
+    "/usr/bin/sudo",
+    "-n",
+    "env",
+    "PYTHONPATH=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "nice",
+    "-n",
+    "19",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.ds7_association_adapter"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 0.5725056070368737,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:5a15b859702eaebff653019895dbc050bce302e94e47c24860d33e446ef42c22",
+          "request.json": "sha256:bdeb1471d2788e85a84798cd4b04d8fd28335917f2637c3086f4a47cfc8c4e33"
+        },
+        "request_sha256": "sha256:bdeb1471d2788e85a84798cd4b04d8fd28335917f2637c3086f4a47cfc8c4e33",
+        "response_validated": false
+      },
+      "response": {
+        "reason": "ValueError: Adapter exited 1",
+        "schema": "ds7-response/v1",
+        "status": "failed",
+        "unit_id": "single-001"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887"
+        ],
+        "unit_id": "single-001"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:35f91a257d25ce01a44c5a32af6cbef80972951ff82d907f28d22fab1ce0ad42",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T17:33:20.392516+00:00",
+  "selected_unit_ids": [
+    "single-001"
+  ],
+  "started_utc": "2026-09-27T17:33:19.796513+00:00",
+  "unit_seconds": 60.0
+}

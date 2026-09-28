@@ -1,0 +1,18 @@
+{
+  "schema": "ds7-preparation-lease/v1",
+  "owner": "ds7_orbit_execution",
+  "operation": "Matched first-session all-archive newest-per-object Space-Track orbit comparison",
+  "selection_evidence": "Fixed roster audit: complete 11119-object coverage; six changed shortlisted objects in 26 slots across 23 tracks, all newer epochs",
+  "maximum_preparation_wall_seconds": 120,
+  "maximum_adapter_wall_seconds_per_run": 60,
+  "maximum_total_adapter_seconds": 180,
+  "maximum_compute_processes": 1,
+  "blas_threads": 1,
+  "maximum_incremental_ram_gib": 2,
+  "nice": 19,
+  "raw_iq_read_bytes": 0,
+  "fixed_contract": "Exact baseline observations, masks, candidate identities/order, catalogue normalization, search, and frozen solver. Only orbital states change. No missing-object substitution or roster expansion.",
+  "fit_gate": "Coordinator confirms baseline numerical oracle, same-code deterministic replay, and final adapter freeze",
+  "required_controls": "Byte-identical baseline bank is zero-change control; changed-bank fit plus deterministic replay. Retain source product and changed-slot bindings.",
+  "stop_policy": "Preserve timeout/failure receipts. Do not widen compute limits or inspect reference scores."
+}

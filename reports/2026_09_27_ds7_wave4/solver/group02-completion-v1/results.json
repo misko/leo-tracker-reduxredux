@@ -1,0 +1,264 @@
+{
+  "arm_sha256": "sha256:796738e010537bc301038b1ac218be9f050e0ea23836bed3ee0a7e9254771425",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 268.6777086260263,
+  "inputs_sha256": "sha256:757330968794a7a57e8df23ca07a1f7519f4372df22bee06b25e0912c78f65a6",
+  "max_seconds": 610.0,
+  "model_id": "ds7-corrected-static-doppler-wave2-exact-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 19.252284676069394,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:9aab022f8f9f78b99fede2dbe5c70ac977b423168cf1cbcde19e385fed1639c9",
+          "response.json": "sha256:fdd18810836f1ceb4786d68de70adc623a795f1de2aa2a47de974437696cb292"
+        },
+        "request_sha256": "sha256:9aab022f8f9f78b99fede2dbe5c70ac977b423168cf1cbcde19e385fed1639c9",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            -2.817067308781103,
+            -1.218779800512908
+          ],
+          "nfev": 16,
+          "recordings": 1,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 464.7990276555066,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 14,
+              "objective": -12032.390284784113,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 16,
+              "objective": -12032.390284785024,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 16,
+              "objective": -12032.390284784093,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.2324118351548681
+          ],
+          "total_nfev": 46,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-9915fe34f3675e73",
+              "tracks": []
+            }
+          ],
+          "tracks": 64,
+          "train_log_likelihood": -12032.390284784093
+        },
+        "estimate": {
+          "latitude_deg": 37.845289257156224,
+          "longitude_deg": -122.51646211902138
+        },
+        "rf_rms_hz": 464.7990276555066,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-016"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-9915fe34f3675e73"
+        ],
+        "unit_id": "single-016"
+      }
+    },
+    {
+      "elapsed_seconds": 248.33139528310858,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:66f4f1dc1e6afd7b015cdb8bbf7ca56ed5c966ca6e23ffaf36b56f463e148c77",
+          "response.json": "sha256:fa06d27fbd0f6bf631f7e2a8ec885550a55f81c9379f3035bd98091778bd3cef"
+        },
+        "request_sha256": "sha256:66f4f1dc1e6afd7b015cdb8bbf7ca56ed5c966ca6e23ffaf36b56f463e148c77",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            0.09623862791529898,
+            0.06085937955048003
+          ],
+          "nfev": 26,
+          "recordings": 8,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 580.5152684411916,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 33,
+              "objective": -89594.22261667851,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 26,
+              "objective": -89594.2226091965,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 36,
+              "objective": -89594.22261416863,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -1.1449744462058042,
+            -0.14804700678636837,
+            -0.057927567413064825,
+            -0.5447272669237057,
+            0.28893502937851673,
+            0.26128440546544157,
+            0.07705442253850037,
+            0.20108846205380967
+          ],
+          "total_nfev": 95,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-37939cd7af96ffad",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-fff6615096b71f1e",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-409fc1cbdd38dab5",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-a8b89a59f134d9e1",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-9fb9f600946a202e",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-18dfd83dc4498c15",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-e5806d27e568368e",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-9915fe34f3675e73",
+              "tracks": []
+            }
+          ],
+          "tracks": 469,
+          "train_log_likelihood": -89594.2226091965
+        },
+        "estimate": {
+          "latitude_deg": 37.85679732118845,
+          "longitude_deg": -122.48327881734978
+        },
+        "rf_rms_hz": 580.5152684411916,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "group8-02"
+      },
+      "unit": {
+        "kind": "group8",
+        "session_ids": [
+          "scan-fw-37939cd7af96ffad",
+          "scan-fw-fff6615096b71f1e",
+          "scan-fw-409fc1cbdd38dab5",
+          "scan-fw-a8b89a59f134d9e1",
+          "scan-fw-9fb9f600946a202e",
+          "scan-fw-18dfd83dc4498c15",
+          "scan-fw-e5806d27e568368e",
+          "scan-fw-9915fe34f3675e73"
+        ],
+        "unit_id": "group8-02"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T19:26:35.145274+00:00",
+  "selected_unit_ids": [
+    "single-016",
+    "group8-02"
+  ],
+  "started_utc": "2026-09-27T19:22:06.467600+00:00",
+  "unit_seconds": 300.0
+}

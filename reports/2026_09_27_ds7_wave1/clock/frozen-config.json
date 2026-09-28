@@ -1,0 +1,60 @@
+{
+  "schema": "ds7-clock-gate-config/v1",
+  "direction": "C",
+  "frozen_utc_date": "2026-09-27",
+  "reference_audit": "reference_excluded",
+  "allowed_inputs": {
+    "plan": {
+      "path": "reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json",
+      "sha256": "882e2dd9a015eab44441df2d277157092d6ee23c96083e90a1487a663b49f7ad"
+    },
+    "baseline_track_export": {
+      "path": "reports/2026_09_27_ds7_wave1/baseline/exports/scan-fw-5f7bf896e4552887-tracks.json",
+      "sha256": "0bac9e493857e02879f9a2d6a483699669d2ebf064464d2ec1d31e5a77d2d27a"
+    }
+  },
+  "variant": {
+    "name": "receiver_shared_linear_frequency_drift",
+    "state": "one drift_hz_s per receiver, applied to observation time centered within each track while retaining the baseline per-track offsets",
+    "sharing": "shared across every track and channel for the same receiver and fitted capture; cross-capture sharing requires independent stable-path/epoch evidence",
+    "frequency_scaling": "none; drift is absolute baseband Hz per second",
+    "constant_frequency_bias": "excluded as structurally redundant with the baseline per-track offset columns",
+    "sample_clock_ppm": "excluded",
+    "utc_bias_s": "excluded",
+    "utc_drift_s_s": "excluded",
+    "lnb_state": "excluded",
+    "zero_correction_control": true
+  },
+  "independent_constraint": {
+    "required_contract": "immutable receiver/sample-clock stability evidence with receiver and capture-interval binding",
+    "required_identity_fields": ["radio_id", "receiver_id", "capture interval"],
+    "required_validity": "evidence covers every fitted capture interval; cross-capture sharing additionally proves stable physical-path and hardware-epoch identity",
+    "required_bound": "finite drift_hz_s bounds derived independently of DS7 position/reference and residual tuning",
+    "missing_policy": "do not fit"
+  },
+  "admission_gates": {
+    "baseline_inputs": "matched baseline inputs, candidate bank, orbit inputs, and residual/Jacobian export for the selected panel are sealed",
+    "structural_redundancy": "candidate column is not in the span of baseline per-track offsets; constant receiver bias is permanently rejected by this gate",
+    "identity": "each observation maps unambiguously to a receiver and capture interval; any cross-capture sharing has independent stable-path/epoch evidence",
+    "calibration": "independent drift/stability evidence and digest are available and valid for every fitted interval",
+    "injection": "recover zero and both independently bounded drift endpoints within max(0.05 Hz/s, 0.10 * interval_width_hz_s), with no position injection",
+    "identifiability": "unregularized weighted design has full column rank and scaled condition number <= 1000; each clock column retains normalized residual norm >= 0.05 after projection on position and existing nuisance columns",
+    "constraint_removal": "removing the calibration constraint does not change rank, move a clock state by more than 2 standard errors, or create a boundary solution",
+    "replay": "zero-correction reproduces baseline predictions and residuals within 1e-9 relative and 1e-6 Hz absolute tolerance",
+    "held_group": "same frozen parameters improve held-group location score; residual reduction alone does not pass"
+  },
+  "stop_conditions": [
+    "clock column is rank deficient or has projected normalized norm below 0.05",
+    "clock estimate is prior-boundary or materially prior-controlled",
+    "clock state absorbs a position derivative",
+    "independent path/epoch calibration is absent or invalid",
+    "held-group location does not improve"
+  ],
+  "execution_limits": {
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "memory_mib": 2048,
+    "max_compute_seconds": 60,
+    "iq_bytes": 0
+  }
+}

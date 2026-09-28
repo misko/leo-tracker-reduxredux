@@ -1,0 +1,77 @@
+{
+  "schema": "ds7-cfo-wave2-lane-eligibility/v1",
+  "protocol_state": "postreview_correction",
+  "source_result": "profile-results-v3.json",
+  "rule": "A train-line prediction is eligible only when receiver, channel, actual RF, and exported baseline track are identical across both training windows and the held window.",
+  "canonical_frequency_hz": 11200000000.0,
+  "ofdm_alias_spacing_hz": 227272.72727272726,
+  "eligible": [
+    {
+      "receiver_id": 0,
+      "track_id": "sha256:775d3aa289a60b0ce368e9323450be1705a9066158b99de0791ac422dba660c2",
+      "channel": 3,
+      "actual_rf_hz": 11440000000.0,
+      "training_visits": [5, 8],
+      "held_visit": 11,
+      "candidate_ids": [
+        "sha256:1567774bef98dc32b7305cc73881c32901c5ba3f40b80d829b045e5e43401268",
+        "sha256:3071473a55ba5ff579a2ab19dc029d0e21c83170be4431aac2cf20a50b445e89",
+        "sha256:916528c3e333aeb9e4376dbddf9d030ed00a9db50b7ffffdaea0169bc6b1a5bb"
+      ],
+      "training_mask": [true, true, false],
+      "alias_indexes": [0, 0, 0],
+      "canonical_measured_hz": [105874.8024964184, 104656.96212735749, 103275.85957494166],
+      "export_measured_hz": [105874.8024964184, 104656.9621273575, 103275.85957494166],
+      "maximum_mapping_difference_hz": 1.4551915228366852e-11
+    },
+    {
+      "receiver_id": 1,
+      "track_id": "sha256:96d0470867b25d5e5ec9296616d8fa6a932a69207d7e0fc0fef5eb913c47f01b",
+      "channel": 3,
+      "actual_rf_hz": 11440000000.0,
+      "training_visits": [5, 8],
+      "held_visit": 11,
+      "candidate_ids": [
+        "sha256:5ce68dc2a77a8665386ddb59802f1c1b2e811c06253ac3c56f2e05fe88c1fbbe",
+        "sha256:1d08662dd83f9cffd2220bffaa6cc69102dbb355d68a34ee42cc72e919dda757",
+        "sha256:e26cc27aa915e1ac6dc7130026f724fa6a4307a5f837686dca027297261a9d23"
+      ],
+      "training_mask": [true, true, false],
+      "alias_indexes": [3, 3, 3],
+      "canonical_measured_hz": [108555.62619198988, 107248.43297375852, 105894.4545037339],
+      "export_measured_hz": [108555.62619198998, 107248.43297375855, 105894.4545037339],
+      "maximum_mapping_difference_hz": 1.0186340659856796e-10
+    }
+  ],
+  "inapplicable": [
+    {
+      "visit_index": 12,
+      "receiver_id": 0,
+      "channel": 2,
+      "actual_rf_hz": 11190000000.0,
+      "candidate_id": "sha256:310712e17b394aaf43deda8355bfea717f5c64724275f2794316312c3c132288",
+      "reason": "training windows are channel 3 at 11.44 GHz; no cross-channel alias/emitter normalization was frozen"
+    },
+    {
+      "visit_index": 12,
+      "receiver_id": 1,
+      "channel": 2,
+      "actual_rf_hz": 11190000000.0,
+      "candidate_id": "sha256:50dc3a907fb05bfecd3d577a84cfd7958a98262d6c048a239adfe4f8ae920446",
+      "reason": "training windows are channel 3 at 11.44 GHz; no cross-channel alias/emitter normalization was frozen"
+    }
+  ],
+  "eligible_held_profiled_coherence": [
+    {"receiver_id": 0, "method": "baseline", "visit_index": 11, "value": 0.1343076691149442},
+    {"receiver_id": 0, "method": "ordinary_profile", "visit_index": 11, "value": 0.15063462788549462},
+    {"receiver_id": 0, "method": "robust_profile", "visit_index": 11, "value": 0.15133986333189325},
+    {"receiver_id": 0, "method": "differential_phase", "visit_index": 11, "value": 0.029838978899829838},
+    {"receiver_id": 1, "method": "baseline", "visit_index": 11, "value": 0.10302094733755227},
+    {"receiver_id": 1, "method": "ordinary_profile", "visit_index": 11, "value": 0.10410162381300338},
+    {"receiver_id": 1, "method": "robust_profile", "visit_index": 11, "value": 0.10459384842456551},
+    {"receiver_id": 1, "method": "differential_phase", "visit_index": 11, "value": 0.026726740301928814}
+  ],
+  "reference_audit": "reference_excluded",
+  "iq_bytes_added": 0,
+  "compute_seconds_added": 0
+}

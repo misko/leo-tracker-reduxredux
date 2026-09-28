@@ -1,0 +1,20 @@
+{
+  "schema": "ds7-clock-recovery-spec/v1",
+  "scope": "synthetic prerequisite only; no real DS7 clock fit or scoring",
+  "donor_session": "scan-fw-5f7bf896e4552887",
+  "donor_response": "reports/2026_09_27_ds7_wave1/baseline/smoke-final-a-v1/single-001/response.json",
+  "donor_position_east_north_km": [3.705984977262451, -1.9755568160870454],
+  "donor_tau_s": -0.2772259707590678,
+  "candidate_policy": "training-MAP candidate at sealed donor position and tau",
+  "offset_policy": "stationary Student-t4 training offset profiled from frozen observations for the selected candidate",
+  "injection_policy": "physical native-Hz/s receiver slope multiplied by 11.2GHz/actualRF and by time centered within each track",
+  "cases_native_hz_s": [[0.0, 0.0], [1.0, -1.0], [-1.0, 1.0]],
+  "fit_parameters": ["east_km", "north_km", "tau_s", "receiver0_native_hz_s", "receiver1_native_hz_s"],
+  "fit_policy": "full candidate mixture; stationary per-track offsets profiled; no calibrated slope prior",
+  "starts": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, -2.0, 0.0, 0.0], [0.0, 0.0, 2.0, 0.0, 0.0]],
+  "bounds": [[-25.0, 25.0], [-25.0, 25.0], [-5.0, 5.0], [-2.0, 2.0], [-2.0, 2.0]],
+  "thresholds": {"position_error_m": 100.0, "receiver_slope_error_hz_s": 0.05, "tau_error_s": 0.05},
+  "case_limit_seconds": 60,
+  "total_limit_seconds": 180,
+  "reference_audit": "reference_excluded"
+}

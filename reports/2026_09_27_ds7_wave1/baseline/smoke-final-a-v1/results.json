@@ -1,0 +1,113 @@
+{
+  "arm_sha256": "sha256:b3702cd99e849f37956da43e083a1d2f6601f137d5ae55c89bc3868020da5e2b",
+  "code": [
+    {
+      "path": "/usr/bin/sudo",
+      "sha256": "sha256:2eb5d31f91a12d75a2a05b54b7f79775e5565898af0b3263414fcabaad922afb"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 24.370264034951106,
+  "inputs_sha256": "sha256:4d83dfdf15973a4ba3a4eedc51b8a37ee4e1719e79153ed866a42c681fa9d449",
+  "max_seconds": 60.0,
+  "model_id": "ds7-corrected-static-doppler-v1",
+  "plan_sha256": "sha256:7f73ba8e2f591ac188b74013a96721139a11648da91c80f7685189f0a3961a6a",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/usr/bin/sudo",
+    "-n",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 24.337618716992438,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:9ca7043d913245bb50a9a4ba1f2a5296d7f8159af787a52e47465e292498775d",
+          "response.json": "sha256:fb24b9a388927a4a753101074e1c58b9d6229880ffe95c4822a6f359f0720b3d"
+        },
+        "request_sha256": "sha256:9ca7043d913245bb50a9a4ba1f2a5296d7f8159af787a52e47465e292498775d",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            3.705984977262451,
+            -1.9755568160870454
+          ],
+          "nfev": 14,
+          "recordings": 1,
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 13,
+              "objective": -10129.739009069539,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 14,
+              "objective": -10129.739009069435,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 15,
+              "objective": -10129.739009069554,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.2772259707590678
+          ],
+          "total_nfev": 42,
+          "tracks": 56,
+          "train_log_likelihood": -10129.739009069435
+        },
+        "estimate": {
+          "latitude_deg": 37.838483402436374,
+          "longitude_deg": -122.44216288079141
+        },
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-001"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887"
+        ],
+        "unit_id": "single-001"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:35f91a257d25ce01a44c5a32af6cbef80972951ff82d907f28d22fab1ce0ad42",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T17:31:37.466314+00:00",
+  "selected_unit_ids": [
+    "single-001"
+  ],
+  "started_utc": "2026-09-27T17:31:13.096087+00:00",
+  "unit_seconds": 60.0
+}

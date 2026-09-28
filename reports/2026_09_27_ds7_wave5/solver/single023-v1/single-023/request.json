@@ -1,0 +1,135 @@
+{
+  "captures": [
+    {
+      "bandwidth_hz": 10000000,
+      "capture_end_utc_ns": 1790497640387117671,
+      "capture_start_earliest_utc_ns": 1790497338563405684,
+      "capture_start_latest_utc_ns": 1790497338931593136,
+      "capture_start_utc_ns": 1790497338747499410,
+      "chunk_inventory_sha256": "sha256:5c63f9f7296dcd5355f926f184ccf207885bc9434ed3c7bf8bca056c57f04b68",
+      "manifest_sha256": "sha256:1b8cea3b61deec76a7d2607d06cfbed5685c7ddae75c47c4fa9a6d0852ffc24d",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_ids": [
+        0,
+        1
+      ],
+      "sample_rate_hz": 10000000,
+      "session_id": "scan-fw-7f5a2af3dfc94718",
+      "total_sample_count": 2656800000,
+      "uncompressed_sha256": "sha256:9cf46238863a6a3cb1a965da593909460b65ac76c48e6844c4dc64dbf1573a01",
+      "visits": 2214
+    }
+  ],
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "inputs": [
+    {
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave5/inputs/scan-fw-7f5a2af3dfc94718-tracks.json",
+          "sha256": "sha256:769efa15ddee949f28848aa900750827cfae2f35aef033bcb905a21343faa6ff"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.leo/ds7-wave5/baseline/scan-fw-7f5a2af3dfc94718/manifest.json",
+          "sha256": "sha256:6e659b83b8200e17297b3a442c6c64d85cb66936fc9f1e6a67ab976aae400a45"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.leo/ds7-wave5/baseline/scan-fw-7f5a2af3dfc94718/banks.npz",
+          "sha256": "sha256:924436bcdd9cf9e141981475459a0af94f8ff83c01917c44c542f2b76a033ec1"
+        }
+      ],
+      "manifest_sha256": "sha256:1b8cea3b61deec76a7d2607d06cfbed5685c7ddae75c47c4fa9a6d0852ffc24d",
+      "reason": null,
+      "session_id": "scan-fw-7f5a2af3dfc94718",
+      "state": "ready"
+    }
+  ],
+  "inputs_sha256": "sha256:84abe0671d3609c32796dd3c014fc7f6052e3f47dee73158e46f08271f16834c",
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "schema": "ds7-request/v1",
+  "unit": {
+    "kind": "single",
+    "session_ids": [
+      "scan-fw-7f5a2af3dfc94718"
+    ],
+    "unit_id": "single-023"
+  }
+}

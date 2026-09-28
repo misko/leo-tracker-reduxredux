@@ -1,0 +1,48 @@
+{
+  "schema": "ds7-cfo-handoff/v1",
+  "sequence": 1,
+  "operation": "append_only_baseline_export_binding",
+  "panel_receipt": {
+    "path": "reports/2026_09_27_ds7_wave1/cfo/panel.json",
+    "sha256": "sha256:9bac03bf49d9f536212a03cb115aeba08e01b2980c895e140dce636183d76e91",
+    "modified_by_handoff": false
+  },
+  "panel_member": {
+    "session_id": "scan-fw-a40658642d9ade6a",
+    "sample_rate_hz": 10000000,
+    "manifest_sha256": "sha256:6a914312b9b0794d5a862974173543646506cf26efb14d69a6eb21f9f3fa96c2",
+    "tracking_product_sha256": "sha256:d2cb60732b000d26e9672b72d63e6d4ca41ef29f96d4c806a18b0876a41b712e"
+  },
+  "baseline_export": {
+    "path": "reports/2026_09_27_ds7_wave1/baseline/exports/scan-fw-a40658642d9ade6a-tracks.json",
+    "sha256": "sha256:5e2f564996bf4f0dc451902857a97dee9b8e9bda07d3eca08d3c84caed3a40d2",
+    "schema": "ds7-baseline-track-export/v1",
+    "session_id": "scan-fw-a40658642d9ade6a",
+    "manifest_sha256": "sha256:6a914312b9b0794d5a862974173543646506cf26efb14d69a6eb21f9f3fa96c2",
+    "analysis_manifest_sha256": "sha256:d2cb60732b000d26e9672b72d63e6d4ca41ef29f96d4c806a18b0876a41b712e",
+    "track_count": 59,
+    "reference_audit": "reference_excluded"
+  },
+  "binding_checks": {
+    "session_matches_panel": true,
+    "sample_rate_matches_panel": true,
+    "source_manifest_matches_panel": true,
+    "analysis_manifest_matches_panel_tracking_product": true
+  },
+  "comparison_state": "not_ready_for_same_epoch_waveform_measurement",
+  "remaining_required_inputs": [
+    "Per-observation source sample start/end or an immutable native-window identity bound to the recording manifest.",
+    "Per-observation absolute UTC support start/center/end and exact receiver/visit/probe identity.",
+    "Detected pilot edge and acquisition-qualified frame timing or frame epoch for each comparison window.",
+    "Acquisition-bound absolute CFO alias/basin and residual search interval for each epoch.",
+    "Baseline support and rejection diagnostics needed to preserve the same epoch mask, including false-support controls.",
+    "A frozen held-window definition that maps exported training masks to the comparison epochs.",
+    "Read-only native samples for those bounded windows, or a versioned derived matched-pilot matrix carrying equivalent source bindings."
+  ],
+  "limitations": [
+    "The export supplies track times, measured frequency, receiver, visit, RF lane, channel, and training mask; it does not supply native waveform windows or acquisition timing/alias evidence.",
+    "A 10 MS/s sample rate alone does not establish that a known pilot is present or that pilot timing and CFO alias support are valid.",
+    "The unavailable 7.5 MS/s tracking product in the frozen panel means cached tracking evidence was unavailable; it is not evidence that the raw recording failed or lacks signal content.",
+    "No IQ, model fit, geographic score, pose, or reference value was read for this handoff."
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "ds7-wave2-input-preparation/v1",
+  "reference_audit": "reference_excluded",
+  "plan": "reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json",
+  "frozen_inputs": {
+    "path": "reports/2026_09_27_ds7_wave2/inputs/inputs-prefix4-ready-v1.json",
+    "sha256": "sha256:61fb2641ce60ee7062a12f2fb88908b8f4545376083329ce76b19f1209b0f947",
+    "ready": 4,
+    "unavailable": 84
+  },
+  "source_sha256": {
+    "tools/ds7_export_baseline.py": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4",
+    "tools/ds7_eval.py": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+    "config/ds7/baseline-ready-v1.json": "sha256:b4d0ed2c21c85b5831b79d40ad14b1ad9e58dd7442b3676442ac472f3391d1e6"
+  },
+  "runtime": {
+    "python": "3.14.4",
+    "numpy": "2.4.6",
+    "scipy": "1.18.1"
+  },
+  "resource_policy": {
+    "cached_source_reader": "serialized",
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "nice": 19,
+    "export_cap_seconds": 90,
+    "bank_cap_seconds": 150,
+    "timeout_placement": "sudo executes timeout, which executes the privileged Python process"
+  },
+  "commands": {
+    "export": "sudo -n timeout --signal=TERM --kill-after=5s 90s nice -n 19 env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python tools/ds7_export_baseline.py --plan reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json --session SESSION --output reports/2026_09_27_ds7_wave2/inputs/SESSION-tracks.json",
+    "bank": "sudo -n timeout --signal=TERM --kill-after=5s 150s nice -n 19 env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python tools/ds7_export_baseline.py --banks --plan reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json --session SESSION --tracks reports/2026_09_27_ds7_wave2/inputs/SESSION-tracks.json --output .leo/ds7-wave2/baseline/SESSION",
+    "freeze": "sudo -n nice -n 19 env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python tools/ds7_eval.py freeze-inputs --plan reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json --index reports/2026_09_27_ds7_wave2/inputs/inputs-prefix4-index.json --output reports/2026_09_27_ds7_wave2/inputs/inputs-prefix4-ready-v1.json"
+  },
+  "sessions": [
+    {"session_id":"scan-fw-5f7bf896e4552887","ordinal":1,"status":"reused_exact_wave1_bytes"},
+    {"session_id":"scan-fw-a40658642d9ade6a","ordinal":2,"status":"reused_exact_wave1_bytes"},
+    {"session_id":"scan-fw-3b5aa99026fbf2cc","ordinal":3,"export_elapsed_seconds":38.959888871060684,"bank_elapsed_seconds":121.23873214004561,"status":"ready_eligible_bank"},
+    {"session_id":"scan-fw-4461e9a2d9d598cb","ordinal":4,"export_elapsed_seconds":41.727498727850616,"bank_elapsed_seconds":129.20433062501252,"status":"ready"},
+    {"session_id":"scan-fw-534e7fb34771526d","ordinal":5,"export_elapsed_seconds":49.70883742789738,"bank_status":"timeout","bank_cap_seconds":150,"status":"unavailable"},
+    {"session_id":"scan-fw-c8c8eac794484395","ordinal":6,"status":"unavailable_after_cap"},
+    {"session_id":"scan-fw-1a8fada20483c159","ordinal":7,"status":"unavailable_after_cap"},
+    {"session_id":"scan-fw-319730ab74ce43e7","ordinal":8,"status":"unavailable_after_cap"}
+  ],
+  "eligibility_receipt": {
+    "session_id": "scan-fw-3b5aa99026fbf2cc",
+    "observation_track_count": 62,
+    "bank_track_count": 61,
+    "excluded_track_reason": "frozen mask has 7 training points and 0 held-out points; bank policy requires at least 2 training and 1 held-out point",
+    "required_loader_behavior": "validate candidate coverage against eligible observations and retain an explicit exclusion receipt"
+  }
+}

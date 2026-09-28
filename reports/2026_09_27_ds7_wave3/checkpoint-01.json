@@ -1,0 +1,35 @@
+{
+  "schema": "ds7-goal-checkpoint/v1",
+  "observed_utc": "2026-09-27T18:34:29.667850+00:00",
+  "goal": "please achieve sub km accuracy on DS7",
+  "goal_achieved": false,
+  "turn_classification": "progress",
+  "new_evidence": [
+    "canonical CFO units verified",
+    "sealed first8 held-predictive residual audit",
+    "single081 qualified833.301595m with unchangedmodel"
+  ],
+  "tests": {
+    "ds7_component_passed": 72,
+    "frequency_mapping_passed": 2,
+    "ruff": "passed"
+  },
+  "live_preparation": {
+    "owner": "/root/ds7_wave2_inputs",
+    "exec_session_id": 94512,
+    "pid": 2489724,
+    "unit": "single-082 bank",
+    "confirmed_live_via_ps": true,
+    "per_bank_cap_seconds": 240,
+    "total_preparation_lease_seconds": 1200
+  },
+  "solver": {
+    "owner": "/root/ds7_wave2_solver",
+    "state": "single081 sealed; awaiting next immutable input from Terra",
+    "adapter_lease_seconds": 900,
+    "single081_seconds": 20.735
+  },
+  "latest_frozen_inputs": "inputs/inputs-first8-single081-ready-v1.json",
+  "latest_score": "coordinator/single081-score-v1/scores.json",
+  "resume_policy": "Revalidate existing live handles before waiting/restarting. Terra owns prep polling; solver owns sequential frozen transfer fits. Coordinator scores sealed predictions only. Complete remaining singles/group11 and controls within declared leases. Do not share scores with workers or adapt frozen policy to833m result. Full88 remains outstanding; do not mark goalcomplete from one single."
+}

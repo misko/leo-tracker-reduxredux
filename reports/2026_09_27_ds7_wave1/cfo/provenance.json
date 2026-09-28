@@ -1,0 +1,53 @@
+{
+  "schema": "ds7-cfo-preparation-provenance/v1",
+  "state": "panel_frozen",
+  "reference_policy": "reference_excluded",
+  "inputs_read": [
+    "reports/2026_09_27_ds7_evaluation_setup/plans/budgets/plan.json",
+    "cached numerical ScannerTrackingInput products through ScannerTrackingInputStore.load"
+  ],
+  "forbidden_inputs_read": [],
+  "raw_iq_read_bytes": 0,
+  "new_rf": false,
+  "scoring_performed": false,
+  "resource_receipt": {
+    "cpu": 1,
+    "processes": 1,
+    "blas_threads": 1,
+    "attempt_seconds_cap": 120,
+    "terminal_status": "timed_out",
+    "output_written": false
+  },
+  "public_api_inventory_receipt": {
+    "endpoint": "http://127.0.0.1:8090/api/v1/scanner/tracking/{session_id}",
+    "session_count": 88,
+    "per_request_timeout_seconds": 3,
+    "whole_pass_cap_seconds": 90,
+    "wall_seconds_approx": 4,
+    "cpu": 1,
+    "raw_iq_read_bytes": 0,
+    "states": {"complete": 85, "running": 2, "unavailable": 1},
+    "support_classes": {"strong": 53, "weak": 34, "failed": 1},
+    "projection": "state/schema/input and analysis digests/tracklet count and receiver IDs/attempted and deferred group counts"
+  },
+  "findings": {
+    "rates_hz": [2500000, 5000000, 7500000, 10000000],
+    "first_cached_product": {
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "state": "complete",
+      "sample_rate_hz": 7500000,
+      "probe_count": 4426,
+      "analysis_manifest_sha256": "sha256:752600684b05a9203d286fcf3ce31de731cf3e4831ce11ca780690f777061848"
+    },
+    "full_band_waveform_applicable": false,
+    "known_edge_pilot_minimum_sample_rate_hz": 1875000
+  },
+  "limitations": [
+    "The earlier 120-second numerical trajectory reconstruction attempt did not finish and produced no inventory; the frozen panel instead uses the cheaper public tracking-status metadata.",
+    "Capture completeness is not used as a substitute for cached tracking support.",
+    "The known-pilot implementation covers Qin edge tones; the recordings do not contain a full native Starlink channel.",
+    "Frame-CFO comparators require an acquisition-bound timing/CFO basin and do not establish cross-frame carrier continuity.",
+    "Candidate and track review may be site-conditioned even though observer-site and position fields are excluded from this preparation."
+  ],
+  "next_gate": "Await direction A's versioned matched observation product before any downstream comparison; request a bounded IQ lease only if matched real-data measurement remains useful."
+}

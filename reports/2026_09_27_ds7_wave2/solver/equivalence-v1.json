@@ -1,0 +1,52 @@
+{
+  "schema": "ds7-baseline-wave2-equivalence/v1",
+  "reference_policy": "reference excluded; unscored",
+  "frozen_original_sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+  "initial_fast_adapter_sha256": "sha256:3e38f909f8e5f55b7e86b7916027f3a1dafbf867b9344d6219a2a749b848e284",
+  "eligibility_fast_adapter_sha256": "sha256:6b17c138b0cdcd23a97463191df3f9db3f311e808e7b22cdcc1a87cd04bf2fcd",
+  "active_fast_adapter_sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+  "real_prefix2_probes": {
+    "points": [[0.0, 0.0, 0.0, 0.0], [2.25, -3.5, -1.125, 2.375], [-11.9, 11.8, 4.9, -4.8]],
+    "maximum_objective_absolute_difference": 0.0,
+    "maximum_gradient_component_absolute_difference": 0.0,
+    "objective_call_speedups": [3.537141998498507, 3.6868273613978, 2.529231611068459]
+  },
+  "sealed_regressions": {
+    "single_a_elapsed_seconds": 19.450,
+    "single_b_elapsed_seconds": 17.645,
+    "wave1_single_elapsed_seconds": 24.34,
+    "single_science_response_exact": true,
+    "single_repeat_science_response_exact": true,
+    "prefix2_elapsed_seconds": 32.983,
+    "wave1_prefix2_elapsed_seconds": 56.97,
+    "prefix2_science_response_exact": true
+  },
+  "eligibility_loader_repair": {
+    "rule": "at least 2 training observations and at least 1 held-out observation",
+    "single_001_science_response_exact_after_repair": true,
+    "single_001_elapsed_seconds": 14.734919154085219,
+    "prefix4_elapsed_seconds": 84.93195344111882,
+    "prefix4_total_nfev": 56,
+    "prefix4_excluded_tracks": 1,
+    "excluded_reason": "no_held_out_observation"
+  },
+  "first8": {
+    "group8_elapsed_seconds": 170.30393297900446,
+    "group8_total_nfev": 63,
+    "eligible_tracks": 486,
+    "excluded_tracks": 2,
+    "all_eight_singles_qualified_interior": true
+  },
+  "historical_style_initialization_control": {
+    "executed_adapter_sha256": "sha256:eb770005474e7483a407d8af572f2f9428db7abded208451ab220e1e766f100f",
+    "executed_arm_sha256": "sha256:c3e499f1fbb48b77693286d420f16dc512a674843852da7cc44440d9cc819d90",
+    "elapsed_seconds": 120.52868795511313,
+    "total_nfev": 43,
+    "starts": 2,
+    "baseline_starts": 3,
+    "qualified_interior": true
+  },
+  "total_adapter_seconds": 623.5827837241814,
+  "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+  "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information"
+}

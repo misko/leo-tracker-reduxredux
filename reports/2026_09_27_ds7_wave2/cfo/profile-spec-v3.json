@@ -1,0 +1,23 @@
+{
+  "schema": "ds7-cfo-wave2-profile-spec/v1",
+  "base_spec_path": "reports/2026_09_27_ds7_wave2/cfo/read-spec-v2.json",
+  "base_spec_sha256": "435cce6d58a9e2f71c0a58ff07d1dd16d9fd5e570317b686b93ca89ec82ac59b",
+  "session_id": "scan-fw-a40658642d9ade6a",
+  "manifest_sha256": "sha256:6a914312b9b0794d5a862974173543646506cf26efb14d69a6eb21f9f3fa96c2",
+  "methods": ["baseline", "ordinary_profile", "robust_profile", "differential_phase"],
+  "training_policy": "Per receiver and method, fit one UTC-linear line to window estimates from visits 5 and 8 only.",
+  "held_policy": "Evaluate each frozen prediction on the identical held even-Qin pilot matrices from visits 11 and 12; held estimates and profile optima never influence predictions.",
+  "held_objective": "Mean ordinary profiled coherence of held even-Qin frames at the method prediction; common waveform objective, larger is better.",
+  "window_estimate": "Median absolute CFO across complete frames; each frame uses the named estimator in its fixed acquisition basin.",
+  "residual_half_width_hz": 2000.0,
+  "ordinary": {"coarse_step_hz": 100.0, "fine_step_hz": 5.0},
+  "robust": {"coarse_step_hz": 100.0, "fine_step_hz": 5.0, "maximum_iterations": 4},
+  "source": {
+    "frame_cfo_sha256": "58d2cb8b1832afd4d44af24548ba75a3956fb5222ed0b28a055013b79fafbee5",
+    "pilot_demodulator_sha256": "cbcf337be60ae971eb7064293d1dadd79cf6f5c004aa6f1aad142db068c39600",
+    "data_ports": ["ScannerTrackingInputStore", "AdaptiveHopIqStore(read_only=True)"]
+  },
+  "remaining_iq_limit_bytes": 415236096,
+  "remaining_compute_limit_seconds": 95,
+  "reference_audit": "reference_excluded"
+}

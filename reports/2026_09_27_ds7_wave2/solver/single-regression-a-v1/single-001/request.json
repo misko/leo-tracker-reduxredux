@@ -1,0 +1,135 @@
+{
+  "captures": [
+    {
+      "bandwidth_hz": 7500000,
+      "capture_end_utc_ns": 1790488309681132860,
+      "capture_start_earliest_utc_ns": 1790488007753959191,
+      "capture_start_latest_utc_ns": 1790488008119748950,
+      "capture_start_utc_ns": 1790488007936854070,
+      "chunk_inventory_sha256": "sha256:8a6ae3dba96305d19aa10240f5d2b63e531c2de1e6de9cdbe06a56a728207882",
+      "manifest_sha256": "sha256:2766ae5e60df98db4cc70a4242b92c5b709c1b60b29ec38d67a7b1d93efcfdc7",
+      "radio_id": "radio_pluto_5d4d",
+      "receiver_ids": [
+        0,
+        1
+      ],
+      "sample_rate_hz": 7500000,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "total_sample_count": 1991700000,
+      "uncompressed_sha256": "sha256:297466fb30f2c47e01a32bfccf2f2516cb9c82fd69ddf7360720f03473bfe5b4",
+      "visits": 2213
+    }
+  ],
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "inputs": [
+    {
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave1/baseline/exports/scan-fw-5f7bf896e4552887-tracks.json",
+          "sha256": "sha256:0bac9e493857e02879f9a2d6a483699669d2ebf064464d2ec1d31e5a77d2d27a"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.leo/ds7-wave1/baseline/scan-fw-5f7bf896e4552887/manifest.json",
+          "sha256": "sha256:b3e295417ffec97a0b80a9997531b2a115efe62832befa633fd0b3854084e57f"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/.leo/ds7-wave1/baseline/scan-fw-5f7bf896e4552887/banks.npz",
+          "sha256": "sha256:e68c6e170139e481c41c361286adbb259c6a762bb240b8dfda0069f8ad9a12bd"
+        }
+      ],
+      "manifest_sha256": "sha256:2766ae5e60df98db4cc70a4242b92c5b709c1b60b29ec38d67a7b1d93efcfdc7",
+      "reason": null,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "state": "ready"
+    }
+  ],
+  "inputs_sha256": "sha256:4d83dfdf15973a4ba3a4eedc51b8a37ee4e1719e79153ed866a42c681fa9d449",
+  "model_id": "ds7-corrected-static-doppler-wave2-exact-v1",
+  "plan_sha256": "sha256:7f73ba8e2f591ac188b74013a96721139a11648da91c80f7685189f0a3961a6a",
+  "schema": "ds7-request/v1",
+  "unit": {
+    "kind": "single",
+    "session_ids": [
+      "scan-fw-5f7bf896e4552887"
+    ],
+    "unit_id": "single-001"
+  }
+}

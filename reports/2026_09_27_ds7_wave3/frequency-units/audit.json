@@ -1,0 +1,19 @@
+{
+  "schema": "ds7-frequency-units-audit/v1",
+  "finding": "tracking_candidate_native_then_trajectory_canonicalized",
+  "tracking_candidate_units": "native physical receiver CFO Hz; acquired CFO plus residual; no RF normalization",
+  "projected_candidate_units": "native physical receiver CFO Hz; copied verbatim while actual RF remains a separate field",
+  "prepared_track_units": "11.2 GHz canonical-RF-normalized and trajectory-relative-alias-dealiased Hz",
+  "formula": "exported = (11200000000 / actual_rf_hz) * (fractional_tracking_cfo_hz - relative_alias_index * (1 / 4.4e-6))",
+  "maximum_cached_mapping_error_hz": 1.0186340659856796e-10,
+  "examples": [
+    {"receiver_id": 0, "visit": 5, "native_hz": 108143.54826419879, "alias_index": 0, "actual_rf_hz": 11440000000.0, "export_hz": 105874.8024964184},
+    {"receiver_id": 0, "visit": 8, "native_hz": 106899.61131580087, "alias_index": 0, "actual_rf_hz": 11440000000.0, "export_hz": 104656.9621273575},
+    {"receiver_id": 0, "visit": 11, "native_hz": 105488.91370869041, "alias_index": 0, "actual_rf_hz": 11440000000.0, "export_hz": 103275.85957494166},
+    {"receiver_id": 1, "visit": 5, "native_hz": 792700.0, "alias_index": 3, "actual_rf_hz": 11440000000.0, "export_hz": 108555.62619198998},
+    {"receiver_id": 1, "visit": 8, "native_hz": 791364.7954985208, "alias_index": 3, "actual_rf_hz": 11440000000.0, "export_hz": 107248.43297375855},
+    {"receiver_id": 1, "visit": 11, "native_hz": 789981.8032041385, "alias_index": 3, "actual_rf_hz": 11440000000.0, "export_hz": 105894.4545037339}
+  ],
+  "reference_audit": "reference_excluded",
+  "iq_bytes": 0
+}

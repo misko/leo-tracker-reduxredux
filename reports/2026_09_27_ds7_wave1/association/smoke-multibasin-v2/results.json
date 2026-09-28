@@ -1,0 +1,70 @@
+{
+  "arm_sha256": "sha256:ecd0fd9b3275d46e5d77bfc67a9399ba205bcd63d0cd8a845c0c417834c30eb5",
+  "code": [
+    {
+      "path": "/usr/bin/sudo",
+      "sha256": "sha256:2eb5d31f91a12d75a2a05b54b7f79775e5565898af0b3263414fcabaad922afb"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py",
+      "sha256": "sha256:6e8981fa407b5610c2143b85ba8c12a52144e5e2cdeed63df8b47a32e8ad30f1"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 60.0360161580611,
+  "inputs_sha256": "sha256:4d83dfdf15973a4ba3a4eedc51b8a37ee4e1719e79153ed866a42c681fa9d449",
+  "max_seconds": 60.0,
+  "model_id": "ds7-association-multibasin-matched-budget-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.12.14",
+  "resolved_command": [
+    "/usr/bin/sudo",
+    "-n",
+    "env",
+    "PYTHONPATH=/home/mouse9911/gits/leo-tracker-reduxredux",
+    "nice",
+    "-n",
+    "19",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "-m",
+    "tools.ds7_association_adapter"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 60.00473614409566,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:f582b8425f014bb6c7f48937a065f5bc919105755447761c061d9dff08d5bb69"
+        },
+        "request_sha256": "sha256:f582b8425f014bb6c7f48937a065f5bc919105755447761c061d9dff08d5bb69",
+        "response_validated": false
+      },
+      "response": {
+        "reason": "TimeoutExpired: Command '['/usr/bin/sudo', '-n', 'env', 'PYTHONPATH=/home/mouse9911/gits/leo-tracker-reduxredux', 'nice', '-n', '19', '/opt/leo-tracker/current-api/.venv/bin/python', '-m', 'tools.ds7_association_adapter', '--request', '/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave1/association/smoke-multibasin-v2/single-001/request.json', '--response', '/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave1/association/smoke-multibasin-v2/single-001/response.json']' timed out after 59.999948784010485 seconds",
+        "schema": "ds7-response/v1",
+        "status": "failed",
+        "unit_id": "single-001"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887"
+        ],
+        "unit_id": "single-001"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:35f91a257d25ce01a44c5a32af6cbef80972951ff82d907f28d22fab1ce0ad42",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T17:34:52.516897+00:00",
+  "selected_unit_ids": [
+    "single-001"
+  ],
+  "started_utc": "2026-09-27T17:33:52.480903+00:00",
+  "unit_seconds": 60.0
+}

@@ -1,0 +1,147 @@
+{
+  "arm_sha256": "sha256:631c2243d8bfccc0df24ae1c3ab031c117cda6d5e81b1e23bbe39d2c207e245f",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_wave2_search_adapter.py",
+      "sha256": "sha256:7a4c4199b34834a5910747f89b7a09c80950a3d25e0f2e7a60fd78fa74c41bce"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_wave2_search_adapter.py",
+      "sha256": "sha256:7a4c4199b34834a5910747f89b7a09c80950a3d25e0f2e7a60fd78fa74c41bce"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py",
+      "sha256": "sha256:6e8981fa407b5610c2143b85ba8c12a52144e5e2cdeed63df8b47a32e8ad30f1"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:3e38f909f8e5f55b7e86b7916027f3a1dafbf867b9344d6219a2a749b848e284"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 14.916929945116863,
+  "inputs_sha256": "sha256:4d83dfdf15973a4ba3a4eedc51b8a37ee4e1719e79153ed866a42c681fa9d449",
+  "max_seconds": 300.0,
+  "model_id": "ds7-wave2-association-local-v1",
+  "plan_sha256": "sha256:7f73ba8e2f591ac188b74013a96721139a11648da91c80f7685189f0a3961a6a",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_wave2_search_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 14.889822168042883,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:5d3e800aba3a88b8894faa29587274f0cf6339128e754110c455bcd80aa1bc84",
+          "response.json": "sha256:1581c685f40e91eab8f64a054d9b1852bcca762c57195d18bdb590fc7ab82d50"
+        },
+        "request_sha256": "sha256:5d3e800aba3a88b8894faa29587274f0cf6339128e754110c455bcd80aa1bc84",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            3.705984977262451,
+            -1.9755568160870454
+          ],
+          "per_start_nfev_cap": 60,
+          "runs": [
+            {
+              "converged": true,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "nfev": 13,
+              "objective": -10129.739009069539,
+              "start": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "x": [
+                3.7059859614311703,
+                -1.9755555208758697,
+                -0.27722575758065043
+              ]
+            },
+            {
+              "converged": true,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "nfev": 14,
+              "objective": -10129.739009069435,
+              "start": [
+                0.0,
+                0.0,
+                -2.0
+              ],
+              "x": [
+                3.705984977262451,
+                -1.9755568160870454,
+                -0.2772259707590678
+              ]
+            },
+            {
+              "converged": true,
+              "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+              "nfev": 15,
+              "objective": -10129.739009069554,
+              "start": [
+                0.0,
+                0.0,
+                2.0
+              ],
+              "x": [
+                3.7059860294643263,
+                -1.9755576185231922,
+                -0.27722577760725
+              ]
+            }
+          ],
+          "search_policy": "local",
+          "solver": "ds7_matched_budget_association_search_v1",
+          "start_count": 3,
+          "timing_offsets_s": [
+            -0.2772259707590678
+          ],
+          "total_nfev": 42,
+          "total_nfev_cap": 180,
+          "train_log_likelihood": -10129.739009069435,
+          "winning_start_index": 1
+        },
+        "estimate": {
+          "latitude_deg": 37.838483402436374,
+          "longitude_deg": -122.44216288079141
+        },
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-001"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887"
+        ],
+        "unit_id": "single-001"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T17:54:06.443754+00:00",
+  "selected_unit_ids": [
+    "single-001"
+  ],
+  "started_utc": "2026-09-27T17:53:51.526842+00:00",
+  "unit_seconds": 300.0
+}

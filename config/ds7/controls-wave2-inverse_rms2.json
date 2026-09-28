@@ -1,0 +1,16 @@
+{
+  "schema": "ds7-arm/v1",
+  "status": "ready",
+  "model_id": "ds7-wave2-control-inverse_rms2",
+  "command": [
+    "python3",
+    "{repo}/tools/ds7_position_controls.py"
+  ],
+  "code_paths": [
+    "{repo}/tools/ds7_position_controls.py"
+  ],
+  "config": {
+    "method": "inverse_rms2",
+    "rms_policy": "training-MAP visible candidate stationary offset pooled residual RMS; frozen before fits"
+  }
+}

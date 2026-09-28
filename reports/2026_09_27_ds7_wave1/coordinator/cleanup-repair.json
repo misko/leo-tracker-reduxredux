@@ -1,0 +1,17 @@
+{
+  "component_tests_passed": 24,
+  "content_sha256": "sha256:84b46b93197372c4e266bb6d43f1613c74c6b4599c44b4fa3b456654d409b11f",
+  "historical_successful_runs": "Retained; completed before budget, no surviving child found. Working privileged adapter arms require transport repair before future execution.",
+  "incident_run": "association/smoke-multibasin-v2",
+  "observation": "Runner sealed a timeout at60s while privileged adapter PID2413396 remained alive at88s; coordinator killed only that owned process. No late response or seal inventory change occurred.",
+  "recorded_utc": "2026-09-27T17:38:27.165138+00:00",
+  "regressions": [
+    "Privilege/session launcher rejected before subprocess/log creation",
+    "Timed-out same-UID child killed and reaped"
+  ],
+  "repair": "Reject explicit privilege/session launchers in adapter argv, including behind env/timeout. Privileged runtimes require runner at same UID and direct interpreter command. Adapters must not detach or change privileges internally.",
+  "runner_sha256": "sha256:c20f0282d31975ef355e0ef57f103ac426d40596f76f492d737e93219e76dd31",
+  "schema": "ds7-runner-cleanup-repair/v1",
+  "scope": "Trusted adapter execution policy, not a security sandbox or universal descendant containment guarantee.",
+  "tests_sha256": "sha256:03d3f08af0c7b17779aae2dc1a39dac4f0a15e4a89390a64e5c93125183413bf"
+}

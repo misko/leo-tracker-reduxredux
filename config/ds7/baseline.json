@@ -1,0 +1,22 @@
+{
+  "schema": "ds7-arm/v1",
+  "status": "planned",
+  "model_id": "ds7-corrected-static-doppler-v1",
+  "command": [],
+  "code_paths": [],
+  "config": {
+    "solver": "corrected_stationary_penalized_track_offsets",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "position_state": "shared_horizontal_static",
+    "timing_state": "per_recording",
+    "orbit_policy": "newest_per_object_causal_archived_elements",
+    "seed": 20260927
+  },
+  "required_before_ready": [
+    "Implement adapter using frozen DS6 numerical solver, with all dependencies hashed",
+    "Declare geographic prior, altitude assumption, candidate policy and exact search bounds",
+    "Freeze visit masks and multistart seeds; prove evaluation visits cannot select winners",
+    "Pass stationary-offset, gradient and exact-orbit numerical checks"
+  ]
+}
