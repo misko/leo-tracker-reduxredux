@@ -1,0 +1,60 @@
+{
+  "schema": "ds7-full88-fixed-prediction-terminal-receipt/v1",
+  "status": "failed-no-retry",
+  "attempt": {
+    "audit_program": {
+      "path": "tools/ds7_residual_audit.py",
+      "sha256": "sha256:a560a1006a219a21ca7d3df1664d56cc2dfeb35c1e9b77330ee6f0bc5c677e2f"
+    },
+    "wall_cap_seconds": 300,
+    "address_space_limit_bytes": 8589934592,
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "nice": 19,
+    "resource_report": {
+      "path": "reports/2026_09_27_ds7_full88/residual/resource-time.txt",
+      "sha256": "sha256:e538dfef8c813c965b119e4e5f38a196c1440b4af8bf1ed22037ce876cddd7e8",
+      "exit_status": 1,
+      "elapsed_seconds": 60.31,
+      "maximum_resident_set_kib": 5977144,
+      "timeout_reached": false
+    }
+  },
+  "inputs": {
+    "independent_response_index": {
+      "path": "reports/2026_09_27_ds7_full88/residual/independent-response-index.json",
+      "sha256": "sha256:171d92fce23cb2377c2361aff6718747f411944a86ba180df0b68fc565202035",
+      "records": 88
+    },
+    "joint_request": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/request.json",
+      "sha256": "sha256:dfd5cec3384fc9dac44ad6d0751cbd438aca61d11a4e4cec35f8edaead641278"
+    },
+    "joint_response": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/response.json",
+      "sha256": "sha256:2ececb695853e740c955d7decea5f3e0db155639525d3b8b9376badf8f14d286"
+    },
+    "joint_seal": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/seal.json",
+      "sha256": "sha256:80d7e6d742f3bce1e661870d92cfaafc6218f6cf894503c8fa6fe7c15ae7c0d3"
+    }
+  },
+  "failure": {
+    "type": "ValueError",
+    "message": "audit requires a qualified frozen estimate",
+    "deterministic_condition": "single-062 is retained in the required 88-record independent index with boundary_hit=true; ds7_residual_audit.py response_x rejects every response whose boundary_hit is not false.",
+    "single_062": {
+      "session_id": "scan-fw-dbf7972f30e74755",
+      "response_sha256": "sha256:31487fe3f59ca0c811823a4047c6013c6b4343faa292bb46e504d7c64b2aaee2",
+      "seal_sha256": "sha256:0860714853f8180789157d8e15e707bc90dd55ca1a4f3e9a8a8fa075b4a2d5d2",
+      "converged": true,
+      "boundary_hit": true
+    }
+  },
+  "output": {
+    "path": "reports/2026_09_27_ds7_full88/residual/fixed-prediction-audit-v1.json",
+    "published": false
+  },
+  "process_absence_verified": true,
+  "retry": "prohibited by SPEC.md; no retry was run"
+}

@@ -1,0 +1,151 @@
+{
+  "code_paths": [
+    "{repo}/tools/ds7_historical_init_adapter.py",
+    "{repo}/tools/ds7_fast_baseline_adapter.py",
+    "{repo}/tools/ds7_baseline_adapter.py",
+    "{repo}/tools/ds7_export_baseline.py"
+  ],
+  "command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "{repo}/tools/ds7_historical_init_adapter.py"
+  ],
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "one explicit group8-01 unit; CPU1 and BLAS1; at most 300 seconds",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "historical_delta": "historical DS6 used independent fitted timing offsets and also tried a zero-position start; spherical equal-mean position is a declared wave2 control addition",
+    "initialization_policy": "two starts: spherical equal mean of eight qualified independent estimates with their independent fitted timing offsets; donor center with the same independent timing offsets",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "predeclared_historical_style_joint_initialization_control",
+    "single_fit_bindings": [
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/prefix4-panel-loaderfix-v1/single-001/response.json",
+        "response_sha256": "sha256:826beaa1303b643ad33c46d07f2f5812b3acf5b1221bc27e1d5fedcb428d52ad",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/prefix4-panel-loaderfix-v1/seal.json",
+        "seal_sha256": "sha256:c118ab6d24721bb04dbc0d5c50c8aff3b41455d599f25bdb481f27b9a5262feb",
+        "unit_id": "single-001"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/prefix2-regression-v1/single-002/response.json",
+        "response_sha256": "sha256:7d17e544da10f3a37c84afeea60032df96ba1852fccf0ee18f867f95186a3f54",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/prefix2-regression-v1/seal.json",
+        "seal_sha256": "sha256:81c8dbfeec49622c40386a625f119f23d4e9955ece8bb8f23116aa2b75e3582e",
+        "unit_id": "single-002"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/singles-003-004-v1/single-003/response.json",
+        "response_sha256": "sha256:2d093d13d22e562189bf27e3eb355bb9825b86a192e472878cbd55493dd505cd",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/singles-003-004-v1/seal.json",
+        "seal_sha256": "sha256:2a3fd2d6fe2ae18f6abd272008bd9d55fe36eb5bcf1b7bb3a4a5143d0db4f73d",
+        "unit_id": "single-003"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/singles-003-004-v1/single-004/response.json",
+        "response_sha256": "sha256:cb63b451f31558b847489e80e5267e3f3794688620178d924f8137d71c3784ca",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/singles-003-004-v1/seal.json",
+        "seal_sha256": "sha256:2a3fd2d6fe2ae18f6abd272008bd9d55fe36eb5bcf1b7bb3a4a5143d0db4f73d",
+        "unit_id": "single-004"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/single-005/response.json",
+        "response_sha256": "sha256:a18e546dc97fcf4927f9278219bae71e73da90a661cf498a2a250b970e89e8cb",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/seal.json",
+        "seal_sha256": "sha256:bc3602dc3a749c888c64348a7fcd25f13c8b6469ce1ec13b572eb7ef067f4a9b",
+        "unit_id": "single-005"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/single-006/response.json",
+        "response_sha256": "sha256:ab0a4ca2cd546e96130801222b5a62bc5357694886a1e58a8a02172eab64d082",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/seal.json",
+        "seal_sha256": "sha256:bc3602dc3a749c888c64348a7fcd25f13c8b6469ce1ec13b572eb7ef067f4a9b",
+        "unit_id": "single-006"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/single-007/response.json",
+        "response_sha256": "sha256:eca106a2c9b8ecb86d786700186d8bcec18dcf334e9eeedb67fe8db4aa34b69d",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/seal.json",
+        "seal_sha256": "sha256:bc3602dc3a749c888c64348a7fcd25f13c8b6469ce1ec13b572eb7ef067f4a9b",
+        "unit_id": "single-007"
+      },
+      {
+        "response_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/single-008/response.json",
+        "response_sha256": "sha256:348e5c271fbf794732d5cab88435b7c743820ae76d0b30ee0f8cdfc544420374",
+        "seal_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave2/solver/first8-panel-v1/seal.json",
+        "seal_sha256": "sha256:bc3602dc3a749c888c64348a7fcd25f13c8b6469ce1ec13b572eb7ef067f4a9b",
+        "unit_id": "single-008"
+      }
+    ],
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "model_id": "ds7-corrected-static-doppler-historical-style-init-v1",
+  "required_before_ready": [],
+  "schema": "ds7-arm/v1",
+  "status": "ready"
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "ds7-association-control-receipt/v1",
+  "reference_policy": "reference_excluded",
+  "baseline_adapter_sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+  "association_adapter_sha256": "sha256:6e8981fa407b5610c2143b85ba8c12a52144e5e2cdeed63df8b47a32e8ad30f1",
+  "canonical_rf_hz": 11200000000,
+  "controls": {
+    "candidate_row_permutation": {
+      "purpose": "label/order invariance, not wrong association",
+      "base_train_log_likelihood": -27.92999719499909,
+      "permuted_train_log_likelihood": -27.92999719499909,
+      "delta": 0.0,
+      "status": "pass"
+    },
+    "injected_wrong_trajectory": {
+      "transformation": "reverse candidate position and velocity over observation time",
+      "correct_train_log_likelihood": -27.92999719499909,
+      "wrong_train_log_likelihood": -69.44125954135657,
+      "correct_minus_wrong": 41.51126234635748,
+      "minimum_required_margin": 10.0,
+      "status": "pass"
+    }
+  },
+  "matched_search_budget": {
+    "total_nfev_cap": 180,
+    "local": {"start_count": 3, "per_start_nfev_cap": 60},
+    "multibasin": {"start_count": 9, "per_start_nfev_cap": 20}
+  },
+  "tests": {"passed": 8, "failed": 0}
+}

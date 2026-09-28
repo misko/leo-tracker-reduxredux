@@ -1,0 +1,205 @@
+{
+  "arm_sha256": "sha256:164fd4ee44b345ac799688a54710109858c8f7132c1518fc7baa654477ebc69c",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py",
+      "sha256": "sha256:a967136e32d12b844cc5d206723198c1eb31eb230506df8c510110ef5aa90a33"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py",
+      "sha256": "sha256:a967136e32d12b844cc5d206723198c1eb31eb230506df8c510110ef5aa90a33"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_objective.py",
+      "sha256": "sha256:2ef456b843b1f921877a1d8675dcb4b8e067074abda447d14cb00379f0be57dd"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 145.2508170020301,
+  "inputs_sha256": "sha256:6e35dce6da192a0261d5654cfb9ad97ccd587ab2eed39ce1a2c62534dbadb893",
+  "max_seconds": 300.0,
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 144.9675991430413,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:578ae1c050b04862b53f41d9ccb0b527a845dac160f160b6bb1a37ad0cb35584",
+          "response.json": "sha256:0ebe0322c4136e6deb38fa8c6582a38574a4b0b99ceefd4a477ef4332383703c"
+        },
+        "request_sha256": "sha256:578ae1c050b04862b53f41d9ccb0b527a845dac160f160b6bb1a37ad0cb35584",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            2.1532500862019774,
+            -1.933263989196708
+          ],
+          "nfev": 21,
+          "recordings": 8,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 434.91303788273854,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 21,
+              "objective": -95020.46249315202,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 21,
+              "objective": -95020.46249315573,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 21,
+              "objective": -95020.46249312042,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.30258697221931996,
+            -0.06154155805605447,
+            0.19449170281949368,
+            0.032839315562864686,
+            -0.18721963707808673,
+            -0.955897656664332,
+            -0.3943064773555314,
+            0.3333761577717114
+          ],
+          "total_nfev": 63,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-5f7bf896e4552887",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-a40658642d9ade6a",
+              "tracks": []
+            },
+            {
+              "count": 1,
+              "session_id": "scan-fw-3b5aa99026fbf2cc",
+              "tracks": [
+                {
+                  "held_out_observations": 0,
+                  "reasons": [
+                    "no_held_out_observation"
+                  ],
+                  "track_id": "sha256:c32055624e1a870121b8ebfd600de072dc15ba817657810f776460fa12d4e722",
+                  "training_observations": 7
+                }
+              ]
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-4461e9a2d9d598cb",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-534e7fb34771526d",
+              "tracks": []
+            },
+            {
+              "count": 1,
+              "session_id": "scan-fw-c8c8eac794484395",
+              "tracks": [
+                {
+                  "held_out_observations": 6,
+                  "reasons": [
+                    "fewer_than_2_training_observations"
+                  ],
+                  "track_id": "sha256:3ade1d9fea16c905a5fcd409c74fed11a309b7b4450ff170fb95f1fa59195c1e",
+                  "training_observations": 0
+                }
+              ]
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-1a8fada20483c159",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-319730ab74ce43e7",
+              "tracks": []
+            }
+          ],
+          "tracks": 486,
+          "train_log_likelihood": -95020.46249312042
+        },
+        "estimate": {
+          "latitude_deg": 37.83886375071543,
+          "longitude_deg": -122.45984892936498
+        },
+        "rf_rms_hz": 434.91303788273854,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "group8-01"
+      },
+      "unit": {
+        "kind": "group8",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887",
+          "scan-fw-a40658642d9ade6a",
+          "scan-fw-3b5aa99026fbf2cc",
+          "scan-fw-4461e9a2d9d598cb",
+          "scan-fw-534e7fb34771526d",
+          "scan-fw-c8c8eac794484395",
+          "scan-fw-1a8fada20483c159",
+          "scan-fw-319730ab74ce43e7"
+        ],
+        "unit_id": "group8-01"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T19:27:35.234415+00:00",
+  "selected_unit_ids": [
+    "group8-01"
+  ],
+  "started_utc": "2026-09-27T19:25:09.983629+00:00",
+  "unit_seconds": 300.0
+}

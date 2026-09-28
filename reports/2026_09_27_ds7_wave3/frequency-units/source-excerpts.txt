@@ -1,0 +1,32 @@
+Installed source excerpts; line numbers refer to the installed files hashed in README.md.
+
+leo/analysis/starlink/pilot_methods.py:995-1012
+  _score(... residual_cfo_hz, acquired_cfo_hz) constructs PilotMethodScore
+  with tracking CFO `acquired_cfo_hz + residual_cfo_hz`. No RF scaling occurs.
+
+leo/scanner/adaptive_hop_analysis.py:540-547
+  AdaptiveHopFractionalCandidateV1 receives
+  `fractional_tracking_cfo_hz=response.fractional_tracking_cfo_hz` verbatim.
+
+leo/application/scanner_trajectory.py:85-108
+  project_scanner_candidates retains actual_rf_hz separately and assigns
+  `measured_cfo_hz=candidate.fractional_tracking_cfo_hz` verbatim.
+
+leo/analysis/persistent_hop_trajectory.py:387-414
+  _lane_tracklets sets `scale = config.canonical_rf_hz / actual_rf_hz`, maps
+  each projected candidate to `frequency_hz=item.measured_cfo_hz * scale`, and
+  scales the line detector alias spacing by the same factor.
+
+leo/analysis/persistent_hop_trajectory.py:425-441
+  Each track point stores normalized_raw_cfo_hz and
+  `normalized_dealiased_cfo_hz = point.frequency_hz - alias_index *
+  common.alias_spacing_hz`.
+
+leo/analysis/persistent_hop_trajectory.py:744-779
+  The episode graph writes `measured_cfo_hz=point.normalized_dealiased_cfo_hz`
+  and scales the source uncertainty by canonical_rf_hz/actual_rf_hz.
+
+leo/operations/adaptive_tle_position_inputs.py:89-125
+  prepare_adaptive_tle_position_inputs reconstructs the trajectory, obtains
+  graph observations, and copies graph `row.measured_cfo_hz` into prepared
+  track measured_hz. It does not copy the projected raw candidate field.

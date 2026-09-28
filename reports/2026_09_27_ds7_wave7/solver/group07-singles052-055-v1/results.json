@@ -1,0 +1,411 @@
+{
+  "arm_sha256": "sha256:164fd4ee44b345ac799688a54710109858c8f7132c1518fc7baa654477ebc69c",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py",
+      "sha256": "sha256:a967136e32d12b844cc5d206723198c1eb31eb230506df8c510110ef5aa90a33"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py",
+      "sha256": "sha256:a967136e32d12b844cc5d206723198c1eb31eb230506df8c510110ef5aa90a33"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_objective.py",
+      "sha256": "sha256:2ef456b843b1f921877a1d8675dcb4b8e067074abda447d14cb00379f0be57dd"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 61.62800352484919,
+  "inputs_sha256": "sha256:d05fd8d6162550bc8febd823761e27e97f2b6c05299b587e360065071739a15d",
+  "max_seconds": 856.102980541,
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_batched_baseline_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 10.436102129984647,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:470425f22cc4605d2569dff46c9b58d42bb815b3da34cb7557137173342fe9ae",
+          "response.json": "sha256:3e8da2cff902e6a2c3b93ec248bbcba370547f0db022b4bfcd1ec22e6a888e07"
+        },
+        "request_sha256": "sha256:470425f22cc4605d2569dff46c9b58d42bb815b3da34cb7557137173342fe9ae",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            -6.659904455661554,
+            2.865816138796447
+          ],
+          "nfev": 14,
+          "recordings": 1,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 455.0329567181925,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 15,
+              "objective": -9876.57779969288,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 16,
+              "objective": -9876.577799692597,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 14,
+              "objective": -9876.577799692543,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.9988850964020485
+          ],
+          "total_nfev": 45,
+          "track_eligibility_exclusions": [
+            {
+              "count": 1,
+              "session_id": "scan-fw-53b81eb605a1bb4f",
+              "tracks": [
+                {
+                  "held_out_observations": 0,
+                  "reasons": [
+                    "no_held_out_observation"
+                  ],
+                  "track_id": "sha256:10325118fa36051582ad148786ac07e9dfdbb642b4f6a68ad6b8428d4832a40f",
+                  "training_observations": 6
+                }
+              ]
+            }
+          ],
+          "tracks": 51,
+          "train_log_likelihood": -9876.577799692543
+        },
+        "estimate": {
+          "latitude_deg": 37.88202288671969,
+          "longitude_deg": -122.56023301953462
+        },
+        "rf_rms_hz": 455.0329567181925,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-052"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-53b81eb605a1bb4f"
+        ],
+        "unit_id": "single-052"
+      }
+    },
+    {
+      "elapsed_seconds": 14.628542305901647,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:bdcabacb8bc35d2a3406b7670bf4500055e378fb263d1433d0670be52daefcc0",
+          "response.json": "sha256:82b975e22b7a221d91a706b262f8c800064b082b5965d3bb92eddaf1d0efa07c"
+        },
+        "request_sha256": "sha256:bdcabacb8bc35d2a3406b7670bf4500055e378fb263d1433d0670be52daefcc0",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            -9.45952668840466,
+            2.4784458013382626
+          ],
+          "nfev": 27,
+          "recordings": 1,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 894.0363680736539,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 19,
+              "objective": -8626.316278994756,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 27,
+              "objective": -8626.316278994695,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 23,
+              "objective": -8626.31627899471,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -1.408961358130387
+          ],
+          "total_nfev": 69,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-7bfaf984bc20419f",
+              "tracks": []
+            }
+          ],
+          "tracks": 49,
+          "train_log_likelihood": -8626.316278994695
+        },
+        "estimate": {
+          "latitude_deg": 37.87853918387821,
+          "longitude_deg": -122.59212143466654
+        },
+        "rf_rms_hz": 894.0363680736539,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-053"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-7bfaf984bc20419f"
+        ],
+        "unit_id": "single-053"
+      }
+    },
+    {
+      "elapsed_seconds": 16.122270706808195,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:39784fa71c93c1d5b81ee6595174aa09ff9582f1a9d8e6dd92caa5aa5aa7fe78",
+          "response.json": "sha256:89f4e6d59e246e1042454cb5bf76e0af692ddded4c2a0a0f88eebde10bd10078"
+        },
+        "request_sha256": "sha256:39784fa71c93c1d5b81ee6595174aa09ff9582f1a9d8e6dd92caa5aa5aa7fe78",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            -3.4950540044681673,
+            3.3841983096789336
+          ],
+          "nfev": 15,
+          "recordings": 1,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 200.54665214788278,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 17,
+              "objective": -11070.757686739775,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 15,
+              "objective": -11070.757686739636,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 21,
+              "objective": -11070.757686739664,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -1.4777851501588437
+          ],
+          "total_nfev": 53,
+          "track_eligibility_exclusions": [
+            {
+              "count": 1,
+              "session_id": "scan-fw-a177aad6836951de",
+              "tracks": [
+                {
+                  "held_out_observations": 6,
+                  "reasons": [
+                    "fewer_than_2_training_observations"
+                  ],
+                  "track_id": "sha256:346817a20bb2be87dabfaf8c775254f9cc6f89832994e8c8d48bd85fff1c300f",
+                  "training_observations": 0
+                }
+              ]
+            }
+          ],
+          "tracks": 59,
+          "train_log_likelihood": -11070.757686739636
+        },
+        "estimate": {
+          "latitude_deg": 37.88668480650819,
+          "longitude_deg": -122.5241845613399
+        },
+        "rf_rms_hz": 200.54665214788278,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-054"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-a177aad6836951de"
+        ],
+        "unit_id": "single-054"
+      }
+    },
+    {
+      "elapsed_seconds": 18.95321586704813,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:ccc064c42896214f04c0eff7302d847c97cdf2432af1af4e9af065649f0532ac",
+          "response.json": "sha256:50d0faf133d2d4743a96d4a85274b54f27051c40bf22bbfd85c527647824cfe6"
+        },
+        "request_sha256": "sha256:ccc064c42896214f04c0eff7302d847c97cdf2432af1af4e9af065649f0532ac",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            -1.6429303044936274,
+            -2.9682172116039074
+          ],
+          "nfev": 25,
+          "recordings": 1,
+          "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+          "rf_rms_hz": 349.226944395968,
+          "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 21,
+              "objective": -9698.21335181534,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 24,
+              "objective": -9698.213351369153,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 25,
+              "objective": -9698.213351330533,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.03408415052667559
+          ],
+          "total_nfev": 70,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-f930a8e995aa139c",
+              "tracks": []
+            }
+          ],
+          "tracks": 56,
+          "train_log_likelihood": -9698.213351330533
+        },
+        "estimate": {
+          "latitude_deg": 37.82955619891538,
+          "longitude_deg": -122.50308839746118
+        },
+        "rf_rms_hz": 349.226944395968,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-055"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-f930a8e995aa139c"
+        ],
+        "unit_id": "single-055"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T20:19:17.719330+00:00",
+  "selected_unit_ids": [
+    "single-052",
+    "single-053",
+    "single-054",
+    "single-055"
+  ],
+  "started_utc": "2026-09-27T20:18:16.091349+00:00",
+  "unit_seconds": 300.0
+}

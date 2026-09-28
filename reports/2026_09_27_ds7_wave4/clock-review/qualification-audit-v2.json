@@ -1,0 +1,76 @@
+{
+  "schema": "ds7-clock-recovery-qualification-audit/v2",
+  "scope": "qualification repair only; sealed recovery was not rerun",
+  "reference_audit": "reference_excluded",
+  "bindings": {
+    "spec": {
+      "path": "reports/2026_09_27_ds7_wave3/clock-recovery/spec-v1.json",
+      "sha256": "c7c9132a125238d219ddd581addb651e644571b17aaf25b14fd50d7b2bc5fbe3"
+    },
+    "result": {
+      "path": "reports/2026_09_27_ds7_wave3/clock-recovery/results-v1.json",
+      "sha256": "114a84eadb45085f786922e9efc2906c2527ac7ee51078a79a27825d8eaab6a5"
+    },
+    "gate_config": {
+      "path": "reports/2026_09_27_ds7_wave1/clock/frozen-config.json",
+      "sha256": "bac4c268872e733e2dc22bfcd7606685f0236d4a37d9a84533d297106a65e2fc"
+    },
+    "tool": {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_clock_recovery_v2.py",
+      "sha256": "2df41909a599f009935510747aea8a42a117e2317a672430bbf678af71637d69"
+    }
+  },
+  "prior_status": "qualified",
+  "declared_cases": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      1.0,
+      -1.0
+    ],
+    [
+      -1.0,
+      1.0
+    ]
+  ],
+  "corrected_status": "qualified",
+  "rank_full": true,
+  "condition_number": 38.56086732094294,
+  "maximum_condition_number": 1000.0,
+  "condition_within_limit": true,
+  "cases": [
+    {
+      "case_index": 0,
+      "injected_native_hz_s": [
+        0.0,
+        0.0
+      ],
+      "prior_qualified": true,
+      "boundary_free": true,
+      "corrected_qualified": true
+    },
+    {
+      "case_index": 1,
+      "injected_native_hz_s": [
+        1.0,
+        -1.0
+      ],
+      "prior_qualified": true,
+      "boundary_free": true,
+      "corrected_qualified": true
+    },
+    {
+      "case_index": 2,
+      "injected_native_hz_s": [
+        -1.0,
+        1.0
+      ],
+      "prior_qualified": true,
+      "boundary_free": true,
+      "corrected_qualified": true
+    }
+  ],
+  "interpretation": "This repairs two qualification checks only. It supplies no hardware calibration, physical drift bound, real-data clock fit, or geographic evidence."
+}

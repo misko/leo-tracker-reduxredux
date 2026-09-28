@@ -1,0 +1,190 @@
+{
+  "arm_sha256": "sha256:fac1e18b204e8eef81716da1b4f16cd9836f0deef5f45e3874de0cd9b2aeed39",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_historical_init_adapter.py",
+      "sha256": "sha256:eb770005474e7483a407d8af572f2f9428db7abded208451ab220e1e766f100f"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_historical_init_adapter.py",
+      "sha256": "sha256:eb770005474e7483a407d8af572f2f9428db7abded208451ab220e1e766f100f"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+      "sha256": "sha256:ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 120.75319234305061,
+  "inputs_sha256": "sha256:6e35dce6da192a0261d5654cfb9ad97ccd587ab2eed39ce1a2c62534dbadb893",
+  "max_seconds": 310.0,
+  "model_id": "ds7-corrected-static-doppler-historical-style-init-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_historical_init_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 120.52868795511313,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:0634f05d242a5de50b4a14760686502e5ca76604624eb2f7f33e130c522becf1",
+          "response.json": "sha256:c808874e8938a1b32216042dfe283a172e3bc0d64c39f2197555ba1d922fde3a"
+        },
+        "request_sha256": "sha256:0634f05d242a5de50b4a14760686502e5ca76604624eb2f7f33e130c522becf1",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            2.1532383750180735,
+            -1.9332552916095882
+          ],
+          "nfev": 23,
+          "recordings": 8,
+          "rf_rms_hz": 434.9130773487042,
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint_historical_initialization",
+          "starts": [
+            {
+              "kind": "independent_spherical_mean",
+              "nfev": 20,
+              "objective": -95020.46249319281,
+              "success": true
+            },
+            {
+              "kind": "donor_center",
+              "nfev": 23,
+              "objective": -95020.46249312932,
+              "success": true
+            }
+          ],
+          "timing_offsets_s": [
+            -0.30258725105080075,
+            -0.061544060864157715,
+            0.19449034642094348,
+            0.03283811997124279,
+            -0.18722087771472165,
+            -0.9558993270463346,
+            -0.39430965894773023,
+            0.3333760282281832
+          ],
+          "total_nfev": 43,
+          "track_eligibility_exclusions": [
+            {
+              "count": 0,
+              "session_id": "scan-fw-5f7bf896e4552887",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-a40658642d9ade6a",
+              "tracks": []
+            },
+            {
+              "count": 1,
+              "session_id": "scan-fw-3b5aa99026fbf2cc",
+              "tracks": [
+                {
+                  "held_out_observations": 0,
+                  "reasons": [
+                    "no_held_out_observation"
+                  ],
+                  "track_id": "sha256:c32055624e1a870121b8ebfd600de072dc15ba817657810f776460fa12d4e722",
+                  "training_observations": 7
+                }
+              ]
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-4461e9a2d9d598cb",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-534e7fb34771526d",
+              "tracks": []
+            },
+            {
+              "count": 1,
+              "session_id": "scan-fw-c8c8eac794484395",
+              "tracks": [
+                {
+                  "held_out_observations": 6,
+                  "reasons": [
+                    "fewer_than_2_training_observations"
+                  ],
+                  "track_id": "sha256:3ade1d9fea16c905a5fcd409c74fed11a309b7b4450ff170fb95f1fa59195c1e",
+                  "training_observations": 0
+                }
+              ]
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-1a8fada20483c159",
+              "tracks": []
+            },
+            {
+              "count": 0,
+              "session_id": "scan-fw-319730ab74ce43e7",
+              "tracks": []
+            }
+          ],
+          "tracks": 486,
+          "train_log_likelihood": -95020.46249312932
+        },
+        "estimate": {
+          "latitude_deg": 37.83886382893466,
+          "longitude_deg": -122.45984906275837
+        },
+        "rf_rms_hz": 434.9130773487042,
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "group8-01"
+      },
+      "unit": {
+        "kind": "group8",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887",
+          "scan-fw-a40658642d9ade6a",
+          "scan-fw-3b5aa99026fbf2cc",
+          "scan-fw-4461e9a2d9d598cb",
+          "scan-fw-534e7fb34771526d",
+          "scan-fw-c8c8eac794484395",
+          "scan-fw-1a8fada20483c159",
+          "scan-fw-319730ab74ce43e7"
+        ],
+        "unit_id": "group8-01"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:6f8b067f64032e32003874cc1e0dd86ad9d3bc74360fe11ac15c9230687fa208",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T18:20:50.974118+00:00",
+  "selected_unit_ids": [
+    "group8-01"
+  ],
+  "started_utc": "2026-09-27T18:18:50.220950+00:00",
+  "unit_seconds": 300.0
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "ds7-cfo-matched-epoch-config/v1",
+  "methods": [
+    "baseline",
+    "ordinary_profile",
+    "robust_profile",
+    "differential_phase"
+  ],
+  "epoch_policy": "Every method accounts for each baseline receiver/UTC epoch; rejected, failed, and inapplicable rows remain explicit.",
+  "baseline_binding": "handoff-0001.json binds the frozen 10 MS/s panel member to the second direction-A track export; native-window measurement inputs remain pending.",
+  "frequency_policy": "Alternatives refine the acquisition-bound CFO basin and cannot select a different OFDM alias.",
+  "mask_policy": "Use the baseline support mask unchanged; do not add epochs discovered by an alternative.",
+  "failure_policy": "A missing method row invalidates the comparison.",
+  "metrics": [
+    "held-window frequency prediction error",
+    "supported and rejected epoch counts",
+    "false-support controls",
+    "search-boundary count",
+    "runtime seconds"
+  ],
+  "waveform_applicability": "Known-pilot comparison requires detected pilot evidence plus acquisition-qualified timing and CFO alias support at each epoch; sample rate alone is insufficient.",
+  "remaining_input_contract": [
+    "immutable source sample/native-window identity per observation",
+    "absolute UTC support and receiver/visit/probe identity",
+    "detected pilot edge and acquisition-qualified frame epoch",
+    "absolute CFO alias/basin and bounded residual interval",
+    "baseline support/rejection diagnostics and frozen held-window mapping",
+    "read-only bounded samples or equivalently bound matched-pilot matrices"
+  ],
+  "downstream": "No waveform comparison, model fit, scoring, or downstream position fitting is authorized by this handoff."
+}

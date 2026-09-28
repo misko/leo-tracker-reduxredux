@@ -1,0 +1,44 @@
+{
+  "schema": "ds7-wave2-input-preparation-continuation/v1",
+  "authorization": "recorded continuation after the original fifth-bank 150-second cap",
+  "scope": {
+    "sessions": [
+      "scan-fw-534e7fb34771526d",
+      "scan-fw-c8c8eac794484395",
+      "scan-fw-1a8fada20483c159",
+      "scan-fw-319730ab74ce43e7"
+    ],
+    "reuse_exact_fifth_observations": "reports/2026_09_27_ds7_wave2/inputs/scan-fw-534e7fb34771526d-tracks.json",
+    "bank_output_root": ".leo/ds7-wave2/baseline-continuation"
+  },
+  "limits": {
+    "total_seconds": 1000,
+    "export_seconds": 90,
+    "bank_seconds": 240,
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "ram_gib": 4,
+    "nice": 19,
+    "source_reader": "serialized"
+  },
+  "policy": "unchanged tools/ds7_export_baseline.py public read-only export and bank policy; no raw IQ, scoring, reference, pose, or QNAP writes",
+  "stop_condition": "stop and record partial preparation on the next per-step cap or the total continuation cap",
+  "result": {
+    "status": "complete_within_lease",
+    "measured_step_seconds": 488.87241142116075,
+    "remaining_step_seconds": 511.12758857883925,
+    "frozen_inputs": {
+      "path": "reports/2026_09_27_ds7_wave2/inputs/inputs-first8-ready-v1.json",
+      "sha256": "sha256:b348efbcdd00347cef6c66c221948f63fbc78c669c0b3bb0b7ea68e24e4baedc",
+      "ready": 8,
+      "unavailable": 80
+    },
+    "sessions": [
+      {"session_id":"scan-fw-534e7fb34771526d","observations":"reused exact prior export","bank_elapsed_seconds":111.71042929613031,"bank_tracks":60,"status":"ready"},
+      {"session_id":"scan-fw-c8c8eac794484395","export_elapsed_seconds":43.49854357005097,"bank_elapsed_seconds":82.38106405478902,"bank_tracks":61,"status":"ready"},
+      {"session_id":"scan-fw-1a8fada20483c159","export_elapsed_seconds":37.89398498297669,"bank_elapsed_seconds":83.83952206303366,"bank_tracks":64,"status":"ready"},
+      {"session_id":"scan-fw-319730ab74ce43e7","export_elapsed_seconds":30.614731467096135,"bank_elapsed_seconds":98.93413555808365,"bank_tracks":62,"status":"ready"}
+    ],
+    "process_cleanup_check": "no completed export or timeout process remained after freeze"
+  }
+}

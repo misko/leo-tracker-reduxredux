@@ -1,0 +1,98 @@
+{
+  "code_paths": [
+    "{repo}/tools/ds7_wave2_search_adapter.py",
+    "{repo}/tools/ds7_association_adapter.py",
+    "{repo}/tools/ds7_fast_baseline_adapter.py",
+    "{repo}/tools/ds7_baseline_adapter.py"
+  ],
+  "command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "{repo}/tools/ds7_wave2_search_adapter.py"
+  ],
+  "config": {
+    "candidate_policy": "consume exact corrected DS6 frozen bank without reselection",
+    "canonical_rf_hz": 11200000000,
+    "frozen_starts": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        -2
+      ],
+      [
+        0,
+        0,
+        2
+      ]
+    ],
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "per_start_nfev_cap": 60,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "scientific_status": "same_objective_and_eval_caps_wave2_wall_allowance_300s",
+    "search_policy": "local",
+    "selection_policy": "training likelihood only; physical rf_hz is provenance because measured_hz is canonical-11.2GHz normalized",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "total_nfev_cap": 180
+  },
+  "model_id": "ds7-wave2-association-local-v1",
+  "schema": "ds7-arm/v1",
+  "status": "ready"
+}

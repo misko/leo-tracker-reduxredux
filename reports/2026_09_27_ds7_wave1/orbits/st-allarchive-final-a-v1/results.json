@@ -1,0 +1,119 @@
+{
+  "arm_sha256": "sha256:07cbb9f0158211b81129ca2d0abc3ec3174d4f8bdc32fdc1f2f5b1e147f3ec59",
+  "code": [
+    {
+      "path": "/opt/leo-tracker/current-api/.venv/bin/python",
+      "sha256": "sha256:52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py",
+      "sha256": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_export_baseline.py",
+      "sha256": "sha256:4d2e4bb96e687ca9fe1a035c138c87e55d2976d0136bffac182b1bc380c42dc4"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_orbit_matched_bank.py",
+      "sha256": "sha256:c7873b0c14b29a25cad346915d35ad757fab8416795e78441935264848d2ee03"
+    }
+  ],
+  "dataset_sha256": "sha256:47007b1c18e8182f6a005dfd05c237cb3edb9bf85ae6376c99ccf29d54434109",
+  "elapsed_seconds": 21.94430345785804,
+  "inputs_sha256": "sha256:8319c7ee4a4022b96c7b87a839ec8bf8b20c486b43309767e334adab52e6496d",
+  "max_seconds": 60.0,
+  "model_id": "ds7-corrected-static-doppler-st-allarchive-v1",
+  "plan_sha256": "sha256:b634c5eca2265b7d1e7f49d19c6853e183a203be8cd28930c82c6b73b15176a4",
+  "python": "3.14.4",
+  "resolved_command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py"
+  ],
+  "results": [
+    {
+      "elapsed_seconds": 21.90387267502956,
+      "evidence": {
+        "files": {
+          "adapter.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "request.json": "sha256:4eb761d56c9936bf76c1168cf2c58752debe2114fac95529648db550f5ee96cc",
+          "response.json": "sha256:05160d57aae58a4ef027f644bb694c60bcf15c82f887d56dea90e1ba57457d14"
+        },
+        "request_sha256": "sha256:4eb761d56c9936bf76c1168cf2c58752debe2114fac95529648db550f5ee96cc",
+        "response_validated": true
+      },
+      "response": {
+        "boundary_hit": false,
+        "converged": true,
+        "diagnostics": {
+          "east_north_km": [
+            3.7059952226682937,
+            -1.9755666264422134
+          ],
+          "nfev": 15,
+          "recordings": 1,
+          "runtime": {
+            "numpy": "2.4.6",
+            "python": "3.14.4",
+            "scipy": "1.18.1"
+          },
+          "solver": "corrected_ds6_stationary_joint",
+          "starts": [
+            {
+              "boundary_hit": false,
+              "nfev": 13,
+              "objective": -10129.712430545873,
+              "success": true,
+              "timing_start_s": 0
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 14,
+              "objective": -10129.712430545807,
+              "success": true,
+              "timing_start_s": -2
+            },
+            {
+              "boundary_hit": false,
+              "nfev": 15,
+              "objective": -10129.712430545756,
+              "success": true,
+              "timing_start_s": 2
+            }
+          ],
+          "timing_offsets_s": [
+            -0.2772274378254569
+          ],
+          "total_nfev": 42,
+          "tracks": 56,
+          "train_log_likelihood": -10129.712430545756
+        },
+        "estimate": {
+          "latitude_deg": 37.83848331420979,
+          "longitude_deg": -122.44216276409361
+        },
+        "schema": "ds7-response/v1",
+        "status": "ok",
+        "unit_id": "single-001"
+      },
+      "unit": {
+        "kind": "single",
+        "session_ids": [
+          "scan-fw-5f7bf896e4552887"
+        ],
+        "unit_id": "single-001"
+      }
+    }
+  ],
+  "runner_sha256": "sha256:c20f0282d31975ef355e0ef57f103ac426d40596f76f492d737e93219e76dd31",
+  "schema": "ds7-run/v1",
+  "sealed_utc": "2026-09-27T17:38:07.936648+00:00",
+  "selected_unit_ids": [
+    "single-001"
+  ],
+  "started_utc": "2026-09-27T17:37:45.992371+00:00",
+  "unit_seconds": 60.0
+}

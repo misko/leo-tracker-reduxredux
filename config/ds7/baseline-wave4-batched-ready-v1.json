@@ -1,0 +1,37 @@
+{
+  "schema": "ds7-arm/v1",
+  "status": "ready",
+  "model_id": "ds7-corrected-static-doppler-batched-objective-validation-v1",
+  "command": [
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "{repo}/tools/ds7_batched_baseline_adapter.py"
+  ],
+  "code_paths": [
+    "{repo}/tools/ds7_batched_baseline_adapter.py",
+    "{repo}/tools/ds7_batched_objective.py",
+    "{repo}/tools/ds7_fast_baseline_adapter.py",
+    "{repo}/tools/ds7_baseline_adapter.py",
+    "{repo}/tools/ds7_export_baseline.py"
+  ],
+  "config": {
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "geographic_prior_center_deg": [37.856249999999996, -122.484375],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "altitude_km": 0,
+    "position_bounds_km": [-12, 12],
+    "timing_bounds_s": [-5, 5],
+    "timing_grid_s": [-5, -4.75, -4.5, -4.25, -4, -3.75, -3.5, -3.25, -3, -2.75, -2.5, -2.25, -2, -1.75, -1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5],
+    "timing_starts_s": [0, -2, 2],
+    "partition_seed": 2026092711,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles"
+  },
+  "required_before_ready": []
+}

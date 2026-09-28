@@ -1,0 +1,42 @@
+{
+  "schema": "ds7-clock-synthetic-check/v1",
+  "reference_audit": "reference_excluded",
+  "purpose": "Verify that the numerical gate accepts an independent shared-bias column, rejects exact clock/position confounding, and recovers noise-free injected biases.",
+  "real_track_membership_projection": {
+    "source": "allowed baseline export only",
+    "observations": 2391,
+    "tracks": 56,
+    "receiver_track_counts": {"0": 29, "1": 27},
+    "constant_receiver_indicators": {
+      "receiver_0": {"rank": 56, "columns": 57, "projected_clock_norm": 7.843030496187488e-16, "identifiable": false},
+      "receiver_1": {"rank": 56, "columns": 57, "projected_clock_norm": 5.519960721195338e-16, "identifiable": false}
+    },
+    "track_centered_linear_drift": {
+      "receiver_0": {"rank": 57, "columns": 57, "projected_clock_norm": 1.0, "identifiable_against_track_offsets_only": true},
+      "receiver_1": {"rank": 57, "columns": 57, "projected_clock_norm": 1.0, "identifiable_against_track_offsets_only": true}
+    },
+    "interpretation": "A constant receiver bias is exactly in the span of per-track offsets. A receiver-shared linear drift adds geometry beyond those offsets, but still requires the unavailable position/nuisance Jacobian and independent physical bounds."
+  },
+  "diverse_design": {
+    "rows": 41,
+    "rank": 3,
+    "columns": 3,
+    "scaled_condition_number": 1.0,
+    "projected_clock_norm": 1.0,
+    "identifiable": true,
+    "injection_recovery_hz": [
+      {"injected": 0.0, "recovered": 0.0},
+      {"injected": -250.0, "recovered": -249.99999999999994},
+      {"injected": 250.0, "recovered": 249.99999999999994}
+    ]
+  },
+  "confounded_design": {
+    "rows": 41,
+    "rank": 2,
+    "columns": 3,
+    "scaled_condition_number": 9206144793516338.0,
+    "projected_clock_norm": 1.402927815449387e-16,
+    "identifiable": false
+  },
+  "interpretation": "The implementation detects the intended algebraic failure. The real membership projection establishes only offset-column independence, not full DS7 drift identifiability or calibration."
+}

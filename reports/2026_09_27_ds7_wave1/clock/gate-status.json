@@ -1,0 +1,29 @@
+{
+  "schema": "ds7-clock-gate-status/v1",
+  "config": "frozen-config.json",
+  "status": "not_admitted",
+  "fit_attempted": false,
+  "failed_gates": [
+    {
+      "gate": "constant_frequency_bias",
+      "reason": "Rejected as structurally redundant: for each receiver, its constant indicator is exactly the sum of the baseline offset indicators for tracks on that receiver. The real 2,391-observation, 56-track export gives rank 56/57 and projected normalized norms 7.84e-16 (receiver 0) and 5.52e-16 (receiver 1)."
+    },
+    {
+      "gate": "baseline_inputs",
+      "reason": "Only one baseline track export is present. Its candidate_policy_state is not_exported, and no matched candidate bank, orbit inputs, residual export, or Jacobian export is available."
+    },
+    {
+      "gate": "calibration",
+      "reason": "No independently evidenced receiver/sample-clock drift or stability bound valid for the DS7 capture intervals was supplied in the allowed inputs."
+    },
+    {
+      "gate": "identifiability",
+      "reason": "Track membership shows that a track-centered receiver linear-drift column survives projection on per-track offsets, but no matched model residuals or position/existing-nuisance Jacobian exists to test drift-versus-position independence on DS7."
+    }
+  ],
+  "excluded_states": {
+    "sample_clock_ppm": "No independent sample-rate reference or device-counter calibration is present. Nominal sample rate and sample count do not measure clock error.",
+    "utc_bias_or_drift": "Host request brackets are acquisition bounds, not UTC calibration; plan brackets span approximately 362 to 369 ms.",
+    "lnb_frequency_state": "A stable SDR oscillator does not establish LNB stability, and no independent LNB calibration is present."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "ds7-preparation-lease/v1",
+  "owner": "ds7_baseline_execution",
+  "operation": "Prepare only the second chronological DS7 capture for prefix2-01, then run the frozen two-recording fit",
+  "gate": "Original numerical-oracle agreement and same-code deterministic single-recording replay must pass first",
+  "maximum_preparation_wall_seconds": 240,
+  "maximum_adapter_wall_seconds": 60,
+  "maximum_compute_processes": 1,
+  "blas_threads": 1,
+  "maximum_incremental_ram_gib": 4,
+  "nice": 19,
+  "raw_iq_read_bytes": 0,
+  "fit_policy": "Unchanged frozen baseline scientific parameters; shared runner budgets suite, unit prefix2-01",
+  "stop_policy": "Preserve partial products and timeout receipts. No prefix4 or group8 preparation until prefix2 qualifies. Scores are coordinator-only."
+}

@@ -1,0 +1,109 @@
+{
+  "schema": "ds7-full88-terminal-receipt/v1",
+  "created_utc": "2026-09-27T21:20:49Z",
+  "unit_id": "full88",
+  "status": "ok",
+  "run_directory": "reports/2026_09_27_ds7_full88/solver/joint-v1",
+  "source_bindings": {
+    "bound_launch_receipt": {
+      "path": "reports/2026_09_27_ds7_full88/solver/full88-joint-bound-receipt.json",
+      "sha256": "8b4b4a314d96d34e667611cad1f782b0be94f4beb421d0d277db9d9b6ed6ac87"
+    },
+    "canonical_input": {
+      "path": "reports/2026_09_27_ds7_wave9/inputs/group10/inputs-through-single-080-ready-v1.json",
+      "sha256": "4c016a800491487c1c71b31b473160d301664a8c28908015951fc69d5ff66c28"
+    },
+    "input_integrity_audit": {
+      "path": "reports/2026_09_27_ds7_wave9/inputs/INPUT-INTEGRITY.json",
+      "sha256": "f9773eed655d84631d42a98e47eec9171d69eca21a153cea887713a0761d7861"
+    }
+  },
+  "run_evidence": {
+    "seal": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/seal.json",
+      "sha256": "80d7e6d742f3bce1e661870d92cfaafc6218f6cf894503c8fa6fe7c15ae7c0d3",
+      "content_sha256": "b441e95a3c216923bd13b0937597724ede472aeb6e9bd60625261f0d5ce38bf2"
+    },
+    "results": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/results.json",
+      "sha256": "30da220e4f5aa237086f65b8eb42a2757f0e0923761c3f7085481e4f760e0856"
+    },
+    "request": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/request.json",
+      "sha256": "dfd5cec3384fc9dac44ad6d0751cbd438aca61d11a4e4cec35f8edaead641278"
+    },
+    "response": {
+      "path": "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/response.json",
+      "sha256": "2ececb695853e740c955d7decea5f3e0db155639525d3b8b9376badf8f14d286"
+    },
+    "resource_time": {
+      "path": "reports/2026_09_27_ds7_full88/solver/resource-time.txt",
+      "sha256": "001d42fd02e587da337b667b015d54fbecd1f728f8267d140300c89623539058"
+    }
+  },
+  "outcome": {
+    "runner_elapsed_seconds": 1481.9597216991242,
+    "unit_elapsed_seconds": 1480.173737155972,
+    "outer_wall_seconds": 1488.76,
+    "converged": true,
+    "boundary_hit": false,
+    "recordings": 88,
+    "requested_membership_count": 88,
+    "eligible_tracks": 5131,
+    "excluded_tracks": 11,
+    "exclusion_reasons": {
+      "fewer_than_2_training_observations": 5,
+      "no_held_out_observation": 6
+    },
+    "selected_start_nfev": 21,
+    "total_nfev": 65,
+    "starts": [
+      {
+        "timing_start_s": 0,
+        "nfev": 20,
+        "success": true,
+        "boundary_hit": false
+      },
+      {
+        "timing_start_s": -2,
+        "nfev": 24,
+        "success": true,
+        "boundary_hit": false
+      },
+      {
+        "timing_start_s": 2,
+        "nfev": 21,
+        "success": true,
+        "boundary_hit": false
+      }
+    ],
+    "rf_rms_hz": 625.2272515397415
+  },
+  "resource_observations": {
+    "launch_mem_available_bytes": 50567122944,
+    "coordinator_live_resource_check": {
+      "path": "reports/2026_09_27_ds7_full88/coordinator/live-resource-check-v1.json",
+      "sha256": "21e1b5fc850a91362d9db3c0e6cc501a24fef8abe550dd93ed466f07a51fa8d3",
+      "adapter_vm_hwm_kib": 6022212,
+      "adapter_vm_rss_kib": 6020912
+    },
+    "solver_observed_adapter_max_rss_kib": 6019764,
+    "solver_observed_adapter_rss_method": "maximum periodic ps RSS sample while adapter PID 2635789 was live",
+    "final_adapter_peak_limitation": "The exact final adapter peak is unmeasured; the retained values are live snapshots. The 8 GiB address-space limit was enforced and verified through /proc.",
+    "time_exit_status": 0,
+    "time_reported_maximum_rss_kib": 7520,
+    "time_rss_limitation": "/usr/bin/time wrapped a sudo/prlimit launcher whose adapter ran as a descendant; its maximum RSS does not include the adapter. The periodic adapter PID sample is the applicable retained peak observation.",
+    "address_space_limit_bytes": 8589934592,
+    "adapter_limit_seconds": 1800,
+    "outer_limit_seconds": 1920,
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "nice": 19
+  },
+  "execution_policy": {
+    "retry_count": 0,
+    "deadline_extended": false,
+    "competing_fit_started": false,
+    "reference_or_score_accessed": false
+  }
+}

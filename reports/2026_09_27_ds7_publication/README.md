@@ -1,5 +1,8 @@
 # DS7: 677 m from the complete pooled dataset
 
+The [complete original report](../2026_09_27_ds7_full88/REPORT.md) and its
+sealed evidence chain are now published alongside this illustrated summary.
+
 **The frozen joint estimator reached 677.323 m horizontal error using all 88
 DS7 recordings**, spanning 10 h 19 min 59 s. It converged without hitting
 position or timing bounds. This meets the predeclared complete pooled benchmark.

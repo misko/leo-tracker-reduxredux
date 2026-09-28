@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py", line 165, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py", line 159, in main
+    result = estimate(json.loads(args.request.read_text()))
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_association_adapter.py", line 72, in estimate
+    documents = baseline.load_documents(request)
+  File "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py", line 238, in load_documents
+    raise ValueError("candidate timing grid differs from model config")
+ValueError: candidate timing grid differs from model config

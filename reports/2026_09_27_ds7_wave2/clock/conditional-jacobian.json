@@ -1,0 +1,93 @@
+{
+  "clock_fit_attempted": false,
+  "code_sha256": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_baseline_adapter.py": "sha256:221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_clock_jacobian.py": "sha256:17a597e6a02e2a9d651d84526812daa37ba3b8878ab976329d633910726b2b55",
+    "tools/ds7_clock_gate.py": "sha256:bffbb0e5fe650c34018126053dbbfca103358f05db3a2a083d1e26462e65f21b"
+  },
+  "content_sha256": "sha256:e274ca91207efc5c3e12c48c56641922a9b7ecec9b8edc7904ac22d18e2a6cb2",
+  "gate": "hold_no_independent_calibration",
+  "input_sha256": {
+    "reports/2026_09_27_ds7_wave1/baseline/smoke-final-a-v1/single-001/request.json": "sha256:9ca7043d913245bb50a9a4ba1f2a5296d7f8159af787a52e47465e292498775d",
+    "reports/2026_09_27_ds7_wave1/baseline/smoke-final-a-v1/single-001/response.json": "sha256:fb24b9a388927a4a753101074e1c58b9d6229880ffe95c4822a6f359f0720b3d"
+  },
+  "limitations": [
+    "Local conditional sensitivity screen, not full mixture information or global identifiability",
+    "Normalized-Hz drift and physical-baseband-Hz drift are distinct; physical drift is scaled by canonical RF / actual RF",
+    "Synthetic +/-1 linear recovery is algebraic only; no physical drift bounds or nonlinear injection test established",
+    "No sharing across captures and no independent calibration supplied"
+  ],
+  "method": "Training-only posterior-mean prediction derivatives; fixed responsibilities and positive Student-t IRLS weights; project against all track offsets, position, recording time and other receiver drift",
+  "reference_access": "none; baseline prediction used as local linearization point",
+  "rows": [
+    {
+      "columns": 61,
+      "identifiable": true,
+      "minimum_track_max_posterior": 0.2492595999089686,
+      "projected_clock_norm": 0.5940803982407346,
+      "rank": 61,
+      "receiver_id": 0,
+      "scaled_condition_number": 55.358751047018735,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "synthetic_linear_recovery": [
+        -1.0000000000000007,
+        0.0,
+        1.0000000000000007
+      ],
+      "training_observations": 1473,
+      "units_policy": "canonical"
+    },
+    {
+      "columns": 61,
+      "identifiable": true,
+      "minimum_track_max_posterior": 0.2492595999089686,
+      "projected_clock_norm": 0.9412685046405241,
+      "rank": 61,
+      "receiver_id": 1,
+      "scaled_condition_number": 55.35875104701877,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "synthetic_linear_recovery": [
+        -0.9999999999999997,
+        0.0,
+        0.9999999999999997
+      ],
+      "training_observations": 1473,
+      "units_policy": "canonical"
+    },
+    {
+      "columns": 61,
+      "identifiable": true,
+      "minimum_track_max_posterior": 0.2492595999089686,
+      "projected_clock_norm": 0.5939038593157843,
+      "rank": 61,
+      "receiver_id": 0,
+      "scaled_condition_number": 55.34747652929799,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "synthetic_linear_recovery": [
+        -1.0000000000000009,
+        0.0,
+        1.0000000000000009
+      ],
+      "training_observations": 1473,
+      "units_policy": "physical_baseband"
+    },
+    {
+      "columns": 61,
+      "identifiable": true,
+      "minimum_track_max_posterior": 0.2492595999089686,
+      "projected_clock_norm": 0.9405681910866647,
+      "rank": 61,
+      "receiver_id": 1,
+      "scaled_condition_number": 55.34747652929795,
+      "session_id": "scan-fw-5f7bf896e4552887",
+      "synthetic_linear_recovery": [
+        -1.0000000000000007,
+        0.0,
+        1.0000000000000007
+      ],
+      "training_observations": 1473,
+      "units_policy": "physical_baseband"
+    }
+  ],
+  "schema": "ds7-conditional-clock-jacobian/v1"
+}

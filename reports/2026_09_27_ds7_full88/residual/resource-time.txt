@@ -1,0 +1,24 @@
+Command exited with non-zero status 1
+	Command being timed: "nice -n 19 env OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 /opt/leo-tracker/current-api/.venv/bin/python -c import json, subprocess; d=json.load(open("reports/2026_09_27_ds7_full88/residual/independent-response-index.json")); cmd=["/opt/leo-tracker/current-api/.venv/bin/python","tools/ds7_residual_audit.py","--request","reports/2026_09_27_ds7_full88/solver/joint-v1/full88/request.json","--joint-response","reports/2026_09_27_ds7_full88/solver/joint-v1/full88/response.json"]; [cmd.extend(["--independent-response",x["response_path"]]) for x in d["responses"]]; cmd.extend(["--output","reports/2026_09_27_ds7_full88/residual/fixed-prediction-audit-v1.json"]); subprocess.run(cmd,check=True)"
+	User time (seconds): 54.11
+	System time (seconds): 5.91
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:00.31
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 5977144
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 67
+	Minor (reclaiming a frame) page faults: 3379263
+	Voluntary context switches: 1222
+	Involuntary context switches: 232
+	Swaps: 0
+	File system inputs: 77936
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1

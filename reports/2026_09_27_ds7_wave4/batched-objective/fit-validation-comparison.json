@@ -1,0 +1,50 @@
+{
+  "schema": "ds7-batched-objective-fit-validation/v1",
+  "status": "passed_optional_computational_adoption_gate",
+  "reference_audit": "reference_pose_scores_iq_excluded_from_comparison",
+  "bindings": {
+    "spec_sha256": "8f354a6d2caa1702b3055375f7fde08a2dca52fb8174bffe332d5022752e9857",
+    "new_run_results_sha256": "537158d39491a3c60692c95ef5bc86591771088d7828863ef48d05fd01fabd99",
+    "new_run_seal_sha256": "b5772788872dae040dd4a2da8dfb7491b17054edc04ed735c568da3aded3da34",
+    "new_response_sha256": "0ebe0322c4136e6deb38fa8c6582a38574a4b0b99ceefd4a477ef4332383703c",
+    "frozen_response_sha256": "0ebe0322c4136e6deb38fa8c6582a38574a4b0b99ceefd4a477ef4332383703c",
+    "optional_adapter_sha256": "a967136e32d12b844cc5d206723198c1eb31eb230506df8c510110ef5aa90a33",
+    "adapter_bound_objective_sha256": "2ef456b843b1f921877a1d8675dcb4b8e067074abda447d14cb00379f0be57dd",
+    "ready_config_sha256": "ad955ed7f54baeeae1199f88eb5c06ac9c46579c3eabf690dc3db7b38274d142",
+    "benchmark_v3_source_snapshot_sha256": "0fd98d1902e1db6b60477a6649112af605e99ae527572816c27ff8176be56903",
+    "time_v_sha256": "52b29652b185c2433000c653b77ef9c52d9cd14c6e7a288135a357058d8a302a"
+  },
+  "equivalence": {
+    "response_bytes_identical": true,
+    "status_equal_ok": true,
+    "converged_equal_true": true,
+    "boundary_equal_false": true,
+    "maximum_east_north_difference_km": 0.0,
+    "east_north_tolerance_km": 1e-8,
+    "maximum_timing_offset_difference_s": 0.0,
+    "timing_offset_tolerance_s": 1e-8,
+    "training_log_likelihood_difference": 0.0,
+    "training_log_likelihood_tolerance": 1e-7,
+    "training_rms_difference_hz": 0.0,
+    "training_rms_tolerance_hz": 1e-7,
+    "nfev_frozen": 21,
+    "nfev_batched": 21,
+    "total_nfev_frozen": 63,
+    "total_nfev_batched": 63
+  },
+  "resources": {
+    "adapter_elapsed_seconds_batched": 144.9675991430413,
+    "adapter_elapsed_seconds_frozen_run": 170.30393297900446,
+    "external_runner_wall_seconds_batched": 145.98,
+    "external_maximum_rss_kib_batched": 639140,
+    "adapter_cap_seconds": 300,
+    "cpu_threads": 1,
+    "blas_threads": 1,
+    "nice": 19
+  },
+  "source_history": {
+    "benchmark_v3_snapshot_matches_receipt": true,
+    "post_benchmark_change": "Added only BatchedJointObjective.coordinates delegation required by the optional adapter; the sealed fit binds the resulting source hash independently."
+  },
+  "decision": "The optional adapter passes this single first-eight computational equivalence gate. Frozen adapters and executed Wave 4 arms remain unchanged. No scientific, geographic, or full-88 feasibility claim is added."
+}
