@@ -1,0 +1,84 @@
+5edf0: mov x3, x0
+5edf4: mov w6, #0
+5edf8: mov w0, #0
+5edfc: nop 
+5ee00: ldr x5, [x3, #0x2d0]
+5ee04: eor w2, w0, #1
+5ee08: add w1, w0, w6
+5ee0c: and x2, x2, #0xffff
+5ee10: ldr x4, [x3, #0xce0]
+5ee14: sxtw x1, w1
+5ee18: ldr w2, [x5, x2, lsl #2]
+5ee1c: add w0, w0, #1
+5ee20: cmp w0, #0x200
+5ee24: str w2, [x4, x1, lsl #2]
+5ee28: b.ne #0x5ee00
+5ee2c: add w6, w6, #0x200
+5ee30: cmp w6, #2, lsl #12
+5ee34: b.ne #0x5edf8
+5ee38: mov w0, #0
+5ee3c: ret 
+5ee40: mov x5, x0
+5ee44: ldr w0, [x0, #0x10]
+5ee48: adrp x1, #0xaf000
+5ee4c: add x1, x1, #0x3a0
+5ee50: cmp w0, #3
+5ee54: adrp x4, #0xaf000
+5ee58: add x4, x4, #0x7a0
+5ee5c: mov x3, #0x100
+5ee60: csel x4, x4, x1, ne
+5ee64: mov x6, #0x1100
+5ee68: sub x0, x3, #0x100
+5ee6c: nop 
+5ee70: ldr x1, [x5, #0xce8]
+5ee74: ldr w2, [x4, x0, lsl #2]
+5ee78: str w2, [x1, x0, lsl #2]
+5ee7c: add x0, x0, #1
+5ee80: cmp x3, x0
+5ee84: b.ne #0x5ee70
+5ee88: add x3, x3, #0x100
+5ee8c: sub x4, x4, #0x400
+5ee90: cmp x3, x6
+5ee94: b.ne #0x5ee68
+5ee98: mov w0, #0
+5ee9c: ret 
+5eea0: mov x1, x0
+5eea4: dsb sy
+5eea8: ldr x4, [x1, #0x4f70]
+5eeac: mov w0, #0
+5eeb0: ldr w2, [x1, #0x14]
+5eeb4: ldr w3, [x1, #8]
+5eeb8: add x1, x4, x2, lsl #2
+5eebc: ldr w2, [x1, #0xb4]
+5eec0: str w3, [x1, #0xb4]
+5eec4: ret 
+5eec8: nop 
+5eecc: nop 
+5eed0: ldr x1, [x0, #0x4f70]
+5eed4: ldr w0, [x0, #0x14]
+5eed8: add x0, x0, #0x60
+5eedc: add x0, x1, x0, lsl #2
+5eee0: ldr w0, [x0, #4]
+5eee4: and w0, w0, #0x3ff
+5eee8: ret 
+5eeec: nop 
+5eef0: ldr x1, [x0, #0x4f70]
+5eef4: ldr w0, [x0, #0x14]
+5eef8: add x0, x0, #0x74
+5eefc: add x0, x1, x0, lsl #2
+5ef00: ldr w0, [x0, #4]
+5ef04: ret 
+5ef08: nop 
+5ef0c: nop 
+5ef10: ret 
+5ef14: nop 
+5ef18: nop 
+5ef1c: nop 
+5ef20: sub sp, sp, #0x60
+5ef24: mov w2, #4
+5ef28: stp x29, x30, [sp, #0x40]
+5ef2c: add x29, sp, #0x40
+5ef30: stp x19, x20, [sp, #0x50]
+5ef34: mov x20, x0
+5ef38: mov x19, x1
+5ef3c: mov w0, w2

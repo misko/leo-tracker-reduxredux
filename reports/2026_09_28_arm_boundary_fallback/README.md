@@ -18,8 +18,11 @@ only when `conditioned_fallback` is true.
 The threshold was selected after inspecting the 704-dwell corpus: all 3370
 positive same-proposal alias mismatches were within the threshold, while 9477
 of 123904 candidate outputs (7.65%) met it. Consequently the 704 corpus and its
-640-dwell subset are tuning data, not a holdout. This report makes no speed or
-generalization claim before independent measurement.
+640-dwell subset are tuning data, not a holdout. The completed run recovered
+19,576/19,581 original hits; the separate four-dwell ARM run recovered 119/119
+and measured 25.084860 CPU seconds/dwell, 1.32218x faster than the latest exact
+cache baseline. See `REPORT.md` for per-rate counts and measurement limitations.
+These results do not establish generalization to unseen data.
 
 The first 64-dwell qualification (1408 windows) retained 1669/1669 reference hits across all
 691 positive windows and added one unmatched positive. It invoked 854

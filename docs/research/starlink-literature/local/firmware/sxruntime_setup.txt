@@ -1,0 +1,384 @@
+#!/bin/sh
+
+#
+# sxruntime_setup
+#
+# $Id$
+# @author Matt Sachtler
+# @author Sergio Benitez
+# @date 07/30/2014
+#
+
+# Bail out if any command in a pipe fails.
+set -o pipefail
+# Bail out if any command fails.
+set -o errexit
+# Bail out if any variables are undefined.
+set -o nounset
+
+# See if a live load update is performed instead of the standard load pull.
+LIVE_UPDATE=0
+if [ "$#" -gt 0 ]; then
+    if [ "$1" = "--live_update" ]; then
+        LIVE_UPDATE=1
+    else
+        echo "Error: Unknown parameter \"$1\"."
+        echo
+        echo "Usage: $0 [--live_update]"
+        exit 1
+    fi
+fi
+
+# Externally overwritable.  Default to false, but set to 1 on rsync failure.
+LOAD_FROM_FLASH=false
+
+. flash_utils.sh
+. whatami.sh
+. unpack.sh
+
+#
+# The flash device storing the runtime load.
+#
+SX_FLASH_DEV=/dev/mtd/sx
+
+#
+# The name of the runtime load file.
+#
+RUNTIME_IMG_TAR=runtime.tar
+RUNTIME_IMG_LZ=${RUNTIME_IMG_TAR}.lz
+# RUNTIME_IMG_NAME defined by unpack.sh
+
+#
+# Information files written by this script.
+# The status code meaning is:
+#  0: Could not ping the proxy;
+#  1: Could ping the proxy, but not rsync with the proxy;
+#  2: Could ping the proxy and rsync with the proxy;
+#  3: A new load (different from the one in flash) was downloaded from
+#     the proxy.
+#
+PROXY_LOAD_STATUS=/tmp/proxy_load_status
+UNPACK_LOAD_ERROR=/tmp/unpack_load_error
+
+#
+# Our device's serial number. Skip pulling the load from the proxy if
+# the serial number is not available.
+# Serial numbers are set via HOOTL_SERIAL in HOOTL
+#
+SERIAL_NUMBER=$(get_assembly_serial_num)
+# If the SERIAL_NUMBER is an empty string, HOOTL_SERIAL will be unset.
+# Because this is run with nounset, provide a default value of the empty
+# string for HOOTL_SERIAL.
+SERIAL_NUMBER="${SERIAL_NUMBER:-${HOOTL_SERIAL:-}}"
+if [ -z "${SERIAL_NUMBER}" ]; then
+    ATTEMPT_RSYNC=false
+    LOAD_FROM_FLASH=true
+
+    # Warn about missing assembly serial on platforms that don't do TFTP boot.
+    if [ ! -e /proc/device-tree/chosen/sx_update ]; then
+        echo "ERROR Assembly serial number not set. "
+    fi
+else
+    ATTEMPT_RSYNC=true
+
+    #
+    # Determine the location of the remote runtime load: "sxruntime/<role>_<serial>".
+    #
+    ROLE_NAME=$(whatNodeTypeAmI)
+    REMOTE_IMG_DIR="sxruntime/${ROLE_NAME}_${SERIAL_NUMBER}"
+fi
+
+#
+# A temporary location in which to place the downloaded remote runtime load.
+#
+TMP_IMG_DIR=/tmp/proxy
+TMP_IMG=${TMP_IMG_DIR}/${RUNTIME_IMG_NAME}
+
+#
+# Determine the location of the local runtime load.
+#
+LOCAL_IMG_DIR=/sx/local/runtime
+LOCAL_IMG=${LOCAL_IMG_DIR}/${RUNTIME_IMG_NAME}
+LOCAL_IMG_LZ=${LOCAL_IMG_DIR}/${RUNTIME_IMG_LZ}
+
+#
+# Load per-box overrides if they exist.
+#
+if [ -e /etc/flash_info.per_box ]; then
+    . /etc/flash_info.per_box
+fi
+
+#
+# Given a path to an existing image, reads from flash a possibly different image
+# of the first image's size to some local path. Then, the hash of the read image
+# is compared to the hash of the existing image, which is read from and assumed
+# to be stored in {image_path}.md5sum.
+#
+# @param flash_dev The flash device to read a possibly different image from.
+# @param local_path The path to store the image read from flash.
+# @param image_path The path of the image to compare the read image to.
+#
+# @return 0 if the images match, 1 otherwise
+#
+read_check_img()
+{
+    local flash_dev=$1
+    local local_path=$2
+    local image_path=$3
+    local image_size=$(ls -l $image_path | awk '{print $5}')
+
+    # Read the image from flash.
+    echo "Reading ${image_size} bytes from ${flash_dev} to ${local_path}"
+    if ! cat_flash $image_size $flash_dev > $local_path; then
+        echo "ERROR ERROR ERROR"
+        echo "Failed to read from flash device!"
+        echo "ERROR ERROR ERROR"
+        exit 1
+    fi
+
+    # Determine their hashes.
+    local_hash=$(md5sum $local_path | cut -d' ' -f1)
+    remote_hash=$(cat ${image_path}.md5sum | cut -d' ' -f1)
+
+    echo "Remote hash is ${remote_hash}. Local is ${local_hash}."
+    test "${remote_hash}" = "${local_hash}"
+}
+
+#
+# Downloads the runtime load from the proxy and stores it in `img_dir`. If
+# `img_dir` does not exist, it is created.
+#
+# @param img_dir The location to store the runtime load files.
+#
+# @return 0 on success, 1 otherwise
+#
+download_img()
+{
+    local proxy=$1
+    local img_dir=$2
+    local rsync_timeout_in_seconds=2
+    #
+    # Apply common timeouts for all rsync operations. Also, specify that links
+    # should be copied as regular files, since the "group" keyword in a vehicle
+    # manifest will result in some loads being symlinked to others.
+    #
+    local rsync_options="--contimeout=${rsync_timeout_in_seconds} \
+        --timeout=${rsync_timeout_in_seconds} \
+        --copy-links"
+
+    # Allow specifying additional rsync options per board.  The rsync_options
+    # file is assumed be a script that sets up the 'rsync_extra_options' variable.
+    if [ -e "/etc/rsync_options" ]; then
+        . /etc/rsync_options
+        rsync_options="${rsync_options} ${rsync_extra_options}";
+    fi
+
+    local seconds_between_rsync_attempts=1
+    #
+    # Don't use the rsync_timeout_in_seconds value above because some
+    # errors may cause rsync to return immediately (hence only taking
+    # seconds_between_rsync_attempts).
+    #
+    local max_num_attempts=$(($(get_proxy_timeout) /
+            ${seconds_between_rsync_attempts}))
+    local succeeded=0
+
+    mkdir -p $img_dir
+
+    echo "1" > ${proxy_load_status_tmp}
+
+    echo "Downloading runtime from ${proxy}..."
+    #
+    # Try several times to contact the proxy via rsync.
+    # Contact may be lost with the proxy, even though the ping test
+    # succeeded, if the Ethernet Switch hands over from the bootloader
+    # to the main application during the transfer.
+    # If that happens, it's not necessarily an error; we should not print
+    # an error, just retry.
+    # The last attempt, however, is allowed to print the error, as this is
+    # likely the same error that caused earlier failures.
+    #
+    for attempt in $(seq 1 ${max_num_attempts})
+    do
+        if [ ${attempt} -lt ${max_num_attempts} ]
+        then
+            if rsync --list-only ${rsync_options} \
+                ${proxy}::${REMOTE_IMG_DIR}/${RUNTIME_IMG_NAME} \
+                > /dev/null 2>&1
+            then
+                if rsync ${rsync_options} \
+                    ${proxy}::${REMOTE_IMG_DIR}/${RUNTIME_IMG_NAME}* \
+                    $img_dir >& /dev/null
+                then
+                    succeeded=1
+                    break
+                fi
+            else
+                # If the file was not found, there is no load to pull
+                if [ ${?} -eq 23 ]; then
+                    echo "No load corresponding to this assembly was found." \
+                        "Skipping."
+                    echo "2" > ${proxy_load_status_tmp}
+                    return 1
+                fi
+            fi
+        else
+            if rsync ${rsync_options} \
+                ${proxy}::${REMOTE_IMG_DIR}/${RUNTIME_IMG_NAME}* \
+                $img_dir
+            then
+                succeeded=1
+                break
+            fi
+        fi
+        sleep ${seconds_between_rsync_attempts}
+    done
+
+    if [ ${succeeded} -eq 1 ]; then
+        echo "2" > ${proxy_load_status_tmp}
+    else
+        echo "ERROR: Download failed."
+        return 1
+    fi
+
+    return 0
+}
+
+#
+# This function moves the output files to their final location and name.
+#
+finalize_output_files()
+{
+    if [ -f ${proxy_load_status_tmp} ]; then
+        mv ${proxy_load_status_tmp} ${PROXY_LOAD_STATUS}
+    fi
+    if [ -s ${unpack_load_error_tmp} ]; then
+        mv ${unpack_load_error_tmp} ${UNPACK_LOAD_ERROR}
+    else
+        rm ${unpack_load_error_tmp} ${UNPACK_LOAD_ERROR} 2> /dev/null || true
+    fi
+}
+
+heartbeat()
+{
+    echo "Still alive."
+    if [ -e "/usr/bin/heartbeat_once" ]; then
+        # Don't stop if this fails.  Leave std out for debugging.
+        heartbeat_once || true
+    fi
+}
+
+trap finalize_output_files EXIT
+proxy_load_status_tmp=$(mktemp)
+echo "0" > ${proxy_load_status_tmp}
+unpack_load_error_tmp=$(mktemp)
+
+echo "Starting runtime load setup."
+
+#
+# Unpack the archive to a temporary location when performing a live update.
+#
+if [ $LIVE_UPDATE -gt 0 ]; then
+    STAGING_DIR=$(mktemp -d)
+else
+    STAGING_DIR=$LOCAL_IMG_DIR
+    mkdir -p $LOCAL_IMG_DIR
+fi
+
+#
+# If there's a proxy, check to see if there is a new load available. If there
+# is, flash it. Then, unecc the image and prepare it to be extracted. If no
+# proxy is available, the rsync from the proxy fails, or when booting from TFTP
+# simply unecc the image currently on flash.
+#
+if ${ATTEMPT_RSYNC}; then
+    # Find the active proxy
+    active_proxy=$(verify_active_proxy) || active_proxy=""
+
+    # Try to download load
+    if [ -n "$active_proxy" ] && download_img $active_proxy $TMP_IMG_DIR; then
+        #
+        # Read the currently stored image from flash and store it in $LOCAL_IMG.
+        # Compare the remote load to the local image; flash the remote load if it is
+        # different from the local load. Then, make sure it was flashed and loaded
+        # into memory correctly.
+        #
+        if [ -z "$SX_FLASH_DEV" ]; then
+            # If no flash, just use what we downloaded directly.
+            mv $TMP_IMG $LOCAL_IMG
+        elif ! read_check_img $SX_FLASH_DEV $LOCAL_IMG $TMP_IMG; then
+            echo "New load available. Writing proxy image to flash..."
+            # Single heartbeat here to let everyone know we are still alive
+            # before we flash new loads, which could take a while.
+            heartbeat
+
+            dump_to_flash $TMP_IMG $SX_FLASH_DEV
+
+            # Re-read and re-check the flashed load.
+            if ! read_check_img $SX_FLASH_DEV $LOCAL_IMG $TMP_IMG; then
+                echo "ERROR ERROR ERROR ERROR ERROR"
+                echo "The flashed image does not match the proxy's image!"
+                echo "ERROR ERROR ERROR ERROR ERROR"
+                exit 1
+            fi
+
+            echo "3" > ${proxy_load_status_tmp}
+
+            echo "New load flashed successfully."
+        else
+            echo "Local load matches load on proxy."
+        fi
+
+        if ! ${LOAD_FROM_FLASH}; then
+            unpack_file $LOCAL_IMG $LOCAL_IMG_LZ
+        fi
+
+        # remove now unneeded files
+        rm $LOCAL_IMG
+        rm -rf $TMP_IMG_DIR
+    else
+        echo "Could not pull load from the proxy."
+        LOAD_FROM_FLASH=true
+    fi
+fi
+
+if ${LOAD_FROM_FLASH} ; then
+    if [ -n "$SX_FLASH_DEV" ]; then
+        echo "Unpacking load from flash."
+        unpack_flash $SX_FLASH_DEV $STAGING_DIR $RUNTIME_IMG_LZ
+    fi
+else
+    echo "Unpacking runtime files to ${STAGING_DIR}."
+    if ! cat $LOCAL_IMG_LZ | unlzma | tar -x -C $STAGING_DIR; then
+        unpack_error "Failed to extract runtime!"
+    fi
+    rm $LOCAL_IMG_LZ
+fi
+#
+# Now apply the delta between the staging directory and the local runtime load.
+#
+# Options:
+#  * --archive - archive mode.
+#  * --force - force deletion of non-empty directories.
+#  * --delete-before - delete extraneous files from the destination.
+#  * --checksum - use checksum to decide which files to update. This prevents
+#           rsync from overwriting unchanged files during live update. Without
+#           this option it is not possible remount / in read-only mode.
+#  * --filter=-_/bin/* - prevent the binaries from being deleted when a wrong
+#           load was pushed to the proxy.
+#
+if [ $LIVE_UPDATE -gt 0 ]; then
+    echo "Copying runtime files from ${STAGING_DIR} to ${LOCAL_IMG_DIR}."
+
+    mkdir -p $LOCAL_IMG_DIR
+    rsync --archive --force --delete-before --checksum "--filter=-_/bin/*" \
+        $STAGING_DIR/ $LOCAL_IMG_DIR/
+    rm -rf $STAGING_DIR
+fi
+
+#
+# invalidate version_info cache
+#
+version_info -c
+
+# EOF
