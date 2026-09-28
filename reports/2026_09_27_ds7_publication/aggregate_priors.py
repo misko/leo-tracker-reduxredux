@@ -100,7 +100,8 @@ def main():
             assert document["session_id"] == member["session_id"]
             assert document["input_manifest_sha256"] == member["manifest_sha256"]
         priors = {p["name"]: p for p in document.get("priors", [])}
-        row = {"session_id": member["session_id"], "dwell_ms": capture["valid_visit_ms"],
+        row = {"session_id": member["session_id"], "dwell_ms": capture["active_dwell_ms"],
+               "valid_visit_ms": capture["valid_visit_ms"],
                "sample_rate_msps": capture["sample_rate_hz"] / 1e6,
                "nominal_capture_seconds": capture["nominal_duration_seconds"],
                "publication_state": result.get("state")}
@@ -136,8 +137,9 @@ def main():
     lines = ["# DS7 error by dwell time and sample rate", "",
              "Rows aggregate individual published selected-position errors; they are not pooled location fits.",
              "Reno and Sacramento name search priors applied to the same recordings, not collection sites.",
-             "Dwell is valid per-visit time, not the nominal 300-second recording duration.", "",
-             "| Dwell (ms) | Rate (MS/s) | N | Reno available | Reno median (km) | Reno mean (km) | Reno P90 (km) | Sac available | Sac median (km) | Sac mean (km) | Sac P90 (km) |",
+             "Dwell groups use `active_dwell_ms` (120, 240, or 360 ms), not `valid_visit_ms` (120 ms for all 88). Each recording has a nominal duration of 300 seconds.", "",
+             "Correction: the initial published table incorrectly grouped by `valid_visit_ms` and therefore collapsed the three active-dwell settings. This version uses the same frozen API snapshot and errors, regrouped by active dwell and sample rate. The overall 88-recording metrics are unchanged.", "",
+             "| Active dwell (ms) | Rate (MS/s) | N | Reno available | Reno median (km) | Reno mean (km) | Reno P90 (km) | Sac available | Sac median (km) | Sac mean (km) | Sac P90 (km) |",
              "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     def fmt(value):
         return f"{value:.2f}" if value is not None else "—"
@@ -158,7 +160,7 @@ def main():
     lines += ["", f"Recorded stopping reasons: `{json.dumps(stops, sort_keys=True)}`.", "",
               "These budget-limited prior searches are a different estimator from the report's 677 m full88 joint fit.",
               "Availability means a published selected estimate exists; it does not imply exhaustive search or a qualified fix.",
-              "All 88 recordings have a 120 ms valid dwell and nominal duration of 300 s; dwell-duration effects cannot be estimated here.",
+              "DS7 contains 31 recordings at 120 ms, 25 at 240 ms, and 32 at 360 ms active dwell. `valid_visit_ms` is a separate metadata field and is 120 ms throughout.",
               "The evaluation-only reference is 37.84903264307456, -122.4856541910174 (unsurveyed).",
               "This is descriptive single-site evidence, not a causal comparison of sample rates or dwell durations.", "",
               f'Snapshot UTC: {payload["captured_utc"]}. DS7 manifest SHA-256: `{payload["membership_sha256"]}`.', "",
