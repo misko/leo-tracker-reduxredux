@@ -1,0 +1,25 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_subkm_joint_slope/curvature-resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "180s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_subkm_joint_slope/curvature.py"
+  ],
+  "fit_seal_sha256": "9e6343291147249b8cc9719f8b18f4cf5450a259736ce000de1255f8ba7a41d3"
+}
