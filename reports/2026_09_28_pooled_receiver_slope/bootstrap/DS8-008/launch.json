@@ -1,0 +1,39 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pooled_receiver_slope/bootstrap/DS8-008/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "120s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/ds7_fast_baseline_adapter.py",
+    "--request",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pooled_receiver_slope/bootstrap/DS8-008/request.json",
+    "--response",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_pooled_receiver_slope/bootstrap/DS8-008/response.json"
+  ],
+  "sha256": {
+    "reports/2026_09_28_pooled_receiver_slope/bootstrap_ds8.py": "25f74dc8017244b9a2b634c2674a1d19b45959edbb7920ebd50e87879cf9a9ce",
+    "reports/2026_09_28_pooled_receiver_slope/BOOTSTRAP-PROTOCOL.md": "0dad5f782a5e28899aae236f0a13157127a7023dbed34054e99b52365967fbfa",
+    "reports/2026_09_28_pooled_receiver_slope/bootstrap/DS8-008/request.json": "efaa124804e93c5286b3a8416ebcdbfd021048e1edc202ad3eb2034e898a3131",
+    "reports/2026_09_28_pooled_receiver_slope/preparation/DS8-008/preparation-seal.json": "c82e6b08ea2b1d98d741d20c92aa2964fd29d3db27436d17aec5e3e4ed2fc1b4",
+    "tools/ds7_fast_baseline_adapter.py": "ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+    "tools/ds7_baseline_adapter.py": "221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "reports/2026_09_28_ds89_baseline_panel/exports/DS8-008/observations.json": "59356ec272e95d0b4ba4760f7a7fc75e1af5807d7e1ab731e6b74f3d93462ffd",
+    "reports/2026_09_28_pooled_receiver_slope/preparation/DS8-008/banks/manifest.json": "4956ee411ada7adb6e14a18f7fcd069b8685fb1ece779abaefb5869babb10ccf",
+    "reports/2026_09_28_pooled_receiver_slope/preparation/DS8-008/banks/banks.npz": "442e1c3ea85d15ea42674bd1ef50c5123a232e2dd50b06b80c10007fbf8b951f"
+  }
+}
