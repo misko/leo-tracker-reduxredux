@@ -1,0 +1,37 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_subkm_shared_slope/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "300s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/current-api/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_subkm_shared_slope/run.py"
+  ],
+  "sha256": {
+    "reports/2026_09_28_subkm_shared_slope/launch.py": "f886eb8ec9098e7c8b9849cc96bf5280c675c9444531748528510a9791d10a16",
+    "reports/2026_09_28_subkm_shared_slope/run.py": "0a823836f6eef192d007a80980d7688cda3e7c746fe218895f2a4072c0a42a22",
+    "reports/2026_09_28_subkm_shared_slope/PROTOCOL.md": "26b86acbdbb18416f8ede1202fc07f9690e2f7f2a92a03701eb27ea2bd322f2a",
+    "tools/ds7_shared_slope_shadow.py": "023a234f13932c5b3161e8c79b98668cb8c2826b60e488f801638f4ba2166ed7",
+    "tools/ds7_residual_audit.py": "a560a1006a219a21ca7d3df1664d56cc2dfeb35c1e9b77330ee6f0bc5c677e2f",
+    "tools/ds7_fast_baseline_adapter.py": "ec130ab9f8fb9517aca55281c5b32062106a193038be91c39c1ff2b4b74c5de9",
+    "tools/ds7_baseline_adapter.py": "221ddff51a37f45e73fc420c3ef769e2943e6667f31e10bcc6fa6fd56e7fa43e",
+    "tests/research/test_ds7_shared_slope_shadow.py": "110d17d2f3e78b32978352c99fcc52c7d638e1fcbd4575702e91a0034eef01bf",
+    "reports/2026_09_28_subkm_residual_transfer/results/single-001.json": "efa675461de749e519e98beab6ca3326d923490acf504e13f84064125c4d7b72",
+    "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/request.json": "dfd5cec3384fc9dac44ad6d0751cbd438aca61d11a4e4cec35f8edaead641278",
+    "reports/2026_09_27_ds7_full88/solver/joint-v1/full88/response.json": "2ececb695853e740c955d7decea5f3e0db155639525d3b8b9376badf8f14d286"
+  }
+}
