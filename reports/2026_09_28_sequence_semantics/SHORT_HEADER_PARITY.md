@@ -78,3 +78,63 @@ Two additional tests verify zero syndromes for synthetic encoded words, detectio
 of deliberate corruption, and approximately half failing checks for random
 uncoded words. The JSON results and input hashes are in ignored
 `local/moving_header_code.json`. Formatting/lint checks passed.
+
+## Firmware-derived 114-bit candidate
+
+The dish firmware's MAC MCS entry 0 specifies 32 bits and 114 symbols. This is
+compatible with 32 information bits plus six termination bits encoded at rate
+1/3, but neither the generators nor downlink applicability is established.
+The same moving-window assay was therefore rerun with length 114, preserving
+the previous carrier orders, directions, six stream permutations, eligibility
+filter, and discovery/evaluation split. Reproduction:
+
+```
+python moving_header_code.py --lengths 114 --output local/moving_header_code_114.json
+```
+
+Of 10,020 eligible start/order/generator combinations, none had zero discovery
+syndrome errors. The discovery-selected candidate was symbol 7, descending
+physical frequency, compact start 874, actual FFT bin 649, generators
+133/171/165 octal. Its syndrome-error fraction was 0.413194 on discovery and
+0.513889 on evaluation, with qualified evaluation decisions. This provides no
+support for that candidate. It does not reject other generator sets,
+interleaving, symbol-crossing boundaries, or excluded low-activity regions.
+The assay uses necessary convolutional parity relations; it does not enforce
+the proposed termination state or recover a 32-bit message.
+
+The reporting code now distinguishes the actual FFT bin from the column index
+in the compact carrier array; the older output's `first_bin` field stored the
+column index. Existing historical JSON remains unchanged. A third focused test
+encodes 32 random bits with six termination zeros, checks 114-bit words after
+fixed-mask cancellation, and detects corruption. All three focused tests and
+lint passed. No new RF data was collected.
+
+User-directed recording scope going forward is **DS7 + DS8 + DS9**. DS9's
+manifest is `reports/2026_09_28_ds9_post_ds8/manifest.json`; the current assay
+still uses the UT full-band reference. Dataset availability does not establish
+that a narrowband visit contains a complete candidate codeword.
+
+## Generator-independent exact relation check
+
+`blind_header_114.py` removes the assumed 133/171/165 generators. For each
+eligible 114-bit window it builds seven-tap windows for each pair of the three
+serialized output streams. GF(2) elimination searches for a homogeneous parity
+relation using both streams. Columns with one-fraction outside 0.1–0.9 cannot
+participate, to avoid constant-region relations. All within-symbol starts are
+considered in both carrier orders and directions; quality/activity filters and
+frame pairing remain as above. Arbitrary starts already cover the three output
+phases. Only one representative relation per eligible configuration would be
+evaluated on the separate frame group; that group never selects the relation.
+
+**No exact discovery relation was found in 5,010 eligible configurations.**
+Consequently there was no relation to evaluate or interpret. This result is
+independent of a particular seven-tap generator pair, but still assumes direct
+uninterleaved serialization and fixed-mask cancellation. It is an exact,
+error-sensitive necessary-relation test, not a decoder or proof that the signal
+lacks convolutional coding. The activity filter can exclude real low-entropy
+headers, and untested symbol-crossing/interleaved layouts remain possible.
+
+Two focused tests verify recovery with a different synthetic generator set,
+generalization to independently generated words, detection of corruption, and
+rejection of random or constant input. Both pass; lint/format checks pass.
+Results and input hashes: ignored `local/blind_header_114.json`.

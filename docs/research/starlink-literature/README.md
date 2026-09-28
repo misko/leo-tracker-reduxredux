@@ -26,7 +26,14 @@ Downloads are reference material, never application runtime dependencies.
 
 ## Contents
 
+- [Expanded technical review — 2026-09-28](broad-review-2026-09-28.md):
+  navigation/receivers, networking, Direct-to-Cell, security, astronomy, and environment.
+- [Expanded source index and local PDF links](source-index-2026-09-28.md)
+- [Search scope, reading depth, and access gaps](search-notes-2026-09-28.md)
+- [2026-09-28 download provenance](downloads-2026-09-28.json): additive
+  manifest with successful PDFs/article snapshots and failed requests.
 - [Public firmware leads for header decoding](firmware-leads.md)
+- [Receive-MAC header parsing evidence from firmware](firmware-header-analysis.md)
 - [State of the art and paper reviews](review.md)
 - [Cleartext, satellite identity, timing, and orbit investigation](identity-timing-orbit.md)
 - [UT raw-IQ header reproduction](../../../reports/2026_09_27_ut_header/README.md)

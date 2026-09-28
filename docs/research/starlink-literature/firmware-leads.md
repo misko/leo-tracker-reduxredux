@@ -2,8 +2,54 @@
 
 Reviewed 2026-09-28. Scope: public online artifacts only. No private researcher
 access, hardware extraction, or new RF collection is assumed. This is a source
-review plus inspection of one public Linux-partition binary. No modem executable
-has yet been recovered or disassembled in this review.
+review plus inspection of public firmware binaries. The APK acquisition below
+has now succeeded and modem executables have been recovered. Header decoding
+remains unverified.
+
+## Successful APK acquisition and modem runtime recovery
+
+Later on 2026-09-28, [APKCombo's public download page](https://apkcombo.com/starlink/com.starlink.mobile/download/apk)
+provided a working download for app version 2026.24.0. The XAPK is 404,609,952
+bytes, SHA-256 `21bb48af60c47b0df9fc786c78d03c1d8927f0bf5ea4175e4b9ef5eb141ec862`.
+The 176,978,724-byte base APK contains both dish update bundles. This independently
+confirms the embedded-firmware route, using a newer app than the cited teardown.
+APK signing and sxverity authentication have not yet been independently verified;
+these are third-party-hosted research artifacts, not trusted deployment images.
+
+| Extracted asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| sw_update_catson.sxv | 47,355,904 | 2213b5cd9edf5e01be813f97724f0c4b21aed25138a220791fbce46c92d4ba1f |
+| sw_update_catapult.sxv | 43,866,112 | e5ceea7e46a7b5321d61bd68d2ccfb88c04fe1f4ea2f6ac4d557531b30765222 |
+
+Static extraction chain: base APK ZIP member → sxverity bundle → ROMFS at
+offset 4096 → runtime.sxv → nested ROMFS → runtime.tar.zst → Zstandard
+decompression → tar member reads. No mount, terminal modification, or firmware
+execution was used. Both tar inventories contain 8,298 entries.
+
+The runtime contains AArch64 ELF executables, including:
+
+| Catson runtime file | Bytes | SHA-256 |
+| --- | ---: | --- |
+| bin/phyfw | 1,056,208 | 52285c9809696a88dca1a24407bc3ec5e853c255ca385f97b6da2463898cc326 |
+| bin/rx_lmac | 1,577,336 | 9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe |
+| bin/tx_lmac | 1,577,336 | a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6 |
+
+Catapult and v4 variants are also present. The runtime version file identifies
+March 27, 2026 build `mr76839`, constellation commit
+`d2db9be25af5f37f9b642e7ac7ad1b2833efac3a`, matching the published teardown's
+metadata despite the newer app container.
+
+Initial string inspection finds header-decoder error counters, PDU/GMH parsing
+diagnostics, and PHY/LDPC references. These identify analysis targets only;
+strings and internal metadata are not proof of on-air field layouts. Next work
+is tracing these references through the executable code and hardware interface.
+
+All packages, inventories and extracted bytes remain under ignored
+`local/firmware/`. Canonical extracted executable names preserve their original
+directory: `catson-bin--phyfw`, `catson-bin--rx_lmac`, and
+`catson-bin--tx_lmac`. Earlier basename-only scratch exports collided with
+AppArmor profile names and must not be used as executable inputs. ZIP integrity
+was checked while reading members; cryptographic provenance is still open.
 
 ## Acquisition and binary inspection results
 

@@ -1,0 +1,94 @@
+311e0: ldr x5, [x0, #8]
+311e4: cbnz x5, #0x31220
+311e8: and w3, w3, #0xff
+311ec: and w2, w2, #0xff
+311f0: eor w5, w3, #1
+311f4: str x1, [x0, #8]
+311f8: strb w2, [x0, #0x14]
+311fc: strb w5, [x0, #0x15]
+31200: str w4, [x0, #0x40]
+31204: cbz w3, #0x31218
+31208: ldr x1, [x0, #0x5b0]
+3120c: ldrb w0, [x1, #0x179]
+31210: add w0, w0, #1
+31214: strb w0, [x1, #0x179]
+31218: mov w0, #0
+3121c: ret 
+31220: stp x29, x30, [sp, #-0x10]!
+31224: mov w2, #0
+31228: mov w1, #0x10
+3122c: mov x29, sp
+31230: mov w0, #1
+31234: bl #0x105540
+31238: tst w0, #0xff
+3123c: b.eq #0x31270
+31240: adrp x0, #0x17f000
+31244: ldr x0, [x0, #0xc10]
+31248: adrp x3, #0x109000
+3124c: adrp x2, #0x109000
+31250: add x3, x3, #0x238
+31254: add x2, x2, #0x348
+31258: adrp x1, #0x106000
+3125c: add x1, x1, #0x688
+31260: mov w4, #0x228
+31264: ldr x0, [x0]
+31268: bl #0x22420
+3126c: bl #0x22470
+31270: adrp x7, #0x109000
+31274: adrp x6, #0x109000
+31278: add x7, x7, #0x310
+3127c: add x6, x6, #0x5a0
+31280: adrp x5, #0x106000
+31284: adrp x0, #0x109000
+31288: add x0, x0, #0x24e
+3128c: add x5, x5, #0x648
+31290: mov w4, #0
+31294: mov w3, #0x10
+31298: mov w2, #1
+3129c: mov w1, #0x228
+312a0: bl #0x105590
+312a4: b #0x31240
+312a8: nop 
+312ac: nop 
+312b0: adrp x2, #0x17f000
+312b4: ldr x2, [x2, #0x8b8]
+312b8: stp x29, x30, [sp, #-0xf0]!
+312bc: mov w3, #2
+312c0: mov x29, sp
+312c4: ldr x4, [x2]
+312c8: str x4, [sp, #0xe8]
+312cc: mov x4, #0
+312d0: stp x19, x20, [sp, #0x10]
+312d4: strh wzr, [sp, #0x78]
+312d8: stp wzr, wzr, [sp, #0x7c]
+312dc: str w3, [sp, #0x84]
+312e0: cbz x0, #0x31438
+312e4: stp x27, x28, [sp, #0x50]
+312e8: add x28, x0, #0x280
+312ec: mov x19, x0
+312f0: ldr x0, [x28, #8]
+312f4: cbz x0, #0x3137c
+312f8: mov x2, #0
+312fc: mov x20, x1
+31300: mov w1, #0
+31304: stp x21, x22, [sp, #0x20]
+31308: bl #0xf1910
+3130c: mov x22, x0
+31310: add x21, sp, #0x98
+31314: ldr x0, [x28, #8]
+31318: bl #0xf1860
+3131c: mov w2, w0
+31320: mov x1, x22
+31324: mov x0, x21
+31328: bl #0xea8b0
+3132c: cbz w0, #0x313d0
+31330: adrp x0, #0x1a9000
+31334: add x1, x0, #0xbe8
+31338: ldr w0, [x0, #0xbe8]
+3133c: cbz w0, #0x31428
+31340: ldr x2, [x28, #8]
+31344: mov w1, #0x2c8
+31348: bl #0xf2960
+3134c: str xzr, [x28, #8]
+31350: ldrb w1, [x28, #0x14]
+31354: ldr x0, [x28, #0x5b0]
