@@ -1,22 +1,28 @@
 # Interpreting the extra bits: a cyclic-phase representation
 
-[Follow-up: pilot-referenced headers, expanded reference checks, and scrambler
-ambiguity](PILOT_HEADER_FOLLOWUP.md). The header's field meanings remain unresolved.
+Follow-up: [pilot-referenced header decoding and tail-polarity resolution](PILOT_HEADER_FOLLOWUP.md).
 
 2026-09-28. **Progress: an exact generator has been identified for our recovered
 60-bit vocabulary. The protocol meaning of its phase choice remains unresolved.**
 No satellite ID, absolute time, position, orbit message or user payload is claimed.
 
-## Abstract and scope
+**New boundary interpretation:** in 13 full-band reference frames, a transition
+estimated from soft quadrature power without using sign or cyclic phase predicts
+every fitted phase exactly: `phase = (-boundary) mod 60`. Here `boundary` counts
+the selected non-pilot carriers from OFDM symbol 2. Three flank sizes give the
+same boundaries. This supports interpreting the phase as the repeating region's
+start offset modulo 60, rather than an independently varying identity field in
+these frames. Validation is still limited to one previously examined recording;
+it does not yet identify a header length field, exact packet format, or payload.
+See [soft-boundary results](FULL_FRAME_REGIONS.md#soft-power-boundaries-predict-all-13-phases).
 
-This report follows the [DS7/DS8 signal-structure study](../2026-09-28-ds7-ds8-signal-structure.md).
-DS7 and DS8 are local narrow-band recordings; UT denotes published University
-of Texas reference symbols and a separate full-band raw-IQ excerpt. We find an
-exact cyclic generator for the previously recovered words, test temporal and
-identity hypotheses, and examine all 300 saved data symbols in seven full-band
-UT frames. The latter reveals three additional frame-level phase recoveries in
-short end-of-frame regions. Header relative signs also repeat, but neither
-header semantics nor user payload is decoded. All analyses are offline.
+The fixed boundary-to-phase relation also holds in four eligible locally
+demodulated raw-IQ frames (250, 251, 254, 255), with identical boundaries and
+phases under both edge-pilot corrections. Three other raw frames have no
+qualifying terminal transition. This brings the evidence to 17 distinct frames
+from the same public acquisition, not 17 independent recordings.
+
+[Open the illustrated report and complete dictionary](local/phase_report.html).
 
 ## Main finding
 
@@ -49,7 +55,7 @@ generator. We inspected the broader catalogue before noticing this structure,
 so this is an **exploratory algebraic discovery**, not a prospectively blind
 holdout or a claim of novelty relative to all external literature.
 
-![Raw words and their cyclic-shift representation](figures/phase_generator.png)
+![Raw words and their cyclic-shift representation](local/phase_generator.png)
 
 ## What this explains
 
@@ -74,6 +80,33 @@ template leaves only a cyclically shifted periodic sequence. This is the
 physical waveform interpretation supported by the algebra. Whether the phase
 is set by a scrambler, encoder state, allocation machinery or another mechanism
 has not been established.
+
+### Exact linear-algebra constraint on the vocabulary
+
+`phase_rank.py` checks the current 60-word dictionary against the saved model,
+whose observed-state list contains all 60 states. The differences `B_k XOR B_0`
+have **GF(2) rank 59**. Because every word has even parity, these differences
+span the entire 59-dimensional even-parity subspace; even parity is the only
+independent linear parity constraint shared by this vocabulary.
+
+This does **not** mean 59 independent information bits are transmitted: only
+60 words occur, so the choice still carries at most log2(60) bits. It means the
+mapping from a compact state label to a word is not a fixed affine binary map.
+A fixed affine encoder with six binary inputs has difference rank at most six.
+Likewise, any fixed bit projection, permutation, or constant XOR mask applied
+to a linear code with only 32 variable input bits has rank at most 32, so it
+cannot produce this complete vocabulary. This excludes treating the signature
+as that simple projection of one 32-bit GMH codeword under those assumptions.
+Varying masks/positions, additional variable encoder state, multiple codewords,
+and nonlinear phase selection are not excluded.
+
+The 60 cyclic rotations of the seed itself have rank 60; independently,
+its binary polynomial is coprime to `x^60 + 1`. Both calculations agree that
+there is no smaller cyclic linear span of this seed. These algebraic findings
+do not identify the physical implementation or the meaning of phase selection.
+Results and the model hash are in ignored `local/phase_rank.json`. Two focused
+tests check a known six-input affine code and polynomial common factors; both
+pass, along with lint/format checks. No new RF data is involved.
 
 For context, Qin et al. characterize the tessellation structure and discuss an
 empty-allocation coding/scrambling explanation as a conjecture; their paper
@@ -130,16 +163,7 @@ gives approximately 1.68% and 1.59% matches respectively, compared with 3.39%
 and 0.69% observed. Pairs reuse visits; these small descriptive differences are
 not independent evidence of satellite identity. No relative lag is a UTC estimate.
 
-![State sequences with gaps preserved](figures/phase_sequences.png)
-
-The plotted labels identify recording visits, not waveform classes or satellite
-IDs. S01/S02 are DS7 upper-edge 5 MS/s visits; S06/S07 and S13 are DS8 upper-edge
-10 MS/s visits; S18/S19 are DS7 lower-edge 10 MS/s visits; S22/S23 are DS7
-upper-edge 10 MS/s visits. Prior geometry/orbit matching conditionally associates
-S06/S07 and S18/S19 with STARLINK-31567 (NORAD 59199), S13 with STARLINK-31407
-(59250), and S22/S23 with STARLINK-30257 (57526). These are candidate associations,
-not identities read from the words. The sequence comparison also includes S17,
-another visit associated with 59199. Missing frame observations remain gaps.
+![State sequences with gaps preserved](local/phase_sequences.png)
 
 ## Early-header test
 
@@ -170,102 +194,24 @@ This does not establish a readable phase field. The examined range may include
 post-header symbols in frames with shorter headers; no fixed header boundary
 is assumed by this exploratory test.
 
-## Further decoding: short regions missed by long windows
+## Artifacts, validation and remaining objective
 
-We examined the existing raw-IQ-derived soft symbols for UT frames 250–256:
-seven complete frames, 300 data symbols each, and 1,004 loaded carriers per
-symbol. Frame 257 is incomplete and excluded. SSS equalization, blind slope
-correction, and reference-template removal precede the assay. Each symbol is
-rotated onto its fitted binary axis, leaving an independent sign ambiguity.
-Binary-axis coherence is `abs(mean((z/abs(z))**2))`; the gate is 0.9.
+- [Phase dictionary](local/phase_dictionary.csv): all 60 generated words, state
+  indices, folded families and counts by dataset.
+- [Decoded state observations](local/phase_indices.csv): all 907 original accepted
+  observations, with explicit frame and visit IDs.
+- [Model/provenance](local/phase_model.json), [sequence comparisons](local/sequence_comparisons.json),
+  [temporal and header tests](local/state_and_header.json).
+- `window_audit.py`: fixed-window fits and nine native-rate IQ replays.
+- `phase_model.py`: two-word seed derivation and exact corpus/model checks.
+- `state_and_header.py`, `compare_sequences.py`: chronological prediction,
+  repeated-visit controls and header hypothesis test.
 
-![Full-frame binary structure and early-header detail](figures/rest_signal.png)
-
-The strong binary regions are the early symbols and five isolated tail symbols.
-The full-frame average does not detect every possible partial-band allocation;
-a low value is not proof that a symbol contains no recoverable structure.
-For each gated symbol, we fit an unrestricted 60-sign word separately to each
-502-carrier physical frequency half. Each half contains repetitions of all 60
-positions. Mapping uses compact physical carrier order and slot
-`(carrier_index - 16 × OFDM_symbol) mod 60`. The codebook is used only after
-both halves independently recover their words, allowing either global polarity.
-
-| UT frame | OFDM symbols | Independently matching state | Fitted polarity relative to generator | Band-fit correlation range |
-| --- | --- | --- | --- | --- |
-| 250 | 301 | 52 | +1 | 0.9744–0.9747 |
-| 254 | 300, 301 | 31 | −1 | 0.9717–0.9824 |
-| 255 | 300, 301 | 35 | −1 | 0.9726–0.9819 |
-
-All five tail symbols agree **exactly on all 60 signs between frequency halves**
-and match the generator up to the retained polarity. Both symbols in each
-two-symbol tail select the same state. These are three additional frame-level
-recoveries from the seven-frame raw excerpt, which yielded no accepted words
-in the previous 32-symbol-window assay. We keep them separate from the original
-907 observations: their acceptance method differs, and frequency halves share
-the same recording, reference template and calibration. This is not a new
-independent receiver experiment or a new semantic message type.
-
-No gated early-header symbol produces an exact split-band generator match.
-Thus the observed header is not simply another instance of the tail word under
-this test. The long-window decoder misses short allocations; full bandwidth
-allows a single symbol to contain enough repetitions to recover its word.
-Our narrow-band receivers generally need repetition over multiple symbols.
-The next useful local decoder extension is a variable-duration search with
-receiver-held-out and incorrect-mapping controls, rather than assuming every
-recoverable region lasts 32–64 symbols.
-
-### Polarity-independent header decisions
-
-For the common early range, OFDM 2–7, we multiply the signs of adjacent physical
-carriers. This cancels each symbol's unknown polarity. Gaps between loaded
-carriers are excluded; both samples must have `abs(real(z/abs(z))) > 0.9` and
-the symbol must pass the binary-axis gate. We export 41,743 qualified relative
-sign decisions locally. Adjacent pairs overlap and are not independent bits of
-information; these are neither absolute payload bits nor FEC/CRC-verified bytes.
-
-Of the positions unanimous in discovery frames 250–252, 3,082 qualify. In frames
-253–256, they predict 10,100/12,282 usable decisions (**82.23%**). Shifting the
-evaluation positions by 7, 19, 43 or 101 carriers gives 54.57–57.87% agreement.
-This supports repeatable frequency-position-dependent structure in the header.
-Seven previously inspected frames, shared calibration, and overlapping decisions
-do not establish a field interpretation or independent statistical significance.
-It does provide a concrete bit representation for future header-layout tests
-without silently choosing an absolute polarity.
-
-## Reproducibility, validation and remaining objective
-
-This publication includes the report, three figures, [generator code](phase_model.py),
-the standalone [full-frame assay](rest_signal.py), and its [tests](test_rest_signal.py).
-Raw IQ, soft-symbol arrays, recovered observation tables, and generated datasets
-are excluded from Git. The full working analysis additionally retains local
-window, chronology, header and visit-alignment scripts and provenance records;
-the report is readable without those private/local artifacts. The generator
-module's corpus-audit entry point requires those excluded local observation
-files; its `derive_seed` and `codebook` functions have no corpus dependency.
-
-The public source is the [UT supplementary archive](https://rnl-data.ae.utexas.edu/datastore/supplementaryMaterial/qin-starlink-pilots/),
-specifically `raw-iq-data/exemplar250-257.zip` and its reference template.
-Raw interleaved-int16 IQ SHA-256:
-`c69e82022d45173cdcaf1a5fdc8a2b864e2d61e85ae819af54b16002044adae3`.
-The cached soft-symbol input to the new assay has SHA-256:
-`cb05524ae78c8d80d76df6992180a05cc9cab04ae1da89a5219dbc1914bb4d57`.
-Producing that cache uses the earlier [research equalization pipeline](../2026_09_27_ut_header/analyze.py)
-with `--carrier-limit 0.5 --channel-smooth 9`;
-the assay itself accepts its explicit path and does not download or collect RF:
-
-```sh
-uv run --no-project --with numpy --with matplotlib python rest_signal.py \
-  /path/to/soft_deviations.npz --out local
-uv run --no-project --with numpy --with matplotlib --with pytest \
-  python -m pytest -q -o addopts='' test_rest_signal.py
-```
-
-The working analysis suite passes 36 tests, covering the original decoder and
-clustering checks, seed/complement invariance, chronological split and gap
-preservation, header prediction, and three new tests for relative-sign polarity
-invariance, discovery-only selection, and split-band recovery with a random
-negative control. The publication's three tests also run independently.
-No new radio capture was performed.
+Four focused tests cover seed recovery/complement ambiguity, cyclic closure,
+gap and split preservation, header discovery/evaluation isolation, and recovery
+of a synthetic known binary phase field. Original
+observations are unchanged; all soft symbols, raw outputs and generated media
+are Git-ignored. No new radio capture was performed.
 
 The semantic goal is **not complete**: we now have an explicit waveform state
 representation, but still need independent evidence for why the transmitter

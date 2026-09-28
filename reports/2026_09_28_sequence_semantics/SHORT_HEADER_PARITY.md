@@ -138,3 +138,130 @@ Two focused tests verify recovery with a different synthetic generator set,
 generalization to independently generated words, detection of corruption, and
 rejection of random or constant input. Both pass; lint/format checks pass.
 Results and input hashes: ignored `local/blind_header_114.json`.
+
+## Separate encoder-output blocks
+
+The same generator-independent assay also tests a 114-bit word as three
+consecutive 38-bit output-stream blocks, converted to interleaved triples before
+forming the parity checks. This layout was not covered by reversing carrier
+order or permuting interleaved streams. Reproduction:
+`python blind_header_114.py --layout stream_blocks`.
+
+Again, **5,010 eligible configurations produced no exact discovery relation**;
+there was no candidate to evaluate. The layout is a hypothesis, not one recovered
+from firmware. Noise sensitivity, fixed-mask assumptions, activity exclusion,
+within-symbol boundaries, and reuse of previously examined UT data all still
+apply. Three focused tests now pass, including a synthetic block-serialized
+code that yields a relation after the correct permutation and no relation under
+the wrong interleaved interpretation. Lint and formatting pass. Results are
+in ignored `local/blind_header_114_stream_blocks.json`; the earlier interleaved
+result remains separate.
+
+## Coverage and rare-change audit
+
+The original all-bits-qualified gate excludes **19,256 of 21,384** candidate
+windows (90.05%). This substantially limits the negative result's coverage;
+it does not mean 90% of individual bits are bad. One unqualified decision in
+any of the three discovery frame pairs rejects the entire 114-bit window.
+
+`--activity-floor 0` now allows arbitrarily rare changes while still excluding
+exactly constant input columns and exactly constant candidate differences.
+Of the 2,128 quality-qualified windows, 404 are constant and 1,724 remain,
+yielding 5,172 paired-stream configurations per layout. Interleaved output
+produces 12 exact discovery relations, all two-bit checks in overlapping
+symbol-4 windows represented under different orders/directions. Their
+discovery activity is only 0.01754–0.02339. Every relation's evaluation signed
+correlation falls to 0.458333 (agreement 0.729167), with qualified evaluation
+bits. None remains exact or establishes an encoder. The separate-block layout
+produces zero discovery relations at this lower activity threshold.
+
+Results are saved separately as `local/blind_header_114_activity_0.json` and
+`local/blind_header_114_stream_blocks_activity_0.json`. Four tests pass, including
+a rare-change synthetic code that the old activity threshold excludes and the
+new setting detects; constant columns remain excluded. Lint/format pass.
+The next useful improvement is to qualify individual parity windows rather
+than reject every candidate containing any uncertain bit, while retaining
+minimum support and separate evaluation requirements.
+
+## Qualification at the parity-window level
+
+`--quality-mode parity_window --activity-floor 0` retains a seven-tap,
+two-stream parity window only if all its 14 input decisions are qualified.
+It requires at least 30 retained windows overall and at least eight from each
+frame pair. Discovery still selects one representative mixed-stream null check
+without consulting evaluation. Evaluation additionally requires every selected
+column to vary, avoiding trivial success on constant evaluation inputs.
+
+Both layouts now admit 18,888 candidate words before pair-level support checks.
+Of their 56,664 stream-pair configurations, 326 lack discovery support for the
+interleaved layout and 904 for separate blocks. Thus **56,338 interleaved** and
+**55,760 block-layout** configurations are tested, versus 5,172 per layout with
+the whole-word quality gate at the same activity threshold. These are overlapping
+configurations, not independent statistical trials.
+
+The interleaved scan finds 1,684 exact discovery relations; all have sufficient
+evaluation support and varying selected columns, but **none remains exact on
+evaluation**. Separate blocks yield no exact discovery relation. This closes
+much of the earlier quality-coverage gap without establishing an encoder.
+
+A post-hoc inspection of evaluation scores finds a maximum signed correlation
+of 0.947917 (187/192 agreeing windows). That candidate is only a two-bit
+relation in a low-activity symbol-2 region, with discovery activity 0.020468;
+it is not a recovered generator triple or decoded header. Selecting this maximum
+uses evaluation data, so it is exploratory evidence, not held-out confirmation.
+The largest correlation among checks using at least three bits is 0.90625.
+Near-relations merit error-aware follow-up, but neither a zero-error requirement
+nor these selected scores establish absence or presence of a full code.
+
+Five focused tests pass. The new test verifies that changing an unqualified bit
+cannot change retained parity windows and that a frame pair with no support
+fails the support gate. Lint/format pass. Results:
+`local/blind_header_114_activity_0_parity_window.json` and
+`local/blind_header_114_stream_blocks_activity_0_parity_window.json`.
+
+## Bias audit of the highest evaluation near-match
+
+`parity_bias_audit.py` re-extracts the post-hoc highest-scoring two-bit relation.
+Across its 192 evaluation windows, the two columns have eight and three ones.
+Their contingency counts are 184 occurrences of (0,0), zero of (0,1), five of
+(1,0), and three of (1,1). Thus observed agreement is 97.3958%, but the product
+of the observed marginal frequencies already gives a descriptive independent-
+bits baseline of 94.4010%. Excess agreement is only 2.9948 percentage points.
+
+There is additional alignment: all three ones in the second column coincide
+with ones in the first. Circularly shifting the second column within each
+32-window frame-pair block gives 94.2708% agreement for shifts 1–30 and
+96.3542% for shift 31, compared with 97.3958% at shift zero. These are
+descriptive controls, not independent significance tests. They neither prove
+independence nor establish an encoder; the candidate was selected using these
+evaluation data and the windows overlap. Most of the headline agreement comes
+from zero-heavy inputs, so interpreting 2.6% disagreement as an encoder's bit
+error rate would be unjustified.
+
+Two focused tests verify the marginal baseline on independent biased bits and
+perfectly equal balanced bits. Both pass. Results and hashes are saved in
+ignored `local/parity_bias_audit.json`. No RF header or payload is decoded by
+this audit.
+
+## Candidate codewords crossing OFDM-symbol boundaries
+
+`--boundaries crossing --quality-mode parity_window --activity-floor 0`
+extends the assay to the 113 possible 114-bit windows straddling each boundary
+between symbols 2–3 through 6–7. Carrier order is applied within each symbol;
+time order remains forward. Both physical/FFT carrier orders, both frequency
+directions, and both output-stream layouts are tested. These are candidate
+serializations, not a recovered transmitter allocation rule.
+
+There are 2,260 candidate windows per layout, of which one has constant
+discovery differences. After the existing per-frame-pair support requirements,
+6,541 interleaved and 6,099 separate-block configurations remain. Interleaved
+output gives 275 exact discovery relations, but none passes the exact evaluation
+gate. Separate blocks give no exact discovery relations. No full encoder or
+header is identified. The results retain the earlier noise, fixed-mask,
+selection, overlap, and reused-recording limitations.
+
+Six focused tests now pass, including explicit verification that stitching
+adjacent symbols preserves forward time order while reversing carrier order
+within each symbol. Lint/format pass. Results are the ignored
+`local/blind_header_114_activity_0_parity_window_crossing.json` and
+`local/blind_header_114_stream_blocks_activity_0_parity_window_crossing.json`.

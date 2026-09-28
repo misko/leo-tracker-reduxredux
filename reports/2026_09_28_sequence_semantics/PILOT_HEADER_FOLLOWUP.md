@@ -1,11 +1,5 @@
 # Pilot-referenced decoding of the additional regions
 
-This published follow-up records the offline working analysis. Named follow-up
-scripts and ignored data products refer to the research workspace; this
-publication adds the report and illustration, not those datasets or the full
-experimental code archive. See the [main report](README.md) for the established
-60-state generator and the original publication's code scope.
-
 Frame convention: labels 250–256 below come from the raw excerpt's one-based
 metadata. They correspond to zero-based published-reference array indices
 249–255. The larger-reference tests explicitly use array indices.
@@ -42,7 +36,7 @@ transmitter inversion flag. Their phase-state identities were unaffected.
 
 ## Header structure
 
-![Pilot-referenced header stability](figures/header_structure.png)
+![Pilot-referenced header stability](local/header_structure.png)
 
 | OFDM symbol | Qualified positions identical across all seven frames |
 | --- | ---: |

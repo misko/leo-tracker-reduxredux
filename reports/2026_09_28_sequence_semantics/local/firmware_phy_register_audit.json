@@ -1,0 +1,1133 @@
+{
+  "source_sha256": "52285c9809696a88dca1a24407bc3ec5e853c255ca385f97b6da2463898cc326",
+  "object_member": "0xcb0 = constructor input base + 0x4000",
+  "offsets": [
+    4,
+    8,
+    12
+  ],
+  "ordinary_words": [
+    "0x351c155b",
+    "0x38220e3d",
+    "0x4345"
+  ],
+  "mode3_words": [
+    "0x361d165c",
+    "0x39230f3e",
+    "0x614446"
+  ],
+  "ordinary_bytes": [
+    91,
+    21,
+    28,
+    53,
+    61,
+    14,
+    34,
+    56,
+    69,
+    67,
+    0,
+    0
+  ],
+  "mode3_bytes": [
+    92,
+    22,
+    29,
+    54,
+    62,
+    15,
+    35,
+    57,
+    70,
+    68,
+    97,
+    0
+  ],
+  "receive_ldpc_counter_accessors": [
+    {
+      "name": "get_rfp_ldpc_codewords",
+      "string_address": "0xb0658",
+      "register_offset_formula": "4 * (60 + user + 4 * object_word_at_0x2c)",
+      "operation": "Mask register bit31 and add remaining value to caller accumulator",
+      "accepted_user_range": [
+        0,
+        3
+      ]
+    },
+    {
+      "name": "get_rfp_ldpc_syn_failed",
+      "string_address": "0xb06c8",
+      "register_offset_formula": "4 * (44 + user + 4 * object_word_at_0x2c)",
+      "operation": "Mask register bit31 and add remaining value to caller accumulator",
+      "accepted_user_range": [
+        0,
+        3
+      ]
+    },
+    {
+      "name": "get_rfp_ldpc_corrected",
+      "string_address": "0xb06e0",
+      "register_offset_formula": "4 * (28 + user + 4 * object_word_at_0x2c)",
+      "operation": "Mask register bit31 and add remaining value to caller accumulator",
+      "accepted_user_range": [
+        0,
+        3
+      ]
+    }
+  ],
+  "decoder_error_telemetry": [
+    {
+      "name": "header_decoder_error_cnt",
+      "metadata_entry": "0x10bdc0",
+      "structure_offset": "0x16",
+      "register_offset": "0x168",
+      "extracted_bits": [
+        16,
+        31
+      ]
+    },
+    {
+      "name": "mcs_decoder_error_cnt",
+      "metadata_entry": "0x10bde0",
+      "structure_offset": "0x18",
+      "register_offset": "0x168",
+      "extracted_bits": [
+        0,
+        15
+      ]
+    }
+  ],
+  "tx_mpp_telemetry_metadata": [
+    {
+      "name": "mpp_pdu_cnt",
+      "structure_offset": "0x10",
+      "metadata_entry": "0x10e060"
+    },
+    {
+      "name": "mpp_pdu_payload_bytes",
+      "structure_offset": "0x14",
+      "metadata_entry": "0x10e080"
+    },
+    {
+      "name": "mpp_pdu_gmh_meta_bytes",
+      "structure_offset": "0x18",
+      "metadata_entry": "0x10e0a0"
+    },
+    {
+      "name": "mpp_dropped_pdu_cnt",
+      "structure_offset": "0x1c",
+      "metadata_entry": "0x10e0c0"
+    }
+  ],
+  "tx_counter_producer": {
+    "instruction": "0x6ac10\u20130x6ac1c",
+    "operation": "uint32(register_at_member_0x5f0_plus_0x64 - saved_word_0x664)",
+    "output_offset": "0x18",
+    "baseline_capture": "0x6ade0 adjusts object by 0x8000; 0x6ae10/0x6ae14 save same register",
+    "limitation": "Producer identification uses matching adjacent telemetry layout; complete serialization call chain and hardware byte accounting unverified."
+  },
+  "instructions": {
+    "0x5dba8": [
+      "add",
+      "x8, x20, #4, lsl #12"
+    ],
+    "0x5dbac": [
+      "add",
+      "x9, x20, #2, lsl #12"
+    ],
+    "0x5dbb0": [
+      "add",
+      "x10, x20, #1, lsl #12"
+    ],
+    "0x5dbb4": [
+      "add",
+      "x0, x0, #0x10"
+    ],
+    "0x5dbb8": [
+      "str",
+      "x0, [x19]"
+    ],
+    "0x5dbbc": [
+      "add",
+      "x0, x19, #0xc98"
+    ],
+    "0x5dbc0": [
+      "add",
+      "x7, x20, #3, lsl #12"
+    ],
+    "0x5dbc4": [
+      "add",
+      "x6, x20, #7, lsl #12"
+    ],
+    "0x5dbc8": [
+      "add",
+      "x5, x20, #5, lsl #12"
+    ],
+    "0x5dbcc": [
+      "add",
+      "x4, x20, #8, lsl #12"
+    ],
+    "0x5dbd0": [
+      "add",
+      "x3, x20, #0x10, lsl #12"
+    ],
+    "0x5dbd4": [
+      "stp",
+      "x9, x8, [x0, #0x10]"
+    ],
+    "0x5dbd8": [
+      "add",
+      "x8, x19, #0xcb8"
+    ],
+    "0x5dbdc": [
+      "add",
+      "x9, x19, #0xcd8"
+    ],
+    "0x5dbe0": [
+      "stp",
+      "x20, x10, [x0]"
+    ],
+    "0x5dbe4": [
+      "add",
+      "x2, x20, #0xc, lsl #12"
+    ],
+    "0x5dbe8": [
+      "add",
+      "x1, x20, #0xb, lsl #12"
+    ],
+    "0x5dbec": [
+      "stp",
+      "x7, x20, [x8]"
+    ],
+    "0x5dbf0": [
+      "mov",
+      "x0, #0x4f80"
+    ],
+    "0x5dbf4": [
+      "stp",
+      "x6, x5, [x8, #0x10]"
+    ],
+    "0x5dbf8": [
+      "stp",
+      "x4, x3, [x9]"
+    ],
+    "0x5dbfc": [
+      "stp",
+      "x2, x1, [x9, #0x10]"
+    ],
+    "0x5e0d4": [
+      "mov",
+      "w1, #0x45"
+    ],
+    "0x5e0d8": [
+      "movk",
+      "w1, #1, lsl #16"
+    ],
+    "0x5e0dc": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e0e0": [
+      "str",
+      "w1, [x0]"
+    ],
+    "0x5e0e4": [
+      "ldr",
+      "w0, [x19, #0x10]"
+    ],
+    "0x5e0e8": [
+      "cmp",
+      "w0, #3"
+    ],
+    "0x5e0ec": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e0f0": [
+      "b.eq",
+      "#0x5e27c"
+    ],
+    "0x5e0f4": [
+      "mov",
+      "w3, #0x155b"
+    ],
+    "0x5e0f8": [
+      "movk",
+      "w3, #0x351c, lsl #16"
+    ],
+    "0x5e0fc": [
+      "mov",
+      "w2, #0xe3d"
+    ],
+    "0x5e100": [
+      "movk",
+      "w2, #0x3822, lsl #16"
+    ],
+    "0x5e104": [
+      "mov",
+      "w1, #0x4345"
+    ],
+    "0x5e108": [
+      "str",
+      "w3, [x0, #4]"
+    ],
+    "0x5e10c": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e110": [
+      "str",
+      "w2, [x0, #8]"
+    ],
+    "0x5e114": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e118": [
+      "str",
+      "w1, [x0, #0xc]"
+    ],
+    "0x5e11c": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e120": [
+      "str",
+      "wzr, [x0, #0x10]"
+    ],
+    "0x5e124": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e128": [
+      "str",
+      "wzr, [x0, #0x14]"
+    ],
+    "0x5e25c": [
+      "mov",
+      "w1, #0x45"
+    ],
+    "0x5e260": [
+      "movk",
+      "w1, #1, lsl #16"
+    ],
+    "0x5e264": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e268": [
+      "str",
+      "w1, [x0]"
+    ],
+    "0x5e26c": [
+      "ldr",
+      "w0, [x19, #0x10]"
+    ],
+    "0x5e270": [
+      "cmp",
+      "w0, #3"
+    ],
+    "0x5e274": [
+      "ldr",
+      "x0, [x19, #0xcb0]"
+    ],
+    "0x5e278": [
+      "b.ne",
+      "#0x5e0f4"
+    ],
+    "0x5e27c": [
+      "mov",
+      "w3, #0x165c"
+    ],
+    "0x5e280": [
+      "movk",
+      "w3, #0x361d, lsl #16"
+    ],
+    "0x5e284": [
+      "mov",
+      "w2, #0xf3e"
+    ],
+    "0x5e288": [
+      "movk",
+      "w2, #0x3923, lsl #16"
+    ],
+    "0x5e28c": [
+      "mov",
+      "w1, #0x4446"
+    ],
+    "0x5e290": [
+      "movk",
+      "w1, #0x61, lsl #16"
+    ],
+    "0x5e294": [
+      "b",
+      "#0x5e108"
+    ],
+    "0x61dc0": [
+      "and",
+      "w1, w1, #0xff"
+    ],
+    "0x61dc4": [
+      "cmp",
+      "w1, #3"
+    ],
+    "0x61dc8": [
+      "b.hi",
+      "#0x61dfc"
+    ],
+    "0x61dcc": [
+      "mov",
+      "x4, x0"
+    ],
+    "0x61dd0": [
+      "mov",
+      "w0, #0"
+    ],
+    "0x61dd4": [
+      "ldr",
+      "w3, [x4, #0x2c]"
+    ],
+    "0x61dd8": [
+      "ldr",
+      "x4, [x4, #0xcb0]"
+    ],
+    "0x61ddc": [
+      "add",
+      "w3, w1, w3, lsl #2"
+    ],
+    "0x61de0": [
+      "ldr",
+      "w1, [x2]"
+    ],
+    "0x61de4": [
+      "add",
+      "x3, x3, #0x3c"
+    ],
+    "0x61de8": [
+      "ldr",
+      "w3, [x4, x3, lsl #2]"
+    ],
+    "0x61dec": [
+      "and",
+      "w3, w3, #0x7fffffff"
+    ],
+    "0x61df0": [
+      "add",
+      "w1, w1, w3"
+    ],
+    "0x61df4": [
+      "str",
+      "w1, [x2]"
+    ],
+    "0x61df8": [
+      "ret",
+      ""
+    ],
+    "0x61dfc": [
+      "stp",
+      "x29, x30, [sp, #-0x10]!"
+    ],
+    "0x61e00": [
+      "mov",
+      "w2, #0"
+    ],
+    "0x61e04": [
+      "mov",
+      "w1, #0x10"
+    ],
+    "0x61e08": [
+      "mov",
+      "x29, sp"
+    ],
+    "0x61e0c": [
+      "mov",
+      "w0, #1"
+    ],
+    "0x61e10": [
+      "bl",
+      "#0x9dd40"
+    ],
+    "0x61e14": [
+      "tst",
+      "w0, #0xff"
+    ],
+    "0x61e18": [
+      "b.eq",
+      "#0x61e4c"
+    ],
+    "0x61e1c": [
+      "adrp",
+      "x0, #0x10f000"
+    ],
+    "0x61e20": [
+      "ldr",
+      "x0, [x0, #0xbc8]"
+    ],
+    "0x61e24": [
+      "adrp",
+      "x3, #0xb0000"
+    ],
+    "0x61e28": [
+      "adrp",
+      "x2, #0xb0000"
+    ],
+    "0x61e2c": [
+      "add",
+      "x3, x3, #0x670"
+    ],
+    "0x61e30": [
+      "add",
+      "x2, x2, #0x6a8"
+    ],
+    "0x61e34": [
+      "adrp",
+      "x1, #0x9f000"
+    ],
+    "0x61e38": [
+      "add",
+      "x1, x1, #0xe00"
+    ],
+    "0x61e3c": [
+      "mov",
+      "w4, #0x74"
+    ],
+    "0x61e40": [
+      "ldr",
+      "x0, [x0]"
+    ],
+    "0x61e44": [
+      "bl",
+      "#0x1b5b0"
+    ],
+    "0x61e48": [
+      "bl",
+      "#0x1b630"
+    ],
+    "0x61e4c": [
+      "adrp",
+      "x7, #0xb0000"
+    ],
+    "0x61e50": [
+      "adrp",
+      "x6, #0xb0000"
+    ],
+    "0x61e54": [
+      "add",
+      "x7, x7, #0x648"
+    ],
+    "0x61e58": [
+      "add",
+      "x6, x6, #0x658"
+    ],
+    "0x61e5c": [
+      "adrp",
+      "x5, #0x9f000"
+    ],
+    "0x61e60": [
+      "adrp",
+      "x0, #0xb0000"
+    ],
+    "0x61e64": [
+      "add",
+      "x0, x0, #0x694"
+    ],
+    "0x61e68": [
+      "add",
+      "x5, x5, #0xd58"
+    ],
+    "0x61e6c": [
+      "mov",
+      "w4, #0"
+    ],
+    "0x61e70": [
+      "mov",
+      "w3, #0x10"
+    ],
+    "0x61e74": [
+      "mov",
+      "w2, #1"
+    ],
+    "0x61e78": [
+      "mov",
+      "w1, #0x74"
+    ],
+    "0x61e7c": [
+      "bl",
+      "#0x9dd90"
+    ],
+    "0x61e80": [
+      "b",
+      "#0x61e1c"
+    ],
+    "0x61e84": [
+      "nop",
+      ""
+    ],
+    "0x61e88": [
+      "nop",
+      ""
+    ],
+    "0x61e8c": [
+      "nop",
+      ""
+    ],
+    "0x61e90": [
+      "and",
+      "w1, w1, #0xff"
+    ],
+    "0x61e94": [
+      "cmp",
+      "w1, #3"
+    ],
+    "0x61e98": [
+      "b.hi",
+      "#0x61ecc"
+    ],
+    "0x61e9c": [
+      "mov",
+      "x4, x0"
+    ],
+    "0x61ea0": [
+      "mov",
+      "w0, #0"
+    ],
+    "0x61ea4": [
+      "ldr",
+      "w3, [x4, #0x2c]"
+    ],
+    "0x61ea8": [
+      "ldr",
+      "x4, [x4, #0xcb0]"
+    ],
+    "0x61eac": [
+      "add",
+      "w3, w1, w3, lsl #2"
+    ],
+    "0x61eb0": [
+      "ldr",
+      "w1, [x2]"
+    ],
+    "0x61eb4": [
+      "add",
+      "x3, x3, #0x2c"
+    ],
+    "0x61eb8": [
+      "ldr",
+      "w3, [x4, x3, lsl #2]"
+    ],
+    "0x61ebc": [
+      "and",
+      "w3, w3, #0x7fffffff"
+    ],
+    "0x61ec0": [
+      "add",
+      "w1, w1, w3"
+    ],
+    "0x61ec4": [
+      "str",
+      "w1, [x2]"
+    ],
+    "0x61ec8": [
+      "ret",
+      ""
+    ],
+    "0x61ecc": [
+      "stp",
+      "x29, x30, [sp, #-0x10]!"
+    ],
+    "0x61ed0": [
+      "mov",
+      "w2, #0"
+    ],
+    "0x61ed4": [
+      "mov",
+      "w1, #0x10"
+    ],
+    "0x61ed8": [
+      "mov",
+      "x29, sp"
+    ],
+    "0x61edc": [
+      "mov",
+      "w0, #1"
+    ],
+    "0x61ee0": [
+      "bl",
+      "#0x9dd40"
+    ],
+    "0x61ee4": [
+      "tst",
+      "w0, #0xff"
+    ],
+    "0x61ee8": [
+      "b.eq",
+      "#0x61f1c"
+    ],
+    "0x61eec": [
+      "adrp",
+      "x0, #0x10f000"
+    ],
+    "0x61ef0": [
+      "ldr",
+      "x0, [x0, #0xbc8]"
+    ],
+    "0x61ef4": [
+      "adrp",
+      "x3, #0xb0000"
+    ],
+    "0x61ef8": [
+      "adrp",
+      "x2, #0xb0000"
+    ],
+    "0x61efc": [
+      "add",
+      "x3, x3, #0x670"
+    ],
+    "0x61f00": [
+      "add",
+      "x2, x2, #0x6a8"
+    ],
+    "0x61f04": [
+      "adrp",
+      "x1, #0x9f000"
+    ],
+    "0x61f08": [
+      "add",
+      "x1, x1, #0xe00"
+    ],
+    "0x61f0c": [
+      "mov",
+      "w4, #0x81"
+    ],
+    "0x61f10": [
+      "ldr",
+      "x0, [x0]"
+    ],
+    "0x61f14": [
+      "bl",
+      "#0x1b5b0"
+    ],
+    "0x61f18": [
+      "bl",
+      "#0x1b630"
+    ],
+    "0x61f1c": [
+      "adrp",
+      "x7, #0xb0000"
+    ],
+    "0x61f20": [
+      "adrp",
+      "x6, #0xb0000"
+    ],
+    "0x61f24": [
+      "add",
+      "x7, x7, #0x648"
+    ],
+    "0x61f28": [
+      "add",
+      "x6, x6, #0x6c8"
+    ],
+    "0x61f2c": [
+      "adrp",
+      "x5, #0x9f000"
+    ],
+    "0x61f30": [
+      "adrp",
+      "x0, #0xb0000"
+    ],
+    "0x61f34": [
+      "add",
+      "x0, x0, #0x694"
+    ],
+    "0x61f38": [
+      "add",
+      "x5, x5, #0xd58"
+    ],
+    "0x61f3c": [
+      "mov",
+      "w4, #0"
+    ],
+    "0x61f40": [
+      "mov",
+      "w3, #0x10"
+    ],
+    "0x61f44": [
+      "mov",
+      "w2, #1"
+    ],
+    "0x61f48": [
+      "mov",
+      "w1, #0x81"
+    ],
+    "0x61f4c": [
+      "bl",
+      "#0x9dd90"
+    ],
+    "0x61f50": [
+      "b",
+      "#0x61eec"
+    ],
+    "0x61f54": [
+      "nop",
+      ""
+    ],
+    "0x61f58": [
+      "nop",
+      ""
+    ],
+    "0x61f5c": [
+      "nop",
+      ""
+    ],
+    "0x61f60": [
+      "and",
+      "w1, w1, #0xff"
+    ],
+    "0x61f64": [
+      "cmp",
+      "w1, #3"
+    ],
+    "0x61f68": [
+      "b.hi",
+      "#0x61f9c"
+    ],
+    "0x61f6c": [
+      "mov",
+      "x4, x0"
+    ],
+    "0x61f70": [
+      "mov",
+      "w0, #0"
+    ],
+    "0x61f74": [
+      "ldr",
+      "w3, [x4, #0x2c]"
+    ],
+    "0x61f78": [
+      "ldr",
+      "x4, [x4, #0xcb0]"
+    ],
+    "0x61f7c": [
+      "add",
+      "w3, w1, w3, lsl #2"
+    ],
+    "0x61f80": [
+      "ldr",
+      "w1, [x2]"
+    ],
+    "0x61f84": [
+      "add",
+      "x3, x3, #0x1c"
+    ],
+    "0x61f88": [
+      "ldr",
+      "w3, [x4, x3, lsl #2]"
+    ],
+    "0x61f8c": [
+      "and",
+      "w3, w3, #0x7fffffff"
+    ],
+    "0x61f90": [
+      "add",
+      "w1, w1, w3"
+    ],
+    "0x61f94": [
+      "str",
+      "w1, [x2]"
+    ],
+    "0x61f98": [
+      "ret",
+      ""
+    ],
+    "0x61f9c": [
+      "stp",
+      "x29, x30, [sp, #-0x10]!"
+    ],
+    "0x61fa0": [
+      "mov",
+      "w2, #0"
+    ],
+    "0x61fa4": [
+      "mov",
+      "w1, #0x10"
+    ],
+    "0x61fa8": [
+      "mov",
+      "x29, sp"
+    ],
+    "0x61fac": [
+      "mov",
+      "w0, #1"
+    ],
+    "0x61fb0": [
+      "bl",
+      "#0x9dd40"
+    ],
+    "0x61fb4": [
+      "tst",
+      "w0, #0xff"
+    ],
+    "0x61fb8": [
+      "b.eq",
+      "#0x61fec"
+    ],
+    "0x61fbc": [
+      "adrp",
+      "x0, #0x10f000"
+    ],
+    "0x61fc0": [
+      "ldr",
+      "x0, [x0, #0xbc8]"
+    ],
+    "0x61fc4": [
+      "adrp",
+      "x3, #0xb0000"
+    ],
+    "0x61fc8": [
+      "adrp",
+      "x2, #0xb0000"
+    ],
+    "0x61fcc": [
+      "add",
+      "x3, x3, #0x670"
+    ],
+    "0x61fd0": [
+      "add",
+      "x2, x2, #0x6a8"
+    ],
+    "0x61fd4": [
+      "adrp",
+      "x1, #0x9f000"
+    ],
+    "0x61fd8": [
+      "add",
+      "x1, x1, #0xe00"
+    ],
+    "0x61fdc": [
+      "mov",
+      "w4, #0x8e"
+    ],
+    "0x61fe0": [
+      "ldr",
+      "x0, [x0]"
+    ],
+    "0x61fe4": [
+      "bl",
+      "#0x1b5b0"
+    ],
+    "0x61fe8": [
+      "bl",
+      "#0x1b630"
+    ],
+    "0x61fec": [
+      "adrp",
+      "x7, #0xb0000"
+    ],
+    "0x61ff0": [
+      "adrp",
+      "x6, #0xb0000"
+    ],
+    "0x61ff4": [
+      "add",
+      "x7, x7, #0x648"
+    ],
+    "0x61ff8": [
+      "add",
+      "x6, x6, #0x6e0"
+    ],
+    "0x61ffc": [
+      "adrp",
+      "x5, #0x9f000"
+    ],
+    "0x62000": [
+      "adrp",
+      "x0, #0xb0000"
+    ],
+    "0x62004": [
+      "add",
+      "x0, x0, #0x694"
+    ],
+    "0x62008": [
+      "add",
+      "x5, x5, #0xd58"
+    ],
+    "0x6200c": [
+      "mov",
+      "w4, #0"
+    ],
+    "0x62208": [
+      "ldr",
+      "x6, [x20, #0xcb0]"
+    ],
+    "0x6220c": [
+      "ldr",
+      "w0, [x6, #0x168]"
+    ],
+    "0x62210": [
+      "lsr",
+      "w0, w0, #0x10"
+    ],
+    "0x62214": [
+      "strh",
+      "w0, [x22, #0x16]"
+    ],
+    "0x62218": [
+      "ldr",
+      "w0, [x6, #0x168]"
+    ],
+    "0x6221c": [
+      "strh",
+      "w0, [x22, #0x18]"
+    ],
+    "0x6abd0": [
+      "ldr",
+      "x2, [x20, #0x5f0]"
+    ],
+    "0x6abd4": [
+      "ldrh",
+      "w4, [x20, #0x65c]"
+    ],
+    "0x6abd8": [
+      "ldr",
+      "w1, [x2, #0x78]"
+    ],
+    "0x6abdc": [
+      "cmp",
+      "w1, w3"
+    ],
+    "0x6abe0": [
+      "csel",
+      "w1, w1, w3, ls"
+    ],
+    "0x6abe4": [
+      "sub",
+      "w1, w1, w4"
+    ],
+    "0x6abe8": [
+      "strh",
+      "w1, [x19, #0x1c]"
+    ],
+    "0x6abec": [
+      "ldr",
+      "x1, [x20, #0x5e8]"
+    ],
+    "0x6abf0": [
+      "ldr",
+      "w4, [x20, #0x658]"
+    ],
+    "0x6abf4": [
+      "ldr",
+      "w3, [x1, #0x30]"
+    ],
+    "0x6abf8": [
+      "sub",
+      "w3, w3, w4"
+    ],
+    "0x6abfc": [
+      "str",
+      "w3, [x19, #0x10]"
+    ],
+    "0x6ac00": [
+      "ldr",
+      "w3, [x2, #0x60]"
+    ],
+    "0x6ac04": [
+      "ldr",
+      "w4, [x20, #0x660]"
+    ],
+    "0x6ac08": [
+      "sub",
+      "w3, w3, w4"
+    ],
+    "0x6ac0c": [
+      "str",
+      "w3, [x19, #0x14]"
+    ],
+    "0x6ac10": [
+      "ldr",
+      "w3, [x2, #0x64]"
+    ],
+    "0x6ac14": [
+      "ldr",
+      "w4, [x20, #0x664]"
+    ],
+    "0x6ac18": [
+      "sub",
+      "w3, w3, w4"
+    ],
+    "0x6ac1c": [
+      "str",
+      "w3, [x19, #0x18]"
+    ],
+    "0x6ac20": [
+      "ldr",
+      "w2, [x2, #0x50]"
+    ],
+    "0x6ac24": [
+      "strb",
+      "w2, [x19, #0x1e]"
+    ],
+    "0x6ade0": [
+      "add",
+      "x0, x0, #8, lsl #12"
+    ],
+    "0x6ade4": [
+      "mov",
+      "w3, #0xffff"
+    ],
+    "0x6ade8": [
+      "ldr",
+      "x2, [x0, #0x5f0]"
+    ],
+    "0x6adec": [
+      "ldr",
+      "x4, [x0, #0x5e8]"
+    ],
+    "0x6adf0": [
+      "ldr",
+      "w1, [x2, #0x78]"
+    ],
+    "0x6adf4": [
+      "cmp",
+      "w1, w3"
+    ],
+    "0x6adf8": [
+      "csel",
+      "w1, w1, w3, ls"
+    ],
+    "0x6adfc": [
+      "strh",
+      "w1, [x0, #0x65c]"
+    ],
+    "0x6ae00": [
+      "ldr",
+      "w1, [x4, #0x30]"
+    ],
+    "0x6ae04": [
+      "str",
+      "w1, [x0, #0x658]"
+    ],
+    "0x6ae08": [
+      "ldr",
+      "w1, [x2, #0x60]"
+    ],
+    "0x6ae0c": [
+      "str",
+      "w1, [x0, #0x660]"
+    ],
+    "0x6ae10": [
+      "ldr",
+      "w1, [x2, #0x64]"
+    ],
+    "0x6ae14": [
+      "str",
+      "w1, [x0, #0x664]"
+    ],
+    "0x6ae18": [
+      "ret",
+      ""
+    ]
+  },
+  "limitation": "Static setup writes only; register meaning and field boundaries unknown. Named LDPC counters establish block use, not header coding. Byte differences do not establish generators, interleaving, scrambling, or RF placement. Firmware not executed."
+}
