@@ -78,7 +78,6 @@ def render_persistent_hop_tracking_png(
             f"Dealiased CFO normalized to {trajectory.canonical_rf_hz / 1e9:.1f} GHz (Hz)"
         )
         axis.grid(alpha=0.2)
-        axis.legend(loc="best", fontsize=7)
         axis.set_title(
             (
                 "TLE-blind cross-channel Doppler trajectories with causal catalogue diagnostics\n"

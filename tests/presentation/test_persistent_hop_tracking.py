@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from leo.analysis.persistent_hop_trajectory import (
     PersistentHopCfoCandidate,
     reconstruct_persistent_hop_trajectories,
@@ -9,7 +11,20 @@ from leo.contracts.states import StarlinkEdge
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
 
 
-def test_tracking_renderer_plots_a_tle_blind_cross_channel_trajectory() -> None:
+@pytest.mark.parametrize("catalogue_diagnostics", [False, True])
+def test_tracking_renderer_plots_a_tle_blind_cross_channel_trajectory(
+    monkeypatch, catalogue_diagnostics: bool
+) -> None:
+    from leo.presentation import persistent_hop_tracking
+
+    save = persistent_hop_tracking._save
+
+    def check_figure(figure):
+        assert len(figure.axes[0].lines) > 0
+        assert all(axis.get_legend() is None for axis in figure.axes)
+        return save(figure)
+
+    monkeypatch.setattr(persistent_hop_tracking, "_save", check_figure)
     epoch_ns = 1_788_400_000_000_000_000
     candidates = tuple(
         PersistentHopCfoCandidate(
@@ -43,7 +58,9 @@ def test_tracking_renderer_plots_a_tle_blind_cross_channel_trajectory() -> None:
     )
     trajectory = reconstruct_persistent_hop_trajectories(candidates)
 
-    payload = render_persistent_hop_tracking_png(trajectory, candidates, ())
+    payload = render_persistent_hop_tracking_png(
+        trajectory, candidates, (), catalogue_diagnostics=catalogue_diagnostics
+    )
 
     assert payload.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(payload) > 10_000
