@@ -1,0 +1,143 @@
+{
+  "unit_id": "DS7-F067",
+  "session_id": "scan-fw-fc8ddf94792f5fb1",
+  "dataset_id": "DS7",
+  "request": {
+    "config": {
+      "altitude_km": 0,
+      "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+      "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+      "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+      "geographic_prior_center_deg": [
+        37.856249999999996,
+        -122.484375
+      ],
+      "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+      "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+      "partition_seed": 2026092711,
+      "position_bounds_km": [
+        -12,
+        12
+      ],
+      "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+      "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+      "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+      "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+      "student_t_dof": 4,
+      "student_t_scale_hz": 100,
+      "timing_bounds_s": [
+        -5,
+        5
+      ],
+      "timing_grid_s": [
+        -5,
+        -4.75,
+        -4.5,
+        -4.25,
+        -4,
+        -3.75,
+        -3.5,
+        -3.25,
+        -3,
+        -2.75,
+        -2.5,
+        -2.25,
+        -2,
+        -1.75,
+        -1.5,
+        -1.25,
+        -1,
+        -0.75,
+        -0.5,
+        -0.25,
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1,
+        1.25,
+        1.5,
+        1.75,
+        2,
+        2.25,
+        2.5,
+        2.75,
+        3,
+        3.25,
+        3.5,
+        3.75,
+        4,
+        4.25,
+        4.5,
+        4.75,
+        5
+      ],
+      "timing_starts_s": [
+        0,
+        -2,
+        2
+      ]
+    },
+    "inputs": [
+      {
+        "artifacts": [
+          {
+            "kind": "observations",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_27_ds7_wave8/inputs/group09/scan-fw-fc8ddf94792f5fb1-tracks.json",
+            "sha256": "sha256:f3bea64a906aa2ca42e157b338e235af8157c83187a47d564516d6771447ff1c"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_full_manifest_inputs/exports/DS7-F067/banks/manifest.json",
+            "sha256": "sha256:72696fe3af5a47bcd7928fffa0c424083a9b6fe219e7a48dbda592f7d05cf68a"
+          },
+          {
+            "kind": "candidates",
+            "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_28_full_manifest_inputs/exports/DS7-F067/banks/banks.npz",
+            "sha256": "sha256:f55f566feaa9819e964a9c141d4917d15ab5c76253ffdaadbb7afdce30a2bb2c"
+          }
+        ],
+        "manifest_sha256": "sha256:9ac9aa87db451a95b3057c21ec79187f999de29e9ade67e528e4c78390ec87c6",
+        "reason": null,
+        "session_id": "scan-fw-fc8ddf94792f5fb1",
+        "state": "ready"
+      }
+    ]
+  },
+  "tracks": 53,
+  "eligibility_exclusions": [
+    {
+      "track_id": "sha256:7d9ddf3393afceb6735222d2f6beb1eb19a5d454b58dc7b4eee5164985c3e5c0",
+      "training_observations": 6,
+      "held_out_observations": 0,
+      "reasons": [
+        "no_held_out_observation"
+      ]
+    },
+    {
+      "track_id": "sha256:88928383caa6b5eacd8c4d56f52a21db13ec1be559c45632967b8d7d08ca7b21",
+      "training_observations": 1,
+      "held_out_observations": 6,
+      "reasons": [
+        "fewer_than_2_training_observations"
+      ]
+    }
+  ],
+  "training_observations": 963,
+  "held_observations": 612,
+  "analysis_manifest_sha256": "sha256:3de4c2a4ffb75b1f0cf3c27b787eb9021bd3a19c06d7b30c8e7f904cd5de1ef9",
+  "mint_glrt_metrics_match": null,
+  "sample_rate_hz": 2500000,
+  "provider_sources": [
+    {
+      "provider": "huggingface",
+      "collected_utc_ns": 1790510594848011053,
+      "snapshot_sha256": "sha256:c84ee6d218b9b0596de80dc3ab2f2997cca2a5e4144483281d0a7d8e565676ce"
+    },
+    {
+      "provider": "space-track",
+      "collected_utc_ns": 1790514095120723327,
+      "snapshot_sha256": "sha256:1f257fbf0981dd20ea80f304953f7a9d2a17f9f4f3a4957b01ec126ad8bda6ac"
+    }
+  ]
+}
