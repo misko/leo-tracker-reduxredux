@@ -1,0 +1,26 @@
+{
+  "schema": "arm-rate-coarse-gate-arm-units-plan/v1",
+  "status": "prepared_not_executed",
+  "execution_owner": "root",
+  "scope": "correctness only; no RF; no execution by this agent",
+  "target": "192.168.1.15",
+  "build_receipt": "builds-312/arm/build-receipt.json",
+  "build_receipt_sha256": "6842c46268c0de02546984e46de678053be8cdd3901cbaf9c7a4936284812a81",
+  "coarse_score_thresholds": {
+    "2500000": 0.312,
+    "5000000": 0.15,
+    "7500000": 0.175,
+    "10000000": 0.152
+  },
+  "runner": {
+    "path": "builds-312/arm/fused_rate_coarse_gate_arm",
+    "sha256": "d218828b133172e997808bd833d1bef6d08543f5550e6a1a24245fe0dd230ef1"
+  },
+  "units": [
+    {"path": "builds-312/arm/test_rate_coarse_gate_arm", "sha256": "8071f6a2906fc3f302f4ba0a79869d790f5be5e6c0b6e459c06f5c3ee0b0d43c", "expected_stdout": "rate coarse gate passed all rates, equal/nextafter, and nonfinite checks\\n"},
+    {"path": "builds-312/arm/test_final_reuse_arm", "sha256": "d4b6593fd1bbff441effd999e8679c0f99ff07f708dec6db7dc04126a1789365"},
+    {"path": "builds-312/arm/test_fine_budget_arm", "sha256": "fe990dd4f630251f0a5b25a8969ed87b7829452d2ae7f57650e781c538c68220"},
+    {"path": "builds-312/arm/test_moment_accuracy_arm", "sha256": "63f00fa005e45e4d811982858014d133839ad864849d73eced9f5e243dd9c0dd"}
+  ],
+  "execution": "Upload each listed file, verify the listed SHA-256 on target, then execute the four unit binaries. This receipt intentionally records no result."
+}

@@ -1,0 +1,79 @@
+{
+  "schema": "arm-decimated-fine-neon-component/v1",
+  "target": "sanitizer",
+  "base": "Wave4 for future integration; standalone gate only",
+  "filter": "factor-5 circular 24-tap FP32 FIR; 500 Hz full-frame output grid; requested band response corrected by integration layer",
+  "bounds": "NEON loads begin only after tap-23; explicit n controls every output and partial wrap",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-Wall",
+        "-Wextra",
+        "-fno-fast-math",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-g",
+        "-fno-omit-frame-pointer",
+        "-fsanitize=address,undefined",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/decimated_fir.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/test_decimated_fir.c",
+        "-lfftw3f",
+        "-lm",
+        "-fsanitize=address,undefined",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/test_decimated_fir_sanitizer"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-Wall",
+        "-Wextra",
+        "-fno-fast-math",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-g",
+        "-fno-omit-frame-pointer",
+        "-fsanitize=address,undefined",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/decimated_fir.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/bench_decimated_fir.c",
+        "-lfftw3f",
+        "-lm",
+        "-fsanitize=address,undefined",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/sanitizer/bench_decimated_fir_sanitizer"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_decimated_fir_sanitizer",
+      "executed": true,
+      "stdout": "decimated NEON FIR passed: all rates zero/fullscale/impulse/tone/twotone/OOB alias/partial bounds\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "test_decimated_fir_sanitizer": "4176a5895770c25d6e2b833089cc934b19f053ff5f1446dbaafcc848d2c77b72",
+    "bench_decimated_fir_sanitizer": "f8c3ed2ea29526b7a7a1aa8757e9873acb6e174695cb580fe03c187192a6d52c"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "bench_decimated_fir.c": "5a3dd4f3aaf9298f58416d211024aed746fa463d9143d0b602b1cac5486a3ec8",
+    "test_decimated_fir.c": "0a3cca928e66f8b8440085f3cb7c2e15f03512d585f8af3e185f90ac8dba6eef",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  }
+}

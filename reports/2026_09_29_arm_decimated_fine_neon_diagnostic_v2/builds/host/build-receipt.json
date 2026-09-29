@@ -1,0 +1,39 @@
+{
+  "schema": "arm-decimated-fir-forward-error/v1",
+  "target": "host",
+  "command": [
+    "gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-fast-math",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-I",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/host",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/host/decimated_fir.c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/host/test_fir_forward_error.c",
+    "-lm",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/host/test_fir_forward_error_host"
+  ],
+  "compiler_stdout": "",
+  "compiler_stderr": "",
+  "binary": {
+    "path": "test_fir_forward_error_host",
+    "sha256": "87c9be451b18de92207621f8f9ecc4e381fbd70d096ef27ddf81ce0e64bfbfd1"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "test_fir_forward_error.c": "157c619f9b81e5d0017360aa803813c3e8ea3781f01dc556e25df04958df821b",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  },
+  "unit": {
+    "executed": true,
+    "returncode": 0,
+    "stdout": "rate=2500000 outputs=1000 old_tolerance_failures=0 max_old_ratio=0 max_pair_error=0 max_scalar_bound_ratio=0.00223810477 max_neon_bound_ratio=0.00223810477 worst_neon_index=48 filter_l1=1.14678895\nrate=5000000 outputs=2000 old_tolerance_failures=0 max_old_ratio=0 max_pair_error=0 max_scalar_bound_ratio=0.00171206648 max_neon_bound_ratio=0.00171206648 worst_neon_index=1724 filter_l1=1.14678895\nrate=7500000 outputs=3000 old_tolerance_failures=0 max_old_ratio=0 max_pair_error=0 max_scalar_bound_ratio=0.00117393601 max_neon_bound_ratio=0.00117393601 worst_neon_index=893 filter_l1=1.14678895\nrate=10000000 outputs=4000 old_tolerance_failures=0 max_old_ratio=0 max_pair_error=0 max_scalar_bound_ratio=0.00148666574 max_neon_bound_ratio=0.00148666574 worst_neon_index=26 filter_l1=1.14678895\n",
+    "stderr": ""
+  }
+}

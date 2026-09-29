@@ -1,0 +1,40 @@
+{
+  "schema": "arm-decimated-fine-neon-diagnostic/v1",
+  "target": "host",
+  "purpose": "preserve 3e-6 relative test bound and print first failing pattern/rate/index plus numerical scale",
+  "command": [
+    "gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-fast-math",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-I",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/host",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/host/decimated_fir.c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/host/diagnose_decimated_fir.c",
+    "-lm",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/host/diagnose_decimated_fir_host"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "binary": {
+    "path": "diagnose_decimated_fir_host",
+    "sha256": "c72e0d05585678f923521e4fcc83ba2272e524b37a65d9b6b1e789fa307eb69d"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "diagnose_decimated_fir.c": "15923b5cffa34dc071983b13739702486d2ebb5beb01602b21b0c57d9ad8aba4",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  },
+  "unit": {
+    "executed": true,
+    "returncode": 0,
+    "stdout": "PASS pattern=zero rate=2500000 center=80000 n=5000 outputs=1000\nPASS pattern=alternating-fullscale rate=2500000 center=-80000 n=5000 outputs=1000\nPASS pattern=two-impulse rate=2500000 center=0 n=5000 outputs=1000\nPASS pattern=three-tone rate=2500000 center=80000 n=5000 outputs=1000\nPASS pattern=three-tone-partial rate=2500000 center=80000 n=4999 outputs=999\nPASS pattern=three-tone-short rate=2500000 center=80000 n=29 outputs=5\nPASS pattern=zero rate=5000000 center=80000 n=10000 outputs=2000\nPASS pattern=alternating-fullscale rate=5000000 center=-80000 n=10000 outputs=2000\nPASS pattern=two-impulse rate=5000000 center=0 n=10000 outputs=2000\nPASS pattern=three-tone rate=5000000 center=80000 n=10000 outputs=2000\nPASS pattern=three-tone-partial rate=5000000 center=80000 n=9999 outputs=1999\nPASS pattern=three-tone-short rate=5000000 center=80000 n=29 outputs=5\nPASS pattern=zero rate=7500000 center=80000 n=15000 outputs=3000\nPASS pattern=alternating-fullscale rate=7500000 center=-80000 n=15000 outputs=3000\nPASS pattern=two-impulse rate=7500000 center=0 n=15000 outputs=3000\nPASS pattern=three-tone rate=7500000 center=80000 n=15000 outputs=3000\nPASS pattern=three-tone-partial rate=7500000 center=80000 n=14999 outputs=2999\nPASS pattern=three-tone-short rate=7500000 center=80000 n=29 outputs=5\nPASS pattern=zero rate=10000000 center=80000 n=20000 outputs=4000\nPASS pattern=alternating-fullscale rate=10000000 center=-80000 n=20000 outputs=4000\nPASS pattern=two-impulse rate=10000000 center=0 n=20000 outputs=4000\nPASS pattern=three-tone rate=10000000 center=80000 n=20000 outputs=4000\nPASS pattern=three-tone-partial rate=10000000 center=80000 n=19999 outputs=3999\nPASS pattern=three-tone-short rate=10000000 center=80000 n=29 outputs=5\n",
+    "stderr": ""
+  }
+}

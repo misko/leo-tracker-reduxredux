@@ -2,6 +2,23 @@
 
 ## Current research baseline — 2026-09-29
 
+The [fifth-wave combination](../../reports/2026_09_29_arm_subsecond/WAVE5.md)
+measures **0.915 seconds/dwell mean** across 152 physical-ARM dwells at
+2.5 MS/s (p95 **1.219 seconds**) and retains
+**19,217/19,581** standard detections on 704 mixed-rate DS7 dwells. A rate-based
+coarse gate removes weak candidates; quadratic conditioned search, exact direct
+CI16 ingestion, prepared coarse input and sparse peak extraction reduce the
+remaining work. All 15,488 windows remain, with 86,439 emitted candidates.
+The larger ARM run recovers **4,506/4,573** hits across all 3,344 windows.
+DS8/DS9 host checks retain 773/785 and 886/908 hits. This remains a research
+prototype, above the 120 ms real-time budget, with capture excluded. The
+subsecond-average milestone is achieved; a one-second tail bound and 40%
+real-time headroom remain unachieved. See the
+report for the matched four-dwell comparison (0.960 seconds), timing
+distributions and the explicit 183-hit difference from the
+earlier 19,400-hit method. The source and build evidence are in
+[`arm_wave5_final`](../../reports/2026_09_29_arm_wave5_final/README.md).
+
 The [fourth-wave exact proposal changes](../../reports/2026_09_29_arm_subsecond/WAVE4.md)
 reduce the two-run ARM mean to **1.686 seconds/dwell**, retaining
 **19,226/19,581** standard hits and every candidate object from Wave3 on the

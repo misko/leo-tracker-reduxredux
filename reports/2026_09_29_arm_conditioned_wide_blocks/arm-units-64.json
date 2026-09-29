@@ -1,0 +1,43 @@
+{
+  "receipt_sha256": "c12262b1f07cfbe4a742951c4c3eeb6574f7e4ea7d7b38fb3463029899db65d5",
+  "target": "192.168.1.15",
+  "scope": "correctness only, unpinned; no RF",
+  "results": [
+    {
+      "binary": "test_resampling_arm",
+      "binary_sha256": "4e093d9d6c289bf23764b11e3e020c44de73074def9fa19b3bc68159467a55cc",
+      "stdout": "periodic power-of-two resampling passed: zero, wrap tail, circular shift, mapping and original-grid peak distance at all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_omit_component_arm",
+      "binary_sha256": "4a2fa43aa20137c6c303c1c0771790171c862e8f97d8dc5c602176278c31c183",
+      "stdout": "resampled omit-power proposal passed all-rate zero-input component checks\n",
+      "passed": true
+    },
+    {
+      "binary": "test_final_reuse_arm",
+      "binary_sha256": "50ab34c6b4f3511296add665446f41f97db9169df24a649801a1a812e06bfee4",
+      "stdout": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "binary_sha256": "36b3e5f3269727f7cd5c7218b0060fbb90272f2928ae2c4f7140f9c2cf6e92a9",
+      "stdout": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "binary_sha256": "88fc8f2b8934b923157f85cd94920594960b2f3e43cf0045e7b4706c1c85759d",
+      "stdout": "conditioned moments four-frequency: max_abs=0.000610351562 max_rel=12.3641281 max_screen_normalized=0.000418364274 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    },
+    {
+      "binary": "test_wide_moments_arm",
+      "binary_sha256": "8b36e12c56d61267664ccb42df488555ed1e271ecb00e479202d88bf3d29a642",
+      "stdout": "wide block=64 direct DFT max normalized error=4.9280299953414006e-06 all_rates=4 patterns=5 bins=41\n",
+      "passed": true
+    }
+  ]
+}
