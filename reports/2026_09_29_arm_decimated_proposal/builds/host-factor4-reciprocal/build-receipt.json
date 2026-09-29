@@ -1,0 +1,116 @@
+{
+  "schema": "arm-decimated-proposal-reciprocal-build/v1",
+  "target": "host",
+  "factor": 4,
+  "rounding_semantics": "cached FP32 reciprocal multiply replaces per-cell division; support zero maps to exact zero; no fast-math",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/proposal_probe_host_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_neon_fold_host_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_decimation.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_decimation_host_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_reciprocal.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor4-reciprocal/test_reciprocal_host_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_neon_fold_host_factor4_reciprocal",
+      "executed": true,
+      "stdout": "scalar fold passed: direct-order sanity\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_decimation_host_factor4_reciprocal",
+      "executed": true,
+      "stdout": "decimation passed: factor=4, ceil length, partial weighting, original-grid wrap, epoch mapping\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_reciprocal_host_factor4_reciprocal",
+      "executed": true,
+      "stdout": "reciprocal normalization passed: support 0..16, extremes, partial blocks, score bound, all rates\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_probe_host_factor4_reciprocal": "99a89e075980a557b4a4b221a5f7d7422c7ba5be54e97176aba8cab62fb769c3",
+    "test_neon_fold_host_factor4_reciprocal": "4a1c178e2d48164a8d71936fe99ccabc119c46a3a0c5dcb47109abb2fc3f5b0c",
+    "test_decimation_host_factor4_reciprocal": "7a890ba6e0410a43dd7329df161d99f5d79bf6729160df17da4643189a258731",
+    "test_reciprocal_host_factor4_reciprocal": "aa322f6e65d63fe26328bd16e5140a9679d0b31997ad10638ddbf17bc17e3ff8"
+  },
+  "sources": {
+    "proposal_probe.c": "c6787c110843f25f6d21ca516ed39fcdaa25600608269b99a5cf792013c6b32a",
+    "test_decimation.c": "94c5fa4bfe7a5b073a17b96fff1ca000dd7fb0c48f42cf0720ebabb93b45a42f",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_reciprocal.c": "aaaf824be393bbbede9020f3cf89b0202aab3f0d3a82f30f872388fa42d7da80"
+  }
+}

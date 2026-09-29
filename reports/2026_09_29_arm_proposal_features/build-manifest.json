@@ -1,0 +1,17 @@
+{
+  "schema": "arm-proposal-feature-ablation-matrix/v1",
+  "builds": {
+    "host": {
+      "receipt": "builds/host/build-receipt.json",
+      "sha256": "847f47feb8fcbfeb643633fcabbef457f334d8c04da33968b525c47be02e58c6"
+    },
+    "arm": {
+      "receipt": "builds/arm/build-receipt.json",
+      "sha256": "bc19b6cd1a3085a86c4f201fc155d70c2c74edc55db7e9fb5dd334c36a629c4b"
+    }
+  },
+  "host_test": {
+    "stdout": "{\"cases\": [{\"case\": \"partial\", \"rate\": 2500000, \"rows\": 22}, {\"case\": \"zero\", \"rate\": 2500000, \"rows\": 22}, {\"case\": \"partial\", \"rate\": 5000000, \"rows\": 22}, {\"case\": \"zero\", \"rate\": 5000000, \"rows\": 22}, {\"case\": \"partial\", \"rate\": 7500000, \"rows\": 22}, {\"case\": \"zero\", \"rate\": 7500000, \"rows\": 22}, {\"case\": \"partial\", \"rate\": 10000000, \"rows\": 22}, {\"case\": \"zero\", \"rate\": 10000000, \"rows\": 22}], \"control_parity\": \"exact JSON numerical equality for all scores and top32 at every rate on partial input; top4 parity at every rate and both input cases\", \"partial_input\": \"first 90 ms deterministic CI16 signal followed by 30 ms zero CI16 at each rate\", \"passed\": true, \"rates\": [2500000, 5000000, 7500000, 10000000], \"schema\": \"arm-proposal-feature-ablation-test/v1\"}\n",
+    "stderr": ""
+  }
+}

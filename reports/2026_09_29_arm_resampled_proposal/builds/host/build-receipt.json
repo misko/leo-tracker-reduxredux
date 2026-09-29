@@ -1,0 +1,101 @@
+{
+  "schema": "arm-resampled-proposal-build/v1",
+  "target": "host",
+  "algorithm": {
+    "fold_features": [
+      "lag1",
+      "lag3",
+      "lag5",
+      "power"
+    ],
+    "resampling": "periodic-linear",
+    "fft_length": "next-power-of-two",
+    "peak_mapping": "round(k*original_length/fft_length)",
+    "minimum_peak_distance_original_samples": 5
+  },
+  "implementation": "scalar host; NEON CI16 folding on ARM; stable radix rank both targets",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/proposal_probe_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_neon_fold_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_resampling.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_resampling_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "tests": [
+    {
+      "binary": "test_neon_fold_host",
+      "command": [
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_neon_fold_host"
+      ],
+      "stdout": "scalar fold passed: direct-order sanity\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_resampling_host",
+      "command": [
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/host/test_resampling_host"
+      ],
+      "stdout": "periodic power-of-two resampling passed: zero, wrap tail, circular shift, mapping and original-grid peak distance at all rates\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_probe_host": "85785a55b788443ebad97258f752be1c3b3ba8a36cae98fa711aa705f4de0fcc",
+    "test_neon_fold_host": "7bde65c04d897402f59a7d2141d362bfe111e66bccc655bf29573a7831866453",
+    "test_resampling_host": "e8e39923892fd93c084b639830debf80b21abcd78d8325b6e1592894bc105693"
+  },
+  "sources": {
+    "proposal_probe.c": "071d71c5d81e8851fb7c1054d09819afd4a150e86efcb1790f2f668da2e127ac",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_resampling.c": "27ab5666e03c7557a8eeef84b5a6883479a10f1ec7fa11755ef43b31a97fa6fc"
+  }
+}

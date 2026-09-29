@@ -1,0 +1,86 @@
+{
+  "schema": "arm-proposal-planner-build/v1",
+  "target": "host",
+  "planner": "estimate",
+  "planning_scope": "bank initialization before reference population; monotonic wall time excluded from window total",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/proposal_probe_host_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/test_neon_fold_host_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/test_planner.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-estimate/test_planner_host_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_neon_fold_host_estimate",
+      "executed": true,
+      "stdout": "scalar fold passed: direct-order sanity\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_planner_host_estimate",
+      "executed": true,
+      "stdout": "planner passed: estimate, planning_wall_ms=0.343135118, setup excluded from window timer\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_probe_host_estimate": "eb6bbef6385c9105d66a212d2bb9d089352533bed92f14dc1a1bc0cff44695ca",
+    "test_neon_fold_host_estimate": "9502d7263b0e2b957cfec3d16f8e3787c4f7e2d28f477a29f28ab1ade5bdcc6c",
+    "test_planner_host_estimate": "129cde648d9fa07e54cba8b71459ff4dfcb22d54103ae1214bd702e3bf0625c2"
+  },
+  "sources": {
+    "proposal_probe.c": "bb278172a85ffb646f34f6161c03f863530951985d786545b99286522ef64630",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_planner.c": "908789b29c87d92fdff0be3d3043975e18f82abf87a2b0332dbc8a41fb60cc86"
+  }
+}

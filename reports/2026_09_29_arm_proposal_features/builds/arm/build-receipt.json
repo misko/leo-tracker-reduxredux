@@ -1,0 +1,64 @@
+{
+  "schema": "arm-proposal-feature-ablation-build/v1",
+  "target": "arm",
+  "implementation": "NEON exact fold and radix combined-percentile ranking; one selected feature omitted before reference, fold, correlation, and ranking",
+  "executed_on_target": false,
+  "commands": [
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/sources/proposal_feature_ablation.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/builds/arm/proposal_feature_ablation"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/sources/control_proposal_probe.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/builds/arm/control_proposal_probe"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_feature_ablation": "2b62916b6476806e861c98721d9dc09ad04a514ff735e317e162071c59fc8238",
+    "control_proposal_probe": "b1734c7be02acd93e109b47185ce2975695d0bf19b61f515c9a1bbc339739fc5"
+  },
+  "sources": {
+    "control_proposal_probe.c": "236632e26bfd7ba656a6edea73b9f837c708f788951619dc6a50265028e36ce0",
+    "proposal_feature_ablation.c": "ae9aa7bed72b7d8fc8b58fce19261bd057ac1e22e2d242d6d2f6dbb578015819"
+  }
+}

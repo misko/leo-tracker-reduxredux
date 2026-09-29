@@ -4,6 +4,11 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [subsecond-goal checkpoint](../../reports/2026_09_29_arm_subsecond/REPORT.md)
+adds a 2.010-second tradeoff retaining 19,249/19,581 original hits. It keeps all
+windows and candidate entries but increases unmatched positives to 21,555.
+The subsecond goal is not achieved; timings remain separately measured stage sums.
+
 The latest [compiler and packing experiment](../../reports/2026_09_29_arm_low_precision/REPORT.md)
 reduces raw-FP32 search CPU by 8.1%, with unchanged standard-hit recovery.
 Q15 integer FFTs and packed spectrum caches were slower, including NEON packing.
@@ -42,6 +47,8 @@ and returns 19,581 positive candidate entries. Its 2.5 MS/s subset contains
 | FP32 lag proposals plus restricted timing search and lazy FFT reuse | 4,551/4,573 | 19,400/19,581 | 99.08% | 6.313 s, separately timed stage sum |
 | Above, with raw FP32 fine FFTs | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.711 s, separately timed stage sum |
 | Raw FP32 plus corrected compiler/local-arithmetic tuning | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.319 s, separately timed stage sum |
+| Full-frame moment conditioned screen with FP64 near-max rechecks | 4,551/4,573 | 19,400/19,581 | 99.08% | 4.567 s, separately timed stage sum |
+| Two-frame fine estimate, moment screen, radius 2, exact final reuse | 4,521/4,573 | 19,249/19,581 | 98.30% | 2.010 s, separately timed stage sum |
 | Above, with guarded FP32 fine FFTs | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.802 s, separately timed stage sum |
 | Sparse coarse search, eight frames | 4,347/4,573 | 18,404/19,581 | 93.99% | 27.808 s |
 | Tracking with full refresh every second window | 3,898/4,573 | 17,076/19,581 | 87.20% | 33.997 s |

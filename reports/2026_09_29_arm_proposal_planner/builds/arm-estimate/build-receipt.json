@@ -1,0 +1,91 @@
+{
+  "schema": "arm-proposal-planner-build/v1",
+  "target": "arm",
+  "planner": "estimate",
+  "planning_scope": "bank initialization before reference population; monotonic wall time excluded from window total",
+  "commands": [
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/proposal_probe.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/proposal_probe_arm_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/test_neon_fold.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/test_neon_fold_arm_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/test_planner.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/arm-estimate/test_planner_arm_estimate"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [],
+  "binaries": {
+    "proposal_probe_arm_estimate": "41c057ed6599773ede0906c2f0f9885ba05b8edc75520bd412844128dfcd777e",
+    "test_neon_fold_arm_estimate": "3f93ff95fa15c2942f65049b165a8247f51579649d451d49bb7c42bffffc08a2",
+    "test_planner_arm_estimate": "58251c3c326eed2e7e035d203c6f0b9f0ae30fff88f48289614d9b713c9b176c"
+  },
+  "sources": {
+    "proposal_probe.c": "bb278172a85ffb646f34f6161c03f863530951985d786545b99286522ef64630",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_planner.c": "908789b29c87d92fdff0be3d3043975e18f82abf87a2b0332dbc8a41fb60cc86"
+  }
+}

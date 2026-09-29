@@ -1,0 +1,102 @@
+{
+  "schema": "arm-resampled-proposal-build/v1",
+  "target": "arm",
+  "algorithm": {
+    "fold_features": [
+      "lag1",
+      "lag3",
+      "lag5",
+      "power"
+    ],
+    "resampling": "periodic-linear",
+    "fft_length": "next-power-of-two",
+    "peak_mapping": "round(k*original_length/fft_length)",
+    "minimum_peak_distance_original_samples": 5
+  },
+  "implementation": "scalar host; NEON CI16 folding on ARM; stable radix rank both targets",
+  "commands": [
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/proposal_probe.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/proposal_probe_arm"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/test_neon_fold.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/test_neon_fold_arm"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/test_resampling.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_resampled_proposal/builds/arm/test_resampling_arm"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "tests": [],
+  "binaries": {
+    "proposal_probe_arm": "d1aa03f7d4207cf1737be017c94fc7164797b611dcbf1378ee21f2b9d221a536",
+    "test_neon_fold_arm": "92c8884e08a5b13c18bd4834cc12edbf08055b83ef554c909f4aae539a36e5f5",
+    "test_resampling_arm": "5bed43a4fee5acd3615479a8013c9be24cb66884e7c677a47f0c657891de87e8"
+  },
+  "sources": {
+    "proposal_probe.c": "071d71c5d81e8851fb7c1054d09819afd4a150e86efcb1790f2f668da2e127ac",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_resampling.c": "27ab5666e03c7557a8eeef84b5a6883479a10f1ec7fa11755ef43b31a97fa6fc"
+  }
+}

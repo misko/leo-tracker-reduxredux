@@ -1,0 +1,52 @@
+{
+  "schema": "arm-proposal-feature-ablation-build/v1",
+  "target": "host",
+  "implementation": "scalar host reference with radix combined-percentile ranking; one selected feature omitted before reference, fold, correlation, and ranking",
+  "executed_on_target": false,
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/sources/proposal_feature_ablation.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/builds/host/proposal_feature_ablation"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/sources/control_proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_features/builds/host/control_proposal_probe"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_feature_ablation": "6f95123149609168369ed0af6044cb5075c21a0efd927245d1d4dd349aaa3707",
+    "control_proposal_probe": "7e50266ac22e4f86988c403b974d14f65356024c163f0168728250457d5f8b05"
+  },
+  "sources": {
+    "control_proposal_probe.c": "236632e26bfd7ba656a6edea73b9f837c708f788951619dc6a50265028e36ce0",
+    "proposal_feature_ablation.c": "ae9aa7bed72b7d8fc8b58fce19261bd057ac1e22e2d242d6d2f6dbb578015819"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema": "arm-neon-proposal-build/v1",
+  "target": "host",
+  "implementation": "scalar",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_neon_proposal/builds/host/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_neon_proposal/builds/host/proposal_probe_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_neon_proposal/builds/host/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_neon_proposal/builds/host/test_neon_fold_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "unit": {
+    "executed": true,
+    "stdout": "scalar fold passed: direct-order sanity\n",
+    "stderr": ""
+  },
+  "binaries": {
+    "proposal_probe_host": "9d25e85641f0da2b13d142475fe51462ecf771caea3232dcc365aadd668af6f8",
+    "test_neon_fold_host": "4e8a08ddd15f4edbed57f17fc32bc130a4598233f725acc46ade09eceeec8f7e"
+  },
+  "sources": {
+    "proposal_probe.c": "236632e26bfd7ba656a6edea73b9f837c708f788951619dc6a50265028e36ce0",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992"
+  }
+}
