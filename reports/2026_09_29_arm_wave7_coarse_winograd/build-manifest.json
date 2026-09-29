@@ -1,0 +1,93 @@
+{
+  "host": {
+    "schema": "arm-wave7-coarse-winograd/v1",
+    "target": "host",
+    "command": [
+      "gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds/host/test_coarse_winograd_host"
+    ],
+    "compiler_stderr": "",
+    "run": "worst_abs_error=2.86102295e-06 direct_ms=8.600 winograd_ms=8.466 ratio=0.9844 sink=-187829",
+    "binary_sha256": "594795d808a991cc2a953f7ad9d24a4cba5fab35e519b9b20b0d50b35cc799a8",
+    "sources": {
+      "implementation/coarse_winograd.c": "ea2066feea7aeeb7da4dde9d58fcd386c95d7381ce9b9a0e7b0be7386e13f784",
+      "implementation/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests/test_coarse_winograd.c": "d332e6ccad7f6fcf293402524dadab1dcf6c03d557fd448a124a53e4484ce9bf"
+    }
+  },
+  "sanitizer": {
+    "schema": "arm-wave7-coarse-winograd/v1",
+    "target": "sanitizer",
+    "command": [
+      "gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-O1",
+      "-g",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds/sanitizer/test_coarse_winograd_sanitizer"
+    ],
+    "compiler_stderr": "",
+    "run": "worst_abs_error=2.86102295e-06 direct_ms=321.774 winograd_ms=240.207 ratio=0.7465 sink=-187829",
+    "binary_sha256": "b51ccd5c7d3f01a1ef35d88234fb66bd015e2108b5a7ec815b44eb6cda7deb98",
+    "sources": {
+      "implementation/coarse_winograd.c": "ea2066feea7aeeb7da4dde9d58fcd386c95d7381ce9b9a0e7b0be7386e13f784",
+      "implementation/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests/test_coarse_winograd.c": "d332e6ccad7f6fcf293402524dadab1dcf6c03d557fd448a124a53e4484ce9bf"
+    }
+  },
+  "arm": {
+    "schema": "arm-wave7-coarse-winograd/v1",
+    "target": "arm",
+    "command": [
+      "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-mcpu=cortex-a9",
+      "-mfpu=neon",
+      "-mfloat-abi=hard",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds/arm/test_coarse_winograd_arm"
+    ],
+    "compiler_stderr": "",
+    "run": null,
+    "binary_sha256": "5b9254ff11115669c9a6785c29d5cd7256645aca300ce435c8c61e137217595e",
+    "sources": {
+      "implementation/coarse_winograd.c": "ea2066feea7aeeb7da4dde9d58fcd386c95d7381ce9b9a0e7b0be7386e13f784",
+      "implementation/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests/test_coarse_winograd.c": "d332e6ccad7f6fcf293402524dadab1dcf6c03d557fd448a124a53e4484ce9bf"
+    }
+  }
+}

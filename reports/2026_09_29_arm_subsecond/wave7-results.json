@@ -1,0 +1,2540 @@
+{
+  "schema": "arm-wave7-comparison/v1",
+  "baseline_ms": 863.0294265,
+  "scope": "Same four saved 2.5 MS/s dual-RX 120 ms dwells, 88 overlapping 20 ms receiver/windows; CPU0, no RF. Host704 mixed-rate hit audit is separate. Initial setup and file I/O excluded; dwell preparation included.",
+  "exact_pgo_heldout32": {
+    "path": "reports/2026_09_29_arm_wave7_hist_pgo/arm-heldout32",
+    "summary": {
+      "complete": true,
+      "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_pgo/heldout32-reference",
+      "binary_sha256": "8312b514ae1fc278f428012d7031300174ce1af8c669f0bced5048b526f5c5e5",
+      "build_sha256": "2476f3d41d3a979726434ff211bf6a3bb4584d51cd0df981d88897b8bcdacd14",
+      "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+      "rows_sha256": "2fffd270bc45fcafde3c6cda7b777759896cd498b2b508bcba444c6d54172161",
+      "reference_manifest_sha256": "95b0e671d3af9790ae32611fc811b2cde3becd01f42dd47422fd4d6eacb528de",
+      "dwells": 32,
+      "windows": 704,
+      "candidate_entries": 1201,
+      "changed_candidates": 0,
+      "changed_windows": 0,
+      "scientific_outputs_identical": true,
+      "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+      "proposal_radius": 2,
+      "proposal_top": 4,
+      "cache_entries": 606,
+      "cache_hits": 595,
+      "mean_timings_ms": {
+        "total_cpu": 356.325111,
+        "proposal": 344.48834587500005,
+        "stage_sum": 700.813456875,
+        "fused_total": 758.5923789375,
+        "proposal_fold": 144.43569824999997,
+        "proposal_correlation": 141.0094659375,
+        "proposal_ranking": 58.04202356249999,
+        "coarse": 130.04427956249995,
+        "acquisition": 69.63982593749996,
+        "fine_fft": 58.26348262500006,
+        "conditioned": 80.83681462500004,
+        "verification": 0.0,
+        "glrt": 73.22857368750003
+      },
+      "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+      "hardware": "PLUTO+ CPU0",
+      "fine_instrumentation_totals": {
+        "fine_precision_calls": 1201,
+        "fine_precision_guard_checks": 0,
+        "fine_precision_fallbacks": 0,
+        "fine_precision_nonfinite_fallbacks": 0,
+        "fine_precision_near_tie_fallbacks": 0,
+        "fine_precision_interpolation_fallbacks": 0
+      },
+      "fine_configuration_values": {
+        "fine_frame_budget": [
+          2
+        ],
+        "skip_conditioned_recheck": [
+          1
+        ]
+      }
+    },
+    "hits": {
+      "dwells": 32,
+      "windows": 704,
+      "candidates": 5632,
+      "reference_positive_windows": 354,
+      "native_positive_windows": 371,
+      "windows_with_recovered_hit": 350,
+      "reference_positive_hits": 921,
+      "native_positive_hits": 1136,
+      "recovered_positive_hits": 904,
+      "ordered_mismatched_windows": 704,
+      "ordered_mismatched_candidates": 5631,
+      "missing_native_windows": 0,
+      "reference_candidate_entries": 5632,
+      "emitted_candidate_entries": 1201,
+      "candidates_meaning": "frozen reference inventory",
+      "unmatched_positive_hits": 232,
+      "hit_recovery_fraction": 0.9815418023887079
+    }
+  },
+  "approximate_pgo_heldout32": {
+    "path": "reports/2026_09_29_arm_wave7_frontier_pgo/arm-heldout32",
+    "summary": {
+      "complete": true,
+      "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_pgo/heldout32-reference",
+      "binary_sha256": "df9dc612d739fb9c3be66c29606d22c8ab616a08450a546679b7816894ce24d6",
+      "build_sha256": "4c957101cb677219585f9979cee133fd21bfdd47306a77f74be138f7f3a2204f",
+      "runner_sha256": "a5d73b2960e261a93baba570441f46fd25511672608887b563854db927e243f2",
+      "rows_sha256": "f0676f79d324a944a8546f1f99a58cfa6aa5e3dee4e684aa7d8d6d2b3bca0232",
+      "reference_manifest_sha256": "95b0e671d3af9790ae32611fc811b2cde3becd01f42dd47422fd4d6eacb528de",
+      "dwells": 32,
+      "windows": 704,
+      "candidate_entries": 1116,
+      "changed_candidates": 239,
+      "changed_windows": 120,
+      "scientific_outputs_identical": false,
+      "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+      "proposal_radius": 1,
+      "proposal_top": 4,
+      "cache_entries": 555,
+      "cache_hits": 561,
+      "mean_timings_ms": {
+        "total_cpu": 297.9488265,
+        "proposal": 117.7648794375,
+        "stage_sum": 415.7137059375,
+        "fused_total": 473.79482775,
+        "proposal_fold": 49.65468112500002,
+        "proposal_correlation": 43.8125371875,
+        "proposal_ranking": 23.75693793749999,
+        "coarse": 83.69239275000002,
+        "acquisition": 64.30013606250002,
+        "fine_fft": 53.33963325000001,
+        "conditioned": 79.12654275000001,
+        "verification": 0.0,
+        "glrt": 68.77404899999999
+      },
+      "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+      "hardware": "PLUTO+ CPU0",
+      "fine_instrumentation_totals": {
+        "fine_precision_calls": 1116,
+        "fine_precision_guard_checks": 0,
+        "fine_precision_fallbacks": 0,
+        "fine_precision_nonfinite_fallbacks": 0,
+        "fine_precision_near_tie_fallbacks": 0,
+        "fine_precision_interpolation_fallbacks": 0
+      },
+      "fine_configuration_values": {
+        "fine_frame_budget": [
+          2
+        ],
+        "skip_conditioned_recheck": [
+          1
+        ]
+      }
+    },
+    "hits": {
+      "dwells": 32,
+      "windows": 704,
+      "candidates": 5632,
+      "reference_positive_windows": 354,
+      "native_positive_windows": 358,
+      "windows_with_recovered_hit": 341,
+      "reference_positive_hits": 921,
+      "native_positive_hits": 1064,
+      "recovered_positive_hits": 854,
+      "ordered_mismatched_windows": 704,
+      "ordered_mismatched_candidates": 5631,
+      "missing_native_windows": 0,
+      "reference_candidate_entries": 5632,
+      "emitted_candidate_entries": 1116,
+      "candidates_meaning": "frozen reference inventory",
+      "unmatched_positive_hits": 210,
+      "hit_recovery_fraction": 0.9272529858849077
+    }
+  },
+  "arm_codegen": {
+    "thumb2": {
+      "path": "reports/2026_09_29_arm_wave7_codegen_matrix/arm4-thumb",
+      "summary": {
+        "complete": true,
+        "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_rank_histograms/arm4-v2",
+        "binary_sha256": "f42babb60a14a869201841070cb087904a999e98aa3a343d2c6ffa2cd2f8b299",
+        "build_sha256": "eadaed93fd1ae9b34f7dbea16fb1982617f8adc3ec77bcb176cec6cf4e2e2c9a",
+        "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+        "rows_sha256": "a50c58123660f338f65aa1cdc27a28638374dce35fda9468a2fb19ce926528e5",
+        "reference_manifest_sha256": "f430e4e7fb576a7be77806057ed2f580cb650da719617b88c3910c4e31fbfd80",
+        "dwells": 4,
+        "windows": 88,
+        "candidate_entries": 182,
+        "changed_candidates": 0,
+        "changed_windows": 0,
+        "scientific_outputs_identical": true,
+        "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+        "proposal_radius": 2,
+        "proposal_top": 4,
+        "cache_entries": 98,
+        "cache_hits": 84,
+        "mean_timings_ms": {
+          "total_cpu": 407.13546449999984,
+          "proposal": 363.35766449999994,
+          "stage_sum": 770.4931289999998,
+          "fused_total": 834.1901220000001,
+          "proposal_fold": 149.93545049999977,
+          "proposal_correlation": 143.02219800000012,
+          "proposal_ranking": 69.43544550000007,
+          "coarse": 136.0441154999999,
+          "acquisition": 87.59099100000003,
+          "fine_fft": 75.69761100000004,
+          "conditioned": 92.17472249999994,
+          "verification": 0.0,
+          "glrt": 88.53397500000004
+        },
+        "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+        "hardware": "PLUTO+ CPU0",
+        "fine_instrumentation_totals": {
+          "fine_precision_calls": 182,
+          "fine_precision_guard_checks": 0,
+          "fine_precision_fallbacks": 0,
+          "fine_precision_nonfinite_fallbacks": 0,
+          "fine_precision_near_tie_fallbacks": 0,
+          "fine_precision_interpolation_fallbacks": 0
+        },
+        "fine_configuration_values": {
+          "fine_frame_budget": [
+            2
+          ],
+          "skip_conditioned_recheck": [
+            1
+          ]
+        }
+      },
+      "hits": {
+        "dwells": 4,
+        "windows": 88,
+        "candidates": 704,
+        "reference_positive_windows": 49,
+        "native_positive_windows": 53,
+        "windows_with_recovered_hit": 49,
+        "reference_positive_hits": 119,
+        "native_positive_hits": 158,
+        "recovered_positive_hits": 119,
+        "ordered_mismatched_windows": 88,
+        "ordered_mismatched_candidates": 704,
+        "missing_native_windows": 0,
+        "reference_candidate_entries": 704,
+        "emitted_candidate_entries": 182,
+        "candidates_meaning": "frozen reference inventory",
+        "unmatched_positive_hits": 39,
+        "hit_recovery_fraction": 1.0
+      }
+    },
+    "O2": {
+      "path": "reports/2026_09_29_arm_wave7_codegen_matrix/arm4-o2",
+      "summary": {
+        "complete": true,
+        "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_rank_histograms/arm4-v2",
+        "binary_sha256": "c375000a848e26c9ab615b5376c8f3b8685568b156aebe94738b574f63eaeebd",
+        "build_sha256": "cbbefe27fb26fd6450624ff613df6b5f89addaa3feeb43bb84689ff8d630bc84",
+        "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+        "rows_sha256": "a45f55170032e31720ca57112a8233c605394c1299bc9595a21d7037d9e837ab",
+        "reference_manifest_sha256": "f430e4e7fb576a7be77806057ed2f580cb650da719617b88c3910c4e31fbfd80",
+        "dwells": 4,
+        "windows": 88,
+        "candidate_entries": 182,
+        "changed_candidates": 0,
+        "changed_windows": 0,
+        "scientific_outputs_identical": true,
+        "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+        "proposal_radius": 2,
+        "proposal_top": 4,
+        "cache_entries": 98,
+        "cache_hits": 84,
+        "mean_timings_ms": {
+          "total_cpu": 445.5655725000002,
+          "proposal": 391.1232765,
+          "stage_sum": 836.6888490000001,
+          "fused_total": 900.058293,
+          "proposal_fold": 160.91059200000007,
+          "proposal_correlation": 151.85139750000013,
+          "proposal_ranking": 77.35279949999982,
+          "coarse": 142.87880100000027,
+          "acquisition": 87.87980249999991,
+          "fine_fft": 75.9822584999998,
+          "conditioned": 114.00994050000006,
+          "verification": 0.0,
+          "glrt": 98.08582049999973
+        },
+        "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+        "hardware": "PLUTO+ CPU0",
+        "fine_instrumentation_totals": {
+          "fine_precision_calls": 182,
+          "fine_precision_guard_checks": 0,
+          "fine_precision_fallbacks": 0,
+          "fine_precision_nonfinite_fallbacks": 0,
+          "fine_precision_near_tie_fallbacks": 0,
+          "fine_precision_interpolation_fallbacks": 0
+        },
+        "fine_configuration_values": {
+          "fine_frame_budget": [
+            2
+          ],
+          "skip_conditioned_recheck": [
+            1
+          ]
+        }
+      },
+      "hits": {
+        "dwells": 4,
+        "windows": 88,
+        "candidates": 704,
+        "reference_positive_windows": 49,
+        "native_positive_windows": 53,
+        "windows_with_recovered_hit": 49,
+        "reference_positive_hits": 119,
+        "native_positive_hits": 158,
+        "recovered_positive_hits": 119,
+        "ordered_mismatched_windows": 88,
+        "ordered_mismatched_candidates": 704,
+        "missing_native_windows": 0,
+        "reference_candidate_entries": 704,
+        "emitted_candidate_entries": 182,
+        "candidates_meaning": "frozen reference inventory",
+        "unmatched_positive_hits": 39,
+        "hit_recovery_fraction": 1.0
+      }
+    },
+    "restrict": {
+      "path": "reports/2026_09_29_arm_wave7_compile_review/arm4-restrict",
+      "summary": {
+        "complete": true,
+        "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_rank_histograms/arm4-v2",
+        "binary_sha256": "4aef3a7e13725ef55646794bb49cd96b41fd879f009671b1ba8626f176572526",
+        "build_sha256": "55dce6e1108f515832e562f51413284712ff3c8b79f3a10da5dec30e44cbb9ca",
+        "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+        "rows_sha256": "c8892d775bd788077de53d4e0e40b5ad74b2c7baac210d3ebaef2f7942e45503",
+        "reference_manifest_sha256": "f430e4e7fb576a7be77806057ed2f580cb650da719617b88c3910c4e31fbfd80",
+        "dwells": 4,
+        "windows": 88,
+        "candidate_entries": 182,
+        "changed_candidates": 0,
+        "changed_windows": 0,
+        "scientific_outputs_identical": true,
+        "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+        "proposal_radius": 2,
+        "proposal_top": 4,
+        "cache_entries": 98,
+        "cache_hits": 84,
+        "mean_timings_ms": {
+          "total_cpu": 406.1211930000001,
+          "proposal": 363.4582260000001,
+          "stage_sum": 769.5794190000001,
+          "fused_total": 832.4802045,
+          "proposal_fold": 151.1893275,
+          "proposal_correlation": 142.6722345,
+          "proposal_ranking": 68.60151600000006,
+          "coarse": 135.06150150000005,
+          "acquisition": 87.10006799999996,
+          "fine_fft": 75.17919900000007,
+          "conditioned": 92.632281,
+          "verification": 0.0,
+          "glrt": 88.53583649999993
+        },
+        "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+        "hardware": "PLUTO+ CPU0",
+        "fine_instrumentation_totals": {
+          "fine_precision_calls": 182,
+          "fine_precision_guard_checks": 0,
+          "fine_precision_fallbacks": 0,
+          "fine_precision_nonfinite_fallbacks": 0,
+          "fine_precision_near_tie_fallbacks": 0,
+          "fine_precision_interpolation_fallbacks": 0
+        },
+        "fine_configuration_values": {
+          "fine_frame_budget": [
+            2
+          ],
+          "skip_conditioned_recheck": [
+            1
+          ]
+        }
+      },
+      "hits": {
+        "dwells": 4,
+        "windows": 88,
+        "candidates": 704,
+        "reference_positive_windows": 49,
+        "native_positive_windows": 53,
+        "windows_with_recovered_hit": 49,
+        "reference_positive_hits": 119,
+        "native_positive_hits": 158,
+        "recovered_positive_hits": 119,
+        "ordered_mismatched_windows": 88,
+        "ordered_mismatched_candidates": 704,
+        "missing_native_windows": 0,
+        "reference_candidate_entries": 704,
+        "emitted_candidate_entries": 182,
+        "candidates_meaning": "frozen reference inventory",
+        "unmatched_positive_hits": 39,
+        "hit_recovery_fraction": 1.0
+      }
+    }
+  },
+  "rows": [
+    {
+      "method": "Wave6 exact control",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave6_combined/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave5_final/arm4-v2",
+          "binary_sha256": "5b36a68cd0184ff60c3c2db8db98414fdc87dfc0060d041d677475f11d338d01",
+          "build_sha256": "e2dd4216c4df527f1dc5d8c6a8711649558408023247632040f28f32d4a9cfd8",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "ea39b534a11f6c59d7150a906f3d3b69c64d7ce033b95fc8868960be4e99bec6",
+          "reference_manifest_sha256": "e9967b7c8986d4333cd1137ebe99a483ad388aecce2b80a818639ad521d10a39",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 405.94854900000007,
+            "proposal": 393.6160799999999,
+            "stage_sum": 799.564629,
+            "fused_total": 863.0294265,
+            "proposal_fold": 151.17123300000011,
+            "proposal_correlation": 143.40199199999967,
+            "proposal_ranking": 98.0469134999999,
+            "coarse": 134.91092549999988,
+            "acquisition": 87.03541799999996,
+            "fine_fft": 75.09932099999997,
+            "conditioned": 92.44264949999993,
+            "verification": 0.0,
+            "glrt": 88.77731099999997
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave6_combined/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave5_final/host704-v2",
+          "binary_sha256": "423c1db4b494d683d818668ee071e0f2752949a95c3a70442b7be8779dfbdb8b",
+          "build_sha256": "688752cdc06b0eec790c68254206552994824644bdb63237dc55f6e0ca04a82f",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "62b66a748f78272dd251063d2b8e98493120658f036d718fca7829949232c03f",
+          "reference_manifest_sha256": "8575a61770b2bdd67c3a6578d40e8e91afe3b4d9f97a50376c9dde11c0f22192",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 46.831434292613636,
+            "proposal": 25.709512938920454,
+            "stage_sum": 72.54094723153409,
+            "fused_total": 88.12948629119317,
+            "proposal_fold": 11.771822636363636,
+            "proposal_correlation": 4.853880903409092,
+            "proposal_ranking": 8.990424644886362,
+            "coarse": 10.855029892045453,
+            "acquisition": 16.98365830255682,
+            "fine_fft": 15.26534783096591,
+            "conditioned": 8.970103296875001,
+            "verification": 0.0,
+            "glrt": 9.849972933238636
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": 0.0
+    },
+    {
+      "method": "Single histogram scan",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_rank_histograms/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "1cee84f6f76f150c4bcad74c6616bae309fd61b0c9b488e425cdff4daea704a4",
+          "build_sha256": "86232e9f64ade5a77905a5f9abb083631cf8102e419dca678b9461da8750293b",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "569e9c4c3d16e6d71c9fffd0845610b2e5e6d95e841576b151e38931f4a09635",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 406.77255449999996,
+            "proposal": 370.72055550000016,
+            "stage_sum": 777.4931100000001,
+            "fused_total": 840.301788,
+            "proposal_fold": 151.2180855,
+            "proposal_correlation": 143.99276100000026,
+            "proposal_ranking": 74.52677849999995,
+            "coarse": 134.9403465,
+            "acquisition": 87.0425819999999,
+            "fine_fft": 75.15023700000006,
+            "conditioned": 93.03571650000008,
+            "verification": 0.0,
+            "glrt": 88.97187600000007
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_rank_histograms/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "e93a3a4253228e83813045abc1cf0720ae05654dd03ff0be1515bd3ebf7f7783",
+          "build_sha256": "3d232e254b466582eb3519f9ae45c318e7cc920104ed98c85834bfc285516842",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "9e5ae9fe20bc8465f157ae4e65b79d99de57823e6ae59715fe188dd9cdb33c89",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 41.56219951846591,
+            "proposal": 23.630655146306818,
+            "stage_sum": 65.19285466477272,
+            "fused_total": 78.43766067897728,
+            "proposal_fold": 11.121784113636364,
+            "proposal_correlation": 4.532561369318181,
+            "proposal_ranking": 7.887988093749999,
+            "coarse": 9.340577934659091,
+            "acquisition": 15.177250376420455,
+            "fine_fft": 13.916656517045455,
+            "conditioned": 8.00833013778409,
+            "verification": 0.0,
+            "glrt": 8.863003009943183
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": 0.02633472023331984
+    },
+    {
+      "method": "Histogram scan plus integer keys",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_rank_histograms/arm4-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "24eef905d12da339a6ed7876c4129d1cdf3858ea014e3218dcc97fce23d9a255",
+          "build_sha256": "edcca98b4614b18f6cb478f107bac0a05824b27ddb91a475a22df93b3234a4b1",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "cde15c4394fad02a7bdcace8a8ed332c5da068e3f016790ccb6c649fbb9a6c9b",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 405.91054050000014,
+            "proposal": 363.09973799999995,
+            "stage_sum": 769.0102785000001,
+            "fused_total": 831.7952445000001,
+            "proposal_fold": 151.20620699999992,
+            "proposal_correlation": 142.6655445000001,
+            "proposal_ranking": 68.26689599999996,
+            "coarse": 134.95005300000008,
+            "acquisition": 86.86214099999998,
+            "fine_fft": 75.02012400000018,
+            "conditioned": 92.68870050000001,
+            "verification": 0.0,
+            "glrt": 88.58508599999989
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_rank_histograms/host704-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "8c5492aeb315a6258e4b9e5c18b5a6f04e5f12c2a1fe456f89ccf40db941b6cf",
+          "build_sha256": "e8fc514965e11f6869cf30842c8c6d8885d7b4c9efe53b8840ba97b19391d853",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "43aa1c06c9b86e30addb6bf4fbcf8abd6e1e1adf38a2b40f994e257f7138352a",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 0,
+          "changed_windows": 0,
+          "scientific_outputs_identical": true,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 44.25749986363636,
+            "proposal": 24.05973040625,
+            "stage_sum": 68.31723026988637,
+            "fused_total": 82.23765704119317,
+            "proposal_fold": 11.602740046875,
+            "proposal_correlation": 4.707725207386364,
+            "proposal_ranking": 7.656252718750002,
+            "coarse": 9.981313343750001,
+            "acquisition": 16.23251070028409,
+            "fine_fft": 14.711391401988637,
+            "conditioned": 8.460752217329544,
+            "verification": 0.0,
+            "glrt": 9.412647906250003
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": 0.036191329102959524
+    },
+    {
+      "method": "Whole FP32 final scorer v2",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_float_final/arm4-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "de1d5a81079bf298553e0cb300f4fc055c61064f2aa4a383be4227b73d7184ae",
+          "build_sha256": "c2bbdd9ed9b5f580f4178accb1b67c0fb37c9b4145378320e8cc14938f7c3aeb",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "7d153429f48a14546f5738eeda773f103ebd280618aeda0aed11e925809106cb",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 182,
+          "changed_windows": 56,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 400.74965100000003,
+            "proposal": 392.9319495000001,
+            "stage_sum": 793.6816005000001,
+            "fused_total": 856.6614539999999,
+            "proposal_fold": 151.01802600000013,
+            "proposal_correlation": 142.8668235000002,
+            "proposal_ranking": 98.05986150000015,
+            "coarse": 134.644377,
+            "acquisition": 87.20191650000014,
+            "fine_fft": 75.08462849999981,
+            "conditioned": 93.54779550000002,
+            "verification": 0.0,
+            "glrt": 82.48583700000009
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_float_final/host704-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "9637416ce300c1aef6069955c10d3af8e996e9ea4f7aa01d60fd7186d01d3866",
+          "build_sha256": "de8131964b2798c5f62ea7a7e113c89148aee5783c4922c9c52b3818131f968b",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "5aed3a717e6d277c7cd009445c9c0f0a7d89e800e44799d0da01874654be94c5",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 86439,
+          "changed_windows": 13780,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 47.58489318039772,
+            "proposal": 26.140192079545454,
+            "stage_sum": 73.72508525994319,
+            "fused_total": 89.11119205397728,
+            "proposal_fold": 12.050929585227271,
+            "proposal_correlation": 4.837895127840908,
+            "proposal_ranking": 9.146986948863635,
+            "coarse": 9.808361579545455,
+            "acquisition": 17.566059610795453,
+            "fine_fft": 15.485231255681818,
+            "conditioned": 8.856994784090908,
+            "verification": 0.0,
+            "glrt": 11.17722360369318
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123903,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": 0.0073786273149749615
+    },
+    {
+      "method": "Whole FP32 final scorer plus Winograd coarse",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_coarse_winograd_integrated/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "06eb2553d86c1427c3408111076bcf3c33273358936a7b05e45010daf5678a57",
+          "build_sha256": "9d43d83f26c9b558f491a8d6f168cb6de81f7f5228844269e4f3699bbf472ee2",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "f70f4db8fbbe70b353ab1a177419629777184b7d8b1cd7a031374d4cd4d5e070",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 182,
+          "changed_windows": 56,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 518.737767,
+            "proposal": 393.2607585000001,
+            "stage_sum": 911.9985255000001,
+            "fused_total": 974.9349855,
+            "proposal_fold": 150.83765550000004,
+            "proposal_correlation": 143.4903060000002,
+            "proposal_ranking": 97.95364650000002,
+            "coarse": 257.883603,
+            "acquisition": 87.86981099999974,
+            "fine_fft": 75.85050000000014,
+            "conditioned": 88.00445400000004,
+            "verification": 0.0,
+            "glrt": 82.15137300000004
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_coarse_winograd_integrated/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_float_final/host704-v2",
+          "binary_sha256": "b1535c7d92d53400ebba0788fc3b0efc9b6148c1f0ba48d438814d26067e143d",
+          "build_sha256": "a8766a51b6604d1a46d6fc10f8793f5d712f8cde0780731a91379a67533abd20",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "30f9417a4359d2bb49ffbf9c78719a7ddab69527487dfb9facf63bcc73a0600f",
+          "reference_manifest_sha256": "3f1eba76937f5def7f84de61a3e073bbe34b7d792a516883bb857b2ea760d7d4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 39758,
+          "changed_windows": 12800,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 51.61921500710228,
+            "proposal": 26.305411427556816,
+            "stage_sum": 77.92462643465909,
+            "fused_total": 94.23646465625,
+            "proposal_fold": 12.131826882102272,
+            "proposal_correlation": 4.919816133522726,
+            "proposal_ranking": 9.14719542471591,
+            "coarse": 12.574910673295456,
+            "acquisition": 18.32350394886364,
+            "fine_fft": 16.007407346590906,
+            "conditioned": 9.203372625,
+            "verification": 0.0,
+            "glrt": 11.337898142045457
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123903,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": -0.1296659830636726
+    },
+    {
+      "method": "Winograd integration v2",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_coarse_winograd_integrated/arm4-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "8272ff30cf47eceec38d8d8e2c651bdef5fca7f1aaeed29b018ec68c8d175588",
+          "build_sha256": "9428664b086506d05f2fddee595482a6f4c870eb7598dda1f734cd94e3c68ee9",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "b75f32062e53076ff523613f4ff5c578a2c96aca2855540fc64994855d5a39eb",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 182,
+          "changed_candidates": 182,
+          "changed_windows": 56,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 98,
+          "cache_hits": 84,
+          "mean_timings_ms": {
+            "total_cpu": 548.7109649999999,
+            "proposal": 392.81569799999994,
+            "stage_sum": 941.5266629999999,
+            "fused_total": 1004.373795,
+            "proposal_fold": 150.81219000000073,
+            "proposal_correlation": 143.40823649999965,
+            "proposal_ranking": 97.61982450000008,
+            "coarse": 287.53883700000017,
+            "acquisition": 87.80849550000016,
+            "fine_fft": 75.6963255000005,
+            "conditioned": 88.18710299999995,
+            "verification": 0.0,
+            "glrt": 82.34146050000018
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 182,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 182,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_coarse_winograd_integrated/host704-v2",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_float_final/host704-v2",
+          "binary_sha256": "b1535c7d92d53400ebba0788fc3b0efc9b6148c1f0ba48d438814d26067e143d",
+          "build_sha256": "b450da2236b9778da9f1186d1c2ad5f2fa1151a861630b91a010c8e1e42e43b6",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "2176fb7ef78833db311b2ee03c650a8d3949880783882a9410d6d8daea24175f",
+          "reference_manifest_sha256": "3f1eba76937f5def7f84de61a3e073bbe34b7d792a516883bb857b2ea760d7d4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86439,
+          "changed_candidates": 39758,
+          "changed_windows": 12800,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54338,
+          "cache_hits": 32101,
+          "mean_timings_ms": {
+            "total_cpu": 51.47212590198864,
+            "proposal": 26.27691527982954,
+            "stage_sum": 77.74904118181819,
+            "fused_total": 94.08616509374998,
+            "proposal_fold": 12.128532696022729,
+            "proposal_correlation": 4.90547102272727,
+            "proposal_ranking": 9.137105713068179,
+            "coarse": 12.377431491477275,
+            "acquisition": 18.69250917897727,
+            "fine_fft": 16.281739866477274,
+            "conditioned": 9.035121647727273,
+            "verification": 0.0,
+            "glrt": 11.188889934659093
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86439,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8587,
+          "windows_with_recovered_hit": 6920,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35725,
+          "recovered_positive_hits": 19217,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123903,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 86439,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 16508,
+          "hit_recovery_fraction": 0.9814105510443798
+        }
+      },
+      "reduction_from_wave6": -0.16377699781711907
+    },
+    {
+      "method": "Eight proposal frames",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_budget/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "dc2616ea1e5c08e7623c1e3523b7f1e9a3f078b4424e11001d81f2b50838094b",
+          "build_sha256": "5c7d8c7176729a4573b1fd666ec091533d2c93f0e9ef70d0632f0fe86be06f6e",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "a73029185c4a11914f9d39fce80cb567859f10f94fc6cb89ae1678a99cce8c80",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 173,
+          "changed_candidates": 24,
+          "changed_windows": 16,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 93,
+          "cache_hits": 80,
+          "mean_timings_ms": {
+            "total_cpu": 395.7061814999998,
+            "proposal": 327.9628125,
+            "stage_sum": 723.6689939999998,
+            "fused_total": 786.6194595000001,
+            "proposal_fold": 85.48748550000018,
+            "proposal_correlation": 142.64622150000028,
+            "proposal_ranking": 98.88064349999992,
+            "coarse": 134.61895950000002,
+            "acquisition": 82.80327599999993,
+            "fine_fft": 71.08075349999987,
+            "conditioned": 90.71636699999998,
+            "verification": 0.0,
+            "glrt": 84.7800255
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 173,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 150,
+          "recovered_positive_hits": 116,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 173,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 34,
+          "hit_recovery_fraction": 0.9747899159663865
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_budget/host704-budget8",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "5695edbed9c2df09d907cf8cca794712be1d00d1c76832123bb5130545183263",
+          "build_sha256": "4358e06cdf55e8f67a6e93e707d68abd5696d8d618cf3dd1d3506a9d33128b42",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "ead32d1e5acc6b67d000f2ec95fe71d19a63611b7e1d8164cf12f0f3a98adc79",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 85566,
+          "changed_candidates": 58317,
+          "changed_windows": 11436,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 53787,
+          "cache_hits": 31779,
+          "mean_timings_ms": {
+            "total_cpu": 41.832865096590915,
+            "proposal": 19.76732827840909,
+            "stage_sum": 61.600193375,
+            "fused_total": 75.33283578551136,
+            "proposal_fold": 6.267363497159092,
+            "proposal_correlation": 4.501173157670457,
+            "proposal_ranking": 8.912425207386363,
+            "coarse": 9.70351573153409,
+            "acquisition": 15.184788914772726,
+            "fine_fft": 13.886073842329546,
+            "conditioned": 7.824048360795455,
+            "verification": 0.0,
+            "glrt": 8.955636203125001
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 85566,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8099,
+          "windows_with_recovered_hit": 6817,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 32867,
+          "recovered_positive_hits": 18983,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123842,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 85566,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 13884,
+          "hit_recovery_fraction": 0.9694601910014811
+        }
+      },
+      "reduction_from_wave6": 0.08853691966203192
+    },
+    {
+      "method": "Neighbor proposal reuse min2",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "e5ab56f1f39bc9f4633f4c48d7c6c33c504685191978b329d56a763ac576f5f4",
+          "build_sha256": "56e9e7708bb8c511a7d9d8797dff3f545aefc0503e930f54c19c69ddb94d19b2",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "b718645e1cbc1212a2d62aa9048259678de3a695bf21fc5f4e6be1111351677a",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 179,
+          "changed_candidates": 10,
+          "changed_windows": 4,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 96,
+          "cache_hits": 83,
+          "mean_timings_ms": {
+            "total_cpu": 403.08236850000003,
+            "proposal": 272.26918049999995,
+            "stage_sum": 675.351549,
+            "fused_total": 738.492816,
+            "proposal_fold": 105.04474349999997,
+            "proposal_correlation": 98.57365949999996,
+            "proposal_ranking": 67.98402600000001,
+            "coarse": 134.52186000000006,
+            "acquisition": 85.05394050000004,
+            "fine_fft": 73.43049149999968,
+            "conditioned": 93.21982199999994,
+            "verification": 0.0,
+            "glrt": 87.58175399999986
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 179,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 179,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "20889cfce514c531b8ee05b408566cbad17837b1acf749d2c19394592a022d55",
+          "build_sha256": "06690add6237224994e5a09acb9565a62c2218b5dfa16274c25b44682d2da1e5",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "6786e69121f204c443c1f5630e6385253d17737c03b79668edb8ce7dbaa75693",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86412,
+          "changed_candidates": 9815,
+          "changed_windows": 2296,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54222,
+          "cache_hits": 32190,
+          "mean_timings_ms": {
+            "total_cpu": 40.480939681818185,
+            "proposal": 18.791788620738632,
+            "stage_sum": 59.272728302556814,
+            "fused_total": 72.80669168323864,
+            "proposal_fold": 8.62481127130682,
+            "proposal_correlation": 3.1933761491477273,
+            "proposal_ranking": 6.918195377840908,
+            "coarse": 9.08686504971591,
+            "acquisition": 14.640276859375001,
+            "fine_fft": 13.419931098011363,
+            "conditioned": 7.868507897727273,
+            "verification": 0.0,
+            "glrt": 8.730711934659091
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86412,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8600,
+          "windows_with_recovered_hit": 6919,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35789,
+          "recovered_positive_hits": 19208,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "baseline_candidate_slots": 123904,
+          "unmatched_positive_hits": 16581,
+          "hit_recovery_fraction": 0.9809509218119605,
+          "candidate_entries": 86412,
+          "conditioned_fallbacks": 13702,
+          "actual_glrt_kernel_calls": 100114
+        }
+      },
+      "reduction_from_wave6": 0.144301696646725
+    },
+    {
+      "method": "Neighbor proposal reuse min1",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking/arm4-min1",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "d378e9f55479f6ff6dad4dccc8638234c259400eba6a1642e3990e4aa47b3b27",
+          "build_sha256": "37efb5bc4f93132d9f6d67c541e83a19d8dfae65fac537a8739cab62a6dc3bbc",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "3c16fdd94e66f771db57713c3fa434c51d8c059193949273a7c4cbd7773fcee9",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 177,
+          "changed_candidates": 13,
+          "changed_windows": 5,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 95,
+          "cache_hits": 82,
+          "mean_timings_ms": {
+            "total_cpu": 400.7843669999999,
+            "proposal": 231.30601049999999,
+            "stage_sum": 632.0903774999999,
+            "fused_total": 695.3058,
+            "proposal_fold": 89.34796949999998,
+            "proposal_correlation": 83.80601999999988,
+            "proposal_ranking": 57.58924500000001,
+            "coarse": 134.4431204999999,
+            "acquisition": 84.23770499999992,
+            "fine_fft": 72.66400799999994,
+            "conditioned": 93.13247100000004,
+            "verification": 0.0,
+            "glrt": 86.30908650000002
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 177,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 177,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking/host704-min1",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "447ea9f190a1a3cd86821ad49bbfa3004e08cf59264364efa40df511a46a5e44",
+          "build_sha256": "cf56081afbf583434d7d40fa2bd3d49bd2ce31b87404781d98d1618a9ba1d102",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "31e6ed84a23bfef3bec71abafb9f922fd7063cfc16f05cabfc95b0991483bcca",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 86394,
+          "changed_candidates": 20192,
+          "changed_windows": 4264,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 54127,
+          "cache_hits": 32267,
+          "mean_timings_ms": {
+            "total_cpu": 41.996132525568186,
+            "proposal": 14.903069274147727,
+            "stage_sum": 56.89920179971591,
+            "fused_total": 70.92410739204546,
+            "proposal_fold": 6.8825078366477275,
+            "proposal_correlation": 2.5394427443181815,
+            "proposal_ranking": 5.433922943181818,
+            "coarse": 9.297339711647727,
+            "acquisition": 15.314045623579545,
+            "fine_fft": 13.909028796874997,
+            "conditioned": 8.109763744318181,
+            "verification": 0.0,
+            "glrt": 9.10378424289773
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 86394,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8596,
+          "windows_with_recovered_hit": 6917,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 35714,
+          "recovered_positive_hits": 19205,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123842,
+          "missing_native_windows": 0,
+          "baseline_candidate_slots": 123904,
+          "unmatched_positive_hits": 16509,
+          "hit_recovery_fraction": 0.9807977120678208,
+          "candidate_entries": 86394,
+          "conditioned_fallbacks": 13690,
+          "actual_glrt_kernel_calls": 100084
+        }
+      },
+      "reduction_from_wave6": 0.19434288258304255
+    },
+    {
+      "method": "Radius1 plus exact rank improvements",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_radius1/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "2fa55ef1a37b0cbf8f3d7f027feef42ea8bb32f858461d8a9a5be51c12503f43",
+          "build_sha256": "abb9571dc841d9303bb8a2694b6ea9935d1c2955be4df3599115a2e5d0542ba8",
+          "runner_sha256": "a5d73b2960e261a93baba570441f46fd25511672608887b563854db927e243f2",
+          "rows_sha256": "72091c4b2e352da91037c1ce5c8eaec0d081272e0e16cab3512a1e94030200e2",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 173,
+          "changed_candidates": 12,
+          "changed_windows": 7,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 1,
+          "proposal_top": 4,
+          "cache_entries": 91,
+          "cache_hits": 82,
+          "mean_timings_ms": {
+            "total_cpu": 349.74841200000014,
+            "proposal": 363.481392,
+            "stage_sum": 713.2298040000002,
+            "fused_total": 776.227416,
+            "proposal_fold": 150.91626450000007,
+            "proposal_correlation": 143.33951399999998,
+            "proposal_ranking": 68.25798750000013,
+            "coarse": 88.35270000000007,
+            "acquisition": 81.71414399999996,
+            "fine_fft": 69.9441134999999,
+            "conditioned": 92.74653450000008,
+            "verification": 0.0,
+            "glrt": 84.59497050000002
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 173,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 119,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 173,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 39,
+          "hit_recovery_fraction": 1.0
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_radius1/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "c1d58ec6491ca1b49b9f1fd47355b166ec8ad60dad670852e65887e42e1cdf8d",
+          "build_sha256": "e6475ae5868e4b8fe73085c49f46d444d2b18d5e18f614e873eba56f3ec291a4",
+          "runner_sha256": "a5d73b2960e261a93baba570441f46fd25511672608887b563854db927e243f2",
+          "rows_sha256": "303eef9067a490986959ef551a390cfebc4a19c9d0de784ab3cf4aa884d95821",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 79849,
+          "changed_candidates": 40474,
+          "changed_windows": 9641,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 1,
+          "proposal_top": 4,
+          "cache_entries": 46088,
+          "cache_hits": 33761,
+          "mean_timings_ms": {
+            "total_cpu": 41.59268991051136,
+            "proposal": 24.73864326278409,
+            "stage_sum": 66.33133317329545,
+            "fused_total": 81.92371289914773,
+            "proposal_fold": 12.223278163352273,
+            "proposal_correlation": 4.909945276988638,
+            "proposal_ranking": 7.502434666193182,
+            "coarse": 8.53948709375,
+            "acquisition": 15.427298080965908,
+            "fine_fft": 13.392491245738636,
+            "conditioned": 8.618311357954545,
+            "verification": 0.0,
+            "glrt": 8.853500441761359
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 79849,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8620,
+          "windows_with_recovered_hit": 6918,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 36517,
+          "recovered_positive_hits": 19206,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 79849,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 17311,
+          "hit_recovery_fraction": 0.9808487819825341
+        }
+      },
+      "reduction_from_wave6": 0.10057827443036793
+    },
+    {
+      "method": "Eight proposal frames/half grid/coarse8",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_budget_frontier/arm4-triple",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "9ce7f0c0d983495bb867410dcac9e58724333a2229084cfa602973bfc1e5f1ba",
+          "build_sha256": "621f0c5bc710f8e6ac4da016ef387f9ebe9ca42129bb42311898d97f44ac4f17",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "14f0e8c12a8eebebc6821495d694dbb46ffd2e069d53bf215427b57c88d6580b",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 334,
+          "changed_candidates": 344,
+          "changed_windows": 81,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 193,
+          "cache_hits": 141,
+          "mean_timings_ms": {
+            "total_cpu": 483.7039185000001,
+            "proposal": 189.90125699999982,
+            "stage_sum": 673.6051754999999,
+            "fused_total": 736.500324,
+            "proposal_fold": 77.25941250000007,
+            "proposal_correlation": 65.82193500000008,
+            "proposal_ranking": 46.013692499999884,
+            "coarse": 72.5484554999999,
+            "acquisition": 160.34754450000005,
+            "fine_fft": 146.72549549999985,
+            "conditioned": 97.77076200000008,
+            "verification": 0.0,
+            "glrt": 150.06739649999997
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 334,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 45,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 155,
+          "recovered_positive_hits": 102,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 334,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 53,
+          "hit_recovery_fraction": 0.8571428571428571
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_budget_frontier/host704-triple",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "1769ae067ada3fb8b8ea7ddec2151349e189e46703570cafdb00a09901f72559",
+          "build_sha256": "011258f850f6425947cd8509295f3081395509bbdff1b08eb31778b9c3f15780",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "3676527be04dff84da32eeab29717dceaecaeff03639defa01daec0330a41398",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 106718,
+          "changed_candidates": 107619,
+          "changed_windows": 15185,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 68684,
+          "cache_hits": 38034,
+          "mean_timings_ms": {
+            "total_cpu": 45.868352143465906,
+            "proposal": 12.831613329545457,
+            "stage_sum": 58.69996547301137,
+            "fused_total": 73.24963502414772,
+            "proposal_fold": 6.038753995738637,
+            "proposal_correlation": 2.298530829545454,
+            "proposal_ranking": 4.432143221590909,
+            "coarse": 6.512396191761365,
+            "acquisition": 20.000127140625,
+            "fine_fft": 18.27838740909091,
+            "conditioned": 7.492703569602273,
+            "verification": 0.0,
+            "glrt": 11.679761907670455
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 106718,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 7961,
+          "windows_with_recovered_hit": 6606,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 30053,
+          "recovered_positive_hits": 17924,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123863,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 106718,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 12129,
+          "hit_recovery_fraction": 0.9153771513201573
+        }
+      },
+      "reduction_from_wave6": 0.14661041514324313
+    },
+    {
+      "method": "Above plus neighbor reuse min1",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_frontier_tracking/arm4-triple-min1",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "1022dc050d16a9194b7cd5da0f61e118e3f198b7189fdde8361cdca3256b35e1",
+          "build_sha256": "40b3573747984e781bf4e67a631c096918865daef0229a3078d8b7982b150aef",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "c952821351c633b164c2fdc99f9ac9159a32e0f437a4c8fecbaee149ffa52859",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 332,
+          "changed_candidates": 342,
+          "changed_windows": 82,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 196,
+          "cache_hits": 136,
+          "mean_timings_ms": {
+            "total_cpu": 486.9512009999999,
+            "proposal": 122.55625199999997,
+            "stage_sum": 609.5074529999999,
+            "fused_total": 672.6573105,
+            "proposal_fold": 50.44527449999987,
+            "proposal_correlation": 41.94689249999993,
+            "proposal_ranking": 29.64383100000002,
+            "coarse": 72.44406149999996,
+            "acquisition": 162.44234850000007,
+            "fine_fft": 148.78923149999986,
+            "conditioned": 98.16326999999993,
+            "verification": 0.0,
+            "glrt": 150.9893790000001
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 332,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 53,
+          "windows_with_recovered_hit": 45,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 158,
+          "recovered_positive_hits": 102,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 332,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 56,
+          "hit_recovery_fraction": 0.8571428571428571
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_frontier_tracking/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "476de4dc375eb5876c54c0693e322c1340f7c5fc3df34c002319251dfb775445",
+          "build_sha256": "c64b433022fba0e608801296706229df0e8ec17bd9126a5ebf4eabb866f85b56",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "00ba9f9f1724c128bce33748745569b5f4465a070d336f3f62496da18ad2d2a3",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 106748,
+          "changed_candidates": 107647,
+          "changed_windows": 15196,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 68624,
+          "cache_hits": 38124,
+          "mean_timings_ms": {
+            "total_cpu": 43.85674114346591,
+            "proposal": 9.022656551136363,
+            "stage_sum": 52.87939769460227,
+            "fused_total": 68.22965515909091,
+            "proposal_fold": 4.395590947443181,
+            "proposal_correlation": 1.4904272144886357,
+            "proposal_ranking": 3.1037213948863633,
+            "coarse": 6.2508732528409094,
+            "acquisition": 18.796203887784092,
+            "fine_fft": 17.2006204375,
+            "conditioned": 7.027530666193181,
+            "verification": 0.0,
+            "glrt": 11.617416404829543
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 106748,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 8003,
+          "windows_with_recovered_hit": 6619,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 30062,
+          "recovered_positive_hits": 17939,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123864,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 106748,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 12123,
+          "hit_recovery_fraction": 0.9161432000408559
+        }
+      },
+      "reduction_from_wave6": 0.22058589215439695
+    },
+    {
+      "method": "Eight proposal frames/half grid/neighbor reuse, full coarse16",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking_fullcoarse/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "32365f8e6cf036e06e8ca990790aa1bbd90f62cac4d7c323bd9876d42dd412f4",
+          "build_sha256": "f803858a1c40fb52d23ccee7f1e4c49cc338d1d04337b4e3e0aa368d8ad2a212",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "da8f78abc1307f3c4ce1f6786e356e6c08d91a1660ca18e3f9b9e3b462a4396b",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 170,
+          "changed_candidates": 34,
+          "changed_windows": 20,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 90,
+          "cache_hits": 80,
+          "mean_timings_ms": {
+            "total_cpu": 392.5338375000001,
+            "proposal": 122.69501699999998,
+            "stage_sum": 515.2288545000001,
+            "fused_total": 578.7260805,
+            "proposal_fold": 50.48152950000004,
+            "proposal_correlation": 41.992876499999966,
+            "proposal_ranking": 29.719373999999995,
+            "coarse": 134.49539699999997,
+            "acquisition": 80.61947849999994,
+            "fine_fft": 69.00891149999991,
+            "conditioned": 91.36498200000001,
+            "verification": 0.0,
+            "glrt": 83.39213850000003
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 170,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 52,
+          "windows_with_recovered_hit": 49,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 147,
+          "recovered_positive_hits": 116,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 170,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 31,
+          "hit_recovery_fraction": 0.9747899159663865
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_proposal_tracking_fullcoarse/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "c3b292bc39de010da5e448bd338db7372733c399f12d224b1c7794ec3135b186",
+          "build_sha256": "90679c22dd40a46024881872e714631282e34d72825a48e54928a9d7e0ebd7bd",
+          "runner_sha256": "86b8a678ade31a8aaee0e402686937d54fc1bd9cba154e270a1cfc8ccfb75cd1",
+          "rows_sha256": "0cec462bdcfbd57e446c47cb7bb6c25611f548aa782d9e448f56645dd079be8e",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 85180,
+          "changed_candidates": 61339,
+          "changed_windows": 11902,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 2,
+          "proposal_top": 4,
+          "cache_entries": 53366,
+          "cache_hits": 31814,
+          "mean_timings_ms": {
+            "total_cpu": 46.78277367897727,
+            "proposal": 8.300328127840908,
+            "stage_sum": 55.08310180681818,
+            "fused_total": 71.3898115184659,
+            "proposal_fold": 3.9825135269886376,
+            "proposal_correlation": 1.3211225653409093,
+            "proposal_ranking": 2.9661020184659095,
+            "coarse": 10.496855163352272,
+            "acquisition": 17.850525740056817,
+            "fine_fft": 15.687420169034091,
+            "conditioned": 8.392566259943182,
+            "verification": 0.0,
+            "glrt": 9.863438329545456
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 85180,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 7980,
+          "windows_with_recovered_hit": 6761,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 31992,
+          "recovered_positive_hits": 18805,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123843,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 85180,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 13187,
+          "hit_recovery_fraction": 0.9603697461825239
+        }
+      },
+      "reduction_from_wave6": 0.32942485768183716
+    },
+    {
+      "method": "Above plus radius1",
+      "arm": {
+        "path": "reports/2026_09_29_arm_wave7_fullcoarse_radius1/arm4",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/arm4",
+          "binary_sha256": "fe599ae978786c6222f73193f7b00b6131bc8fd60cffdccf006ca2a4166d9744",
+          "build_sha256": "6969a3273182a13be715f6c386f511a02ec29e0b7c6b3ca2303918139aeeb75b",
+          "runner_sha256": "a5d73b2960e261a93baba570441f46fd25511672608887b563854db927e243f2",
+          "rows_sha256": "7591f5c47a4e9a31cb9d91362a7aa04d8af8a293c5b4608f092a8ac3ed2cb984",
+          "reference_manifest_sha256": "c23e7bd663124f94a71102a38c85917786f77e2f2b95acc5838d5383c99b042e",
+          "dwells": 4,
+          "windows": 88,
+          "candidate_entries": 154,
+          "changed_candidates": 54,
+          "changed_windows": 26,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 1,
+          "proposal_top": 4,
+          "cache_entries": 80,
+          "cache_hits": 74,
+          "mean_timings_ms": {
+            "total_cpu": 320.32691850000003,
+            "proposal": 122.49553349999996,
+            "stage_sum": 442.82245199999994,
+            "fused_total": 506.35499849999997,
+            "proposal_fold": 50.52454950000004,
+            "proposal_correlation": 41.99932349999987,
+            "proposal_ranking": 29.46980699999998,
+            "coarse": 88.06780349999987,
+            "acquisition": 72.90706499999995,
+            "fine_fft": 61.58304749999981,
+            "conditioned": 82.76625149999992,
+            "verification": 0.0,
+            "glrt": 74.43622200000003
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "PLUTO+ CPU0",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 154,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 4,
+          "windows": 88,
+          "candidates": 704,
+          "reference_positive_windows": 49,
+          "native_positive_windows": 49,
+          "windows_with_recovered_hit": 46,
+          "reference_positive_hits": 119,
+          "native_positive_hits": 135,
+          "recovered_positive_hits": 108,
+          "ordered_mismatched_windows": 88,
+          "ordered_mismatched_candidates": 704,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 704,
+          "emitted_candidate_entries": 154,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 27,
+          "hit_recovery_fraction": 0.907563025210084
+        }
+      },
+      "host": {
+        "path": "reports/2026_09_29_arm_wave7_fullcoarse_radius1/host704",
+        "summary": {
+          "complete": true,
+          "reference": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave6_combined/host704",
+          "binary_sha256": "7314fb160c848ec16cc47cedcaae212dcaa0e1dc9ed295f0ebd843832a09e472",
+          "build_sha256": "fa77da242f14c667d2253a3c335def090d8e2dc92be1be5d428a47b1e6e16b88",
+          "runner_sha256": "a5d73b2960e261a93baba570441f46fd25511672608887b563854db927e243f2",
+          "rows_sha256": "9035fae39d9e7ce8d07da17e34c7416952f53a7d8a9c71a6cac267efde226e0c",
+          "reference_manifest_sha256": "33cae88d8ba9b4ad1188a3b40353ec40503d1d22350a84195fa41b1c2adf00e4",
+          "dwells": 704,
+          "windows": 15488,
+          "candidate_entries": 77894,
+          "changed_candidates": 63000,
+          "changed_windows": 12223,
+          "scientific_outputs_identical": false,
+          "feature_rows_sha256": "ac71106bfb9f6b89c3e52a3f9d2ff5869c0ee520ff9a65f8b8279638d0cc783a",
+          "proposal_radius": 1,
+          "proposal_top": 4,
+          "cache_entries": 44348,
+          "cache_hits": 33546,
+          "mean_timings_ms": {
+            "total_cpu": 36.43733844034091,
+            "proposal": 8.133505443181816,
+            "stage_sum": 44.57084388352273,
+            "fused_total": 58.43168156107954,
+            "proposal_fold": 3.8647708110795445,
+            "proposal_correlation": 1.2670135298295453,
+            "proposal_ranking": 2.9721076306818177,
+            "coarse": 8.024744598011365,
+            "acquisition": 12.404132940340908,
+            "fine_fft": 11.280944528409092,
+            "conditioned": 7.694276198863637,
+            "verification": 0.0,
+            "glrt": 8.180277279829545
+          },
+          "scope": "fused_total includes proposals plus search; total_cpu is search only; capture and initial setup excluded",
+          "hardware": "host",
+          "fine_instrumentation_totals": {
+            "fine_precision_calls": 77894,
+            "fine_precision_guard_checks": 0,
+            "fine_precision_fallbacks": 0,
+            "fine_precision_nonfinite_fallbacks": 0,
+            "fine_precision_near_tie_fallbacks": 0,
+            "fine_precision_interpolation_fallbacks": 0
+          },
+          "fine_configuration_values": {
+            "fine_frame_budget": [
+              2
+            ],
+            "skip_conditioned_recheck": [
+              1
+            ]
+          }
+        },
+        "hits": {
+          "dwells": 704,
+          "windows": 15488,
+          "candidates": 123904,
+          "reference_positive_windows": 7007,
+          "native_positive_windows": 7928,
+          "windows_with_recovered_hit": 6680,
+          "reference_positive_hits": 19581,
+          "native_positive_hits": 31968,
+          "recovered_positive_hits": 18465,
+          "ordered_mismatched_windows": 15488,
+          "ordered_mismatched_candidates": 123845,
+          "missing_native_windows": 0,
+          "reference_candidate_entries": 123904,
+          "emitted_candidate_entries": 77894,
+          "candidates_meaning": "frozen reference inventory",
+          "unmatched_positive_hits": 13503,
+          "hit_recovery_fraction": 0.9430059751800215
+        }
+      },
+      "reduction_from_wave6": 0.4132818847747598
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "host": {
+    "schema": "arm-wave7-coarse-winograd/v2",
+    "target": "host",
+    "comparison": "explicit NEON direct versus explicit NEON Winograd across four CFO lanes; ARM pinned CPU0",
+    "command": [
+      "gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests-v2/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds-v2/host/test_coarse_winograd_v2_host"
+    ],
+    "compiler_stderr": "",
+    "run": "worst_abs_error=2.86102295e-06 direct_ms=7.478 winograd_ms=7.816 ratio=1.0452 sink=-187829",
+    "binary_sha256": "14bccf2bf713e7bf91c1700d290a000505357166e8fa284d8787399b15d3b8c7",
+    "sources": {
+      "implementation-v2/coarse_winograd.c": "97cab9de250b4ceb9b25d5dc6db7c7c0dfd395b9b0c489f8aa903584bbfb2a2e",
+      "implementation-v2/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests-v2/test_coarse_winograd.c": "ae9849b3c3c25f6d5fcbedacca5af293b87591b97d6c44bd76fab461406639c5"
+    }
+  },
+  "sanitizer": {
+    "schema": "arm-wave7-coarse-winograd/v2",
+    "target": "sanitizer",
+    "comparison": "explicit NEON direct versus explicit NEON Winograd across four CFO lanes; ARM pinned CPU0",
+    "command": [
+      "gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-O1",
+      "-g",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests-v2/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds-v2/sanitizer/test_coarse_winograd_v2_sanitizer"
+    ],
+    "compiler_stderr": "",
+    "run": "worst_abs_error=2.86102295e-06 direct_ms=320.610 winograd_ms=241.655 ratio=0.7537 sink=-187829",
+    "binary_sha256": "904640ac67a9888c95aeb1da19999c9a3b8aae0ee5d808be5ac31fb418e710ad",
+    "sources": {
+      "implementation-v2/coarse_winograd.c": "97cab9de250b4ceb9b25d5dc6db7c7c0dfd395b9b0c489f8aa903584bbfb2a2e",
+      "implementation-v2/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests-v2/test_coarse_winograd.c": "ae9849b3c3c25f6d5fcbedacca5af293b87591b97d6c44bd76fab461406639c5"
+    }
+  },
+  "arm": {
+    "schema": "arm-wave7-coarse-winograd/v2",
+    "target": "arm",
+    "comparison": "explicit NEON direct versus explicit NEON Winograd across four CFO lanes; ARM pinned CPU0",
+    "command": [
+      "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+      "-std=c11",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fno-fast-math",
+      "-mcpu=cortex-a9",
+      "-mfpu=neon",
+      "-mfloat-abi=hard",
+      "-I",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/implementation-v2/coarse_winograd.c",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/tests-v2/test_coarse_winograd.c",
+      "-lm",
+      "-o",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave7_coarse_winograd/builds-v2/arm/test_coarse_winograd_v2_arm"
+    ],
+    "compiler_stderr": "",
+    "run": null,
+    "binary_sha256": "7dce7accf886cc4a657ab1c837d3456ff4b1f15f5ae2d832fe20f90adb2213ac",
+    "sources": {
+      "implementation-v2/coarse_winograd.c": "97cab9de250b4ceb9b25d5dc6db7c7c0dfd395b9b0c489f8aa903584bbfb2a2e",
+      "implementation-v2/coarse_winograd.h": "ba9a72c2ed99f82c4ce73d52f481351dda0b4033c60ada45633f85b6c8baad5c",
+      "tests-v2/test_coarse_winograd.c": "ae9849b3c3c25f6d5fcbedacca5af293b87591b97d6c44bd76fab461406639c5"
+    }
+  }
+}

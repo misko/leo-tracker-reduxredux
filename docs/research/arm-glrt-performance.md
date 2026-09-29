@@ -2,6 +2,21 @@
 
 ## Current research baseline — 2026-09-29
 
+The [seventh-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE7.md)
+add exact histogram reuse and integer ranking keys: **0.863 → 0.832 seconds**
+on the matched four-dwell ARM panel, with unchanged **119/119** standard hits
+and exact host704 candidate parity. Separate approximate proposal reductions
+reach **0.579 seconds** with **116/119** ARM hits and **18,805/19,581** host704
+hits. These small-panel results are not replacements for the larger qualified
+baseline below; the report separates exact changes and quality tradeoffs.
+The measured exact ranking plus ARM-trained PGO combination reaches
+**0.759 seconds/dwell** on 32 held-out dwells, preserving all 1,201 candidate
+objects and **904/921** standard hits; this is 17.33% less CPU than the matched
+Wave5 control and 2.30% less than Wave6 PGO.
+The approximate reduced-proposal/radius-one PGO variant takes **0.474 seconds**
+on that same held-out panel, recovering **854/921** standard hits (92.73%).
+Its 48.37% runtime reduction trades away hits and is kept separate.
+
 The [sixth-wave packing and reuse experiments](../../reports/2026_09_29_arm_subsecond/WAVE6.md)
 reduce mean time from **0.915 to 0.815 seconds/dwell** across the same 152 ARM
 dwells, preserving every candidate and **4,506/4,573** standard hits across
