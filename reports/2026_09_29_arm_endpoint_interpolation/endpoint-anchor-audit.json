@@ -1,0 +1,96 @@
+{
+  "schema": "endpoint-interpolation-independent-anchor-audit/v1",
+  "scope": "Host 32-dwell panel. Endpoint candidates are compared positionally with the frozen boundary-fallback host704 control; middle positive hits use the frozen maximum-cardinality <=2-sample, <=8-kHz matcher.",
+  "margin_gate": 0.025,
+  "source_sha256": {
+    "frozen_boundary_host704_rows": "481bcc64626b21ba4e02cd8f9388d18895048da816e4e6e7ab17bde11c478a91",
+    "pairs_rows": "a0308f48a2ef9502afaf983688e2a827010fb85c828c1f68f6dca089e4ac5ca5",
+    "union_rows": "a8207292fb67f66e6d80e22cae24729d3ca282dde86bf613da85829b5f9c3b42",
+    "union_fallback_rows": "faa67d6fbc25992f7cc9c93a0155211df7bbd5b55370f6516aca6c79a90a06d7",
+    "pairs_manifest": "1450b6f7fd2b0ff505deeb28650cc0fcb5cf01a62483a00fd6fbed889e57bdf8",
+    "union_manifest": "44fa07119a9aec037445ee5599e2f7ba923ce472f2ddf5775d7bd3d73a4c952a",
+    "union_fallback_manifest": "f7606cbfb47bd35a18b181be73ac3d3e732b2be6921ef70abf2599e5a46ef085",
+    "endpoint_scorer": "106cfeec3f4c6b15d2b8f77c212e77af37853c7598ddb6bbcc2b655e6093f94a",
+    "frozen_matcher": "e525584402633db15e4153baa4d0918da3caf07e525a3f3766f62e63f900c5c4"
+  },
+  "anchor_equality": {
+    "endpoint_windows": 128,
+    "endpoint_candidates": 1024,
+    "pairs": {
+      "mismatched_candidates": 0,
+      "maximum_deltas": {
+        "epoch": 0,
+        "acquired_cfo_hz": 0,
+        "tracking_cfo_hz": 0,
+        "exact_score": 0,
+        "control_score": 0,
+        "margin": 0
+      }
+    },
+    "union": {
+      "mismatched_candidates": 0,
+      "maximum_deltas": {
+        "epoch": 0,
+        "acquired_cfo_hz": 0,
+        "tracking_cfo_hz": 0,
+        "exact_score": 0,
+        "control_score": 0,
+        "margin": 0
+      }
+    },
+    "union_fallback": {
+      "mismatched_candidates": 0,
+      "maximum_deltas": {
+        "epoch": 0,
+        "acquired_cfo_hz": 0,
+        "tracking_cfo_hz": 0,
+        "exact_score": 0,
+        "control_score": 0,
+        "margin": 0
+      }
+    }
+  },
+  "middle_reference_positive_hits": 697,
+  "pairs_loss_attribution": {
+    "recovered_positive_hits": 328,
+    "unrecovered_positive_hits": 369,
+    "zero_seed_positive_hits": 91,
+    "zero_seed_positive_windows": 60,
+    "seeded_unrecovered_positive_hits": 278,
+    "seeded_positive_windows_without_recovered_hit": 28,
+    "seeded_middle_windows": 198,
+    "seeded_middle_windows_without_candidates": 0,
+    "seed_count_histogram": {
+      "0": 378,
+      "1": 72,
+      "2": 72,
+      "3": 45,
+      "5": 9
+    },
+    "interpretation": "91 losses are direct paired-association scarcity. The remaining 278 occur despite at least one local candidate, so the data do not support attributing them to absent local GLRT work; they reflect an incorrect/insufficient association or local timing/CFO/margin prediction."
+  },
+  "union_loss_attribution": {
+    "recovered_positive_hits": 455,
+    "unrecovered_positive_hits": 242,
+    "middle_windows_with_zero_seeds": 0,
+    "middle_windows_without_candidates": 0,
+    "seed_count_histogram": {
+      "11": 9,
+      "13": 45,
+      "14": 72,
+      "15": 72,
+      "16": 378
+    },
+    "interpretation": "Unmatched endpoint propagation gains 127 middle hits over pairs and eliminates zero-seed scarcity, but leaves 242 positive misses in seeded, nonempty local searches."
+  },
+  "union_fallback": {
+    "middle_recovered_positive_hits": 507,
+    "middle_unrecovered_positive_hits": 190,
+    "fallback_windows": 323,
+    "fallback_reference_positive_hits": 52,
+    "fallback_recovered_positive_hits": 52,
+    "nonfallback_reference_positive_hits": 645,
+    "nonfallback_recovered_positive_hits": 455,
+    "interpretation": "On this panel, fallback recovered every reference positive in the windows where it ran; it does so by invoking full search in 323 of 576 middle windows."
+  }
+}

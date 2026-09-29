@@ -1,0 +1,59 @@
+{
+  "schema": "arm-endpoint-interpolation-frozen-hit-audit/v1",
+  "scope": "Margin-gated candidate hits, one-to-one maximum-cardinality association within the frozen <=2-sample and <=8-kHz gates.",
+  "mode": "pairs-only",
+  "margin_gate": 0.025,
+  "totals": {
+    "dwells": 4,
+    "windows": 88,
+    "candidate_entries": 173,
+    "actual_glrt_kernel_attempts": 272,
+    "windows_with_glrt_attempts": 52,
+    "windows_without_glrt_attempts": 36,
+    "full_search_windows": 16,
+    "local_search_windows": 36,
+    "total_cpu_ms": 19346.657544,
+    "reference_positive_windows": 49,
+    "native_positive_windows": 39,
+    "windows_with_recovered_hit": 34,
+    "reference_positive_hits": 119,
+    "native_positive_hits": 57,
+    "recovered_positive_hits": 52,
+    "unmatched_positive_hits": 5,
+    "unrecovered_reference_positive_hits": 67,
+    "hit_recovery_fraction": 0.4369747899159664,
+    "mean_cpu_ms_per_dwell": 4836.664386
+  },
+  "by_rate": {
+    "2500000": {
+      "dwells": 4,
+      "windows": 88,
+      "candidate_entries": 173,
+      "actual_glrt_kernel_attempts": 272,
+      "windows_with_glrt_attempts": 52,
+      "windows_without_glrt_attempts": 36,
+      "full_search_windows": 16,
+      "local_search_windows": 36,
+      "total_cpu_ms": 19346.657544,
+      "reference_positive_windows": 49,
+      "native_positive_windows": 39,
+      "windows_with_recovered_hit": 34,
+      "reference_positive_hits": 119,
+      "native_positive_hits": 57,
+      "recovered_positive_hits": 52,
+      "unmatched_positive_hits": 5,
+      "unrecovered_reference_positive_hits": 67,
+      "hit_recovery_fraction": 0.4369747899159664,
+      "mean_cpu_ms_per_dwell": 4836.664386
+    }
+  },
+  "source_sha256": {
+    "score.py": "106cfeec3f4c6b15d2b8f77c212e77af37853c7598ddb6bbcc2b655e6093f94a",
+    "frozen_matcher": "e525584402633db15e4153baa4d0918da3caf07e525a3f3766f62e63f900c5c4"
+  },
+  "manifest_sha256": "bed57f25e9cc9603d596e5fe74410030aa5d182985f102e32fb966a2cf89056a",
+  "native_sha256": "e12202d49a507324124fb052d4dc61f62265ffdd96d055a7a84de1f15f5ee849",
+  "baseline_sha256": "e4a54142e3b31c12088b3fa3cd53c053a1cf14acf41c5b3a5111236d5b7fe9cf",
+  "kernel_attempt_accounting": "Sum native rows[].instrumentation.kernel_calls; candidate_entries are intentionally not used as a proxy.",
+  "cpu_accounting": "Sum each native rows[].timings_ms.total_cpu once; stage timings are not summed."
+}

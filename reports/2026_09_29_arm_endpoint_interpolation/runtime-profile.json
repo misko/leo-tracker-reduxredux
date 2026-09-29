@@ -1,0 +1,88 @@
+{
+  "scope": "2.5 MS/s saved-IQ CPU0; four unique dual-RX dwells. No concurrent capture. Restricted method is a separately measured stage sum.",
+  "profiles": {
+    "exact_refinement_reuse": {
+      "mean_cpu_ms_per_dwell": 33166.615476,
+      "exclusive_stages_ms": {
+        "coarse": 19744.866117,
+        "fine_fft": 3834.732732000006,
+        "conditioned": 7383.5019945000095,
+        "verification": 1391.49125699999,
+        "glrt": 452.0306429999979,
+        "other": 359.9927324999953,
+        "proposal": 0
+      },
+      "acquisition_parent_timer_not_added_ms": 12617.9356965
+    },
+    "boundary_fallback": {
+      "mean_cpu_ms_per_dwell": 25084.860459,
+      "exclusive_stages_ms": {
+        "coarse": 19771.047816,
+        "fine_fft": 3839.188540500014,
+        "conditioned": 592.9504214999993,
+        "verification": 0.0,
+        "glrt": 519.7399124999995,
+        "other": 361.9337684999882,
+        "proposal": 0
+      },
+      "acquisition_parent_timer_not_added_ms": 3843.641407499996
+    },
+    "restricted_lazy_fp32_stage_sum": {
+      "mean_cpu_ms_per_dwell": 6312.502200499999,
+      "exclusive_stages_ms": {
+        "coarse": 414.2471722499996,
+        "fine_fft": 2841.0154807500003,
+        "conditioned": 1446.5668087500003,
+        "verification": 0.0,
+        "glrt": 576.9468457499988,
+        "other": 182.08716449999974,
+        "proposal": 851.6387285
+      },
+      "acquisition_parent_timer_not_added_ms": 2899.087665
+    },
+    "endpoint_pairs": {
+      "mean_cpu_ms_per_dwell": 4836.664385999999,
+      "exclusive_stages_ms": {
+        "sample_preparation": 52.86737699999989,
+        "endpoint_discovery": 4554.124644,
+        "association": 0.06988500000034037,
+        "interpolation": 0.14503199999944627,
+        "local_glrt": 229.4574479999992,
+        "fallback": 0.0
+      }
+    },
+    "endpoint_union": {
+      "mean_cpu_ms_per_dwell": 10158.68004,
+      "exclusive_stages_ms": {
+        "sample_preparation": 53.0509455000004,
+        "endpoint_discovery": 4558.4700944999995,
+        "association": 0.05163149999998495,
+        "interpolation": 0.3951509999994869,
+        "local_glrt": 5546.7122175,
+        "fallback": 0.0
+      }
+    },
+    "endpoint_union-fallback": {
+      "mean_cpu_ms_per_dwell": 20083.882911000004,
+      "exclusive_stages_ms": {
+        "sample_preparation": 52.135684500000195,
+        "endpoint_discovery": 4553.8062375,
+        "association": 0.05155500000023494,
+        "interpolation": 0.38054400000237365,
+        "local_glrt": 5368.1086665,
+        "fallback": 10109.4002235
+      }
+    }
+  },
+  "source_sha256": {
+    "2026_09_28_arm_refinement_cache/arm-cohort-v2/summary.json": "77161a2415d60e8b859631c853b003f0655be5e6afa5fcfec1375beacd55e484",
+    "2026_09_28_arm_boundary_fallback/arm-cohort-v1/summary.json": "d9edcf13ef1b6d849b28d3c8fc54da6b2e973d2504c86f647d14fde42b5db419",
+    "2026_09_29_arm_fine_reuse/arm-aggregate.json": "673dd9354995944b2aff050449c65988242916c2a08c3b9aedacd314cc209baa",
+    "2026_09_29_arm_endpoint_interpolation/arm4-pairs-v1/manifest.json": "bed57f25e9cc9603d596e5fe74410030aa5d182985f102e32fb966a2cf89056a",
+    "2026_09_29_arm_endpoint_interpolation/arm4-pairs-v1/rows.jsonl": "e12202d49a507324124fb052d4dc61f62265ffdd96d055a7a84de1f15f5ee849",
+    "2026_09_29_arm_endpoint_interpolation/arm4-union-v1/manifest.json": "4d5cef3f80c6925dbfdf89c37b59f59f7ac92634ad6d01c8b7d95176d51cba4c",
+    "2026_09_29_arm_endpoint_interpolation/arm4-union-v1/rows.jsonl": "e1bd8abc6ccb4ad79de36bf48ebe74ec0c5410d1a3f2e243bc882716e2aa57d0",
+    "2026_09_29_arm_endpoint_interpolation/arm4-union-fallback-v1/manifest.json": "16e5298fcf772de1292fb59590f73aa94256f713bc41c61d1adb0c08d97afb18",
+    "2026_09_29_arm_endpoint_interpolation/arm4-union-fallback-v1/rows.jsonl": "0c5ad8e456422c0319e88c4323874518c569aa7636163a631e916fabe02732a2"
+  }
+}

@@ -1,5 +1,10 @@
 # ARM methods compared with the standard GLRT pipeline
 
+See [per-stage ARM runtime](../../reports/2026_09_29_arm_endpoint_interpolation/RUNTIME_PROFILE.md)
+and [first/last-window interpolation results](../../reports/2026_09_29_arm_endpoint_interpolation/REPORT.md)
+for the latest smaller-cohort experiment. Endpoint interpolation recovered
+56.23–77.46% of 843 standard hits and did not meet the recovery target.
+
 See [new prototype results and architectural priorities](../../reports/2026_09_29_arm_realtime_review/PROTOTYPES.md)
 for exact FFT reuse, FP32 proposals and causal same-channel frequency prediction.
 
