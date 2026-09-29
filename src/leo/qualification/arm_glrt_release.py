@@ -9,9 +9,10 @@ import os
 import subprocess
 from pathlib import Path
 
-SCHEMA = "org.leo.native-glrt-build/v1"
+SCHEMA = "org.leo.native-glrt-build/v2"
 LIBRARY = "libleo-native-glrt.a"
 CLI = "leo-native-glrt"
+BENCHMARK = "leo-native-glrt-bench"
 COMPILE_SOURCES = (
     "native_glrt.c",
     "kernel/proposal_core_wrapper.c",
@@ -92,6 +93,15 @@ def build(
     target: str,
     pgo: str = "off",
     profile_dir: Path | None = None,
+    with_benchmark: bool = False,
+    benchmark_source: Path | None = None,
+    wrapper_source: Path | None = None,
+    full_prep: bool = False,
+    uncached_boundary: bool = False,
+    disable_prepared_reuse: bool = False,
+    scalar_boundary_dots: bool = False,
+    disable_fine_plan_reuse: bool = False,
+    diagnostic_wrap: bool = False,
 ) -> Path:
     """Build a library and saved-input CLI, returning the receipt path."""
 
@@ -129,6 +139,18 @@ def build(
         raise ValueError("PGO mode must be off, generate, or use")
     if (pgo == "off") != (profile_dir is None):
         raise ValueError("profile directory is required exactly when PGO is enabled")
+    if benchmark_source is None:
+        benchmark_source = Path(__file__).with_name("native_glrt_bench.c")
+    if with_benchmark and not benchmark_source.is_file():
+        raise ValueError(f"benchmark adapter source is missing: {benchmark_source}")
+    wrapper_source = wrapper_source or Path(__file__).with_name("native_glrt_profile_wrap.c")
+    wrapper_header = wrapper_source.with_suffix(".h")
+    if diagnostic_wrap and (
+        not with_benchmark or not wrapper_source.is_file() or not wrapper_header.is_file()
+    ):
+        raise ValueError("diagnostic wrapper requires benchmark output and wrapper source")
+    if full_prep and disable_prepared_reuse:
+        raise ValueError("prepared-reuse ablation applies only to sparse preparation")
     for relative in (*COMPILE_SOURCES, "native_glrt.h", "native_glrt_cli.c"):
         if not (source_root / relative).is_file():
             raise ValueError(f"required package source is missing: {relative}")
@@ -165,6 +187,16 @@ def build(
     if target == "arm-cortex-a9":
         common += ["-mcpu=cortex-a9", "-mfpu=neon", "-mfloat-abi=hard",
                    "-DLEO_PROPOSAL_NEON_FOLD"]
+    if full_prep:
+        common.append("-DLEO_NATIVE_GLRT_FULL_PREP=1")
+    if uncached_boundary:
+        common.append("-DLEO_NATIVE_GLRT_UNCACHED_BOUNDARY=1")
+    if disable_prepared_reuse:
+        common.append("-DLEO_NATIVE_GLRT_DISABLE_PREPARED_REUSE=1")
+    if scalar_boundary_dots:
+        common.append("-DLEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS=1")
+    if disable_fine_plan_reuse:
+        common.append("-DLEO_NATIVE_GLRT_DISABLE_FINE_PLAN_REUSE=1")
     if pgo == "generate":
         common.append(f"-fprofile-generate={profile_dir}")
     elif pgo == "use":
@@ -202,8 +234,44 @@ def build(
                    "-o", os.fspath(cli)]
     _run(cli_command, commands)
 
+    built_outputs = [library, cli]
+    if with_benchmark:
+        benchmark = output_dir / BENCHMARK
+        benchmark_object = objects / "native_glrt_bench.c.o"
+        benchmark_only = (
+            ["-DLEO_NATIVE_GLRT_BENCH_AFFINITY=1"] if target == "arm-cortex-a9" else []
+        )
+        if diagnostic_wrap:
+            benchmark_only += ["-DLEO_NATIVE_GLRT_DIAGNOSTIC_WRAP=1",
+                               f"-I{wrapper_source.parent}"]
+        _run(
+            [*common, *benchmark_only, "-c", os.fspath(benchmark_source),
+             "-o", os.fspath(benchmark_object)],
+            commands,
+        )
+        diagnostic_objects: list[Path] = []
+        if diagnostic_wrap:
+            wrapper_object = objects / "native_glrt_profile_wrap.c.o"
+            _run([*common, "-fno-lto", f"-I{wrapper_source.parent}",
+                  "-c", os.fspath(wrapper_source),
+                  "-o", os.fspath(wrapper_object)], commands)
+            diagnostic_objects.append(wrapper_object)
+        wrap_flags = [f"-Wl,--wrap={name}" for name in (
+            "malloc", "calloc", "realloc", "free", "fftw_plan_dft_1d",
+            "fftwf_plan_dft_1d", "fftw_execute", "fftwf_execute",
+            "fftw_execute_dft", "fftwf_execute_dft",
+        )] if diagnostic_wrap else []
+        _run(
+            [*common, os.fspath(benchmark_object), *map(os.fspath, diagnostic_objects),
+             os.fspath(library), *wrap_flags,
+             os.fspath(static_float), os.fspath(double_fftw), "-lm",
+             "-o", os.fspath(benchmark)],
+            commands,
+        )
+        built_outputs.append(benchmark)
+
     source_hashes = _sources(source_root)
-    outputs = {path.name: _digest(path) for path in (library, cli)}
+    outputs = {path.name: _digest(path) for path in built_outputs}
     profile_files = {}
     if profile_dir is not None:
         profile_files = {
@@ -214,6 +282,12 @@ def build(
         "schema": SCHEMA,
         "target": target,
         "pgo_mode": pgo,
+        "full_prep_control": full_prep,
+        "uncached_boundary_control": uncached_boundary,
+        "prepared_reuse_disabled": disable_prepared_reuse,
+        "scalar_boundary_dots": scalar_boundary_dots,
+        "fine_plan_reuse_disabled": disable_fine_plan_reuse,
+        "diagnostic_wrap": diagnostic_wrap,
         "compiler": os.fspath(compiler),
         "compiler_sha256": _digest(compiler),
         "compiler_version": version.stdout.splitlines()[0],
@@ -225,6 +299,11 @@ def build(
         "fftw3_sha256": _digest(double_fftw),
         "source_root": os.fspath(source_root),
         "sources": source_hashes,
+        "qualification_sources": {
+            benchmark_source.name: _digest(benchmark_source), **(
+                {wrapper_source.name: _digest(wrapper_source),
+                 wrapper_header.name: _digest(wrapper_header)} if diagnostic_wrap else {}
+            )} if with_benchmark else {},
         "profile_dir": os.fspath(profile_dir) if profile_dir else None,
         "profiles": profile_files,
         "commands": commands,
@@ -247,6 +326,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--target", choices=("host", "arm-cortex-a9"), required=True)
     parser.add_argument("--pgo", choices=("off", "generate", "use"), default="off")
     parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument("--with-benchmark", action="store_true")
+    parser.add_argument("--full-prep", action="store_true")
+    parser.add_argument("--uncached-boundary", action="store_true")
+    parser.add_argument("--disable-prepared-reuse", action="store_true")
+    parser.add_argument("--scalar-boundary-dots", action="store_true")
+    parser.add_argument("--disable-fine-plan-reuse", action="store_true")
+    parser.add_argument("--diagnostic-wrap", action="store_true")
     args = parser.parse_args(argv)
     receipt = build(**vars(args))
     print(receipt)

@@ -1,0 +1,42 @@
+{
+  "binary_sha256": "c20cf56d19fa28fd31210c24b8b1673e7a66cc721ce20af7ef39f1c33a1bcf41",
+  "cases": [
+    {
+      "rate_hz": 7500000,
+      "dwell_ms": 360,
+      "strides_ms": [
+        10,
+        20,
+        120
+      ],
+      "virtual_memory_limit_kib": 220000,
+      "returncode": 0,
+      "output": "geometry rate_hz=7500000 dwell_ms=360\nnative GLRT RAM API tests passed\n"
+    },
+    {
+      "rate_hz": 10000000,
+      "dwell_ms": 240,
+      "strides_ms": [
+        10,
+        20,
+        120
+      ],
+      "virtual_memory_limit_kib": 220000,
+      "returncode": 0,
+      "output": "geometry rate_hz=10000000 dwell_ms=240\nnative GLRT RAM API tests passed\n"
+    },
+    {
+      "rate_hz": 10000000,
+      "dwell_ms": 360,
+      "strides_ms": [
+        10,
+        20,
+        120
+      ],
+      "virtual_memory_limit_kib": 220000,
+      "returncode": 1,
+      "output": "geometry rate_hz=10000000 dwell_ms=360\nanalysis failed: rate_hz=10000000 dwell_ms=360 stride_ms=10 status=-2\n"
+    }
+  ],
+  "scope": "physical ARM correctness, unpinned; no timing claim"
+}

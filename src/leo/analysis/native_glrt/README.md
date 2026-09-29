@@ -26,6 +26,13 @@ evaluate only their selected anchors. Thus 20 ms probes share anchor
 construction with the even 10 ms probes, while a 120 ms dwell at stride 120
 contains only the probe starting at zero.
 
+For that two-window geometry, input preparation now converts only the first
+20 ms per receiver while still validating the complete 120 ms input buffer.
+Clipped-grid conditioned scoring also caches repeated FP64 rotation vectors
+within a call. These changes preserve window placement, candidate settings,
+and arithmetic; `kernel/provenance.json` identifies the owned change to the
+copied scorer. The original dense and longer-dwell preparation paths remain.
+
 ## Boundaries and routing
 
 `native_glrt.h` is the public in-memory C boundary. It accepts caller-owned RAM
@@ -46,6 +53,14 @@ The frozen kernels contain mutable process-global FFT and phase caches. API
 operations are process-serialized and concurrent calls return
 `LEO_NATIVE_GLRT_BUSY`. The library never changes CPU affinity. The ARM build
 pins only the standalone CLI to CPU 0.
+
+`leo_native_glrt_analyze_profiled` is an additive API for outer-stage CPU and
+monotonic-wall diagnostics; the existing analyze entry point remains available.
+The maintained `leo-native-glrt-bench` qualification client preloads bounded
+saved input buffers, reuses a context, pins CPU0 on ARM, and records call,
+serialization, flushed-output and client-cycle timing. It is not a capture
+worker. Context creation/readiness must occur before a persistent RAM service
+accepts deadline-bound dwells; process-per-dwell CLI costs remain separate.
 
 ## Saved-input examples
 
@@ -100,7 +115,7 @@ python -m leo.cli.arm_glrt \
 All JSON timing values are process CPU milliseconds from
 `CLOCK_PROCESS_CPUTIME_ID`; they are not wall-clock deadlines. `io` covers CPU
 spent reading the three files, `setup` covers context construction, and
-`detector_cpu` covers prepared-dwell allocation, whole-dwell preparation,
+`detector_cpu` covers prepared-input allocation, required input preparation,
 proposal work, all selected searches, and per-call cleanup. It excludes file
 reading, context setup and destruction, JSON serialization, process startup,
 capture, transfer, scheduling delay and storage latency. Per-row stage timings
@@ -138,3 +153,22 @@ The copied numerical closure is bound by `kernel/provenance.json` and has no
 runtime dependency on a research report directory. `proposal_core_wrapper.c`
 alone retains the measured `-fno-lto` exception; the remaining production
 objects use the recorded safe optimization flags without blanket fast-math.
+The provenance file retains original hashes and separately identifies owned
+modifications. `--with-benchmark` builds the qualification client;
+The default sparse path retains its 20 ms prepared input buffers in the context
+and reuses them across calls. The exact conditioned screen evaluates four
+adjacent regular boundary dots as a tile while retaining each dot's original
+FP32 lane and FP64 reduction order. `--disable-prepared-reuse` restores
+per-call allocation for the sparse buffers, and `--scalar-boundary-dots`
+restores one-at-a-time regular boundary dots. These two release-builder options
+are measurement ablations. Sparse input buffers allocate lazily on the first
+120/120 call and are released before a different geometry runs. Fine FFT plans
+are created with the context and reused; `--disable-fine-plan-reuse` restores
+two per-call plan creations for measurement. Lazy input allocation remains
+inside the first detector call; context and plan setup is timed separately.
+First calls remain in reported detector distributions.
+`--full-prep --uncached-boundary` restores the
+matched earlier preparation and irregular-boundary behavior.
+`--diagnostic-wrap` additionally measures inclusive allocator/FFTW activity;
+its instrumentation overhead must not be presented as an ordinary release
+timing. Expanded build receipts use a separate schema version.

@@ -1,10 +1,10 @@
 {
-  "schema": "leo-native-glrt-kernel-provenance/v1",
+  "schema": "leo-native-glrt-kernel-provenance/v2",
   "origin_report": "reports/2026_09_29_arm_wave8_gate_pgo",
   "origin_build_receipt": "reports/2026_09_29_arm_wave8_gate_pgo/builds/use/build-receipt.json",
   "origin_build_receipt_sha256": "826f54f64a283c7af3ca1c76aa5906a97a7eaa04c0ccf155327606f5190b8284",
   "origin_publication_source_archive": "reports/2026_09_29_arm_subsecond/source-archives/3122160fb9d9df5461b63a718d95075eda77707df6bd3c3dcaa270c36e5eff09.tar.gz",
-  "selection": "Minimal compile closure of the frozen Wave8 gate-PGO detector; copied files remain private and byte-identical.",
+  "selection": "Minimal compile closure of the frozen Wave8 gate-PGO detector. The files map preserves the original copied-byte hashes; reviewed repository-owned changes are recorded separately under owned_modifications.",
   "files": {
     "conditioned_czt.c": "ebd7352773d406e192e1e39b1afb3bcff79bca8dc762aec2d1d19e6f8c7f7bd4",
     "conditioned_czt.h": "68dcf7dc5f84a7ecc39684aa6fd166619666bbfbe146cdafb7f439a97da0b300",
@@ -24,5 +24,31 @@
     "proposal_core.h": "184f790da8917bc1a89f2466bfe1156bab196673a37bff4d94516bd3b8d62549",
     "proposal_tracking.c": "3bd508ab9cd9df35fe1d2a20cfd3393b1e021edb692e5260c0e487af53eacc6b",
     "proposal_tracking.h": "339f1d98a0b01340ab2b513f259d7f4bd9c51a04f90281b2064132239b31de7f"
+  },
+  "owned_modifications": {
+    "dwell_input.h": {
+      "origin_commit": "32f71e25b35390a73a5d3a79a222d923b07b40ff",
+      "origin_sha256": "d336040a37d837abcb8157b4cb9e1e6ef8b70343c55f25f2086df716c7b8c844",
+      "current_sha256": "4bbc82c77598fccd76732c4903e982c9cbfe950892ac8bdd61edf1e8b4609abf",
+      "rationale": "Atomically reserve and reuse context-owned dual-receiver raw, normalized, and energy-prefix buffers for exact 20 ms sparse preparation while retaining the original conversion and prefix arithmetic. Other geometries use call-local preparation; LEO_NATIVE_GLRT_DISABLE_PREPARED_REUSE preserves shortened sparse preparation with per-call allocation, and LEO_NATIVE_GLRT_FULL_PREP preserves full-dwell preparation."
+    },
+    "fine_precision.h": {
+      "origin_commit": "32f71e25b35390a73a5d3a79a222d923b07b40ff",
+      "origin_sha256": "c773b030d10ec91ec87f75ad5db02ad30e487950fd1e5c397408df166a662aae",
+      "current_sha256": "62bfcec3559229556fbd13bc96b7a73c0839424adab72a8e5c1e5d647f33e731",
+      "rationale": "Separate the aligned FP32 FFT input, output, and FFTW_ESTIMATE plan from per-search spectra, epochs, and counters so one process-serialized context can reuse its plan. Every transform still clears the complete input, every output is copied into search-owned spectra, and each search releases all spectra and resets all counters. LEO_NATIVE_GLRT_DISABLE_FINE_PLAN_REUSE retains per-search plan creation."
+    },
+    "full_search.c": {
+      "origin_commit": "32f71e25b35390a73a5d3a79a222d923b07b40ff",
+      "origin_sha256": "7e966d57a0b2b220b3843415285b1898c5ed674e6494413c42664f9e765f3e9e",
+      "current_sha256": "ba0b355ee211eefb478548e5a56d0818f6d473d14ac5eef5210aa474e95d25cb",
+      "rationale": "Cache exact FP64 rotation vectors for clipped-grid irregular conditioned bins once per scoring call and share weighted-sample loads across four regular blocked dots while retaining each dot's original FP32 lane and FP64 reduction order. LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS retains cached rotations with scalar dots; LEO_NATIVE_GLRT_UNCACHED_BOUNDARY retains literal per-frame irregular rotations. Allocation failure keeps the original complete irregular-bin computation. An explicit internal parameter borrows the context-owned fine FFT workspace while preserving the original entry points with local plans. No bins, frames, candidates, rechecks, or GLRT work are removed."
+    },
+    "full_search.h": {
+      "origin_commit": "32f71e25b35390a73a5d3a79a222d923b07b40ff",
+      "origin_sha256": "9a3d8e0bf788310bdb090af6058c5a49dbd7c6954c401c8437dd9de41b69434d",
+      "current_sha256": "6eac36d36c4ea92889fbd7c929b7b9eb9dfdcaee2f0f04e30f460f7a0a573fa8",
+      "rationale": "Add a private prepared-search entry point that explicitly borrows an opaque fine FFT workspace. Existing callers retain the original local-plan entry point."
+    }
   }
 }

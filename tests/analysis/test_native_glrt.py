@@ -115,3 +115,11 @@ def test_native_glrt_component_through_maintained_release_build(tmp_path: Path) 
         check=True,
     )
     subprocess.run([os.fspath(coexistence)], check=True)
+    symbols = subprocess.run(
+        ["nm", "-g", "--defined-only", os.fspath(output / LIBRARY)],
+        text=True,
+        capture_output=True,
+        check=True,
+    ).stdout.split()
+    assert "leo_full_search_run_prepared_with_fine_workspace" not in symbols
+    assert "leo_native_glrt_private_full_search_run_prepared_with_fine_workspace" in symbols

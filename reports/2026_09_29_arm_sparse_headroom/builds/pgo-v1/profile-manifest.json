@@ -1,0 +1,40 @@
+{
+  "schema": "org.leo.native-glrt-pgo-profile/v1",
+  "training_selection": {
+    "description": "first 32 whole primary contexts, declared before training",
+    "seed": 2026092901,
+    "cli_calls": 32,
+    "persistent_benchmark_calls": 128,
+    "training_manifest": "../../local/pgo-training/manifest.json",
+    "training_manifest_sha256": "8a07965239c210d828effbd5c0d6d9f117cd94c7ea3c6f06466bb2a877a2e37c"
+  },
+  "profile_archive": {
+    "path": "../../local/pgo-training/profiles.tar",
+    "format": "uncompressed POSIX tar",
+    "sha256": "6d64cb91a3b99e05c5cd4783f490c14b4301660c22ec50f299b5219eb06e0621"
+  },
+  "fixed_paths": {
+    "profile_dir": "/tmp/leo-native-glrt-headroom-pgo-profile-v1",
+    "work_dir": "/var/tmp/leo-native-glrt-headroom-pgo-work-v1"
+  },
+  "profiles": {
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/kernel__fft_full_wrapper.c.gcda": "e9c5caebad205111fff949bf06e5a5eaad5c39c9fad60cb54587c5846fec8c82",
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/kernel__proposal_core_wrapper.c.gcda": "a4deab26f3258351cad8c9b3400007342c231e1ce830b660d125b69b087fe53f",
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/kernel__proposal_tracking_wrapper.c.gcda": "387f13f2865992a8b2e1055338eca9363650edcf4b95432ab64d5d3e57d1e406",
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/native_glrt.c.gcda": "650e7b0a504e00e45e75953f2acba826e209dfd5448736b29efc51fbfa6899fc",
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/native_glrt_bench.c.gcda": "c433e45747fd1034dece7a2cdbc0ac3f21846a58731814b245d9ddcc303dcced",
+    "var/tmp/leo-native-glrt-headroom-pgo-work-v1/objects/native_glrt_cli.c.gcda": "8f8ab7aa9c46a7a415ae9b180e5b42dfed177ea17e2697e1d7c8dda1610b0c6b"
+  },
+  "receipts": {
+    "generate-build-receipt.json": "ed897db52e967dde555dd874b56e321ce8c1daa7cb67d3587bbcb442cc252ebd",
+    "use-build-receipt.json": "1f4f5ae4fd6670b02f814c99ca04a48ff8f472812f231d614af1b3dc41203e4d"
+  },
+  "generate_outputs": {
+    "leo-native-glrt": "d2d94e212f2d6277682f395cf662d68f28a2fa05649dbdac3e7d9d99a0a4702c",
+    "leo-native-glrt-bench": "868bb8c77220aac876f53684051dc600da2bf260c868601772577050976b5ed7"
+  },
+  "use_outputs": {
+    "leo-native-glrt": "1c602e26af9c5f6ecc90e615a73a4ced26854191e073b7f6e153529b47755bdc",
+    "leo-native-glrt-bench": "1e9f160d0b490178b0da6450035b931d0a6efeae88936f055b6709c62cc98824"
+  }
+}

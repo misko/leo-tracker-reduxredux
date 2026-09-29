@@ -55,6 +55,8 @@ typedef struct {
     double total_wall_ms;
 } leo_full_search_result;
 
+struct leo_fine_precision_workspace;
+
 /* Research-private full candidate inventory. This translation unit includes
  * the frozen native presence implementation and must replace, rather than be
  * linked alongside, a separately compiled presence.c object. */
@@ -71,6 +73,10 @@ int leo_full_search_run_prepared(leo_presence_workspace *workspace,
     const double complex *raw_samples, const float *normalized_samples,
     const double *energy_prefix, size_t count,
     leo_full_search_result *result);
+int leo_full_search_run_prepared_with_fine_workspace(
+    leo_presence_workspace *workspace,const double complex *raw_samples,
+    const float *normalized_samples,const double *energy_prefix,size_t count,
+    leo_full_search_result *result,struct leo_fine_precision_workspace *fine_workspace);
 
 /* Pure deterministic helper retained for unit qualification of peak ordering
  * and all-previous basin separation. `peaks` may be in any input order. */

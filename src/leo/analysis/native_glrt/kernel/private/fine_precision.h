@@ -27,13 +27,19 @@ typedef struct {
     float complex *spectra[LEO_PRESENCE_FINE_FRAMES];
 } leo_fine_precision_entry;
 
-typedef struct {
+typedef struct leo_fine_precision_workspace {
     size_t size;
+    fftwf_complex *input, *output;
+    fftwf_plan plan;
+} leo_fine_precision_workspace;
+
+typedef struct {
     int count, transforms, hits, calls;
     int guard_checks, fallbacks, nonfinite_fallbacks;
     int near_tie_fallbacks, interpolation_fallbacks;
-    fftwf_complex *input, *output;
-    fftwf_plan plan;
+    leo_fine_precision_workspace local_workspace;
+    leo_fine_precision_workspace *workspace;
+    int owns_workspace;
     leo_fine_precision_entry entries[LEO_FULL_SEARCH_MAX_CANDIDATES];
 } leo_fine_precision_cache;
 
@@ -67,19 +73,40 @@ static inline void *leo_fine_precision_spectrum_alloc(size_t bytes)
     return posix_memalign(&storage,16,bytes)==0 ? storage : NULL;
 }
 
-static int leo_fine_precision_init(leo_fine_precision_cache *cache, size_t size)
+static int leo_fine_precision_workspace_init(leo_fine_precision_workspace *workspace,
+    size_t size)
 {
-    memset(cache, 0, sizeof(*cache));
-    cache->size=size;
-    cache->input=fftwf_alloc_complex(size);
-    cache->output=fftwf_alloc_complex(size);
-    if (cache->input && cache->output)
-        cache->plan=fftwf_plan_dft_1d((int)size,cache->input,cache->output,
+    memset(workspace,0,sizeof(*workspace));workspace->size=size;
+    workspace->input=fftwf_alloc_complex(size);
+    workspace->output=fftwf_alloc_complex(size);
+    if(workspace->input&&workspace->output)
+        workspace->plan=fftwf_plan_dft_1d((int)size,workspace->input,workspace->output,
             FFTW_FORWARD,FFTW_ESTIMATE);
-    if (cache->plan) return 0;
-    fftwf_free(cache->input); fftwf_free(cache->output);
-    memset(cache,0,sizeof(*cache));
+    if(workspace->plan)return 0;
+    fftwf_free(workspace->input);fftwf_free(workspace->output);
+    memset(workspace,0,sizeof(*workspace));
     return -1;
+}
+
+static void leo_fine_precision_workspace_free(leo_fine_precision_workspace *workspace)
+{
+    if(!workspace)return;
+    if(workspace->plan)fftwf_destroy_plan(workspace->plan);
+    fftwf_free(workspace->input);fftwf_free(workspace->output);
+    memset(workspace,0,sizeof(*workspace));
+}
+
+static int leo_fine_precision_init(leo_fine_precision_cache *cache,size_t size,
+    leo_fine_precision_workspace *workspace)
+{
+    memset(cache,0,sizeof(*cache));
+    if(workspace){
+        if(workspace->size!=size||!workspace->input||!workspace->output||!workspace->plan)
+            return -1;
+        cache->workspace=workspace;return 0;
+    }
+    if(leo_fine_precision_workspace_init(&cache->local_workspace,size))return -1;
+    cache->workspace=&cache->local_workspace;cache->owns_workspace=1;return 0;
 }
 
 static void leo_fine_precision_free(leo_fine_precision_cache *cache)
@@ -87,8 +114,7 @@ static void leo_fine_precision_free(leo_fine_precision_cache *cache)
     for (int i=0;i<cache->count;++i)
         for (int frame=0;frame<cache->entries[i].frames;++frame)
             free(cache->entries[i].spectra[frame]);
-    if (cache->plan) fftwf_destroy_plan(cache->plan);
-    fftwf_free(cache->input); fftwf_free(cache->output);
+    if(cache->owns_workspace)leo_fine_precision_workspace_free(&cache->local_workspace);
     memset(cache,0,sizeof(*cache));
 }
 
@@ -160,7 +186,8 @@ static int leo_fine_precision_scores(leo_presence_workspace *w,
         for(int slot=0;slot<selected;++slot) {
             int frame=selected==1 ? (available-1)/2 : slot*(available-1)/(selected-1);
             int start=frame_start(w,epoch,frame+w->acquisition_first_frame);
-            memset(cache->input,0,cache->size*sizeof(*cache->input));
+            leo_fine_precision_workspace *workspace=cache->workspace;
+            memset(workspace->input,0,workspace->size*sizeof(*workspace->input));
             double energy=0;
             for(int symbol=2;symbol<302;symbol+=symbol_step) {
                 int begin=symbol_start(w,symbol),end=symbol_start(w,symbol+1);
@@ -170,14 +197,15 @@ static int leo_fine_precision_scores(leo_presence_workspace *w,
                     const double ai=cimag(w->samples[start+k]);
                     const double br=creal(w->base[k]);
                     const double bi=cimag(w->base[k]);
-                    cache->input[k]=(float)(ar*br-ai*bi)+I*(float)(ar*bi+ai*br);
+                    workspace->input[k]=(float)(ar*br-ai*bi)+I*(float)(ar*bi+ai*br);
                 }
             }
-            fftwf_execute(cache->plan);
+            fftwf_execute(workspace->plan);
             item->spectra[item->frames]=(float complex *)leo_fine_precision_spectrum_alloc(
-                cache->size*sizeof(float complex));
+                workspace->size*sizeof(float complex));
             if(!item->spectra[item->frames]) {leo_fine_precision_free(cache);return -1;}
-            memcpy(item->spectra[item->frames],cache->output,cache->size*sizeof(float complex));
+            memcpy(item->spectra[item->frames],workspace->output,
+                workspace->size*sizeof(float complex));
             item->denominators[item->frames]=sqrt(template_energy*energy);
             item->frame_indices[item->frames]=frame;
             ++item->frames;
@@ -185,7 +213,7 @@ static int leo_fine_precision_scores(leo_presence_workspace *w,
         ++cache->transforms;
     } else ++cache->hits;
     int first_bin=(int)nearbyint(first_frequency/w->fine_step_hz);
-    first_bin=(first_bin+(int)cache->size)%(int)cache->size;
+    first_bin=(first_bin+(int)cache->workspace->size)%(int)cache->workspace->size;
     memset(scores,0,(size_t)frequency_count*sizeof(*scores));
     leo_fine_precision_entry *item=&cache->entries[entry];
     for(int frame=0;frame<item->frames;++frame) {
@@ -196,7 +224,7 @@ static int leo_fine_precision_scores(leo_presence_workspace *w,
             const double reciprocal=1.0/item->denominators[frame];
             for(int f=0;f<frequency_count;++f) {
                 score_out[f]+=leo_fine_precision_magnitude(spectrum[bin])*reciprocal;
-                if(++bin==(int)cache->size) bin=0;
+                if(++bin==(int)cache->workspace->size) bin=0;
             }
         }
     }

@@ -1,0 +1,369 @@
+{
+  "schema": "org.leo.native-glrt-supplement/v1",
+  "scope": {
+    "diagnostic": "link-visible wrapper measurements are inclusive, nested, and not headline runtime",
+    "client": "setup, serialization, and per-call E2E are maintained-client process measurements",
+    "telemetry": "thermal reads and peak RSS snapshots occur outside the analyzed call"
+  },
+  "inputs": {
+    "diagnostic_files": {
+      "2500000-lower-000.jsonl": "663a3e670d69d3483b6a81f641df96bc0296bb7c252094a0c485e73396311bf3",
+      "2500000-lower-016.jsonl": "1b88fb330e1e7b717d5a4a998c8cc2dc7254342523d5c2a023fede0c99d18a77",
+      "2500000-lower-032.jsonl": "28016605f024cab015f74378ff98831a1f54951b9bb8d185985b7b580c736be5",
+      "2500000-lower-048.jsonl": "8f2ea27e6214ce4109330aa574d0a9ab0713242a0e0b4f66fb399a770568f48d",
+      "2500000-upper-000.jsonl": "4e48be2b2316de94d569cc4e60e73453ce53ec5ee777feecd0a78faefd385f5e",
+      "2500000-upper-016.jsonl": "a36eab85b0e76f8e933dab7ac42174558b315fba512037747b30c1fcffdfe839",
+      "2500000-upper-032.jsonl": "f291bda96ef5bdeab38a4de28b937d55af8dcb906e9d21cea55421e6387c2581",
+      "2500000-upper-048.jsonl": "09edd859d319f3d44686906509b88dadf5063407446ebea2c7a42037612d623d",
+      "2500000-upper-064.jsonl": "eb1f164375339209d867eff86cb161a31b5805bfb778f3d704eb743326d89af1",
+      "2500000-upper-080.jsonl": "4ad6e1cd2a3cec58841dc92d9da2a18823edf5ca4ac75f36267f066b19b9ad6f"
+    },
+    "execution_panel_sha256": "7539daf0f20bed134e3d68f4092c1fc99a4bcb115efac0c2de116c7bdce1819c",
+    "pgo_training_panel_sha256": "1a26d82599b02e09e2de3d67a029bb85f0c618ef84cbb161e2212cd8e53e6fcd"
+  },
+  "diagnostic": {
+    "calls": 1520,
+    "wrapper": {
+      "allocation_cpu_ms": {
+        "count": 1520,
+        "mean": 2.9073444750001656,
+        "p50": 2.899659000001975,
+        "p95": 3.029826000034518,
+        "p99": 3.160955999998805,
+        "max": 3.7167480000002797
+      },
+      "allocation_wall_ms": {
+        "count": 1520,
+        "mean": 2.9057664454179375,
+        "p50": 2.895825058221817,
+        "p95": 3.033257871866226,
+        "p99": 3.1864860355854034,
+        "max": 3.678725779056549
+      },
+      "fft_plan_cpu_ms": {
+        "count": 1520,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "fft_plan_wall_ms": {
+        "count": 1520,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "fftf_plan_cpu_ms": {
+        "count": 1520,
+        "mean": 2.4964800434210566,
+        "p50": 2.468495999999959,
+        "p95": 2.5662600000005114,
+        "p99": 2.8439039999998386,
+        "max": 3.890010000000018
+      },
+      "fftf_plan_wall_ms": {
+        "count": 1520,
+        "mean": 2.497211149178053,
+        "p50": 2.468604028224945,
+        "p95": 2.5673099756240845,
+        "p99": 2.849496006965637,
+        "max": 3.8901840150356293
+      },
+      "fft_execute_cpu_ms": {
+        "count": 1520,
+        "mean": 2.023526640789641,
+        "p50": 1.9206960000005893,
+        "p95": 5.229947999997421,
+        "p99": 6.436661999996886,
+        "max": 6.953322000007574
+      },
+      "fft_execute_wall_ms": {
+        "count": 1520,
+        "mean": 1.9986049679549116,
+        "p50": 1.8977279961109161,
+        "p95": 5.180213630199432,
+        "p99": 6.381137669086456,
+        "max": 6.873455673456192
+      },
+      "fftf_execute_cpu_ms": {
+        "count": 1520,
+        "mean": 8.23277538157891,
+        "p50": 7.2935250000002725,
+        "p95": 14.034143999999742,
+        "p99": 14.22274799999991,
+        "max": 16.477709999998297
+      },
+      "fftf_execute_wall_ms": {
+        "count": 1520,
+        "mean": 8.244671740088808,
+        "p50": 7.3055459856987,
+        "p95": 14.044854044914246,
+        "p99": 14.23829996585846,
+        "max": 16.538922041654587
+      },
+      "malloc_calls": {
+        "count": 1520,
+        "mean": 136.29605263157896,
+        "p50": 136.0,
+        "p95": 136.0,
+        "p99": 137.0,
+        "max": 180.0
+      },
+      "calloc_calls": {
+        "count": 1520,
+        "mean": 4.0,
+        "p50": 4.0,
+        "p95": 4.0,
+        "p99": 4.0,
+        "max": 4.0
+      },
+      "realloc_calls": {
+        "count": 1520,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "free_calls": {
+        "count": 1520,
+        "mean": 144.0921052631579,
+        "p50": 143.0,
+        "p95": 150.0,
+        "p99": 153.0,
+        "max": 197.0
+      },
+      "allocation_requested_bytes": {
+        "count": 1520,
+        "mean": 3394989.552631579,
+        "p50": 3394629.0,
+        "p95": 3394789.0,
+        "p99": 3397385.0,
+        "max": 3447797.0
+      },
+      "fft_plan_calls": {
+        "count": 1520,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "fftf_plan_calls": {
+        "count": 1520,
+        "mean": 2.0,
+        "p50": 2.0,
+        "p95": 2.0,
+        "p99": 2.0,
+        "max": 2.0
+      },
+      "fft_execute_calls": {
+        "count": 1520,
+        "mean": 106.34210526315789,
+        "p50": 102.0,
+        "p95": 272.0,
+        "p99": 340.0,
+        "max": 364.0
+      },
+      "fftf_execute_calls": {
+        "count": 1520,
+        "mean": 14.868421052631579,
+        "p50": 14.0,
+        "p95": 20.0,
+        "p99": 20.0,
+        "max": 22.0
+      }
+    },
+    "call_cpu_ms": {
+      "count": 1520,
+      "mean": 63.16989424342104,
+      "p50": 61.730781000000206,
+      "p95": 102.25748999999996,
+      "p99": 111.94891199999984,
+      "max": 124.12960199999998
+    },
+    "call_wall_ms": {
+      "count": 1520,
+      "mean": 63.19359255542881,
+      "p50": 61.764825999736786,
+      "p95": 102.25835499167442,
+      "p99": 112.00533097982407,
+      "max": 124.1302570104599
+    },
+    "detector_cpu_ms": {
+      "count": 1520,
+      "mean": 62.82420935131579,
+      "p50": 61.390620000000126,
+      "p95": 101.93477400000029,
+      "p99": 111.61663200000021,
+      "max": 123.78319800000008
+    },
+    "setup_cpu_ms": {
+      "count": 10,
+      "mean": 114.62513759999999,
+      "p50": 114.484314,
+      "p95": 116.092578,
+      "p99": 116.092578,
+      "max": 116.092578
+    },
+    "setup_wall_ms": {
+      "count": 10,
+      "mean": 114.66709240078926,
+      "p50": 114.52782100439072,
+      "p95": 116.09212300181389,
+      "p99": 116.09212300181389,
+      "max": 116.09212300181389
+    },
+    "serialization_cpu_ms": {
+      "count": 1520,
+      "mean": 0.5266442960526296,
+      "p50": 0.5082449999999881,
+      "p95": 0.8848799999996118,
+      "p99": 1.025903999999855,
+      "max": 1.1459039999999732
+    },
+    "temperature_before_millidegrees": {
+      "count": 1520,
+      "mean": 72680.02434210526,
+      "p50": 72717.0,
+      "p95": 73578.0,
+      "p99": 73948.0,
+      "max": 74440.0
+    },
+    "temperature_after_millidegrees": {
+      "count": 1520,
+      "mean": 72693.94013157894,
+      "p50": 72717.0,
+      "p95": 73701.0,
+      "p99": 73948.0,
+      "max": 74563.0
+    },
+    "peak_rss_kib": {
+      "count": 1520,
+      "mean": 50628.01052631579,
+      "p50": 51684.0,
+      "p95": 51808.0,
+      "p99": 51808.0,
+      "max": 51808.0
+    },
+    "client_e2e_cpu_ms": {
+      "count": 1520,
+      "mean": 64.25429023421054,
+      "p50": 62.76969300000019,
+      "p95": 103.6334280000001,
+      "p99": 113.4997679999999,
+      "max": 125.35428000000002
+    },
+    "client_e2e_wall_ms": {
+      "count": 1520,
+      "mean": 64.27814043681873,
+      "p50": 62.7907595038414,
+      "p95": 103.63347700238228,
+      "p99": 113.60343697667122,
+      "max": 125.35444301366806
+    },
+    "write_cpu_ms_sum_per_process": {
+      "count": 10,
+      "mean": 15.506442600001543,
+      "p50": 16.34032200000118,
+      "p95": 17.22727200000253,
+      "p99": 17.22727200000253,
+      "max": 17.22727200000253
+    },
+    "write_wall_ms_sum_per_process": {
+      "count": 10,
+      "mean": 15.685157519578933,
+      "p50": 16.517517030239105,
+      "p95": 17.419344186782837,
+      "p99": 17.419344186782837,
+      "max": 17.419344186782837
+    }
+  },
+  "pgo": {
+    "available": true,
+    "candidate_files": {
+      "10000000-lower-000.jsonl": "1eb222b31e92aed3bebf9120fb8e02850bed147074f34d12c160b435f1e6dd81",
+      "10000000-upper-000.jsonl": "671d6c27f23e6dc8e63a07c9b5f667269d3f16b89b0fafcb79d137d3555d2e5b",
+      "10000000-upper-004.jsonl": "abe145b4f99364646877bfd70a0b847bc60e135f444db3cb55d8a41ef8715b2c",
+      "2500000-lower-000.jsonl": "608802c858aafa0a4eaee195e33f6a641648c9c7dae6a82d37b5ae69b5dc2662",
+      "2500000-lower-016.jsonl": "7554fb01c366aff16df18b14c8a89a0da3b54d72d1525f537b00b50297e303c7",
+      "2500000-lower-032.jsonl": "85f1038ed2bfadd11bee952813548a8d10e582479e601d1398b4d5530034d994",
+      "2500000-lower-048.jsonl": "cc5fa7801ea346960797572946af3222af56110056f3ee14a7298c0deb60481d",
+      "2500000-upper-000.jsonl": "90a5047e9c9ef9f947e91ed22ac90962dc7f14712c67633fa41bcf34b211fe03",
+      "2500000-upper-016.jsonl": "366af3616ef38a0b54fad177ef6b2addaeb865740bab339ebbb92802debfa9ec",
+      "2500000-upper-032.jsonl": "e5d3355a303bdff4b83c4c8758c75935f4dfda1dc07eaacb193edef74f6bdde0",
+      "2500000-upper-048.jsonl": "23d431189fac238e3361b759386b742cdecb21d711eee74557628d643a6ebd9b",
+      "2500000-upper-064.jsonl": "972a6a6079b7e8844118bce5e76547ee33fd4509a7f9f3900dd66b7467122e2e",
+      "2500000-upper-080.jsonl": "5db862dfd8fed9f38adec62b8b54ea03fadf6aa55c0610d648f8af802a2a48b1",
+      "5000000-lower-000.jsonl": "dd6938c21b98bb3057a217e419639552f84f11442a75edb0244fd7918bd9f291",
+      "5000000-lower-004.jsonl": "9af27bd8f796f0ec9199c7536b95da113d6ac4300491a431eb1fa22ff48622dc",
+      "5000000-upper-000.jsonl": "a945f30a08e512ae2e14dea1dc6ef9bfcfe1cfc4649b5faeef3803dd7a990f48",
+      "7500000-lower-000.jsonl": "681dbf54c79d214ab0e62a42a3e796f6c472913cf7e5a336ede81e22d3388fdb",
+      "7500000-upper-000.jsonl": "12a18a837f533bb465c96903a2afa06bb3ee025ea95c87dcfd8e64450dde2ed5",
+      "7500000-upper-004.jsonl": "c513f5e602bcecf8c09a372185f5d3b4064d72c82b56fd9d0efb7e7665e6a1a5"
+    },
+    "control_files": {
+      "10000000-lower-000.jsonl": "e274ef83c91df0ce29d411fd454aba295d96b5ff39cbdd5a94f0f8ae4e06fc3c",
+      "10000000-upper-000.jsonl": "1aaaab1e61d830b0f26e2e6c81f385dab2f6246fa217933c81f6963b9c0bf2c0",
+      "10000000-upper-004.jsonl": "52ca475971a2bb6111361bf5aedea1e3a4c05bc74ef91bcd3410de011d630cb6",
+      "2500000-lower-000.jsonl": "7bae8e70837212c7f7b11e65a8aede30fcae6943bec2c06c6653e64ae6b081f7",
+      "2500000-lower-016.jsonl": "1c7a11091bce57810308d788e3fbff77ca5123b6482e976f7b7df5ce6cc2a6f7",
+      "2500000-lower-032.jsonl": "b5e62dccd850da137196def63828564f1f900173ae040cf588e291a055a59ac1",
+      "2500000-lower-048.jsonl": "d5961ca2cdd9e3e452246c668053d1751f9450b82d0e8cbdf7b06fe42ee24229",
+      "2500000-upper-000.jsonl": "f420799955924c4bcfeb9f361786631d4f3fddde003a2284564aa63654cc131e",
+      "2500000-upper-016.jsonl": "c277df9515c968d37d8695ed9c38aa942f36b8d21d9a7383dedbb94bf7abc764",
+      "2500000-upper-032.jsonl": "13d96e7dd629336d4424035361297d04b2a8d2cc172bc55829577e01e6937ab5",
+      "2500000-upper-048.jsonl": "d2c516a56cdff787355df3aa2a5d348d99711c154beeb4adccd51a187020bfb2",
+      "2500000-upper-064.jsonl": "379ffc736c55a4bff71ba4ca358c0f96289c1a7e57cc2825cf74d6ad252cac4a",
+      "2500000-upper-080.jsonl": "cc91a3589482708d7c9d204302813dbaf86467c5c5778d9535d8a235c1c4deb2",
+      "5000000-lower-000.jsonl": "335ec252785fa5da3c7902c02a93c70a2f9066d46059f85ecd172951b990bdad",
+      "5000000-lower-004.jsonl": "667bde64ff2f24aa9f57c8618933981f9dc550bca79db9026b703a03feb5f129",
+      "5000000-upper-000.jsonl": "818974a3b2fc6f94cf04ce0ecd587cb300cf72d6c3eaee5378ad4966bcaa616c",
+      "7500000-lower-000.jsonl": "7e24533a1d849dee06911adc0f256154aeb0d82fcda57d87ae7f0009b0e64944",
+      "7500000-upper-000.jsonl": "e63799a767df270aa7eb50d329e14823cb54be8d38345c602323af9b812853f8",
+      "7500000-upper-004.jsonl": "5e85f6d461a863c973251cb33d16ee6e38996349cee47b543947c50cd0b1e7cb"
+    },
+    "candidate_identity_mismatched_calls": 0,
+    "timing_scope": "outer maintained-client call CPU milliseconds",
+    "training_panel_sha256": "02830f9d8c4c02c692ee58a3fca6f270df2dd41979781a7466d654dbe0cd7f46",
+    "cpu_ms": {
+      "trained33": {
+        "count": 330,
+        "mean": 47.296125509090906,
+        "p50": 46.82516399999986,
+        "p95": 71.61156000000028,
+        "p99": 91.74656400000003,
+        "max": 93.8132700000001
+      },
+      "held_out119": {
+        "count": 1190,
+        "mean": 48.75031167731093,
+        "p50": 47.021772000000055,
+        "p95": 78.42317999999977,
+        "p99": 83.7252239999998,
+        "max": 93.06139200000001
+      }
+    },
+    "wall_ms": {
+      "trained33": {
+        "count": 330,
+        "mean": 47.3086576273947,
+        "p50": 46.84568400681019,
+        "p95": 71.61159098148346,
+        "p99": 91.74637898802757,
+        "max": 93.92628100514412
+      },
+      "held_out119": {
+        "count": 1190,
+        "mean": 48.764972411208795,
+        "p50": 47.02872350811958,
+        "p95": 78.42404499650002,
+        "p99": 83.8158609867096,
+        "max": 93.06345099210739
+      }
+    }
+  }
+}
