@@ -48,6 +48,15 @@ typedef struct {
     leo_native_glrt_row rows[LEO_NATIVE_GLRT_MAX_ROWS];
 } leo_native_glrt_result;
 
+typedef struct {
+    double allocation_cpu_ms, allocation_wall_ms;
+    double preparation_cpu_ms, preparation_wall_ms;
+    double proposals_cpu_ms, proposals_wall_ms;
+    double search_cpu_ms, search_wall_ms;
+    double cleanup_cpu_ms, cleanup_wall_ms;
+    size_t prepared_complex_times;
+} leo_native_glrt_profile;
+
 enum {
     LEO_NATIVE_GLRT_OK = 0,
     LEO_NATIVE_GLRT_INVALID = -1,
@@ -68,6 +77,12 @@ int leo_native_glrt_analyze(leo_native_glrt *context,
     const int16_t *dual_rx_iqiq, size_t complex_times,
     uint32_t dwell_ms, uint32_t probe_stride_ms,
     leo_native_glrt_result *result);
+/* Like leo_native_glrt_analyze, with disjoint outer-stage CPU and monotonic-wall
+ * measurements. The profile is committed only with a successful result. */
+int leo_native_glrt_analyze_profiled(leo_native_glrt *context,
+    const int16_t *dual_rx_iqiq, size_t complex_times,
+    uint32_t dwell_ms, uint32_t probe_stride_ms,
+    leo_native_glrt_result *result, leo_native_glrt_profile *profile);
 const char *leo_native_glrt_status_string(int status);
 
 #endif

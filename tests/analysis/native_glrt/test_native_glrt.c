@@ -73,6 +73,19 @@ static void assert_same_science(const leo_native_glrt_row *a,
         assert(!memcmp(&a->candidates[i],&b->candidates[i],sizeof(a->candidates[i])));
 }
 
+static void assert_valid_profile(const leo_native_glrt_profile *profile,
+    size_t expected_prepared)
+{
+    const double timings[]={profile->allocation_cpu_ms,profile->allocation_wall_ms,
+        profile->preparation_cpu_ms,profile->preparation_wall_ms,
+        profile->proposals_cpu_ms,profile->proposals_wall_ms,
+        profile->search_cpu_ms,profile->search_wall_ms,
+        profile->cleanup_cpu_ms,profile->cleanup_wall_ms};
+    for(size_t i=0;i<sizeof(timings)/sizeof(timings[0]);++i)
+        assert(isfinite(timings[i])&&timings[i]>=0);
+    assert(profile->prepared_complex_times==expected_prepared);
+}
+
 static void shared_anchor_numerics(void)
 {
     const uint32_t rate=2500000,dwell_ms=120;
@@ -122,6 +135,62 @@ static void shared_anchor_numerics(void)
     free(accumulated);free(input);free(control);free(exact);
 }
 
+static void sparse_science_equivalence(void)
+{
+    const uint32_t rates[]={2500000,5000000,7500000,10000000};
+    for(size_t r=0;r<4;++r){
+        uint32_t rate=rates[r];
+        size_t frame=(rate+375u)/750u,times=(size_t)rate*120u/1000u;
+        leo_native_glrt_complex *exact=make_template(frame,.2);
+        leo_native_glrt_complex *control=make_template(frame,1.1);
+        leo_native_glrt *context=NULL;
+        assert(!leo_native_glrt_create(&context,rate,exact,control,frame));
+        int16_t *input=calloc(4*times,sizeof(*input));assert(input);
+        for(int kind=0;kind<3;++kind){
+            uint32_t state=UINT32_C(0x91e10da5)+(uint32_t)kind;
+            for(size_t k=0;k<times;++k)for(int lane=0;lane<4;++lane){
+                int16_t value=0;
+                if(kind==0 && k<rate/50u){
+                    size_t symbol=k%frame;
+                    value=(int16_t)lround(12000*(lane%2
+                        ? exact[symbol].imaginary : exact[symbol].real));
+                }else if(kind==1){
+                    state=state*UINT32_C(1664525)+UINT32_C(1013904223);
+                    value=(int16_t)(state>>16);
+                }else if(kind==2)value=((k+(size_t)lane)&1u) ? INT16_MAX : INT16_MIN;
+                input[4*k+(size_t)lane]=value;
+            }
+            leo_native_glrt_result full,sparse;
+            leo_native_glrt_profile profile;
+            assert(!leo_native_glrt_analyze(context,input,times,120,20,&full));
+            assert(!leo_native_glrt_analyze_profiled(context,input,times,120,120,
+                &sparse,&profile));
+            assert(sparse.row_count==2);
+            assert_valid_profile(&profile,
+#ifdef LEO_NATIVE_GLRT_FULL_PREP
+                times
+#else
+                rate/50u
+#endif
+            );
+            for(int rx=0;rx<2;++rx)assert_same_science(&full.rows[rx],&sparse.rows[rx]);
+            if(kind==0){
+                leo_native_glrt_result unchanged=sparse,repeated;
+                leo_native_glrt_profile unchanged_profile=profile;
+                assert(leo_native_glrt_analyze_profiled(context,input,times-1,120,120,
+                    &unchanged,&unchanged_profile)==LEO_NATIVE_GLRT_INVALID);
+                assert(!memcmp(&unchanged,&sparse,sizeof(sparse)));
+                assert(!memcmp(&unchanged_profile,&profile,sizeof(profile)));
+                assert(!leo_native_glrt_analyze_profiled(context,input,times,120,120,
+                    &repeated,&profile));
+                for(int rx=0;rx<2;++rx)
+                    assert_same_science(&sparse.rows[rx],&repeated.rows[rx]);
+            }
+        }
+        free(input);assert(!leo_native_glrt_destroy(context));free(control);free(exact);
+    }
+}
+
 static int supported_geometry_actual_runs(uint32_t selected_rate,
     uint32_t selected_dwell)
 {
@@ -147,6 +216,7 @@ static int supported_geometry_actual_runs(uint32_t selected_rate,
                 return 1;
             }
             leo_native_glrt_result dense,twenty,one_twenty;
+            leo_native_glrt_profile profile;
             uint32_t failed_stride=10;
             int status=leo_native_glrt_analyze(context,zero,times,dwells[d],10,&dense);
             if(!status){
@@ -155,7 +225,8 @@ static int supported_geometry_actual_runs(uint32_t selected_rate,
             }
             if(!status){
                 failed_stride=120;
-                status=leo_native_glrt_analyze(context,zero,times,dwells[d],120,&one_twenty);
+                status=leo_native_glrt_analyze_profiled(context,zero,times,dwells[d],120,
+                    &one_twenty,&profile);
             }
             if(status){
                 fprintf(stderr,
@@ -167,6 +238,11 @@ static int supported_geometry_actual_runs(uint32_t selected_rate,
             assert(dense.row_count==2u*(1u+(dwells[d]-20u)/10u));
             assert(twenty.row_count==2u*(1u+(dwells[d]-20u)/20u));
             assert(one_twenty.row_count==2u*(1u+(dwells[d]-20u)/120u));
+#ifdef LEO_NATIVE_GLRT_FULL_PREP
+            assert_valid_profile(&profile,times);
+#else
+            assert_valid_profile(&profile,dwells[d]==120 ? rates[r]/50u : times);
+#endif
             for(size_t window=0;window<twenty.row_count/2;++window)
                 for(int rx=0;rx<2;++rx)
                     assert_same_science(&dense.rows[4*window+(size_t)rx],
@@ -211,6 +287,7 @@ int main(int argc,char **argv)
     }
     configuration_validation();
     shared_anchor_numerics();
+    sparse_science_equivalence();
     if(supported_geometry_actual_runs(rate,dwell))return 1;
     puts("native GLRT RAM API tests passed");
     return 0;

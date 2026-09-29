@@ -21,6 +21,8 @@ struct leo_native_glrt {
     size_t frame;
     leo_presence_workspace *search;
     leo_proposal_workspace *proposal;
+    leo_dwell_input sparse_prepared;
+    leo_fine_precision_workspace fine_workspace;
 };
 
 _Static_assert(sizeof(leo_native_glrt_complex)==sizeof(leo_presence_complex),
@@ -44,6 +46,18 @@ static int cpu_ms(double *result)
     struct timespec value;
     if(!result||clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&value))return -1;
     *result=1000.0*(double)value.tv_sec+1e-6*(double)value.tv_nsec;return 0;
+}
+
+static int wall_ms(double *result)
+{
+    struct timespec value;
+    if(!result||clock_gettime(CLOCK_MONOTONIC,&value))return -1;
+    *result=1000.0*(double)value.tv_sec+1e-6*(double)value.tv_nsec;return 0;
+}
+
+static int profile_clock(double *cpu,double *wall)
+{
+    return cpu_ms(cpu)||wall_ms(wall) ? -1 : 0;
 }
 
 static int valid_rate(uint32_t rate)
@@ -187,7 +201,14 @@ int leo_native_glrt_create(leo_native_glrt **out,uint32_t rate,
     context->search=leo_presence_create(rate,native_exact,native_control,count);
     context->proposal=leo_proposal_create(proposal_template,count,(double)rate);
     free(proposal_template);free(native_control);free(native_exact);
-    if(!context->search||!context->proposal){
+    if(!context->search||!context->proposal
+#if !defined(LEO_NATIVE_GLRT_DISABLE_FINE_PLAN_REUSE)
+       ||leo_fine_precision_workspace_init(&context->fine_workspace,
+           context->search->fine_fft.size)
+#endif
+       ){
+        leo_fine_precision_workspace_free(&context->fine_workspace);
+        leo_dwell_input_free(&context->sparse_prepared);
         if(context->proposal)leo_proposal_destroy(context->proposal);
         if(context->search)leo_presence_destroy(context->search);
         free(context);leave();return LEO_NATIVE_GLRT_NOMEM;
@@ -201,12 +222,14 @@ int leo_native_glrt_destroy(leo_native_glrt *context)
     int status=enter();if(status)return status;
     leo_proposal_destroy(context->proposal);
     leo_presence_destroy(context->search);
+    leo_dwell_input_free(&context->sparse_prepared);
+    leo_fine_precision_workspace_free(&context->fine_workspace);
     free(context);leave();return LEO_NATIVE_GLRT_OK;
 }
 
-int leo_native_glrt_analyze(leo_native_glrt *context,const int16_t *ci16,
+int leo_native_glrt_analyze_profiled(leo_native_glrt *context,const int16_t *ci16,
     size_t complex_times,uint32_t dwell_ms,uint32_t stride_ms,
-    leo_native_glrt_result *result)
+    leo_native_glrt_result *result,leo_native_glrt_profile *profile)
 {
     size_t required_times=0,row_count=0;
     if(!context||!ci16||!result||
@@ -216,21 +239,60 @@ int leo_native_glrt_analyze(leo_native_glrt *context,const int16_t *ci16,
     size_t windows=row_count/2;
     if(fegetround()!=FE_TONEAREST)return LEO_NATIVE_GLRT_INVALID;
     int status=enter();if(status)return status;
-    double started=0,finished=0;
+    double started=0,finished=0,stage_cpu=0,stage_wall=0,end_cpu=0,end_wall=0;
     if(cpu_ms(&started)){leave();return LEO_NATIVE_GLRT_KERNEL;}
     leo_native_glrt_result temporary={0};
+    leo_native_glrt_profile measured={0};
     leo_dwell_input prepared={0};
+    leo_dwell_input *prepared_view=&prepared;
+    int persistent_prepared=0;
+    if(profile_clock(&stage_cpu,&stage_wall)){
+        leave();return LEO_NATIVE_GLRT_KERNEL;
+    }
     unsigned char *selected=calloc(context->frame,1);
     size_t anchors=1+(dwell_ms-20)/20;
     int (*centers)[2][4]=calloc(anchors,sizeof(*centers));
     int (*counts)[2]=calloc(anchors,sizeof(*counts));
     leo_proposal_timing (*timings)[2]=calloc(anchors,sizeof(*timings));
-    if(!selected||!centers||!counts||!timings||
-       leo_dwell_input_prepare(&prepared,ci16,complex_times)){
+    if(profile_clock(&end_cpu,&end_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
+    measured.allocation_cpu_ms=end_cpu-stage_cpu;
+    measured.allocation_wall_ms=end_wall-stage_wall;
+    if(!selected||!centers||!counts||!timings){
         status=LEO_NATIVE_GLRT_NOMEM;goto done;
     }
+#ifdef LEO_NATIVE_GLRT_FULL_PREP
+    size_t prepare_count=complex_times;
+#else
+    size_t prepare_count=(dwell_ms==120&&stride_ms==120)
+        ? context->rate/50u : complex_times;
+#endif
+    measured.prepared_complex_times=prepare_count;
+    if(profile_clock(&stage_cpu,&stage_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
+#if !defined(LEO_NATIVE_GLRT_FULL_PREP) && !defined(LEO_NATIVE_GLRT_DISABLE_PREPARED_REUSE)
+    if(dwell_ms==120&&stride_ms==120){
+        prepared_view=&context->sparse_prepared;persistent_prepared=1;
+    }else leo_dwell_input_free(&context->sparse_prepared);
+#endif
+    int prepare_failed=persistent_prepared
+        ? leo_dwell_input_prepare_reuse(prepared_view,ci16,prepare_count)
+        : leo_dwell_input_prepare(prepared_view,ci16,prepare_count);
+    if(prepare_failed){
+        status=LEO_NATIVE_GLRT_NOMEM;goto done;
+    }
+    if(profile_clock(&end_cpu,&end_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
+    measured.preparation_cpu_ms=end_cpu-stage_cpu;
+    measured.preparation_wall_ms=end_wall-stage_wall;
     /* Sparse strides execute only scheduled anchors. Dense stride 10 needs all
      * 20 ms anchors to reproduce the frozen odd-window neighbor tracking. */
+    if(profile_clock(&stage_cpu,&stage_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
     for(size_t window=0;window<windows;++window){
         unsigned start_ms=(unsigned)window*stride_ms;
         if(stride_ms==10 && start_ms%20)continue;
@@ -241,6 +303,14 @@ int leo_native_glrt_analyze(leo_native_glrt *context,const int16_t *ci16,
                 centers[anchor][rx],&counts[anchor][rx],&timings[anchor][rx])){
                 status=LEO_NATIVE_GLRT_KERNEL;goto done;
             }
+    }
+    if(profile_clock(&end_cpu,&end_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
+    measured.proposals_cpu_ms=end_cpu-stage_cpu;
+    measured.proposals_wall_ms=end_wall-stage_wall;
+    if(profile_clock(&stage_cpu,&stage_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
     }
     for(size_t window=0;window<windows;++window)for(int rx=0;rx<2;++rx){
         unsigned start_ms=(unsigned)window*stride_ms;
@@ -276,27 +346,57 @@ int leo_native_glrt_analyze(leo_native_glrt *context,const int16_t *ci16,
             if(selected[epoch])regional_epochs[regional_count++]=(int)epoch;
         size_t offset=(size_t)start_ms*context->rate/1000u;
         leo_full_search_result search;
-        if(leo_full_search_run_prepared(context->search,prepared.raw[rx]+offset,
-            prepared.normalized[rx]+2*offset,prepared.prefix[rx]+offset,
-            context->rate/50u,&search)){
+        if(leo_full_search_run_prepared_with_fine_workspace(context->search,
+            prepared_view->raw[rx]+offset,
+            prepared_view->normalized[rx]+2*offset,prepared_view->prefix[rx]+offset,
+            context->rate/50u,&search,
+#ifdef LEO_NATIVE_GLRT_DISABLE_FINE_PLAN_REUSE
+            NULL
+#else
+            &context->fine_workspace
+#endif
+            )){
             status=LEO_NATIVE_GLRT_KERNEL;goto done;
         }
         copy_row(&temporary.rows[temporary.row_count++],rx,(int)window,
             (int)start_ms,&search,&timing,executed,fallback,matches);
     }
+    if(profile_clock(&end_cpu,&end_wall)){
+        status=LEO_NATIVE_GLRT_KERNEL;goto done;
+    }
+    measured.search_cpu_ms=end_cpu-stage_cpu;
+    measured.search_wall_ms=end_wall-stage_wall;
     status=LEO_NATIVE_GLRT_OK;
 done:
-    leo_dwell_input_free(&prepared);free(timings);free(counts);free(centers);free(selected);
+    if(profile_clock(&stage_cpu,&stage_wall))status=LEO_NATIVE_GLRT_KERNEL;
+    if(!persistent_prepared)leo_dwell_input_free(&prepared);
+    free(timings);free(counts);free(centers);free(selected);
+    if(profile_clock(&end_cpu,&end_wall))status=LEO_NATIVE_GLRT_KERNEL;
+    else {
+        measured.cleanup_cpu_ms=end_cpu-stage_cpu;
+        measured.cleanup_wall_ms=end_wall-stage_wall;
+    }
     if(status==LEO_NATIVE_GLRT_OK){
         if(cpu_ms(&finished))status=LEO_NATIVE_GLRT_KERNEL;
         else {
             temporary.detector_cpu_ms=finished-started;
             if(!isfinite(temporary.detector_cpu_ms)||!finite_result(&temporary))
                 status=LEO_NATIVE_GLRT_KERNEL;
-            else *result=temporary;
+            else {
+                *result=temporary;
+                if(profile)*profile=measured;
+            }
         }
     }
     leave();return status;
+}
+
+int leo_native_glrt_analyze(leo_native_glrt *context,const int16_t *ci16,
+    size_t complex_times,uint32_t dwell_ms,uint32_t stride_ms,
+    leo_native_glrt_result *result)
+{
+    return leo_native_glrt_analyze_profiled(context,ci16,complex_times,
+        dwell_ms,stride_ms,result,NULL);
 }
 
 const char *leo_native_glrt_status_string(int status)

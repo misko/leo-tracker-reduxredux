@@ -34,6 +34,12 @@
 #if LEO_FULL_REFINEMENT_MODE < 0 || LEO_FULL_REFINEMENT_MODE > 2
 #error "LEO_FULL_REFINEMENT_MODE must be 0 (full), 1 (coarse direct), or 2 (fine direct)"
 #endif
+#ifndef LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS
+#define LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS 0
+#endif
+#if LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS != 0 && LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS != 1
+#error "LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS must be 0 or 1"
+#endif
 
 /* The goal40mag range backend is FP32 FFTW. The full-search reference build
  * uses the repository's double FFT and computes the whole transform; this
@@ -79,6 +85,50 @@ static double complex full_blocked_dot(const float *a, const float *b, size_t n)
         for (int j=0;j<4;++j) {total_re+=re[j];total_im+=im[j];}
     }
     return total_re+I*total_im;
+}
+
+/* Evaluate four adjacent regular bins while retaining full_blocked_dot's exact
+ * per-frequency arithmetic topology: four FP32 sample lanes per 64-sample
+ * block, followed by the same lane-order FP64 reduction. Frequencies share
+ * only the weighted-sample load and loop control. */
+static void full_blocked_dots_four(const float *a,const float *b,size_t n,
+    double complex totals[4])
+{
+    double total_re[4]={0},total_im[4]={0};
+    for(size_t start=0;start<n;start+=64) {
+        size_t end=start+64<n?start+64:n,k=start;
+        float re[4][4]={{0}},im[4][4]={{0}};
+#if defined(__ARM_NEON)
+        float32x4_t vr[4],vi[4];
+        for(int f=0;f<4;++f)vr[f]=vi[f]=vdupq_n_f32(0);
+        for(;k+3<end;k+=4) {
+            float32x4x2_t x=vld2q_f32(a+2*k);
+            for(int f=0;f<4;++f) {
+                float32x4x2_t y=vld2q_f32(b+2*((size_t)f*n+k));
+                vr[f]=vaddq_f32(vr[f],vsubq_f32(vmulq_f32(x.val[0],y.val[0]),
+                    vmulq_f32(x.val[1],y.val[1])));
+                vi[f]=vaddq_f32(vi[f],vaddq_f32(vmulq_f32(x.val[0],y.val[1]),
+                    vmulq_f32(x.val[1],y.val[0])));
+            }
+        }
+        for(int f=0;f<4;++f){vst1q_f32(re[f],vr[f]);vst1q_f32(im[f],vi[f]);}
+#else
+        for(;k+3<end;k+=4)for(int f=0;f<4;++f)for(size_t j=0;j<4;++j) {
+            size_t x=2*(k+j),y=2*((size_t)f*n+k+j);
+            re[f][j]+=a[x]*b[y]-a[x+1]*b[y+1];
+            im[f][j]+=a[x]*b[y+1]+a[x+1]*b[y];
+        }
+#endif
+        for(;k<end;++k)for(int f=0;f<4;++f) {
+            size_t x=2*k,y=2*((size_t)f*n+k);
+            re[f][0]+=a[x]*b[y]-a[x+1]*b[y+1];
+            im[f][0]+=a[x]*b[y+1]+a[x+1]*b[y];
+        }
+        for(int f=0;f<4;++f)for(int j=0;j<4;++j) {
+            total_re[f]+=re[f][j];total_im[f]+=im[f][j];
+        }
+    }
+    for(int f=0;f<4;++f)totals[f]=total_re[f]+I*total_im[f];
 }
 
 static int peak_before(const leo_full_search_peak *a, const leo_full_search_peak *b,
@@ -285,6 +335,29 @@ static void full_conditioned_scores(leo_presence_workspace *w, size_t count,
 {
     double te=0;
     memset(scores,0,(size_t)nf*sizeof(*scores));
+    /* A clipped grid may append one off-grid endpoint. Its offset from f0 is
+     * constant across every frame, so retain the exact rotate() values once
+     * instead of recomputing the same trigonometry up to sixteen times. The
+     * stored double-complex value and subsequent multiply/accumulation order
+     * are identical to the original inner-loop expression. Allocation failure
+     * keeps the complete original path. */
+#if !defined(LEO_NATIVE_GLRT_UNCACHED_BOUNDARY)
+    int irregular_slot[64],irregular_count=0;
+    for(int f=0;f<nf&&f<64;++f) {
+        irregular_slot[f]=-1;
+        if(frequencies[f]!=frequencies[0]+f*100.0)
+            irregular_slot[f]=irregular_count++;
+    }
+    double complex *irregular_offsets=NULL;
+    if(irregular_count>0&&nf<=64&&w->n<=SIZE_MAX/(size_t)irregular_count/
+        sizeof(*irregular_offsets)) {
+        irregular_offsets=malloc((size_t)irregular_count*w->n*sizeof(*irregular_offsets));
+        if(irregular_offsets) for(int f=0;f<nf;++f) if(irregular_slot[f]>=0)
+            for(size_t k=0;k<w->n;++k)
+                irregular_offsets[(size_t)irregular_slot[f]*w->n+k]=
+                    rotate(-TAU*(frequencies[f]-frequencies[0])*k/w->rate);
+    }
+#endif
     /* Only the approximate regular-grid screen uses factored phasors.
      * Re-anchor every 32 samples; exact near-max rechecks retain the original
      * per-sample rotation below. No samples or hypotheses are removed. */
@@ -323,23 +396,46 @@ static void full_conditioned_scores(leo_presence_workspace *w, size_t count,
         int moment_ok=approximate && denom>0 && regular;
         if (moment_ok) moment_ok=!conditioned_moment_magnitudes(w->opt_weighted,w->n,w->rate,nf,
             moment_magnitudes);
+        double complex tiled_totals[64]={0};
+        unsigned char tiled[64]={0};
+#if !LEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS
+        if(approximate&&!moment_ok&&nf<=64)for(int f=0;f+3<nf;) {
+            int run=1;
+            for(int j=0;j<4;++j)
+                run&=frequencies[f+j]==frequencies[0]+(f+j)*100.0;
+            if(run) {
+                full_blocked_dots_four(w->opt_weighted,
+                    w->opt_conditioned_offsets+2*(size_t)f*w->n,w->n,tiled_totals+f);
+                for(int j=0;j<4;++j)tiled[f+j]=1;
+                f+=4;
+            } else ++f;
+        }
+#endif
         for (int f=0; f<nf && denom>0; ++f) {
             double complex total=0;
             int bin_regular=frequencies[f]==frequencies[0]+f*100.0;
             if (moment_ok) {
                 scores[f]+=moment_magnitudes[f]/denom;
                 continue;
-            } else if (approximate && bin_regular)
+            } else if(tiled[f])
+                total=tiled_totals[f];
+            else if (approximate && bin_regular)
                 total=full_blocked_dot(w->opt_weighted,
                     w->opt_conditioned_offsets+2*f*w->n,w->n);
             else for (size_t k=0; k<w->n; ++k)
                 total+=w->weighted[k]*(bin_regular ? w->conditioned_offsets[f*w->n+k] :
+#if !defined(LEO_NATIVE_GLRT_UNCACHED_BOUNDARY)
+                    irregular_offsets ? irregular_offsets[(size_t)irregular_slot[f]*w->n+k] :
+#endif
                     rotate(-TAU*(frequencies[f]-frequencies[0])*k/w->rate));
             scores[f]+=magnitude(total)/denom;
         }
         ++frames;
     }
     if (frames) for (int f=0; f<nf; ++f) scores[f]/=frames;
+#if !defined(LEO_NATIVE_GLRT_UNCACHED_BOUNDARY)
+    free(irregular_offsets);
+#endif
 }
 
 #if LEO_FULL_REFINEMENT_MODE == 0
@@ -553,7 +649,8 @@ static size_t collect_active_peaks(const leo_presence_workspace *w,
 }
 
 static int leo_full_search_run_ingested(leo_presence_workspace *w,size_t count,
-    leo_full_search_result *result,double cpu,double wall,double conversion_cpu_ms)
+    leo_full_search_result *result,double cpu,double wall,double conversion_cpu_ms,
+    leo_fine_precision_workspace *fine_workspace)
 {
     if (!result) return -1;
     leo_full_search_result out={0};
@@ -588,7 +685,7 @@ static int leo_full_search_run_ingested(leo_presence_workspace *w,size_t count,
 
     started=clock_ms(CLOCK_PROCESS_CPUTIME_ID);
     leo_fine_precision_cache fine_cache;
-    if (leo_fine_precision_init(&fine_cache,w->fine_fft.size)) return -1;
+    if(leo_fine_precision_init(&fine_cache,w->fine_fft.size,fine_workspace))return -1;
     for (size_t r=0; r<nr; ++r) {
         int e=retained[r].epoch, f=retained[r].coarse_bin, refined=e;
         for (int local=e-1; local<=e+1; ++local)
@@ -742,14 +839,23 @@ static int leo_full_search_run_ingested(leo_presence_workspace *w,size_t count,
 
 int leo_full_search_run(leo_presence_workspace *w,const leo_presence_complex *samples,
     size_t count,leo_full_search_result *result)
-{double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);if(ingest(w,samples,count))return -1;return leo_full_search_run_ingested(w,count,result,cpu,wall,clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu);}
+{double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);if(ingest(w,samples,count))return -1;return leo_full_search_run_ingested(w,count,result,cpu,wall,clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu,NULL);}
 
 int leo_full_search_run_ci16(leo_presence_workspace *w,const int16_t *samples,size_t scalar_stride,size_t count,leo_full_search_result *result)
-{double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);if(w){w->coarse_input_prepared=0;w->coarse_prepared_count=0;}if(!w||!samples||!result||scalar_stride<2||fegetround()!=FE_TONEAREST||count<(size_t)ceil(w->rate/375.0)||count>w->max_samples||(count&&(count-1)>(SIZE_MAX-1)/scalar_stride))return -1;w->prefix[0]=0;for(size_t k=0;k<count;k++){double real=(double)samples[k*scalar_stride],imag=(double)samples[k*scalar_stride+1];w->samples[k]=real+I*imag;real/=32768.0;imag/=32768.0;w->float_samples[2*k]=(float)real;w->float_samples[2*k+1]=(float)imag;w->prefix[k+1]=w->prefix[k]+real*real+imag*imag;}w->coarse_input_prepared=1;w->coarse_prepared_count=count;return leo_full_search_run_ingested(w,count,result,cpu,wall,clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu);}
+{double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);if(w){w->coarse_input_prepared=0;w->coarse_prepared_count=0;}if(!w||!samples||!result||scalar_stride<2||fegetround()!=FE_TONEAREST||count<(size_t)ceil(w->rate/375.0)||count>w->max_samples||(count&&(count-1)>(SIZE_MAX-1)/scalar_stride))return -1;w->prefix[0]=0;for(size_t k=0;k<count;k++){double real=(double)samples[k*scalar_stride],imag=(double)samples[k*scalar_stride+1];w->samples[k]=real+I*imag;real/=32768.0;imag/=32768.0;w->float_samples[2*k]=(float)real;w->float_samples[2*k+1]=(float)imag;w->prefix[k+1]=w->prefix[k]+real*real+imag*imag;}w->coarse_input_prepared=1;w->coarse_prepared_count=count;return leo_full_search_run_ingested(w,count,result,cpu,wall,clock_ms(CLOCK_PROCESS_CPUTIME_ID)-cpu,NULL);}
 
 int leo_full_search_run_prepared(leo_presence_workspace *w,
     const double complex *raw,const float *normalized,const double *prefix,
     size_t count,leo_full_search_result *result)
+{
+    return leo_full_search_run_prepared_with_fine_workspace(w,raw,normalized,prefix,
+        count,result,NULL);
+}
+
+int leo_full_search_run_prepared_with_fine_workspace(leo_presence_workspace *w,
+    const double complex *raw,const float *normalized,const double *prefix,
+    size_t count,leo_full_search_result *result,
+    leo_fine_precision_workspace *fine_workspace)
 {
     double cpu=clock_ms(CLOCK_PROCESS_CPUTIME_ID),wall=clock_ms(CLOCK_MONOTONIC);
     if(w){w->coarse_input_prepared=0;w->coarse_prepared_count=0;}
@@ -762,7 +868,7 @@ int leo_full_search_run_prepared(leo_presence_workspace *w,
     w->float_samples=(float *)normalized;
     w->prefix=(double *)prefix;
     w->coarse_input_prepared=1;w->coarse_prepared_count=count;
-    int status=leo_full_search_run_ingested(w,count,result,cpu,wall,0);
+    int status=leo_full_search_run_ingested(w,count,result,cpu,wall,0,fine_workspace);
     w->samples=owned_samples;w->float_samples=owned_float_samples;
     w->prefix=owned_prefix;w->coarse_input_prepared=0;w->coarse_prepared_count=0;
     return status;

@@ -1,0 +1,43 @@
+{
+  "argv": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Wno-error=lto-type-mismatch",
+    "-fno-fast-math",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-fcx-limited-range",
+    "-flto",
+    "-I/var/tmp/leo-arm-realtime-publication/src/leo/analysis/native_glrt",
+    "/var/tmp/leo-arm-realtime-publication/tests/analysis/native_glrt/test_native_glrt.c",
+    "/var/tmp/leo-native-glrt-headroom-tile-reuse-final-v1/libleo-native-glrt.a",
+    "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libfftw3.so",
+    "-lm",
+    "-mcpu=cortex-a9",
+    "-mfpu=neon",
+    "-mfloat-abi=hard",
+    "-o",
+    "/tmp/test-native-glrt-tile-reuse-final-arm"
+  ],
+  "compiler": "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+  "compiler_version": "arm-linux-gnueabihf-gcc (Linaro GCC 7.3-2018.05) 7.3.1 20180425 [linaro-7.3-2018.05 revision d29120a424ecfbc167ef90065c0eeb7f91977701]",
+  "execution": "not run; root is sole hardware owner",
+  "inputs": {
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/libfftw3.so": "311b6ee1acd0aee1c1db9b7f9e8a41d4a918463b70cce441aad5f4679665eef4",
+    "/var/tmp/leo-arm-realtime-publication/tests/analysis/native_glrt/test_native_glrt.c": "2bde7a32e3a691fd27adb12448504bfd93d3df5578a360a99d38a14bb73fa3b7",
+    "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a": "6b4f3d98e8874429d5e56fe202ebbd5623486d97e62c17aae7551d97bfa46a2a",
+    "/var/tmp/leo-native-glrt-headroom-tile-reuse-final-v1/build-receipt.json": "2d5a0ea6ffacb614bce6abd60a134843e03ea450a3d076e59b77e7deff718b72",
+    "/var/tmp/leo-native-glrt-headroom-tile-reuse-final-v1/libleo-native-glrt.a": "6f70612cf2fc811add68c4bd9130f2fc6879ac7f14b985eac66dc4952399e3f7"
+  },
+  "output": {
+    "runtime_path": "/tmp/test-native-glrt-tile-reuse-final-arm",
+    "sha256": "5a7f5fc13d7c1c817883f509a2676def9ce7c16e95f97c4c6738ce844c739545"
+  },
+  "schema": "org.leo.native-glrt-geometry-unit-build/v1",
+  "target": "arm-cortex-a9"
+}

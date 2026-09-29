@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from leo.qualification.arm_glrt_release import CLI, LIBRARY, build
+from leo.qualification.arm_glrt_release import BENCHMARK, CLI, LIBRARY, build
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -18,6 +18,7 @@ def _fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         "native_glrt.c",
         "native_glrt.h",
         "native_glrt_cli.c",
+        "native_glrt_bench.c",
         "kernel/proposal_core_wrapper.c",
         "kernel/proposal_tracking_wrapper.c",
         "kernel/conditioned_czt_wrapper.c",
@@ -26,6 +27,8 @@ def _fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         path = source / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"/* {relative} */\n")
+    (source / "native_glrt_profile_wrap.c").write_text("/* wrapper */\n")
+    (source / "native_glrt_profile_wrap.h").write_text("/* wrapper header */\n")
     fftw = tmp_path / "fftw"
     (fftw / "include").mkdir(parents=True)
     (fftw / "lib").mkdir()
@@ -62,21 +65,66 @@ def test_arm_build_records_sources_outputs_and_safe_flags(tmp_path: Path) -> Non
         archiver=archiver,
         fftw_prefix=fftw,
         target="arm-cortex-a9",
+        with_benchmark=True,
+        benchmark_source=source / "native_glrt_bench.c",
+        wrapper_source=source / "native_glrt_profile_wrap.c",
+        full_prep=True,
+        uncached_boundary=True,
+        scalar_boundary_dots=True,
+        disable_fine_plan_reuse=True,
+        diagnostic_wrap=True,
     )
     receipt = json.loads(receipt_path.read_text())
-    assert set(receipt["outputs"]) == {LIBRARY, CLI}
+    assert set(receipt["outputs"]) == {LIBRARY, CLI, BENCHMARK}
+    assert receipt["qualification_sources"] == {
+        "native_glrt_bench.c": receipt_hash(source / "native_glrt_bench.c"),
+        "native_glrt_profile_wrap.c": receipt_hash(source / "native_glrt_profile_wrap.c"),
+        "native_glrt_profile_wrap.h": receipt_hash(source / "native_glrt_profile_wrap.h"),
+    }
     assert receipt["compiler_version"] == "fixture cc 1.0"
+    assert receipt["prepared_reuse_disabled"] is False
+    assert receipt["scalar_boundary_dots"] is True
+    assert receipt["fine_plan_reuse_disabled"] is True
     assert set(receipt["sources"]) >= {"native_glrt.c", "kernel/proposal_core_wrapper.c"}
     commands = [entry["argv"] for entry in receipt["commands"]]
     proposal = next(
         command for command in commands if "proposal_core_wrapper.c" in " ".join(command)
     )
     native = next(command for command in commands if command[-3].endswith("native_glrt.c"))
+    benchmark = next(command for command in commands if "native_glrt_bench.c" in " ".join(command))
     assert "-fno-lto" in proposal
     assert "-fno-lto" not in native
     assert "-fno-fast-math" in native
     assert "-mcpu=cortex-a9" in native
+    assert "-DLEO_NATIVE_GLRT_FULL_PREP=1" in native
+    assert "-DLEO_NATIVE_GLRT_UNCACHED_BOUNDARY=1" in native
+    assert "-DLEO_NATIVE_GLRT_SCALAR_BOUNDARY_DOTS=1" in native
+    assert "-DLEO_NATIVE_GLRT_DISABLE_FINE_PLAN_REUSE=1" in native
+    assert "-DLEO_NATIVE_GLRT_BENCH_AFFINITY=1" in benchmark
+    assert "-DLEO_NATIVE_GLRT_DIAGNOSTIC_WRAP=1" in benchmark
+    assert any("--wrap=malloc" in argument for command in commands for argument in command)
     assert all("reports/" not in argument for command in commands for argument in command)
+
+
+def test_sparse_prepared_reuse_ablation_is_explicit(tmp_path: Path) -> None:
+    source, fftw, compiler, archiver = _fixture(tmp_path)
+    receipt_path = build(
+        source_root=source,
+        output_dir=tmp_path / "out",
+        work_dir=tmp_path / "work",
+        compiler=compiler,
+        archiver=archiver,
+        fftw_prefix=fftw,
+        target="arm-cortex-a9",
+        disable_prepared_reuse=True,
+    )
+    receipt = json.loads(receipt_path.read_text())
+    assert receipt["prepared_reuse_disabled"] is True
+    assert receipt["scalar_boundary_dots"] is False
+    assert receipt["fine_plan_reuse_disabled"] is False
+    commands = [entry["argv"] for entry in receipt["commands"]]
+    assert any("-DLEO_NATIVE_GLRT_DISABLE_PREPARED_REUSE=1" in command
+               for command in commands)
 
 
 def test_pgo_use_fails_closed_without_collected_profiles(tmp_path: Path) -> None:

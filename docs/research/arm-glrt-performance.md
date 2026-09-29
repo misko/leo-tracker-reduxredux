@@ -1,5 +1,21 @@
 # ARM GLRT performance: implementation and evidence index
 
+## Sparse native headroom — 2026-09-29
+
+The [sparse-dwell qualification report](../../reports/2026_09_29_arm_sparse_headroom/README.md)
+optimizes the maintained native component for **one first-20-ms probe per RX
+per 120-ms dual-RX dwell at 2.5 MS/s**. On 1,520 CPU0 calls the final source
+reaches **96.05 ms maximum without PGO**, or **93.93 ms with fresh PGO**.
+A separate 1,600-call candidate-heavy sustained run reaches **91.75 ms p95,
+94.17 ms maximum**, leaving 21.5% of the dwell at its observed maximum.
+All **461/461 native positive candidates** are retained; frozen standard
+same-schedule recovery remains **392/409**. These 304 unique sparse windows
+must not be confused with the 3,344-window dense research workload below.
+The result requires a persistent native RAM context: fresh-process CLI runs
+take 210–360 ms. It is **not deployed fractional-detector or simultaneous
+capture qualification**, and the higher-rate measurements miss 120 ms.
+See the report for matched baselines, exact hashes, tests and reproduction.
+
 ## Maintained opt-in stride component — 2026-09-29
 
 The [ARM stride implementation and qualification report](../../reports/2026_09_29_arm_strides/README.md)
