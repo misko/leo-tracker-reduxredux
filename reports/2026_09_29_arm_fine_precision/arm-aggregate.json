@@ -1,0 +1,104 @@
+{
+  "scope": "Four unique saved 2.5 MS/s dwells, CPU0, no RF/concurrent capture; raw and guarded average two runs. Repeats do not enlarge the cohort.",
+  "proposal_ms_separately_measured": 851.6387285,
+  "methods": {
+    "baseline": {
+      "runs": [
+        "arm4-baseline-v1"
+      ],
+      "mean_search_timings_ms": {
+        "total_cpu": 5461.3761255,
+        "coarse": 414.00509550000044,
+        "acquisition": 2898.1871205,
+        "fine_fft": 2840.873314499998,
+        "conditioned": 1446.4379280000003,
+        "verification": 0.0,
+        "glrt": 577.3060394999993
+      },
+      "search_plus_separately_measured_proposal_ms": 6313.014854,
+      "search_speedup": 1.0,
+      "search_cpu_reduction_fraction": 0.0
+    },
+    "raw_fp32": {
+      "runs": [
+        "arm4-raw-v2",
+        "arm4-raw-v2-repeat"
+      ],
+      "mean_search_timings_ms": {
+        "total_cpu": 4859.84936175,
+        "coarse": 413.6251417500005,
+        "acquisition": 2307.3647204999997,
+        "fine_fft": 2267.3086814999992,
+        "conditioned": 1441.5608062500007,
+        "verification": 0.0,
+        "glrt": 572.5562107499986
+      },
+      "search_plus_separately_measured_proposal_ms": 5711.48809025,
+      "search_speedup": 1.1237747755073204,
+      "search_cpu_reduction_fraction": 0.11014197702688522
+    },
+    "guarded_fp32": {
+      "runs": [
+        "arm4-guarded-v2",
+        "arm4-guarded-v2-repeat"
+      ],
+      "mean_search_timings_ms": {
+        "total_cpu": 4950.45333525,
+        "coarse": 414.27244500000023,
+        "acquisition": 2395.23489825,
+        "fine_fft": 2355.0673860000006,
+        "conditioned": 1442.1673672499999,
+        "verification": 0.0,
+        "glrt": 573.6309577500002
+      },
+      "search_plus_separately_measured_proposal_ms": 5802.09206375,
+      "search_speedup": 1.1032072732838312,
+      "search_cpu_reduction_fraction": 0.09355202397879592
+    },
+    "batch4_fp64": {
+      "runs": [
+        "arm4-batch4-v1"
+      ],
+      "mean_search_timings_ms": {
+        "total_cpu": 5853.5671245,
+        "coarse": 416.71970550000094,
+        "acquisition": 3293.552336999999,
+        "fine_fft": 3224.6005859999996,
+        "conditioned": 1443.294427500001,
+        "verification": 0.0,
+        "glrt": 574.0712445000004
+      },
+      "search_plus_separately_measured_proposal_ms": 6705.205853,
+      "search_speedup": 0.9329996580446661,
+      "search_cpu_reduction_fraction": -0.07181175403188234
+    },
+    "batch16_fp64": {
+      "runs": [
+        "arm4-batch16-v1"
+      ],
+      "mean_search_timings_ms": {
+        "total_cpu": 6060.631864499998,
+        "coarse": 416.4765630000011,
+        "acquisition": 3496.8415575,
+        "fine_fft": 3408.8311365,
+        "conditioned": 1448.843480999999,
+        "verification": 0.0,
+        "glrt": 574.2096555000008
+      },
+      "search_plus_separately_measured_proposal_ms": 6912.270592999998,
+      "search_speedup": 0.9011232240469638,
+      "search_cpu_reduction_fraction": -0.1097261432337504
+    }
+  },
+  "source_sha256": {
+    "2026_09_29_arm_fine_reuse/arm-aggregate.json": "673dd9354995944b2aff050449c65988242916c2a08c3b9aedacd314cc209baa",
+    "2026_09_29_arm_fine_precision/arm4-baseline-v1/summary.json": "5a85f79d54e95e1ee2d6a93f38200d1f47737177d5eb6d7bf105e4d07eec8d19",
+    "2026_09_29_arm_fine_precision/arm4-raw-v2/summary.json": "da0641bab50da7b94aaf17e5af283ded2745e0dd6bb921cd1860f9f864a872c0",
+    "2026_09_29_arm_fine_precision/arm4-raw-v2-repeat/summary.json": "fd01d61f93a112d27f4b8f93869b092df1ccc112b57fa92f7641df9a98aa2c46",
+    "2026_09_29_arm_fine_precision/arm4-guarded-v2/summary.json": "46c043fb10ae5b19c27c1c3dedfaa89a1e01ba4d267c7f8661f3a8117d1c29f9",
+    "2026_09_29_arm_fine_precision/arm4-guarded-v2-repeat/summary.json": "871b3f560cdad2856e7f8a7a2ef60a5f640dfe9e043fe2ee94d893120af1759b",
+    "2026_09_29_arm_fine_batch/arm4-batch4-v1/summary.json": "48aa4e9c7827e2221347a11f0a02fe09becbdecf77192cfb3d7f1ff306de2aad",
+    "2026_09_29_arm_fine_batch/arm4-batch16-v1/summary.json": "b28231d1a717967b470d741fef46b75d21bd40a0614f1222fd970a0e9f6ee6cc",
+    "2026_09_29_arm_fine_precision/arm4-raw-diagnostic-v3/summary.json": "5c290ef1a0d6c5ffe692c83904f0f0226f534603e770d5f62577ef1edeb88818"
+  }
+}
