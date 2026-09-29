@@ -1,5 +1,17 @@
 # FP32 fine-frequency FFT prototype
 
+**Selected research baseline (2026-09-29): raw FP32, with no fine-FFT FP64
+fallback.** Use the measured `host-raw-v2` / `arm-raw-v2` snapshots and their
+`fine-precision-build.json` receipts. The published `source-snapshots.tar.gz`
+contains these sources under the corresponding build names; adapt absolute
+paths in the recorded compile commands when rebuilding. Top-level `build.py`
+currently produces v3 diagnostic builds with additional timers, not the v2
+performance reference. Guarded builds remain comparison experiments.
+
+Final GLRT scoring stays FP64, and the separate residual-boundary conditioned
+fallback remains enabled. This selection does not deploy a production mode.
+Track subsequent changes in the [ARM progress index](../../docs/research/arm-glrt-performance.md).
+
 This bounded research prototype starts from the immutable fine-reuse host-v4
 and ARM-v3 snapshots. It changes the fine-frequency FFT input, transform,
 stored spectra, and per-bin magnitude to FP32. Denominators and score

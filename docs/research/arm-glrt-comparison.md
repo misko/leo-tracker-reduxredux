@@ -1,5 +1,9 @@
 # ARM methods compared with the standard GLRT pipeline
 
+Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
+The [ARM progress index](arm-glrt-performance.md) records the selected research
+baseline, milestones, remaining limitations and links to reproducible evidence.
+
 The latest [FP32 fine-FFT and batching experiment](../../reports/2026_09_29_arm_fine_precision/REPORT.md)
 reduces restricted-search CPU by 11.0% without changing candidate positive
 decisions on the 704-dwell DS7 subset. The tested FP64 batches are slower.
