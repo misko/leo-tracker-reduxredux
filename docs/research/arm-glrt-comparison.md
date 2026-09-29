@@ -4,6 +4,17 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [sixth-wave comparison](../../reports/2026_09_29_arm_subsecond/WAVE6.md)
+separates compiler, SIMD, shared folding, input reuse, and approximate smaller
+FFT experiments. Its exact combination measures **0.815 seconds mean** on
+152 ARM dwells, conserving **4,506/4,573** standard hits and every prior ARM
+candidate across all 3,344 windows; mixed-rate host recovery remains
+**19,217/19,581**. It saves 10.98% versus Wave5 on the same larger ARM panel.
+The exact combination plus ARM-trained PGO reaches **0.776 seconds** on a
+disjoint 32-dwell panel versus 0.918 seconds for Wave5, with the same
+**904/921** standard hits. Its target qualification is currently that smaller
+panel; the report keeps the two timing cohorts separate.
+
 The [fifth-wave final combination](../../reports/2026_09_29_arm_subsecond/WAVE5.md)
 measures **0.915 seconds/dwell mean** on 152 physical-ARM dwells at 2.5 MS/s,
 recovering **4,506/4,573** hits across all 3,344 windows. P95 is **1.219
