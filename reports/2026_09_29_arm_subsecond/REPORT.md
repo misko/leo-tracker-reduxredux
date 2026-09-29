@@ -121,9 +121,12 @@ snapshots remain evidence; only the measured v3 is used above.
 
 Matching uses the sealed standard pipeline, same receiver/window, one-to-one
 maximum-cardinality matches, margin >=0.025, timing distance <=2 samples and
-tracking CFO <=8 kHz. Timing counts preparation, conversion, scaling,
-per-window allocations/plans and cleanup within search. File loading and
-initial workspace/template setup are outside the reported timed kernels.
+tracking CFO <=8 kHz. Timing counts inner per-window search work, including
+ingest, scaling, peak buffers and fine-cache work. It excludes workspace and
+template allocation, initial FFT plan setup, the outer probe's CI16-to-FP64
+window conversion, proposal-region construction and file loading. This scope correction
+was established by the later outer-timer experiment in `WAVE2.md`; the earlier
+stage-sum numbers are unchanged and must not be read as complete RAM processing.
 
 Host and sanitizer component tests cover all four rates, partial/full/zero
 input and relevant extreme numerical cases. The preferred combined and

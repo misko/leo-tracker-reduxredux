@@ -2,6 +2,15 @@
 
 ## Current research baseline — 2026-09-29
 
+The [second-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE2.md)
+add direct outer-timer measurements, cheaper proposals, batched FFTs and packed
+Q15 final dots. The fused omit-power method with improved NEON moment layout
+measures **1.866 seconds/dwell** (mean of two runs)
+and retains **19,225/19,581** original hits. It includes proposal generation,
+region construction, CI16 conversion and search, excluding initial setup and
+capture. The earlier stage sums exclude the outer conversion and region work;
+their report scope has been corrected. The subsecond objective remains open.
+
 The [subsecond-goal checkpoint](../../reports/2026_09_29_arm_subsecond/REPORT.md)
 measures a faster tradeoff at **2.010 seconds/dwell**, including separately timed
 proposals: **19,249/19,581** standard hits retained, 151 fewer than the previous
@@ -18,8 +27,8 @@ reduces raw-FP32 search to **4.468 seconds/dwell**, 8.1% less CPU than the fresh
 dwells and changes no candidate positive decisions. Including separately timed
 proposals gives **5.319 seconds/dwell**. The corrected `limited-complex-v2`
 build passed physical-ARM tests; its relaxed exceptional complex semantics are
-qualified only for the tested finite-data workload. This is the fastest measured
-research extension, not production integration. Q15 integer FFTs and scalar/NEON
+qualified only for the tested finite-data workload. This remains a research
+extension, not production integration. Q15 integer FFTs and scalar/NEON
 packed spectrum caches were slower. Strict raw FP32 remains the reference below.
 
 Selected by the user: **raw FP32 fine FFTs without the fine-FFT FP64 fallback**,
