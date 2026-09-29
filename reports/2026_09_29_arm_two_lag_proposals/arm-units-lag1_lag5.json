@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "scope": "component correctness; unpinned, no timing claim",
+  "receipt_sha256": "fddfc278f6d6945451b5558a14f8da005cdf5d1eab88b21092580cdd1c62e80d",
+  "tests": [
+    {
+      "binary": "test_resampling_arm",
+      "sha256": "9cd010383dc8a220b635a0494c2dcdb789379bb1db731638669e9a5fc741d395",
+      "output": "periodic power-of-two resampling passed: zero, wrap tail, circular shift, mapping and original-grid peak distance at all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_two_lag_arm",
+      "sha256": "e2f98cf29292ba8031a1b9d0d2b0b98db44da72e7796bfc65a1414ccf6fa7623",
+      "output": "two-lag resampled omit-power proposal passed feature-mask and all-rate zero-input checks\n",
+      "passed": true
+    },
+    {
+      "binary": "test_final_reuse_arm",
+      "sha256": "41320062ef6ae87a2f3b0bb85b75658e189768cbd8716f384cb1e7f24640b9fe",
+      "output": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "sha256": "9d372ad57c3877132054c1789a1046272ff0fb0014012c17d3c2675562aaff8d",
+      "output": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "sha256": "30a4d7efb74e204cc298d5b46a1ff4005925035b6ac78bbbeb1ad120365b768e",
+      "output": "conditioned moments four-frequency: max_abs=0.000854492188 max_rel=27.4401264 max_screen_normalized=0.00126164407 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    }
+  ]
+}

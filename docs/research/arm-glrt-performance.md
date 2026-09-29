@@ -2,6 +2,15 @@
 
 ## Current research baseline — 2026-09-29
 
+The [third-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE3.md)
+combine resampled proposals, squared-magnitude ranking and a boundary-refinement
+margin gate: **1.710 seconds/dwell**, mean of two physical-ARM runs, with
+**19,226/19,581** standard hits recovered on 704 mixed-rate host dwells.
+All 15,488 windows and 123,904 candidate entries remain. There are 21,505
+unmatched positives. Timing includes proposal generation, regions, conversion
+and search, excluding capture and initial setup. This improves the previous
+fused runtime by 8.36%; neither subsecond nor real-time operation is achieved.
+
 The [second-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE2.md)
 add direct outer-timer measurements, cheaper proposals, batched FFTs and packed
 Q15 final dots. The fused omit-power method with improved NEON moment layout
