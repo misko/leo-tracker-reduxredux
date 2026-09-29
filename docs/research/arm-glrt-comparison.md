@@ -4,6 +4,12 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [second-wave follow-up](../../reports/2026_09_29_arm_subsecond/WAVE2.md)
+measures the fused omit-power plus NEON-moment method at 1.866 seconds/dwell, retaining
+19,225/19,581 original hits with 21,418 unmatched positives. Its outer timer
+includes proposals, region construction, conversion and search. This remains
+above the subsecond goal and excludes capture and initial setup.
+
 The [subsecond-goal checkpoint](../../reports/2026_09_29_arm_subsecond/REPORT.md)
 adds a 2.010-second tradeoff retaining 19,249/19,581 original hits. It keeps all
 windows and candidate entries but increases unmatched positives to 21,555.

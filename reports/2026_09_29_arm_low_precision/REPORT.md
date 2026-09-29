@@ -18,9 +18,13 @@ Timing is CPU0 on PLUTO+ 192.168.1.15, four saved 120 ms dual-receiver dwells
 at 2.5 MS/s: 88 receiver-specific 20 ms windows and 704 candidate entries.
 Every listed method recovers **119/119 standard positive hits**, with 139
 unmatched positives. This small ARM panel is distinct from the larger host
-quality checks below. Search time includes per-window conversion, scaling,
-packing, allocation, FFT planning and cleanup; it excludes file loading,
-initial workspace setup, proposals and simultaneous capture.
+quality checks below. Search time includes inner per-window ingest, scaling,
+packing, peak buffers and fine-cache work. It excludes workspace and template
+allocation, initial FFT plan setup, the outer probe's CI16-to-FP64 window
+conversion, proposal-region construction, file loading, proposals and
+simultaneous capture. The outer
+conversion exclusion was clarified by the later fused-timer experiment in
+`../2026_09_29_arm_subsecond/WAVE2.md`; the recorded stage times are unchanged.
 
 | Method | Search CPU seconds/dwell | Interpretation |
 |---|---:|---|
