@@ -1,0 +1,37 @@
+{
+  "receipt_sha256": "545487b9cb3d15fb04b91f1eb3070e6910dede3bcef30e53a3cf712378d1c0da",
+  "target": "192.168.1.15",
+  "scope": "correctness only, unpinned; no RF",
+  "results": [
+    {
+      "binary": "test_final_reuse_arm",
+      "binary_sha256": "5e5eba465812e6f19b8a547dd668336cb3b1a412f1dad3e39c259426fe9aeaaa",
+      "stdout": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "binary_sha256": "0dd62881f41bdc6de52df93e4ddd47d859fd911ccb794fd04c721b5fd9c01865",
+      "stdout": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "binary_sha256": "3fced188dd22d80972d57d8aab66036d1e83dbc8d355c4d6767d1f4c1ccc14ca",
+      "stdout": "conditioned moments four-frequency: max_abs=0.000854492188 max_rel=27.4401264 max_screen_normalized=0.00126164407 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    },
+    {
+      "binary": "test_boundary_margin_allowed_arm",
+      "binary_sha256": "fd79cbb0cfb1db59490d5580c066d6b9355f020cacd8b3331efe189276ab4d49",
+      "stdout": "boundary margin .100 passed: finite, equal threshold, nextafter, and nonfinite fallback\n",
+      "passed": true
+    },
+    {
+      "binary": "test_coarse_epoch4_arm",
+      "binary_sha256": "a50011eca29d05f55ce49e9efff6d67016680c63198f6c6816fa731df3bf7520",
+      "stdout": "coarse epoch4 exact parity: all rates zero/extreme partial/full sparse-four and scalar tails\n",
+      "passed": true
+    }
+  ]
+}

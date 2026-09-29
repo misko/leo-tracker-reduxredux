@@ -1,0 +1,53 @@
+=================================================================
+==569742==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x78e59df5d280 at pc 0x57d5a816392a bp 0x7ffe10ab7f40 sp 0x7ffe10ab7f30
+READ of size 4 at 0x78e59df5d280 thread T0
+    #0 0x57d5a8163929 in leo_fine_precision_scores /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/../sources/fine_precision.h:194
+    #1 0x57d5a81779e3 in run_rate /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan.c:39
+    #2 0x57d5a81846ee in main /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan.c:48
+    #3 0x78e59dc2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #4 0x78e59dc2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #5 0x57d5a815c8e4 in _start (/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan+0x3e8e4) (BuildId: 3d7888347780a480615bef769b38afae30ef6fc2)
+
+0x78e59df5d280 is located 0 bytes after 400000-byte region [0x78e59defb800,0x78e59df5d280)
+allocated by thread T0 here:
+    #0 0x78e59f12b40f in calloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:74
+    #1 0x57d5a8175643 in leo_presence_create /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/sources/src/native_presence/presence.c:352
+    #2 0x57d5a8177841 in run_rate /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan.c:26
+    #3 0x57d5a81846ee in main /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan.c:48
+    #4 0x78e59dc2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #5 0x78e59dc2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 066527e430a32768d82741e00b81eebb1a872294)
+    #6 0x57d5a815c8e4 in _start (/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/test_fine_precision_tail_asan+0x3e8e4) (BuildId: 3d7888347780a480615bef769b38afae30ef6fc2)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_fine_input_neon/tests/../sources/fine_precision.h:194 in leo_fine_precision_scores
+Shadow bytes around the buggy address:
+  0x78e59df5d000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x78e59df5d080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x78e59df5d100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x78e59df5d180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x78e59df5d200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x78e59df5d280:[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x78e59df5d300: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x78e59df5d380: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x78e59df5d400: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x78e59df5d480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x78e59df5d500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==569742==ABORTING

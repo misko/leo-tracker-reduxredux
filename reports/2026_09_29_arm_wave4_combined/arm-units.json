@@ -1,0 +1,61 @@
+{
+  "receipt_sha256": "c923f55d36a662359e43939cce9d8dc0a8a0a445ac4cef1e3411fdfb575e535c",
+  "target": "192.168.1.15",
+  "scope": "correctness only, unpinned; no RF",
+  "results": [
+    {
+      "binary": "test_resampling_arm",
+      "binary_sha256": "347336a190b7cbd29e127c58026516ed303679247c11ac52ca7fd28676ebb81e",
+      "stdout": "periodic power-of-two resampling passed: zero, wrap tail, circular shift, mapping and original-grid peak distance at all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_omit_component_arm",
+      "binary_sha256": "fa0b0ee8b1b3615e8bb90ea666e169647a662c6cab05aeb5334f71a97011959f",
+      "stdout": "resampled omit-power proposal passed all-rate zero-input component checks\n",
+      "passed": true
+    },
+    {
+      "binary": "test_final_reuse_arm",
+      "binary_sha256": "732412f56b83e323619054ececbdd30143233d3351301b9a2330780dff121bd7",
+      "stdout": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "binary_sha256": "f2cebd1f1b022be51b17a382030117b9641f4045e6cb5f7b2dd49e96bc2b58ad",
+      "stdout": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "binary_sha256": "c325b45d1d52ebe4669ae93189780c5e22c735250836426c766ddbf4b1f24e7d",
+      "stdout": "conditioned moments four-frequency: max_abs=0.000854492188 max_rel=27.4401264 max_screen_normalized=0.00126164407 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    },
+    {
+      "binary": "test_rank_only_arm",
+      "binary_sha256": "050d464122265b0c46d821851b331be811c30cde605065ef09ce56af417b324f",
+      "stdout": "rank-only squared magnitude: ordering flat-gate zero/extreme all-rates ok\n",
+      "passed": true
+    },
+    {
+      "binary": "test_boundary_margin_allowed_arm",
+      "binary_sha256": "5d04e0655fb123643cc69334dbbea0bd49ee749929dfaa94ab252963e2d577c9",
+      "stdout": "boundary margin .100 passed: finite, equal threshold, nextafter, and nonfinite fallback\n",
+      "passed": true
+    },
+    {
+      "binary": "test_preplan_arm",
+      "binary_sha256": "af5d654fd0ef5c7e02d83cd9a5fd5bd69bea54dc388d5eaf0b5b5b048a33c292",
+      "stdout": "proposal preplan bitwise parity: resample geometry, support, full-range CI16 fold, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_rank_fast_arm",
+      "binary_sha256": "379c079b211b0495d1f71bcdd712ed1c38c27c11ea0db70eb22d4c1a24f6a493",
+      "stdout": "rank fast passed all-rate flat, equal-tie, wrap and circular-separation equivalence\n",
+      "passed": true
+    }
+  ]
+}
