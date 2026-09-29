@@ -1,0 +1,37 @@
+{
+  "schema": "arm-decimated-fine-neon-diagnostic/v1",
+  "target": "arm",
+  "purpose": "preserve 3e-6 relative test bound and print first failing pattern/rate/index plus numerical scale",
+  "command": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-fast-math",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-mcpu=cortex-a9",
+    "-mfpu=neon",
+    "-mfloat-abi=hard",
+    "-I",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/arm",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/arm/decimated_fir.c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/arm/diagnose_decimated_fir.c",
+    "-lm",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic/builds/arm/diagnose_decimated_fir_arm"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "binary": {
+    "path": "diagnose_decimated_fir_arm",
+    "sha256": "147c918886772adb1ca257ea4b9a2d0958216f9604a3eeed2f3bede660cdee02"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "diagnose_decimated_fir.c": "15923b5cffa34dc071983b13739702486d2ebb5beb01602b21b0c57d9ad8aba4",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  }
+}

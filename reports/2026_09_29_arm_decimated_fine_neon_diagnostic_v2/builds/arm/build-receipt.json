@@ -1,0 +1,36 @@
+{
+  "schema": "arm-decimated-fir-forward-error/v1",
+  "target": "arm",
+  "command": [
+    "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-fast-math",
+    "-fno-math-errno",
+    "-fno-trapping-math",
+    "-mcpu=cortex-a9",
+    "-mfpu=neon",
+    "-mfloat-abi=hard",
+    "-I",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/arm",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/arm/decimated_fir.c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/arm/test_fir_forward_error.c",
+    "-lm",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon_diagnostic_v2/builds/arm/test_fir_forward_error_arm"
+  ],
+  "compiler_stdout": "",
+  "compiler_stderr": "",
+  "binary": {
+    "path": "test_fir_forward_error_arm",
+    "sha256": "eb1c4e349d3bb0002dd1fedc4cc4d8467e86190f64c0d56c2cd8ebc458f50241"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "test_fir_forward_error.c": "157c619f9b81e5d0017360aa803813c3e8ea3781f01dc556e25df04958df821b",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "arm-decimated-fine-neon-component/v1",
+  "target": "host",
+  "base": "Wave4 for future integration; standalone gate only",
+  "filter": "factor-5 circular 24-tap FP32 FIR; 500 Hz full-frame output grid; requested band response corrected by integration layer",
+  "bounds": "NEON loads begin only after tap-23; explicit n controls every output and partial wrap",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-fno-fast-math",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/decimated_fir.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/test_decimated_fir.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/test_decimated_fir_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-fno-fast-math",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-I",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/decimated_fir.c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/bench_decimated_fir.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_fine_neon/builds/host/bench_decimated_fir_host"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_decimated_fir_host",
+      "executed": true,
+      "stdout": "decimated NEON FIR passed: all rates zero/fullscale/impulse/tone/twotone/OOB alias/partial bounds\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "test_decimated_fir_host": "0010809064bde767b2a6bb9d11c92d7d2558bcc2b14b0908dd28406c4471247e",
+    "bench_decimated_fir_host": "0a48ef61dbc99d889b65bf6dc61286457387308fff2f18da234ed38ea3c602f2"
+  },
+  "sources": {
+    "decimated_fir.c": "bddd87c4175b94a969d22b1816822bc3d82b948692cd1a8a1a9a5f36a299188a",
+    "bench_decimated_fir.c": "5a3dd4f3aaf9298f58416d211024aed746fa463d9143d0b602b1cac5486a3ec8",
+    "test_decimated_fir.c": "0a3cca928e66f8b8440085f3cb7c2e15f03512d585f8af3e185f90ac8dba6eef",
+    "decimated_fir.h": "a4bb413336e5195489ab716a867fca1d9f9af93eb1331c50f80b823f9859aaf6"
+  }
+}

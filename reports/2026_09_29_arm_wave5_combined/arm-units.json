@@ -1,0 +1,37 @@
+{
+  "receipt_sha256": "a66cdd485cd5875f0bb891beba57cf438c76b29a8a82aa9c9617041f863621d4",
+  "target": "192.168.1.15",
+  "scope": "correctness only, unpinned; no RF",
+  "results": [
+    {
+      "binary": "test_direct_ci16_ingest_arm",
+      "binary_sha256": "0561b5aa9c5fd7f2ca5e1ba7c464dfb7864ec982419f497fe0b3ee2153d36ab9",
+      "stdout": "raw direct CI16 ingest passed all rates, stride2/4 view, tails, extremes, overflow bounds, bit-exact workspace, and candidates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_rate_coarse_gate_arm",
+      "binary_sha256": "abaf615e917c05cef38fea1b613689ab854b7caf725cebf8c5a095065381bcb3",
+      "stdout": "rate coarse gate passed all rates, equal/nextafter, and nonfinite checks\n",
+      "passed": true
+    },
+    {
+      "binary": "test_final_reuse_arm",
+      "binary_sha256": "e69332b185b0cd3c61ddc5f2c228f20d370682a73082bfe0a6c365e24a8f05ec",
+      "stdout": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "binary_sha256": "658ebdcd1bb9583b68ff80646de74d3dee02eb3a592bd237decae0fb6214e73c",
+      "stdout": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "binary_sha256": "a9b8defd1ef166e8ff96f255f77f2ba64c0d60a9c9b0e7c977a41638e3a10369",
+      "stdout": "quadratic conditioned direct-DFT bound: block=64 max_bound_fraction=0.0439954742 scalar_vector_max_abs=0.00390625 max_rel=3.3028307 max_screen_normalized=0.00354166818 all_rates=4 bins=41 zero=1 extreme=1 tone=1 partial_tail=1\n",
+      "passed": true
+    }
+  ]
+}

@@ -4,6 +4,17 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [fifth-wave final combination](../../reports/2026_09_29_arm_subsecond/WAVE5.md)
+measures **0.915 seconds/dwell mean** on 152 physical-ARM dwells at 2.5 MS/s,
+recovering **4,506/4,573** hits across all 3,344 windows. P95 is **1.219
+seconds**; 105/152 dwells finish below one second. The larger host audit has
+**19,217/19,581** standard hits recovered on 704 mixed-rate DS7 dwells. It runs
+all 15,488 windows and emits 86,439 candidates. Rate-based coarse rejection
+provides the largest saving; exact input preparation and sparse peak extraction
+add no further lost detections. Quadratic search retains the gated method's
+hit identities across DS7, DS8 and DS9. This is research-only static-input
+processing, not 120 ms real-time operation or concurrent-capture validation.
+
 The [fourth-wave follow-up](../../reports/2026_09_29_arm_subsecond/WAVE4.md)
 measures **1.686 seconds/dwell**, retaining **19,226/19,581** standard hits and
 every Wave3 candidate object. It precomputes proposal geometry and rank values
