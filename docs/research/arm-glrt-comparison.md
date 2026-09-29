@@ -4,6 +4,12 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [third-wave combined method](../../reports/2026_09_29_arm_subsecond/WAVE3.md)
+measures **1.710 seconds/dwell** (two-run mean) and recovers
+**19,226/19,581** hits, with 21,505 unmatched positives. It retains every window
+and candidate entry. Two-lag proposals reach 1.652 seconds in one run but
+recover fewer hits (19,189). These remain static-IQ research measurements.
+
 The [second-wave follow-up](../../reports/2026_09_29_arm_subsecond/WAVE2.md)
 measures the fused omit-power plus NEON-moment method at 1.866 seconds/dwell, retaining
 19,225/19,581 original hits with 21,418 unmatched positives. Its outer timer
@@ -55,6 +61,9 @@ and returns 19,581 positive candidate entries. Its 2.5 MS/s subset contains
 | Raw FP32 plus corrected compiler/local-arithmetic tuning | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.319 s, separately timed stage sum |
 | Full-frame moment conditioned screen with FP64 near-max rechecks | 4,551/4,573 | 19,400/19,581 | 99.08% | 4.567 s, separately timed stage sum |
 | Two-frame fine estimate, moment screen, radius 2, exact final reuse | 4,521/4,573 | 19,249/19,581 | 98.30% | 2.010 s, separately timed stage sum |
+| Fused omit-power proposals and NEON moments | 4,516/4,573 | 19,225/19,581 | 98.18% | 1.866 s, outer timer |
+| Resampled proposals, squared ranking, boundary margin gate | 4,515/4,573 | 19,226/19,581 | 98.19% | 1.710 s, outer timer |
+| Resampled lag1 + lag5 proposals, original boundary rule | 4,513/4,573 | 19,189/19,581 | 98.00% | 1.652 s, outer timer, single run |
 | Above, with guarded FP32 fine FFTs | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.802 s, separately timed stage sum |
 | Sparse coarse search, eight frames | 4,347/4,573 | 18,404/19,581 | 93.99% | 27.808 s |
 | Tracking with full refresh every second window | 3,898/4,573 | 17,076/19,581 | 87.20% | 33.997 s |

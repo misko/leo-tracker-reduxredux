@@ -1,0 +1,49 @@
+{
+  "receipt_sha256": "0f72c911fdd7f2697aa9aa67e3d6ab67e5dbb336fe405b0c70dcb7c8443096b3",
+  "target": "192.168.1.15",
+  "scope": "correctness only, unpinned; no RF",
+  "results": [
+    {
+      "binary": "test_resampling_arm",
+      "binary_sha256": "b657d5f8e6d909ba00b29d8196d5310ed348c6d4795e4ed8b61a3b3b6e300bd4",
+      "stdout": "periodic power-of-two resampling passed: zero, wrap tail, circular shift, mapping and original-grid peak distance at all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_omit_component_arm",
+      "binary_sha256": "ce162e927a3b571168e05a23c82770aac2f94eed0d3499606d74dfa94afd9677",
+      "stdout": "resampled omit-power proposal passed all-rate zero-input component checks\n",
+      "passed": true
+    },
+    {
+      "binary": "test_final_reuse_arm",
+      "binary_sha256": "5fa905cc38b46ed1c9001a7b7e51fd90f547e451c763a83c22ec010c9a0512bd",
+      "stdout": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "binary_sha256": "b603a6c4f4c423e4b607f5f218de00e12a74e60631234f1307a624b013b0b3e2",
+      "stdout": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "binary_sha256": "6afbb9a543e447e2db687f34f6c8e9d5f464b0de499b34e1da9fb27a417aeb1e",
+      "stdout": "conditioned moments four-frequency: max_abs=0.000854492188 max_rel=27.4401264 max_screen_normalized=0.00126164407 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    },
+    {
+      "binary": "test_rank_only_arm",
+      "binary_sha256": "e0db82d0f1ca566ef2bbbb2f9fa1abc9b49e46d547a5605211f8fa0dbb8aef86",
+      "stdout": "rank-only squared magnitude: ordering flat-gate zero/extreme all-rates ok\n",
+      "passed": true
+    },
+    {
+      "binary": "test_boundary_margin_allowed_arm",
+      "binary_sha256": "64b34b9103bcf2b11de738ee40bc9a8b8f777300abee56a4026558e9c20970ee",
+      "stdout": "boundary margin .100 passed: finite, equal threshold, nextafter, and nonfinite fallback\n",
+      "passed": true
+    }
+  ]
+}

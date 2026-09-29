@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "scope": "component correctness; unpinned, no timing claim",
+  "receipt_sha256": "d2a5b3074806b1b1b8c45ea44c6cdd306aae25d69baec02c99eaca721de6b9ce",
+  "tests": [
+    {
+      "binary": "test_final_reuse_arm",
+      "sha256": "850ce0e5db5eb87916d2f146e2be82389c101fac2ba33312fd96ad74454e8ab6",
+      "output": "final reuse passed: exact hits, distinct adjacent CFO/count keys, logical counters, window/RX reset, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_fine_budget_arm",
+      "sha256": "1ce3561ac1200d0be09d26ac0ae8d507967da1444e07c530a22db3db2a78f496",
+      "output": "frame budget passed: full default, budgets 1/2/4/8, even span, all rates\n",
+      "passed": true
+    },
+    {
+      "binary": "test_moment_accuracy_arm",
+      "sha256": "9d1c43241fbb52da68671de2a3b09bd91cd15b208ad30e8a048e1fcb9965ec04",
+      "output": "conditioned moments four-frequency: max_abs=0.000854492188 max_rel=27.4401264 max_screen_normalized=0.00126164407 all_rates=4 bins=41 frames=16\n",
+      "passed": true
+    },
+    {
+      "binary": "test_boundary_margin_allowed_arm",
+      "sha256": "1d544a8d033113ba41529d8e25769c8e169bde2fd16f76a581df4ce50ab21014",
+      "output": "boundary margin .100 passed: finite, equal threshold, nextafter, and nonfinite fallback\n",
+      "passed": true
+    }
+  ]
+}
