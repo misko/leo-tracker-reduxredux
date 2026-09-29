@@ -1,0 +1,9 @@
+{
+  "schema": "arm-fine-batch-test-build/v1",
+  "batch_size": 16,
+  "execution": "not run; root owns serialized ARM workload",
+  "binary": "test_fine_batch",
+  "binary_sha256": "9acbc55212a11e4d4ea1e7d722b9eea67e192b7e326f10572818b8f2f2682185",
+  "command_status": "actual recorded shell command",
+  "command": ["/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc", "-DLEO_PRESENCE_FFTW=1", "-DLEO_FINE_BATCH=16", "-std=c11", "-O3", "-Wall", "-Wextra", "-Werror", "-fno-fast-math", "-DLEO_PRESENCE_COARSE_FP32", "-DLEO_FULL_CONDITIONED_SCREEN", "-DLEO_FULL_REFINEMENT_MODE=2", "-mcpu=cortex-a9", "-mfpu=neon", "-mfloat-abi=hard", "-I", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16/src/native_presence", "-I", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16/conditioned_czt.c", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16/test_fine_reuse.c", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16/fft_full.c", "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a", "-lfftw3", "-lm", "-o", "reports/2026_09_29_arm_fine_batch/builds/arm-batch16/test_fine_batch"]
+}

@@ -1,5 +1,9 @@
 # ARM methods compared with the standard GLRT pipeline
 
+The latest [FP32 fine-FFT and batching experiment](../../reports/2026_09_29_arm_fine_precision/REPORT.md)
+reduces restricted-search CPU by 11.0% without changing candidate positive
+decisions on the 704-dwell DS7 subset. The tested FP64 batches are slower.
+
 See [per-stage ARM runtime](../../reports/2026_09_29_arm_endpoint_interpolation/RUNTIME_PROFILE.md)
 and [first/last-window interpolation results](../../reports/2026_09_29_arm_endpoint_interpolation/REPORT.md)
 for the latest smaller-cohort experiment. Endpoint interpolation recovered
@@ -27,6 +31,8 @@ and returns 19,581 positive candidate entries. Its 2.5 MS/s subset contains
 | Lag-structure proposals plus restricted timing search | 4,551/4,573 | 19,400/19,581 | 99.08% | 7.377 s, separately timed stage sum |
 | Restricted timing search plus exact lazy FFT reuse | 4,551/4,573 | 19,400/19,581 | 99.08% | 6.449 s, separately timed stage sum |
 | FP32 lag proposals plus restricted timing search and lazy FFT reuse | 4,551/4,573 | 19,400/19,581 | 99.08% | 6.313 s, separately timed stage sum |
+| Above, with raw FP32 fine FFTs | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.711 s, separately timed stage sum |
+| Above, with guarded FP32 fine FFTs | 4,551/4,573 | 19,400/19,581 | 99.08% | 5.802 s, separately timed stage sum |
 | Sparse coarse search, eight frames | 4,347/4,573 | 18,404/19,581 | 93.99% | 27.808 s |
 | Tracking with full refresh every second window | 3,898/4,573 | 17,076/19,581 | 87.20% | 33.997 s |
 | Fine-frequency result directly into GLRT | 3,894/4,573 | 16,333/19,581 | 83.41% | 24.455 s |
