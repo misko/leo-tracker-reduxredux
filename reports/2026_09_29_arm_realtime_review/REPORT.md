@@ -1,5 +1,8 @@
 # ARM methods compared with the standard GLRT pipeline
 
+See [new prototype results and architectural priorities](../../reports/2026_09_29_arm_realtime_review/PROTOTYPES.md)
+for exact FFT reuse, FP32 proposals and causal same-channel frequency prediction.
+
 Use the standard analysis pipeline's individual positive GLRT candidate
 entries as the recovery denominator. Count one-to-one matches in the same
 receiver/window. Do not substitute native-baseline parity, positive-window
@@ -17,6 +20,8 @@ and returns 19,581 positive candidate entries. Its 2.5 MS/s subset contains
 | Exact refinement reuse V2 | 4,573/4,573 | 19,581/19,581 | 100% | 33.167 s |
 | Selective boundary fallback | 4,573/4,573 | 19,576/19,581 | 99.9745% | 25.085 s |
 | Lag-structure proposals plus restricted timing search | 4,551/4,573 | 19,400/19,581 | 99.08% | 7.377 s, separately timed stage sum |
+| Restricted timing search plus exact lazy FFT reuse | 4,551/4,573 | 19,400/19,581 | 99.08% | 6.449 s, separately timed stage sum |
+| FP32 lag proposals plus restricted timing search and lazy FFT reuse | 4,551/4,573 | 19,400/19,581 | 99.08% | 6.313 s, separately timed stage sum |
 | Sparse coarse search, eight frames | 4,347/4,573 | 18,404/19,581 | 93.99% | 27.808 s |
 | Tracking with full refresh every second window | 3,898/4,573 | 17,076/19,581 | 87.20% | 33.997 s |
 | Fine-frequency result directly into GLRT | 3,894/4,573 | 16,333/19,581 | 83.41% | 24.455 s |
@@ -38,6 +43,12 @@ The restricted timing search also returns 18,328 unmatched positive entries
 on DS7. Its high recall does not imply an equivalent output inventory or
 verified false-alarm behavior. Boundary fallback returns two unmatched
 positive entries and remains the preferred near-baseline quality reference.
+
+Lazy FFT reuse preserves all 123,904 candidate objects on the DS7 subset.
+FP32 proposals change 200 candidate objects in 57 windows but retain the same
+per-rate recovered-hit counts and the same overall unmatched-positive count.
+Their ARM proposal timing uses three repeats of four dwells; lazy search uses
+two repeats of the same four dwells. No combined capture measurement is implied.
 
 Final-scorer optimization is not a separate discovery method: 274.0 ms scores
 all 176 supplied-coordinate entries; 46.7 ms is the retrospective positive-only
@@ -67,6 +78,8 @@ subset containing 90 original hits; they are not full-cohort timings.
 - [Exact refinement reuse](../../reports/2026_09_28_arm_refinement_cache/REPORT.md).
 - [Boundary fallback](../../reports/2026_09_28_arm_boundary_fallback/REPORT.md).
 - [Lag-structure discovery](../../reports/2026_09_29_arm_lag_discovery/REPORT.md).
+- [Exact lazy FFT reuse](../../reports/2026_09_29_arm_fine_reuse/REPORT.md).
+- [FP32 proposals and downstream GLRT](../../reports/2026_09_29_arm_float_proposal/REPORT.md).
 - [Sparse coarse search](../../reports/2026_09_28_arm_sparse_proposal/REPORT.md).
 - [Tracking](../../reports/2026_09_28_arm_glrt_tracking/REPORT.md).
 - [Fine-direct GLRT](../../reports/2026_09_28_arm_direct_glrt/REPORT.md).
