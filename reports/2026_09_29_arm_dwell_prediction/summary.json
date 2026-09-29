@@ -1,0 +1,210 @@
+{
+  "frequency_reference_note": "The arithmetic uses actual_lo_frequency_hz + actual_if_offset_hz as a metadata hypothesis. The standard acquisition code does not consume these fields, so its sign and applicability are unverified. Every eligible same-key pair here has zero reference delta; this assumption changes none of these results.",
+  "causality_policy": {
+    "same_key": "session_id, channel, edge, receiver_id, and rate_hz",
+    "history": "strictly earlier sample_start_counter only",
+    "gap": "positive counter/rate seconds; cross-rate history is excluded",
+    "cold_starts": "counted in full denominator and require a blind path",
+    "bounded_drift": "fixed 20 kHz nearest-older association before current IQ; one prediction per unique latest seed"
+  },
+  "command": ".venv/bin/python reports/2026_09_29_arm_dwell_prediction/analyze.py",
+  "test_command": ".venv/bin/python -m pytest -q reports/2026_09_29_arm_dwell_prediction/test_analyze.py",
+  "next_same_channel_smoke": {
+    "schema": "arm-dwell-prediction-feasibility/v2",
+    "source": "reports/2026_09_28_ds7_glrt_benchmark/run-01/rows.jsonl",
+    "source_sha256": "61edf942f96c03aeda0f4f3c9356c4e011dfc4d6f737903ad092ae177d9759e8",
+    "scope": "DS7 28-dwell chronological smoke cohort; same session/channel/edge/receiver/rate only",
+    "positive_gate": 0.025,
+    "match_tolerance_hz": 8000.0,
+    "bounded_drift_association_gate_hz": 20000.0,
+    "receiver_dwell_records": 56,
+    "standard_positive_entries": 1154,
+    "cold_start_positive_entries": 469,
+    "history_without_last_positive_seed_entries": 0,
+    "history_without_two_positive_seed_entries": 286,
+    "history_without_bounded_drift_seed_entries": 286,
+    "last_prior_oracle_seed_bank": {
+      "eligible_positive_entries": 685,
+      "within_8khz": 662,
+      "conditional_coverage": 0.9664233576642336,
+      "prospective_full_denominator_coverage": 0.5736568457538995,
+      "not_covered_requires_blind_path": 492,
+      "median_abs_error_hz": 685.9654943324858,
+      "p95_abs_error_hz": 4589.571499673999,
+      "bank": "last prior dwell positive entries"
+    },
+    "last_two_oracle_seed_bank": {
+      "eligible_positive_entries": 399,
+      "within_8khz": 384,
+      "conditional_coverage": 0.9624060150375939,
+      "prospective_full_denominator_coverage": 0.3327556325823224,
+      "not_covered_requires_blind_path": 770,
+      "median_abs_error_hz": 4.147760090010706,
+      "p95_abs_error_hz": 1921.1474708857422,
+      "bank": "all older/prior positive-entry pairs"
+    },
+    "bounded_causal_drift_bank": {
+      "eligible_positive_entries": 399,
+      "within_8khz": 378,
+      "conditional_coverage": 0.9473684210526315,
+      "prospective_full_denominator_coverage": 0.3275563258232236,
+      "not_covered_requires_blind_path": 776,
+      "median_abs_error_hz": 49.80814848848968,
+      "p95_abs_error_hz": 10631.31981767228,
+      "bank": "one extrapolation per unique latest seed after a 20 kHz causal nearest-history gate"
+    },
+    "proposal_bank_sizes_per_eligible_dwell": {
+      "last_prior_raw": {
+        "eligible_dwells": 28,
+        "mean": 24.857142857142858,
+        "median": 25,
+        "p95": 43,
+        "max": 51
+      },
+      "last_prior_unique": {
+        "eligible_dwells": 28,
+        "mean": 18.642857142857142,
+        "median": 16,
+        "p95": 32,
+        "max": 43
+      },
+      "last_two_all_pairs_raw": {
+        "eligible_dwells": 17,
+        "mean": 754.1176470588235,
+        "median": 315,
+        "p95": 1720,
+        "max": 2499
+      },
+      "last_two_all_pairs_unique": {
+        "eligible_dwells": 17,
+        "mean": 416.11764705882354,
+        "median": 154,
+        "p95": 928,
+        "max": 1677
+      },
+      "bounded_drift_raw": {
+        "eligible_dwells": 17,
+        "mean": 17.352941176470587,
+        "median": 11,
+        "p95": 30,
+        "max": 43
+      },
+      "bounded_drift_unique": {
+        "eligible_dwells": 17,
+        "mean": 17.352941176470587,
+        "median": 11,
+        "p95": 30,
+        "max": 43
+      }
+    },
+    "gap_seconds": {
+      "min": 0.1200255999865476,
+      "median": 0.2805299999890849,
+      "max": 1.3216984000173397
+    },
+    "lo_reference_change_hz": {
+      "max": 0.0,
+      "nonzero_pairs": 0
+    },
+    "interpretation": "Coverage is an oracle-seeded all-positive-bank upper envelope, not a narrow predictor. It is not IQ-to-GLRT recovery, does not account for cold starts or negative proposals, and cannot justify a runtime claim."
+  },
+  "sparse_history_stress": {
+    "schema": "arm-dwell-prediction-feasibility/v2",
+    "source": "reports/2026_09_28_ds7_large_arm/baseline-01/rows.jsonl",
+    "source_sha256": "e4a54142e3b31c12088b3fa3cd53c053a1cf14acf41c5b3a5111236d5b7fe9cf",
+    "scope": "DS7 704-dwell stratified cohort; same session/channel/edge/receiver/rate only; not adjacent dwells",
+    "positive_gate": 0.025,
+    "match_tolerance_hz": 8000.0,
+    "bounded_drift_association_gate_hz": 20000.0,
+    "receiver_dwell_records": 1408,
+    "standard_positive_entries": 19581,
+    "cold_start_positive_entries": 9171,
+    "history_without_last_positive_seed_entries": 1186,
+    "history_without_two_positive_seed_entries": 6826,
+    "history_without_bounded_drift_seed_entries": 9140,
+    "last_prior_oracle_seed_bank": {
+      "eligible_positive_entries": 9224,
+      "within_8khz": 695,
+      "conditional_coverage": 0.07534692107545533,
+      "prospective_full_denominator_coverage": 0.03549359072570349,
+      "not_covered_requires_blind_path": 18886,
+      "median_abs_error_hz": 51671.800984445115,
+      "p95_abs_error_hz": 180479.55278850885,
+      "bank": "last prior dwell positive entries"
+    },
+    "last_two_oracle_seed_bank": {
+      "eligible_positive_entries": 3584,
+      "within_8khz": 413,
+      "conditional_coverage": 0.115234375,
+      "prospective_full_denominator_coverage": 0.02109187477656912,
+      "not_covered_requires_blind_path": 19168,
+      "median_abs_error_hz": 52897.53386835953,
+      "p95_abs_error_hz": 205827.01908539643,
+      "bank": "all older/prior positive-entry pairs"
+    },
+    "bounded_causal_drift_bank": {
+      "eligible_positive_entries": 1270,
+      "within_8khz": 25,
+      "conditional_coverage": 0.01968503937007874,
+      "prospective_full_denominator_coverage": 0.0012767478678310607,
+      "not_covered_requires_blind_path": 19556,
+      "median_abs_error_hz": 80585.48327413396,
+      "p95_abs_error_hz": 209396.16077306028,
+      "bank": "one extrapolation per unique latest seed after a 20 kHz causal nearest-history gate"
+    },
+    "proposal_bank_sizes_per_eligible_dwell": {
+      "last_prior_raw": {
+        "eligible_dwells": 470,
+        "mean": 23.02340425531915,
+        "median": 21,
+        "p95": 51,
+        "max": 76
+      },
+      "last_prior_unique": {
+        "eligible_dwells": 470,
+        "mean": 17.325531914893617,
+        "median": 15,
+        "p95": 39,
+        "max": 56
+      },
+      "last_two_all_pairs_raw": {
+        "eligible_dwells": 172,
+        "mean": 620.8720930232558,
+        "median": 374,
+        "p95": 1944,
+        "max": 3658
+      },
+      "last_two_all_pairs_unique": {
+        "eligible_dwells": 172,
+        "mean": 348.2848837209302,
+        "median": 216,
+        "p95": 1147,
+        "max": 2115
+      },
+      "bounded_drift_raw": {
+        "eligible_dwells": 57,
+        "mean": 11.56140350877193,
+        "median": 10,
+        "p95": 28,
+        "max": 35
+      },
+      "bounded_drift_unique": {
+        "eligible_dwells": 57,
+        "mean": 11.56140350877193,
+        "median": 10,
+        "p95": 28,
+        "max": 35
+      }
+    },
+    "gap_seconds": {
+      "min": 37.14267639999889,
+      "median": 74.79633479999029,
+      "max": 262.6029947999923
+    },
+    "lo_reference_change_hz": {
+      "max": 0.0,
+      "nonzero_pairs": 0
+    },
+    "interpretation": "Coverage is an oracle-seeded all-positive-bank upper envelope, not a narrow predictor. It is not IQ-to-GLRT recovery, does not account for cold starts or negative proposals, and cannot justify a runtime claim."
+  }
+}
