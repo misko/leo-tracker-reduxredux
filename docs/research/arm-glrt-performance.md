@@ -2,6 +2,14 @@
 
 ## Current research baseline — 2026-09-29
 
+The [fourth-wave exact proposal changes](../../reports/2026_09_29_arm_subsecond/WAVE4.md)
+reduce the two-run ARM mean to **1.686 seconds/dwell**, retaining
+**19,226/19,581** standard hits and every candidate object from Wave3 on the
+704-dwell host cohort. Precomputed geometry and cheaper exact top-four selection
+save 1.36% of outer CPU time. No window or candidate is removed. The subsecond
+goal remains open. Other packing changes were slower; a rejected fine-input
+prototype is explicitly quarantined after a terminal-frame ASan failure.
+
 The [third-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE3.md)
 combine resampled proposals, squared-magnitude ranking and a boundary-refinement
 margin gate: **1.710 seconds/dwell**, mean of two physical-ARM runs, with
