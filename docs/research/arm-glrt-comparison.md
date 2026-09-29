@@ -4,6 +4,21 @@ Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
 
+The [seventh-wave comparison](../../reports/2026_09_29_arm_subsecond/WAVE7.md)
+lists exact ranking, whole FP32 scoring, neighboring-window proposal reuse,
+and reduced search variants. Exact ranking saves another 3.62% on ARM4 with
+all 119/119 hits and all candidate objects unchanged. The faster approximate
+proposal combination takes 578.726 ms/dwell, recovering 116/119 on ARM4 and
+18,805/19,581 on the separate host704 cohort. Every 20 ms window still runs;
+these figures count individual standard-pipeline positive hits.
+Combined with target-trained PGO, exact ranking takes **758.592 ms/dwell**
+on the separate 32-dwell held-out panel, conserving **904/921** hits and every
+candidate object, versus 776.473 ms for Wave6 PGO on that same panel.
+The approximate reduced-proposal/radius-one PGO variant reaches **473.795 ms**
+with **854/921** standard hits (92.73%) on the same held-out panel. Its 48.37%
+runtime reduction is a quality tradeoff and has not received larger ARM or
+DS8/DS9 qualification.
+
 The [sixth-wave comparison](../../reports/2026_09_29_arm_subsecond/WAVE6.md)
 separates compiler, SIMD, shared folding, input reuse, and approximate smaller
 FFT experiments. Its exact combination measures **0.815 seconds mean** on

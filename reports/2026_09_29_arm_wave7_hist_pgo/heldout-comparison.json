@@ -1,0 +1,49 @@
+{
+  "schema": "arm-wave7-hist-pgo-comparison/v1",
+  "scope": "Same disjoint held-out 32 saved 2.5 MS/s dwells; outer CPU ms/dwell; training four contexts excluded",
+  "cases": {
+    "wave5_reference": {
+      "path": "reports/2026_09_29_arm_wave6_pgo/heldout32-reference",
+      "mean_outer_cpu_ms_per_dwell": 917.6329126875,
+      "candidate_entries": 1201,
+      "hashes": {
+        "summary.json": "fc25b429cb2068fea974bdd86cb5e136d2c1ab9be70411b4491a0ffddd90314f",
+        "rows.jsonl": "300e2f7769adc19107afd0da7d7fbcef2cf47739e8b3a2bc78c41d09d3ce1a29",
+        "manifest.json": "95b0e671d3af9790ae32611fc811b2cde3becd01f42dd47422fd4d6eacb528de",
+        "build-receipt.json": "c0ddcb86f51861d73a649100d8a349d4448334177703150ccfe15f6596ca44bd"
+      }
+    },
+    "wave6_combined_pgo": {
+      "path": "reports/2026_09_29_arm_wave6_combined_pgo/arm-heldout32",
+      "mean_outer_cpu_ms_per_dwell": 776.4727666875,
+      "candidate_entries": 1201,
+      "hashes": {
+        "summary.json": "f0023d1dbb5b08ffa435d4c19a7c491a338e69e90a9a2f758a47ad05adfb27ed",
+        "rows.jsonl": "87d7a90e96680685f75b7b8359ab2fc5b4610a87f9e8054015ce8b4b3a5ca5b7",
+        "manifest.json": "7d57a825720424c52dc00dfed00342bef4fc36ffca8952986a339451a644b498",
+        "build-receipt.json": "eaa11a5ed489d8f36e5fb65c3fb284f370d1f6310146f90b4bd3c5b83d5b4a3b",
+        "standard-audit.json": "db622f8a7f23e6820618fc840ad3d37c68bff8405a06280a15a948c10ee4d2f8"
+      },
+      "scientific_outputs_identical": true,
+      "standard_hits": 904,
+      "standard_hit_denominator": 921
+    },
+    "wave7_hist_pgo": {
+      "path": "reports/2026_09_29_arm_wave7_hist_pgo/arm-heldout32",
+      "mean_outer_cpu_ms_per_dwell": 758.5923789375,
+      "candidate_entries": 1201,
+      "hashes": {
+        "summary.json": "9a1f6b9ee9635efd5d38e3e032f739ddf38a9b91c9c6b5b4ea8384260f041ae4",
+        "rows.jsonl": "2fffd270bc45fcafde3c6cda7b777759896cd498b2b508bcba444c6d54172161",
+        "manifest.json": "65558f5719182cac219fa3e78447e72568a95606d6e9e7d0715b5f1cb16ba0fd",
+        "build-receipt.json": "2476f3d41d3a979726434ff211bf6a3bb4584d51cd0df981d88897b8bcdacd14",
+        "standard-audit.json": "e9c5f566be3fcde15de16743d070baf826fdb394a066f658f322ad42cffb8039"
+      },
+      "scientific_outputs_identical": true,
+      "standard_hits": 904,
+      "standard_hit_denominator": 921
+    }
+  },
+  "reduction_vs_wave5": 0.17331607394531334,
+  "reduction_vs_wave6_combined_pgo": 0.023027707496142136
+}
