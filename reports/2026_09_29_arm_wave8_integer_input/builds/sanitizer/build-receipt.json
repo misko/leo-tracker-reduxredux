@@ -1,0 +1,25 @@
+{
+  "target": "sanitizer",
+  "command": [
+    "gcc",
+    "-std=c11",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-fast-math",
+    "-O1",
+    "-g",
+    "-fsanitize=address,undefined",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave8_integer_input/builds/sanitizer/bench.c",
+    "-lm",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_wave8_integer_input/builds/sanitizer/bench"
+  ],
+  "sources": {
+    "bench.c": "5c529d73670f3145a89b0996cf647ee026f99455ad593b872a65cabcc2723ad2",
+    "dwell_input.h": "d336040a37d837abcb8157b4cb9e1e6ef8b70343c55f25f2086df716c7b8c844"
+  },
+  "binary_sha256": "a2ce60372e8f1496c038a287b5ccf3a53f684aa7b217ca886fa259115c6d8338",
+  "output": "rate=2500000 baseline_ms=13.244692 integer_ms=13.435552 exact=1\nrate=5000000 baseline_ms=18.480972 integer_ms=19.011928 exact=1\nrate=7500000 baseline_ms=24.740806 integer_ms=24.004744 exact=1\nrate=10000000 baseline_ms=32.598986 integer_ms=31.355504 exact=1\n"
+}

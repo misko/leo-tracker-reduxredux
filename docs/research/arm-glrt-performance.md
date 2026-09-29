@@ -2,6 +2,26 @@
 
 ## Current research baseline — 2026-09-29
 
+**Workload distinction:** these ARM results process 11 overlapping 20 ms
+windows per receiver per 120 ms dwell. The deployed automatic main analysis
+uses one window per receiver for a 120 ms dwell; selected relative-phase
+replays are separate. Our frozen eight-candidate reference also predates
+deployed fractional refinement. Its hit-recovery figures do not establish
+equivalence to all current production outputs, and dense timings cannot be
+used directly to rule out real-time sparse production analysis. See the
+[deployment audit](../../reports/2026_09_29_adaptive_glrt_audit/README.md).
+
+The [eighth-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE8.md)
+combine reduced proposals, neighboring-window reuse, exact ranking, a slightly
+higher coarse gate, and ARM-trained PGO. Across 152 physical ARM dwells they
+measure **445.353 ms/dwell**, versus **915.499 ms** for a fresh matched Wave5
+control: **51.35% less mean CPU**, or 2.06×. All 3,344 windows execute,
+recovering **4,211/4,573** frozen original hits (92.08%), versus 4,506/4,573
+for the control. Excluding compiler-training contexts still saves 51.33%.
+This achieves the mean-runtime target with a quality tradeoff; it remains
+above the 120 ms real-time budget and excludes capture.
+Packed integer final scoring and integer/NEON input preparation were slower.
+
 The [seventh-wave experiments](../../reports/2026_09_29_arm_subsecond/WAVE7.md)
 add exact histogram reuse and integer ranking keys: **0.863 → 0.832 seconds**
 on the matched four-dwell ARM panel, with unchanged **119/119** standard hits
@@ -22,7 +42,8 @@ reduce mean time from **0.915 to 0.815 seconds/dwell** across the same 152 ARM
 dwells, preserving every candidate and **4,506/4,573** standard hits across
 all 3,344 windows. P95 is **1.129 seconds**. The mixed-rate host panel retains
 **19,217/19,581** hits, with exact candidate parity also on DS8/DS9.
-The additional 50% runtime-reduction goal remains unmet; capture is excluded.
+This exact combination does not meet the additional 50% runtime-reduction
+goal; capture is excluded.
 Adding target-trained PGO measures **0.776 seconds/dwell** versus 0.918
 seconds for Wave5 on a separate 32-dwell held-out panel, conserving all
 candidate objects and **904/921** standard hits (15.38% less CPU).

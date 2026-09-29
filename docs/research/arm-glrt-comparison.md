@@ -1,5 +1,19 @@
 # ARM methods compared with the standard GLRT pipeline
 
+Here “standard” means the frozen original eight-candidate GLRT reference run
+at 10 ms stride (22 receiver/windows per 120 ms dwell). It is not the deployed
+main adaptive analysis schedule of 120 ms stride, and it predates deployed
+fractional refinement. Compare identical windows and versions before applying
+these recovery or runtime figures to a current production recording.
+
+The [eighth-wave comparison](../../reports/2026_09_29_arm_subsecond/WAVE8.md)
+measures **445.353 ms/dwell** on 152 physical-ARM dwells with **4,211/4,573**
+frozen original hits recovered (92.08%). The approximate proposal/reuse/gate/
+ranking/PGO combination reduces mean CPU by **51.35%** against a fresh matched
+Wave5 control (915.499 ms, 4,506/4,573 hits). All 3,344 scheduled windows execute.
+Excluding compiler-training contexts still gives 51.33% less CPU. This is a
+quality tradeoff at 2.5 MS/s, with capture excluded, not a real-time result.
+
 Current selection: **raw FP32 fine FFTs without fine-FFT FP64 fallback**.
 The [ARM progress index](arm-glrt-performance.md) records the selected research
 baseline, milestones, remaining limitations and links to reproducible evidence.
