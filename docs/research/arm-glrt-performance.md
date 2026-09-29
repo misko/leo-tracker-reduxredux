@@ -2,6 +2,16 @@
 
 ## Current research baseline — 2026-09-29
 
+The [sixth-wave packing and reuse experiments](../../reports/2026_09_29_arm_subsecond/WAVE6.md)
+reduce mean time from **0.915 to 0.815 seconds/dwell** across the same 152 ARM
+dwells, preserving every candidate and **4,506/4,573** standard hits across
+all 3,344 windows. P95 is **1.129 seconds**. The mixed-rate host panel retains
+**19,217/19,581** hits, with exact candidate parity also on DS8/DS9.
+The additional 50% runtime-reduction goal remains unmet; capture is excluded.
+Adding target-trained PGO measures **0.776 seconds/dwell** versus 0.918
+seconds for Wave5 on a separate 32-dwell held-out panel, conserving all
+candidate objects and **904/921** standard hits (15.38% less CPU).
+
 The [fifth-wave combination](../../reports/2026_09_29_arm_subsecond/WAVE5.md)
 measures **0.915 seconds/dwell mean** across 152 physical-ARM dwells at
 2.5 MS/s (p95 **1.219 seconds**) and retains
