@@ -1,5 +1,17 @@
 # ARM GLRT performance: implementation and evidence index
 
+## Maintained opt-in stride component — 2026-09-29
+
+The [ARM stride implementation and qualification report](../../reports/2026_09_29_arm_strides/README.md)
+adds a source-owned RAM API and saved-input command with 10/20/120 ms strides,
+2.5/5/7.5/10 MS/s rates, and 120/240/360 ms dwell geometry. Dense 10 ms remains
+its default. Fresh PLUTO+ CPU0 measurements compare identical saved dwells and
+separate original-hit recovery from the unchanged tracking overlap filter.
+This is an explicit opt-in analysis component, **not a deployed capture worker**
+or replacement for the automatic fractional detector. The historical 445 ms
+Wave8 PGO binary below remains research-only; its timing does not transfer to
+the new build. See the report for exact per-mode budgets and limitations.
+
 ## Current research baseline — 2026-09-29
 
 **Workload distinction:** these ARM results process 11 overlapping 20 ms

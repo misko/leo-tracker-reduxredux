@@ -1,0 +1,29 @@
+{
+  "virtual_memory_limit_kib": 220000,
+  "rate_hz": 10000000,
+  "dwell_ms": 360,
+  "input": "zero CI16, 28800000 bytes",
+  "cases": [
+    {
+      "stride_ms": 10,
+      "returncode": 5,
+      "stdout": "",
+      "stderr": "analysis: out of memory\n",
+      "command": "ulimit -v 220000 && /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/leo-native-glrt --rate-hz 10000000 --dwell-ms 360 --probe-stride-ms 10 --input-ci16 /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/zero-10m-360ms.ci16 --exact-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-acec1e78a6ee3093bda4d1f7a56ebbe907db7797e11a4c0eddcc77aaa3e40f0c --control-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-b2e64a1be8cc8b3106a01c5a3136e8a35725a1600fa801f802857228dc5cba73"
+    },
+    {
+      "stride_ms": 20,
+      "returncode": 5,
+      "stdout": "",
+      "stderr": "analysis: out of memory\n",
+      "command": "ulimit -v 220000 && /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/leo-native-glrt --rate-hz 10000000 --dwell-ms 360 --probe-stride-ms 20 --input-ci16 /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/zero-10m-360ms.ci16 --exact-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-acec1e78a6ee3093bda4d1f7a56ebbe907db7797e11a4c0eddcc77aaa3e40f0c --control-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-b2e64a1be8cc8b3106a01c5a3136e8a35725a1600fa801f802857228dc5cba73"
+    },
+    {
+      "stride_ms": 120,
+      "returncode": 5,
+      "stdout": "",
+      "stderr": "analysis: out of memory\n",
+      "command": "ulimit -v 220000 && /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/leo-native-glrt --rate-hz 10000000 --dwell-ms 360 --probe-stride-ms 120 --input-ci16 /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/zero-10m-360ms.ci16 --exact-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-acec1e78a6ee3093bda4d1f7a56ebbe907db7797e11a4c0eddcc77aaa3e40f0c --control-template /mnt/glrtbench/strides-a40e3ec1ebed-ca5a30c7b378/template-b2e64a1be8cc8b3106a01c5a3136e8a35725a1600fa801f802857228dc5cba73"
+    }
+  ]
+}
