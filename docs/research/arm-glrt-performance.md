@@ -2,7 +2,17 @@
 
 ## Current research baseline — 2026-09-29
 
-Latest measured extension: [compiler/local-arithmetic tuning](../../reports/2026_09_29_arm_low_precision/REPORT.md)
+The [subsecond-goal checkpoint](../../reports/2026_09_29_arm_subsecond/REPORT.md)
+measures a faster tradeoff at **2.010 seconds/dwell**, including separately timed
+proposals: **19,249/19,581** standard hits retained, 151 fewer than the previous
+19,400-hit result.
+Search alone is 1.280 seconds; all 15,488 windows still run. Unmatched positives
+increase to 21,555. This combines two-frame fine estimation, full-frame moment
+conditioning without near-max rechecks, fixed CI16 scaling, radius-2 proposals,
+exact final-result reuse and NEON/radix proposals. **The subsecond goal remains
+open**; this is neither a fused nor concurrent-capture measurement.
+
+The earlier measured extension, [compiler/local-arithmetic tuning](../../reports/2026_09_29_arm_low_precision/REPORT.md),
 reduces raw-FP32 search to **4.468 seconds/dwell**, 8.1% less CPU than the fresh
 4.863-second reference. It retains **19,400/19,581** standard hits on 704 DS7
 dwells and changes no candidate positive decisions. Including separately timed
@@ -47,6 +57,8 @@ Larger-cohort recovery is evaluated separately from the small ARM timing set.
 | Add FP32 proposals | 6.313 s, stage sum | 19,400/19,581 |
 | **Add raw FP32 fine FFTs — selected** | **5.711 s, stage sum** | **19,400/19,581** |
 | Compiler/local-arithmetic extension, qualified finite inputs | **5.319 s, stage sum** | **19,400/19,581** |
+| Full-frame moment conditioned screen, exact near-max rechecks | 4.567 s, stage sum | 19,400/19,581 |
+| Two-frame estimation, moment screen, radius 2, exact final reuse | **2.010 s, stage sum** | **19,249/19,581** |
 
 Tested alternatives are retained in reports: guarded FP32 fine FFTs cost
 5.802 seconds including proposals with unchanged measured recovery; batches

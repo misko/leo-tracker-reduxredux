@@ -1,0 +1,89 @@
+{
+  "schema": "arm-decimated-proposal-build/v1",
+  "target": "host",
+  "factor": 2,
+  "semantics": "original-grid lag1/3/5 and power; feature block averages before reduced-grid correlation/ranking; output epoch=factor*bin",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=2",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/proposal_probe_host_factor2"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=2",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/test_neon_fold_host_factor2"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=2",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/test_decimation.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/host-factor2/test_decimation_host_factor2"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_neon_fold_host_factor2",
+      "executed": true,
+      "stdout": "scalar fold passed: direct-order sanity\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_decimation_host_factor2",
+      "executed": true,
+      "stdout": "decimation passed: factor=2, ceil length, partial weighting, original-grid wrap, epoch mapping\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_probe_host_factor2": "a83dc76e72fdfa845607135aeef4c3f204e977aa4ea863f5e5186f1d94de7978",
+    "test_neon_fold_host_factor2": "51c1798f4f531a898fe41a59d667e7fa94430d6986f7410431abe1e8a9be9907",
+    "test_decimation_host_factor2": "389997d029acb669ca2ebb6ed17ec76a101a7149e01f61ddae817d628451f8f8"
+  },
+  "sources": {
+    "proposal_probe.c": "e44e8262b61732d4a6d33e642ce37f569163370f4acca1ebdbdf17210ad72561",
+    "test_decimation.c": "94c5fa4bfe7a5b073a17b96fff1ca000dd7fb0c48f42cf0720ebabb93b45a42f",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992"
+  }
+}

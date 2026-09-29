@@ -1,0 +1,121 @@
+{
+  "schema": "arm-decimated-proposal-reciprocal-build/v1",
+  "target": "arm",
+  "factor": 4,
+  "rounding_semantics": "cached FP32 reciprocal multiply replaces per-cell division; support zero maps to exact zero; no fast-math",
+  "commands": [
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/proposal_probe.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/proposal_probe_arm_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_neon_fold.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_neon_fold_arm_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_decimation.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_decimation_arm_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/plutosdr-fw/buildroot/output/host/bin/arm-linux-gnueabihf-gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_DECIMATION=4",
+        "-mcpu=cortex-a9",
+        "-mfpu=neon",
+        "-mfloat-abi=hard",
+        "-DLEO_LAG_ARM_AFFINITY",
+        "-DLEO_PROPOSAL_NEON_FOLD",
+        "-I/var/tmp/leo-fftw-float-20260912/install/include",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_reciprocal.c",
+        "/var/tmp/leo-fftw-float-20260912/install/lib/libfftw3f.a",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_decimated_proposal/builds/arm-factor4-reciprocal/test_reciprocal_arm_factor4_reciprocal"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [],
+  "binaries": {
+    "proposal_probe_arm_factor4_reciprocal": "2d62b59bc9a6ee1ff2c454dc81a6ecc4790ba1574d821010075be3af3ca27225",
+    "test_neon_fold_arm_factor4_reciprocal": "070ccbe162ec70f0a1b29968273f3817a76eafc0750b421c4d3610381fe4e9d1",
+    "test_decimation_arm_factor4_reciprocal": "4cbe6f10d10248ac54c2aa2639f707899baa73c0e5259ef7ff0f2d139cfed424",
+    "test_reciprocal_arm_factor4_reciprocal": "c93d202a17666ffabfe42d0c1771def1ae4a4b61426d6b54932e58ffc82c76ed"
+  },
+  "sources": {
+    "proposal_probe.c": "c6787c110843f25f6d21ca516ed39fcdaa25600608269b99a5cf792013c6b32a",
+    "test_decimation.c": "94c5fa4bfe7a5b073a17b96fff1ca000dd7fb0c48f42cf0720ebabb93b45a42f",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_reciprocal.c": "aaaf824be393bbbede9020f3cf89b0202aab3f0d3a82f30f872388fa42d7da80"
+  }
+}

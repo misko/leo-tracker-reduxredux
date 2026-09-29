@@ -1,0 +1,54 @@
+{
+  "schema": "arm-proposal-feature-ablation-test/v1",
+  "passed": true,
+  "rates": [
+    2500000,
+    5000000,
+    7500000,
+    10000000
+  ],
+  "cases": [
+    {
+      "rate": 2500000,
+      "case": "partial",
+      "rows": 22
+    },
+    {
+      "rate": 2500000,
+      "case": "zero",
+      "rows": 22
+    },
+    {
+      "rate": 5000000,
+      "case": "partial",
+      "rows": 22
+    },
+    {
+      "rate": 5000000,
+      "case": "zero",
+      "rows": 22
+    },
+    {
+      "rate": 7500000,
+      "case": "partial",
+      "rows": 22
+    },
+    {
+      "rate": 7500000,
+      "case": "zero",
+      "rows": 22
+    },
+    {
+      "rate": 10000000,
+      "case": "partial",
+      "rows": 22
+    },
+    {
+      "rate": 10000000,
+      "case": "zero",
+      "rows": 22
+    }
+  ],
+  "partial_input": "first 90 ms deterministic CI16 signal followed by 30 ms zero CI16 at each rate",
+  "control_parity": "exact JSON numerical equality for all scores and top32 at every rate on partial input; top4 parity at every rate and both input cases"
+}

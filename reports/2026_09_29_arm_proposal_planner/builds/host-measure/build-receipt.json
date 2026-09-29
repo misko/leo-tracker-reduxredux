@@ -1,0 +1,89 @@
+{
+  "schema": "arm-proposal-planner-build/v1",
+  "target": "host",
+  "planner": "measure",
+  "planning_scope": "bank initialization before reference population; monotonic wall time excluded from window total",
+  "commands": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_FFTW_MEASURE",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/proposal_probe.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/proposal_probe_host_measure"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_FFTW_MEASURE",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/test_neon_fold.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/test_neon_fold_host_measure"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-fast-math",
+        "-DLEO_PROPOSAL_FFTW_MEASURE",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/test_planner.c",
+        "-lfftw3f",
+        "-lm",
+        "-o",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_arm_proposal_planner/builds/host-measure/test_planner_host_measure"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "units": [
+    {
+      "binary": "test_neon_fold_host_measure",
+      "executed": true,
+      "stdout": "scalar fold passed: direct-order sanity\n",
+      "stderr": ""
+    },
+    {
+      "binary": "test_planner_host_measure",
+      "executed": true,
+      "stdout": "planner passed: measure, planning_wall_ms=30.1853678, setup excluded from window timer\n",
+      "stderr": ""
+    }
+  ],
+  "binaries": {
+    "proposal_probe_host_measure": "002abb0f5286f99c30e5f04425215b206746cca34b507623e31e4a42709db7b6",
+    "test_neon_fold_host_measure": "d1c03bf3c98f7ff56b081e77730b24ef2d25c50f540d7287ac9749d4ba63396c",
+    "test_planner_host_measure": "3a94b80eddfc9844ecdb63c03d37cb4f655e00c908c1d0769c23991623bbf45e"
+  },
+  "sources": {
+    "proposal_probe.c": "bb278172a85ffb646f34f6161c03f863530951985d786545b99286522ef64630",
+    "test_neon_fold.c": "bb0d9aefd389195a1d8f5b915c65efd9241b13e3f34c1f481505c506afadb992",
+    "test_planner.c": "908789b29c87d92fdff0be3d3043975e18f82abf87a2b0332dbc8a41fb60cc86"
+  }
+}
