@@ -2,6 +2,16 @@
 
 ## Current research baseline — 2026-09-29
 
+Latest measured extension: [compiler/local-arithmetic tuning](../../reports/2026_09_29_arm_low_precision/REPORT.md)
+reduces raw-FP32 search to **4.468 seconds/dwell**, 8.1% less CPU than the fresh
+4.863-second reference. It retains **19,400/19,581** standard hits on 704 DS7
+dwells and changes no candidate positive decisions. Including separately timed
+proposals gives **5.319 seconds/dwell**. The corrected `limited-complex-v2`
+build passed physical-ARM tests; its relaxed exceptional complex semantics are
+qualified only for the tested finite-data workload. This is the fastest measured
+research extension, not production integration. Q15 integer FFTs and scalar/NEON
+packed spectrum caches were slower. Strict raw FP32 remains the reference below.
+
 Selected by the user: **raw FP32 fine FFTs without the fine-FFT FP64 fallback**,
 combined with FP32 lag proposals, restricted timing search and lazy FFT reuse.
 The final GLRT remains FP64. The separate residual-boundary conditioned
@@ -36,6 +46,7 @@ Larger-cohort recovery is evaluated separately from the small ARM timing set.
 | Add lazy fine-FFT reuse | 6.449 s, stage sum | 19,400/19,581 |
 | Add FP32 proposals | 6.313 s, stage sum | 19,400/19,581 |
 | **Add raw FP32 fine FFTs — selected** | **5.711 s, stage sum** | **19,400/19,581** |
+| Compiler/local-arithmetic extension, qualified finite inputs | **5.319 s, stage sum** | **19,400/19,581** |
 
 Tested alternatives are retained in reports: guarded FP32 fine FFTs cost
 5.802 seconds including proposals with unchanged measured recovery; batches

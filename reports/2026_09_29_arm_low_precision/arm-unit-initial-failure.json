@@ -1,0 +1,7 @@
+{
+  "variant": "fine-local v1",
+  "test": "test_fine_precision_fine_local_arm",
+  "failure": "Assertion ((uintptr_t)cache.entries[0].spectra[0]&15u)==0 failed at test_fine_precision.c:44",
+  "interpretation": "fftwf_malloc on this target did not guarantee the prototype's promised 16-byte cache alignment. Host tests passed; the physical ARM test caught the assumption.",
+  "action": "Require explicit aligned allocation in new immutable v2 builds and rerun physical ARM qualification before selecting this variant. Preserve v1 measurement receipts."
+}

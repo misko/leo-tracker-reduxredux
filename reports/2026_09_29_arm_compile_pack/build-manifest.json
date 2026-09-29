@@ -1,0 +1,168 @@
+{
+  "schema": "arm-compile-pack-matrix/v1",
+  "immutable_baselines": {
+    "host": "../2026_09_29_arm_fine_precision/builds/host-raw-v2",
+    "arm": "../2026_09_29_arm_fine_precision/builds/arm-raw-v2"
+  },
+  "variants": {
+    "strict-lto": {
+      "source": "strict-base",
+      "flags": [
+        "-flto",
+        "-fno-math-errno",
+        "-fno-trapping-math"
+      ],
+      "description": "whole-program LTO with errno/trap observability disabled; no fast-math"
+    },
+    "fine-local": {
+      "source": "fine-local",
+      "flags": [],
+      "description": "aligned compact spectra and explicit local complex arithmetic"
+    },
+    "combined": {
+      "source": "fine-local",
+      "flags": [
+        "-flto",
+        "-fno-math-errno",
+        "-fno-trapping-math"
+      ],
+      "description": "fine-local source plus strict-LTO compiler flags"
+    },
+    "limited-complex": {
+      "source": "limited-complex",
+      "flags": [
+        "-flto",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-fcx-limited-range"
+      ],
+      "description": "combined variant plus limited-range complex arithmetic",
+      "semantics": "No global fast-math. FP64 final GLRT source is unchanged, but fcx-limited-range changes complex exceptional-value and range semantics throughout the program. Only finite real-input behavior is supported."
+    },
+    "fine-local-v2": {
+      "source": "fine-local-v2",
+      "flags": [],
+      "description": "fine-local with explicit 16-byte aligned spectrum allocation"
+    },
+    "combined-v2": {
+      "source": "combined-v2",
+      "flags": [
+        "-flto",
+        "-fno-math-errno",
+        "-fno-trapping-math"
+      ],
+      "description": "combined with explicit 16-byte aligned spectrum allocation"
+    },
+    "limited-complex-v2": {
+      "source": "limited-complex-v2",
+      "flags": [
+        "-flto",
+        "-fno-math-errno",
+        "-fno-trapping-math",
+        "-fcx-limited-range"
+      ],
+      "description": "limited-complex with explicit 16-byte aligned spectrum allocation",
+      "semantics": "No global fast-math. FP64 final GLRT source is unchanged, but fcx-limited-range changes complex exceptional-value and range semantics throughout the program. Only finite real-input behavior is supported."
+    }
+  },
+  "builds": {
+    "strict-lto": {
+      "host": {
+        "receipt": "builds/strict-lto/host/build-receipt.json",
+        "receipt_sha256": "1e07e729c673129a98f77696e7a371ddca4174a1d81576f6a0740ee4ff2a43d1"
+      },
+      "sanitizer": {
+        "receipt": "builds/strict-lto/sanitizer/build-receipt.json",
+        "receipt_sha256": "697529c9503dbe1ecbbd3ed7cec4120d7e0d10858a2b948a38d527a8e2be6dea"
+      },
+      "arm": {
+        "receipt": "builds/strict-lto/arm/build-receipt.json",
+        "receipt_sha256": "dc2847caa311edf5ab6ea760694f853ca5a34cfe2f20e9cde21e28601597705b"
+      }
+    },
+    "fine-local": {
+      "host": {
+        "receipt": "builds/fine-local/host/build-receipt.json",
+        "receipt_sha256": "6eed699272431db453ee01031d5eadb5f47caf5df95d97aac8d0dc116547c1a6"
+      },
+      "sanitizer": {
+        "receipt": "builds/fine-local/sanitizer/build-receipt.json",
+        "receipt_sha256": "df6a06e33cca68244495366291bb55862651ba7bf50c702b6c279e6f2f04ccfe"
+      },
+      "arm": {
+        "receipt": "builds/fine-local/arm/build-receipt.json",
+        "receipt_sha256": "6f9d140f04f88f9c3c8aed2455690271375fd93b16c3a4cbada5f294be5b9fe7"
+      }
+    },
+    "combined": {
+      "host": {
+        "receipt": "builds/combined/host/build-receipt.json",
+        "receipt_sha256": "982626b7eb5a043041414afff622100ff84966910641d75d21ddbbe4605ed188"
+      },
+      "sanitizer": {
+        "receipt": "builds/combined/sanitizer/build-receipt.json",
+        "receipt_sha256": "447e7c96ee27dc9bc37f6baed520f835c896732d5fe4d2391b48d71e972d8b06"
+      },
+      "arm": {
+        "receipt": "builds/combined/arm/build-receipt.json",
+        "receipt_sha256": "f6f510750c77b9639608edc5c73875ec4189733a621edf3c92a76d5f0ee09e0b"
+      }
+    },
+    "limited-complex": {
+      "host": {
+        "receipt": "builds/limited-complex/host/build-receipt.json",
+        "receipt_sha256": "036f87695f60a5c7afcdefe8ea845c258bfdeb4f8ed36297c17ce033c01adfea"
+      },
+      "sanitizer": {
+        "receipt": "builds/limited-complex/sanitizer/build-receipt.json",
+        "receipt_sha256": "00a7b73083ba6692d4ff01f54989ec4baa927fdb02510008b0198c880c777a95"
+      },
+      "arm": {
+        "receipt": "builds/limited-complex/arm/build-receipt.json",
+        "receipt_sha256": "68f71cf6440eb87a601d53cf9fe8bbeae64c92f2be9e1833069b8fb40fbc737e"
+      }
+    },
+    "fine-local-v2": {
+      "host": {
+        "receipt": "builds/fine-local-v2/host/build-receipt.json",
+        "receipt_sha256": "b104518f6dfc8f9d004f8c01a32b195fef1ad77f9173c1d768c278aa62192aad"
+      },
+      "sanitizer": {
+        "receipt": "builds/fine-local-v2/sanitizer/build-receipt.json",
+        "receipt_sha256": "f0981f431ab478a2ef1b587b97e6e091b024dbe4055f6e880584aecebb4781b7"
+      },
+      "arm": {
+        "receipt": "builds/fine-local-v2/arm/build-receipt.json",
+        "receipt_sha256": "9741c1c65f157e4406d9d24949ee04520818ba01d4fbfb1c34aeffd37e1f3276"
+      }
+    },
+    "combined-v2": {
+      "host": {
+        "receipt": "builds/combined-v2/host/build-receipt.json",
+        "receipt_sha256": "da658b23961c538f6a13c02b91c836927e269c4cfd6cccca9dd2a32caab12a19"
+      },
+      "sanitizer": {
+        "receipt": "builds/combined-v2/sanitizer/build-receipt.json",
+        "receipt_sha256": "1ce1c71ded277362b1ac3b2bc3ccc5e8b179654b7146128b8f89244d13344319"
+      },
+      "arm": {
+        "receipt": "builds/combined-v2/arm/build-receipt.json",
+        "receipt_sha256": "bf68ca420ca699c386e95df8d0fb4fedd7b059668cf7e3c7bd3f582df9c73f00"
+      }
+    },
+    "limited-complex-v2": {
+      "host": {
+        "receipt": "builds/limited-complex-v2/host/build-receipt.json",
+        "receipt_sha256": "5b98ad06f5024a26ced0021965e04c627a9bcf329983e817372b3af688546321"
+      },
+      "sanitizer": {
+        "receipt": "builds/limited-complex-v2/sanitizer/build-receipt.json",
+        "receipt_sha256": "5748d197bf3b0fa3c39b28cf62ce957e4f511dc454f81e4ea8ddb93e4ae82970"
+      },
+      "arm": {
+        "receipt": "builds/limited-complex-v2/arm/build-receipt.json",
+        "receipt_sha256": "74dda5092b6eafb77369c87e74cb9137ed642ee04c81757bdb43c5b74d397a05"
+      }
+    }
+  }
+}
