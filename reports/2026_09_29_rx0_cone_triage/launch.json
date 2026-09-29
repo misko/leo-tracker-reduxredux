@@ -1,0 +1,26 @@
+{
+  "command": [
+    "sudo",
+    "-n",
+    "/usr/bin/time",
+    "-v",
+    "-o",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_rx0_cone_triage/resources.txt",
+    "timeout",
+    "--kill-after=5s",
+    "90s",
+    "prlimit",
+    "--as=4294967296",
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=1",
+    "MKL_NUM_THREADS=1",
+    "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/bin/python",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_29_rx0_cone_triage/inspect_tracks.py"
+  ],
+  "available_bytes": 54528950272,
+  "source_sha256": "9b242925b09d098a4f7a5eb02b5f8e340886f39d4b5c37fce67212859e1a101b"
+}
