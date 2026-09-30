@@ -8,21 +8,18 @@ from tcodes import bit_word, compact_indices, fit_code, score_code, slots
 
 
 class TcodeTests(unittest.TestCase):
-    def test_lower_unobserved_bits_are_not_invented(self):
+    def test_lower_full_code_is_observable(self):
         mapping = slots(geometry("lower")[0], np.arange(14, 78))
         code, means, counts = fit_code(np.ones(mapping.shape, dtype=complex), mapping)
-        self.assertEqual(int(np.sum(counts > 0)), 52)
-        self.assertEqual(bit_word(code)[44:52], "????????")
+        self.assertEqual(int(np.sum(counts > 0)), 60)
+        self.assertEqual(bit_word(code), "1" * 60)
         self.assertEqual(float(score_code(np.ones(mapping.shape), mapping, code)), 1.0)
 
-    def test_finite_wrap_matches_full_vector_rotation(self):
+    def test_lower_mapping_crosses_period_boundary(self):
         bins = geometry("lower")[0]
-        vector = np.arange(1004) % 60
-        symbols = np.arange(2, 302)
-        expected = np.array(
-            [np.roll(vector, (16 * int(i)) % 60)[compact_indices(bins)] for i in symbols]
-        )
-        np.testing.assert_array_equal(slots(bins, symbols), expected)
+        # The lowest retained carrier has compact index 4. The rejected finite
+        # vector model instead maps these to 44 and 28 at symbols 4 and 5.
+        np.testing.assert_array_equal(slots(bins, np.array([4, 5]))[:, 0], [0, 44])
 
     def test_upper_mapping_unchanged(self):
         symbols = np.arange(2, 302)

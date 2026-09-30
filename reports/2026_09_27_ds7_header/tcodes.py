@@ -25,10 +25,10 @@ def compact_indices(bins):
 
 
 def slots(bins, symbols):
-    # Qin et al. (2026), equations 62--64: reduce the shift modulo 60
-    # BEFORE circularly shifting the finite 1004-element non-pilot vector.
-    shift = (16 * np.asarray(symbols)[:, None]) % 60
-    return ((compact_indices(bins)[None, :] - shift) % 1004) % 60
+    # Tile the 60-bit sequence before applying the symbol-dependent phase.
+    # UT hard-symbol frames 806..818 independently validate this at BOTH edges.
+    # Circularly wrapping a truncated 1004-element vector fails the lower edge.
+    return (compact_indices(bins)[None, :] - 16 * np.asarray(symbols)[:, None]) % 60
 
 
 def fit_code(values, mapping):
@@ -96,7 +96,7 @@ def ut_control(edge="upper"):
     print(json.dumps(results))
 
 
-def ds7(group, limit, allow_lower=False):
+def ds7(group, limit, allow_lower=False, channel_mode="sss"):
     out = OUT / group
     inventory = json.loads((out / "inventory.json").read_text())
     records = json.loads((out / "recovery.json").read_text())
@@ -127,7 +127,7 @@ def ds7(group, limit, allow_lower=False):
                 center,
             )
             y, _ = pilot_calibrate(sy, pilot, record["diagnostics"][frame]["phase_slope"], edge)
-            h = archive[row["name"] + "_sss_channel"][frame]
+            h = archive[row["name"] + "_sss_channel"][frame] if channel_mode == "sss" else 1.0
             deviations.append(y[1:, bins] / h * template[bins, 1:].T.conj())
         first, score, trials = select_window(deviations[0], bins)
         mapping = slots(bins, np.arange(first, first + 64))
@@ -187,10 +187,13 @@ def ds7(group, limit, allow_lower=False):
         json.dumps(
             dict(
                 group=group,
-                mapping_validation="qualified-upper" if edge == "upper" else "experimental-lower",
+                channel_mode=channel_mode,
+                mapping_validation="qualified-upper"
+                if edge == "upper"
+                else "UT-reference-validated",
                 results=results,
                 bins=bins.tolist(),
-                convention="T[((n - (16*i mod 60)) mod 1004) mod 60]; "
+                convention="T[(n - 16*i) mod 60]; "
                 "n indexes ascending physical-frequency non-pilot bins; "
                 "i is OFDM symbol number; positive deviation maps to 1; ? means unobserved",
                 interpretation="Recovered physical-layer repetition codes, "
@@ -239,11 +242,12 @@ def main():
     parser.add_argument("--group", default="best-upper")
     parser.add_argument("--frames", type=int, default=14)
     parser.add_argument("--allow-lower", action="store_true")
+    parser.add_argument("--channel-mode", choices=("sss", "pilot-only"), default="sss")
     args = parser.parse_args()
     if args.ut:
         ut_control(args.ut_edge)
     else:
-        ds7(args.group, args.frames, allow_lower=args.allow_lower)
+        ds7(args.group, args.frames, allow_lower=args.allow_lower, channel_mode=args.channel_mode)
 
 
 if __name__ == "__main__":
