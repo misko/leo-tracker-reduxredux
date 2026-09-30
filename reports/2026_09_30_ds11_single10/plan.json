@@ -1,0 +1,752 @@
+{
+  "config": {
+    "altitude_km": 0,
+    "candidate_policy": "corrected DS6 union top8 at center and four +/-12km corners over full causal catalogue",
+    "catalogue_policy": "newest causal archived elements per object; labelled Starlink debris excluded",
+    "execution_policy": "CPU1 and BLAS1; at most 300 seconds per unit and 1800 total adapter-seconds; first tranche limited to prefix1/2/4/8 plus eight independent singles",
+    "geographic_prior_center_deg": [
+      37.856249999999996,
+      -122.484375
+    ],
+    "geographic_prior_provenance": "inherited_ds6_development_donor; prior exposure unaudited",
+    "known_conditioning": "candidate and track review products may be observer-site-conditioned and are not accepted as the corrected candidate bank",
+    "partition_seed": 2026092711,
+    "position_bounds_km": [
+      -12,
+      12
+    ],
+    "rf_rms_definition": "pooled training-observation residual RMS using each track's training-MAP visible candidate and stationary training offset",
+    "rf_rms_limitation": "training conditional metric; catalogue ambiguity is not resolved by held-out or reference information",
+    "scientific_status": "exact_wave1_model_with_batched_offset_iteration",
+    "solver": "corrected_ds6_stationary_joint_sparse_envelope_gradient",
+    "student_t_dof": 4,
+    "student_t_scale_hz": 100,
+    "timing_bounds_s": [
+      -5,
+      5
+    ],
+    "timing_grid_s": [
+      -5,
+      -4.75,
+      -4.5,
+      -4.25,
+      -4,
+      -3.75,
+      -3.5,
+      -3.25,
+      -3,
+      -2.75,
+      -2.5,
+      -2.25,
+      -2,
+      -1.75,
+      -1.5,
+      -1.25,
+      -1,
+      -0.75,
+      -0.5,
+      -0.25,
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+      3.25,
+      3.5,
+      3.75,
+      4,
+      4.25,
+      4.5,
+      4.75,
+      5
+    ],
+    "timing_starts_s": [
+      0,
+      -2,
+      2
+    ]
+  },
+  "inputs": [
+    {
+      "session_id": "scan-fw-a32c07775a887379",
+      "manifest_sha256": "sha256:65fb09f52d3ebf4e96b9584a07fe072cbddc3d2c0f576238d48bb5526d48a890",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F001/observations.json",
+          "sha256": "sha256:3e35801130dec7a8b467e708377cfbe473c00b51084a52709e2a1b4d1bcdefea"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F001/banks/manifest.json",
+          "sha256": "sha256:811d0de210b94bf067f6cea6a3e45f90a52dbdc3c10ce98b371ddea0f759a2b4"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F001/banks/banks.npz",
+          "sha256": "sha256:95c73bc130e71377853ecd3ade5c94d1085bddda4b6603504bf9e6978139382e"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-1104f08bdc373471",
+      "manifest_sha256": "sha256:17b394d27904b934645b360b7639e71089e8eb8bc16794591cd529e35b99376f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F003/observations.json",
+          "sha256": "sha256:aa7f932c71d00a7c9657769407500772d9b5a8ac7cc535085cf54335d05eb8d2"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F003/banks/manifest.json",
+          "sha256": "sha256:55a22df2ff3089cf7707f629236c539243a02129fc71b513c2a062850dd7f152"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F003/banks/banks.npz",
+          "sha256": "sha256:acfe318654b4d6559fc28a4e1a5559a742d8f83eeeebd9e241d36b02f6b6d5ad"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-49d3aae278813149",
+      "manifest_sha256": "sha256:ddce5f64bd502a0af17f86650bbf3efd2131c2fa01197dddc6ea81ae1fa11375",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F006/observations.json",
+          "sha256": "sha256:abefb51b4de156f07c299ce08463eb30e2d23d21e5e97f3183996d99da9cf0d5"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F006/banks/manifest.json",
+          "sha256": "sha256:bf20b39e877e014f6421ef5aaaa59df03323a5ac5578fe5b2ddac3bd7550532d"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F006/banks/banks.npz",
+          "sha256": "sha256:0e5225d6f8181288446b451a3ddf6b425f68865d9f87af94ec05a00da0dd2dc3"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-40342f486cccc9d9",
+      "manifest_sha256": "sha256:37fe01b7e48cdab4a76d663ddff647634c7cec8be747825c166282684d4a6fc8",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F009/observations.json",
+          "sha256": "sha256:5325a60e9cafd49fe09fe62ce00408d8fa7076dbc546c9618f127ddc69d097d0"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F009/banks/manifest.json",
+          "sha256": "sha256:a1d1bd21dd4bf799ac1d3466c40ad08baee1d75306db0bd6a1b0a32dd6dbef08"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F009/banks/banks.npz",
+          "sha256": "sha256:1e49635b06a3fe33c1062696401ce400e0948a755378ce5f5d97e12d1fc3252b"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-6575ab4394ce18d4",
+      "manifest_sha256": "sha256:550495dfbd040211161f0bed1c6695f03c295a91bd54a3e9b2121daab00282a1",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F012/observations.json",
+          "sha256": "sha256:4e65ff0736e100de6e4984a720167a797db2e9d4e73de1ffea0456380f7d4854"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F012/banks/manifest.json",
+          "sha256": "sha256:b9cf1b274082430c46e07f369460b808fc29ce556d2e762753a5ea050f949aaf"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F012/banks/banks.npz",
+          "sha256": "sha256:5d4b152474d851badc683d2cdd309e6aa61dd9f44abc7178c6268362e0effd78"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-c3b376fb262f4d2e",
+      "manifest_sha256": "sha256:b7e9a050b7d6399e5411446adda753523ea263f75e7d7f4c0e6d232fcc1f3d1f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F014/observations.json",
+          "sha256": "sha256:2a844e74237498fe730514ca1989eab955e77dde94bcf23b5221b4fa8bf6ab02"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F014/banks/manifest.json",
+          "sha256": "sha256:afc84242c8aa6bf1cb2c8145aa50c0d50231ab390b12454b70c5cbbcd9c6a86b"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F014/banks/banks.npz",
+          "sha256": "sha256:10f28ac4fe493c2d8cd5e684abf51f3e7e904bbf743cd33e08e99d1eaeacea75"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-57637a9113e75330",
+      "manifest_sha256": "sha256:c5032de2e0bf0e2b3e3ead4962cef9afcea00f8e38ad904db979457427785174",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F017/observations.json",
+          "sha256": "sha256:60708e5abff69be1f2843ae3d323ae2dfa6b08a84b5fe55a4b17abc34f5dcdee"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F017/banks/manifest.json",
+          "sha256": "sha256:283109f1bdd236fccfcb2d1d797b455e89be449dc55e94e0a26c6f92e66eb3c1"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F017/banks/banks.npz",
+          "sha256": "sha256:54bddd9ccde2a7ca5a9bffb3809f2b843d3b75ad58b9cc54490f49ecb2304f16"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-f1e2c050ac43a181",
+      "manifest_sha256": "sha256:7cbccfc778c0f37193c523362fb119fa99b3e5c5c6c6aff00a4be2dfacbc1b3f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F020/observations.json",
+          "sha256": "sha256:7ceece92b7ace8a8801f104681953ad23bd974bd217d78c617c6f650b3f788e4"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F020/banks/manifest.json",
+          "sha256": "sha256:7c27227a2b41d37b84f3ce030bd4508e50ea3d3e7640380f0f0c448d59775547"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F020/banks/banks.npz",
+          "sha256": "sha256:e73140dc6b857a80d9fb420f1916369345403acceab6585cfd56b3f5ff2f339d"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-9002e33591f2f60b",
+      "manifest_sha256": "sha256:c7829d39f1ca3cc664d4081b37d52c8c6d4bd864d0b57c015a6f099e4a905707",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F023/observations.json",
+          "sha256": "sha256:b59b41269e5f3c2d0207c6f503045679aeb3cf19dae4366a53deac3e05d466ad"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F023/banks/manifest.json",
+          "sha256": "sha256:cce08523321f253d4d697786c4cef713b1de3869d89168464ee00292146b9af1"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F023/banks/banks.npz",
+          "sha256": "sha256:cd4d5d7bd1d5f70c8c80fc25fa7ff0871a752daeaf4b5299b9309ec48443a797"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-e3b6d5e4216285b4",
+      "manifest_sha256": "sha256:d8942fba38c972536d4b2591bbef800c6954a61a566b9c8c2df9fcfda1f859a9",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F025/observations.json",
+          "sha256": "sha256:6d75915ff9a63c25ed15cd279e7dfd322a6a346f5c67f3309c3b983f81056e79"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F025/banks/manifest.json",
+          "sha256": "sha256:7d21ac0f0bdc9b5efe3470fba89ba6e35b41469e3d2f1ca07afbf62f2f6c55bd"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F025/banks/banks.npz",
+          "sha256": "sha256:cb2bfa4599716318a94650dda23f56a2af7a88a84fb4e52e85f8b6464be5cdcf"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-b5b7bdee0eec6b5d",
+      "manifest_sha256": "sha256:fbe82383996df7e061db00ee740f296818102e4834dfe2bc3bc229dee52e75dd",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F028/observations.json",
+          "sha256": "sha256:a51ca507927563678f53023bdeed551403b26efb297f2557f05ca513025dcecd"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F028/banks/manifest.json",
+          "sha256": "sha256:8b2c226c2a97579827edde30235b3bebb0a66e80ef785546d89f9e4f939e86bc"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F028/banks/banks.npz",
+          "sha256": "sha256:f37768d6c0b806af24a02ee04ef76a1fedb8bdfe17d866e1050281099c36f83b"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-bdebca84c993a39f",
+      "manifest_sha256": "sha256:ec03773ae4f310729e7004a945ab07683723bcb10264f47c6f6981740397b8f6",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F031/observations.json",
+          "sha256": "sha256:9ae71bbbf98baef9c830bc1e7fc2cca7506b9ea2bcd61aa3114351fc71add7a0"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F031/banks/manifest.json",
+          "sha256": "sha256:a2ee7b70865753f805648313972b20234cf816a1972c33976634d5cb1519f354"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F031/banks/banks.npz",
+          "sha256": "sha256:59d808f1eacc63036219d605e180bcf9fef9714125f51f05e4390765fa0d59ea"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-3773a5de2cae9212",
+      "manifest_sha256": "sha256:fbb24172b22cdda244a30e23131a9e013cadff80e3372fc2895b9b3ce3b8357b",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F034/observations.json",
+          "sha256": "sha256:4c27d8f0d9f6eeddfa93e14c33dc9b68dd67aedbe3c2ba8147d584e0bb6f2b74"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F034/banks/manifest.json",
+          "sha256": "sha256:71e8f08cfac6f4c9fc067c451d4362be294207a8adcffe41cb259184cfc84133"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F034/banks/banks.npz",
+          "sha256": "sha256:2438356bfcd9d691a7fdc6a59f6ad8266a24c0ad5ea2a7004d2ab304f7cc67a5"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-366335f256f0e364",
+      "manifest_sha256": "sha256:9a6fe721bb7b22d41e6e2315c3036ae1766162b9aca9077ac7d2873b1b366900",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F037/observations.json",
+          "sha256": "sha256:19c04f4ae241d41c143a79a7bbe4ab4b5ed02b5776172b980feafaa43667803e"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F037/banks/manifest.json",
+          "sha256": "sha256:dbb5181aa9671535227b1ac3279bf307b08e4ff9b1d35bf1df3f86b7b42b878d"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F037/banks/banks.npz",
+          "sha256": "sha256:f295629c4a9162f53bd84a01d740af7a11546e4773c22abb83d8afd1bfeea496"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-86b8d833a818f08f",
+      "manifest_sha256": "sha256:bf4fc57f7b82008357275c2dc1f4121ff130fe5087e09a4972b38c7aceb899e6",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F039/observations.json",
+          "sha256": "sha256:2f0f6c43495c33011278c9f2df7bb3979a6ddcabb578d63d75533cb1e8abdca1"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F039/banks/manifest.json",
+          "sha256": "sha256:91f75c2b8f7d4d6120db041692df352018f407788a2276768fbd63015202784b"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F039/banks/banks.npz",
+          "sha256": "sha256:aea7679220ad82c3d2a2a98510a1952373d92412c548e7025d7d1e82d3846ab6"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-7aa0a593f8f8e233",
+      "manifest_sha256": "sha256:f6d42685693526d9c18e25d4bce942d4c7ff19bbad51c4133251f3ecd69979b7",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F042/observations.json",
+          "sha256": "sha256:4f0e44f0a6f58d6ca7afbb2881d7133ddb29fa007d924835cf904f57e1af92ae"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F042/banks/manifest.json",
+          "sha256": "sha256:9815b2dee2297e17fccfb75a1079c4174ee8a385f6df9d3e87b9deb24a970cdf"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F042/banks/banks.npz",
+          "sha256": "sha256:355d528317081a35753351d87f6d469ecf12c280127a6a641cd34ec472aaf60b"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-6a8bd0ca578b58eb",
+      "manifest_sha256": "sha256:ccc5ef347791337f349b9fefee0ead3b3bcec3e03a7427240c3e9bd430f20e3d",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F045/observations.json",
+          "sha256": "sha256:46ed2bb07c1c37f4447e313e626d034221e92121c72f75b97741307666b4b8ef"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F045/banks/manifest.json",
+          "sha256": "sha256:d87a3c9e40e341e4c6c2754299e677e17fa7e4175e374cf533ef34db81fa1f80"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F045/banks/banks.npz",
+          "sha256": "sha256:903735e5a938c2f108b08ac4f06a9db708a6b79d4736170accd98fb7bdbb6900"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-57af4c0ef8089db5",
+      "manifest_sha256": "sha256:ea818dfac0b7df4f8de7777d29736a6148eedb4b0af2932a7736c8d6d8842e2f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F048/observations.json",
+          "sha256": "sha256:919bff99c9cecad630046defe7c047441b0e70b8d395d535b1eed3850557aa52"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F048/banks/manifest.json",
+          "sha256": "sha256:ca49b67911dcadd3207c1f761d555aac193a3b4c69c222c34344a3a411079ce8"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F048/banks/banks.npz",
+          "sha256": "sha256:291d31f1de36d44a7128fba921e2f9995e868f1ccdd898eb02e9e49bf4146244"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-682838e4169fa032",
+      "manifest_sha256": "sha256:c52a75e8de2309f93f8f5bfc83fcdac1d8d70bad97c06e595191303ae691b8ed",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F050/observations.json",
+          "sha256": "sha256:8a60118ac9194403c9c63e058fbf38e33fc5dd90ba61efc76464a9cc8ed64dcc"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F050/banks/manifest.json",
+          "sha256": "sha256:bf57b4bbe971395af1be349b38439fe6dab16dd5daa55ad3d027ececb799401a"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F050/banks/banks.npz",
+          "sha256": "sha256:4341d40e351d28813abf75afafd5a2aa27a4a35b162d140d8b4dc9ea033868b3"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-0bcf99ca2b158c2c",
+      "manifest_sha256": "sha256:1636f15ba5b67c79bc973485b271b65f92429c01d8d8d489579f25639de0cfcd",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F053/observations.json",
+          "sha256": "sha256:47d27a3e06c16e9eae7fef4c89c5c41cd5f57f0a8512baa5482fb3443e49673e"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F053/banks/manifest.json",
+          "sha256": "sha256:32b43163c8b3320a9dc2d0885e7a4e6347080b7a810c76106e531b751a1e07ea"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F053/banks/banks.npz",
+          "sha256": "sha256:2d1f38f86e393772c1ddb31fabe8b156912ae1cad4193005fabf876fddc093b3"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-61be64a021e343e8",
+      "manifest_sha256": "sha256:7b9e68d9faa2eacdcdbac9492f75cba3ae26a05518d8b724532f061c1e9ae240",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F056/observations.json",
+          "sha256": "sha256:269056ec1c07da470f51bf35969ed26951e08624db53ae98f18c9a8db776d8d6"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F056/banks/manifest.json",
+          "sha256": "sha256:e7575b1b147f0b28c4c15e9979e79a62b504dfcbd373012ec6ad356b3b524b39"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F056/banks/banks.npz",
+          "sha256": "sha256:c2d5eeeb5f179e6f3e4fba1ce6d6fd71456049694aafa65e7e8423f2d2fa6568"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-4dbf1fb13ad2ed54",
+      "manifest_sha256": "sha256:ee8eef551a33ea6c72492d8d1026de512ccf2b3754616371783a43f1815e345f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F059/observations.json",
+          "sha256": "sha256:c92ca4582ef05814a618224ec7576f8821edc9346c2897197539ba78c684b0bc"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F059/banks/manifest.json",
+          "sha256": "sha256:09eb236e28a32e89eaec89c76e5a12ccefaf4bb7dd6662d3435e902fd21be564"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F059/banks/banks.npz",
+          "sha256": "sha256:fdd374308ebf225184101da8e8804c0a32acf5a1e9a2b9ee3646a93b328c72e5"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-47639950dbd07a0f",
+      "manifest_sha256": "sha256:f10ecc4547391b43b048e6327d596fb73a5366e26fd34a4590db1e04c3e2091b",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F062/observations.json",
+          "sha256": "sha256:e6ad6802d5df6ff045edbef7fe384881530dcb8a737f5f41da5e93c6b289ee47"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F062/banks/manifest.json",
+          "sha256": "sha256:83e41fc149e93c2136cbda1e02b9f2bc38ecc8fad260807abbcf4bc3a58b98e5"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F062/banks/banks.npz",
+          "sha256": "sha256:d5f297a5670ba3d98a16e769103ddec2c1e1498ce3f14e9c3b856a5d142efccf"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-2ce4bf27b97e1a83",
+      "manifest_sha256": "sha256:d0cdb550f55b9246da1c9b1d377aa23d5207ebbd6d1b0f6ba96b0c7fc3fbc99f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F064/observations.json",
+          "sha256": "sha256:bfbabb96eaf261cecd2e8859e1c646d748abee365b8a55fadb9c847fd172b286"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F064/banks/manifest.json",
+          "sha256": "sha256:27dae92eb127c447120cb09635d989bb83b5e49e638fd3fe52a992c47e71ecdd"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F064/banks/banks.npz",
+          "sha256": "sha256:51fed4aac6205849ad81f5307a528e1c0e8160edc8740943663a3914deef02fe"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-40ae60052a6435ae",
+      "manifest_sha256": "sha256:54d78d036554b744831da2854ce7fcd8e9683292886aae221644ebb0409d930f",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F067/observations.json",
+          "sha256": "sha256:18e7e21382392412a2d5afa93794ed1ef9e61bfedb9be3c0a9dc1c7e533cee60"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F067/banks/manifest.json",
+          "sha256": "sha256:b5ab335e1176446f04ddc6a5d84ebceb1cfd9acfa7e12231382edbba2c89daed"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F067/banks/banks.npz",
+          "sha256": "sha256:dc80011fc7141086888dda5650aaf952ebaf090c8da3687afc8c734983b63101"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-2a60591f680cd8c2",
+      "manifest_sha256": "sha256:9db0785f21fdc5db4e3c0bd4235e33c522ac3ec592dc5331b94167c9b9a50667",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F070/observations.json",
+          "sha256": "sha256:916aaaa852a507ba08ab53010af84d1b804337c88e0724d3dee10b0e4283ebe1"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F070/banks/manifest.json",
+          "sha256": "sha256:b5ec0ed83ed3a04b7e4b78e5db37d36e3d58d6bd6ac02d83e08912562605acbd"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F070/banks/banks.npz",
+          "sha256": "sha256:d11f53a7203908eece3056340e8b4742d265e2f56f97daaaac843c7f2c98d96b"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-f7f4568e8daa4db4",
+      "manifest_sha256": "sha256:59f913bfadec11d4965c7a41a3904b280fc498744170206090a2c56c3034e6c6",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F073/observations.json",
+          "sha256": "sha256:21df58303643484855927bae8bb9793237e5d3c72213d3e66d17d8b07b56cf1b"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F073/banks/manifest.json",
+          "sha256": "sha256:cad00af218301e836411237a14c581fb96a5a8cf79fad2991b12acc88ba263ca"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F073/banks/banks.npz",
+          "sha256": "sha256:4d5a4f7f87f870207372a9dca9b92c31293867c81f09923e9ad09bc04972ae22"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-5d2e9ba7479fde9d",
+      "manifest_sha256": "sha256:ef937d1af881e4e04e5430fc6016a8b3e1ff6189f86a7b49dab3af471011a148",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F075/observations.json",
+          "sha256": "sha256:2884b5f513fa7b366db3bf5a64b609a409ca0fa216bed7caf4adea16f971c49b"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F075/banks/manifest.json",
+          "sha256": "sha256:8db889e562715db470497955ccbab11a311b6beeef690561c3e180d08b71200e"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F075/banks/banks.npz",
+          "sha256": "sha256:e09160ce379e71ac49ce1b55d16eb036eb6c907e4b7825c85716bd02fa858b55"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-12673ffd4ab77b65",
+      "manifest_sha256": "sha256:2775bd0ba3f9739d289b105f685aa379e1aa70d1c25849dc9ac97294902f3c21",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F078/observations.json",
+          "sha256": "sha256:e0a27670875a248069b14e708a536fe8f3b46422af6251b469e62ebe9b110fbd"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F078/banks/manifest.json",
+          "sha256": "sha256:2fe4db66315e614a77b3c6bb9141b567e7bed2ed19c90f38cd114a60dbfef185"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F078/banks/banks.npz",
+          "sha256": "sha256:a4b99e30045311b5fb52c0458b2ba9d211e7b9fbbe64a93633367e05516e1a29"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-09398d404640c2d6",
+      "manifest_sha256": "sha256:311322403e200cf980ca5805a80f4e4707f051a9f8a2178f00a333c28bbd0a65",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F081/observations.json",
+          "sha256": "sha256:106e6e326c0c57d9c67ef2e6d29ef48a61caa1ac1b133cc5c60e7e768c5d7041"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F081/banks/manifest.json",
+          "sha256": "sha256:dab2a963de219da107a1b98ad636a2ebfb32b4b42333ad1db1998ce71547bd5e"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F081/banks/banks.npz",
+          "sha256": "sha256:de4f2e3ed5152bf1eefe625cdc797fd661124e4fca4650b632a9650d753a3d3c"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-aa0c324dd1825b44",
+      "manifest_sha256": "sha256:b8598f9391e65e586b24b15a33a897ecc2288e91ec48b4f75091c21d48bdec06",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F084/observations.json",
+          "sha256": "sha256:34f9d63bd020b490ae9643fa6b4e0bf33126ea8138109e9076f234f99dff7f98"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F084/banks/manifest.json",
+          "sha256": "sha256:94e70a8209acf9311d7a2812f64367f328249362d4e54468d22841e93f413298"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F084/banks/banks.npz",
+          "sha256": "sha256:5c04e3129bb4dcdfdf4c4209a7743f1bd7f73b54d2bcec074356e49be648f216"
+        }
+      ]
+    },
+    {
+      "session_id": "scan-fw-8165310e3c4e205a",
+      "manifest_sha256": "sha256:5d1b86a7e44755afc306011f81b0b647b7edf6357d0978edfe4e6628ca321a1b",
+      "artifacts": [
+        {
+          "kind": "observations",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F087/observations.json",
+          "sha256": "sha256:f69f31bc4fdc90cd6503afc247c79d16047574d54c8011b5bd7f095b9a6127a6"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F087/banks/manifest.json",
+          "sha256": "sha256:dbab3f56cbb611b467fabea9bacca8624aa8992a8e45fb6bd9097146e48d4053"
+        },
+        {
+          "kind": "candidates",
+          "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_ds11_single10/exports/DS11-F087/banks/banks.npz",
+          "sha256": "sha256:d0435af65c5e6357477c168bf42d2bdb4c4408f2a1006731c1b6e257bd24842d"
+        }
+      ]
+    }
+  ],
+  "source_sha256": "ef512282850265a21f3a87fbf07c4af1f04381dc7f606048d170d9831da5bbce"
+}

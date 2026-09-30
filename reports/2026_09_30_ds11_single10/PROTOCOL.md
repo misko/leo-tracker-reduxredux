@@ -1,0 +1,9 @@
+# DS11 single scan replication of ten methods
+
+Mint DS11 after DS10's last admitted capture end through 2026-09-30 01:40:39 UTC, requiring the same complete capture/analysis admission as DS10. Select exactly 32 admitted scans at sorted indices floor(i*(N-1)/31), i=0..31, sorting by start time then session ID. No rate, signal quality, fitted distance or candidate outcome chooses membership. Do not replace failed exports with another scan.
+
+Replicate the DS10 ten-method single-scan benchmark: independent Student-t, shared scale, shared scale with 10s correlation, contrasts, q020, correlated q020, shared-scale 40-degree cones, q020 40-degree cones, shared slope SD0.5 Hz/s and shared curvature SD0.1 Hz/s². Use unchanged original implementation, starts, bounds, hyperparameters, masks, qualification and quadrature checks. The DS10 list-to-array adapter correction is included. No DS10 fitted positions or DS11 pooled fits initialize singles. Candidate grouping for slope/curvature uses the current scan's qualified q020 training result only.
+
+Each method/scan receives three starts (-2,0,0), (0,0,0), (2,0,0) and a 90-second process cap; at most two fit processes, one BLAS thread each. Derived input exports use the same public adapter and causal orbit-bank policy, at most three export workers with 180-second caps. No RF collection or raw-IQ processing. Preserve failures and do not expand scientific budgets after seeing outcomes. Engineering corrections require recorded amendments and retained original receipts.
+
+Report all 320 attempts: qualified count, median/p90/min/max reference distance, sub-km count over all attempted scans, runtime, per-scan table and common-q020 held scores. Also report all-method matched-complete medians when qualification differs. Reference remains unsurveyed and DS11 installation continuity unverified. This is a later dataset with frozen methods, not evidence of surveyed absolute accuracy. No remote publication is requested.

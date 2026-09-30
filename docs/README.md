@@ -47,6 +47,7 @@ Solution, Method—so it remains understandable when read alone.
 | Where are the PLUTO+ ARM GLRT speed improvements, source, and validation results? | [ARM GLRT performance index](research/arm-glrt-performance.md) |
 | What did the complete DS7 benchmark achieve? | [DS7 results, visualizations, and ablation comparisons](../reports/2026_09_27_ds7_publication/README.md) |
 | Where is the original sealed DS7 report and evidence? | [Full88 original report](../reports/2026_09_27_ds7_full88/REPORT.md) |
+| How do the ten single-scan models perform on DS11? | [Full DS11 benchmark, visualization and 320 results](../reports/2026_09_30_ds11_single10/README.md), [publication audit](../reports/2026_09_30_ds11_publication/README.md) |
 | Where are the formerly local research and engineering reports? | [Reviewed report archive and reading guide](../reports/2026_09_28_report_archive/README.md) |
 | How should another page be written? | [Documentation standard](contributing/documentation.md) |
 | How is production operated? | [Operator runbook](operations/runbook.md) |

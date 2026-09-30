@@ -1,0 +1,4804 @@
+{
+  "observed_utc": "2026-09-29T13:53:46.799827+00:00",
+  "glrt": {
+    "schema_version": 8,
+    "kind": "adaptive_hop_analysis_status",
+    "session_id": "scan-fw-e47b37c3c0af03c4",
+    "input_manifest_sha256": "sha256:0e481b7192b0b28d1a1ac5bad8a13372599e204f1dd77ed9d89be343ab78ba0a",
+    "binding_sha256": "sha256:21fc30e27c45d0f3f6016e24f2b0abd1bb6717294dd3369b9d287bea4a8f11c8",
+    "configuration": {
+      "schema_version": 5,
+      "analyzer_id": "adaptive-hop-variable-dwell-fractional-glrt64-cfo-v1",
+      "sample_rate_hz": 10000000,
+      "allowed_valid_visit_ms": [
+        120,
+        240,
+        360
+      ],
+      "probe_ms": 20,
+      "probe_stride_ms": 120,
+      "glrt64_margin_gate": 0.025,
+      "maximum_acquisition_candidates": 8,
+      "receiver_ids": [
+        0,
+        1
+      ],
+      "timing_refinement": "circular-five-cell-log-parabola-plus-lanczos16-v1",
+      "decision_score": "fractional-epoch-conditioned-glrt64-v1"
+    },
+    "total_visits": 2212,
+    "checkpoint_visits": 2212,
+    "state": "figures_ready",
+    "progress_basis": "sealed_metrics_manifest",
+    "worker_activity": "not_observed",
+    "metrics_manifest_sha256": "sha256:d2ce0876963fd84a424f26adbea31b5b85e603ea608e620cc5b718bbbc07ed6d",
+    "overview": {
+      "schema_version": 8,
+      "kind": "adaptive_hop_fractional_overview",
+      "presentation_id": "adaptive-actual-visit-glrt64-overview-v1",
+      "session_id": "scan-fw-e47b37c3c0af03c4",
+      "binding_sha256": "sha256:21fc30e27c45d0f3f6016e24f2b0abd1bb6717294dd3369b9d287bea4a8f11c8",
+      "metrics_manifest_sha256": "sha256:d2ce0876963fd84a424f26adbea31b5b85e603ea608e620cc5b718bbbc07ed6d",
+      "finalized_utc_ns": "1790673016257263414",
+      "artifacts": [
+        {
+          "name": "coverage",
+          "content_type": "image/png",
+          "sha256": "sha256:1be60710073ae0224ea3cbdf2c2233b4e6240800a7aaf6ec47ab32bbb0bbce1e",
+          "byte_count": 76555
+        },
+        {
+          "name": "glrt64-response",
+          "content_type": "image/png",
+          "sha256": "sha256:d555d3a9c5e172327648d8d3dbd0a841a6dce87373ad8dc370a15b130f1c776f",
+          "byte_count": 469080
+        },
+        {
+          "name": "cfo-trajectories",
+          "content_type": "image/png",
+          "sha256": "sha256:13cbe47d80eb2ce9cd8cb81d1938d184b8f762bbdcf6aa97ac14e215404619d3",
+          "byte_count": 638238
+        }
+      ],
+      "trajectory_configuration_sha256": "sha256:469344a7a0768460988b697bd7537a10c9ebeb31fe67af3e3933e8b226fcee3e",
+      "trajectory_input_policy": "strongest-passed-fractional-candidate-per-visit-rx",
+      "trajectory_scope": "separate-target-and-receiver-candidate-associations",
+      "selected_observation_count": 3410,
+      "association_count": 235,
+      "truncated_association_count": 0
+    }
+  },
+  "tracking": {
+    "session_id": "scan-fw-e47b37c3c0af03c4",
+    "state": "complete",
+    "phase": "complete",
+    "failure_summary": null,
+    "product": {
+      "schema_version": 14,
+      "analysis_id": "scanner-shared-tracking-v14",
+      "session_id": "scan-fw-e47b37c3c0af03c4",
+      "capture_mode": "adaptive",
+      "sample_rate_hz": 10000000,
+      "input_manifest_sha256": "sha256:0e481b7192b0b28d1a1ac5bad8a13372599e204f1dd77ed9d89be343ab78ba0a",
+      "analysis_manifest_sha256": "sha256:d2ce0876963fd84a424f26adbea31b5b85e603ea608e620cc5b718bbbc07ed6d",
+      "configuration_digest": "sha256:f54e5ab518dae837df03eaf7a4d54b9d30807f0a5edc872f1b9351c70ec2c054",
+      "tle_match_config_digest": "sha256:3c660b30fe415db05f1ecb4f62b58515347fdc55bba83f91c5d8a5cc890a35e4",
+      "created_at": "2026-09-29T09:27:05.333451Z",
+      "trajectory_state": "complete",
+      "tle_state": "complete",
+      "reasons": [],
+      "projected_candidate_count": 10571,
+      "physical_group_count": 287,
+      "eligible_group_count": 272,
+      "attempted_group_count": 4,
+      "deferred_group_count": 268,
+      "group_limit": 4,
+      "tracklets": [
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:16c3bc6998d91d688dbc84cac5177cb95b4d824f1c0ae0ffabb5480c2370f1be",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668382306001703,
+          "end_utc_ns": 1790668390891567103,
+          "observation_count": 20,
+          "normalized_rate_hz_per_s": -3267.9938449973956,
+          "residual_rms_hz": 129.09684047499437
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:c9ae14c197d16ac57a5f23f761dc1927678084b88f7254de8dde5f9140811295",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668382445613403,
+          "end_utc_ns": 1790668395947180603,
+          "observation_count": 14,
+          "normalized_rate_hz_per_s": -2631.4914936511454,
+          "residual_rms_hz": 278.82876599532113
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:5ca6450749a6780d1469b77acc0dd51dd971417ffdbd9a137d10d73a7b26b4b9",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668382445975103,
+          "end_utc_ns": 1790668391554195003,
+          "observation_count": 10,
+          "normalized_rate_hz_per_s": -3250.471655475422,
+          "residual_rms_hz": 185.59399394018303
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:2f9b8547d4957f2a26da3322c8e80659c48390e69605c9942073d7e03556b05d",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668382725670503,
+          "end_utc_ns": 1790668420859221503,
+          "observation_count": 66,
+          "normalized_rate_hz_per_s": -3139.606809438483,
+          "residual_rms_hz": 488.7080642896288
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:05f4ec1e61618c54f8408e7c159a7252ff24b5f28885c14727bbfeffd107fe0e",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668383494112103,
+          "end_utc_ns": 1790668420858202703,
+          "observation_count": 69,
+          "normalized_rate_hz_per_s": -3484.3990726177294,
+          "residual_rms_hz": 588.3220440460238
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:c3fe8b6bf55e2b2831a92a81663a6fcd262df40bc1e513344761ef4293d62eba",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668395928420003,
+          "end_utc_ns": 1790668426014231803,
+          "observation_count": 56,
+          "normalized_rate_hz_per_s": -3309.7611223152808,
+          "residual_rms_hz": 791.643826833337
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:84ac8e9d10dfbbb2118cd20446ad20558fefef962068e8c2c24d283438ce9754",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668403929899803,
+          "end_utc_ns": 1790668421660880703,
+          "observation_count": 29,
+          "normalized_rate_hz_per_s": -3312.893120019868,
+          "residual_rms_hz": 315.13564361114186
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:f4348f890437ce327702b1ee7151696935365d9c6eca5b66fdc58d682d519138",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668405996494203,
+          "end_utc_ns": 1790668421399501603,
+          "observation_count": 18,
+          "normalized_rate_hz_per_s": -3421.0091647801196,
+          "residual_rms_hz": 147.7700926809889
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:67d6b2ac0371a92c10a31653b8a7e55bdf3fa4430cfe4902c3277d9a5427e014",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668421923249503,
+          "end_utc_ns": 1790668436568750003,
+          "observation_count": 21,
+          "normalized_rate_hz_per_s": -2756.8181473937607,
+          "residual_rms_hz": 395.02535345946814
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:1f96b08427c48cc8d4cc6f591cb939360e54f602cfa3803d96efb4a74ced2ab0",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668422343616403,
+          "end_utc_ns": 1790668438514036803,
+          "observation_count": 21,
+          "normalized_rate_hz_per_s": -1934.9742139825696,
+          "residual_rms_hz": 408.36247056870167
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:ebe7778ad2ea46e5fb01ec94c307b2b66e761fa3ea3960df85a08635ffe12833",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668429766953803,
+          "end_utc_ns": 1790668457310186003,
+          "observation_count": 48,
+          "normalized_rate_hz_per_s": -2643.4780471230183,
+          "residual_rms_hz": 881.9097997822342
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:21323d2070b350a75505cec9bef2b227fb318a9a5283bb0fa0e6b41721fb4899",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668436831018803,
+          "end_utc_ns": 1790668456207246303,
+          "observation_count": 37,
+          "normalized_rate_hz_per_s": -2576.222139455336,
+          "residual_rms_hz": 567.6436047169162
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:66a9ab000e7c582d65d021469fab971400b534fedd17bbc699fd82e80ba08f12",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668437793744003,
+          "end_utc_ns": 1790668455666240503,
+          "observation_count": 17,
+          "normalized_rate_hz_per_s": -2621.930088828737,
+          "residual_rms_hz": 553.642319434078
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:d76ff4fb6e0bb16dbe8d5b3b81223776bc1004e18e5e3daa6986ae3d90e18b9a",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668438495087003,
+          "end_utc_ns": 1790668459796945503,
+          "observation_count": 45,
+          "normalized_rate_hz_per_s": -2767.7705020052263,
+          "residual_rms_hz": 888.83543603717
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:fc4ab9d03afcca31413597b9a5437ad9552117e740362884d2ce9387cb154c04",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668451856459603,
+          "end_utc_ns": 1790668465734204803,
+          "observation_count": 12,
+          "normalized_rate_hz_per_s": -3062.870097957512,
+          "residual_rms_hz": 390.48215375882387
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:90f2e5884d2c1f50e1a40f191ecfe22c51fcb299fd3ee1fe92dccd565a434782",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668456188560503,
+          "end_utc_ns": 1790668496404795503,
+          "observation_count": 64,
+          "normalized_rate_hz_per_s": -3445.685674397695,
+          "residual_rms_hz": 770.3292056353845
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:c20b3afb476e4bf849948e332549caaa9712bfe01166024a963cbf7e702f553b",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668457149971803,
+          "end_utc_ns": 1790668496123744903,
+          "observation_count": 87,
+          "normalized_rate_hz_per_s": -3641.862545976478,
+          "residual_rms_hz": 854.6097312651141
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:985fe4d1ec86fdf1d8824fdd0a9415d2f140d417982b4e418e567f5e60dbeda1",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668457291236203,
+          "end_utc_ns": 1790668496404795503,
+          "observation_count": 62,
+          "normalized_rate_hz_per_s": -3453.100982986094,
+          "residual_rms_hz": 689.8960676242826
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:ac88732ce0d1123fe8b5aa01ef468ef6ec206d22f071c5244a40f6b1a6e39f25",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668458675788303,
+          "end_utc_ns": 1790668481266211803,
+          "observation_count": 45,
+          "normalized_rate_hz_per_s": -3562.753920308353,
+          "residual_rms_hz": 561.9893069042106
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:b825602b1ac1a936f879f7bc4005d6161b62ce77f7c20c5bfa5c92bfbf60c32a",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668460739337303,
+          "end_utc_ns": 1790668496123744903,
+          "observation_count": 77,
+          "normalized_rate_hz_per_s": -3667.8020398426056,
+          "residual_rms_hz": 633.9163004079961
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:9ed74a8f624a91c1f8efd6c0eadaf9e91d9d6ab05944430b4ca4dc71b9123d4f",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668472112752503,
+          "end_utc_ns": 1790668511169867703,
+          "observation_count": 80,
+          "normalized_rate_hz_per_s": -2805.511547838137,
+          "residual_rms_hz": 842.8165176037528
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:e3054152904734e6d52094c71ca1d9bf59fd200db61f70e2edf948e38ef35851",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668475704689303,
+          "end_utc_ns": 1790668511169103103,
+          "observation_count": 64,
+          "normalized_rate_hz_per_s": -3917.9451877474858,
+          "residual_rms_hz": 355.11510946210916
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:e4de7534eb317cf192559ee4f57edf5c7c84ef37c6a2a5e2b7bbbf38226a36e5",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668481807460503,
+          "end_utc_ns": 1790668511169103103,
+          "observation_count": 58,
+          "normalized_rate_hz_per_s": -3927.154814059386,
+          "residual_rms_hz": 293.0667994754957
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:c86dcc61242ebfc0dde3ee74ec28115e0b2418c5d2b0b1e841481ea043e665b8",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668482329920103,
+          "end_utc_ns": 1790668518200797903,
+          "observation_count": 62,
+          "normalized_rate_hz_per_s": -3495.167583410292,
+          "residual_rms_hz": 789.8258808032831
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:4ed19a088ed280e3950466c85f3694894ddae81f93664ad80723fb5dd578a881",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668492292607003,
+          "end_utc_ns": 1790668520768778203,
+          "observation_count": 43,
+          "normalized_rate_hz_per_s": -3360.844641770233,
+          "residual_rms_hz": 618.878226525035
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:e61bffc6dda9329c33c1944fd0785d9afde90f778908e0b2df94b8678f9cf7e7",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668496907179303,
+          "end_utc_ns": 1790668511451370803,
+          "observation_count": 24,
+          "normalized_rate_hz_per_s": -2746.287455754918,
+          "residual_rms_hz": 358.59992274236987
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:4baddc50741e9edc5ea019ab20cedcca5104e6bf90b2b2e50b7af8f69ea6e39a",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668498412531003,
+          "end_utc_ns": 1790668509543599903,
+          "observation_count": 20,
+          "normalized_rate_hz_per_s": -2777.367272106716,
+          "residual_rms_hz": 248.2677047658967
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:e2552f2bf3cd9da4ab2f91e1fde3ab76c9a6c66b3055270d6fc6c57cd535dd40",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668498552532703,
+          "end_utc_ns": 1790668511451370803,
+          "observation_count": 15,
+          "normalized_rate_hz_per_s": -2797.191310758935,
+          "residual_rms_hz": 361.71689078860794
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:f9a97b1685a3bda7be3dae85b8aa913583d823703a143955b7d45566ee71fa05",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668498812535803,
+          "end_utc_ns": 1790668510507608803,
+          "observation_count": 18,
+          "normalized_rate_hz_per_s": -2821.0489219565493,
+          "residual_rms_hz": 232.95494280757038
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:1bec6875957c81a0bff189dc1ab1a034870c74c90bb634c48316d798a027d7d6",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668510488659003,
+          "end_utc_ns": 1790668540943746803,
+          "observation_count": 62,
+          "normalized_rate_hz_per_s": -3513.7140166429094,
+          "residual_rms_hz": 784.7876151553519
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:29ef668ce50f6530b85a6a94f62ad6b96f5a8eb936df166833fb42fb38614cff",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668510488659003,
+          "end_utc_ns": 1790668554733085503,
+          "observation_count": 73,
+          "normalized_rate_hz_per_s": -3571.655899431883,
+          "residual_rms_hz": 883.9256936820082
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:5aca8a059581694064a4f81df181e98d3dca22e04191196aa4fe3c223d221a03",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668511432667403,
+          "end_utc_ns": 1790668547624836003,
+          "observation_count": 68,
+          "normalized_rate_hz_per_s": -3572.522920257315,
+          "residual_rms_hz": 788.3537054958587
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:6229a33e902b853c6c8bb009891c12e312209c75351e453b0e5a1954123c33e4",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668511972672103,
+          "end_utc_ns": 1790668555695686003,
+          "observation_count": 75,
+          "normalized_rate_hz_per_s": -3598.0405854546525,
+          "residual_rms_hz": 729.4697706787123
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:0a7846beb8279fc1bd0466308a8e939f21bfbd3d641ea26368ab02806a9b5fc5",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668512754180003,
+          "end_utc_ns": 1790668541625140503,
+          "observation_count": 54,
+          "normalized_rate_hz_per_s": -3969.0606585502114,
+          "residual_rms_hz": 341.3976238704671
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:fa24c213bc157dc528f921d817b2eb5954a2a2ac9095f79dc89b631724c46074",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668512754180003,
+          "end_utc_ns": 1790668541746473303,
+          "observation_count": 57,
+          "normalized_rate_hz_per_s": -3962.808992145499,
+          "residual_rms_hz": 368.35861328103465
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:2315ddfe0bf45b33774523a0efa599f341a1ef9837b86775241b6923e99482a2",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668513035315503,
+          "end_utc_ns": 1790668541344882303,
+          "observation_count": 44,
+          "normalized_rate_hz_per_s": -3409.1395561472345,
+          "residual_rms_hz": 623.9774121268659
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:1ee285de23a2d21bd1d277e8a2595eb6e19839805ff2eefd1e8308fae02ee417",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668527837901303,
+          "end_utc_ns": 1790668537932946503,
+          "observation_count": 21,
+          "normalized_rate_hz_per_s": -2754.8139832007455,
+          "residual_rms_hz": 185.94817589797353
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:2a58f2cc7f37041a7782c37e83d5ba9d4a94e5499a39e35e7a86b0b73fe75831",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668534359234603,
+          "end_utc_ns": 1790668571344968603,
+          "observation_count": 54,
+          "normalized_rate_hz_per_s": -3415.091386496734,
+          "residual_rms_hz": 1168.9731869514371
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:469afad016d72b359b3b2f6a6ba888f2dbaf52fd1a9cede8f107922346a8c0df",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668536128648403,
+          "end_utc_ns": 1790668585252787503,
+          "observation_count": 103,
+          "normalized_rate_hz_per_s": -3504.603019394724,
+          "residual_rms_hz": 931.477455443783
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:61939dfa979632ab6d12e4c5d221ab7061269108c8d198842f006103975a4b73",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668542008694403,
+          "end_utc_ns": 1790668585252787403,
+          "observation_count": 93,
+          "normalized_rate_hz_per_s": -3534.6806419297723,
+          "residual_rms_hz": 538.0773073766961
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:288809f5b4f95f24855265baf72ff2fc034b9752593826a6509b29e02bdd389f",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668542671324603,
+          "end_utc_ns": 1790668584570411603,
+          "observation_count": 67,
+          "normalized_rate_hz_per_s": -3544.720881917583,
+          "residual_rms_hz": 451.39630435017693
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:093fb527fad1a58f61961b232f64373194c0db0c64ac28ecb8fce1e2118c63cd",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668543072821303,
+          "end_utc_ns": 1790668556097105203,
+          "observation_count": 28,
+          "normalized_rate_hz_per_s": -3550.8613665655616,
+          "residual_rms_hz": 185.6487845737251
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:4438db5af02e4dc2ff7e4153b131ea7c8ee4b5b57d0457e3b5b7c356b1810bea",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668546643355903,
+          "end_utc_ns": 1790668586735714903,
+          "observation_count": 68,
+          "normalized_rate_hz_per_s": -3536.2244180655152,
+          "residual_rms_hz": 501.3193678834942
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:57f9d65805c98ea02544d3fb89aea64958d5987c98122ab321b519cbb08abe40",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668557162087203,
+          "end_utc_ns": 1790668571746323703,
+          "observation_count": 29,
+          "normalized_rate_hz_per_s": -3613.5784048848323,
+          "residual_rms_hz": 31.95786024391726
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:c74c5493163ae48a562d65911dec9ba969d363b6871db4ad427d405563e9797b",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668574816736803,
+          "end_utc_ns": 1790668615358466803,
+          "observation_count": 94,
+          "normalized_rate_hz_per_s": -3667.6012292585856,
+          "residual_rms_hz": 609.0966655404569
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:fec519688ee9599a499a49a13eaaa87b986550bc8c39ae98e1c42ffabf22f598",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668574816736803,
+          "end_utc_ns": 1790668615358466803,
+          "observation_count": 94,
+          "normalized_rate_hz_per_s": -3672.380539696511,
+          "residual_rms_hz": 595.3407047692918
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:8f81dbc2ef9b1c1c00bf455456e8cddb2e4dfa3ad4b6cd1008476d18febd0070",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668576303015103,
+          "end_utc_ns": 1790668599832705903,
+          "observation_count": 44,
+          "normalized_rate_hz_per_s": -2378.802955686661,
+          "residual_rms_hz": 926.755010107852
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:64790518f1bb1bc18e6096d1b6b3d3685facd1f3adffb0419bda4d76a998f4eb",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668586976781403,
+          "end_utc_ns": 1790668616462392003,
+          "observation_count": 33,
+          "normalized_rate_hz_per_s": -3532.5809025396943,
+          "residual_rms_hz": 163.13266098327145
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:e01b91f57e1c84ebe84f5f26540be1d45ef429a6d0eb109f111b359185f23972",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668587118108103,
+          "end_utc_ns": 1790668600233106603,
+          "observation_count": 22,
+          "normalized_rate_hz_per_s": -3541.2467029882027,
+          "residual_rms_hz": 109.66422047487566
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:8f1d8d83687f7deb81822b5a5770b17d7246cd945c0f6a2c933c9446d1a858e9",
+          "channel": 2,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10960000000.0,
+          "start_utc_ns": 1790668587118108203,
+          "end_utc_ns": 1790668600233106603,
+          "observation_count": 21,
+          "normalized_rate_hz_per_s": -3541.85784810624,
+          "residual_rms_hz": 87.99872784623265
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:7628485d41e46f419d529519681ff38cc3bfdc03b0b1b9ce0ea2f82185eb9c50",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668589023205503,
+          "end_utc_ns": 1790668604085029203,
+          "observation_count": 25,
+          "normalized_rate_hz_per_s": -2687.157724197421,
+          "residual_rms_hz": 419.939129061849
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:fce5c891037e70760c7609a43f94a4afdf6574576fe4fe11c497af7d3f7b6c11",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668601498001903,
+          "end_utc_ns": 1790668632691788603,
+          "observation_count": 58,
+          "normalized_rate_hz_per_s": -3439.700816985453,
+          "residual_rms_hz": 970.4490544054828
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:4d60de008833968a9416f4b093cd60e3a1b640353d62f2048438a586519b0141",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668602562067203,
+          "end_utc_ns": 1790668655583729803,
+          "observation_count": 105,
+          "normalized_rate_hz_per_s": -3522.3780834273553,
+          "residual_rms_hz": 883.4804035005723
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:1d5574791182a71172aaf98d0a0f44fb07d804a866cfc8be4e9673459d2b8ab9",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668604066079403,
+          "end_utc_ns": 1790668639151595603,
+          "observation_count": 62,
+          "normalized_rate_hz_per_s": -3504.8789399287916,
+          "residual_rms_hz": 758.998860975956
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:140ce6b8fb05ce547895fc101ad61af0f0a788a42252100447f646b94cb1a4a6",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668604728561003,
+          "end_utc_ns": 1790668654942419403,
+          "observation_count": 74,
+          "normalized_rate_hz_per_s": -3555.916752234231,
+          "residual_rms_hz": 686.5124741786549
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:0595522b47514f3dbc0543de261b55a771c72c647e9b2432fd2edd6e134bc4de",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668617948693303,
+          "end_utc_ns": 1790668656989053603,
+          "observation_count": 61,
+          "normalized_rate_hz_per_s": -3541.061399799011,
+          "residual_rms_hz": 828.6882630531096
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:d91cd616546d99fbb32f64679ae78143d8b9469ca07556f11cc790f3811558d6",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668619452703103,
+          "end_utc_ns": 1790668654258404803,
+          "observation_count": 58,
+          "normalized_rate_hz_per_s": -3530.851464821388,
+          "residual_rms_hz": 768.7041544411491
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:f48b536bcf22a6272192a342ebcb9ae3d27de65a537eea78c1f32fa0e9011e75",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668634136491503,
+          "end_utc_ns": 1790668654942383803,
+          "observation_count": 33,
+          "normalized_rate_hz_per_s": -2562.9916559152102,
+          "residual_rms_hz": 832.7653291721099
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:ff4b50f2c838f1b52e89d20f5c0bde6ff7c6fa61dca8e1a268746efffc1cc9b9",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668637788546203,
+          "end_utc_ns": 1790668671425191103,
+          "observation_count": 63,
+          "normalized_rate_hz_per_s": -2993.4891846057476,
+          "residual_rms_hz": 1037.9284505679952
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:3a460905d9b12e03f8b0f67e5e0aed63aa9f4cbbbd2d10504755d74965fb9ccb",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668646620667703,
+          "end_utc_ns": 1790668662959641503,
+          "observation_count": 31,
+          "normalized_rate_hz_per_s": -3038.4312318494754,
+          "residual_rms_hz": 514.9951640736303
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:625c4172a5f8cafa76bde8a0c4d6b18777549bac2ee50b7aa6197814a4dbed86",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668656127446803,
+          "end_utc_ns": 1790668680721232703,
+          "observation_count": 53,
+          "normalized_rate_hz_per_s": -3601.4195703429364,
+          "residual_rms_hz": 813.2766094849865
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:7932717f9de0bfc2cd492bfd3794c90cc53de00dbb0c01d499a223dae034c9df",
+          "channel": 3,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11210000000.0,
+          "start_utc_ns": 1790668656407449803,
+          "end_utc_ns": 1790668678766559703,
+          "observation_count": 39,
+          "normalized_rate_hz_per_s": -3625.2443979270197,
+          "residual_rms_hz": 633.4383052105402
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:47bbccd9ad586a861439a3a79a8a10685e26807a69e9a8ca9dabf8d7051ee141",
+          "channel": 4,
+          "edge": "lower",
+          "receiver_id": 1,
+          "actual_rf_hz": 11460000000.0,
+          "start_utc_ns": 1790668660131486903,
+          "end_utc_ns": 1790668681805235603,
+          "observation_count": 39,
+          "normalized_rate_hz_per_s": -3742.034992947958,
+          "residual_rms_hz": 507.38076649958174
+        },
+        {
+          "schema_version": 1,
+          "tracklet_id": "sha256:76b9dd0c704c6b1d0eadf3d6d7b70c014e80357f68ea330476c505401fe63bd6",
+          "channel": 1,
+          "edge": "lower",
+          "receiver_id": 0,
+          "actual_rf_hz": 10710000000.0,
+          "start_utc_ns": 1790668661856465403,
+          "end_utc_ns": 1790668681945015903,
+          "observation_count": 35,
+          "normalized_rate_hz_per_s": -2282.287301257158,
+          "residual_rms_hz": 805.0837281811172
+        }
+      ],
+      "tle_candidates": [
+        {
+          "schema_version": 1,
+          "hypothesis_rank": 1,
+          "hypothesis_id": "sha256:8d3bf270aeb79cfc458b900a4f855e36bf0b861c59e572e32dcae1f761d93045",
+          "physical_group_id": "sha256:a7b444604529eedf2835e915ab811cde4df1db183dd8d7eea7c45b6d7a9c6937",
+          "representative_tracklet_id": "sha256:4d60de008833968a9416f4b093cd60e3a1b640353d62f2048438a586519b0141",
+          "tracklet_ids": [
+            "sha256:0595522b47514f3dbc0543de261b55a771c72c647e9b2432fd2edd6e134bc4de",
+            "sha256:140ce6b8fb05ce547895fc101ad61af0f0a788a42252100447f646b94cb1a4a6",
+            "sha256:1d5574791182a71172aaf98d0a0f44fb07d804a866cfc8be4e9673459d2b8ab9",
+            "sha256:4d60de008833968a9416f4b093cd60e3a1b640353d62f2048438a586519b0141",
+            "sha256:d91cd616546d99fbb32f64679ae78143d8b9469ca07556f11cc790f3811558d6",
+            "sha256:fce5c891037e70760c7609a43f94a4afdf6574576fe4fe11c497af7d3f7b6c11"
+          ],
+          "source_observation_count": 105,
+          "scored_observation_count": 105,
+          "support_span_s": 53.0216626,
+          "nominal_candidate_count": 523,
+          "leading_catalog_number": 67517,
+          "selected_tau_s": -1.0,
+          "training_runner_negative_log_score_margin": 19.671682231162663,
+          "training_leader_heldout_rank": 1,
+          "heldout_runner_negative_log_score_margin": 15.012590779313257,
+          "nominal_heldout_negative_log_score": 373.7394237129509,
+          "radio_null_heldout_negative_log_score": 371.2750006392618,
+          "wrong_time_minus_500_heldout_negative_log_score": 376.44672555685645,
+          "wrong_time_plus_500_heldout_negative_log_score": 374.29555397168366,
+          "leading_candidate_persisted_on_heldout": true,
+          "abstention_recommended": false,
+          "abstention_reasons": [],
+          "match_content_digest": "sha256:df2781f5a0eb2df971a182adf5d3a5dfd0c4dcb52413f0e2f969a5b095c5400e",
+          "candidate_only": true,
+          "identity_claimed": false
+        },
+        {
+          "schema_version": 1,
+          "hypothesis_rank": 1,
+          "hypothesis_id": "sha256:8d3bf270aeb79cfc458b900a4f855e36bf0b861c59e572e32dcae1f761d93045",
+          "physical_group_id": "sha256:8ee01ebc3d802bba4437272b6ce75a0f9e3c79e2c8f681e7a1d350cf3d2deb91",
+          "representative_tracklet_id": "sha256:469afad016d72b359b3b2f6a6ba888f2dbaf52fd1a9cede8f107922346a8c0df",
+          "tracklet_ids": [
+            "sha256:093fb527fad1a58f61961b232f64373194c0db0c64ac28ecb8fce1e2118c63cd",
+            "sha256:288809f5b4f95f24855265baf72ff2fc034b9752593826a6509b29e02bdd389f",
+            "sha256:4438db5af02e4dc2ff7e4153b131ea7c8ee4b5b57d0457e3b5b7c356b1810bea",
+            "sha256:469afad016d72b359b3b2f6a6ba888f2dbaf52fd1a9cede8f107922346a8c0df",
+            "sha256:5aca8a059581694064a4f81df181e98d3dca22e04191196aa4fe3c223d221a03",
+            "sha256:61939dfa979632ab6d12e4c5d221ab7061269108c8d198842f006103975a4b73",
+            "sha256:6229a33e902b853c6c8bb009891c12e312209c75351e453b0e5a1954123c33e4"
+          ],
+          "source_observation_count": 103,
+          "scored_observation_count": 103,
+          "support_span_s": 49.1241391,
+          "nominal_candidate_count": 520,
+          "leading_catalog_number": 64247,
+          "selected_tau_s": -1.0,
+          "training_runner_negative_log_score_margin": 27.94476620445448,
+          "training_leader_heldout_rank": 1,
+          "heldout_runner_negative_log_score_margin": 46.55619931723015,
+          "nominal_heldout_negative_log_score": 374.4598920804297,
+          "radio_null_heldout_negative_log_score": 371.66116217454834,
+          "wrong_time_minus_500_heldout_negative_log_score": 392.8468065604147,
+          "wrong_time_plus_500_heldout_negative_log_score": 377.535607713724,
+          "leading_candidate_persisted_on_heldout": true,
+          "abstention_recommended": false,
+          "abstention_reasons": [],
+          "match_content_digest": "sha256:f01e4bd5d0a67606bca619ab66ff07e806506c84058719b7434b34d1b4d933e8",
+          "candidate_only": true,
+          "identity_claimed": false
+        },
+        {
+          "schema_version": 1,
+          "hypothesis_rank": 1,
+          "hypothesis_id": "sha256:8d3bf270aeb79cfc458b900a4f855e36bf0b861c59e572e32dcae1f761d93045",
+          "physical_group_id": "sha256:181110b290b80fc34cd135ced9bd4d8154b6c69262fb0d74c7cff5c4a5153522",
+          "representative_tracklet_id": "sha256:fec519688ee9599a499a49a13eaaa87b986550bc8c39ae98e1c42ffabf22f598",
+          "tracklet_ids": [
+            "sha256:8f1d8d83687f7deb81822b5a5770b17d7246cd945c0f6a2c933c9446d1a858e9",
+            "sha256:c74c5493163ae48a562d65911dec9ba969d363b6871db4ad427d405563e9797b",
+            "sha256:e01b91f57e1c84ebe84f5f26540be1d45ef429a6d0eb109f111b359185f23972",
+            "sha256:fec519688ee9599a499a49a13eaaa87b986550bc8c39ae98e1c42ffabf22f598"
+          ],
+          "source_observation_count": 94,
+          "scored_observation_count": 94,
+          "support_span_s": 40.54173,
+          "nominal_candidate_count": 509,
+          "leading_catalog_number": 67190,
+          "selected_tau_s": -1.0,
+          "training_runner_negative_log_score_margin": 11.031790778106938,
+          "training_leader_heldout_rank": 1,
+          "heldout_runner_negative_log_score_margin": 6.496553875345683,
+          "nominal_heldout_negative_log_score": 340.4095251414851,
+          "radio_null_heldout_negative_log_score": 338.6049025559881,
+          "wrong_time_minus_500_heldout_negative_log_score": 342.30476321251825,
+          "wrong_time_plus_500_heldout_negative_log_score": 340.5581071602349,
+          "leading_candidate_persisted_on_heldout": true,
+          "abstention_recommended": false,
+          "abstention_reasons": [],
+          "match_content_digest": "sha256:be976da7c43d1255bd12800d41684c25b4b5abd1c634730f0bacedaccc5049e2",
+          "candidate_only": true,
+          "identity_claimed": false
+        },
+        {
+          "schema_version": 1,
+          "hypothesis_rank": 1,
+          "hypothesis_id": "sha256:8d3bf270aeb79cfc458b900a4f855e36bf0b861c59e572e32dcae1f761d93045",
+          "physical_group_id": "sha256:dbe42249b8bad3b69f9b60ac80226aa6e4adf44069cecf0a1b1111a165e051d5",
+          "representative_tracklet_id": "sha256:90f2e5884d2c1f50e1a40f191ecfe22c51fcb299fd3ee1fe92dccd565a434782",
+          "tracklet_ids": [
+            "sha256:90f2e5884d2c1f50e1a40f191ecfe22c51fcb299fd3ee1fe92dccd565a434782",
+            "sha256:b825602b1ac1a936f879f7bc4005d6161b62ce77f7c20c5bfa5c92bfbf60c32a",
+            "sha256:c20b3afb476e4bf849948e332549caaa9712bfe01166024a963cbf7e702f553b",
+            "sha256:c86dcc61242ebfc0dde3ee74ec28115e0b2418c5d2b0b1e841481ea043e665b8"
+          ],
+          "source_observation_count": 64,
+          "scored_observation_count": 64,
+          "support_span_s": 40.216235,
+          "nominal_candidate_count": 513,
+          "leading_catalog_number": 66973,
+          "selected_tau_s": 0.0,
+          "training_runner_negative_log_score_margin": 0.09531855573254688,
+          "training_leader_heldout_rank": 1,
+          "heldout_runner_negative_log_score_margin": 0.04415308845415211,
+          "nominal_heldout_negative_log_score": 231.57326651639647,
+          "radio_null_heldout_negative_log_score": 230.83177759253198,
+          "wrong_time_minus_500_heldout_negative_log_score": 233.00285316546,
+          "wrong_time_plus_500_heldout_negative_log_score": 236.15142786910022,
+          "leading_candidate_persisted_on_heldout": true,
+          "abstention_recommended": false,
+          "abstention_reasons": [],
+          "match_content_digest": "sha256:839f576a1ef240b62426cf39f5942e049fafa5408e33d5ac1d215bb22deb6986",
+          "candidate_only": true,
+          "identity_claimed": false
+        }
+      ],
+      "unscored_groups": [],
+      "observer_site": {
+        "schema_version": 1,
+        "latitude_deg": 37.858988,
+        "longitude_deg": -122.478103,
+        "altitude_m": -29.0,
+        "label": "Spinnaker, Sausalito"
+      },
+      "original_tle_snapshot": {
+        "schema_version": 1,
+        "provider": "space-track",
+        "collected_utc_ns": 1790665256057662341,
+        "digest": "sha256:feb786afcbbd4229953dd8ad37865273796c83f15c26bcd200560128b033f977",
+        "object_count": 11130
+      },
+      "eligible_tle_snapshot": {
+        "schema_version": 1,
+        "provider": "space-track",
+        "collected_utc_ns": 1790665256057662341,
+        "digest": "sha256:ed16b139369b8ccfb9aa24bfb46839a39bb3f3994611fa72f141b47dffdd2498",
+        "object_count": 11129
+      },
+      "catalogue_policy": "exclude-labelled-debris-and-sgp4-failures-before-response-v1",
+      "catalogue_exclusions": [],
+      "artifacts": [
+        {
+          "name": "trajectory",
+          "sha256": "sha256:fb6e3db1b8ef8a24289e286f3a1803966e9599e0f2f4f6348fdedb79e7e60905",
+          "byte_count": 263740
+        },
+        {
+          "name": "trajectory-tle",
+          "sha256": "sha256:d7497b142f569ca56db0da900ff7c2275993d6c6f09fa0d04aa143e6537bab87",
+          "byte_count": 267782
+        },
+        {
+          "name": "tle-review-01",
+          "sha256": "sha256:e50ae13698efa2a4f95cf8ffc7671eed16bfe0b171ec82c6d956325a5f53ce12",
+          "byte_count": 316188
+        },
+        {
+          "name": "tle-review-02",
+          "sha256": "sha256:4b2070ae88ebc1d5c5f1db2ad81d6e5c7cab701db9781a29cccfb842a7b62336",
+          "byte_count": 304098
+        },
+        {
+          "name": "tle-review-03",
+          "sha256": "sha256:2ab22a857db647ae852d0aaabeba91712c33596074c7a51f29d7adcfc336203f",
+          "byte_count": 312702
+        },
+        {
+          "name": "tle-review-04",
+          "sha256": "sha256:380511205962ffa3c883e4e04aff0c607e14c00a7792930af26e8208585cb95c",
+          "byte_count": 304355
+        },
+        {
+          "name": "tle-review-05",
+          "sha256": "sha256:de4197915516bc721f941b223fc3f968368485eabdf8097f18a669730f076fa4",
+          "byte_count": 306890
+        },
+        {
+          "name": "tle-review-06",
+          "sha256": "sha256:c4bb4f78fbdb14f77ebb694d1cf99d23dab208ab8e891deb85b9e0ddd78530d0",
+          "byte_count": 310400
+        },
+        {
+          "name": "tle-review-07",
+          "sha256": "sha256:0575727d524c67c05c9d324f0caee5d82a086eb0104a9b93cc43122a559d94e1",
+          "byte_count": 314338
+        },
+        {
+          "name": "tle-review-08",
+          "sha256": "sha256:c02349bd0cf46ed3a4babc03ec4059bcc86596c0b2523d91fba2730e3c0e054d",
+          "byte_count": 315762
+        },
+        {
+          "name": "tle-review-09",
+          "sha256": "sha256:c2b726b8729e6525b327eb014f696bcbcd22b6cbb6bbf8b9a63f58c3addfcf71",
+          "byte_count": 316636
+        },
+        {
+          "name": "tle-review-10",
+          "sha256": "sha256:b3d80d69407352944ecc8aebe8fbe44b36cd430f348853681df740f9f0edfd0e",
+          "byte_count": 290527
+        },
+        {
+          "name": "tle-review-11",
+          "sha256": "sha256:79cb3c3cf421bba1d52f772110e72ae240267e23473db9d3a4884691a09a88fa",
+          "byte_count": 318604
+        },
+        {
+          "name": "tle-review-12",
+          "sha256": "sha256:29061600671025513d8839a035e4717f4784360fd569cf1205aa01bc1e0f1b1b",
+          "byte_count": 293437
+        },
+        {
+          "name": "tle-review-13",
+          "sha256": "sha256:94bb42195914935861cd807e1d2d05b46a0c8c59d95b6eddfb6b1272052ddf3b",
+          "byte_count": 299765
+        },
+        {
+          "name": "tle-review-14",
+          "sha256": "sha256:abad3e5ceb479758df86d2e363d33565420d4f80669b28aa3c72b4506a1bc684",
+          "byte_count": 312968
+        },
+        {
+          "name": "tle-review-15",
+          "sha256": "sha256:a3d9be4ae824ed2594b38fdb91dee6f74d9915f4f8f7e1bb77349ae75809e829",
+          "byte_count": 301413
+        },
+        {
+          "name": "tle-review-16",
+          "sha256": "sha256:44a966c1b0ef9f078c79975a71163a616a83dda7ab9b8fe3a307e8caf2d0f68d",
+          "byte_count": 290241
+        },
+        {
+          "name": "tle-review-17",
+          "sha256": "sha256:b6db2697be43b79b81006b97f53b4cba60974937b155fdf34a906da4de9328c3",
+          "byte_count": 301496
+        },
+        {
+          "name": "tle-review-18",
+          "sha256": "sha256:fdb0656cfe6797610219ce831a3543939918a1ca9f66b4a2cfde9040ef986ffa",
+          "byte_count": 309979
+        },
+        {
+          "name": "tle-review-19",
+          "sha256": "sha256:470b5515d31b33796e696ccf76afbc10c89ca6d8696cde58737d8317bae560f8",
+          "byte_count": 309855
+        },
+        {
+          "name": "tle-review-20",
+          "sha256": "sha256:7fd8599619a3ead71b94a3eb5ae3668abe80518e86418610cc245312f9ed5b84",
+          "byte_count": 297143
+        },
+        {
+          "name": "tle-review-21",
+          "sha256": "sha256:004e41168db83feb99e8968b435305d3671c84a7017c91ce4312c9638bee2e57",
+          "byte_count": 308568
+        },
+        {
+          "name": "tle-review-22",
+          "sha256": "sha256:d84bc85d848d1aab47b964d7bf2ec4ff8ed4d6429ad54dd2f626bd963d31f272",
+          "byte_count": 305698
+        },
+        {
+          "name": "tle-review-23",
+          "sha256": "sha256:31e93936c7dccd2576b405cbe5f0b0e87434c69c57de01aab0aee74bf5cfe216",
+          "byte_count": 299540
+        },
+        {
+          "name": "tle-review-24",
+          "sha256": "sha256:1f336440824a2afa6cb069901c4e5c551cadd0afd69e271f5ccca71efcca1e20",
+          "byte_count": 305845
+        },
+        {
+          "name": "tle-review-25",
+          "sha256": "sha256:4af37b78ccfcc4ed581944c2bef414d8c474bafb4a1edc6521ec85a9cb8841e1",
+          "byte_count": 309083
+        },
+        {
+          "name": "tle-review-26",
+          "sha256": "sha256:691a5cdcfb7a76e1100587b72379d0b9349bc25117039c35dece2e04a875959d",
+          "byte_count": 298900
+        },
+        {
+          "name": "tle-review-27",
+          "sha256": "sha256:050ceef6c257336b9f7171da3c3ae7763ab6137cafaa273c1fe08e98fc751946",
+          "byte_count": 299024
+        },
+        {
+          "name": "tle-review-28",
+          "sha256": "sha256:5e8a9c822b77b730ba2680a10b051d7b67944de773a3fe4830b3ca40fd7a2891",
+          "byte_count": 288467
+        },
+        {
+          "name": "tle-review-29",
+          "sha256": "sha256:b41da4552eef0f2e7ce44ed01ff9e8e30ffff6bdc324e2a34d611e01945ba4f8",
+          "byte_count": 294892
+        },
+        {
+          "name": "tle-review-30",
+          "sha256": "sha256:01461dea3d9956b5f45ccc16157b07d56ef3dd9a9c84dd04e32c97ca191582a2",
+          "byte_count": 303764
+        },
+        {
+          "name": "tle-review-31",
+          "sha256": "sha256:ecb7257e22fe703a0ae7a7ade748978d48111dd68c7763e3fe66cdbb9f93dc53",
+          "byte_count": 296993
+        },
+        {
+          "name": "tle-review-32",
+          "sha256": "sha256:a886911efa196ee3415e0dbbcf8f3f03a2a57d3a32b8b30cbc4590e9925435cf",
+          "byte_count": 299245
+        },
+        {
+          "name": "tle-review-33",
+          "sha256": "sha256:463cb4020f1fd2493b777ee7deab7b2950359308b2631659babb1490a88dd7f4",
+          "byte_count": 284732
+        },
+        {
+          "name": "tle-review-34",
+          "sha256": "sha256:bcc34a925d77e6777c05345a5fb08cbd82d381ca85a7116be3bee5157e4aac83",
+          "byte_count": 285819
+        },
+        {
+          "name": "tle-review-35",
+          "sha256": "sha256:e48f0c8afcb9411fb6802e037ff9ffd92dbf51be7265e5110fd6921ee629b903",
+          "byte_count": 287386
+        },
+        {
+          "name": "tle-review-36",
+          "sha256": "sha256:3dabc5c2675d4364238adddd5d4591ff0d91933d5b8c403ea80a116eb54d51c6",
+          "byte_count": 286756
+        },
+        {
+          "name": "tle-review-37",
+          "sha256": "sha256:253667b6a33341dadc2223fd9011226602196133f4394f646b78bab2f4e4abb7",
+          "byte_count": 287808
+        },
+        {
+          "name": "tle-review-38",
+          "sha256": "sha256:5b797b7526addb3ee1651e16e5718ff345e02dc5df206da5b47bdad3d4147e19",
+          "byte_count": 280504
+        },
+        {
+          "name": "tle-review-39",
+          "sha256": "sha256:231e93bc71f65c5f3122da7635bae99f74fc88d75b0267c7c3694e00c0ed8ad5",
+          "byte_count": 301376
+        },
+        {
+          "name": "tle-review-40",
+          "sha256": "sha256:cb43865b48122121fbcd266b5382a9534ca10bace56a3e1ecb5544ec9062b903",
+          "byte_count": 294214
+        },
+        {
+          "name": "tle-review-41",
+          "sha256": "sha256:081838c639f45af1c993421e07ebbe0ea534d3ffa78fe4727dadd332b4a979e9",
+          "byte_count": 268269
+        },
+        {
+          "name": "tle-review-42",
+          "sha256": "sha256:c9c1a0f4330efdbb788662a7cb78178448127eb7e1f8d2759bd041d260cc4204",
+          "byte_count": 296534
+        },
+        {
+          "name": "tle-review-43",
+          "sha256": "sha256:ce0ffc927b4682e240ec85ff8fd70771c896e61bf9553ce7935fa334329d4929",
+          "byte_count": 293258
+        },
+        {
+          "name": "tle-review-44",
+          "sha256": "sha256:ea7b6e73058aefb5a5a453dcaa13110c3c13ccb4328417252e70421066d8085c",
+          "byte_count": 272256
+        },
+        {
+          "name": "tle-review-45",
+          "sha256": "sha256:82fdd429fe482d048770035418b72822a4827601309e105d36ddfe389eeed943",
+          "byte_count": 268882
+        },
+        {
+          "name": "tle-review-46",
+          "sha256": "sha256:dc75c565b7f5ec2ede3d9ffe759db4815ec688602fcef347da5652836c646a04",
+          "byte_count": 295415
+        },
+        {
+          "name": "tle-review-47",
+          "sha256": "sha256:9f0ec64b38169da373d40f3aa5d36ed1f9a5569f031829b2e574df71a07e64d3",
+          "byte_count": 290652
+        },
+        {
+          "name": "tle-review-48",
+          "sha256": "sha256:2319b9f67f88053709e2091c92041b4beb5a7ca89698638dfcb21c96bd9fbfaa",
+          "byte_count": 280632
+        },
+        {
+          "name": "tle-review-49",
+          "sha256": "sha256:10291e25a780ca5f435f3a56846ef67be8d5c8d227052b6dcd619ef1c8f28150",
+          "byte_count": 278299
+        },
+        {
+          "name": "tle-review-50",
+          "sha256": "sha256:3a0daf546ebb714f59d16878cf2f5e6afa4a17e9a4519d4fa1faa55346cc5c1d",
+          "byte_count": 275311
+        },
+        {
+          "name": "tle-review-51",
+          "sha256": "sha256:fb554ac817cf6a8f042b9a62c755667edc3ce56afb52fe7ed060be48fad34d3e",
+          "byte_count": 275864
+        },
+        {
+          "name": "tle-review-52",
+          "sha256": "sha256:1dc75ae4f06fa1dfd6a672a6bbe6467b13b9733487abc3e3617c8a8e079c0177",
+          "byte_count": 289750
+        },
+        {
+          "name": "tle-review-53",
+          "sha256": "sha256:3b080bbda4df75e0e1b783581c2c60faeadfb3de0a7f1a3ba80182eb49efbc88",
+          "byte_count": 285382
+        },
+        {
+          "name": "tle-review-54",
+          "sha256": "sha256:b96dd16bf3fe9abc4683098a3bada721f5ad1411236a3c1be0879ce40804c85e",
+          "byte_count": 280215
+        },
+        {
+          "name": "tle-review-55",
+          "sha256": "sha256:77e0d3857ed655853af104636cfdeef8dd0d14b5898e0b2fe9c70ea9bb46888c",
+          "byte_count": 295715
+        },
+        {
+          "name": "tle-review-56",
+          "sha256": "sha256:0b98ba5dc5f55dabbd53550f071d797cd40a5e954669de76cfa43278c8d3d007",
+          "byte_count": 295196
+        },
+        {
+          "name": "tle-review-57",
+          "sha256": "sha256:be77ea829f205ec75ce91c1a6d647b6d5bed4e1309031ab22f70ea7cc58bb77f",
+          "byte_count": 284539
+        },
+        {
+          "name": "tle-review-58",
+          "sha256": "sha256:9946175972e2f90318279a728a0c27e95d023b9791d34027af5b0f3a6a362e5a",
+          "byte_count": 281429
+        },
+        {
+          "name": "tle-review-59",
+          "sha256": "sha256:781fe332f0226e79abb540c873552185d25b218ad3047600d6f2f1b9ae77e394",
+          "byte_count": 293583
+        },
+        {
+          "name": "tle-review-60",
+          "sha256": "sha256:592b5edd91df7d6e4a686f0193945a65695fb01d1725086fd78cb1110c6216f8",
+          "byte_count": 282599
+        },
+        {
+          "name": "tle-review-61",
+          "sha256": "sha256:adfc112d419074dab0c8335a29022cd04aba900d200e7b47c01f966f0d76b6c2",
+          "byte_count": 285272
+        },
+        {
+          "name": "tle-review-62",
+          "sha256": "sha256:2093a9700b891a332be73145c9afed0a7593753c212d6e73c7e6a394efe01a7b",
+          "byte_count": 265755
+        },
+        {
+          "name": "position-diagnostic",
+          "sha256": "sha256:20cb1a092bb6c09d0ba2e46c7fbf34df4f48064635da93c3d83c0bec55504e7a",
+          "byte_count": 111132
+        }
+      ],
+      "candidate_only": true,
+      "identity_claimed": false,
+      "trajectory_time_basis": "qualified-utc",
+      "propagation_exclusions": [
+        {
+          "catalog_number": 100560,
+          "name": "STARLINK-38358",
+          "selected_element_digest": "sha256:9028c79287853b10bab79493171adf18e8e474a941c43857efaecfb7331963cb",
+          "error_codes": [
+            6
+          ],
+          "screened_utc_ns": [
+            1790667877186059803,
+            1790668382186059803,
+            1790668682186059803,
+            1790669187186059803
+          ],
+          "reason": "sgp4-propagation-error"
+        }
+      ],
+      "tle_residual_partition_policy": "deterministic-randomized-observation-v1",
+      "control_comparison_policy": "polynomial-and-wrong-time-diagnostic-only-v1",
+      "track_reviews": [
+        {
+          "tracklet_id": "sha256:4d60de008833968a9416f4b093cd60e3a1b640353d62f2048438a586519b0141",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 220.385482256,
+          "end_s": 273.388195019,
+          "observation_count": 105,
+          "fit_observation_count": 63,
+          "randomized_evaluation_observation_count": 42,
+          "artifact_name": "tle-review-01",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -796546.5582815117,
+              "fit_rms_hz": 95.47766367833641,
+              "randomized_evaluation_rms_hz": 76.9516343671193
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -799415.1073822969,
+              "fit_rms_hz": 2137.9641122320845,
+              "randomized_evaluation_rms_hz": 2593.7066661596286
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -789301.2983944877,
+              "fit_rms_hz": 2760.928340728631,
+              "randomized_evaluation_rms_hz": 2969.498465782445
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -777819.6798636505,
+              "fit_rms_hz": 4160.4628247894925,
+              "randomized_evaluation_rms_hz": 5441.890207443519
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48479,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -801036.0587652639,
+              "fit_rms_hz": 5855.637872103359,
+              "randomized_evaluation_rms_hz": 6892.189986843314
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:140ce6b8fb05ce547895fc101ad61af0f0a788a42252100447f646b94cb1a4a6",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 222.551693263,
+          "end_s": 272.746577432,
+          "observation_count": 74,
+          "fit_observation_count": 44,
+          "randomized_evaluation_observation_count": 30,
+          "artifact_name": "tle-review-02",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -814130.9555576085,
+              "fit_rms_hz": 84.58080950587461,
+              "randomized_evaluation_rms_hz": 109.87235958278167
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -816746.2378734156,
+              "fit_rms_hz": 2023.2683335770346,
+              "randomized_evaluation_rms_hz": 2046.0777942080942
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -806497.41618121,
+              "fit_rms_hz": 2655.1194412677814,
+              "randomized_evaluation_rms_hz": 2608.542881019324
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -795764.3557692997,
+              "fit_rms_hz": 3856.104198109751,
+              "randomized_evaluation_rms_hz": 3875.1658951799914
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48479,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -817912.9424650393,
+              "fit_rms_hz": 5565.193495653226,
+              "randomized_evaluation_rms_hz": 5531.983445618846
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:469afad016d72b359b3b2f6a6ba888f2dbaf52fd1a9cede8f107922346a8c0df",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 153.952063479,
+          "end_s": 203.056983379,
+          "observation_count": 103,
+          "fit_observation_count": 61,
+          "randomized_evaluation_observation_count": 42,
+          "artifact_name": "tle-review-03",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -351561.5646443035,
+              "fit_rms_hz": 105.88298141770254,
+              "randomized_evaluation_rms_hz": 127.86773413286592
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -297299.3722754157,
+              "fit_rms_hz": 3281.745325847463,
+              "randomized_evaluation_rms_hz": 3830.7433349865173
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -273968.06672095164,
+              "fit_rms_hz": 4243.796955727672,
+              "randomized_evaluation_rms_hz": 5028.88524969144
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59947,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -222332.63117687748,
+              "fit_rms_hz": 6248.6734432177645,
+              "randomized_evaluation_rms_hz": 7330.682524574867
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63581,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -358990.2293169462,
+              "fit_rms_hz": 6544.12508699849,
+              "randomized_evaluation_rms_hz": 6794.6953271403
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:29ef668ce50f6530b85a6a94f62ad6b96f5a8eb936df166833fb42fb38614cff",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 128.312073992,
+          "end_s": 172.537550685,
+          "observation_count": 73,
+          "fit_observation_count": 43,
+          "randomized_evaluation_observation_count": 30,
+          "artifact_name": "tle-review-04",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -353387.6193831701,
+              "fit_rms_hz": 123.95463065655099,
+              "randomized_evaluation_rms_hz": 164.65637556944782
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64182,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -329443.9548492612,
+              "fit_rms_hz": 1249.0594418090593,
+              "randomized_evaluation_rms_hz": 2136.181725005626
+            },
+            {
+              "rank": 3,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -302206.2157240453,
+              "fit_rms_hz": 1616.9125525803042,
+              "randomized_evaluation_rms_hz": 3151.361932298225
+            },
+            {
+              "rank": 4,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -353000.86128700804,
+              "fit_rms_hz": 1671.0552098638632,
+              "randomized_evaluation_rms_hz": 2417.7694091838657
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59529,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -292216.75800675666,
+              "fit_rms_hz": 1769.513466472081,
+              "randomized_evaluation_rms_hz": 3578.3401405218615
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:6229a33e902b853c6c8bb009891c12e312209c75351e453b0e5a1954123c33e4",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 129.796087112,
+          "end_s": 173.500151216,
+          "observation_count": 75,
+          "fit_observation_count": 45,
+          "randomized_evaluation_observation_count": 30,
+          "artifact_name": "tle-review-05",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -368830.76623357396,
+              "fit_rms_hz": 121.7018223553332,
+              "randomized_evaluation_rms_hz": 133.7938551403393
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64182,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -349410.86471905874,
+              "fit_rms_hz": 2343.3616585328564,
+              "randomized_evaluation_rms_hz": 1644.4340345655357
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -369279.7177975567,
+              "fit_rms_hz": 2363.6408746038596,
+              "randomized_evaluation_rms_hz": 1844.1054471151588
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64447,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -303493.45749100886,
+              "fit_rms_hz": 3443.0084302019495,
+              "randomized_evaluation_rms_hz": 2881.0859416540184
+            },
+            {
+              "rank": 5,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -319473.5102261391,
+              "fit_rms_hz": 3615.120281696457,
+              "randomized_evaluation_rms_hz": 2437.044837606872
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:61939dfa979632ab6d12e4c5d221ab7061269108c8d198842f006103975a4b73",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 159.832109433,
+          "end_s": 203.056983355,
+          "observation_count": 93,
+          "fit_observation_count": 55,
+          "randomized_evaluation_observation_count": 38,
+          "artifact_name": "tle-review-06",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -351972.171772304,
+              "fit_rms_hz": 80.89638433032331,
+              "randomized_evaluation_rms_hz": 89.1199089280769
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -294375.34517614765,
+              "fit_rms_hz": 3633.2199967342517,
+              "randomized_evaluation_rms_hz": 3659.7183087950652
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -270928.64107570745,
+              "fit_rms_hz": 4751.402881461907,
+              "randomized_evaluation_rms_hz": 4756.358205135525
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59947,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -224921.04208826434,
+              "fit_rms_hz": 5490.605826923384,
+              "randomized_evaluation_rms_hz": 5603.5862605841085
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63581,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -357210.71779405227,
+              "fit_rms_hz": 5968.859652122645,
+              "randomized_evaluation_rms_hz": 6298.248213337247
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:288809f5b4f95f24855265baf72ff2fc034b9752593826a6509b29e02bdd389f",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 160.494739596,
+          "end_s": 202.374876876,
+          "observation_count": 67,
+          "fit_observation_count": 40,
+          "randomized_evaluation_observation_count": 27,
+          "artifact_name": "tle-review-07",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -589834.5734009177,
+              "fit_rms_hz": 106.38974628231924,
+              "randomized_evaluation_rms_hz": 132.50696273927204
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -532276.7316039492,
+              "fit_rms_hz": 3683.754488556173,
+              "randomized_evaluation_rms_hz": 3487.4272951543453
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -508736.35203021625,
+              "fit_rms_hz": 4864.166370511628,
+              "randomized_evaluation_rms_hz": 4573.784900471315
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59947,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -468469.39290910773,
+              "fit_rms_hz": 4932.6626946403,
+              "randomized_evaluation_rms_hz": 4738.966943871676
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63581,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -595970.2709344898,
+              "fit_rms_hz": 5334.816079846101,
+              "randomized_evaluation_rms_hz": 5415.414916100145
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:fec519688ee9599a499a49a13eaaa87b986550bc8c39ae98e1c42ffabf22f598",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 192.640151801,
+          "end_s": 233.162932006,
+          "observation_count": 94,
+          "fit_observation_count": 56,
+          "randomized_evaluation_observation_count": 38,
+          "artifact_name": "tle-review-08",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67190,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -613021.7902834722,
+              "fit_rms_hz": 64.83579955320027,
+              "randomized_evaluation_rms_hz": 35.6774893102071
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59040,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -604357.1906793447,
+              "fit_rms_hz": 1886.471921254592,
+              "randomized_evaluation_rms_hz": 1784.5926129154223
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62073,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -637260.0417562742,
+              "fit_rms_hz": 5290.171214087002,
+              "randomized_evaluation_rms_hz": 5246.057160478923
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64066,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -479277.94255899027,
+              "fit_rms_hz": 5429.614245355863,
+              "randomized_evaluation_rms_hz": 5303.088305795695
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59584,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -603611.8101005091,
+              "fit_rms_hz": 5841.105503227041,
+              "randomized_evaluation_rms_hz": 5630.073981662978
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:c74c5493163ae48a562d65911dec9ba969d363b6871db4ad427d405563e9797b",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 192.64015182,
+          "end_s": 233.162932019,
+          "observation_count": 94,
+          "fit_observation_count": 56,
+          "randomized_evaluation_observation_count": 38,
+          "artifact_name": "tle-review-09",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67190,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -616368.8083551489,
+              "fit_rms_hz": 88.50257340097254,
+              "randomized_evaluation_rms_hz": 77.90487780009687
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59040,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -603958.7998846134,
+              "fit_rms_hz": 1856.4004325765159,
+              "randomized_evaluation_rms_hz": 1830.1973857866124
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62073,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -639738.1609438834,
+              "fit_rms_hz": 5449.50131255087,
+              "randomized_evaluation_rms_hz": 5005.72607744167
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64066,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -482573.776233844,
+              "fit_rms_hz": 5555.011447807908,
+              "randomized_evaluation_rms_hz": 5053.128072995593
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59584,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -602912.6669994035,
+              "fit_rms_hz": 5855.237951525606,
+              "randomized_evaluation_rms_hz": 5581.831832971023
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:90f2e5884d2c1f50e1a40f191ecfe22c51fcb299fd3ee1fe92dccd565a434782",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 74.011352699,
+          "end_s": 114.209071256,
+          "observation_count": 64,
+          "fit_observation_count": 38,
+          "randomized_evaluation_observation_count": 26,
+          "artifact_name": "tle-review-10",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64462,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -132210.80102401588,
+              "fit_rms_hz": 123.47756363260575,
+              "randomized_evaluation_rms_hz": 107.30171092617513
+            },
+            {
+              "rank": 2,
+              "catalog_number": 66973,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -130592.4193447845,
+              "fit_rms_hz": 130.92967556314434,
+              "randomized_evaluation_rms_hz": 110.97171645920677
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63077,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -144052.38546806044,
+              "fit_rms_hz": 362.4483510442423,
+              "randomized_evaluation_rms_hz": 377.30464288080873
+            },
+            {
+              "rank": 4,
+              "catalog_number": 100297,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -165030.32074234504,
+              "fit_rms_hz": 1036.6283333323377,
+              "randomized_evaluation_rms_hz": 1113.5290086130726
+            },
+            {
+              "rank": 5,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -147149.93204358523,
+              "fit_rms_hz": 1431.9161083189665,
+              "randomized_evaluation_rms_hz": 1474.1596067699993
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:4438db5af02e4dc2ff7e4153b131ea7c8ee4b5b57d0457e3b5b7c356b1810bea",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 164.466770963,
+          "end_s": 204.540152562,
+          "observation_count": 68,
+          "fit_observation_count": 40,
+          "randomized_evaluation_observation_count": 28,
+          "artifact_name": "tle-review-11",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -586721.7283523867,
+              "fit_rms_hz": 69.834334640502,
+              "randomized_evaluation_rms_hz": 39.508480314059625
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -529378.4897653427,
+              "fit_rms_hz": 4103.20411120383,
+              "randomized_evaluation_rms_hz": 4999.211362028624
+            },
+            {
+              "rank": 3,
+              "catalog_number": 59947,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -475751.658955366,
+              "fit_rms_hz": 4332.210040370064,
+              "randomized_evaluation_rms_hz": 4524.766720478657
+            },
+            {
+              "rank": 4,
+              "catalog_number": 63581,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -593327.3376025993,
+              "fit_rms_hz": 5119.555792866905,
+              "randomized_evaluation_rms_hz": 5482.767463934824
+            },
+            {
+              "rank": 5,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -505880.7070776362,
+              "fit_rms_hz": 5489.4812875630705,
+              "randomized_evaluation_rms_hz": 6758.979936993866
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:985fe4d1ec86fdf1d8824fdd0a9415d2f140d417982b4e418e567f5e60dbeda1",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 75.114651253,
+          "end_s": 114.209071264,
+          "observation_count": 62,
+          "fit_observation_count": 37,
+          "randomized_evaluation_observation_count": 25,
+          "artifact_name": "tle-review-12",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64462,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -135153.51525794042,
+              "fit_rms_hz": 71.45060113542256,
+              "randomized_evaluation_rms_hz": 65.07087934477396
+            },
+            {
+              "rank": 2,
+              "catalog_number": 66973,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -133545.14040391825,
+              "fit_rms_hz": 83.41071985997186,
+              "randomized_evaluation_rms_hz": 83.96883669407426
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63077,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -147026.77095605983,
+              "fit_rms_hz": 332.06804885567027,
+              "randomized_evaluation_rms_hz": 331.0725884962898
+            },
+            {
+              "rank": 4,
+              "catalog_number": 100297,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -168020.42806103048,
+              "fit_rms_hz": 1013.11279163283,
+              "randomized_evaluation_rms_hz": 1001.3030023626362
+            },
+            {
+              "rank": 5,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -149749.6452439346,
+              "fit_rms_hz": 1433.762568684882,
+              "randomized_evaluation_rms_hz": 1464.5252405753056
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:9ed74a8f624a91c1f8efd6c0eadaf9e91d9d6ab05944430b4ca4dc71b9123d4f",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 89.936167536,
+          "end_s": 128.974332937,
+          "observation_count": 80,
+          "fit_observation_count": 48,
+          "randomized_evaluation_observation_count": 32,
+          "artifact_name": "tle-review-13",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 57933,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -135743.04154211638,
+              "fit_rms_hz": 630.369261031964,
+              "randomized_evaluation_rms_hz": 774.4420295298414
+            },
+            {
+              "rank": 2,
+              "catalog_number": 58836,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -182862.75022067735,
+              "fit_rms_hz": 1137.3040658367208,
+              "randomized_evaluation_rms_hz": 1313.2068224771876
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64182,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -252809.34138440175,
+              "fit_rms_hz": 2630.3670680529744,
+              "randomized_evaluation_rms_hz": 2981.835054193406
+            },
+            {
+              "rank": 4,
+              "catalog_number": 61063,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -253773.57528102354,
+              "fit_rms_hz": 2678.928668517803,
+              "randomized_evaluation_rms_hz": 2999.703983887132
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48312,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -35354.25233749289,
+              "fit_rms_hz": 2848.091460226479,
+              "randomized_evaluation_rms_hz": 2404.2888892181777
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:0595522b47514f3dbc0543de261b55a771c72c647e9b2432fd2edd6e134bc4de",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 235.772108359,
+          "end_s": 274.793518853,
+          "observation_count": 61,
+          "fit_observation_count": 36,
+          "randomized_evaluation_observation_count": 25,
+          "artifact_name": "tle-review-14",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -851581.7284071781,
+              "fit_rms_hz": 93.61915085691409,
+              "randomized_evaluation_rms_hz": 84.7067712710301
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -858940.1725955834,
+              "fit_rms_hz": 1445.7147849675102,
+              "randomized_evaluation_rms_hz": 1587.617994337907
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -849000.8010668529,
+              "fit_rms_hz": 2214.8193073770835,
+              "randomized_evaluation_rms_hz": 2415.57624151149
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -834293.9772884942,
+              "fit_rms_hz": 2403.7905219765626,
+              "randomized_evaluation_rms_hz": 2652.3871530437978
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48479,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -877830.1641245892,
+              "fit_rms_hz": 4009.249704791243,
+              "randomized_evaluation_rms_hz": 4414.801325156211
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:c20b3afb476e4bf849948e332549caaa9712bfe01166024a963cbf7e702f553b",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 74.973386879,
+          "end_s": 113.928210099,
+          "observation_count": 87,
+          "fit_observation_count": 52,
+          "randomized_evaluation_observation_count": 35,
+          "artifact_name": "tle-review-15",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -134028.54192331756,
+              "fit_rms_hz": 88.40205344183265,
+              "randomized_evaluation_rms_hz": 64.51539707299935
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -138195.38480780672,
+              "fit_rms_hz": 115.34877448257795,
+              "randomized_evaluation_rms_hz": 128.4998022647508
+            },
+            {
+              "rank": 3,
+              "catalog_number": 65846,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -163125.37159506843,
+              "fit_rms_hz": 957.726312659217,
+              "randomized_evaluation_rms_hz": 1076.4249363760644
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64462,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -116232.17430568875,
+              "fit_rms_hz": 1804.6770074297408,
+              "randomized_evaluation_rms_hz": 1720.4478226500773
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66973,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -114646.91965291694,
+              "fit_rms_hz": 1902.1527564985313,
+              "randomized_evaluation_rms_hz": 1814.5080155520557
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:2f9b8547d4957f2a26da3322c8e80659c48390e69605c9942073d7e03556b05d",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 0.549085561,
+          "end_s": 38.663659235,
+          "observation_count": 66,
+          "fit_observation_count": 39,
+          "randomized_evaluation_observation_count": 27,
+          "artifact_name": "tle-review-16",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 66285,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": 97291.90567312186,
+              "fit_rms_hz": 51.926242345899,
+              "randomized_evaluation_rms_hz": 54.58007637093987
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63060,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 101945.03935238787,
+              "fit_rms_hz": 107.37365586712617,
+              "randomized_evaluation_rms_hz": 132.17957344692044
+            },
+            {
+              "rank": 3,
+              "catalog_number": 53165,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 94611.43266762313,
+              "fit_rms_hz": 146.54752918298882,
+              "randomized_evaluation_rms_hz": 105.95359288796143
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59031,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": 85997.88662158445,
+              "fit_rms_hz": 996.3800235975267,
+              "randomized_evaluation_rms_hz": 919.0630063703143
+            },
+            {
+              "rank": 5,
+              "catalog_number": 58832,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 18577.1117028583,
+              "fit_rms_hz": 2033.8403281879305,
+              "randomized_evaluation_rms_hz": 2166.691449400695
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:05f4ec1e61618c54f8408e7c159a7252ff24b5f28885c14727bbfeffd107fe0e",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 1.317527101,
+          "end_s": 38.662667937,
+          "observation_count": 69,
+          "fit_observation_count": 41,
+          "randomized_evaluation_observation_count": 28,
+          "artifact_name": "tle-review-17",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 57906,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": 99821.22104013167,
+              "fit_rms_hz": 75.7998403323415,
+              "randomized_evaluation_rms_hz": 75.00390238639046
+            },
+            {
+              "rank": 2,
+              "catalog_number": 53178,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 91700.8762449252,
+              "fit_rms_hz": 2727.556362311136,
+              "randomized_evaluation_rms_hz": 2545.9467119254086
+            },
+            {
+              "rank": 3,
+              "catalog_number": 58832,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 26466.561362088443,
+              "fit_rms_hz": 3473.258364703508,
+              "randomized_evaluation_rms_hz": 3217.767936405094
+            },
+            {
+              "rank": 4,
+              "catalog_number": 66285,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 92182.96566232217,
+              "fit_rms_hz": 3788.7914613923244,
+              "randomized_evaluation_rms_hz": 3573.244551603684
+            },
+            {
+              "rank": 5,
+              "catalog_number": 53165,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": 80187.46334367244,
+              "fit_rms_hz": 3876.9163371049094,
+              "randomized_evaluation_rms_hz": 3657.5486050906616
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:2a58f2cc7f37041a7782c37e83d5ba9d4a94e5499a39e35e7a86b0b73fe75831",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 152.182649634,
+          "end_s": 189.149315335,
+          "observation_count": 54,
+          "fit_observation_count": 32,
+          "randomized_evaluation_observation_count": 22,
+          "artifact_name": "tle-review-18",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -613498.3430162707,
+              "fit_rms_hz": 148.303095065253,
+              "randomized_evaluation_rms_hz": 113.53585055045595
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -558045.0348996079,
+              "fit_rms_hz": 1703.1204717966702,
+              "randomized_evaluation_rms_hz": 1767.3569237030993
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62476,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -524261.96143728413,
+              "fit_rms_hz": 2748.0888095851496,
+              "randomized_evaluation_rms_hz": 2877.9404790653393
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64447,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -486669.2628365257,
+              "fit_rms_hz": 3739.607051097803,
+              "randomized_evaluation_rms_hz": 4200.073602708833
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64182,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -506051.0981830502,
+              "fit_rms_hz": 4168.6390054374015,
+              "randomized_evaluation_rms_hz": 4765.7349769689245
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:5aca8a059581694064a4f81df181e98d3dca22e04191196aa4fe3c223d221a03",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 129.255503152,
+          "end_s": 165.429081448,
+          "observation_count": 68,
+          "fit_observation_count": 40,
+          "randomized_evaluation_observation_count": 28,
+          "artifact_name": "tle-review-19",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -372074.4379501684,
+              "fit_rms_hz": 132.87254854006568,
+              "randomized_evaluation_rms_hz": 134.68599602507544
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64182,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -344679.88224175747,
+              "fit_rms_hz": 1057.4465926390073,
+              "randomized_evaluation_rms_hz": 1700.0398396772327
+            },
+            {
+              "rank": 3,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -320869.57234549505,
+              "fit_rms_hz": 1330.149840396371,
+              "randomized_evaluation_rms_hz": 2208.785483129134
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59529,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -310872.1293268217,
+              "fit_rms_hz": 1481.9235800253107,
+              "randomized_evaluation_rms_hz": 2421.765861700176
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -371709.5967118318,
+              "fit_rms_hz": 1644.025894912109,
+              "randomized_evaluation_rms_hz": 2115.178733340598
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:c86dcc61242ebfc0dde3ee74ec28115e0b2418c5d2b0b1e841481ea043e665b8",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 100.153335177,
+          "end_s": 136.005263161,
+          "observation_count": 62,
+          "fit_observation_count": 37,
+          "randomized_evaluation_observation_count": 25,
+          "artifact_name": "tle-review-20",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 63077,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -363169.09739430837,
+              "fit_rms_hz": 111.2744958990853,
+              "randomized_evaluation_rms_hz": 99.91988223577539
+            },
+            {
+              "rank": 2,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -342474.4691807935,
+              "fit_rms_hz": 697.7669505785972,
+              "randomized_evaluation_rms_hz": 705.1498261383606
+            },
+            {
+              "rank": 3,
+              "catalog_number": 100297,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -339186.645686665,
+              "fit_rms_hz": 737.0362141878552,
+              "randomized_evaluation_rms_hz": 733.7955842633112
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64462,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -348783.5344955607,
+              "fit_rms_hz": 1233.2725545334329,
+              "randomized_evaluation_rms_hz": 1174.090097216338
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66973,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -347391.30984710436,
+              "fit_rms_hz": 1438.172478042101,
+              "randomized_evaluation_rms_hz": 1380.3099287173056
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:e3054152904734e6d52094c71ca1d9bf59fd200db61f70e2edf948e38ef35851",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 93.52810432,
+          "end_s": 128.9735683,
+          "observation_count": 64,
+          "fit_observation_count": 38,
+          "randomized_evaluation_observation_count": 26,
+          "artifact_name": "tle-review-21",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 65846,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -378887.3506295332,
+              "fit_rms_hz": 111.1330915460221,
+              "randomized_evaluation_rms_hz": 91.33224571464487
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -366612.1930113579,
+              "fit_rms_hz": 2043.7080670397193,
+              "randomized_evaluation_rms_hz": 2400.8965841402573
+            },
+            {
+              "rank": 3,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -348072.41159132845,
+              "fit_rms_hz": 2792.8401173447037,
+              "randomized_evaluation_rms_hz": 3477.9701183528855
+            },
+            {
+              "rank": 4,
+              "catalog_number": 63077,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -375642.21549556515,
+              "fit_rms_hz": 3513.256000927589,
+              "randomized_evaluation_rms_hz": 3915.9219050000215
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64462,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -353667.3965996118,
+              "fit_rms_hz": 4301.925434185687,
+              "randomized_evaluation_rms_hz": 5072.810206843785
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:b825602b1ac1a936f879f7bc4005d6161b62ce77f7c20c5bfa5c92bfbf60c32a",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 78.562752378,
+          "end_s": 113.92821013,
+          "observation_count": 77,
+          "fit_observation_count": 46,
+          "randomized_evaluation_observation_count": 31,
+          "artifact_name": "tle-review-22",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -137088.9224780934,
+              "fit_rms_hz": 104.59997921889546,
+              "randomized_evaluation_rms_hz": 95.78552377259854
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -141261.5571059766,
+              "fit_rms_hz": 107.68739286366828,
+              "randomized_evaluation_rms_hz": 116.98302962321792
+            },
+            {
+              "rank": 3,
+              "catalog_number": 65846,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -169847.8134268008,
+              "fit_rms_hz": 959.8555618298262,
+              "randomized_evaluation_rms_hz": 925.8053541895209
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64462,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -122634.66692557091,
+              "fit_rms_hz": 1875.4238034625782,
+              "randomized_evaluation_rms_hz": 1739.9120291425443
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66973,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -121037.51267567955,
+              "fit_rms_hz": 1969.4117839529185,
+              "randomized_evaluation_rms_hz": 1824.8126592701906
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:1d5574791182a71172aaf98d0a0f44fb07d804a866cfc8be4e9673459d2b8ab9",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 221.889494425,
+          "end_s": 256.955810171,
+          "observation_count": 62,
+          "fit_observation_count": 37,
+          "randomized_evaluation_observation_count": 25,
+          "artifact_name": "tle-review-23",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -577578.9254878392,
+              "fit_rms_hz": 88.396654208213,
+              "randomized_evaluation_rms_hz": 62.99410040205703
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -555039.0677317361,
+              "fit_rms_hz": 922.1106987981743,
+              "randomized_evaluation_rms_hz": 1022.9013359883442
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -551185.2128661445,
+              "fit_rms_hz": 1227.8605514410199,
+              "randomized_evaluation_rms_hz": 1364.6247375950331
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -599946.1273698757,
+              "fit_rms_hz": 1648.4729727447418,
+              "randomized_evaluation_rms_hz": 1809.7989876921006
+            },
+            {
+              "rank": 5,
+              "catalog_number": 62073,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -531657.4848796158,
+              "fit_rms_hz": 2234.901219535096,
+              "randomized_evaluation_rms_hz": 2476.5897444927964
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:d91cd616546d99fbb32f64679ae78143d8b9469ca07556f11cc790f3811558d6",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 237.276118093,
+          "end_s": 272.06353677,
+          "observation_count": 58,
+          "fit_observation_count": 34,
+          "randomized_evaluation_observation_count": 24,
+          "artifact_name": "tle-review-24",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -848286.7980081192,
+              "fit_rms_hz": 85.32970419088169,
+              "randomized_evaluation_rms_hz": 113.18884918331148
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -855374.0230476065,
+              "fit_rms_hz": 1573.7700742213372,
+              "randomized_evaluation_rms_hz": 1355.116669963332
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -845315.4543487533,
+              "fit_rms_hz": 2324.1564957106852,
+              "randomized_evaluation_rms_hz": 2137.9987292174746
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -831484.0631784907,
+              "fit_rms_hz": 2641.398872462205,
+              "randomized_evaluation_rms_hz": 2064.3701813487737
+            },
+            {
+              "rank": 5,
+              "catalog_number": 53800,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -746698.0713941805,
+              "fit_rms_hz": 3712.952955264085,
+              "randomized_evaluation_rms_hz": 3336.0325339003307
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:ff4b50f2c838f1b52e89d20f5c0bde6ff7c6fa61dca8e1a268746efffc1cc9b9",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 255.611961191,
+          "end_s": 289.229656314,
+          "observation_count": 63,
+          "fit_observation_count": 37,
+          "randomized_evaluation_observation_count": 26,
+          "artifact_name": "tle-review-25",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 58058,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -648541.7318522031,
+              "fit_rms_hz": 1623.6169129726984,
+              "randomized_evaluation_rms_hz": 1698.8092342960751
+            },
+            {
+              "rank": 2,
+              "catalog_number": 48479,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -646977.2105447104,
+              "fit_rms_hz": 1635.8166905865128,
+              "randomized_evaluation_rms_hz": 1692.971460693637
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -784894.9964513255,
+              "fit_rms_hz": 1733.3050473231515,
+              "randomized_evaluation_rms_hz": 1760.8852638257374
+            },
+            {
+              "rank": 4,
+              "catalog_number": 57264,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -793897.0146035173,
+              "fit_rms_hz": 1882.5612080079409,
+              "randomized_evaluation_rms_hz": 2051.53412623579
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63079,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -782788.6198988449,
+              "fit_rms_hz": 2034.2375116204873,
+              "randomized_evaluation_rms_hz": 2639.246920512823
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:fce5c891037e70760c7609a43f94a4afdf6574576fe4fe11c497af7d3f7b6c11",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 219.321416933,
+          "end_s": 250.496253785,
+          "observation_count": 58,
+          "fit_observation_count": 34,
+          "randomized_evaluation_observation_count": 24,
+          "artifact_name": "tle-review-26",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -817307.2703020371,
+              "fit_rms_hz": 78.66991633589868,
+              "randomized_evaluation_rms_hz": 77.12862099417686
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57507,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -791335.8128901133,
+              "fit_rms_hz": 656.8407442315754,
+              "randomized_evaluation_rms_hz": 592.2076523722926
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62088,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -787466.5032975551,
+              "fit_rms_hz": 906.0486260091278,
+              "randomized_evaluation_rms_hz": 802.2799583029209
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -839876.5970191455,
+              "fit_rms_hz": 1249.6900078577528,
+              "randomized_evaluation_rms_hz": 1133.8688987819985
+            },
+            {
+              "rank": 5,
+              "catalog_number": 62073,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -771170.3409538724,
+              "fit_rms_hz": 1710.3468220285056,
+              "randomized_evaluation_rms_hz": 1510.6908621302287
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:1bec6875957c81a0bff189dc1ab1a034870c74c90bb634c48316d798a027d7d6",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 128.312073985,
+          "end_s": 158.748211986,
+          "observation_count": 62,
+          "fit_observation_count": 37,
+          "randomized_evaluation_observation_count": 25,
+          "artifact_name": "tle-review-27",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -356387.4226765926,
+              "fit_rms_hz": 125.08943540472025,
+              "randomized_evaluation_rms_hz": 137.091355735916
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64182,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -328649.1722553698,
+              "fit_rms_hz": 620.1371455404307,
+              "randomized_evaluation_rms_hz": 729.7989241353591
+            },
+            {
+              "rank": 3,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -305016.0445853216,
+              "fit_rms_hz": 936.7053245111028,
+              "randomized_evaluation_rms_hz": 809.8261988067535
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59529,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -295134.26221511024,
+              "fit_rms_hz": 1205.7585138762558,
+              "randomized_evaluation_rms_hz": 953.1933783503387
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -355169.1848039022,
+              "fit_rms_hz": 1458.961059308265,
+              "randomized_evaluation_rms_hz": 1613.6904769014075
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:c3fe8b6bf55e2b2831a92a81663a6fcd262df40bc1e513344761ef4293d62eba",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 13.751395209,
+          "end_s": 43.818697023,
+          "observation_count": 56,
+          "fit_observation_count": 33,
+          "randomized_evaluation_observation_count": 23,
+          "artifact_name": "tle-review-28",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 58832,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -138260.60052126204,
+              "fit_rms_hz": 91.41163806801565,
+              "randomized_evaluation_rms_hz": 105.3594819061003
+            },
+            {
+              "rank": 2,
+              "catalog_number": 53175,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -181462.81268127335,
+              "fit_rms_hz": 890.932050571597,
+              "randomized_evaluation_rms_hz": 980.500297218518
+            },
+            {
+              "rank": 3,
+              "catalog_number": 57906,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -43357.37010061511,
+              "fit_rms_hz": 1719.0551942825532,
+              "randomized_evaluation_rms_hz": 1870.2236814871246
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53165,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -77776.31691031448,
+              "fit_rms_hz": 1795.429209072224,
+              "randomized_evaluation_rms_hz": 1774.75611131666
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66285,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -56381.50711938451,
+              "fit_rms_hz": 2390.7270980466815,
+              "randomized_evaluation_rms_hz": 2364.791026443877
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:64790518f1bb1bc18e6096d1b6b3d3685facd1f3adffb0419bda4d76a998f4eb",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 204.800196397,
+          "end_s": 234.266857218,
+          "observation_count": 33,
+          "fit_observation_count": 19,
+          "randomized_evaluation_observation_count": 14,
+          "artifact_name": "tle-review-29",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 59040,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -574225.7584609594,
+              "fit_rms_hz": 94.1825329056531,
+              "randomized_evaluation_rms_hz": 96.08411747567138
+            },
+            {
+              "rank": 2,
+              "catalog_number": 67190,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -550254.2711059245,
+              "fit_rms_hz": 1226.9820815309147,
+              "randomized_evaluation_rms_hz": 1008.5709071653084
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62073,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -597245.6734523374,
+              "fit_rms_hz": 2215.987420563129,
+              "randomized_evaluation_rms_hz": 1831.4929825555082
+            },
+            {
+              "rank": 4,
+              "catalog_number": 50834,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -667089.6765490969,
+              "fit_rms_hz": 2926.2838927329058,
+              "randomized_evaluation_rms_hz": 2578.536386629764
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59584,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -563277.4029771734,
+              "fit_rms_hz": 3169.6129041329054,
+              "randomized_evaluation_rms_hz": 2560.834886157099
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:e4de7534eb317cf192559ee4f57edf5c7c84ef37c6a2a5e2b7bbbf38226a36e5",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 99.630875578,
+          "end_s": 128.973568309,
+          "observation_count": 58,
+          "fit_observation_count": 34,
+          "randomized_evaluation_observation_count": 24,
+          "artifact_name": "tle-review-30",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 65846,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -375706.04457045376,
+              "fit_rms_hz": 28.245577549344322,
+              "randomized_evaluation_rms_hz": 30.671282297447938
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -364261.6782518417,
+              "fit_rms_hz": 2160.0411440827284,
+              "randomized_evaluation_rms_hz": 1707.1607577806815
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63077,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -380910.01467570895,
+              "fit_rms_hz": 3189.2132380856215,
+              "randomized_evaluation_rms_hz": 2705.6485339974092
+            },
+            {
+              "rank": 4,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -346037.33588656964,
+              "fit_rms_hz": 3266.1291591346794,
+              "randomized_evaluation_rms_hz": 2475.80742097204
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64447,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -466034.52505445556,
+              "fit_rms_hz": 4022.565184785318,
+              "randomized_evaluation_rms_hz": 4070.991841819476
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:fa24c213bc157dc528f921d817b2eb5954a2a2ac9095f79dc89b631724c46074",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 130.577595039,
+          "end_s": 159.550938488,
+          "observation_count": 57,
+          "fit_observation_count": 34,
+          "randomized_evaluation_observation_count": 23,
+          "artifact_name": "tle-review-31",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64447,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -374158.70046685153,
+              "fit_rms_hz": 63.04630759770173,
+              "randomized_evaluation_rms_hz": 63.764130515007906
+            },
+            {
+              "rank": 2,
+              "catalog_number": 62476,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -403859.7567243208,
+              "fit_rms_hz": 2341.654842938073,
+              "randomized_evaluation_rms_hz": 2985.8223430779813
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64329,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -282703.38760243525,
+              "fit_rms_hz": 2459.0037814275765,
+              "randomized_evaluation_rms_hz": 3092.3864958804606
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59529,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -364071.68642042764,
+              "fit_rms_hz": 3548.5671370657687,
+              "randomized_evaluation_rms_hz": 4124.048222151567
+            },
+            {
+              "rank": 5,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -374145.12372745137,
+              "fit_rms_hz": 3637.6592635072316,
+              "randomized_evaluation_rms_hz": 4306.261089425663
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:0a7846beb8279fc1bd0466308a8e939f21bfbd3d641ea26368ab02806a9b5fc5",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 130.577595031,
+          "end_s": 159.429605688,
+          "observation_count": 54,
+          "fit_observation_count": 32,
+          "randomized_evaluation_observation_count": 22,
+          "artifact_name": "tle-review-32",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64447,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -377354.83755474497,
+              "fit_rms_hz": 55.1070164061299,
+              "randomized_evaluation_rms_hz": 74.00651528022367
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64329,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -281922.22505413915,
+              "fit_rms_hz": 2492.13781716895,
+              "randomized_evaluation_rms_hz": 2743.1656970126055
+            },
+            {
+              "rank": 3,
+              "catalog_number": 62476,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -406509.93854459317,
+              "fit_rms_hz": 2508.707143956583,
+              "randomized_evaluation_rms_hz": 2740.2302481507318
+            },
+            {
+              "rank": 4,
+              "catalog_number": 59529,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -366414.24533098825,
+              "fit_rms_hz": 3393.8774704609095,
+              "randomized_evaluation_rms_hz": 4125.279169105702
+            },
+            {
+              "rank": 5,
+              "catalog_number": 61063,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -376464.62448589416,
+              "fit_rms_hz": 3560.3214954112323,
+              "randomized_evaluation_rms_hz": 4235.039701431749
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:4ed19a088ed280e3950466c85f3694894ddae81f93664ad80723fb5dd578a881",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 110.115420996,
+          "end_s": 138.573243474,
+          "observation_count": 43,
+          "fit_observation_count": 25,
+          "randomized_evaluation_observation_count": 18,
+          "artifact_name": "tle-review-33",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 63077,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -360083.9307586934,
+              "fit_rms_hz": 42.66074550197817,
+              "randomized_evaluation_rms_hz": 56.634390662379765
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -342542.8745157593,
+              "fit_rms_hz": 265.63730921504214,
+              "randomized_evaluation_rms_hz": 320.51995466217215
+            },
+            {
+              "rank": 3,
+              "catalog_number": 67173,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -339065.8622396195,
+              "fit_rms_hz": 495.88706411242833,
+              "randomized_evaluation_rms_hz": 719.3377875076366
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64462,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -346268.1121727449,
+              "fit_rms_hz": 959.4009845744675,
+              "randomized_evaluation_rms_hz": 1371.9962971678676
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66973,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -344976.2975890862,
+              "fit_rms_hz": 1115.9528917445089,
+              "randomized_evaluation_rms_hz": 1592.6395303387071
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:2315ddfe0bf45b33774523a0efa599f341a1ef9837b86775241b6923e99482a2",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 130.858730533,
+          "end_s": 159.149347487,
+          "observation_count": 44,
+          "fit_observation_count": 26,
+          "randomized_evaluation_observation_count": 18,
+          "artifact_name": "tle-review-34",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 61063,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -359004.3754380717,
+              "fit_rms_hz": 23.431955083905976,
+              "randomized_evaluation_rms_hz": 27.531531715100698
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59529,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -352385.6064865834,
+              "fit_rms_hz": 132.02261993320354,
+              "randomized_evaluation_rms_hz": 130.08880942949082
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64182,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -375841.22571080306,
+              "fit_rms_hz": 523.0406204439439,
+              "randomized_evaluation_rms_hz": 507.36314515768873
+            },
+            {
+              "rank": 4,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -430597.5628508394,
+              "fit_rms_hz": 1203.505927553843,
+              "randomized_evaluation_rms_hz": 1185.343980953441
+            },
+            {
+              "rank": 5,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -444902.0480668417,
+              "fit_rms_hz": 1757.1144172290183,
+              "randomized_evaluation_rms_hz": 1646.1270944670662
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:ebe7778ad2ea46e5fb01ec94c307b2b66e761fa3ea3960df85a08635ffe12833",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 47.59036881,
+          "end_s": 75.114651233,
+          "observation_count": 48,
+          "fit_observation_count": 28,
+          "randomized_evaluation_observation_count": 20,
+          "artifact_name": "tle-review-35",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 63322,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 3031.40427488558,
+              "fit_rms_hz": 1123.5167617092404,
+              "randomized_evaluation_rms_hz": 960.4080103703119
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64462,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -121271.61576308454,
+              "fit_rms_hz": 1619.2641434606483,
+              "randomized_evaluation_rms_hz": 1477.3566554096953
+            },
+            {
+              "rank": 3,
+              "catalog_number": 66973,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -119684.37371714905,
+              "fit_rms_hz": 1623.8014119215386,
+              "randomized_evaluation_rms_hz": 1477.0351538908565
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53178,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": 106971.51314317754,
+              "fit_rms_hz": 1669.5352688216196,
+              "randomized_evaluation_rms_hz": 1726.264795876763
+            },
+            {
+              "rank": 5,
+              "catalog_number": 67173,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -130872.20342149182,
+              "fit_rms_hz": 1737.8542738411356,
+              "randomized_evaluation_rms_hz": 1644.3593129511278
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:625c4172a5f8cafa76bde8a0c4d6b18777549bac2ee50b7aa6197814a4dbed86",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 273.950861862,
+          "end_s": 298.525697904,
+          "observation_count": 53,
+          "fit_observation_count": 31,
+          "randomized_evaluation_observation_count": 22,
+          "artifact_name": "tle-review-36",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64438,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -1042894.6564027116,
+              "fit_rms_hz": 64.59479792143864,
+              "randomized_evaluation_rms_hz": 106.64169983041359
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57264,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -1023429.9781367196,
+              "fit_rms_hz": 289.7651261192801,
+              "randomized_evaluation_rms_hz": 278.31384808855984
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -1021832.2230117503,
+              "fit_rms_hz": 850.5168094749533,
+              "randomized_evaluation_rms_hz": 770.974730332479
+            },
+            {
+              "rank": 4,
+              "catalog_number": 48575,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -1026884.9748456418,
+              "fit_rms_hz": 1729.6006109610096,
+              "randomized_evaluation_rms_hz": 1597.4577637140694
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59527,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -974870.4921635872,
+              "fit_rms_hz": 1854.4420334677432,
+              "randomized_evaluation_rms_hz": 1734.8881001504637
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:8f81dbc2ef9b1c1c00bf455456e8cddb2e4dfa3ad4b6cd1008476d18febd0070",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 194.126430158,
+          "end_s": 217.636863884,
+          "observation_count": 44,
+          "fit_observation_count": 26,
+          "randomized_evaluation_observation_count": 18,
+          "artifact_name": "tle-review-37",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 57507,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -582475.8514056937,
+              "fit_rms_hz": 72.45290411811187,
+              "randomized_evaluation_rms_hz": 63.01609956995806
+            },
+            {
+              "rank": 2,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -589851.4908367789,
+              "fit_rms_hz": 138.43386537194004,
+              "randomized_evaluation_rms_hz": 135.78845252391423
+            },
+            {
+              "rank": 3,
+              "catalog_number": 50834,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -602031.5349544735,
+              "fit_rms_hz": 155.68073537362426,
+              "randomized_evaluation_rms_hz": 167.92151800743102
+            },
+            {
+              "rank": 4,
+              "catalog_number": 56449,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -561988.3920943643,
+              "fit_rms_hz": 299.01452929270346,
+              "randomized_evaluation_rms_hz": 284.4694550151905
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48479,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -573434.519623648,
+              "fit_rms_hz": 355.6523725142013,
+              "randomized_evaluation_rms_hz": 339.36556892857396
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:ac88732ce0d1123fe8b5aa01ef468ef6ec206d22f071c5244a40f6b1a6e39f25",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 76.499203332,
+          "end_s": 99.070426377,
+          "observation_count": 45,
+          "fit_observation_count": 27,
+          "randomized_evaluation_observation_count": 18,
+          "artifact_name": "tle-review-38",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -140102.36000150515,
+              "fit_rms_hz": 109.09176115096241,
+              "randomized_evaluation_rms_hz": 54.58652915406273
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -140726.4387702053,
+              "fit_rms_hz": 110.19656172616646,
+              "randomized_evaluation_rms_hz": 105.17423282238865
+            },
+            {
+              "rank": 3,
+              "catalog_number": 65846,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -166324.82388056943,
+              "fit_rms_hz": 390.4981743392692,
+              "randomized_evaluation_rms_hz": 407.3756872687362
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64462,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -121582.66579808427,
+              "fit_rms_hz": 669.2766089306118,
+              "randomized_evaluation_rms_hz": 724.2843706432644
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66973,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -119948.5983151357,
+              "fit_rms_hz": 692.0238787103879,
+              "randomized_evaluation_rms_hz": 749.0617173338048
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:7932717f9de0bfc2cd492bfd3794c90cc53de00dbb0c01d499a223dae034c9df",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 274.230864829,
+          "end_s": 296.571024908,
+          "observation_count": 39,
+          "fit_observation_count": 23,
+          "randomized_evaluation_observation_count": 16,
+          "artifact_name": "tle-review-39",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64438,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -1039793.5097554302,
+              "fit_rms_hz": 24.73436050697312,
+              "randomized_evaluation_rms_hz": 116.98918866124072
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57264,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -1020275.6485580505,
+              "fit_rms_hz": 231.49878575045412,
+              "randomized_evaluation_rms_hz": 202.85540958907663
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -1018715.2411899084,
+              "fit_rms_hz": 787.0757726503564,
+              "randomized_evaluation_rms_hz": 619.1289119158345
+            },
+            {
+              "rank": 4,
+              "catalog_number": 48575,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -1023645.8669368058,
+              "fit_rms_hz": 1507.8155608837244,
+              "randomized_evaluation_rms_hz": 1390.458444027012
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59527,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -971683.3301204223,
+              "fit_rms_hz": 1721.498056385778,
+              "randomized_evaluation_rms_hz": 1290.9157630648135
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:47bbccd9ad586a861439a3a79a8a10685e26807a69e9a8ca9dabf8d7051ee141",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 277.954901931,
+          "end_s": 299.609700797,
+          "observation_count": 39,
+          "fit_observation_count": 23,
+          "randomized_evaluation_observation_count": 16,
+          "artifact_name": "tle-review-40",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64438,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -1017290.3494826928,
+              "fit_rms_hz": 129.25774655896106,
+              "randomized_evaluation_rms_hz": 212.59028782817956
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57264,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -997786.7441053458,
+              "fit_rms_hz": 396.60027646478466,
+              "randomized_evaluation_rms_hz": 459.96614579975153
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -996315.7820863471,
+              "fit_rms_hz": 1031.3400130630102,
+              "randomized_evaluation_rms_hz": 1158.6873547038015
+            },
+            {
+              "rank": 4,
+              "catalog_number": 48575,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -1000955.9099940992,
+              "fit_rms_hz": 1312.3529289359456,
+              "randomized_evaluation_rms_hz": 1275.4041350191003
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59527,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -949392.0926429402,
+              "fit_rms_hz": 2256.5804271671404,
+              "randomized_evaluation_rms_hz": 2610.50726170184
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:d76ff4fb6e0bb16dbe8d5b3b81223776bc1004e18e5e3daa6986ae3d90e18b9a",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 56.318502036,
+          "end_s": 77.601410765,
+          "observation_count": 45,
+          "fit_observation_count": 27,
+          "randomized_evaluation_observation_count": 18,
+          "artifact_name": "tle-review-41",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -136983.1061289901,
+              "fit_rms_hz": 93.7413828974095,
+              "randomized_evaluation_rms_hz": 72.44510880745388
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -138065.19884945953,
+              "fit_rms_hz": 115.59020454030711,
+              "randomized_evaluation_rms_hz": 108.19760700997867
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64462,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -127292.28553439312,
+              "fit_rms_hz": 151.74771651432346,
+              "randomized_evaluation_rms_hz": 144.24092136719557
+            },
+            {
+              "rank": 4,
+              "catalog_number": 66973,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -125699.96642746484,
+              "fit_rms_hz": 157.79313487601178,
+              "randomized_evaluation_rms_hz": 155.19371857218206
+            },
+            {
+              "rank": 5,
+              "catalog_number": 53544,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -41256.891275435344,
+              "fit_rms_hz": 1077.074637359333,
+              "randomized_evaluation_rms_hz": 1193.418716133739
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:f48b536bcf22a6272192a342ebcb9ae3d27de65a537eea78c1f32fa0e9011e75",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 251.959906564,
+          "end_s": 272.746849005,
+          "observation_count": 33,
+          "fit_observation_count": 19,
+          "randomized_evaluation_observation_count": 14,
+          "artifact_name": "tle-review-42",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64438,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -588831.878500275,
+              "fit_rms_hz": 34.80762563715256,
+              "randomized_evaluation_rms_hz": 54.37231506724802
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57264,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -582037.6215281172,
+              "fit_rms_hz": 101.9176585073734,
+              "randomized_evaluation_rms_hz": 71.98613495052051
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -575911.8611706267,
+              "fit_rms_hz": 111.89592462481302,
+              "randomized_evaluation_rms_hz": 117.30762700692341
+            },
+            {
+              "rank": 4,
+              "catalog_number": 63079,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -569662.9353433824,
+              "fit_rms_hz": 331.94676870171475,
+              "randomized_evaluation_rms_hz": 231.32559417037638
+            },
+            {
+              "rank": 5,
+              "catalog_number": 55587,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -534844.8937192267,
+              "fit_rms_hz": 542.3932532798927,
+              "randomized_evaluation_rms_hz": 408.1724484256104
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:76b9dd0c704c6b1d0eadf3d6d7b70c014e80357f68ea330476c505401fe63bd6",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 279.679880424,
+          "end_s": 299.74948114,
+          "observation_count": 35,
+          "fit_observation_count": 21,
+          "randomized_evaluation_observation_count": 14,
+          "artifact_name": "tle-review-43",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64446,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -625481.4892948223,
+              "fit_rms_hz": 114.02835884805528,
+              "randomized_evaluation_rms_hz": 65.58234178221403
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57910,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -616636.0892297307,
+              "fit_rms_hz": 138.83354750579193,
+              "randomized_evaluation_rms_hz": 100.4591394282391
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63023,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -524883.9899175692,
+              "fit_rms_hz": 589.7791833187133,
+              "randomized_evaluation_rms_hz": 671.9036660890721
+            },
+            {
+              "rank": 4,
+              "catalog_number": 66497,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -506871.38520538603,
+              "fit_rms_hz": 665.786606126114,
+              "randomized_evaluation_rms_hz": 753.308292213532
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66456,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -524407.561999425,
+              "fit_rms_hz": 670.6548301331306,
+              "randomized_evaluation_rms_hz": 670.0335123935788
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:21323d2070b350a75505cec9bef2b227fb318a9a5283bb0fa0e6b41721fb4899",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 54.654433837,
+          "end_s": 74.011352684,
+          "observation_count": 37,
+          "fit_observation_count": 22,
+          "randomized_evaluation_observation_count": 15,
+          "artifact_name": "tle-review-44",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64462,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -132221.31448300983,
+              "fit_rms_hz": 66.07211164036389,
+              "randomized_evaluation_rms_hz": 57.10179082506208
+            },
+            {
+              "rank": 2,
+              "catalog_number": 66973,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -130645.38293488171,
+              "fit_rms_hz": 67.36397802835421,
+              "randomized_evaluation_rms_hz": 65.89248848209834
+            },
+            {
+              "rank": 3,
+              "catalog_number": 67173,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -139260.77218084753,
+              "fit_rms_hz": 97.72667469427955,
+              "randomized_evaluation_rms_hz": 73.5757435072452
+            },
+            {
+              "rank": 4,
+              "catalog_number": 100297,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -143002.7251676837,
+              "fit_rms_hz": 129.6477729446363,
+              "randomized_evaluation_rms_hz": 131.0224484428985
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63077,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -142455.23757155368,
+              "fit_rms_hz": 549.6032634390803,
+              "randomized_evaluation_rms_hz": 577.7903807599472
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:66a9ab000e7c582d65d021469fab971400b534fedd17bbc699fd82e80ba08f12",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 55.616750923,
+          "end_s": 73.470705766,
+          "observation_count": 17,
+          "fit_observation_count": 10,
+          "randomized_evaluation_observation_count": 7,
+          "artifact_name": "tle-review-45",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -133940.79604930157,
+              "fit_rms_hz": 26.542646208588568,
+              "randomized_evaluation_rms_hz": 170.1588584755514
+            },
+            {
+              "rank": 2,
+              "catalog_number": 66973,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -125342.4959656552,
+              "fit_rms_hz": 58.17828165278088,
+              "randomized_evaluation_rms_hz": 163.87111123816535
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64462,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -126925.96165785419,
+              "fit_rms_hz": 73.92247271367368,
+              "randomized_evaluation_rms_hz": 171.4580104856284
+            },
+            {
+              "rank": 4,
+              "catalog_number": 100297,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -135049.14277508802,
+              "fit_rms_hz": 131.4168951616484,
+              "randomized_evaluation_rms_hz": 203.1857265683957
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63322,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 8504.159051165361,
+              "fit_rms_hz": 528.1255436909674,
+              "randomized_evaluation_rms_hz": 750.1803471210152
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:84ac8e9d10dfbbb2118cd20446ad20558fefef962068e8c2c24d283438ce9754",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 21.75331486,
+          "end_s": 39.465345981,
+          "observation_count": 29,
+          "fit_observation_count": 17,
+          "randomized_evaluation_observation_count": 12,
+          "artifact_name": "tle-review-46",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 57906,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": 92736.2224313759,
+              "fit_rms_hz": 57.59672935834469,
+              "randomized_evaluation_rms_hz": 103.5638135490367
+            },
+            {
+              "rank": 2,
+              "catalog_number": 58832,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -3578.894263181696,
+              "fit_rms_hz": 619.2774826611667,
+              "randomized_evaluation_rms_hz": 657.3289805710585
+            },
+            {
+              "rank": 3,
+              "catalog_number": 53165,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 60677.95856050097,
+              "fit_rms_hz": 899.9325840801446,
+              "randomized_evaluation_rms_hz": 757.8137862485328
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53175,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -50843.54792934517,
+              "fit_rms_hz": 939.9098857864996,
+              "randomized_evaluation_rms_hz": 919.6180154696825
+            },
+            {
+              "rank": 5,
+              "catalog_number": 66285,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 82179.59148059899,
+              "fit_rms_hz": 1253.8607075047987,
+              "randomized_evaluation_rms_hz": 1149.2350809473348
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:3a460905d9b12e03f8b0f67e5e0aed63aa9f4cbbbd2d10504755d74965fb9ccb",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 264.444082778,
+          "end_s": 280.763905132,
+          "observation_count": 31,
+          "fit_observation_count": 18,
+          "randomized_evaluation_observation_count": 13,
+          "artifact_name": "tle-review-47",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64438,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -798231.8138263095,
+              "fit_rms_hz": 28.116336542066175,
+              "randomized_evaluation_rms_hz": 47.713680541062836
+            },
+            {
+              "rank": 2,
+              "catalog_number": 57264,
+              "selected_tau_s": 2.0,
+              "fitted_offset_hz": -788741.5990739302,
+              "fit_rms_hz": 67.98754275639955,
+              "randomized_evaluation_rms_hz": 75.5522556970882
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55380,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -779571.796650386,
+              "fit_rms_hz": 136.02550318715973,
+              "randomized_evaluation_rms_hz": 118.54629053246113
+            },
+            {
+              "rank": 4,
+              "catalog_number": 58058,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -644089.5712028272,
+              "fit_rms_hz": 828.1934821791057,
+              "randomized_evaluation_rms_hz": 599.0561801181943
+            },
+            {
+              "rank": 5,
+              "catalog_number": 48479,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -642505.9231102382,
+              "fit_rms_hz": 838.7142284251004,
+              "randomized_evaluation_rms_hz": 601.5142461684687
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:1f96b08427c48cc8d4cc6f591cb939360e54f602cfa3803d96efb4a74ced2ab0",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 40.167031439,
+          "end_s": 56.31850201,
+          "observation_count": 21,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 9,
+          "artifact_name": "tle-review-48",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67173,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -136990.96402317498,
+              "fit_rms_hz": 78.7496504431852,
+              "randomized_evaluation_rms_hz": 37.9763720656746
+            },
+            {
+              "rank": 2,
+              "catalog_number": 100297,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -140499.87575827588,
+              "fit_rms_hz": 102.25307804048082,
+              "randomized_evaluation_rms_hz": 57.07958855143339
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64462,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -132258.7758518641,
+              "fit_rms_hz": 108.82401427435143,
+              "randomized_evaluation_rms_hz": 137.88045291455109
+            },
+            {
+              "rank": 4,
+              "catalog_number": 66973,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -130724.89926847637,
+              "fit_rms_hz": 112.21068285101714,
+              "randomized_evaluation_rms_hz": 144.55127440994622
+            },
+            {
+              "rank": 5,
+              "catalog_number": 57933,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -105995.75631558576,
+              "fit_rms_hz": 164.11584385811526,
+              "randomized_evaluation_rms_hz": 151.82346783785326
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:f4348f890437ce327702b1ee7151696935365d9c6eca5b66fdc58d682d519138",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 23.819909281,
+          "end_s": 39.203966805,
+          "observation_count": 18,
+          "fit_observation_count": 10,
+          "randomized_evaluation_observation_count": 8,
+          "artifact_name": "tle-review-49",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 58832,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -135281.25756348245,
+              "fit_rms_hz": 37.02624248699655,
+              "randomized_evaluation_rms_hz": 31.62490902407773
+            },
+            {
+              "rank": 2,
+              "catalog_number": 53175,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -182434.95791590997,
+              "fit_rms_hz": 273.34218724792174,
+              "randomized_evaluation_rms_hz": 258.7959708220743
+            },
+            {
+              "rank": 3,
+              "catalog_number": 57906,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -52556.6180178486,
+              "fit_rms_hz": 420.29850944647717,
+              "randomized_evaluation_rms_hz": 303.0629282165871
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53178,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -47980.309745929306,
+              "fit_rms_hz": 1011.4278813257832,
+              "randomized_evaluation_rms_hz": 571.1497263599069
+            },
+            {
+              "rank": 5,
+              "catalog_number": 53165,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -75224.98403066145,
+              "fit_rms_hz": 1233.4053541725305,
+              "randomized_evaluation_rms_hz": 1224.1489057345561
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:7628485d41e46f419d529519681ff38cc3bfdc03b0b1b9ce0ea2f82185eb9c50",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 206.846620579,
+          "end_s": 221.889494407,
+          "observation_count": 25,
+          "fit_observation_count": 15,
+          "randomized_evaluation_observation_count": 10,
+          "artifact_name": "tle-review-50",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 67517,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -577379.7523785456,
+              "fit_rms_hz": 114.48427426855213,
+              "randomized_evaluation_rms_hz": 81.54150494747255
+            },
+            {
+              "rank": 2,
+              "catalog_number": 50834,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -592028.0068168801,
+              "fit_rms_hz": 124.16403262625579,
+              "randomized_evaluation_rms_hz": 69.58393447210054
+            },
+            {
+              "rank": 3,
+              "catalog_number": 57507,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -567216.2332851985,
+              "fit_rms_hz": 138.46737843261218,
+              "randomized_evaluation_rms_hz": 93.70800625322353
+            },
+            {
+              "rank": 4,
+              "catalog_number": 62088,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -566170.8706058741,
+              "fit_rms_hz": 165.40411588055622,
+              "randomized_evaluation_rms_hz": 117.46418379337267
+            },
+            {
+              "rank": 5,
+              "catalog_number": 56449,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -539162.9804510952,
+              "fit_rms_hz": 222.77533654571542,
+              "randomized_evaluation_rms_hz": 226.269096505556
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:67d6b2ac0371a92c10a31653b8a7e55bdf3fa4430cfe4902c3277d9a5427e014",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 39.746664531,
+          "end_s": 54.373215242,
+          "observation_count": 21,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 9,
+          "artifact_name": "tle-review-51",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 57906,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": 97562.08396804042,
+              "fit_rms_hz": 53.952246904277,
+              "randomized_evaluation_rms_hz": 59.314317237766616
+            },
+            {
+              "rank": 2,
+              "catalog_number": 53165,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": 73035.7912866388,
+              "fit_rms_hz": 132.87570735920346,
+              "randomized_evaluation_rms_hz": 138.44787395513995
+            },
+            {
+              "rank": 3,
+              "catalog_number": 59031,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": 66179.31142287281,
+              "fit_rms_hz": 155.48442170771023,
+              "randomized_evaluation_rms_hz": 156.25356386496125
+            },
+            {
+              "rank": 4,
+              "catalog_number": 66285,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 83789.53114399406,
+              "fit_rms_hz": 444.2546498226014,
+              "randomized_evaluation_rms_hz": 494.32539488463976
+            },
+            {
+              "rank": 5,
+              "catalog_number": 53544,
+              "selected_tau_s": 4.0,
+              "fitted_offset_hz": -54177.319130751035,
+              "fit_rms_hz": 556.5008060363011,
+              "randomized_evaluation_rms_hz": 553.9616062329092
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:57f9d65805c98ea02544d3fb89aea64958d5987c98122ab321b519cbb08abe40",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 174.98550224,
+          "end_s": 189.55069934,
+          "observation_count": 29,
+          "fit_observation_count": 17,
+          "randomized_evaluation_observation_count": 12,
+          "artifact_name": "tle-review-52",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -610174.3545820712,
+              "fit_rms_hz": 32.744915038692085,
+              "randomized_evaluation_rms_hz": 32.805900974638654
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59947,
+              "selected_tau_s": -1.0,
+              "fitted_offset_hz": -492060.38604792283,
+              "fit_rms_hz": 722.3187130215108,
+              "randomized_evaluation_rms_hz": 676.6419459981686
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -554776.3135465961,
+              "fit_rms_hz": 1627.6048105691434,
+              "randomized_evaluation_rms_hz": 1493.6471627702365
+            },
+            {
+              "rank": 4,
+              "catalog_number": 62476,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -530554.1843281017,
+              "fit_rms_hz": 2107.781415873171,
+              "randomized_evaluation_rms_hz": 1916.3393413801898
+            },
+            {
+              "rank": 5,
+              "catalog_number": 63581,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -619853.1726789761,
+              "fit_rms_hz": 2484.8327445724162,
+              "randomized_evaluation_rms_hz": 2381.923416869193
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:e61bffc6dda9329c33c1944fd0785d9afde90f778908e0b2df94b8678f9cf7e7",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 114.73059433,
+          "end_s": 129.255503145,
+          "observation_count": 24,
+          "fit_observation_count": 14,
+          "randomized_evaluation_observation_count": 10,
+          "artifact_name": "tle-review-53",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -368866.8373196228,
+              "fit_rms_hz": 94.3978908670353,
+              "randomized_evaluation_rms_hz": 77.72687791989487
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59947,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -414049.021986227,
+              "fit_rms_hz": 320.26914888326206,
+              "randomized_evaluation_rms_hz": 301.2966852368043
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -368379.49880483275,
+              "fit_rms_hz": 356.2629574564056,
+              "randomized_evaluation_rms_hz": 396.1253283942032
+            },
+            {
+              "rank": 4,
+              "catalog_number": 57933,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -220648.5210357584,
+              "fit_rms_hz": 505.4879351492212,
+              "randomized_evaluation_rms_hz": 462.25750102268523
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64182,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -351570.6780797479,
+              "fit_rms_hz": 561.0104556429858,
+              "randomized_evaluation_rms_hz": 646.1628621395921
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:c9ae14c197d16ac57a5f23f761dc1927678084b88f7254de8dde5f9140811295",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 0.269028479,
+          "end_s": 13.751395196,
+          "observation_count": 14,
+          "fit_observation_count": 8,
+          "randomized_evaluation_observation_count": 6,
+          "artifact_name": "tle-review-54",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 58832,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": 94350.81191057248,
+              "fit_rms_hz": 70.76312715099742,
+              "randomized_evaluation_rms_hz": 100.50823754842085
+            },
+            {
+              "rank": 2,
+              "catalog_number": 52114,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": 155492.4269916215,
+              "fit_rms_hz": 127.6634805989204,
+              "randomized_evaluation_rms_hz": 325.1372950359744
+            },
+            {
+              "rank": 3,
+              "catalog_number": 55454,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": 175028.2218717009,
+              "fit_rms_hz": 157.72693547670448,
+              "randomized_evaluation_rms_hz": 441.41191918808727
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53175,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 72096.51380543238,
+              "fit_rms_hz": 251.96478717902568,
+              "randomized_evaluation_rms_hz": 203.8262218846812
+            },
+            {
+              "rank": 5,
+              "catalog_number": 67327,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 274474.827239308,
+              "fit_rms_hz": 317.5217019253359,
+              "randomized_evaluation_rms_hz": 854.1936256286594
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:e01b91f57e1c84ebe84f5f26540be1d45ef429a6d0eb109f111b359185f23972",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 204.941523172,
+          "end_s": 218.037571846,
+          "observation_count": 22,
+          "fit_observation_count": 13,
+          "randomized_evaluation_observation_count": 9,
+          "artifact_name": "tle-review-55",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 59040,
+              "selected_tau_s": 1.0,
+              "fitted_offset_hz": -596522.7861017169,
+              "fit_rms_hz": 67.43939089964752,
+              "randomized_evaluation_rms_hz": 111.81192507786372
+            },
+            {
+              "rank": 2,
+              "catalog_number": 67190,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -613763.5975945456,
+              "fit_rms_hz": 448.05414240543985,
+              "randomized_evaluation_rms_hz": 370.16551311709475
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64066,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -452521.5591117652,
+              "fit_rms_hz": 785.1710287326409,
+              "randomized_evaluation_rms_hz": 500.77643047428364
+            },
+            {
+              "rank": 4,
+              "catalog_number": 62073,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -621817.0829861241,
+              "fit_rms_hz": 1316.7855684411713,
+              "randomized_evaluation_rms_hz": 944.696962908518
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59584,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -577609.7757343806,
+              "fit_rms_hz": 1357.924786876478,
+              "randomized_evaluation_rms_hz": 917.0926233421532
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:8f1d8d83687f7deb81822b5a5770b17d7246cd945c0f6a2c933c9446d1a858e9",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 204.941523189,
+          "end_s": 218.037571846,
+          "observation_count": 21,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 9,
+          "artifact_name": "tle-review-56",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 59040,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -603337.7729449876,
+              "fit_rms_hz": 47.09527043369003,
+              "randomized_evaluation_rms_hz": 34.318712142702275
+            },
+            {
+              "rank": 2,
+              "catalog_number": 67190,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -617007.777522921,
+              "fit_rms_hz": 413.89126214263786,
+              "randomized_evaluation_rms_hz": 410.97654382212727
+            },
+            {
+              "rank": 3,
+              "catalog_number": 64066,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -455639.03991071606,
+              "fit_rms_hz": 555.4069565635323,
+              "randomized_evaluation_rms_hz": 788.6010226653863
+            },
+            {
+              "rank": 4,
+              "catalog_number": 62073,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -625278.2735002445,
+              "fit_rms_hz": 1169.7951406443099,
+              "randomized_evaluation_rms_hz": 1197.5928503852886
+            },
+            {
+              "rank": 5,
+              "catalog_number": 59584,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -581040.6205794916,
+              "fit_rms_hz": 1206.371572586083,
+              "randomized_evaluation_rms_hz": 1213.9915274543
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:093fb527fad1a58f61961b232f64373194c0db0c64ac28ecb8fce1e2118c63cd",
+          "channel": 1,
+          "edge": "lower",
+          "start_s": 160.89623638,
+          "end_s": 173.901570433,
+          "observation_count": 28,
+          "fit_observation_count": 16,
+          "randomized_evaluation_observation_count": 12,
+          "artifact_name": "tle-review-57",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -373534.90817674267,
+              "fit_rms_hz": 26.62682654974936,
+              "randomized_evaluation_rms_hz": 27.15160706253399
+            },
+            {
+              "rank": 2,
+              "catalog_number": 64447,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -341379.8006273837,
+              "fit_rms_hz": 127.24574884135507,
+              "randomized_evaluation_rms_hz": 291.05509106060816
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -412007.5714886622,
+              "fit_rms_hz": 203.8815334357296,
+              "randomized_evaluation_rms_hz": 177.72050622249952
+            },
+            {
+              "rank": 4,
+              "catalog_number": 64247,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -451756.9539031333,
+              "fit_rms_hz": 301.3077978993446,
+              "randomized_evaluation_rms_hz": 342.79355157225694
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64182,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -360791.43051989813,
+              "fit_rms_hz": 943.2250280283384,
+              "randomized_evaluation_rms_hz": 1210.784562678353
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:e2552f2bf3cd9da4ab2f91e1fde3ab76c9a6c66b3055270d6fc6c57cd535dd40",
+          "channel": 2,
+          "edge": "lower",
+          "start_s": 116.375947693,
+          "end_s": 129.255503176,
+          "observation_count": 15,
+          "fit_observation_count": 9,
+          "randomized_evaluation_observation_count": 6,
+          "artifact_name": "tle-review-58",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -365675.986304364,
+              "fit_rms_hz": 152.7514493317456,
+              "randomized_evaluation_rms_hz": 88.31776174000882
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59947,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -410874.38553213485,
+              "fit_rms_hz": 187.25166008860455,
+              "randomized_evaluation_rms_hz": 200.35890159108692
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -365208.09892129624,
+              "fit_rms_hz": 372.61647177819964,
+              "randomized_evaluation_rms_hz": 369.2137646008334
+            },
+            {
+              "rank": 4,
+              "catalog_number": 57933,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -217435.53120094028,
+              "fit_rms_hz": 500.4536173261016,
+              "randomized_evaluation_rms_hz": 401.6203772421803
+            },
+            {
+              "rank": 5,
+              "catalog_number": 58836,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -276604.1520098554,
+              "fit_rms_hz": 544.4568675881526,
+              "randomized_evaluation_rms_hz": 468.3741523979052
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:f9a97b1685a3bda7be3dae85b8aa913583d823703a143955b7d45566ee71fa05",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 116.635950789,
+          "end_s": 128.312073992,
+          "observation_count": 18,
+          "fit_observation_count": 10,
+          "randomized_evaluation_observation_count": 8,
+          "artifact_name": "tle-review-59",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -350251.1963428709,
+              "fit_rms_hz": 65.68018111534364,
+              "randomized_evaluation_rms_hz": 48.070631562509014
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59947,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -395491.71721982845,
+              "fit_rms_hz": 163.00505885653362,
+              "randomized_evaluation_rms_hz": 173.58909953281432
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -349742.3157620439,
+              "fit_rms_hz": 305.07136909760465,
+              "randomized_evaluation_rms_hz": 276.6188522556128
+            },
+            {
+              "rank": 4,
+              "catalog_number": 57933,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -201889.89702900336,
+              "fit_rms_hz": 345.7954028374511,
+              "randomized_evaluation_rms_hz": 406.8650525100734
+            },
+            {
+              "rank": 5,
+              "catalog_number": 58836,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -261133.22255058034,
+              "fit_rms_hz": 414.76959611558146,
+              "randomized_evaluation_rms_hz": 294.9447833584558
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:4baddc50741e9edc5ea019ab20cedcca5104e6bf90b2b2e50b7af8f69ea6e39a",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 116.235946026,
+          "end_s": 127.348065117,
+          "observation_count": 20,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 8,
+          "artifact_name": "tle-review-60",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 62476,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": -353217.856694157,
+              "fit_rms_hz": 50.39902850974124,
+              "randomized_evaluation_rms_hz": 65.53673466402495
+            },
+            {
+              "rank": 2,
+              "catalog_number": 59947,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -398448.9126513898,
+              "fit_rms_hz": 216.79778300001726,
+              "randomized_evaluation_rms_hz": 145.77665961937777
+            },
+            {
+              "rank": 3,
+              "catalog_number": 63078,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -352679.10834897356,
+              "fit_rms_hz": 305.7482343330727,
+              "randomized_evaluation_rms_hz": 205.0300859650446
+            },
+            {
+              "rank": 4,
+              "catalog_number": 57933,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -204851.5270652999,
+              "fit_rms_hz": 357.1364472946169,
+              "randomized_evaluation_rms_hz": 305.5518647805569
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64182,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -335948.28092530655,
+              "fit_rms_hz": 471.8221587530481,
+              "randomized_evaluation_rms_hz": 335.39657352057515
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:1ee285de23a2d21bd1d277e8a2595eb6e19839805ff2eefd1e8308fae02ee417",
+          "channel": 4,
+          "edge": "lower",
+          "start_s": 145.661316378,
+          "end_s": 155.73741176,
+          "observation_count": 21,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 9,
+          "artifact_name": "tle-review-61",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 64247,
+              "selected_tau_s": -2.0,
+              "fitted_offset_hz": -354669.20919694536,
+              "fit_rms_hz": 33.53795978153063,
+              "randomized_evaluation_rms_hz": 67.30193279903992
+            },
+            {
+              "rank": 2,
+              "catalog_number": 50823,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": -290915.7952507775,
+              "fit_rms_hz": 48.77653120783221,
+              "randomized_evaluation_rms_hz": 354.50580148662146
+            },
+            {
+              "rank": 3,
+              "catalog_number": 58836,
+              "selected_tau_s": -3.0,
+              "fitted_offset_hz": -181270.50825727984,
+              "fit_rms_hz": 113.31189954205522,
+              "randomized_evaluation_rms_hz": 632.8664007587626
+            },
+            {
+              "rank": 4,
+              "catalog_number": 55591,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": -315360.5189903067,
+              "fit_rms_hz": 134.2669008944888,
+              "randomized_evaluation_rms_hz": 484.2087012049349
+            },
+            {
+              "rank": 5,
+              "catalog_number": 55464,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -212628.42298669822,
+              "fit_rms_hz": 148.47003708395636,
+              "randomized_evaluation_rms_hz": 766.5426735135251
+            }
+          ]
+        },
+        {
+          "tracklet_id": "sha256:16c3bc6998d91d688dbc84cac5177cb95b4d824f1c0ae0ffabb5480c2370f1be",
+          "channel": 3,
+          "edge": "lower",
+          "start_s": 0.129416739,
+          "end_s": 8.696032347,
+          "observation_count": 20,
+          "fit_observation_count": 12,
+          "randomized_evaluation_observation_count": 8,
+          "artifact_name": "tle-review-62",
+          "candidates": [
+            {
+              "rank": 1,
+              "catalog_number": 59088,
+              "selected_tau_s": 0.0,
+              "fitted_offset_hz": 94142.20292561299,
+              "fit_rms_hz": 111.10314897084791,
+              "randomized_evaluation_rms_hz": 102.41411694144709
+            },
+            {
+              "rank": 2,
+              "catalog_number": 63060,
+              "selected_tau_s": 3.0,
+              "fitted_offset_hz": 20531.059557300952,
+              "fit_rms_hz": 170.33310188309656,
+              "randomized_evaluation_rms_hz": 202.76734875478965
+            },
+            {
+              "rank": 3,
+              "catalog_number": 66285,
+              "selected_tau_s": 5.0,
+              "fitted_offset_hz": 9356.204425012878,
+              "fit_rms_hz": 194.9971526823642,
+              "randomized_evaluation_rms_hz": 226.03213741592805
+            },
+            {
+              "rank": 4,
+              "catalog_number": 53178,
+              "selected_tau_s": -4.0,
+              "fitted_offset_hz": -64055.384892225644,
+              "fit_rms_hz": 214.70447194033207,
+              "randomized_evaluation_rms_hz": 295.3018015220597
+            },
+            {
+              "rank": 5,
+              "catalog_number": 64379,
+              "selected_tau_s": -5.0,
+              "fitted_offset_hz": -75909.29103314706,
+              "fit_rms_hz": 236.26855353295005,
+              "randomized_evaluation_rms_hz": 301.83882115642604
+            }
+          ]
+        }
+      ],
+      "review_limit": 64,
+      "review_eligible_count": 62,
+      "review_count": 62,
+      "deferred_review_count": 0,
+      "review_selection_policy": "longest-support-observations-identity-v1",
+      "position_diagnostic": {
+        "schema_version": 1,
+        "state": "diagnostic",
+        "conditional_on_site_assisted_identity": true,
+        "position_fix_claimed": false,
+        "position_prior": {
+          "center_latitude_deg": 39.7392,
+          "center_longitude_deg": -104.9903,
+          "width_km": 14484.096000000001,
+          "height_km": 14484.096000000001,
+          "altitude_m": 0.0
+        },
+        "source_count": 4,
+        "track_count": 4,
+        "fit_observation_count": 20,
+        "evaluation_observation_count": 20,
+        "selected_observation_ids": [
+          "sha256:09ee8c429c097b8c8aef72991df21c9e9a98ea59e514113b4793b45d40915f5f",
+          "sha256:0b482637e61c2dd5f1280a4350c4e9afa9573b94f7f8d852874fda7b077c0a7f",
+          "sha256:1b926f21a3eeb68017f7ac793913decebc260f2e15bb185ca0ed2dc7be917978",
+          "sha256:2c8aa81daa9b327b4be13e3bda35f43601474e430965f6d7179f845ffe5d771b",
+          "sha256:2ce6917c959cf62dc7c247f3177f4b5c4095c15bab510f2f8dc4039f81b54d00",
+          "sha256:402f4fd454ce7746a3d373d2cc7b89cd74fdb5a8c2bed76a28b45826784fd805",
+          "sha256:57c452ae41147895a456c43117f2f0660d699e7d1969fcc3e46e4994484de2c4",
+          "sha256:57c61d277234ea996f0ce352672b57b4395fb82ca5c1a85ba8a30d7fe58c87bb",
+          "sha256:5d035e41f8eae08eb584950b3027d194e72d78c174d2a28507705a297b3160e5",
+          "sha256:6343075c6f612e8e8e2cfc875cd8e26d29766d4cfb2d5da11ba82e095ca5b161",
+          "sha256:63e5ed98a854befe0b638e0e6d8232e261d1ab18994f0f02e3b5473aa804968f",
+          "sha256:6ea6102eee1d194e1188fce8f6d581521aeb83eaf4f463ace841ca5a6a69b156",
+          "sha256:729ffd5798feecca4c2c1c12c6ca1465b85ea1515c71daafd79be8d9e9818477",
+          "sha256:95931635cecfc42031d71e31f9c6bdc7723315523a54cbaa4b578e2de94435e0",
+          "sha256:9cc5904aa042402e22728e63f2513d0b0fa4afa9732df0a001b9492b8b0eac2d",
+          "sha256:b573c3602526e16e50cfb5035af83b37abf4fd6fb47685f95e8cec4b01afbbcb",
+          "sha256:be56cb9389ebe88c3f53ff56f92633d196124b0981275d10b942790b2cbafcc4",
+          "sha256:c651919de3618b9a922eaac426b74a99ee1e714f681ef0ce493464bb01b7b45a",
+          "sha256:e07581d15865f74052b6e3880ac8915552f4d8da9c94cc9450dabd630d9a42d5",
+          "sha256:f2922d108593c6a9387c57b7bc0f3818337236e908269b2f6179d478c0647be8",
+          "sha256:04c2e318fec4f66c7c975808b8ec44aab5f14be24178e83c8cc5d93f3faedf02",
+          "sha256:0587aadf2d39cb7acc048e6cbc17c7b1909a3ee5035c1e748c85c2ae98619c59",
+          "sha256:29c27a49fad9145e186ec25f7a4528f7829dc71d89da7dfcb7543daacfcd2abc",
+          "sha256:2a220dd5ba56314c6e01c79308259e99c713b41cadebec0102b38dff6bd377e1",
+          "sha256:2de1e78db3a5cb18502579d862176e8b907b1bb9a855a258d19be1d47c68dc76",
+          "sha256:30416b4618e2a02cdf569329fd9245218382360a28ec1462bdaa307aa1762364",
+          "sha256:508934e4407699f131da6535366bef1e4c06f0c47154de835a28dfe6e00900d0",
+          "sha256:552f5d8d1746edf8ff346664031296e77ba8c703165b4335a0cb3c1438adfcc2",
+          "sha256:59c7db26172e136708594651a6a79a1dbad6f49bae92a521ce60b8c92e880a38",
+          "sha256:6d1ff8e6deb261587747a9d746ac10551f81ff00fe4fa0033aa84c06f908e3fe",
+          "sha256:6d7dd6771edbdcf45e3099ca746b390f8a1351a32565a9772bf7f23032e18106",
+          "sha256:7659b2fd6a76ce9d8f1b2e401962b2eea29d58f005c15aaccbefb00eaf0cd6a9",
+          "sha256:785b3fee58ddb92d86ed5ed62f20cd62055c87cda9f35838c9e124faf47aa3f7",
+          "sha256:b2e5e13946240b4db8721a6a54a230f14bcf1f38e148e8c16137beb3e034e48d",
+          "sha256:c576866e98d09d913958b3da578657203a3632c6c993f0e4a6e9b801cdfa6985",
+          "sha256:c7e8954356c21024f6d70e0085dc20d94ffeb51820432fe1cb55aac3f3a2374b",
+          "sha256:cc2a0c475c886eefd65046599628307c63457d7efbb21a8677da7e7ec2ad4e5e",
+          "sha256:e20af8cc4fa40fc689147371d147f37313949aaa5712f001367417aa115f8f96",
+          "sha256:eaa8e652298a371c21ceea18ccd50d56c83890760c5c33200e437a791f36116e",
+          "sha256:f00186fa217176114dfb6b8f4359e956d672ff64ec52d78085dbc8827aeaa161"
+        ],
+        "selected_observations_digest": "sha256:53886861652913763d206c6960ce5f85e33c66f7f252e370f09ca8a13a8f3e48",
+        "configuration_digest": "sha256:b39a67643d79c42f52fe4489025543ea9cf7b7c41accbe7fc39f51827fc01ea2",
+        "candidate_latitude_deg": 37.82346468829403,
+        "candidate_longitude_deg": -122.40668161978459,
+        "training_rms_hz": 109.31023820411703,
+        "evaluation_rms_hz": 121.05854957849304,
+        "jacobian_rank": 2,
+        "condition_number": 1.2522287111298152,
+        "boundary_hit": false,
+        "reasons": [],
+        "runtime_ms": 115.37803499959409
+      }
+    }
+  },
+  "finished_utc": "2026-09-29T13:53:47.605689+00:00"
+}
