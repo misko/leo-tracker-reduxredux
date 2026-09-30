@@ -44,6 +44,8 @@ Solution, Method—so it remains understandable when read alone.
 | How is a normal recording processed? | [Standard analysis pipeline](pipelines/standard-analysis.md) |
 | How should a scientific question be investigated? | [Research analysis pipeline](pipelines/research-analysis.md) |
 | Which reports support each conclusion? | [Research evidence ledger](research/evidence-ledger.md) |
+| Where is the latest dish-firmware reverse engineering? | [APK firmware workspace and RF receive trace](../starlink_firmware/apk_fw_v1/README.md) |
+| What did the Kutkov hardware and firmware review add? | [Source review and download catalog](research/oleg-kutkov/README.md) |
 | Where are the PLUTO+ ARM GLRT speed improvements, source, and validation results? | [ARM GLRT performance index](research/arm-glrt-performance.md) |
 | What did the complete DS7 benchmark achieve? | [DS7 results, visualizations, and ablation comparisons](../reports/2026_09_27_ds7_publication/README.md) |
 | Where is the original sealed DS7 report and evidence? | [Full88 original report](../reports/2026_09_27_ds7_full88/REPORT.md) |

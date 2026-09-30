@@ -59,6 +59,32 @@ generators, guides and licenses are downloaded. These are external numerical
 references, not runtime dependencies. MIT code / CC-BY-4.0 data are described
 in the supplied guide and license.
 
+### Current local availability, verified 2026-09-29
+
+The initial-download note above is historical. Subsequent bounded extraction
+has supplied full-band subsets under
+`reports/2026_09_28_sequence_semantics/local/`:
+
+| Cache | Verified array shape | Scope |
+| --- | --- | --- |
+| `full-reference-0-12.npz` | 13 × 301 × 1024 | Hard symbol estimates, complete frequency/time grid for 13 frames |
+| `full-soft-reference-0-12.npz` | 13 × 301 × 1024 | Soft symbol estimates over the same grid |
+| `header-reference-0-77.npz` | 78 × 6 × 1024 | Six early OFDM symbols over the full frequency grid for 78 frames |
+
+The raw D01 `exemplar250-257.bin` also remains on disk. These caches are symbol
+estimates, not decoded MAC bytes, and the 13-frame reference subset must not be
+confused with the separate raw slice at exemplar indices 250–257. We do not
+claim the complete 1,009-frame MAT file is locally available.
+
+Use the existing full-band soft/reference subsets and raw IQ as the primary
+material for testing firmware-derived SYSINFO/PNT control-message hypotheses.
+They remove the missing-frequency limitation of DS7+DS8+DS9, but not the unknown
+coding/interleaving/serialization or encryption-state questions. Validate any
+candidate by re-encoding and on unused frames before testing restricted bandwidth.
+Firmware is from a March 2026 build whereas these reference captures are from
+January 2025, so protocol compatibility also needs validation. No additional
+download or RF collection is needed to start. All numerical data remain ignored.
+
 ## D03 — StarLoc (cataloged; README downloaded)
 
 [Zenodo](https://zenodo.org/records/19043854),

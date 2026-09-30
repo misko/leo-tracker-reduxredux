@@ -25,6 +25,16 @@ def test_receiver_frequency_offset_changes_available_slots():
     assert len(np.intersect1d(ma, mb)) == 15
 
 
+@pytest.mark.parametrize("edge", ["upper", "lower"])
+def test_full_slice_includes_more_than_original_carriers_with_guard(edge):
+    original, pilots, center = geometry(edge)
+    bins = supported_bins(np.arange(2, 1022), center, 10000000, 111030)
+    frequency = np.fft.fftfreq(1024, 1 / 240e6)[bins] - center + 111030
+    assert np.all(abs(frequency) <= 4500000)
+    assert set(pilots).issubset(bins)
+    assert len(set(bins) - set(pilots) - set(original)) > 0
+
+
 def test_missing_positions_are_unknown_not_zero_bits():
     mapping = slots(np.array([496, 497]), np.arange(14, 78))
     truth = np.random.default_rng(42).choice([-1, 1], 60)

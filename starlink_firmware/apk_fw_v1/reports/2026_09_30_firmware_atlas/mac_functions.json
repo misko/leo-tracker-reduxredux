@@ -1,0 +1,1384 @@
+{
+  "functions": [
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xea8b0",
+      "analyst_name": "reader_init",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, const void *x1, size_t x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Initialize a bounded little-endian bit stream.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/parser_gate.py",
+      "method_sha256": "54f43c22d8ffb9f997ecfa9714d995c7c255df96954fc559274e672b064baa6b",
+      "entry_instructions": {
+        "label": "reader_init",
+        "address": "0xea8b0",
+        "file_offset": "0xea8b0",
+        "sha256": "13fccaae44a3532cec7c8a2aa4fe7cd92cc97242c8f0be7e886aa4986a6da42c",
+        "instructions": [
+          {
+            "address": "0xea8b0",
+            "mnemonic": "sub",
+            "operands": "sp, sp, #0x40"
+          },
+          {
+            "address": "0xea8b4",
+            "mnemonic": "cmp",
+            "operands": "x1, #0"
+          },
+          {
+            "address": "0xea8b8",
+            "mnemonic": "ccmp",
+            "operands": "w2, #0, #4, ne"
+          },
+          {
+            "address": "0xea8bc",
+            "mnemonic": "ccmp",
+            "operands": "x0, #0, #4, ne"
+          },
+          {
+            "address": "0xea8c0",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #0x10]"
+          },
+          {
+            "address": "0xea8c4",
+            "mnemonic": "add",
+            "operands": "x29, sp, #0x10"
+          },
+          {
+            "address": "0xea8c8",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x20]"
+          },
+          {
+            "address": "0xea8cc",
+            "mnemonic": "mov",
+            "operands": "w20, w2"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0xe9f40"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0xebf50"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xeada0",
+      "analyst_name": "read_bits",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, uint32_t *x1, uint32_t x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Reads requested bits into output; executed widths include 1..32.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/sysinfo_address_decode.py",
+      "method_sha256": "2ba4111dd5f6c28710b6276a004fff162970ca812c1dd2856611abc7c87d8dce",
+      "entry_instructions": {
+        "label": "read_bits",
+        "address": "0xeada0",
+        "file_offset": "0xeada0",
+        "sha256": "b01a139887d5dda45a026df92f803b5dfd4ca004de1a73eb5daef13cebf77de8",
+        "instructions": [
+          {
+            "address": "0xeada0",
+            "mnemonic": "sub",
+            "operands": "sp, sp, #0x40"
+          },
+          {
+            "address": "0xeada4",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #0x10]"
+          },
+          {
+            "address": "0xeada8",
+            "mnemonic": "add",
+            "operands": "x29, sp, #0x10"
+          },
+          {
+            "address": "0xeadac",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x20]"
+          },
+          {
+            "address": "0xeadb0",
+            "mnemonic": "mov",
+            "operands": "x19, x0"
+          },
+          {
+            "address": "0xeadb4",
+            "mnemonic": "str",
+            "operands": "x21, [sp, #0x30]"
+          },
+          {
+            "address": "0xeadb8",
+            "mnemonic": "mov",
+            "operands": "x21, x1"
+          },
+          {
+            "address": "0xeadbc",
+            "mnemonic": "cbz",
+            "operands": "x0, #0xeae88"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0xea430"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0xec440"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xd7990",
+      "analyst_name": "control_dispatch",
+      "entry_kind": "function",
+      "prototype": "status32(message *x0, buffer_wrapper *x1)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Dispatches control bytes; minimum SYSINFO test accepts eight bytes, rejects seven.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/sysinfo_dispatch_decode.py",
+      "method_sha256": "5eb88886f1551ba6b9efec1ddf4c91dadb58b788d2174fbd8b89a855f87a3ead",
+      "entry_instructions": {
+        "label": "control_dispatch",
+        "address": "0xd7990",
+        "file_offset": "0xd7990",
+        "sha256": "11098b6caf2b2f24a8fe6f7c711f0e834d4b5b3d398e234a9a3845e3b5303f92",
+        "instructions": [
+          {
+            "address": "0xd7990",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x70]!"
+          },
+          {
+            "address": "0xd7994",
+            "mnemonic": "adrp",
+            "operands": "x2, #0x17f000"
+          },
+          {
+            "address": "0xd7998",
+            "mnemonic": "ldr",
+            "operands": "x2, [x2, #0x8b8]"
+          },
+          {
+            "address": "0xd799c",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xd79a0",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xd79a4",
+            "mnemonic": "mov",
+            "operands": "x20, x0"
+          },
+          {
+            "address": "0xd79a8",
+            "mnemonic": "mov",
+            "operands": "x0, x1"
+          },
+          {
+            "address": "0xd79ac",
+            "mnemonic": "stp",
+            "operands": "x21, x22, [sp, #0x20]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xd6bb0",
+      "analyst_name": "sysinfo_body_decode",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, body *x1, uint32_t *remaining_x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Minimal body retains full uint32 SATAddr and two uint8 channel values.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/sysinfo_address_decode.py",
+      "method_sha256": "2ba4111dd5f6c28710b6276a004fff162970ca812c1dd2856611abc7c87d8dce",
+      "entry_instructions": {
+        "label": "sysinfo_body_decode",
+        "address": "0xd6bb0",
+        "file_offset": "0xd6bb0",
+        "sha256": "9ac82b6c105280a51f919cef830156bc4db904a9217e0ad48eb4d862b9ff880d",
+        "instructions": [
+          {
+            "address": "0xd6bb0",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x30]!"
+          },
+          {
+            "address": "0xd6bb4",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xd6bb8",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xd6bbc",
+            "mnemonic": "mov",
+            "operands": "x19, x1"
+          },
+          {
+            "address": "0xd6bc0",
+            "mnemonic": "add",
+            "operands": "x1, x1, #1"
+          },
+          {
+            "address": "0xd6bc4",
+            "mnemonic": "stp",
+            "operands": "x21, x22, [sp, #0x20]"
+          },
+          {
+            "address": "0xd6bc8",
+            "mnemonic": "mov",
+            "operands": "x22, x0"
+          },
+          {
+            "address": "0xd6bcc",
+            "mnemonic": "mov",
+            "operands": "x21, x2"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0xd6240",
+            "0xd6490",
+            "0xd68f0",
+            "0xd6b80"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0xd8250",
+            "0xd84a0",
+            "0xd8900",
+            "0xd8b90"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xd3bc0",
+      "analyst_name": "sysinfo_base_decode",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, base *x1, uint32_t *remaining_x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Address write can precede logical length failure.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/sysinfo_address_decode.py",
+      "method_sha256": "2ba4111dd5f6c28710b6276a004fff162970ca812c1dd2856611abc7c87d8dce",
+      "entry_instructions": {
+        "label": "sysinfo_base_decode",
+        "address": "0xd3bc0",
+        "file_offset": "0xd3bc0",
+        "sha256": "079af5259c694f8cdd8973588071bdc2574c1aec61bdec1f45a2991d66099175",
+        "instructions": [
+          {
+            "address": "0xd3bc0",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x40]!"
+          },
+          {
+            "address": "0xd3bc4",
+            "mnemonic": "adrp",
+            "operands": "x3, #0x17f000"
+          },
+          {
+            "address": "0xd3bc8",
+            "mnemonic": "ldr",
+            "operands": "x3, [x3, #0x8b8]"
+          },
+          {
+            "address": "0xd3bcc",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xd3bd0",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xd3bd4",
+            "mnemonic": "mov",
+            "operands": "x20, x1"
+          },
+          {
+            "address": "0xd3bd8",
+            "mnemonic": "mov",
+            "operands": "x19, x2"
+          },
+          {
+            "address": "0xd3bdc",
+            "mnemonic": "stp",
+            "operands": "x21, x22, [sp, #0x20]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xd90b0",
+      "analyst_name": "ephemeris_consumer",
+      "entry_kind": "function",
+      "prototype": "return_unknown(const packed_ephemeris *x0, expanded_ephemeris *x1)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Copies positions, widens float velocities and zero extends first timestamp word.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/sysinfo_consumer.py",
+      "method_sha256": "e143bfb96f11e5ffbe1ab1696f0a144e523f1f1539d722e2ed31a3a5e9571898",
+      "entry_instructions": {
+        "label": "ephemeris_consumer",
+        "address": "0xd90b0",
+        "file_offset": "0xd90b0",
+        "sha256": "03d4476a29f011b0b1d9edc15f36e509e81e45fa428a834526407f0c9254872c",
+        "instructions": [
+          {
+            "address": "0xd90b0",
+            "mnemonic": "ldr",
+            "operands": "d0, [x0]"
+          },
+          {
+            "address": "0xd90b4",
+            "mnemonic": "str",
+            "operands": "d0, [x1]"
+          },
+          {
+            "address": "0xd90b8",
+            "mnemonic": "ldr",
+            "operands": "d0, [x0, #8]"
+          },
+          {
+            "address": "0xd90bc",
+            "mnemonic": "str",
+            "operands": "d0, [x1, #8]"
+          },
+          {
+            "address": "0xd90c0",
+            "mnemonic": "ldr",
+            "operands": "d0, [x0, #0x10]"
+          },
+          {
+            "address": "0xd90c4",
+            "mnemonic": "str",
+            "operands": "d0, [x1, #0x10]"
+          },
+          {
+            "address": "0xd90c8",
+            "mnemonic": "ldr",
+            "operands": "s0, [x0, #0x18]"
+          },
+          {
+            "address": "0xd90cc",
+            "mnemonic": "fcvt",
+            "operands": "d0, s0"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0xd8740"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0xda750"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xd7f20",
+      "analyst_name": "variance_decode",
+      "entry_kind": "function",
+      "prototype": "double(uint16_t w0) [return d0]",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "u=0 => 0; u=0x3c00 => 0.0009765625; u=0xffff => NaN.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/pnt_variance_format.py",
+      "method_sha256": "83f305baeca5124071aaf427bc9fc0b2cedd193372c704dfe51079c98d84c7b7",
+      "entry_instructions": {
+        "label": "variance_decode",
+        "address": "0xd7f20",
+        "file_offset": "0xd7f20",
+        "sha256": "3a2a3842292298deb88a4efac97f8a84284d36ce61f88bb6214161072666b8e0",
+        "instructions": [
+          {
+            "address": "0xd7f20",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x20]!"
+          },
+          {
+            "address": "0xd7f24",
+            "mnemonic": "ubfx",
+            "operands": "x1, x0, #8, #8"
+          },
+          {
+            "address": "0xd7f28",
+            "mnemonic": "cmp",
+            "operands": "w1, #3"
+          },
+          {
+            "address": "0xd7f2c",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xd7f30",
+            "mnemonic": "str",
+            "operands": "x19, [sp, #0x10]"
+          },
+          {
+            "address": "0xd7f34",
+            "mnemonic": "and",
+            "operands": "w19, w0, #0x3ff"
+          },
+          {
+            "address": "0xd7f38",
+            "mnemonic": "b.hi",
+            "operands": "#0xd7f78"
+          },
+          {
+            "address": "0xd7f3c",
+            "mnemonic": "movi",
+            "operands": "d0, #0000000000000000"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0xd75b0"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0xd95c0"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xceff0",
+      "analyst_name": "ulmap_grant_decode",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, uint8_t out_x1[7], uint32_t *remaining_x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Seven bytes preserve SID16 and packed40; bit47 explicitly decoded, meaning unknown.",
+      "method": "reports/2026_09_30_firmware_atlas/mac_probe.py",
+      "method_sha256": "60ad31c4f7ae4046e13abe3e06bbdc8c727e61311a16718b8ee82a4c77c55f2b",
+      "entry_instructions": {
+        "label": "ulmap_grant_decode",
+        "address": "0xceff0",
+        "file_offset": "0xceff0",
+        "sha256": "f2564386a3ed17f02e34f44523d497a2f3ab56745adafcea59b09f746e0e1b1e",
+        "instructions": [
+          {
+            "address": "0xceff0",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x40]!"
+          },
+          {
+            "address": "0xceff4",
+            "mnemonic": "adrp",
+            "operands": "x3, #0x17f000"
+          },
+          {
+            "address": "0xceff8",
+            "mnemonic": "ldr",
+            "operands": "x3, [x3, #0x8b8]"
+          },
+          {
+            "address": "0xceffc",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xcf000",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xcf004",
+            "mnemonic": "mov",
+            "operands": "x20, x1"
+          },
+          {
+            "address": "0xcf008",
+            "mnemonic": "mov",
+            "operands": "x19, x2"
+          },
+          {
+            "address": "0xcf00c",
+            "mnemonic": "str",
+            "operands": "x21, [sp, #0x20]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xcee00",
+      "analyst_name": "ulmap_packed_decode",
+      "entry_kind": "function",
+      "prototype": "status32(reader *x0, uint8_t out_x1[5], uint32_t *remaining_x2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Reads widths 5,8,8,5,5,1,8; retains all 40 bits.",
+      "method": "reports/2026_09_30_firmware_atlas/mac_probe.py",
+      "method_sha256": "60ad31c4f7ae4046e13abe3e06bbdc8c727e61311a16718b8ee82a4c77c55f2b",
+      "entry_instructions": {
+        "label": "ulmap_packed_decode",
+        "address": "0xcee00",
+        "file_offset": "0xcee00",
+        "sha256": "1c5057704973d5cf30d8759b1e59effc121e847f757535beab75d4b9d968d9fb",
+        "instructions": [
+          {
+            "address": "0xcee00",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x40]!"
+          },
+          {
+            "address": "0xcee04",
+            "mnemonic": "adrp",
+            "operands": "x3, #0x17f000"
+          },
+          {
+            "address": "0xcee08",
+            "mnemonic": "ldr",
+            "operands": "x3, [x3, #0x8b8]"
+          },
+          {
+            "address": "0xcee0c",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xcee10",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xcee14",
+            "mnemonic": "mov",
+            "operands": "x19, x1"
+          },
+          {
+            "address": "0xcee18",
+            "mnemonic": "mov",
+            "operands": "x20, x2"
+          },
+          {
+            "address": "0xcee1c",
+            "mnemonic": "stp",
+            "operands": "x21, x22, [sp, #0x20]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0x51b90",
+      "analyst_name": "grant_validate",
+      "entry_kind": "function",
+      "prototype": "bool32(context *x0, grant *x1, uint32_t w2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Identity subcheck compares context addresses; other gates constrained by harness.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/grant_identity_context.py",
+      "method_sha256": "ebdfb6c3e810595caab07c38502f9410984064c7bd613ccc0f006d54a91ea39b",
+      "entry_instructions": {
+        "label": "grant_validate",
+        "address": "0x51b90",
+        "file_offset": "0x51b90",
+        "sha256": "6086be2458fd45eb7f211dfe09f21a1c85dcc4551b00e1ea4b049c2334ae4475",
+        "instructions": [
+          {
+            "address": "0x51b90",
+            "mnemonic": "sub",
+            "operands": "sp, sp, #0x90"
+          },
+          {
+            "address": "0x51b94",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #0x30]"
+          },
+          {
+            "address": "0x51b98",
+            "mnemonic": "add",
+            "operands": "x29, sp, #0x30"
+          },
+          {
+            "address": "0x51b9c",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x40]"
+          },
+          {
+            "address": "0x51ba0",
+            "mnemonic": "add",
+            "operands": "x20, x0, #0x40, lsl #12"
+          },
+          {
+            "address": "0x51ba4",
+            "mnemonic": "mov",
+            "operands": "x19, x0"
+          },
+          {
+            "address": "0x51ba8",
+            "mnemonic": "stp",
+            "operands": "x21, x22, [sp, #0x50]"
+          },
+          {
+            "address": "0x51bac",
+            "mnemonic": "stp",
+            "operands": "x23, x24, [sp, #0x60]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [
+            "0x569e0"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [
+            "0x588b0"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0xc6240",
+      "analyst_name": "prefix_parse",
+      "entry_kind": "function",
+      "prototype": "status32(meta *x0, table *x1, wrapper *x2, reader *x3, header *x4)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "count=0 selects no-entry; feature1 and state nonzero selects table.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/parser_gate.py",
+      "method_sha256": "54f43c22d8ffb9f997ecfa9714d995c7c255df96954fc559274e672b064baa6b",
+      "entry_instructions": {
+        "label": "prefix_parse",
+        "address": "0xc6240",
+        "file_offset": "0xc6240",
+        "sha256": "c574c97bd207e5cbc348b8ced5e97f6e5860e92141bfd85d79b577f6e83efd20",
+        "instructions": [
+          {
+            "address": "0xc6240",
+            "mnemonic": "sub",
+            "operands": "sp, sp, #0xb0"
+          },
+          {
+            "address": "0xc6244",
+            "mnemonic": "adrp",
+            "operands": "x5, #0x17f000"
+          },
+          {
+            "address": "0xc6248",
+            "mnemonic": "ldr",
+            "operands": "x5, [x5, #0x8b8]"
+          },
+          {
+            "address": "0xc624c",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #0x10]"
+          },
+          {
+            "address": "0xc6250",
+            "mnemonic": "add",
+            "operands": "x29, sp, #0x10"
+          },
+          {
+            "address": "0xc6254",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x20]"
+          },
+          {
+            "address": "0xc6258",
+            "mnemonic": "mov",
+            "operands": "x20, x3"
+          },
+          {
+            "address": "0xc625c",
+            "mnemonic": "mov",
+            "operands": "x19, x4"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "sha256": "9a41860c3623f6e484d46d17969e96f3dde97508644f7e4026792cdcb683cabe",
+      "address": "0x27168",
+      "analyst_name": "descriptor_integrity_window",
+      "entry_kind": "window",
+      "prototype": "register window; not a callable C prototype",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Descriptor status bits indicate CRC failures; no checksum polynomial recovered.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/descriptor_integrity.py",
+      "method_sha256": "dedc25bb6e08d782811cf9e496f39ae18facab746f68d54bdb9926dcf53ed99b",
+      "entry_instructions": {
+        "label": "descriptor_integrity_window",
+        "address": "0x27168",
+        "file_offset": "0x27168",
+        "sha256": "f0e2872c2708947ed4539878c3834082427bc5c645342f40c0ef38cf16c449e3",
+        "instructions": [
+          {
+            "address": "0x27168",
+            "mnemonic": "ldrb",
+            "operands": "w1, [sp, #0x8d]"
+          },
+          {
+            "address": "0x2716c",
+            "mnemonic": "ldr",
+            "operands": "w0, [sp, #0x90]"
+          },
+          {
+            "address": "0x27170",
+            "mnemonic": "str",
+            "operands": "w0, [x19, #0x10]"
+          },
+          {
+            "address": "0x27174",
+            "mnemonic": "strb",
+            "operands": "wzr, [x19, #0x16]"
+          },
+          {
+            "address": "0x27178",
+            "mnemonic": "ldrb",
+            "operands": "w25, [x19, #0x50]"
+          },
+          {
+            "address": "0x2717c",
+            "mnemonic": "ldr",
+            "operands": "w23, [x19, #0x4c]"
+          },
+          {
+            "address": "0x27180",
+            "mnemonic": "tbnz",
+            "operands": "w1, #0, #0x274b0"
+          },
+          {
+            "address": "0x27184",
+            "mnemonic": "tbnz",
+            "operands": "w1, #2, #0x274d8"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--rx_lmac_v4",
+          "sha256": "1bcf86ef675e32a406db6689a9947302968e9bc7043dc9cd1add022494626758",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--rx_lmac_catapult",
+          "sha256": "ac7bab22c26677f2b062ee2a4f4df23dbb8c964ef4748eb518ba836077264b78",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--tx_lmac",
+      "sha256": "a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6",
+      "address": "0xe1430",
+      "analyst_name": "write_bits",
+      "entry_kind": "function",
+      "prototype": "status32(writer *x0, uint32_t w1, uint32_t width_w2)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Executed writer uses least-significant-bit-first software serialization.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/prefix_execution.py",
+      "method_sha256": "4a8af324a2e419156a152fdf02cdb5a6d710e5a769aaf0e54dac4fd9d6dcdeda",
+      "entry_instructions": {
+        "label": "write_bits",
+        "address": "0xe1430",
+        "file_offset": "0xe1430",
+        "sha256": "ef2916b93dd11667ce542643df7070d270a384d751a36f9f0202fea3da5de2c9",
+        "instructions": [
+          {
+            "address": "0xe1430",
+            "mnemonic": "sub",
+            "operands": "sp, sp, #0x40"
+          },
+          {
+            "address": "0xe1434",
+            "mnemonic": "cmp",
+            "operands": "w2, #0x20"
+          },
+          {
+            "address": "0xe1438",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #0x10]"
+          },
+          {
+            "address": "0xe143c",
+            "mnemonic": "add",
+            "operands": "x29, sp, #0x10"
+          },
+          {
+            "address": "0xe1440",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x20]"
+          },
+          {
+            "address": "0xe1444",
+            "mnemonic": "mov",
+            "operands": "w20, #1"
+          },
+          {
+            "address": "0xe1448",
+            "mnemonic": "lsl",
+            "operands": "w4, w20, w2"
+          },
+          {
+            "address": "0xe144c",
+            "mnemonic": "sub",
+            "operands": "w4, w4, #1"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--tx_lmac_v4",
+          "sha256": "33323cd0c8ba566c688e0468de35bbce7dbfc51c280162a333f6407cd86f0f29",
+          "exact_32_byte_file_offsets": [
+            "0xe0730"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--tx_lmac_catapult",
+          "sha256": "9b61ea75be6877ba521f55100bfd02f671b0a91b04aaef3f1ca6dab4cec12426",
+          "exact_32_byte_file_offsets": [
+            "0xe2010"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--tx_lmac",
+      "sha256": "a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6",
+      "address": "0xc1bb0",
+      "analyst_name": "meh_pad_trailer",
+      "entry_kind": "function",
+      "prototype": "status32(writer *x0, uint32_t mode_w1, ignored_w2, uint32_t trailer_w3, uint32_t *bytes_x4)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "One-fill alignment then zero checksum reservation; no checksum computed here.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/meh_transmit_trailer.py",
+      "method_sha256": "19c5be876271bc06fdcf9ff861b74d0408d5a75179cf949ebf3d8dd5f3c986f0",
+      "entry_instructions": {
+        "label": "meh_pad_trailer",
+        "address": "0xc1bb0",
+        "file_offset": "0xc1bb0",
+        "sha256": "9bce82ef97a6c043d5a35bdf3ae27b3cc6712f7056a59663fdc1a69443f92f6a",
+        "instructions": [
+          {
+            "address": "0xc1bb0",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x50]!"
+          },
+          {
+            "address": "0xc1bb4",
+            "mnemonic": "and",
+            "operands": "w1, w1, #0xff"
+          },
+          {
+            "address": "0xc1bb8",
+            "mnemonic": "cmp",
+            "operands": "w1, #1"
+          },
+          {
+            "address": "0xc1bbc",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xc1bc0",
+            "mnemonic": "adrp",
+            "operands": "x1, #0x16f000"
+          },
+          {
+            "address": "0xc1bc4",
+            "mnemonic": "ldr",
+            "operands": "x1, [x1, #0x8b0]"
+          },
+          {
+            "address": "0xc1bc8",
+            "mnemonic": "stp",
+            "operands": "x19, x20, [sp, #0x10]"
+          },
+          {
+            "address": "0xc1bcc",
+            "mnemonic": "mov",
+            "operands": "w2, #8"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--tx_lmac_v4",
+          "sha256": "33323cd0c8ba566c688e0468de35bbce7dbfc51c280162a333f6407cd86f0f29",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--tx_lmac_catapult",
+          "sha256": "9b61ea75be6877ba521f55100bfd02f671b0a91b04aaef3f1ca6dab4cec12426",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--tx_lmac",
+      "sha256": "a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6",
+      "address": "0xe1940",
+      "analyst_name": "writer_flush",
+      "entry_kind": "function",
+      "prototype": "status32(writer *x0, uint8_t preserve_w1)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Flushes cached word; tested preserve=0 leaves reserved checksum zero.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/meh_transmit_trailer.py",
+      "method_sha256": "19c5be876271bc06fdcf9ff861b74d0408d5a75179cf949ebf3d8dd5f3c986f0",
+      "entry_instructions": {
+        "label": "writer_flush",
+        "address": "0xe1940",
+        "file_offset": "0xe1940",
+        "sha256": "8ee0a45bde6e7e2b30de740d0314b6c1c80118cf5e43f6829c9d93257c4b0530",
+        "instructions": [
+          {
+            "address": "0xe1940",
+            "mnemonic": "stp",
+            "operands": "x29, x30, [sp, #-0x20]!"
+          },
+          {
+            "address": "0xe1944",
+            "mnemonic": "mov",
+            "operands": "x29, sp"
+          },
+          {
+            "address": "0xe1948",
+            "mnemonic": "str",
+            "operands": "x19, [sp, #0x10]"
+          },
+          {
+            "address": "0xe194c",
+            "mnemonic": "mov",
+            "operands": "x19, x0"
+          },
+          {
+            "address": "0xe1950",
+            "mnemonic": "cbz",
+            "operands": "x0, #0xe199c"
+          },
+          {
+            "address": "0xe1954",
+            "mnemonic": "ldr",
+            "operands": "x0, [x0]"
+          },
+          {
+            "address": "0xe1958",
+            "mnemonic": "cbz",
+            "operands": "x0, #0xe19e8"
+          },
+          {
+            "address": "0xe195c",
+            "mnemonic": "ldr",
+            "operands": "x3, [x19, #8]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--tx_lmac_v4",
+          "sha256": "33323cd0c8ba566c688e0468de35bbce7dbfc51c280162a333f6407cd86f0f29",
+          "exact_32_byte_file_offsets": [
+            "0xe0c40"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--tx_lmac_catapult",
+          "sha256": "9b61ea75be6877ba521f55100bfd02f671b0a91b04aaef3f1ca6dab4cec12426",
+          "exact_32_byte_file_offsets": [
+            "0xe2520"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--tx_lmac",
+      "sha256": "a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6",
+      "address": "0xe7390",
+      "analyst_name": "buffer_join",
+      "entry_kind": "function",
+      "prototype": "buffer *(uint32_t tag_w0, uint16_t tag_w1, buffer *x2, buffer *x3)",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Links buffer metadata; inspected successful path does not calculate CRC.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/meh_transmit_trailer.py",
+      "method_sha256": "19c5be876271bc06fdcf9ff861b74d0408d5a75179cf949ebf3d8dd5f3c986f0",
+      "entry_instructions": {
+        "label": "buffer_join",
+        "address": "0xe7390",
+        "file_offset": "0xe7390",
+        "sha256": "7b60736f5b7e6c2e8494b0de910155197246233f5a6b4461ee468fb7527106ec",
+        "instructions": [
+          {
+            "address": "0xe7390",
+            "mnemonic": "cmp",
+            "operands": "x2, #0"
+          },
+          {
+            "address": "0xe7394",
+            "mnemonic": "ccmp",
+            "operands": "x3, #0, #4, ne"
+          },
+          {
+            "address": "0xe7398",
+            "mnemonic": "b.eq",
+            "operands": "#0xe73bc"
+          },
+          {
+            "address": "0xe739c",
+            "mnemonic": "ldr",
+            "operands": "x4, [x2, #0x28]"
+          },
+          {
+            "address": "0xe73a0",
+            "mnemonic": "strh",
+            "operands": "w1, [x2, #0x1c]"
+          },
+          {
+            "address": "0xe73a4",
+            "mnemonic": "str",
+            "operands": "w0, [x2, #0x38]"
+          },
+          {
+            "address": "0xe73a8",
+            "mnemonic": "mov",
+            "operands": "x0, x2"
+          },
+          {
+            "address": "0xe73ac",
+            "mnemonic": "str",
+            "operands": "x3, [x4]"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--tx_lmac_v4",
+          "sha256": "33323cd0c8ba566c688e0468de35bbce7dbfc51c280162a333f6407cd86f0f29",
+          "exact_32_byte_file_offsets": [
+            "0xe6690"
+          ],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--tx_lmac_catapult",
+          "sha256": "9b61ea75be6877ba521f55100bfd02f671b0a91b04aaef3f1ca6dab4cec12426",
+          "exact_32_byte_file_offsets": [
+            "0xe7f70"
+          ],
+          "semantics_transferred": false
+        }
+      ]
+    },
+    {
+      "binary": "catson-bin--tx_lmac",
+      "sha256": "a92181989c19e4609692ed38b54b7e063871fed8e45d22c6ded041aaec9532d6",
+      "address": "0x741b8",
+      "analyst_name": "descriptor_length_window",
+      "entry_kind": "window",
+      "prototype": "register window; not a callable C prototype",
+      "prototype_confidence": "partial ABI; analyst inferred; named types opaque",
+      "behavior": "Excludes mode-dependent trailer counts from descriptor lengths.",
+      "method": "reports/2026_09_29_firmware_cluster_reaudit/transmit_descriptor_lengths.py",
+      "method_sha256": "be7bd40af3e9c35795f3c3740efb4fb07f5af71dc9d6f7b5a2438952a77ff7d6",
+      "entry_instructions": {
+        "label": "descriptor_length_window",
+        "address": "0x741b8",
+        "file_offset": "0x741b8",
+        "sha256": "f41b91e3954b47722393055704978d556e73668885a1387de2da309a9755f65d",
+        "instructions": [
+          {
+            "address": "0x741b8",
+            "mnemonic": "cbnz",
+            "operands": "w21, #0x741f4"
+          },
+          {
+            "address": "0x741bc",
+            "mnemonic": "cmp",
+            "operands": "w28, #1"
+          },
+          {
+            "address": "0x741c0",
+            "mnemonic": "b.eq",
+            "operands": "#0x7431c"
+          },
+          {
+            "address": "0x741c4",
+            "mnemonic": "sub",
+            "operands": "w1, w1, #1"
+          },
+          {
+            "address": "0x741c8",
+            "mnemonic": "str",
+            "operands": "w1, [x20, #0x54]"
+          },
+          {
+            "address": "0x741cc",
+            "mnemonic": "add",
+            "operands": "w21, w21, #1"
+          },
+          {
+            "address": "0x741d0",
+            "mnemonic": "add",
+            "operands": "w26, w26, w1"
+          },
+          {
+            "address": "0x741d4",
+            "mnemonic": "mov",
+            "operands": "x0, x23"
+          }
+        ]
+      },
+      "variants": [
+        {
+          "binary": "catson-bin--tx_lmac_v4",
+          "sha256": "33323cd0c8ba566c688e0468de35bbce7dbfc51c280162a333f6407cd86f0f29",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        },
+        {
+          "binary": "catson-bin--tx_lmac_catapult",
+          "sha256": "9b61ea75be6877ba521f55100bfd02f671b0a91b04aaef3f1ca6dab4cec12426",
+          "exact_32_byte_file_offsets": [],
+          "semantics_transferred": false
+        }
+      ]
+    }
+  ],
+  "checked_grant_callgraph": [
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xceff0",
+      "callsite": "0xcf02c",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xceff0",
+      "callsite": "0xcf060",
+      "target": "0xcee00",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xceff0",
+      "callsite": "0xcf090",
+      "target": "0x221f0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcee40",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcee78",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xceeb0",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xceee8",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcef20",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcef58",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcef8c",
+      "target": "0xeada0",
+      "evidence": "direct BL in complete bounded decoder body"
+    },
+    {
+      "binary": "catson-bin--rx_lmac",
+      "caller": "0xcee00",
+      "callsite": "0xcefe4",
+      "target": "0x221f0",
+      "evidence": "direct BL in complete bounded decoder body"
+    }
+  ],
+  "limitation": "Curated high-value entries, not exhaustive. Exact 32-byte matches are discovery candidates, not variant equivalence. Address spaces belong to specific binary hashes. Full graph and candidate function inventory are supplied separately by the atlas inventory."
+}

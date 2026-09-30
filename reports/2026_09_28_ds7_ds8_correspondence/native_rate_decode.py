@@ -56,13 +56,17 @@ def calibrate(sy, pilot, pilot_bins, fitted_slope=None):
     )
 
 
-def recover(row, folder, frame_limit=24):
+def recover(row, folder, frame_limit=24, *, all_supported_bins=False):
     rate = row["sample_rate_hz"]
     edge = row["probe"]["edge"]
     bins, allpilots, center = geometry(edge)
     sss, template, pilot = references(edge)
     c = row["candidate"]
     cfo = c["fractional_tracking_cfo_hz"]
+    if all_supported_bins:
+        # Atlas mode retains pilots and every supported in-channel carrier.
+        # The default scientific assay and its original carrier set are unchanged.
+        bins = np.arange(2, 1022)
     bins = supported_bins(bins, center, rate, cfo)
     pb = supported_bins(allpilots, center, rate, cfo)
     pilot = pilot[:, np.isin(allpilots, pb)]
@@ -111,6 +115,8 @@ def recover(row, folder, frame_limit=24):
         evaluation_frames=evaluation.tolist(),
         diagnostics=[d for _, d in calibrated],
     )
+    if all_supported_bins:
+        metadata["all_supported_bins"] = True
     return bins, z, metadata
 
 

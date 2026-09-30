@@ -26,6 +26,8 @@ Downloads are reference material, never application runtime dependencies.
 
 ## Contents
 
+- [Kutkov hardware/firmware review and source archive — 2026-09-30](../oleg-kutkov/README.md)
+- [Canonical APK-derived dish-firmware research workspace](../../../starlink_firmware/apk_fw_v1/README.md)
 - [Expanded technical review — 2026-09-28](broad-review-2026-09-28.md):
   navigation/receivers, networking, Direct-to-Cell, security, astronomy, and environment.
 - [Expanded source index and local PDF links](source-index-2026-09-28.md)
