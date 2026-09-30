@@ -1,0 +1,11 @@
+# Ten methods on individual DS10 scans
+
+Select eight entries from the existing chronological DS10 N24 panel at indices floor(i*23/7), i=0..7. Use identical unchanged inputs for every method, never pooled position/timing estimates as starts. This is a reused development pilot, not all 187 DS10 scans or independent confirmation.
+
+Methods: independent Student-t, shared-scale zero-correlation, shared-scale 10-second correlation, frequency contrasts, q020, q020 with 10-second correlation, shared-scale 40-degree cones, q020 40-degree cones without temporal correlation, q020 shared candidate slope SD0.5 Hz/s, q020 shared curvature SD0.1 Hz/s². These are ten established contenders/controls, not ten proven improvements. Hyperparameters stay fixed.
+
+Each fits one position and one scan timing from starts (-2,0,0), (0,0,0), (2,0,0), units km/km/s; bounds ±12km and ±5s. Select highest qualified training score. Require solver success, no boundary within .001, max gradient <=.01 and finite-difference gradient discrepancy <=.02. Slope/curvature groups use only this scan's q020 training-selected candidates; no multi-scan fitted information. Require signal-weight product >=.5 and at least two tracks with both receivers at identical RF. Curvature additionally requires 8 training observations spanning 10 seconds. Verify numerical quadrature at 128 versus 256 nodes within .02 score/held and .01 gradient; preserve failures.
+
+Each scan/method process has a 90-second cap, one numerical thread, maxiter100/maxfun160 per start. Preserve failures and timeouts, without replacing scans or silently expanding budgets. Input and dependency failures are reported separately from scientific qualification. Primary metrics: qualified count, median/p90/min/max reference distance among qualified fits, below-1km count over all attempted scans, runtime and per-scan table. Also compute common-q020 held score at each fitted point as a common-model diagnostic; this is not the native score of each model or a new independent holdout. Report matched-complete medians separately if failures change populations.
+
+Reference is the same unsurveyed roof coordinate; configured center is 809m away. Do not choose a method or start using reference distance. No RF or raw-IQ processing, production changes or remote publication.
