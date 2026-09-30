@@ -1,5 +1,10 @@
 # ARM GLRT performance: implementation and evidence index
 
+The [current ARM implementation and standard pipeline comparison](../../reports/2026_09_30_arm_standard_comparison/README.md)
+summarizes runtime, exact native recovery, frozen standard-reference recovery,
+and the remaining gap to deployed fractional analysis. Start there for an
+overview of what the real-time result does and does not establish.
+
 ## Sparse native headroom — 2026-09-29
 
 The [sparse-dwell qualification report](../../reports/2026_09_29_arm_sparse_headroom/README.md)
