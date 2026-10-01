@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [new DS10/DS11 cold single-scan comparisons](CROSS_DATASET_COLD_SINGLE_RESULTS.md) both pass: one start takes 22.31/22.90 s versus 33.55/25.29 s for three starts, with identical or sub-centimeter geographic error differences. Acquisition and saved-fit equivalence checks pass. Pair comparisons are the next bounded stage; these two timing observations do not establish a general speed guarantee.
+
 The [scan-discrepancy pilot](SCAN_DISCREPANCY_PILOT_RESULTS.md) is complete: all eighteen outcomes pass audits, singles are invariant, DS9 changes negligibly, DS10 worsens and DS11 improves. Retain the baseline and stop this expansion. The [model derivation](SCAN_DISCREPANCY_MODEL.md), [numerical prerequisites](SCAN_DISCREPANCY_PREREQUISITES.md) and [frozen plan](SCAN_DISCREPANCY_FIT_PLAN.md) remain separate evidence; no dataset-specific model selection or calibrated uncertainty claim follows.
 
 The [equal-weight constituent ablation](CENTROID_ABLATION_RESULTS.md) confirms the value of joint fitting: on matched available windows, averaging independent scan locations worsens pair median error from 1,519 to 1,695 m and quad median from 1,136 to 1,547 m. It also loses availability when any constituent fails. This no-refit control does not replace the baseline or justify calibrated uncertainty from scan agreement.
