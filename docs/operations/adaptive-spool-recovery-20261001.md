@@ -41,3 +41,24 @@ adaptive storage, queued storage, host-adaptive storage and history. The tests
 cover an abandoned destination followed by successful import, preservation of
 partial bytes, rejection of live/published/symlinked destinations, mismatched
 same-ID sources, retry fairness, interrupted retirement and nonzero failure exit.
+
+## Production validation
+
+The bounded `leo-spool-recovery-canary.service` ran from 01:43:25 to 01:45:00 UTC
+on October 1 and successfully published `scan-fw-e548a92bfe29a8bc` (2,216 visits).
+Its aggregate raw-IQ digest matches DS12's frozen archive metadata. The partial
+RAID directory was retained under a `.incomplete-...` name. The source was retired
+only after publication and ledger checkpoint; NVMe available space rose from
+2,576,326,656 to 6,295,003,136 bytes (about 3.7 GB recovered).
+
+The recovery timer was resumed with two-item batches. The next blocked recording
+was observed actively copying chunks. The backlog is not yet fully drained;
+unsealed partials and unsupported captures remain outside automatic recovery.
+
+The operator's earlier RF restart request is configured with equal 2.5/10 MS/s
+selection and 120/120 ms dwells, plus a tested free-space guard. At 01:48:07 UTC
+the first attempt deferred before RF access: 6,295,003,136 bytes available versus
+26,147,483,648 required for the selected 10 MS/s rate. The capture timer is stopped
+automatically at 02:11:07 UTC, with a hard timer/service stop at 02:18:07 UTC.
+The capture timer is still disabled for boot activation. Fifteen capture-policy
+and preflight tests passed; no change of rate is made merely to fit free space.
