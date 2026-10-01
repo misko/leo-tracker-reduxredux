@@ -1,0 +1,69 @@
+{
+  "launch": {
+    "unit_id": "DS10-B01-S1",
+    "command": [
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/run_covariance_pilot.py",
+      "DS10-B01-S1",
+      "--worker",
+      "--limit",
+      "matched_white",
+      "--seconds",
+      "50.346916880924255"
+    ],
+    "pid": 2194482,
+    "started_utc": "2026-10-01T20:12:08.768873+00:00",
+    "finished_utc": "2026-10-01T20:12:13.102689+00:00",
+    "elapsed_seconds": 43.986684584990144,
+    "external_limit_seconds": 50.346916880924255,
+    "timed_out": false,
+    "returncode": 0,
+    "within_budget": true,
+    "incremental_seconds": 4.333601465914398,
+    "original_seconds": 39.653083119075745,
+    "freeze_sha256": "sha256:e5329088cc3640bae2d5121fef908fa5099b96ee41283f2721385606dc7cecd5",
+    "receipt_sha256": "sha256:6c778b6aed511d1e1606f451dc09d1dfaf4d9ce3fab5fa6c9135f8f87be1e3a8"
+  },
+  "audit_launch": {
+    "unit_id": "audit",
+    "command": [
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/evaluate_covariance_pilot.py",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/covariance-pilot-v1/DS10-B01-S1/matched_white"
+    ],
+    "pid": 2194552,
+    "started_utc": "2026-10-01T20:12:13.103057+00:00",
+    "finished_utc": "2026-10-01T20:12:18.760956+00:00",
+    "elapsed_seconds": 5.657580561004579,
+    "external_limit_seconds": 90,
+    "timed_out": false,
+    "returncode": 0,
+    "within_budget": true
+  },
+  "evaluation": {
+    "rows": [
+      {
+        "unit": "DS10-B01-S1",
+        "size": 1,
+        "block_id": "DS10-B01",
+        "scans": [
+          "DS10-F001"
+        ],
+        "accepted": true,
+        "failures": [],
+        "fit_status": "converged_local_mode",
+        "runtime_s": 43.986684584990144,
+        "cpu_s": 43.187694,
+        "gradient_error": 8.077328490774249e-05,
+        "numeric_decrement_squared": 5.491880407908411e-09,
+        "receipt_sha256": "sha256:6c778b6aed511d1e1606f451dc09d1dfaf4d9ce3fab5fa6c9135f8f87be1e3a8",
+        "audit_seconds": 3.196055097039789,
+        "error_m": 929.0695200658103
+      }
+    ],
+    "freeze_sha256": "sha256:e5329088cc3640bae2d5121fef908fa5099b96ee41283f2721385606dc7cecd5",
+    "evaluator_sha256": "sha256:0085cb00fd39a54f77d6fe4205bc7c0f574784277e44e1006f57b11007103308",
+    "reference_sha256": "sha256:32a751a38cf6110c8017a53c92bf06f41dfd05bf59af941630480eff02296822",
+    "qualification": "Variant audit; infer timing scope and constituent costs from sealed launch receipts. Reference scoring follows numerical decisions. Development evidence only."
+  }
+}
