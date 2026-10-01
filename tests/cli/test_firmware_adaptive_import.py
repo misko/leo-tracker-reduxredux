@@ -244,7 +244,8 @@ def test_radio20_four_rate_protocol_three_receipt_is_versioned_without_relaxing_
     assert receipt.plan.geometry.gain_mode.value == "manual"
 
 
-def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
+@pytest.mark.parametrize("abandoned_destination", [False, True])
+def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path, abandoned_destination) -> None:
     rate = 10_000_000
     dwell_ms = 360
     archive = tmp_path / "scan-fw-variable-long"
@@ -271,6 +272,11 @@ def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
     bulk = tmp_path / "bulk"
     bulk.mkdir()
 
+    if abandoned_destination:
+        destination = bulk / "scanner-adaptive-recordings" / value["session_id"]
+        destination.mkdir(parents=True)
+        (destination / "old-partial").write_bytes(b"preserve incomplete import")
+
     session_id = importer.import_archive(archive, bulk)
     store = AdaptiveHopIqStore(bulk, read_only=True)
     try:
@@ -281,6 +287,21 @@ def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
         assert manifest.chunks[0].uncompressed_bytes < 64 * 1024 * 1024
         assert manifest.compression.policy_id == "adaptive-one-visit-chunks-v1"
         assert manifest.compression.target_uncompressed_bytes == len(raw)
+        if abandoned_destination:
+            preserved = list(
+                (bulk / "scanner-adaptive-recordings").glob(".incomplete-*/old-partial")
+            )
+            assert len(preserved) == 1
+            assert preserved[0].read_bytes() == b"preserve incomplete import"
+        # A matching completed import can be retried; a conflicting same-ID
+        # archive must never authorize deletion of the source.
+        value["uncompressed_sha256"] = manifest.uncompressed_sha256
+        (archive / "manifest.json").write_text(json.dumps(value))
+        assert importer.import_archive(archive, bulk) == session_id
+        value["uncompressed_sha256"] = "sha256:" + "0" * 64
+        (archive / "manifest.json").write_text(json.dumps(value))
+        with pytest.raises(ValueError, match="does not match"):
+            importer.import_archive(archive, bulk)
     finally:
         store.close()
 

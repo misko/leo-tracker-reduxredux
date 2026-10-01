@@ -265,6 +265,63 @@ def test_firmware_reconciliation_rejects_nonpositive_bound(
         subject.transfer_pending(tmp_path / "bulk", tmp_path / "spool", maximum_firmware_imports=0)
 
 
+def test_repeated_failures_do_not_starve_other_archives(tmp_path, monkeypatch):
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    for name in ("a", "b", "c", "d"):
+        _archive(spool, f"scan-fw-{name}", name.encode())
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+    calls = []
+
+    def importer(archive, _bulk):
+        calls.append(archive.name)
+        raise RuntimeError("persistent failure")
+
+    for _ in range(2):
+        subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=2)
+    assert len(calls) == len(set(calls)) == 4
+    assert len(list((spool / "v052-adaptive").glob("*/manifest.json"))) == 4
+    attempts = subject._load_attempts(spool / subject._RETRY_NAME)
+    assert all(v["attempts"] == 1 for v in attempts.values())
+    subject.transfer_pending(bulk, spool, importer=importer, maximum_firmware_imports=2)
+    assert len(calls) == 6
+
+
+def test_checkpointed_but_unretired_source_is_reverified(tmp_path, monkeypatch):
+    spool, bulk = tmp_path / "spool", tmp_path / "bulk"
+    bulk.mkdir()
+    archive = _archive(spool, "scan-fw-a", b"a")
+    monkeypatch.setattr(subject, "AdaptiveHopIqStore", _Store)
+    calls = []
+
+    def importer(path, _bulk):
+        calls.append(path.name)
+        return "imported", path.name
+
+    retire = subject._retire_imported_archive
+    monkeypatch.setattr(subject, "_retire_imported_archive", lambda *args: None)
+    subject.transfer_pending(bulk, spool, importer=importer)
+    assert archive.exists()
+    monkeypatch.setattr(subject, "_retire_imported_archive", retire)
+    subject.transfer_pending(bulk, spool, importer=importer)
+    assert calls == ["scan-fw-a", "scan-fw-a"]
+    assert not archive.exists()
+
+
+def test_cli_reports_import_failure_as_failure(tmp_path, monkeypatch, capsys):
+    import sys
+    monkeypatch.setattr(
+        sys, "argv", ["transfer", "--bulk-root", str(tmp_path), "--spool-root", str(tmp_path)]
+    )
+    monkeypatch.setattr(
+        subject, "transfer_pending", lambda *args, **kwargs: subject.TransferSummary(
+            (), (), (), 0, firmware_failed=({"session_id": "scan-fw-failed", "reason": "failed"},)
+        )
+    )
+    assert subject.main() == 1
+    assert json.loads(capsys.readouterr().out)["firmware_failed_count"] == 1
+
+
 def test_manifest_digest_reads_in_bounded_chunks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
