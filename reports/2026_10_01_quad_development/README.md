@@ -1,6 +1,6 @@
 # Expanded quad development set
 
-The [scan-discrepancy model derivation](SCAN_DISCREPANCY_MODEL.md) now has four passing algebra tests and a reference-free local sensitivity figure. It can soften conflicting scan likelihoods but cannot identify shared bias. No raw-data refit, width selection or geographic improvement is claimed; an exact port/Jacobian gate is next.
+The [scan-discrepancy model derivation](SCAN_DISCREPANCY_MODEL.md) has four passing algebra tests and a reference-free local sensitivity figure. Its [exact port/Jacobian prerequisites](SCAN_DISCREPANCY_PREREQUISITES.md) now pass on all nine first single/pair/quad windows, with three additional unit tests. It can soften conflicting scan likelihoods but cannot identify shared bias. No raw-data refit or geographic improvement is claimed; the next [fixed-width pilot](SCAN_DISCREPANCY_FIT_PLAN.md) compares unchanged warm controls with a 1 km discrepancy prior.
 
 The [equal-weight constituent ablation](CENTROID_ABLATION_RESULTS.md) confirms the value of joint fitting: on matched available windows, averaging independent scan locations worsens pair median error from 1,519 to 1,695 m and quad median from 1,136 to 1,547 m. It also loses availability when any constituent fails. This no-refit control does not replace the baseline or justify calibrated uncertainty from scan agreement.
 
