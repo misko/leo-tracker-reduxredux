@@ -1,6 +1,6 @@
 # Expanded quad development set
 
-Latest results: [eleven-block baseline and local uncertainty audit](PILOT_UPDATE_10.md). Numerical audits accept 75 of 77 baseline windows. Median accepted baseline errors are 1,802 / 1,279 / 858 m for singles / pairs / quads. On the frozen nine-block subset, nominal 95% local ellipses cover only 42.9% / 44.4% / 62.5% of accepted fits; these are not calibrated error bounds. The constituent-start runner passes real-input preflight but has not yet fitted locations. This is partial development evidence. The [clock ablation and acquisition experiment](PILOT_UPDATE_04.md) retain independent scan clocks as the baseline.
+Latest results: [twelve-block baseline and experiment readiness](PILOT_UPDATE_11.md). Numerical audits accept 81 of 84 baseline windows. Median accepted errors are 1,845 / 1,327 / 953 m for singles / pairs / quads. On the frozen nine-block subset, nominal 95% local ellipses cover only 42.9% / 44.4% / 62.5% of accepted fits; these are not calibrated error bounds. Constituent-start and cold acquisition runners are prepared but have not yet fitted locations. This is partial development evidence. The [clock ablation and acquisition experiment](PILOT_UPDATE_04.md) retain independent scan clocks as the baseline.
 
 Frozen 64-scan membership: 16 non-overlapping blocks of four consecutive recordings, selected using metadata only. This adds 52 scans beyond the original 64-scan benchmark and reuses 12; together the two panels contain 116 unique scans. The original benchmark is preserved. DS12 remains outside this development selection.
 
@@ -36,7 +36,7 @@ All selected blocks span 26.20–26.27 minutes. Four approximately five-minute c
 
 Eight selector tests pass, covering missing captures, long gaps, overlapping captures, hardware changes, deterministic selection, duplicate rejection, nested units and real-data counts. Membership and input/source bindings are hash sealed in [selection.json](selection.json) and [selection.sha256](selection.sha256).
 
-Eleven blocks are evaluated, with correlated nested windows. See [PILOT_REPORT.md](PILOT_REPORT.md) for the original model and [PILOT_UPDATE_10.md](PILOT_UPDATE_10.md) for current results. All 64 scans have admitted observation/orbit inputs. Capture-bound operator pose companions were verified for all 64 scans, reporting constant location within each quad; this is not physical movement sensing or a survey.
+Twelve blocks are evaluated, with correlated nested windows. See [PILOT_REPORT.md](PILOT_REPORT.md) for the original model and [PILOT_UPDATE_11.md](PILOT_UPDATE_11.md) for current results. All 64 scans have admitted observation/orbit inputs. Capture-bound operator pose companions were verified for all 64 scans, reporting constant location within each quad; this is not physical movement sensing or a survey.
 
 [PROTOCOL.md](PROTOCOL.md) is the original frozen execution plan; its final “Current stage” paragraph records the state at selection time. All windows restart from the original uniform Sacramento prior and fixed 100 ft MSL height. Input or numerical failures remain in the selected population without replacement. The common-clock pilot is complete; broader panel evaluation and cold-fit validation of the faster acquisition remain pending.
 
