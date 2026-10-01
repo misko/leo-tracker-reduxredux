@@ -42,6 +42,59 @@ def session_path(tmp_path, session_id="adaptive-storage-test"):
     return tmp_path / "scanner-adaptive-recordings" / session_id
 
 
+def test_recovery_preserves_aborted_chunks_but_refuses_live_writer(tmp_path):
+    receipt = receipt_fixture(count=10)
+    store = AdaptiveHopIqStore(tmp_path)
+    writer = store.begin(receipt.session_id, receipt.plan)
+    for index in range(8):
+        writer.append(block_fixture(receipt, index))
+    with pytest.raises(BundleStateError, match="active writer"):
+        store.quarantine_unpublished_session(receipt.session_id)
+    writer.abort()
+    old = session_path(tmp_path, receipt.session_id)
+    before = {p.name: p.read_bytes() for p in old.iterdir()}
+    assert before
+    name = store.quarantine_unpublished_session(receipt.session_id)
+    assert name.startswith(".incomplete-")
+    preserved = old.parent / name
+    assert {p.name: p.read_bytes() for p in preserved.iterdir()} == before
+    assert not old.exists()
+    assert store.session_ids() == ()
+    assert store.quarantine_unpublished_session(receipt.session_id) is None
+    retry = store.begin(receipt.session_id, receipt.plan)
+    retry.abort()
+    store.close()
+
+
+@pytest.mark.parametrize("manifest", [b"not valid JSON", b"{}"])
+def test_recovery_never_moves_any_published_manifest(tmp_path, manifest):
+    store = AdaptiveHopIqStore(tmp_path)
+    path = session_path(tmp_path)
+    path.mkdir(parents=True)
+    (path / "manifest.json").write_bytes(manifest)
+    with pytest.raises(BundleStateError, match="published manifest"):
+        store.quarantine_unpublished_session(path.name)
+    assert (path / "manifest.json").read_bytes() == manifest
+    store.close()
+
+
+def test_recovery_refuses_symlinks_and_read_only_store(tmp_path):
+    store = AdaptiveHopIqStore(tmp_path)
+    destination = session_path(tmp_path)
+    destination.parent.mkdir()
+    outside = tmp_path / "unrelated"
+    outside.mkdir()
+    destination.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="symlink"):
+        store.quarantine_unpublished_session(destination.name)
+    assert destination.is_symlink() and outside.is_dir()
+    store.close()
+    store = AdaptiveHopIqStore(tmp_path, read_only=True)
+    with pytest.raises(BundleStateError, match="writable"):
+        store.quarantine_unpublished_session(destination.name)
+    store.close()
+
+
 def test_history_indexes_timestamp_beyond_small_prefix_without_full_decode(tmp_path, monkeypatch):
     store, published = publish(tmp_path, count=0)
     path = session_path(tmp_path) / "manifest.json"

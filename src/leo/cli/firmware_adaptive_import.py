@@ -687,9 +687,19 @@ def import_archive(archive: Path, bulk_root: Path) -> str:
     store = AdaptiveHopIqStore(bulk_root)
     try:
         try:
-            return store.inspect(receipt.session_id).session_id
+            existing = store.inspect(receipt.session_id)
         except BundleNotFoundError:
-            pass
+            store.quarantine_unpublished_session(receipt.session_id)
+        else:
+            # A reused ID alone does not authorize retiring the only source IQ.
+            if (
+                existing.manifest.receipt != receipt
+                or existing.manifest.uncompressed_sha256 != document.get("uncompressed_sha256")
+            ):
+                raise ValueError("published recording does not match sealed source archive")
+            for index in range(len(existing.manifest.chunks)):
+                store.read_chunk_ci16(existing, index)
+            return existing.session_id
         writer = store.begin(
             receipt.session_id,
             receipt.plan,

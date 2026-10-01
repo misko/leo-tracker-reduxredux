@@ -9,11 +9,13 @@ local root. Readers never create paths and never need radio or PPU imports.
 from __future__ import annotations
 
 import ctypes
+import fcntl
 import hashlib
 import os
 import re
 import stat
 import time
+import uuid
 from collections.abc import Iterator
 from contextlib import suppress
 from dataclasses import dataclass
@@ -696,6 +698,8 @@ class AdaptiveHopIqStore:
         finally:
             namespace.close()
         try:
+            # Recovery must never move a directory with an active writer.
+            fcntl.flock(directory.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             writer = AdaptiveHopSessionWriter(
                 directory, session_id, plan, receiver_geometry=receiver_geometry
             )
@@ -705,6 +709,45 @@ class AdaptiveHopIqStore:
         except BaseException:
             directory.close()
             raise
+
+    def quarantine_unpublished_session(self, session_id: str) -> str | None:
+        """Preserve an abandoned destination before retrying a sealed import.
+
+        Caller must possess the source archive. A published manifest (even an
+        invalid one), live writer, or symlink is never displaced. Hidden names
+        remain in the local store as evidence and are not recording IDs.
+        """
+        if self._read_only or self._spool_root is not None:
+            raise BundleStateError("recovery requires a writable destination store")
+        _identifier(session_id)
+        try:
+            directory = self._session(session_id)
+        except BundleNotFoundError:
+            return None
+        try:
+            try:
+                fcntl.flock(directory.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise BundleStateError("cannot recover an active writer") from error
+            try:
+                os.stat("manifest.json", dir_fd=directory.fileno(), follow_symlinks=False)
+            except FileNotFoundError:
+                pass
+            else:
+                raise BundleStateError("cannot quarantine a published manifest")
+            namespace = self._root.child(_NAMESPACE)
+            try:
+                info = os.stat(session_id, dir_fd=namespace.fileno(), follow_symlinks=False)
+                if (info.st_dev, info.st_ino) != directory.identity:
+                    raise BundleStateError("recovery destination identity changed")
+                name = f".incomplete-{session_id}-{uuid.uuid4().hex}"
+                _rename_noreplace(namespace.fileno(), session_id.encode(), name.encode())
+                os.fsync(namespace.fileno())
+                return name
+            finally:
+                namespace.close()
+        finally:
+            directory.close()
 
     def _session(self, session_id: str) -> PinnedLocalRoot:
         _identifier(session_id)

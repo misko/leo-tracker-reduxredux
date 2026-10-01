@@ -10,6 +10,7 @@ import json
 import multiprocessing
 import os
 import shutil
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
@@ -25,6 +26,7 @@ from leo.storage.adaptive_hop import AdaptiveHopIqStore
 
 _LEDGER_NAME = ".adaptive-spool-transfer.v1.json"
 _LOCK_NAME = ".adaptive-spool-transfer.lock"
+_RETRY_NAME = ".adaptive-spool-attempts.v1.json"
 _DIGEST_CHUNK_BYTES = 1024 * 1024
 _IMPORT_TIMEOUT_SECONDS = 30 * 60.0
 _CHILD_EXIT_GRACE_SECONDS = 5.0
@@ -141,6 +143,26 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+def _load_attempts(path: Path) -> dict[str, dict]:
+    try:
+        document = json.loads(path.read_bytes())
+    except FileNotFoundError:
+        return {}
+    if document.get("schema_version") != 1 or not isinstance(document.get("entries"), dict):
+        raise ValueError("invalid spool attempt state")
+    for entry in document["entries"].values():
+        if (
+            not isinstance(entry, dict)
+            or not _is_digest(entry.get("manifest_sha256"))
+            or not _is_digest(entry.get("importer_sha256"))
+            or type(entry.get("attempts")) is not int
+            or entry["attempts"] < 1
+            or type(entry.get("last_attempt_ns")) is not int
+        ):
+            raise ValueError("invalid spool attempt entry")
+    return document["entries"]
+
+
 def _retire_imported_archive(archive: Path, firmware_root: Path) -> None:
     """Remove a source only after its imported ledger checkpoint is durable."""
     if archive.parent != firmware_root or archive.is_symlink() or not archive.is_dir():
@@ -235,6 +257,8 @@ def transfer_pending(
 
         ledger_path = spool_root / _LEDGER_NAME
         ledger = _load_ledger(ledger_path)
+        attempts_path = spool_root / _RETRY_NAME
+        attempts = _load_attempts(attempts_path)
         imported: list[str] = []
         unsupported: list[dict[str, str]] = []
         failed: list[dict[str, str]] = []
@@ -264,12 +288,26 @@ def transfer_pending(
             previous = ledger.get(session_id)
             if (
                 previous is not None
+                and previous.get("status") == "unsupported"
                 and previous.get("manifest_sha256") == digest
                 and previous.get("importer_sha256") == importer_digest
             ):
                 unchanged += 1
                 continue
             candidates.append((manifest, session_id, digest))
+        # Preserve newest/oldest preference among equally attempted items, but
+        # checkpoint attempts before starting children so crashes cannot starve
+        # untouched archives. A changed source/importer gets a fresh retry.
+        def priority(item):
+            _, sid, digest = item
+            previous = attempts.get(sid, {})
+            if (previous.get("manifest_sha256"), previous.get("importer_sha256")) != (
+                digest, importer_digest
+            ):
+                return (0, 0)
+            return (previous["attempts"], previous["last_attempt_ns"])
+
+        candidates.sort(key=priority)
         selected = (
             candidates
             if maximum_firmware_imports is None
@@ -277,6 +315,15 @@ def transfer_pending(
         )
         deferred = len(candidates) - len(selected)
         attempted = len(selected)
+        for _, sid, digest in selected:
+            attempts[sid] = {
+                "manifest_sha256": digest,
+                "importer_sha256": importer_digest,
+                "attempts": priority((None, sid, digest))[0] + 1,
+                "last_attempt_ns": time.time_ns(),
+            }
+        if selected:
+            _write_ledger(attempts_path, attempts)
         with ThreadPoolExecutor(
             max_workers=max(1, min(_MAXIMUM_PARALLEL_IMPORTS, attempted))
         ) as executor:
@@ -345,7 +392,7 @@ def main() -> int:
             sort_keys=True,
         )
     )
-    return 0
+    return 1 if summary.firmware_failed else 0
 
 
 if __name__ == "__main__":
