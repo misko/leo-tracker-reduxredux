@@ -1,0 +1,7 @@
+# Geographic evaluation of frozen group-deletion outputs
+
+Evaluate all18 completed arms from group-deletion-v1 against their own accepted baseline, without additional fits, group reselection or parameter changes. Verify seals, source/input maps, launches and accepted audits before accessing the existing admitted reference. Require both arms for all nine planned windows; report failures rather than substitute cases. Fixed and reassigned arms are duplicate fitted outputs and must not be counted as independent trials.
+
+Use the existing reference-admission-v1 artifact and fixed-height geographic evaluation helper. Report baseline and deletion horizontal errors, paired changes, all individual cases, and separate three-case medians for singles, pairs and quads. Improvement means a decrease greater than1m; worsening means an increase greater than1m. No confidence intervals or generalization claims from three overlapping windows per size. The reference is unsurveyed operator metadata. This is exposed development evaluation, not held-out testing.
+
+This evaluation asks whether the specific highest-local-influence deletion is useful for accuracy, not whether any possible deletion could improve a fit. Negative or mixed results do not justify selecting different groups by their geographic outcomes. They should stop promotion of this heuristic and guide a separately specified probabilistic model or quality diagnostic.
