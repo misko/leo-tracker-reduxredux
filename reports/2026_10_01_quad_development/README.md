@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [96-iteration cold pilot](ITERATION96_RESULTS.md) recovers all three unresolved singles within the original 90-second budget, while all three successful controls remain unchanged. All six audits pass, but errors of the recovered cases are 46,067 / 1,269 / 5,367 m: stationarity is not geographic confidence. A separate fixed-coordinate diagnostic shows how the other scans in DS9-B05 favor its much better joint-window location. Five tests pass; all jobs are terminal. This is a bounded research option, not a full-panel or production promotion.
+
 The [failure-selected acquisition comparison](FAILURE_COMPOSITION_RESULTS.md) preserves all three unresolved first-start singles, with exactly matching recorded states and objective histories. Observed wall time falls by 29–34%, but all six fits remain rejected at 64 iterations and have no geographic score. Seven tests pass; all jobs are terminal. This supports a separate bounded-iteration ablation, not a claim that faster acquisition fixes convergence.
 
 The [complete single/pair/quad acquisition composition pilot](ACQUISITION_COMPOSITION_RESULTS.md) passes all eighteen audits and every equivalence check across nine comparisons. With one start held fixed, observed inference wall time falls by 36.3–47.5%, with identical errors. All jobs are terminal. This is a computational improvement on selected development windows, not a new model, a full-panel speed guarantee or production promotion.

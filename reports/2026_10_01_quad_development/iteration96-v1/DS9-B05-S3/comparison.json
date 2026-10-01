@@ -1,0 +1,84 @@
+{
+  "unit": "DS9-B05-S3",
+  "parent_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/failure-composition-cold-v1/DS9-B05-S3/blas/DS9-B05-S3.json",
+  "parent_sha256": "sha256:abe808a268849f0f340e2eb38677d669233b688e4ace301e9a5b05f99e26edd9",
+  "launch": {
+    "unit_id": "DS9-B05-S3",
+    "command": [
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/run_one_start_blas_96.py",
+      "DS9-B05-S3",
+      "--seed-limit",
+      "1",
+      "--output",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/iteration96-v1/DS9-B05-S3/DS9-B05-S3.json"
+    ],
+    "pid": 2332144,
+    "started_utc": "2026-10-01T22:04:59.851083+00:00",
+    "finished_utc": "2026-10-01T22:05:20.754258+00:00",
+    "elapsed_seconds": 20.902861882932484,
+    "external_limit_seconds": 90,
+    "timed_out": false,
+    "returncode": 0,
+    "within_budget": true,
+    "freeze_sha256": "sha256:5dba10842476295d8059a73c8ac89cdaa6d64aea35c59a7204da3d0cbf94cfac",
+    "receipt_sha256": "sha256:04cd0e08cdfe1589ca225a4579b958ac94c8b4a0818b99eff8279a6cf26d5a42"
+  },
+  "audit_launch": {
+    "unit_id": "audit",
+    "command": [
+      "/home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/evaluate_variant.py",
+      "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_01_quad_development/iteration96-v1/DS9-B05-S3"
+    ],
+    "pid": 2332411,
+    "started_utc": "2026-10-01T22:05:20.944752+00:00",
+    "finished_utc": "2026-10-01T22:05:22.826695+00:00",
+    "elapsed_seconds": 1.8816879589576274,
+    "external_limit_seconds": 90,
+    "timed_out": false,
+    "returncode": 0,
+    "within_budget": true
+  },
+  "evaluation": {
+    "rows": [
+      {
+        "unit": "DS9-B05-S3",
+        "size": 1,
+        "block_id": "DS9-B05",
+        "scans": [
+          "DS9-F079"
+        ],
+        "accepted": true,
+        "failures": [],
+        "fit_status": "converged_local_mode",
+        "runtime_s": 20.902861882932484,
+        "cpu_s": 20.862557,
+        "gradient_error": 1.4606474424638805e-05,
+        "numeric_decrement_squared": 5.71560144122616e-08,
+        "receipt_sha256": "sha256:04cd0e08cdfe1589ca225a4579b958ac94c8b4a0818b99eff8279a6cf26d5a42",
+        "audit_seconds": 1.5588953839614987,
+        "error_m": 1268.7064236797241
+      }
+    ],
+    "freeze_sha256": "sha256:5dba10842476295d8059a73c8ac89cdaa6d64aea35c59a7204da3d0cbf94cfac",
+    "evaluator_sha256": "sha256:0085cb00fd39a54f77d6fe4205bc7c0f574784277e44e1006f57b11007103308",
+    "reference_sha256": "sha256:32a751a38cf6110c8017a53c92bf06f41dfd05bf59af941630480eff02296822",
+    "qualification": "Variant audit; infer timing scope and constituent costs from sealed launch receipts. Reference scoring follows numerical decisions. Development evidence only."
+  },
+  "checks": {
+    "parent_policy": true,
+    "config": true,
+    "binding": true,
+    "proposal": true,
+    "one_fit": true,
+    "seed_index": true,
+    "iteration_cap": true,
+    "status_consistency": true,
+    "objective_prefix": true
+  },
+  "processes_completed": true,
+  "policy_equivalent": true,
+  "accepted": true,
+  "qualification": "96-iteration cold pilot; same model and total budget. Historical64-iteration comparator. Controls plus failure-selected singles; reference scoring only after numerical acceptance."
+}
