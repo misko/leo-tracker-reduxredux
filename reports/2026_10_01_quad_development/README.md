@@ -1,6 +1,6 @@
 # Expanded quad development set
 
-Latest complexity ablation: [fresh one-versus-three-start comparisons](COLD_SEED_RESULTS.md) pass all six numerical audits. In the first DS9 single/pair/quad, one start saves observed wall time while pair/quad errors increase modestly. A [separate saved-first-start accuracy study](FIRST_START_REPLAY_PLAN.md) is being audited across the frozen panel; it does not establish cold runtime.
+Latest complexity ablation: [fresh one-versus-three-start comparisons](COLD_SEED_RESULTS.md) pass all six numerical audits. In the first DS9 single/pair/quad, one start saves observed wall time while pair/quad errors increase modestly. The [first seven blocks of the replay accuracy study](FIRST_START_PROGRESS_01.md) pass 49/49 audits versus 47/49 original selections, with mixed geographic changes and 63 windows pending. This partial replay does not establish cold runtime or justify replacing the baseline.
 
 The [complete baseline](FULL_PANEL_BASELINE.md) evaluates all sixteen blocks: 61/64 singles, 31/32 pairs and 15/16 quads pass numerical audits, with median accepted errors of 2,023 / 1,494 / 1,136 m. [Bounded continuation](POST_BASELINE_RESULTS.md) recovers all five unresolved windows; the resulting medians are 1,972 / 1,410 / 1,044 m. Continuation reuses fitted states with original work charged, rather than constituting a new cold benchmark. Numerical acceptance does not guarantee accuracy or calibrated uncertainty. All results are development evidence.
 
