@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [scan-discrepancy model derivation](SCAN_DISCREPANCY_MODEL.md) now has four passing algebra tests and a reference-free local sensitivity figure. It can soften conflicting scan likelihoods but cannot identify shared bias. No raw-data refit, width selection or geographic improvement is claimed; an exact port/Jacobian gate is next.
+
 The [equal-weight constituent ablation](CENTROID_ABLATION_RESULTS.md) confirms the value of joint fitting: on matched available windows, averaging independent scan locations worsens pair median error from 1,519 to 1,695 m and quad median from 1,136 to 1,547 m. It also loses availability when any constituent fails. This no-refit control does not replace the baseline or justify calibrated uncertainty from scan agreement.
 
 Latest complexity ablation: [all 112 first-start replay audits are complete](FIRST_START_RESULTS.md). One start accepts 61/64 singles, 32/32 pairs and 16/16 quads, with median errors 2,023 / 1,501 / 775 m. The original three-start arm accepts 61/64, 31/32 and 15/16, with medians 2,023 / 1,494 / 1,136 m. Acceptance populations differ; matched median error changes are zero. [Fresh cold comparisons](COLD_SEED_RESULTS.md) show observed time savings on the first DS9 block only.
