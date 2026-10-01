@@ -1,0 +1,67 @@
+{
+  "assignment": "Deterministic cost-ordered augmenting-path maximum-cardinality matching; costs only order alternatives.",
+  "files": {
+    "README.md": {
+      "bytes": 2688,
+      "sha256": "efe5dde2271825602ccc0099aaf31b4652d05fe3f97c14a976f5f0a97624d07f"
+    },
+    "baseline-arm-linear.json": {
+      "bytes": 122936,
+      "sha256": "58ec3b7ef60f79b299339b68d7a32ffc4bc097386c6cd23cf8e327d51747bbeb"
+    },
+    "baseline-server-self.json": {
+      "bytes": 156083,
+      "sha256": "a07fd8702ad05cd354bf803b7c6a555aee2b67dca35e3b42e01becea27bd290c"
+    },
+    "compare_membership.py": {
+      "bytes": 27376,
+      "sha256": "0ce0ac6f9df7c86071865ac6ae5ac1a2db04b0169712ff39060cbc0f49903f17"
+    },
+    "host-audit.md": {
+      "bytes": 3332,
+      "sha256": "3812e3513a11671501ce2d37cbcb1dd912d744e03cf7e332e66bcb69db3e51ba"
+    },
+    "host-summary.json": {
+      "bytes": 6078,
+      "sha256": "fcccac7a33d7f75c78c43d7c60396eb0e2bbc24412ca7a866a2ad51c78c1f160"
+    },
+    "test_compare_membership.py": {
+      "bytes": 7947,
+      "sha256": "d5094d0543536717a3f5cf1bdb3b29c0c03698567dc6b9bf36bd0782951f922b"
+    },
+    "thresholds.json": {
+      "bytes": 1755,
+      "sha256": "db9a948542db24431176b99f9b7b38822bba0924d1f06919c2c39ac45975482f"
+    },
+    "unit-tests.log": {
+      "bytes": 953,
+      "sha256": "afafb97882fc620e75f8df46f58fc9151c3478176c692f88d135ca4d822c5688"
+    }
+  },
+  "full_branch_checks": {
+    "arm_data_limited_references": 11,
+    "arm_linear_primary_matches": 42,
+    "arm_observations": 9728,
+    "server_observations": 10066,
+    "server_self_primary_matches": 63
+  },
+  "host_curvature_outputs": "Eight host-v2 membership reports are bound individually by host-summary.json; physical ARM execution is outside this receipt.",
+  "primary": "Exact-lane canonical-source membership with <=2500 Hz same-source modulo-alias CFO, >=80% reference coverage and >=80% in-reference-span output purity.",
+  "schema": "leo-arm-curvature-track-evaluation-qualification/v1",
+  "scope": "Host recorded-TSV evaluation only; no device, RF, detector, or tracker execution by this evaluator.",
+  "tests": {
+    "command": "python3 -m unittest -v test_compare_membership.py",
+    "coverage": [
+      "different IDs and alias shifts",
+      "crossed linear summaries",
+      "long-arc merges",
+      "split fragments",
+      "input CFO ceiling",
+      "64x64 tied graph",
+      "duplicate canonical source rejection"
+    ],
+    "failed": 0,
+    "passed": 5
+  },
+  "thresholds_frozen_before_curvature_output_inspection": true
+}

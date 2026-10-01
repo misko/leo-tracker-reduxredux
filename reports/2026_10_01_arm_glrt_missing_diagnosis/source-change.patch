@@ -1,0 +1,14 @@
+--- /var/tmp/leo-arm-realtime-publication/src/leo/analysis/native_glrt/kernel/private/full_search.c	2026-09-29 22:45:50.818869491 +0000
++++ /var/tmp/leo-glrt-missing-diagnosis-source/kernel/private/full_search.c	2026-10-01 01:07:21.244786689 +0000
+@@ -549,7 +549,11 @@
+ 
+ static int coarse_score_allowed(uint32_t rate, double score)
+ {
++#ifdef LEO_DIAG_BYPASS_COARSE
++    return isfinite(score) && score >= 0.0 * coarse_score_threshold(rate);
++#else
+     return isfinite(score) && score >= coarse_score_threshold(rate);
++#endif
+ }
+ 
+ typedef struct {
