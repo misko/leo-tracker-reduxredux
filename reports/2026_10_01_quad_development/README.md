@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [equal-weight constituent ablation](CENTROID_ABLATION_RESULTS.md) confirms the value of joint fitting: on matched available windows, averaging independent scan locations worsens pair median error from 1,519 to 1,695 m and quad median from 1,136 to 1,547 m. It also loses availability when any constituent fails. This no-refit control does not replace the baseline or justify calibrated uncertainty from scan agreement.
+
 Latest complexity ablation: [all 112 first-start replay audits are complete](FIRST_START_RESULTS.md). One start accepts 61/64 singles, 32/32 pairs and 16/16 quads, with median errors 2,023 / 1,501 / 775 m. The original three-start arm accepts 61/64, 31/32 and 15/16, with medians 2,023 / 1,494 / 1,136 m. Acceptance populations differ; matched median error changes are zero. [Fresh cold comparisons](COLD_SEED_RESULTS.md) show observed time savings on the first DS9 block only.
 
 The [denser-evidence pilot](DENSER_PILOT_RESULTS.md) is complete after passing [numerical prerequisites](DENSER_PREREQUISITES.md). All six warm fits pass, but sixteen points improve DS9/DS10 errors from 659/1,538 m to 486/940 m while worsening DS11 from 1,628 m to 2,464 m. No promotion or automatic window expansion follows. A within-model diagnostic separates changed endpoint identities from continuous evidence/prior tension; conditional added-observation prediction is the next proposed check.
