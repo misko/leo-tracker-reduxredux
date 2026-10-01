@@ -1,6 +1,6 @@
 # Expanded quad development set
 
-Latest results: [second pilot and model diagnostics](PILOT_UPDATE_02.md). DS9 and DS10 each have seven audited windows; their matched A → AB → ABCD results differ, so no general improvement is claimed yet.
+Latest results: [three-block baseline and first clock ablation](PILOT_UPDATE_03.md). All 21 baseline windows pass numerical audits. The common-clock ablation is mixed on its first block; no general improvement is claimed yet.
 
 Frozen 64-scan membership: 16 non-overlapping blocks of four consecutive recordings, selected using metadata only. This adds 52 scans beyond the original 64-scan benchmark and reuses 12; together the two panels contain 116 unique scans. The original benchmark is preserved. DS12 remains outside this development selection.
 
@@ -36,8 +36,8 @@ All selected blocks span 26.20–26.27 minutes. Four approximately five-minute c
 
 Eight selector tests pass, covering missing captures, long gaps, overlapping captures, hardware changes, deterministic selection, duplicate rejection, nested units and real-data counts. Membership and input/source bindings are hash sealed in [selection.json](selection.json) and [selection.sha256](selection.sha256).
 
-The first DS9 pilot is complete: all seven windows passed numerical audits, with matched A → AB → ABCD errors of 659 → 806 → 1,365 m. See [PILOT_REPORT.md](PILOT_REPORT.md) for the model, complete results, figures and pending ablations. This one block does not establish improvement. All 12 scans in the first DS9/DS10/DS11 blocks have admitted observation/orbit inputs. Capture-bound operator pose companions were subsequently verified for all 64 scans, reporting constant location within each quad; this is not physical movement sensing or a survey.
+The first DS9/DS10/DS11 pilots are complete. Across their 12 singles, six doubles and three quads, median errors are 1,349 / 811 / 455 m. These are only three development blocks with correlated nested windows. See [PILOT_REPORT.md](PILOT_REPORT.md) for the original model and [PILOT_UPDATE_03.md](PILOT_UPDATE_03.md) for current results and ablations. The next quad, DS9-B02, is also prepared, bringing admitted observation/orbit inputs to 16 scans. Capture-bound operator pose companions were verified for all 64 scans, reporting constant location within each quad; this is not physical movement sensing or a survey.
 
-[PROTOCOL.md](PROTOCOL.md) is the original frozen execution plan; its final “Current stage” paragraph records the state at selection time. All windows restart from the original uniform Sacramento prior and fixed 100 ft MSL height. Input or numerical failures remain in the selected population without replacement. DS10/DS11 pilot fits, broader evaluation and further model ablations remain pending.
+[PROTOCOL.md](PROTOCOL.md) is the original frozen execution plan; its final “Current stage” paragraph records the state at selection time. All windows restart from the original uniform Sacramento prior and fixed 100 ft MSL height. Input or numerical failures remain in the selected population without replacement. Completing the common-clock ablation and broader panel evaluation remain pending.
 
 ![Selected blocks](selection.png)
