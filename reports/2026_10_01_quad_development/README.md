@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+Latest results: [second pilot and model diagnostics](PILOT_UPDATE_02.md). DS9 and DS10 each have seven audited windows; their matched A → AB → ABCD results differ, so no general improvement is claimed yet.
+
 Frozen 64-scan membership: 16 non-overlapping blocks of four consecutive recordings, selected using metadata only. This adds 52 scans beyond the original 64-scan benchmark and reuses 12; together the two panels contain 116 unique scans. The original benchmark is preserved. DS12 remains outside this development selection.
 
 | Source | Quads | Scans | Adjacent pairs |
