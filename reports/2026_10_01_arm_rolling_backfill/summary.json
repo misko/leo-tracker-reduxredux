@@ -1,0 +1,184 @@
+{
+  "rows": [
+    {
+      "side": "arm",
+      "gained": [
+        9,
+        12,
+        21,
+        22,
+        39,
+        48,
+        51,
+        52
+      ],
+      "lost": [],
+      "before": 39,
+      "after": 47,
+      "hypotheses_before": 327,
+      "hypotheses_after": 327,
+      "prediction_p95_before_hz": 486.2831388679358,
+      "prediction_p95_after_hz": 459.3599226654456,
+      "duration_buckets": {
+        "short": {
+          "before": 3,
+          "after": 3,
+          "denominator": 9
+        },
+        "medium": {
+          "before": 17,
+          "after": 21,
+          "denominator": 25
+        },
+        "long": {
+          "before": 19,
+          "after": 23,
+          "denominator": 28
+        }
+      },
+      "targets": {
+        "12": {
+          "before": false,
+          "after": true,
+          "consistent_source_count": 69,
+          "reference_source_count": 86,
+          "in_span_output_purity": 1.0,
+          "output_track_index": 234
+        },
+        "48": {
+          "before": false,
+          "after": true,
+          "consistent_source_count": 48,
+          "reference_source_count": 54,
+          "in_span_output_purity": 0.9230769230769231,
+          "output_track_index": 282
+        },
+        "51": {
+          "before": false,
+          "after": true,
+          "consistent_source_count": 59,
+          "reference_source_count": 59,
+          "in_span_output_purity": 0.921875,
+          "output_track_index": 156
+        },
+        "52": {
+          "before": false,
+          "after": true,
+          "consistent_source_count": 68,
+          "reference_source_count": 68,
+          "in_span_output_purity": 0.9714285714285714,
+          "output_track_index": 284
+        }
+      }
+    },
+    {
+      "side": "server",
+      "gained": [
+        9,
+        23,
+        35
+      ],
+      "lost": [],
+      "before": 58,
+      "after": 61,
+      "hypotheses_before": 407,
+      "hypotheses_after": 407,
+      "prediction_p95_before_hz": 442.39063405478373,
+      "prediction_p95_after_hz": 439.46607284026686,
+      "duration_buckets": {
+        "short": {
+          "before": 8,
+          "after": 9,
+          "denominator": 9
+        },
+        "medium": {
+          "before": 22,
+          "after": 24,
+          "denominator": 25
+        },
+        "long": {
+          "before": 28,
+          "after": 28,
+          "denominator": 28
+        }
+      },
+      "targets": {
+        "12": {
+          "before": true,
+          "after": true,
+          "consistent_source_count": 86,
+          "reference_source_count": 86,
+          "in_span_output_purity": 1.0,
+          "output_track_index": 329
+        },
+        "48": {
+          "before": true,
+          "after": true,
+          "consistent_source_count": 54,
+          "reference_source_count": 54,
+          "in_span_output_purity": 1.0,
+          "output_track_index": 380
+        },
+        "51": {
+          "before": true,
+          "after": true,
+          "consistent_source_count": 59,
+          "reference_source_count": 59,
+          "in_span_output_purity": 0.9516129032258065,
+          "output_track_index": 181
+        },
+        "52": {
+          "before": true,
+          "after": true,
+          "consistent_source_count": 68,
+          "reference_source_count": 68,
+          "in_span_output_purity": 0.9714285714285714,
+          "output_track_index": 363
+        }
+      }
+    }
+  ],
+  "physical": {
+    "tracking_median_s": 2.55621,
+    "baseline_tracking_median_s": 1.11931,
+    "increase_percent": 128.37373024452563,
+    "within_20_percent_target": false,
+    "whole_process_median_s": 3.625295514,
+    "max_rss_kib": 11488,
+    "all_device_outputs_host_identical": true
+  },
+  "synthetic": {
+    "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_arm_streaming_tracks/qualification/rolling-backfill/synthetic.tsv",
+    "sha256": "9583b901b495aee53fa87664f9d792eff7e17c20431098df078cb5e96fb6e492",
+    "tracks": 2,
+    "complete_true_curves": 2,
+    "unmatched_hypotheses": 0,
+    "per_truth": [
+      {
+        "truth_index": 0,
+        "truth_points": 117,
+        "best": {
+          "track_index": 1,
+          "correct_points": 117,
+          "reference_coverage": 1.0,
+          "purity": 1.0,
+          "output_points": 117
+        }
+      },
+      {
+        "truth_index": 1,
+        "truth_points": 117,
+        "best": {
+          "track_index": 0,
+          "correct_points": 117,
+          "reference_coverage": 1.0,
+          "purity": 0.9831932773109243,
+          "output_points": 119
+        }
+      }
+    ],
+    "criterion": "One-to-one, >=80% known member coverage and >=80% purity; extras remain visible."
+  },
+  "qualification_path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_09_30_arm_streaming_tracks/qualification/rolling-backfill",
+  "limits": "Server agreement with explicit ref10 exception; hypothesis bank, not exclusive physical identities"
+}

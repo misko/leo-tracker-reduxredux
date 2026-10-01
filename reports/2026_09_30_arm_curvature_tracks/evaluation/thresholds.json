@@ -1,0 +1,32 @@
+{
+  "schema": "leo-arm-curvature-track-membership-thresholds/v1",
+  "frozen_before_curvature_output_inspection": true,
+  "canonical_rf_hz": 11200000000.0,
+  "alias_spacing_hz": 227272.72727272726,
+  "same_source_circular_cfo_gate_hz": 2500.0,
+  "minimum_reference_source_coverage": 0.8,
+  "minimum_in_span_output_purity": 0.8,
+  "legacy_linear_diagnostic": {
+    "strict": {
+      "minimum_interval_jaccard": 0.8,
+      "minimum_shorter_interval_coverage": 0.9,
+      "maximum_slope_difference_hz_per_s": 250.0,
+      "maximum_alias_aligned_curve_difference_hz": 2500.0
+    },
+    "relaxed": {
+      "minimum_interval_jaccard": 0.5,
+      "minimum_shorter_interval_coverage": 0.75,
+      "maximum_slope_difference_hz_per_s": 500.0,
+      "maximum_alias_aligned_curve_difference_hz": 5000.0
+    }
+  },
+  "rationale": {
+    "lane": "receiver, channel, edge, and actual RF must match exactly",
+    "source": "candidate IDs and ranks are ignored; canonical source is original visit, receiver, and probe from the frozen source map",
+    "cfo": "2500 Hz is the deployed tracking residual gate and is applied modulo the lane-normalized alias spacing to same-source measured points",
+    "coverage": "a complete conservative association requires at least 80 percent of reference sources",
+    "purity": "a complete conservative association requires at least 80 percent of output members whose centers lie in the reference support interval",
+    "curvature": "time coverage and overall purity are reported separately; no linear fit field participates in primary eligibility",
+    "segmentation": "one-to-one recovery is conservative; multi-reference long arcs and multi-output fragments are reported as merge/split evidence without physical identity claims"
+  }
+}

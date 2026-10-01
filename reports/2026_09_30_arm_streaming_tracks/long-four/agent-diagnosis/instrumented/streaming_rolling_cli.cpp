@@ -1,0 +1,19 @@
+#include "streaming_rolling.hpp"
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <vector>
+namespace {
+std::vector<std::string> split(const std::string&s){std::vector<std::string>v;std::size_t b=0;for(;;){auto e=s.find('\t',b);v.push_back(s.substr(b,e==std::string::npos?e:e-b));if(e==std::string::npos)return v;b=e+1;}}
+template<class T>T integer(const std::string&s,const char*n){errno=0;char*e=nullptr;long long v=std::strtoll(s.c_str(),&e,10);if(errno||e!=s.c_str()+s.size()||v<std::numeric_limits<T>::min()||v>std::numeric_limits<T>::max())throw std::runtime_error(std::string("invalid ")+n);return static_cast<T>(v);}
+double number(const std::string&s,const char*n){errno=0;char*e=nullptr;double v=std::strtod(s.c_str(),&e);if(errno||e!=s.c_str()+s.size()||!std::isfinite(v))throw std::runtime_error(std::string("invalid ")+n);return v;}
+leo::adaptive::tracking::Candidate point(const std::vector<std::string>&f){if(f.size()!=13)throw std::runtime_error("candidate row must contain 13 fields");return{f[0],f[1],integer<int>(f[2],"receiver"),integer<int>(f[3],"channel"),f[4],number(f[5],"RF"),integer<std::int64_t>(f[6],"start"),integer<std::int64_t>(f[7],"center"),integer<std::int64_t>(f[8],"end"),number(f[9],"CFO"),number(f[10],"exact score"),number(f[11],"control score"),number(f[12],"margin")};}
+}
+int main(int argc,char**argv){if(argc<2){std::cerr<<"usage: "<<argv[0]<<" INPUT.tsv [--window 4|8|12]\n";return 2;}try{leo::adaptive::tracking::research::streaming_rolling::Config c;for(int i=2;i<argc;++i){if(std::string(argv[i])=="--window"&&i+1<argc)c.window_s=number(argv[++i],"window");else throw std::runtime_error("unknown or incomplete option");}std::ifstream in(argv[1]);if(!in)throw std::runtime_error("cannot open candidate input");std::string line,header="candidate_id\tsource_group_id\treceiver_id\tchannel\tedge\tactual_rf_hz\tsupport_start_utc_ns\tsupport_center_utc_ns\tsupport_end_utc_ns\tmeasured_cfo_hz\texact_score\tcontrol_score\tmargin";if(!std::getline(in,line)||line!=header)throw std::runtime_error("candidate input has an unsupported header");std::vector<leo::adaptive::tracking::Candidate>v;while(std::getline(in,line))if(!line.empty())v.push_back(point(split(line)));auto begin=std::chrono::steady_clock::now();auto r=leo::adaptive::tracking::research::streaming_rolling::reconstruct(v,c);double sec=std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count();std::cout<<std::setprecision(17)<<"SUMMARY\t"<<r.input_candidate_count<<'\t'<<r.used_candidate_count<<'\t'<<r.tracks.size()<<"\nCONFIG\tresearch:chronological-streaming-rolling-weighted-linear-v1:window-"<<c.window_s<<":max-fit-points-32:gate-2500:uncertainty-cap-2500:max-gap-4:min-support-8:min-span-4:hypothesis-bank:no-exclusive-assignment\n";std::cerr<<"TIMING\treconstruct_s\t"<<sec<<"\nSTATS\t"<<r.stats.lanes<<'\t'<<r.stats.source_groups<<'\t'<<r.stats.groups_processed<<'\t'<<r.stats.fits<<'\t'<<r.stats.associations_tested<<'\t'<<r.stats.births<<'\t'<<r.stats.peak_active<<'\n';for(std::size_t i=0;i<r.tracks.size();++i){const auto&t=r.tracks[i];std::cout<<"TRACK\t"<<i<<'\t'<<t.segment_id<<'\t'<<t.tracklet_id<<'\t'<<t.lane.receiver_id<<'\t'<<t.lane.channel<<'\t'<<t.lane.edge<<'\t'<<t.lane.actual_rf_hz<<'\t'<<t.start_utc_ns<<'\t'<<t.end_utc_ns<<'\t'<<t.reference_utc_ns<<'\t'<<t.normalized_rate_hz_per_s<<'\t'<<t.normalized_intercept_hz<<'\t'<<t.residual_rms_hz<<'\t'<<t.residual_max_hz<<'\t'<<t.weighted_support<<'\t'<<t.points.size()<<'\n';for(const auto&p:t.points)std::cout<<"POINT\t"<<i<<'\t'<<p.candidate_id<<'\t'<<p.source_group_id<<'\t'<<p.relative_alias_index<<'\t'<<p.normalized_raw_cfo_hz<<'\t'<<p.normalized_dealiased_cfo_hz<<'\n';}return 0;}catch(const std::exception&e){std::cerr<<"streaming-rolling: "<<e.what()<<'\n';return 1;}}
