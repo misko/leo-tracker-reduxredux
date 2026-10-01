@@ -1,0 +1,13 @@
+# Pre-fit optimizer-only plan: candidate-weighted marginal curvature
+
+Prerequisites: finish and report the existing six-window marginal pilot without changes; complete the recorded-state curvature checks on one single, pair and quad. A failed prerequisite check must be diagnosed before any weighted-curvature radio fit. Keep the original marginal outcomes immutable.
+
+First run DS9/DS10/DS11-B01-S1 from the same original baseline states used by the marginal pilot. Then run the six metadata-first B01-D1/Q windows as a separately reported extension after inspecting the three single outcomes. Do not substitute states from the completed marginal fits. The original launch cost plus new preparation/fitting remains bounded to90/180/360seconds for singles/pairs/quads, with the same five-second internal margin. No post-result budget or stopping-rule changes.
+
+Change only the direction preconditioner: sum probability-weighted Student-t4 residual curvature across all signal branches, rather than taking only each track's leading branch. Use compact6-by-6candidate blocks and diagonal epoch elimination. Keep the complete marginal objective and gradient, visibility width0.1degrees, Gaussian priors, fixed30.48m MSL height, uniform250km Sacramento support, original data and independent scan nuisance maps. Background remains in the full gradient/objective and has no residual curvature. This preconditioner omits exact mixture covariance and visibility-curvature terms; it is not an uncertainty estimate.
+
+Retain64iterations,24halving Armijo trials,5km position-step cap and maximum scaled gradient below1e-4. Reject singular curvature or non-descent directions explicitly. Reuse independent marginal audits with identical coordinates/directions, derivative tolerance0.002 and separate audit budgets. Always marginalize at derivative perturbations; labels remain diagnostic. Geographic scoring follows numerical decisions and never chooses starts or replacement outputs.
+
+Report every acceptance/failure, iterations, charged and additional time, gradient, objective under the same marginal model, changed labels and accepted reference error. Because the statistical objective is unchanged, final marginal objective values can be compared between these two optimizer arms when input/prior bindings agree. Do not compare their raw values to the hard model. Different converged locations may reflect different modes, not simply speed.
+
+No full-panel campaign or production promotion follows automatically. The purpose is to test whether this direction improves convergence/cost at the same budget, particularly in light of the existing DS10quad timeout. That case stays in its predeclared six-window group rather than becoming the sole evidence for the new method.
