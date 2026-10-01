@@ -1,12 +1,12 @@
 {
   "status": "active_not_complete",
-  "previous_goal_turn_classification": "progress: discrepancy pilot runner/auditor implemented, five tests passed and first six fits completed; queue launched",
-  "current_progress": "All18 discrepancy outcomes accepted; queue4447 terminal0 and summary20729 terminal0. Singles identical. Pairs baseline/discrepancy errors DS9 806/814,DS10 1215/2678,DS11 438/241m; quads1365/1356,146/343,455/405m. Mixed geography; do not expand or tune width. Offsets sumzero within2e-12m; DS10pair max2106m and2changed endpoint identities. Report/figure complete, all source/input hashes verified.",
+  "previous_goal_turn_classification": "progress: all18 discrepancy fits summarized and published to mainac98c95f3; expansion declined",
+  "current_progress": "Cross-dataset cold seed plan/driver created with unchanged scientific worker; structural regression passes. Single queue36442 terminal0: DS10 one/three22.31/33.55s,error1538.240both;DS11 22.90/25.29s,error1628.172/1628.178m. Four accepted and all acquisition/saved-fit equivalence checks pass. Single summary/report/figure complete. Pair stage session65286 live, starts DS10 thenDS11. Quads not launched.",
   "active_cold_seed_queue": {"session_id": 27797, "status": "terminal exit 0; all three comparisons summarized"},
   "active_replay_queue": {"status": "all terminal exit 0", "completed_sessions": [84822,14921,87359,14216,51992], "summary_session": 96882},
-  "next_action": "No jobs live. Publish discrepancy pilot results and sealed artifacts. Stop discrepancy expansion. Inspect cold seed-limit comparison sources and protocol before extending first-DS9 cold evidence to first DS10/DS11 singles,pairs,quads; preserve original acquisition/model and distinguish historical replay from fresh cold timing. No new nuisance-width search. All completed scientific sources remain frozen.",
+  "next_action": "Publish completed cold single-stage artifacts only. Poll live pair queue65286 before any launches. Once terminal, run summarize_cross_dataset_cold_seeds.py pair once; inspect all process/audit/equivalence checks before launching fixed DS10/DS11 quad stage. Retain failures and no retries. Driver/worker/plan and single summary sources frozen. Model unchanged; one versus three cold starts. Discrepancy expansion stopped.",
   "selection": "selection.json",
-  "report": "SCAN_DISCREPANCY_PILOT_RESULTS.md",
+  "report": "CROSS_DATASET_COLD_SINGLE_RESULTS.md",
   "baseline_summary": "full-panel-baseline-v1.json",
   "common_clock_comparison": "clock-pilot-v1.json",
   "decision": "Retain independent scan clocks: common clock worsened3/3pilotquads. Continue frozen baseline without replacement. Test bounded continuation separately; do not relabel original results or select by geography.",
@@ -53,7 +53,7 @@
   ],
   "optimization": "BLAS scores and DS9-B01-S1 proposal agree around1e-10; microbenchmark median1.21x with variability. Not promoted; full cold-fit equivalence/runtime gate pending.",
   "next_commands": [
-    "All18 discrepancy outcomes complete and audited; summary/figure done. Stop expansion, preserve baseline. Next inspect cross-dataset cold one-start test coverage before new work. Frozen sources must not change.",
+    "Cold single stage complete; pair session65286 live. Poll it, then summarize pair and require all equivalence/process gates before quad launch. Preserve frozen scientific sources and recorded orders. No nuisance-model changes.",
     "Weighted marginal pilot complete and negative, decline pair/quad expansion. Screen all 112 saved starts complete; two tests pass. Cold one/three-start comparison holds original acquisition and model fixed; do not mix with BLAS optimization.",
     "Sourcefrozencheckhelpers shared_visibility_port.py, visibility_state_gradient.py, geometry helpers shouldnoteditinplace; versionnewlogic. Existingpubliccontracts unchanged.",
     "Beforeboundedfitpilot freeze membershipfirstsingleeachDS, sameSacprior/fixedheight/nuisancepriors; isolatewidthmodelchange frominitialization policy; warmbaseline-state diagnostic notcoldbenchmark mustbelabeledandcharged.",
@@ -63,9 +63,9 @@
   "implementation": "src/leo/analysis/localization_windows.py",
   "tests": "13 selector and multi-window tests passed",
   "publication_worktree": "/home/mouse9911/gits/leo-quad-report-publish",
-  "published_main_commit": "20603796f5422a2281df79269527051de32e6d16",
+  "published_main_commit": "ac98c95f3b0abfcf77c7139329fbeeb235ef50d4",
   "publication_verified": "git ls-remote matched main after fast-forward push",
-  "active_processes": [],
+  "active_processes": [{"session_id":65286,"kind":"two sequential cold one/three-start pair comparisons","last_verified":"launched DS10-B01-D1 after all single-stage checks passed; DS11-B01-D1 next"}],
   "continuations": [
     {
       "evaluation": "continuation-v1/DS10-B02-Q/evaluation.json",
