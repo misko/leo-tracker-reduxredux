@@ -44,16 +44,52 @@ def test_cfo_receivers_have_distinct_consistent_marker_legend_and_track_colors(m
     for axis in figures[-1].axes:
         for collection in axis.collections:
             label = collection.get_label()
+            if label == "_nolegend_":
+                continue
             color = to_hex(collection.get_facecolors()[0])
             assert colors_by_label.setdefault(label, color) == color
         legend = axis.get_legend()
         if legend is not None:
             for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True):
                 assert to_hex(handle.get_facecolors()[0]) == colors_by_label[text.get_text()]
-        line_colors.update(to_hex(line.get_color()) for line in axis.lines)
+        line_colors.update(
+            to_hex(line.get_color())
+            for line in axis.lines
+            if line.get_gid() != "canonical-alias-boundary"
+        )
     assert len(colors_by_label) == 2 * len(edges)
     assert len(set(colors_by_label.values())) == len(colors_by_label)
     assert line_colors == set(colors_by_label.values())
+
+
+def test_default_cfo_png_adds_exact_half_alias_bands_without_new_observations(monkeypatch):
+    import leo.presentation.adaptive_hop_analysis as presentation
+
+    binding, manifest, products = overview_fixture(monkeypatch, count=3)
+    data = project_adaptive_overview(binding, manifest, iter(products))
+    period = presentation.CFO_ALIAS_SPACING_HZ
+    rows = np.array([[3, 0, 1.0, -period / 2 + 100], [3, 0, 2.0, period / 2 - 100]])
+    data = replace(data, passed=rows, observations={})
+    figures = []
+    monkeypatch.setattr(presentation, "project_adaptive_overview", lambda *args: data)
+    monkeypatch.setattr(presentation, "_save", lambda figure, *args: figures.append(figure) or b"")
+    rendered = render_adaptive_hop_overview(binding, manifest, iter(products))
+    assert rendered.selected_observation_count == rendered.association_count == 0
+    assert tuple(rendered.artifacts) == OVERVIEW_ARTIFACTS
+    assert len(figures[-1].axes) == 4
+    for axis in figures[-1].axes:
+        assert axis.get_ylim() == (-period, period)
+        boundaries = [
+            line.get_ydata()[0]
+            for line in axis.lines
+            if line.get_gid() == "canonical-alias-boundary"
+        ]
+        assert boundaries == [-period / 2, period / 2]
+    original, below, above = figures[-1].axes[3].collections
+    np.testing.assert_array_equal(original.get_offsets(), rows[:, 2:])
+    np.testing.assert_allclose(below.get_offsets(), [[2, -period / 2 - 100]])
+    np.testing.assert_allclose(above.get_offsets(), [[1, period / 2 + 100]])
+    assert [t.get_text() for t in figures[-1].axes[3].get_legend().get_texts()] == ["L RX0"]
 
 
 @pytest.mark.parametrize("gate", [0.025, 0.05])
