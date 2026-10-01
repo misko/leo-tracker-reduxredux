@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [failure-selected acquisition comparison](FAILURE_COMPOSITION_RESULTS.md) preserves all three unresolved first-start singles, with exactly matching recorded states and objective histories. Observed wall time falls by 29–34%, but all six fits remain rejected at 64 iterations and have no geographic score. Seven tests pass; all jobs are terminal. This supports a separate bounded-iteration ablation, not a claim that faster acquisition fixes convergence.
+
 The [complete single/pair/quad acquisition composition pilot](ACQUISITION_COMPOSITION_RESULTS.md) passes all eighteen audits and every equivalence check across nine comparisons. With one start held fixed, observed inference wall time falls by 36.3–47.5%, with identical errors. All jobs are terminal. This is a computational improvement on selected development windows, not a new model, a full-panel speed guarantee or production promotion.
 
 The [optimized-acquisition pair extension](ONE_START_BLAS_PAIR_RESULTS.md) records the intermediate six passing fits and all quad prerequisites. The complete report above adds all six quad fits and an overview figure across sizes.
