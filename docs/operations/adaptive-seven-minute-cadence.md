@@ -15,9 +15,11 @@ The installed runner digest is
 `8eeaf27ebfe88f37b36975c7fe1530cc861716df467e8a648ea8678d4fe32d91`.
 Fifteen scheduling, identity, space-budget and dry-run tests pass. New capture
 pose companions use `gauss-r20-lt3d-004b-20261001-v1` (LT3D-004B; software RX0
-west and RX1 east). The October 1 restart is bounded to 30 minutes, with
-automatic timer shutdown before the final capture can exceed the window;
-the capture timer remains disabled for boot activation.
+west and RX1 east). The first October 1 restart was bounded to 30 minutes.
+At 04:43 UTC the operator explicitly authorized continuous adaptive capture;
+the timer was enabled for ongoing operation and boot activation, with no
+automatic end-of-window stop. Each capture still lasts five minutes followed
+by a two-minute gap, subject to the free-space guard.
 
 The following records the earlier cadence and policy for historical reference.
 
