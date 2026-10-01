@@ -1,6 +1,8 @@
 # Expanded quad development set
 
-The [optimized-acquisition pair extension](ONE_START_BLAS_PAIR_RESULTS.md) passes all six audits and every equivalence check. Observed pair inference times fall from 47.34/46.97/44.70 s to 26.44/27.96/24.13 s on DS9/DS10/DS11, with identical errors. All three quad prerequisites also pass; the predeclared quad fits are the next stage.
+The [complete single/pair/quad acquisition composition pilot](ACQUISITION_COMPOSITION_RESULTS.md) passes all eighteen audits and every equivalence check across nine comparisons. With one start held fixed, observed inference wall time falls by 36.3–47.5%, with identical errors. All jobs are terminal. This is a computational improvement on selected development windows, not a new model, a full-panel speed guarantee or production promotion.
+
+The [optimized-acquisition pair extension](ONE_START_BLAS_PAIR_RESULTS.md) records the intermediate six passing fits and all quad prerequisites. The complete report above adds all six quad fits and an overview figure across sizes.
 
 The [one-start plus optimized-acquisition cold pilot](ONE_START_BLAS_RESULTS.md) passes all six audits and equivalence checks. Observed single-scan times fall from 27.39/24.54/23.51 s to 14.92/14.26/12.35 s on DS9/DS10/DS11, with identical errors. This computational improvement warrants a separately gated pair/quad extension; it is not a full-panel speed guarantee or statistical-model change.
 
