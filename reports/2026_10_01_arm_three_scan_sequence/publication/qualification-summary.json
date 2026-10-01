@@ -1,0 +1,64 @@
+{
+  "execution_complete": true,
+  "all_native_same_checkpoint_controls_passed": false,
+  "queue_and_latency_passed": false,
+  "loaded_throughput": {
+    "passed": false,
+    "period_s": 300,
+    "minimum_loaded_intervals": 2,
+    "sufficient_loaded_intervals": true,
+    "loaded_intervals": [
+      {
+        "scan": 0,
+        "wall_s": 304.410182916,
+        "margin_s": -4.410182915999997,
+        "finished_before_next_scan_ready": false,
+        "passed": false
+      },
+      {
+        "scan": 1,
+        "wall_s": 310.180245244,
+        "margin_s": -10.180245243999991,
+        "finished_before_next_scan_ready": false,
+        "passed": false
+      }
+    ],
+    "excluded_drain_scan": 2,
+    "scope": "Finite recorded-load throughput only; independent scientific and lossless checks required"
+  },
+  "schedule": {
+    "fixed_cadence_and_capacity_passed": true,
+    "scans": [
+      {
+        "scan": 0,
+        "origin_ns": 134092310516529,
+        "detector_finish_after_origin_s": 300.454796081,
+        "downstream_wait_s": 0.000433998,
+        "downstream_wall_s": 304.410182916,
+        "downstream_finished_before_next_scan_ready": false
+      },
+      {
+        "scan": 1,
+        "origin_ns": 134392310516529,
+        "detector_finish_after_origin_s": 304.776816587,
+        "downstream_wait_s": 0.088929084,
+        "downstream_wall_s": 310.180245244,
+        "downstream_finished_before_next_scan_ready": false
+      },
+      {
+        "scan": 2,
+        "origin_ns": 134692310516529,
+        "detector_finish_after_origin_s": 300.50034281,
+        "downstream_wait_s": 14.546028781,
+        "downstream_wall_s": 233.975067986,
+        "downstream_finished_before_next_scan_ready": null
+      }
+    ],
+    "pending_high_water": 1,
+    "detector_process_high_water": 2,
+    "sampled_peak_process_tree_rss_kib": 299516,
+    "scope": "Finite repeated-recording scheduling evidence only; cold first scan and final downstream drain have different contention; scientific checks required separately"
+  },
+  "independent_native_full_chain_search_passed": false,
+  "scope": "Three distinct recorded captures with original science times at fixed replay cadence; not live RF qualification"
+}
