@@ -1,6 +1,6 @@
 # Expanded quad development set
 
-The [DS10/DS11 cold single comparisons](CROSS_DATASET_COLD_SINGLE_RESULTS.md) and [cold pair comparisons](CROSS_DATASET_COLD_PAIR_RESULTS.md) all pass their audits and acquisition/saved-fit equivalence checks. One-start pairs take 47.55/44.06 s versus 60.80/49.87 s for three starts, with identical or sub-4-cm geographic error differences. Fixed quad comparisons are running next. These timing observations do not establish a general speed guarantee.
+The [cross-dataset cold start-count comparison](CROSS_DATASET_COLD_RESULTS.md) is complete for singles, pairs and quads. All twelve new DS10/DS11 fits and six historical DS9 fits pass audits and equivalence checks. One start saves observed time in all nine windows (9–34%); the six new comparisons have identical or sub-4-cm error differences, while historical DS9 pairs/quads regress modestly. No jobs remain in that campaign. One start remains the leading simpler research policy, without a general speed or accuracy guarantee.
 
 The [scan-discrepancy pilot](SCAN_DISCREPANCY_PILOT_RESULTS.md) is complete: all eighteen outcomes pass audits, singles are invariant, DS9 changes negligibly, DS10 worsens and DS11 improves. Retain the baseline and stop this expansion. The [model derivation](SCAN_DISCREPANCY_MODEL.md), [numerical prerequisites](SCAN_DISCREPANCY_PREREQUISITES.md) and [frozen plan](SCAN_DISCREPANCY_FIT_PLAN.md) remain separate evidence; no dataset-specific model selection or calibrated uncertainty claim follows.
 
