@@ -1,0 +1,195 @@
+{
+  "status": "active_not_complete",
+  "previous_goal_turn_classification": "progress: verified expanded selection tests and corrected stale overview",
+  "current_progress": "Weighted marginal single pilot complete: 2/3 accepted versus 3/3, no accepted accuracy gain, more cost; decline pair/quad expansion. Geography-free 112-window start screen complete with two passing tests. Fresh DS9-B01-S1 one/three-start arms both audited, identical 659.44 m error, 30.93/35.57 s wall time. Pair then quad fresh gates launched sequentially; poll session before any restart.",
+  "active_cold_seed_queue": {"session_id": 27797, "units": ["DS9-B01-D1", "DS9-B01-Q"], "qualification": "Revalidate live handle; original acquisition, separate one/three-start arms, bounded independent audits."},
+  "next_action": "Poll session 27797, inspect pair/quad comparisons and independent audits, summarize all three gates with figures; do not infer geographic acceptance from screen flags. Publish periodic reports. No weighted pair/quad extension.",
+  "selection": "selection.json",
+  "report": "COLD_SEED_PROGRESS_01.md",
+  "baseline_summary": "full-panel-baseline-v1.json",
+  "common_clock_comparison": "clock-pilot-v1.json",
+  "decision": "Retain independent scan clocks: common clock worsened3/3pilotquads. Continue frozen baseline without replacement. Test bounded continuation separately; do not relabel original results or select by geography.",
+  "baseline_progress": {
+    "audited": 112,
+    "accepted": 107,
+    "planned": 112,
+    "prepared_scans": 64,
+    "planned_scans": 64
+  },
+  "unresolved": [
+    {
+      "unit": "DS10-B02-Q",
+      "reason": "lowest-objective start hit64iterations",
+      "runtime_s": 232.302430779906,
+      "external_budget_s": 360,
+      "best_objective": 9685.932016949955,
+      "converged_runnerup_objective": 9686.81127924438
+    },
+    {
+      "unit": "DS9-B03-S3",
+      "reason": "lowest-objective start hit64iterations",
+      "runtime_s": 56.50879123015329,
+      "external_budget_s": 90
+    },
+    {
+      "unit": "DS11-B04-D1",
+      "reason": "lowest-objective start hit64iterations",
+      "runtime_s": 104.32749302010052,
+      "external_budget_s": 180
+    },
+    {
+      "unit": "DS9-B05-S2",
+      "reason": "lowest-objective start hit64iterations",
+      "runtime_s": 43.02910928311758,
+      "external_budget_s": 90
+    },
+    {
+      "unit": "DS9-B05-S3",
+      "reason": "lowest-objective start hit64iterations",
+      "runtime_s": 43.81577959493734,
+      "external_budget_s": 90
+    }
+  ],
+  "optimization": "BLAS scores and DS9-B01-S1 proposal agree around1e-10; microbenchmark median1.21x with variability. Not promoted; full cold-fit equivalence/runtime gate pending.",
+  "next_commands": [
+    "Poll cold seed queue session 27797 for DS9-B01-D1 then DS9-B01-Q. Do not restart while live. Single comparison complete; pair/quad pending. Sources sealed; no in-place edits.",
+    "Weighted marginal pilot complete and negative, decline pair/quad expansion. Screen all 112 saved starts complete; two tests pass. Cold one/three-start comparison holds original acquisition and model fixed; do not mix with BLAS optimization.",
+    "Sourcefrozencheckhelpers shared_visibility_port.py, visibility_state_gradient.py, geometry helpers shouldnoteditinplace; versionnewlogic. Existingpubliccontracts unchanged.",
+    "Beforeboundedfitpilot freeze membershipfirstsingleeachDS, sameSacprior/fixedheight/nuisancepriors; isolatewidthmodelchange frominitialization policy; warmbaseline-state diagnostic notcoldbenchmark mustbelabeledandcharged.",
+    "Potential efficiency: geometry adapter andfullscore bothorbitcalculations duplicate; sharedcache perstate future measuredneed only. AvoidNxNepochJacobian; backgroundepochvector linearN.",
+    "Latestmain6d48e1a78 fullbranchgradient report andfigure. Allpreviousbaseline/constituent32/recursive16benchmark outcomesremainimmutable. Goalactive."
+  ],
+  "implementation": "src/leo/analysis/localization_windows.py",
+  "tests": "13 selector and multi-window tests passed",
+  "publication_worktree": "/home/mouse9911/gits/leo-quad-report-publish",
+  "published_main_commit": "54d5697d48f57d17984df800a9e6b4e15d275801",
+  "publication_verified": "git ls-remote matched main after fast-forward push",
+  "active_processes": [{"session_id": 27797, "task": "sequential cold seed-limit pair and quad gates"}],
+  "continuations": [
+    {
+      "evaluation": "continuation-v1/DS10-B02-Q/evaluation.json",
+      "accepted": true,
+      "error_m": 430.90993416434054,
+      "total_runtime_s": 242.4508161698468,
+      "extra_iterations": 3,
+      "qualification": "Warm diagnostic; not yet integrated cold benchmark."
+    },
+    {
+      "evaluation": "continuation-v1/DS9-B03-S3/evaluation.json",
+      "accepted": true,
+      "error_m": 611.7264549239961,
+      "total_runtime_s": 59.90347592625767,
+      "extra_iterations": 3,
+      "qualification": "Warm diagnostic; baseline retained."
+    }
+  ],
+  "pair_diagnostics": [
+    "independent-v2/DS9-B03/pair-mode-diagnostic-v1.json",
+    "independent-v2/DS11-B02/pair-mode-diagnostic-v1.json"
+  ],
+  "constituent_policy": {
+    "plan": "CONSTITUENT_START_PLAN.md",
+    "helper": "src/leo/analysis/localization_window_starts.py",
+    "tests": "tests/analysis/test_localization_window_starts.py:6passed",
+    "pilot": [
+      "DS9-B01-D1",
+      "DS10-B01-D1",
+      "DS11-B01-D1",
+      "DS9-B03-D2"
+    ],
+    "status": "All four pilots numerically accepted. DS10-B01-D1 improves 1,215 to 193 m; failure-selected DS9-B03-D2 improves 6,139 to 411 m. Other two approximately unchanged. Not a full-panel or cold validation.",
+    "runner": "reports/2026_10_01_quad_development/run_constituent_pair_v2.py",
+    "preflight": "constituent-preflight-v1.json"
+  },
+  "uncertainty": {
+    "result": "uncertainty-nine-blocks-v1.json",
+    "snapshot": "panel-nine-blocks-v1.json",
+    "inside_nominal95": {
+      "singles": "15/35",
+      "pairs": "8/18",
+      "quads": "5/8"
+    },
+    "qualification": "Local inverseIRLScurvature undercovers; no calibrated guarantee or tuned scale.",
+    "tests": "3profiled covariance tests passed"
+  },
+  "cold_blas_gate": {
+    "runner": "check_cold_blas.py",
+    "worker": "run_blas_window.py",
+    "units": [
+      "DS9-B01-S1",
+      "DS9-B01-D1",
+      "DS9-B01-Q"
+    ],
+    "status": "All three accepted and equivalent. Baseline/new wall times 41.29/23.61, 70.00/48.22, 170.13/144.58 seconds. Historical timing, not randomized."
+  },
+  "post_baseline": {
+    "tool_session_id": 12698,
+    "pid": 1942354,
+    "plan": "post-baseline-v1/plan.json",
+    "status": "Complete; sealed summary post-baseline-summary-v1.json and figure published.",
+    "sequence": "Alleligiblecontinuations(reuseexisting2),4constituent-pair-v2pilots,3cold-blas-v1gates; sequentialsharedlock",
+    "source_frozen": true
+  },
+  "final_analysis": {
+    "script": "finalize_panel.py",
+    "tests": "test_finalize_panel.py:2passed",
+    "status": "Completed all 112 units; report and figure published. Reporting/policy/transfer tests 11 passed."
+  },
+  "full_pair_study": {
+    "plan": "FULL_PAIR_PLAN.md",
+    "frozen": "full-pair-queue-v1/plan.json",
+    "runner": "run_constituent_pair_v3.py",
+    "queue": "queue_full_pairs.py",
+    "planned": 32,
+    "audited": 32,
+    "tests": "3 policy,1 summarizer,1 mode-binding test pass. Mode script syntax corrected before execution; frozen scientific runners unchanged.",
+    "qualification": "Unchanged two-start policy; warm replay charging original constituent work. All 32 rerun; separate 28 nonpilot results, not heldout.",
+    "summary": "full-pairs-complete-v1.json",
+    "mode_diagnostic": "constituent-modes-twelve-v1.json",
+    "rejected": [
+      "DS11-B03-D2"
+    ]
+  },
+  "recursive_quad": {
+    "plan": "RECURSIVE_QUAD_PLAN.md",
+    "helper": "recursive_quad_starts.py",
+    "tests": "3transfer/budget tests+3supervisor policytests=6passed",
+    "status": "Complete16outcomes:15accepted,DS11B03Qconstituentfailure. Notpromoted; fullreportmain. Noqueueleft.",
+    "policy": "Two starts from disjoint constituent-pair-v3 winners; sum pair launch totals alreadyincludes singles; remaining360sec, at least10sec. Pilot firstquad eachDS thenall16, separate.",
+    "preflight": "recursive-quad-preflight-v1.json",
+    "preparer": "prepare_recursive_quad.py",
+    "runner": "run_recursive_quad.py",
+    "input_module": "recursive_quad_inputs.py",
+    "queue": "queue_recursive_quads.py",
+    "freeze": "recursive-quad-queue-v1/plan.json",
+    "summary": "recursive-quads-complete-v1.json",
+    "audited": 16
+  },
+  "gradient_diagnosis": {
+    "report": "GRADIENT_DIAGNOSIS.md",
+    "result": "pair-gradient-diagnostic-v1.json",
+    "figure": "pair-gradient-diagnostic-v1.png",
+    "finding": "Clockcoordinate1265 local2 DS11F036; backgroundtrack60 scorejump -0.000993542 constant across1e-3..1e-6. Error inversestep0.497..496.771. Hardvisiblecount in backgroundprior source explainsdiscontinuity; crossingcandidate notidentified.",
+    "decision": "Keep originalpairrejected; propose separate smoothvisibilitymodel with consistent derivatives, nottolrelaxation."
+  },
+  "smooth_visibility": {
+    "plan": "SMOOTH_VISIBILITY_PLAN.md",
+    "module": "smooth_visibility_weights.py",
+    "tests": "test_smooth_visibility_weights.py:7passed",
+    "status": "Fullbranch residual+sharedthresholdscore and gradient agreesfourtracks signals/background E,N,clock,drifts,selectedepochs. Sourceboundbysealedchecks so versionneededchanges. Exactties raiseValueError. Not optimizerintegrated.",
+    "count_probe": "visibility-count-probe-v1.json",
+    "finding": "VISIBILITY_COUNT_FINDING.md",
+    "shared_helper": "shared_threshold_weights.py",
+    "shared_tests": "test_shared_threshold_weights.py:3passed",
+    "real_probe": "shared-threshold-real-probe-v1.json",
+    "geometry_helper": "elevation_geometry.py",
+    "geometry_tests": "test_elevation_geometry.py:3passed",
+    "geometry_adapter": "visibility_geometry_adapter.py",
+    "geometry_check": "visibility-geometry-check-v1.json",
+    "geometry_status": "Fourtrackallcatalogue E/N/clock checkspass. AnalyticHermitepositiontime derivative, receiverE/N central0.001km; fullfinitechecks0.0005/.0001. Actualscore usesindependentvelocityinterpolationforDoppler; notassumedpositionderivative.",
+    "state_gradient": "visibility_state_gradient.py",
+    "state_gradient_check": "visibility-state-gradient-check-v1.json",
+    "port": "shared_visibility_port.py",
+    "port_check": "shared-visibility-port-check-v1.json"
+  }
+}
