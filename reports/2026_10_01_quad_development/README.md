@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+The [optimized-acquisition pair extension](ONE_START_BLAS_PAIR_RESULTS.md) passes all six audits and every equivalence check. Observed pair inference times fall from 47.34/46.97/44.70 s to 26.44/27.96/24.13 s on DS9/DS10/DS11, with identical errors. All three quad prerequisites also pass; the predeclared quad fits are the next stage.
+
 The [one-start plus optimized-acquisition cold pilot](ONE_START_BLAS_RESULTS.md) passes all six audits and equivalence checks. Observed single-scan times fall from 27.39/24.54/23.51 s to 14.92/14.26/12.35 s on DS9/DS10/DS11, with identical errors. This computational improvement warrants a separately gated pair/quad extension; it is not a full-panel speed guarantee or statistical-model change.
 
 The [cross-dataset cold start-count comparison](CROSS_DATASET_COLD_RESULTS.md) is complete for singles, pairs and quads. All twelve new DS10/DS11 fits and six historical DS9 fits pass audits and equivalence checks. One start saves observed time in all nine windows (9–34%); the six new comparisons have identical or sub-4-cm error differences, while historical DS9 pairs/quads regress modestly. No jobs remain in that campaign. One start remains the leading simpler research policy, without a general speed or accuracy guarantee.
