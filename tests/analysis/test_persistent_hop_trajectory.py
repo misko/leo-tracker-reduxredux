@@ -246,6 +246,33 @@ def test_preserves_competing_per_probe_paths_as_source_disjoint_hypotheses() -> 
         assert len(source_group_ids) == len(set(source_group_ids)) == 20
 
 
+@pytest.mark.parametrize("rate", [-2_000.0, 2_000.0])
+def test_canonical_cfo_stays_one_track_through_multiple_wraps_over_300_seconds(rate):
+    period = 1 / 4.4e-6
+    candidates = []
+    for point in range(0, 301, 3):
+        candidate = _candidate(
+            lane=0,
+            point=point,
+            normalized_rate_hz_per_s=rate,
+            normalized_intercept_hz=50_000,
+            alias_index=0,
+        )
+        candidates.append(
+            replace(
+                candidate,
+                measured_cfo_hz=(candidate.measured_cfo_hz + period / 2) % period - period / 2,
+            )
+        )
+    result = reconstruct_persistent_hop_trajectories(tuple(candidates))
+    assert len(result.tracklets) == 1
+    track = result.tracklets[0]
+    assert result.used_candidate_count == len(candidates)
+    assert (track.end_utc_ns - track.start_utc_ns) / 1e9 >= 300
+    assert abs(track.normalized_rate_hz_per_s - rate) < 1
+    assert len({point.relative_alias_index for point in track.points}) >= 3
+
+
 def test_work_limit_fails_closed() -> None:
     candidate = _candidate(
         lane=0,
