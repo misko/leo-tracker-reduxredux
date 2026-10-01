@@ -12,6 +12,56 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
+@pytest.mark.parametrize("captured,allowed", [(99, False), (100, True), (101, True), (None, False)])
+def test_recording_cutoff_uses_capture_time(monkeypatch, captured, allowed):
+    monkeypatch.setenv("LEO_ADAPTIVE_MIN_CAPTURE_UTC_NS", "100")
+    capture = SimpleNamespace(
+        manifest=SimpleNamespace(
+            created_utc_ns=1000,
+            timing=None
+            if captured is None
+            else SimpleNamespace(first_sample_estimate_utc_ns=captured),
+        )
+    )
+    assert subject._capture_allowed(capture) is allowed
+
+
+@pytest.mark.parametrize("entry", ["live", "backfill", "follow_on"])
+def test_recording_cutoff_blocks_every_enqueue_path(monkeypatch, tmp_path, entry):
+    monkeypatch.setenv("LEO_ADAPTIVE_MIN_CAPTURE_UTC_NS", "100")
+    capture = SimpleNamespace(
+        manifest=SimpleNamespace(
+            created_utc_ns=time.time_ns(),
+            timing=SimpleNamespace(first_sample_estimate_utc_ns=99),
+        )
+    )
+    monkeypatch.setattr(
+        subject,
+        "AdaptiveHopIqStore",
+        lambda *a, **k: SimpleNamespace(
+            publication_index=lambda: ((time.time_ns(), "old-capture"),),
+            inspect=lambda _: capture,
+            close=lambda: None,
+        ),
+    )
+    # No status lookup or enqueue is allowed for a rejected recording.
+    monkeypatch.setattr(subject, "AdaptiveHopAnalysisPresentationStore", lambda *a, **k: object())
+    monkeypatch.setattr(subject, "ScannerTrackingStore", lambda *a, **k: object())
+    catalog = SimpleNamespace(adaptive_job_kinds_by_session=lambda: {})
+    monkeypatch.setattr(subject, "_catalog", lambda: catalog)
+    if entry == "live":
+        assert subject.enqueue_pending(bulk_root=tmp_path) == ()
+    elif entry == "backfill":
+        assert subject.enqueue_tracking_backfill(bulk_root=tmp_path) == ()
+    else:
+        assert not subject._enqueue_tracking_after_analysis(
+            bulk_root=tmp_path,
+            session_id="old-capture",
+            site="unused",
+            catalog=catalog,
+        )
+
+
 def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path) -> None:
     class VariableReceipt:
         pass
@@ -57,7 +107,7 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path
         "_catalog",
         lambda: SimpleNamespace(
             adaptive_job_kinds_by_session=lambda: {},
-            enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True
+            enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True,
         ),
     )
 
@@ -95,18 +145,14 @@ def test_enqueue_pending_does_not_reopen_sessions_owned_by_queue(monkeypatch, tm
         subject,
         "_catalog",
         lambda: SimpleNamespace(
-            adaptive_job_kinds_by_session=lambda: {
-                "scan-fw-owned": frozenset(("adaptive_scan",))
-            }
+            adaptive_job_kinds_by_session=lambda: {"scan-fw-owned": frozenset(("adaptive_scan",))}
         ),
     )
 
     assert subject.enqueue_pending(bulk_root=tmp_path) == ()
 
 
-def test_enqueue_pending_does_not_open_captures_outside_live_window(
-    monkeypatch, tmp_path
-) -> None:
+def test_enqueue_pending_does_not_open_captures_outside_live_window(monkeypatch, tmp_path) -> None:
     class Captures:
         def __init__(self, *_args, **_kwargs):
             pass

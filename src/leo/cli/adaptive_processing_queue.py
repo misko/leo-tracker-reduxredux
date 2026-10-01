@@ -113,6 +113,18 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     )
 
 
+def _capture_allowed(capture) -> bool:
+    """Apply the operational recording cutoff using capture time, never import time."""
+    minimum = os.environ.get("LEO_ADAPTIVE_MIN_CAPTURE_UTC_NS")
+    if not minimum:
+        return True
+    cutoff = int(minimum)
+    if cutoff < 0:
+        raise ValueError("adaptive minimum capture timestamp must be non-negative")
+    timing = capture.manifest.timing
+    return timing is not None and timing.first_sample_estimate_utc_ns >= cutoff
+
+
 def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str, ...]:
     """Enqueue missing metrics and tracking for captures from the live window."""
     captures = AdaptiveHopIqStore(bulk_root, read_only=True)
@@ -135,6 +147,8 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
             if queued_sessions.get(session_id):
                 continue
             capture = captures.inspect(session_id)
+            if not _capture_allowed(capture):
+                continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
             phase_pending = False
@@ -212,6 +226,8 @@ def enqueue_tracking_backfill(
             if until_utc_ns is not None and indexed_utc_ns > until_utc_ns:
                 continue
             capture = captures.inspect(session_id)
+            if not _capture_allowed(capture):
+                continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
                 continue
@@ -301,6 +317,8 @@ def _enqueue_tracking_after_analysis(
     tracking = ScannerTrackingStore(bulk_root, read_only=True)
     try:
         capture = captures.inspect(session_id)
+        if not _capture_allowed(capture):
+            return False
         status = presentation.status_for_capture(capture, probe_stride_ms=120)
         if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
             raise ValueError("completed adaptive analysis lacks sealed overview authority")
