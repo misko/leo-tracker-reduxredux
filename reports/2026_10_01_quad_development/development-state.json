@@ -1,11 +1,12 @@
 {
   "status": "active_not_complete",
-  "previous_goal_turn_classification": "progress: verified expanded selection tests and corrected stale overview",
-  "current_progress": "Weighted marginal single pilot complete: 2/3 accepted versus 3/3, no accepted accuracy gain, more cost; decline pair/quad expansion. Geography-free 112-window start screen complete with two passing tests. Fresh DS9-B01-S1 one/three-start arms both audited, identical 659.44 m error, 30.93/35.57 s wall time. Pair then quad fresh gates launched sequentially; poll session before any restart.",
-  "active_cold_seed_queue": {"session_id": 27797, "units": ["DS9-B01-D1", "DS9-B01-Q"], "qualification": "Revalidate live handle; original acquisition, separate one/three-start arms, bounded independent audits."},
-  "next_action": "Poll session 27797, inspect pair/quad comparisons and independent audits, summarize all three gates with figures; do not infer geographic acceptance from screen flags. Publish periodic reports. No weighted pair/quad extension.",
+  "previous_goal_turn_classification": "progress: weighted results published, full-panel start screen completed, first cold gate audited and pair/quad launched",
+  "current_progress": "All three cold one/three-start gates complete, six audited outputs. One-start wall savings 4.64/12.13/43.92 s with error changes 0/+46/+114 m; equivalence checks all pass. Summary/figure complete. Seven DS9-B01 first-start replay audits pass; parent lineage and cold/replay scores verified. Seven tests pass across screening, summary failure handling, runner isolation and replay materialization. DS10-B01 then DS11-B01 replay audits running.",
+  "active_cold_seed_queue": {"session_id": 27797, "status": "terminal exit 0; all three comparisons summarized"},
+  "active_replay_queue": {"session_id": 84822, "units": ["DS10-B01", "DS11-B01"], "qualification": "Saved first-fit audits only, no inference timing claim; one process at a time under shared lock."},
+  "next_action": "Poll session 84822, verify replay audits and provenance, then continue frozen full-panel first-start ablation in bounded block batches. Compare against original three-start outcomes without continuation. Preserve failures; no reference-based selection. No weighted pair/quad extension.",
   "selection": "selection.json",
-  "report": "COLD_SEED_PROGRESS_01.md",
+  "report": "COLD_SEED_RESULTS.md",
   "baseline_summary": "full-panel-baseline-v1.json",
   "common_clock_comparison": "clock-pilot-v1.json",
   "decision": "Retain independent scan clocks: common clock worsened3/3pilotquads. Continue frozen baseline without replacement. Test bounded continuation separately; do not relabel original results or select by geography.",
@@ -52,7 +53,7 @@
   ],
   "optimization": "BLAS scores and DS9-B01-S1 proposal agree around1e-10; microbenchmark median1.21x with variability. Not promoted; full cold-fit equivalence/runtime gate pending.",
   "next_commands": [
-    "Poll cold seed queue session 27797 for DS9-B01-D1 then DS9-B01-Q. Do not restart while live. Single comparison complete; pair/quad pending. Sources sealed; no in-place edits.",
+    "Cold seed queue 27797 complete and summarized. Poll replay session 84822 for DS10-B01 then DS11-B01. Sources sealed; no in-place edits. See FIRST_START_REPLAY_PLAN.md for remaining panel batches.",
     "Weighted marginal pilot complete and negative, decline pair/quad expansion. Screen all 112 saved starts complete; two tests pass. Cold one/three-start comparison holds original acquisition and model fixed; do not mix with BLAS optimization.",
     "Sourcefrozencheckhelpers shared_visibility_port.py, visibility_state_gradient.py, geometry helpers shouldnoteditinplace; versionnewlogic. Existingpubliccontracts unchanged.",
     "Beforeboundedfitpilot freeze membershipfirstsingleeachDS, sameSacprior/fixedheight/nuisancepriors; isolatewidthmodelchange frominitialization policy; warmbaseline-state diagnostic notcoldbenchmark mustbelabeledandcharged.",
@@ -62,9 +63,9 @@
   "implementation": "src/leo/analysis/localization_windows.py",
   "tests": "13 selector and multi-window tests passed",
   "publication_worktree": "/home/mouse9911/gits/leo-quad-report-publish",
-  "published_main_commit": "54d5697d48f57d17984df800a9e6b4e15d275801",
+  "published_main_commit": "1b8d9b2a11b985120b441eae3f8619c7a728e2ad",
   "publication_verified": "git ls-remote matched main after fast-forward push",
-  "active_processes": [{"session_id": 27797, "task": "sequential cold seed-limit pair and quad gates"}],
+  "active_processes": [{"session_id": 84822, "task": "sequential saved first-start audits for DS10-B01 and DS11-B01"}],
   "continuations": [
     {
       "evaluation": "continuation-v1/DS10-B02-Q/evaluation.json",

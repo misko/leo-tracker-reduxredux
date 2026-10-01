@@ -1,5 +1,7 @@
 # Expanded quad development set
 
+Latest complexity ablation: [fresh one-versus-three-start comparisons](COLD_SEED_RESULTS.md) pass all six numerical audits. In the first DS9 single/pair/quad, one start saves observed wall time while pair/quad errors increase modestly. A [separate saved-first-start accuracy study](FIRST_START_REPLAY_PLAN.md) is being audited across the frozen panel; it does not establish cold runtime.
+
 The [complete baseline](FULL_PANEL_BASELINE.md) evaluates all sixteen blocks: 61/64 singles, 31/32 pairs and 15/16 quads pass numerical audits, with median accepted errors of 2,023 / 1,494 / 1,136 m. [Bounded continuation](POST_BASELINE_RESULTS.md) recovers all five unresolved windows; the resulting medians are 1,972 / 1,410 / 1,044 m. Continuation reuses fitted states with original work charged, rather than constituting a new cold benchmark. Numerical acceptance does not guarantee accuracy or calibrated uncertainty. All results are development evidence.
 
 Subsequent experiments have completed: [constituent starts for all pairs](FULL_PAIR_RESULTS.md), [recursive starts for all quads](FULL_RECURSIVE_QUAD_RESULTS.md), [marginal association window pilots](MARGINAL_WINDOW_PILOT_RESULTS.md), and [weighted-curvature single pilots](WEIGHTED_MARGINAL_PILOT_RESULTS.md). These remain separate experimental arms; none replaces the full-panel baseline.
