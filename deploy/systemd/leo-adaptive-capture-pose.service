@@ -1,0 +1,21 @@
+[Unit]
+Description=Bind LT3D-004B roof pose to new published adaptive captures
+After=local-fs.target
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+Environment=MPLCONFIGDIR=/tmp
+ExecStart=/opt/leo-tracker/releases/c46e58d024d1f1c158553115f7adfdf377f61333/.venv/bin/python /opt/leo-capture-pose/508093c82fcd821e657aa2b56c6b45f135238ca812cd5d332a58748d4061ee4c/bind_adaptive_capture_pose.py --authority /etc/leo/station-authority/gauss-r20-lt3d-004b-20261001-v1.json --authority-sha256 sha256:9f70e628893b213edc8de327d3d583afcfbb6e067031d6922101597b98474373 --bulk-root /srv/bulk/leo --output-root /srv/bulk/leo/capture-pose --write
+TimeoutStartSec=120
+Nice=10
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo/capture-pose
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX
