@@ -1,0 +1,10 @@
+[Unit]
+Description=Associate published adaptive captures with operator-reported roof pose
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+Unit=leo-adaptive-capture-pose.service
+
+[Install]
+WantedBy=timers.target
