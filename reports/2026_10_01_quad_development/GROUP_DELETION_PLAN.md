@@ -1,0 +1,11 @@
+# Nonlinear validation of group influence
+
+For the nine windows frozen in group-influence-v1, delete precisely the tracks assigned at baseline to that window's maximum-horizontal-influence (scan,NORAD) group. Group selection uses no geographic reference. Preserve the full candidate catalogues, remaining observations, original prior, fixed height and independent scan nuisance layout. Removed observations must not re-enter if associations change.
+
+Run two warm arms from the identical accepted baseline state: fixed baseline associations on all retained tracks, and ordinary reassignment on retained tracks. The fixed arm masks alternative scores without renormalizing the selected physical score; prediction and score_selected remain unchanged. The reassignment arm uses unmodified ports. Use the existing Student-t4 joint optimizer, 64 updates, 60 seconds for the fit and 90 seconds external per arm including a separate numerical audit. No cold-acquisition runtime or production claim. All 18 planned outcomes are retained, without retry or cap tuning.
+
+Audit converged status, finite supported state, observations, objective agreement and monotone history, selected-assignment consistency for the applicable arm, analytic versus finite-difference active gradient below0.005 and finite-gradient scaled decrement below1e-5. Fixed labels need not remain the unconstrained best branch. Report that count separately. Numerical failure excludes an arm from motion comparisons, with its reason retained.
+
+Compare accepted actual horizontal motion with the saved linear prediction: vector difference in meters, norm ratio and direction cosine. Count changed retained-track assignments in the reassignment arm. There is no geographic scoring in this diagnostic and no claim that deletion improves position. Report singles/pairs/quads separately, failures, all per-window values, and a displacement comparison figure. Check fixed-port behavior synthetically before fitting. Seal sources and parent inputs; shared lock and single-thread sequential processes.
+
+If fixed-association motion disagrees materially with the one-step diagnostic, do not use the latter as an accuracy or rejection score. Distinguish nonlinear/robust-weight effects from reassignment effects with the paired arms. A later group robustness model needs its own predeclared prior and ablation.
