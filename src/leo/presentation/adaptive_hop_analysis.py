@@ -475,6 +475,14 @@ def _render_overview(
         figure = Figure(figsize=(15.5, 11.5), dpi=160, constrained_layout=True)
         axes = figure.subplots(4, 1, sharex=True)
         for channel, axis in enumerate(axes):
+            half_alias = CFO_ALIAS_SPACING_HZ / 2
+            for sign in (-1, 1):
+                lower, upper = sorted((sign * half_alias, sign * CFO_ALIAS_SPACING_HZ))
+                axis.axhspan(lower, upper, color="#edf1f6", zorder=0)
+                boundary = axis.axhline(
+                    sign * half_alias, color="#596579", linestyle=":", linewidth=0.8
+                )
+                boundary.set_gid("canonical-alias-boundary")
             for edge in (0, 1):
                 target = channel + edge * 4
                 for rx in binding.configuration.receiver_ids:
@@ -491,21 +499,37 @@ def _render_overview(
                             label=f"{'LU'[edge]} RX{rx}",
                             rasterized=True,
                         )
+                        for sign in (-1, 1):
+                            shifted = rows[:, 3] + sign * CFO_ALIAS_SPACING_HZ
+                            visible = np.abs(shifted) <= CFO_ALIAS_SPACING_HZ
+                            axis.scatter(
+                                rows[visible, 2],
+                                shifted[visible],
+                                s=12,
+                                alpha=0.45,
+                                marker=_MARKERS[rx],
+                                color=_CFO_COLORS[edge][rx],
+                                linewidths=0.8,
+                                label="_nolegend_",
+                                rasterized=True,
+                            )
                     bank = banks.get((target, rx))
                     if bank:
                         for track in bank.trajectories:
                             times = np.linspace(track.start_s, track.end_s, 80)
-                            axis.plot(
-                                times,
-                                track.frequency_hz(times),
-                                color=_CFO_COLORS[edge][rx],
-                                linewidth=1.1,
-                                linestyle="--",
-                                alpha=0.8,
-                            )
+                            for sign in (-1, 0, 1):
+                                axis.plot(
+                                    times,
+                                    track.frequency_hz(times) + sign * CFO_ALIAS_SPACING_HZ,
+                                    color=_CFO_COLORS[edge][rx],
+                                    linewidth=1.1,
+                                    linestyle="--",
+                                    alpha=0.8 if sign == 0 else 0.45,
+                                )
             _axes_time(axis, binding)
             axis.set_xlabel("")
-            axis.set_ylabel(f"CH{channel + 1}\nCanonical residual (Hz)")
+            axis.set_ylim(-CFO_ALIAS_SPACING_HZ, CFO_ALIAS_SPACING_HZ)
+            axis.set_ylabel(f"CH{channel + 1}\nPilot-relative CFO (Hz)")
             if not np.any((data.passed[:, 0] % 4) == channel):
                 axis.set_yticks([])
                 if receipt.source_span_attested:
@@ -520,11 +544,12 @@ def _render_overview(
                 axis.legend(loc="upper right", ncol=4)
         axes[-1].set_xlabel("Device time since capture start (s); fractional candidate epochs")
         figure.suptitle(
-            "All passed fractional GLRT64 pilot-relative CFO candidates\n"
-            f"Capture tuning removed; canonical modulo {CFO_ALIAS_SPACING_HZ / 1000:.3f} kHz · "
-            "Dashed lines: strongest-per-visit candidate associations, not satellite IDs; "
-            "no L/U or cross-channel joins",
-            fontsize=14,
+            "Passed fractional GLRT64 pilot-relative CFO candidates\n"
+            f"Canonical ±{CFO_ALIAS_SPACING_HZ / 2000:.3f} kHz; shaded bands add half an alias "
+            "above and below (shifted copies, not new detections)\n"
+            "Dashed: strongest-per-visit associations, not satellite IDs; "
+            "capture tuning removed; no L/U or cross-channel joins",
+            fontsize=12,
         )
         figures["cfo-trajectories"] = _save(figure, binding, metrics_sha, test_data)
     return RenderedAdaptiveOverview(
