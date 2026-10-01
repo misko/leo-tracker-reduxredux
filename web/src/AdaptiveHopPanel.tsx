@@ -105,12 +105,11 @@ function Timeline({ detail }: { detail: AdaptiveDetail }) {
 export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
   const [detail, setDetail] = useState<AdaptiveDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
   const [selected, setSelected] = useState(0);
   useEffect(() => {
     let active = true; let busy = false;
     const controller = new AbortController();
-    setDetail(null); setError(null); setPage(0); setSelected(0);
+    setDetail(null); setError(null); setSelected(0);
     const refresh = async () => {
       if (busy) return;
       busy = true;
@@ -131,7 +130,6 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
   const hostAdaptive = c.schema_version === 2 || c.schema_version === 3;
   const choice = detail.visits[selected];
   const decision = detail.host_decisions?.[selected];
-  const start = page * 50;
   return <div className="adaptive-detail">
     <header className="recording-heading scanner-heading"><div><p className="section-label">{c.mode.toUpperCase()} HOP CAPTURE</p>
       <h2>Actual channel visits</h2><code>{c.session_id}</code></div><div>{c.terminal_state} · {c.sample_rate_hz / 1e6} MS/s</div></header>
@@ -173,6 +171,9 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
     </section>
     <section className="scanner-results-panel" aria-label="Adaptive scheduling decisions"><header><h3>Why each hop was chosen</h3></header>
       <p>Three evaluated misses AND two seconds since the latest positive are required for demotion. Unknown breaks the miss streak. Quiet does not prove signal absence.</p>
+      {detail.visits.length ? <label>Inspect visit <select value={selected} onChange={event => setSelected(Number(event.target.value))}>
+        {detail.visits.map((visit, index) => <option key={visit.visit_index} value={index}>Visit {visit.visit_index}</option>)}
+      </select></label> : null}
       {choice ? <div className="adaptive-choice" aria-label="Selected hop decision">
         <strong>Visit {choice.visit_index}: actual {targetLabel(choice.target_index)}; proposed {targetLabel(choice.proposed_target_index)}</strong>
         <p>Proposed-target state: {stateAtChoice(choice, choice.proposed_target_index)} · {choice.consecutive_misses} consecutive misses · {seconds(choice.cooldown_remaining_seconds)} cooldown remaining</p>
@@ -189,19 +190,6 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
           </> : null}
         </div> : null}
       </div> : <p>No hop was started.</p>}
-      <div className="queue-table-scroll"><table className="queue-table" aria-label="Adaptive visit decisions"><thead><tr>
-        <th>Visit</th><th>Actual / proposed</th><th>Valid boundary</th><th>IQ</th><th>Choice reason</th>
-      </tr></thead><tbody>{detail.visits.slice(start, start + 50).map(v => <tr key={v.visit_index}>
-        <td><button type="button" aria-pressed={selected === v.visit_index} onClick={() => setSelected(v.visit_index)}>Inspect visit {v.visit_index}</button></td>
-        <td>{targetLabel(v.target_index)} / {targetLabel(v.proposed_target_index)}</td><td>{seconds(v.valid_start_seconds)}</td>
-        <td>{v.retained ? `${Math.round((v.valid_end_seconds! - v.valid_start_seconds) * 1000)} ms retained` : "Incomplete; not retained"}</td><td>{v.reason.replaceAll("_", " ")}</td>
-      </tr>)}</tbody></table></div>
-      <p>For an incomplete hop, the valid boundary may not have been reached before cancellation.</p>
-      {detail.visits.length > 50 ? <div className="candidate-pagination scanner-pagination">
-        <span>{start + 1}–{Math.min(start + 50, detail.visits.length)} of {detail.visits.length}</span><div>
-          <button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous visits</button>
-          <button type="button" disabled={start + 50 >= detail.visits.length} onClick={() => setPage(page + 1)}>Next visits</button>
-        </div></div> : null}
     </section>
     <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />
     <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />

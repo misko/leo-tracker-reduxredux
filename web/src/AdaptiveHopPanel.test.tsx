@@ -199,8 +199,7 @@ describe("adaptive actual-visit presentation", () => {
     expect(screen.queryByText(/both receivers retained/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Selected host decision")).toHaveTextContent("delivery accepted");
     expect(fetcher.mock.calls.some(([path]) => path.endsWith("/glrt"))).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: "Next visits" }));
-    fireEvent.click(screen.getByRole("button", { name: "Inspect visit 52" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Inspect visit" }), { target: { value: "52" } });
     expect(screen.getByLabelText("Selected host decision")).toHaveTextContent("queue_overflow · forwarded verdict unknown · delivery source_ended");
   });
 
@@ -259,7 +258,6 @@ describe("adaptive actual-visit presentation", () => {
     render(<AdaptiveHopDetail sessionId="adaptive-test" />);
     expect(await screen.findByText(label)).toBeInTheDocument();
     expect(screen.getByText("120 ms quiet / 360 ms active dwell · both receivers retained")).toBeInTheDocument();
-    expect(screen.getByText("360 ms retained")).toBeInTheDocument();
   });
 
   it.each(["receiver", "rate", "inventory", "missing-decision", "rounded-counter"])("rejects invalid native %s", async fault => {
@@ -282,14 +280,14 @@ describe("adaptive actual-visit presentation", () => {
     expect(screen.getByText(/Proposals did not change/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Actual retained visits/ })).toBeInTheDocument();
     expect(await screen.findByText(/It is not queued here/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Inspect visit 25" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Inspect visit" }), { target: { value: "25" } });
     const choice = screen.getByLabelText("Selected hop decision");
     expect(choice).toHaveTextContent("actual CH2L; proposed CH1U");
     expect(choice).toHaveTextContent("2 consecutive misses · 1.500 s cooldown remaining");
     expect(choice).toHaveTextContent(detail.visits[25].valid_start_counter);
-    fireEvent.click(screen.getByRole("button", { name: "Next visits" }));
-    expect(screen.getByRole("table", { name: "Adaptive visit decisions" })).toHaveTextContent("Incomplete; not retained");
-    expect(within(screen.getByRole("table", { name: "Adaptive visit decisions" })).getAllByRole("row")).toHaveLength(5);
+    expect(screen.queryByRole("table", { name: "Adaptive visit decisions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next visits" })).not.toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Adaptive channel allocation" })).toBeInTheDocument();
     await screen.findByText(/No on-radio GLRT evidence was recorded/);
     expect(fetcher.mock.calls.some(([path]) => path === "/api/v1/scanner/adaptive-sessions/adaptive-test/glrt")).toBe(true);
     expect(screen.queryByText("No signal")).not.toBeInTheDocument();
@@ -299,6 +297,7 @@ describe("adaptive actual-visit presentation", () => {
     vi.stubGlobal("fetch", vi.fn(async (path: string) => path.endsWith("/glrt") || path.includes("/analysis?") ? respond(null, 404) : respond(adaptiveDetailFixture("empty", 0))));
     render(<AdaptiveHopDetail sessionId="empty" />);
     await screen.findByText("No hop was started.");
+    expect(screen.queryByRole("combobox", { name: "Inspect visit" })).not.toBeInTheDocument();
     expect(screen.getByText(/No attested device-time span/)).toBeInTheDocument();
     expect(screen.getByText("Source-counter duty").parentElement).toHaveTextContent("Unavailable");
     expect(screen.queryByText("0.00%")).not.toBeInTheDocument();
