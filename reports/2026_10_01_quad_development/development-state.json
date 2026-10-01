@@ -1,12 +1,12 @@
 {
   "status": "active_not_complete",
-  "previous_goal_turn_classification": "progress: all cold start-count gates completed and published, seven-window replay provenance validated",
-  "current_progress": "Seven-block first-start replay summary complete: 49/49 accepted versus original 47/49. Single first/original median 1583/1538 m, pair 867/849 m, quad 455/455 m; acceptance populations differ. Matched median changes zero. Newly accepted single DS9-B03-S3 is 7189 m wrong; quad DS10-B02-Q is 182 m. Two summary tests plus two materialization tests pass. Next four-block batch running; 63 windows outside current summary.",
+  "previous_goal_turn_classification": "progress: seven-block first-start audit and figure published; next bounded batch launched",
+  "current_progress": "All 112 first-start replay audits complete: 61/64 singles,32/32 pairs,16/16 quads; medians2023/1501/775 m, p904901/3104/2310 m. Original three-start107accepted versus109first-start; matchedmedianchangeszero, asymmetricalsinglefailurespreserved. Full summary/report/figure complete. Read-only inventory verifies all originalselectedIDs:23208of134822retainedpoints used,8pertrack; naive16dropsoriginalpointsin2531tracks. Nextplan nested denser evidence, no denserfitsyet. Alljobs terminal.",
   "active_cold_seed_queue": {"session_id": 27797, "status": "terminal exit 0; all three comparisons summarized"},
-  "active_replay_queue": {"session_id": 87359, "units": ["DS10-B03", "DS11-B03", "DS9-B04", "DS10-B04"], "qualification": "Saved first-fit audits only, no inference timing claim; one process at a time under shared lock. Prior sessions 84822 and 14921 terminal exit 0."},
-  "next_action": "Poll session 87359 before restarting anything. After current batch, remaining blocks are DS11-B04, DS9-B05, DS10-B05, DS11-B05, DS9-B06. Continue frozen first-start ablation in bounded batches, then summarize all 112 against original three-start outcomes without continuation. Preserve failures and no reference-based selection. Summary script now source-bound by seven-block sealed artifact; version any logic changes.",
+  "active_replay_queue": {"status": "all terminal exit 0", "completed_sessions": [84822,14921,87359,14216,51992], "summary_session": 96882},
+  "next_action": "Implement and test nested 8-to16 observation selection preserving originalIDs per DENSER_TRACK_EVIDENCE_PLAN.md. Build eight-point paritycontrol and sixteen-point ports; verify covariance/background dimensions and finite-differencegradients on metadatafirst DS9/10/11 singles beforefits. No automatic32point/fullpanelcampaign. Existing inference/summary/inventory sources are hashbound; newversion for changes. One-start leading simplification candidate, not productionpromotion.",
   "selection": "selection.json",
-  "report": "FIRST_START_PROGRESS_01.md",
+  "report": "FIRST_START_RESULTS.md",
   "baseline_summary": "full-panel-baseline-v1.json",
   "common_clock_comparison": "clock-pilot-v1.json",
   "decision": "Retain independent scan clocks: common clock worsened3/3pilotquads. Continue frozen baseline without replacement. Test bounded continuation separately; do not relabel original results or select by geography.",
@@ -53,7 +53,7 @@
   ],
   "optimization": "BLAS scores and DS9-B01-S1 proposal agree around1e-10; microbenchmark median1.21x with variability. Not promoted; full cold-fit equivalence/runtime gate pending.",
   "next_commands": [
-    "Cold seed queue 27797 and replay queues 84822/14921 terminal. Poll replay 87359 for next four blocks. Sources sealed; no in-place edits. See FIRST_START_REPLAY_PLAN.md and next_action for remaining panel batches.",
+    "All cold and first-start replay queues terminal; full112summary sealed. Next nesteddenser evidence prerequisite per DENSER_TRACK_EVIDENCE_PLAN.md and next_action. Sources sealed; no inplaceedits.",
     "Weighted marginal pilot complete and negative, decline pair/quad expansion. Screen all 112 saved starts complete; two tests pass. Cold one/three-start comparison holds original acquisition and model fixed; do not mix with BLAS optimization.",
     "Sourcefrozencheckhelpers shared_visibility_port.py, visibility_state_gradient.py, geometry helpers shouldnoteditinplace; versionnewlogic. Existingpubliccontracts unchanged.",
     "Beforeboundedfitpilot freeze membershipfirstsingleeachDS, sameSacprior/fixedheight/nuisancepriors; isolatewidthmodelchange frominitialization policy; warmbaseline-state diagnostic notcoldbenchmark mustbelabeledandcharged.",
@@ -63,9 +63,9 @@
   "implementation": "src/leo/analysis/localization_windows.py",
   "tests": "13 selector and multi-window tests passed",
   "publication_worktree": "/home/mouse9911/gits/leo-quad-report-publish",
-  "published_main_commit": "b09832d56a368b97c3036ced0d51fd870e7f2f6e",
+  "published_main_commit": "3509805f12a0f3a4ff71e5e21f16e3f02dd85014",
   "publication_verified": "git ls-remote matched main after fast-forward push",
-  "active_processes": [{"session_id": 87359, "task": "sequential saved first-start audits for DS10-B03, DS11-B03, DS9-B04, DS10-B04"}],
+  "active_processes": [],
   "continuations": [
     {
       "evaluation": "continuation-v1/DS10-B02-Q/evaluation.json",
