@@ -1,0 +1,11 @@
+# Compare accepted target leaders using their full fitted objectives
+
+The completed 112-window candidate study found that zero-nuisance acquisition ranking often chooses poor fitted coordinates. This separate post-result arm asks whether ranking the same target-only candidates by their already audited full joint objectives performs better. It does not modify the original five-arm study or its decisions.
+
+Use the sealed 219-entry candidate manifest unchanged. For each of the 112 targets, compare only accepted candidates fitted to that exact target, with identical ordered scans, observation IDs, input bindings, model, height, prior precision and configuration except start/iteration limits. Never compare a constituent fit's objective with a larger target's objective. The first fit is the baseline, including the existing three 96-iteration replacements.
+
+Minimize the recorded final objective, using each candidate's fitted position, nuisance parameters and hard assignments. The original independent audit already checked these objective values against the physical score. Require finite objective values and preserve receipt/audit/source hashes. Prefer the first fit within 1e-6 of the minimum; otherwise use frozen order. Unit tests must prevent cross-target comparisons, reject inconsistent scan bindings and show that error metadata cannot affect selection.
+
+Seal all choices before a separate evaluator reads reference errors. Compare the first-fit baseline, the already sealed target-only acquisition choices, full-objective choices and the target-only reference oracle on the same available candidates and denominators. Report all singles/pairs/quads, dataset variation, matched changes and a figure. The oracle remains diagnostic only.
+
+This is a no-refit comparison of existing accepted leaders. Candidate-generation costs are historical and not free in an actual estimator; no runtime or generalization claim follows. Changing from acquisition score to full objective simultaneously changes nuisance treatment and association treatment, so any difference cannot be uniquely attributed to one of them. Preserve the original baseline and do not promote a selector based only on an exposed development median.
