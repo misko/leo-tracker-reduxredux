@@ -1,0 +1,9 @@
+# Matched receiver residual diagnostic
+
+Use the three first-single baseline states and hard assignments, conditional on those fitted labels. Match retained signal observations only when NORAD, channel and physical visit agree, with exactly one candidate per receiver. Require support-center separation <=0.001 seconds and overlapping support intervals. Report exclusions. No interpolation or label changes.
+
+Group matches by the two source track identities. With at least two visits in a group, apply orthonormal Helmert contrasts over those matched visits separately to each receiver. This removes each track's arbitrary frequency offset. Reconstruct centered raw residuals using the transpose of the original full-track contrasts; apply the same linear maps to the existing covariance. Do not compare unrelated coordinates from different original Helmert bases.
+
+Define common=(r0+r1)/sqrt(2) and differential=(r0-r1)/sqrt(2). Under the current independent-receiver covariance, both have covariance (V0+V1)/2. Report whitened common and differential energies, their pooled ratio, and paired contrast count. Ratios above one indicate aligned residual variation, below one opposed variation, conditional on current state/labels/covariance. No significance claim: labels/states were fitted using all data and groups can share source tracks.
+
+Exploratory common-error gate: at least three eligible track-pair groups per dataset, pooled common/differential ratio >2 in every dataset, and a majority of eligible groups in each dataset have common energy greater than differential energy. A pass warrants an independent frozen predictive experiment, not a fitted covariance or a causal orbit-error claim. Otherwise do not add a shared residual covariance from these pilots. No optimization, geographic scoring, or RF collection.
