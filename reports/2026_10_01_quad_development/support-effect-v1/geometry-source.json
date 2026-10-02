@@ -1,0 +1,21 @@
+{
+  "reader_before": {
+    "leo.storage.scanner_tracking_source": "sha256:f47909f9b980020fce0745dff461e68c5d8db2704fa4b366c3fd95dd893dce49",
+    "leo.operations.adaptive_tle_position_inputs": "sha256:2b2c68c2eab3bd26d60c9d366fa6b1dc8cc580b3b7b77ca549f8cf2383fdd477",
+    "leo.operations.tle_archive": "sha256:4197f5e8cbbe43018df88318872746dfbec253aac1285a7971290c7439024da1",
+    "leo.application.scanner_trajectory": "sha256:844f23c068af8c6f6a0477f1a0ce2997e1066b2585d4cbca24781f62ab8c3e7b",
+    "leo.analysis.persistent_hop_trajectory": "sha256:1951ba2c0843c7e23a94390257d611fa255dc5251f3c5bfde487ba2069ea80a8"
+  },
+  "reader_after": {
+    "leo.storage.scanner_tracking_source": "sha256:f47909f9b980020fce0745dff461e68c5d8db2704fa4b366c3fd95dd893dce49",
+    "leo.operations.adaptive_tle_position_inputs": "sha256:2b2c68c2eab3bd26d60c9d366fa6b1dc8cc580b3b7b77ca549f8cf2383fdd477",
+    "leo.operations.tle_archive": "sha256:4197f5e8cbbe43018df88318872746dfbec253aac1285a7971290c7439024da1",
+    "leo.application.scanner_trajectory": "sha256:844f23c068af8c6f6a0477f1a0ce2997e1066b2585d4cbca24781f62ab8c3e7b",
+    "leo.analysis.persistent_hop_trajectory": "sha256:1951ba2c0843c7e23a94390257d611fa255dc5251f3c5bfde487ba2069ea80a8"
+  },
+  "geometry": {
+    "source": "def fractional_glrt64_support_geometry(\n    candidate: FractionalEpoch,\n    *,\n    sample_rate_hz: int,\n    probe_sample_count: int,\n) -> _SupportGeometry:\n    symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S\n    frame_period = sample_rate_hz / FRAME_RATE_HZ\n    template_count = round(frame_period)\n    local_starts = tuple(round(symbol * symbol_period) for symbol in _GLRT64_SYMBOLS)\n    local_stops = tuple(\n        min(round((symbol + 1) * symbol_period), template_count) for symbol in _GLRT64_SYMBOLS\n    )\n    left_guard, right_guard = fractional_take_bounds(candidate.fractional_epoch_offset_samples)\n    centers: list[float] = []\n    source_starts: list[int] = []\n    source_ends: list[int] = []\n    frame = 0\n    while True:\n        frame_start = candidate.integer_epoch_sample + round(frame * frame_period)\n        if (\n            frame_start + candidate.fractional_epoch_offset_samples >= probe_sample_count\n            or frame_start + local_starts[0] + candidate.fractional_epoch_offset_samples\n            >= probe_sample_count\n        ):\n            break\n        for local_start, local_stop in zip(local_starts, local_stops, strict=True):\n            count = local_stop - local_start\n            if count < 2:\n                continue\n            continuous_start = frame_start + local_start + candidate.fractional_epoch_offset_samples\n            if continuous_start < left_guard or (\n                continuous_start + count - 1 >= probe_sample_count - right_guard\n            ):\n                continue\n            centers.append(continuous_start + (count - 1) / 2.0)\n            source_starts.append(math.floor(continuous_start) - left_guard)\n            source_ends.append(math.floor(continuous_start + count - 1) + right_guard + 1)\n        frame += 1\n    if len(centers) < 2:\n        raise PersistentHopTrajectoryProjectionError(\n            \"passing fractional GLRT candidate has insufficient source support\"\n        )\n    center = math.fsum(centers) / len(centers)\n    offsets_s = tuple((item - center) / sample_rate_hz for item in centers)\n    raw_second = math.fsum(item**2 for item in offsets_s) / len(offsets_s)\n    raw_third = math.fsum(item**3 for item in offsets_s) / len(offsets_s)\n    return _SupportGeometry(\n        source_start_in_probe=min(source_starts),\n        source_end_in_probe=max(source_ends),\n        center_in_probe_samples=center,\n        factorial_support_moments_s=(1.0, 0.0, raw_second / 2.0, raw_third / 6.0),\n    )\n",
+    "module_path": "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8/.venv/lib/python3.14/site-packages/leo/application/persistent_hop_trajectory.py",
+    "module_sha256": "sha256:05d769be631055c2d91d8b8175c6c432c2921ebc0d3da00a8fe46c345ece8252"
+  }
+}
