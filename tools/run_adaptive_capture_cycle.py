@@ -14,6 +14,7 @@ import enum
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 import time
 import uuid
@@ -26,9 +27,9 @@ if TYPE_CHECKING:
 
 SERIAL = "10400056f695001322002d0010ad1719f2"
 URI = "ip:192.168.1.21"
-RATES = (2_500_000, 5_000_000, 7_500_000, 10_000_000)
+RATES = (2_500_000,)
 SLOT_SECONDS = 420
-ACTIVE_DWELLS_MS = (120, 240, 360)
+ACTIVE_DWELLS_MS = (120,)
 FREQUENCIES_2P5 = (
     959_687_498,
     1_190_312_500,
@@ -78,15 +79,8 @@ def slot_configuration(
     epoch_seconds: int, serial: str = SERIAL
 ) -> tuple[int, int, str, tuple[int, ...]]:
     ordinal = epoch_seconds // SLOT_SECONDS
-    # Split the probability mass equally between 10 MS/s and the other rates.
-    # Separate hash domains keep choices reproducible and independent of edge/dwell.
-    other_rates = tuple(rate for rate in RATES if rate != 10_000_000)
-    if deterministic_uniform_choice(serial, ordinal, "rate-10m-half-v1", 2) == 0:
-        rate = 10_000_000
-    else:
-        rate = other_rates[
-            deterministic_uniform_choice(serial, ordinal, "rate-other-v1", len(other_rates))
-        ]
+    # All future captures use the operator-selected 2.5 MS/s rate.
+    rate = 2_500_000
     edge = "upper" if deterministic_uniform_choice(serial, ordinal, "edge", 2) else "lower"
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
@@ -103,7 +97,7 @@ def campaign_configuration(
     ordinal, scheduled_rate, edge, _ = slot_configuration(epoch_seconds, serial)
     rate = scheduled_rate if sample_rate_hz is None else sample_rate_hz
     if rate not in RATES:
-        raise ValueError("sample rate must be 2.5, 5, 7.5, or 10 MS/s")
+        raise ValueError("adaptive captures require 2.5 MS/s")
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
     identity = hashlib.sha256(
@@ -113,12 +107,17 @@ def campaign_configuration(
 
 
 def slot_capture_settings(epoch_seconds: int, serial: str) -> tuple[int, GainMode]:
-    """Uniform dwell choice and fixed manual gain across retries of a scan slot."""
+    """Fixed 120 ms active/quiet dwell policy, retaining manual gain."""
     from pluto_plus.models import GainMode
 
-    ordinal = epoch_seconds // SLOT_SECONDS
-    dwell = ACTIVE_DWELLS_MS[deterministic_uniform_choice(serial, ordinal, "dwell-v3", 3)]
-    return dwell, GainMode.MANUAL
+    return 120, GainMode.MANUAL
+
+
+def minimum_capture_free_bytes(sample_rate_hz: int, duration_ms: int) -> int:
+    """Budget worst-case dual-RX ci16 plus compression/metadata headroom."""
+    if sample_rate_hz <= 0 or duration_ms <= 0:
+        raise ValueError("capture rate and duration must be positive")
+    return (sample_rate_hz * duration_ms * 8 + 999) // 1000 + 2 * 1024**3
 
 
 def json_value(value):
@@ -181,7 +180,7 @@ def main() -> int:
         "--sample-rate",
         type=int,
         choices=RATES,
-        help="sample rate in samples/second; defaults to the current seven-minute slot rate",
+        help="sample rate in samples/second; only 2500000 (2.5 MS/s) is supported",
     )
     parser.add_argument(
         "--timing-policy",
@@ -234,6 +233,14 @@ def main() -> int:
                 sort_keys=True,
             )
         )
+        return 0
+    free_bytes = shutil.disk_usage(args.iq_spool_root).free
+    required_bytes = minimum_capture_free_bytes(rate, args.duration_ms)
+    if free_bytes < required_bytes:
+        print(json.dumps({
+            "status": "deferred_insufficient_spool_space", "rate_hz": rate,
+            "free_bytes": free_bytes, "required_bytes": required_bytes,
+        }), flush=True)
         return 0
     stamp = datetime.fromtimestamp(ordinal * SLOT_SECONDS, UTC).strftime("%Y%m%dT%H%M%SZ")
     session_id = f"scan-fw-{identity[:8].hex()}"

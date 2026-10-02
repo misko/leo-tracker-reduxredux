@@ -1,5 +1,40 @@
 # Automatic adaptive capture cadence
 
+## October 2 fixed sample rate
+
+All future adaptive captures use **2.5 MS/s only**, including manual invocations
+of the cadence runner; other sample-rate overrides are rejected. The installed
+runner digest is
+`e437833b8508caf0d8d8c2b8e7b77f87ed8bed4adc13852a963b0666e18410e3`.
+All 15 component tests pass, including the RF-free dry run against the deployed
+acquisition runtime. The service configuration applies at its next scheduled
+activation. Five-minute captures, 120/120 ms dwells, gain, edge selection, and
+the spool-space guard remain unchanged. The installed timer currently has a
+ten-minute catch-up gap (`zzz-catch-up-gap.conf`); this rate change preserves it.
+
+## October 1 operator policy
+
+The October 1 runner selected **10 MS/s or 2.5 MS/s with equal probability** and
+always uses **120 ms active / 120 ms quiet dwells**. Manual 40 dB gain, five-minute
+captures, independent edge choice, unique activation IDs and two-minute gaps
+remain. Before opening RF it requires free spool space for the full uncompressed
+dual-RX capture plus 2 GiB headroom; a low-space attempt is deferred without
+starting a capture. This prevents the observed ENOSPC loop but is not a disk
+reservation against unrelated concurrent writers. The selected rate is not
+changed to fit available space.
+
+The installed runner digest is
+`8eeaf27ebfe88f37b36975c7fe1530cc861716df467e8a648ea8678d4fe32d91`.
+Fifteen scheduling, identity, space-budget and dry-run tests pass. New capture
+pose companions use `gauss-r20-lt3d-004b-20261001-v1` (LT3D-004B; software RX0
+west and RX1 east). The first October 1 restart was bounded to 30 minutes.
+At 04:43 UTC the operator explicitly authorized continuous adaptive capture;
+the timer was enabled for ongoing operation and boot activation, with no
+automatic end-of-window stop. Each capture still lasts five minutes followed
+by a two-minute gap, subject to the free-space guard.
+
+The following records the earlier cadence and policy for historical reference.
+
 Installed on 2026-09-27 for radio `192.168.1.20` using the existing
 `leo-v052-adaptive.service` and enabled `leo-v052-adaptive.timer`.
 
