@@ -2,6 +2,12 @@
 
 ## October 2 fixed sample rate
 
+The timer now waits **three minutes after each capture finishes**, replacing
+the ten-minute catch-up gap. The obsolete `zzz-catch-up-gap.conf` override is
+removed when installing the updated `zz-seven-minute.conf` timer drop-in.
+Five-minute captures continue at 2.5 MS/s, for roughly eight-minute cycles plus
+setup and finalization. The boot delay remains the base timer's two minutes.
+
 All future adaptive captures use **2.5 MS/s only**, including manual invocations
 of the cadence runner; other sample-rate overrides are rejected. The installed
 runner digest is
@@ -9,8 +15,8 @@ runner digest is
 All 15 component tests pass, including the RF-free dry run against the deployed
 acquisition runtime. The service configuration applies at its next scheduled
 activation. Five-minute captures, 120/120 ms dwells, gain, edge selection, and
-the spool-space guard remain unchanged. The installed timer currently has a
-ten-minute catch-up gap (`zzz-catch-up-gap.conf`); this rate change preserves it.
+the spool-space guard remain unchanged. The initial rate-only change preserved
+the ten-minute catch-up gap; the subsequent timer update above replaces it.
 
 ## October 1 operator policy
 

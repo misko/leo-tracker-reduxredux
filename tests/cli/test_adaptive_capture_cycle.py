@@ -84,11 +84,11 @@ def test_manual_gain_preserved(runner):
         assert gain.value == "manual"
 
 
-def test_timer_waits_two_minutes_after_completion():
+def test_timer_waits_three_minutes_after_completion():
     root = Path(__file__).resolve().parents[2]
     timer = (root / "deploy/systemd/leo-adaptive-seven-minute.timer.conf").read_text()
     assert "OnCalendar=\n" in timer
-    assert "OnUnitInactiveSec=2min\n" in timer
+    assert "OnUnitInactiveSec=\nOnUnitInactiveSec=3min\n" in timer
     assert "RandomizedDelaySec=0\n" in timer
 
 
