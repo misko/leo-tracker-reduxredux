@@ -1,0 +1,5 @@
+# Robust single-curve follow-up control
+
+The completed Gaussian mixture experiment has positive pooled gains but zero median gains, failing its frozen all-track gate. Before considering further mixture development, compare the fixed Gaussian-selected policy against a Student-t4 single quadratic trained on the same folds. Fix sigma to the same 100/300 Hz controls. No mixture refit or selection change is allowed. IRLS initializes from training OLS, takes at most 100 updates, and must converge monotonically in Student-t likelihood. Report failed controls explicitly rather than replacing their scores.
+
+For each held observation compare the Gaussian-selected policy (original single Gaussian when mixture was not selected) and the fitted robust single t curve using normalized density. Also report the mixture-admitted subset separately: aggregate policy comparisons conflate distribution choice on unchanged tracks. This is still a correlated within-track surrogate experiment, not the multivariate Student-t contrast likelihood of localization. A result cannot establish geographic improvement.
