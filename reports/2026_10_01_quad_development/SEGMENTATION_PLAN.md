@@ -1,0 +1,9 @@
+# Radio-only segmentation prototype
+
+Hypothesis: some exported tracks combine distinct frequency trajectories and need separate units of association. Fit piecewise quadratic frequency versus recorded time without satellite predictions, fitted localization state, labels, or GPS. Use the independent-track membership already frozen for the first DS9/DS10/DS11 singles, including background-assigned tracks; no track is selected by its current residual.
+
+Minimize sum(segment SSE / sigma²) + lambda*(segments−1), exactly over chronological contiguous partitions. Each segment needs at least six observations and three seconds of span; cap at four segments. All observations appear exactly once. Primary sigma=100 Hz, lambda=6 log(n), corresponding to a deliberately conservative complexity cost per added quadratic segment. This is a heuristic, not calibrated BIC: correlated observations and discrete boundary search invalidate a literal likelihood interpretation. Controls: lambda=3 log(n), lambda=12 log(n), and sigma=300 Hz with primary lambda. Do not retune these after observing outcomes.
+
+Report split counts across all admitted tracks, segment support, SSE reduction and penalty sensitivity. Inspect the previously selected DS10 pair separately. Also apply the primary rule to every other point in that pair when support allows; report rather than conceal instability. Eight retained points cannot support two six-point segments, so segmentation must precede the solver's point cap. This changes data usage and requires a separate matched-compute/evidence comparison before localization claims.
+
+A useful outlier result requires RX1 to split under both primary and doubled penalty, while RX0 remains unsplit under the primary policy. Even a pass only justifies numerical integration and a bounded matched localization pilot; smooth segments do not establish correct satellite identity. Preserve original exports and original baseline arms.
