@@ -1,0 +1,78 @@
+Sample-rate versus satellite-candidate Doppler RMS, 2026-10-03
+
+Finding
+10 MS/s has lower typical held-out Doppler RMS than 2.5 MS/s in this week's
+recordings. There is no clear improvement over 5 MS/s. This is an observational
+association, not proof of better acquisition probability or confirmed identity.
+
+Scope and metric
+Capture window: 2026-09-26 08:58:03 through 2026-10-03 08:58:03 America/Los_Angeles
+(15:58:03 UTC on both dates). Filter by capture time, not analysis creation time.
+All target-rate recordings use radio_pluto_5d4d, manual 40 dB gain and nominal
+120 ms dwell. No IQ was decoded or new RF collected for this review.
+
+Of 964 recordings at the requested rates, 885 have a comparable v14 product with
+tracks: 359/373 at 2.5 MS/s, 141/151 at 5 MS/s, and 385/440 at 10 MS/s. Exclusions
+are 77 without a v14 product and two v14 no-trajectory products. Missing products
+are not classified as failed locks. New v15 products are excluded rather than
+mixed or counted twice. All included v14 products share configuration digest
+sha256:f54e5ab518dae837df03eaf7a4d54b9d30807f0a5edc872f1b9351c70ec2c054.
+
+For each reviewed track, use the training-ranked first TLE candidate and its
+randomized_evaluation_rms_hz. The implementation fits constant frequency offset
+and chooses satellite/time shift using the 60% training subset, then evaluates
+the other 40%. This is offset-only RMS: no learned RF-dependent coefficient c
+or position fit is introduced in this comparison. It is not position accuracy,
+an independent future-pass validation, or proof of correct satellite identity.
+Track observations and scan observations are dependent; do not treat 49,948
+tracks as independent satellite passes. No eligible reviews were deferred in
+these included v14 products.
+
+Rate      Scans    Reviewed tracks   Median Hz   P90 Hz   Fraction below 100 Hz
+2.5 MS/s    359          19,656        113.064    212.309       40.28%
+5 MS/s      141           8,050         98.662    233.236       51.06%
+10 MS/s     385          22,242         97.528    278.064       51.88%
+
+The pooled median improvement of 10 over 2.5 is 13.74%; over 5 it is 1.15%.
+The 10 MS/s error tail is worse, not better: 12.92% exceed or equal 200 Hz,
+versus 11.18% at 2.5 and 11.90% at 5. Retained-track selection and different
+track durations can influence both the median and tail.
+
+Sensitivity checks
+Within the common capture-time interval shared by all three rate cohorts,
+compute one median per scan and give each scan equal weight. Medians are
+116.38 Hz (159 scans, 2.5), 98.05 Hz (141 scans, 5), and 98.43 Hz (288 scans, 10).
+The bootstrap ratio 10/2.5 has median 0.845 and percentile interval 0.815-0.875;
+10/5 has median 1.005 and interval 0.974-1.040 (4,000 scan resamples, fixed seed).
+These intervals condition on the observed scans and ignore temporal dependence
+between adjacent scans; they are descriptive uncertainty, not causal bounds.
+
+Group tracks by Pacific date, channel, edge, 10-second duration bin, and
+20-observation support bin, retaining cells with at least five tracks at both
+rates. The median cell-wise RMS ratio is 0.834 for 10/2.5 (480 cells) and 1.002
+for 10/5 (331 cells). This supports the typical-RMS finding after coarse support
+and capture-condition adjustment. It does not control signal strength or orbit
+geometry completely. The 10 versus 2.5 advantage occurs at both band edges.
+
+An attempted strict pairing on the same candidate ID/channel/edge, within
+15 minutes, with duration and observation counts within a factor of two yielded
+zero pairs. Consequently this review does not establish a same-satellite,
+same-pass rate effect. Candidate labels remain tentative.
+
+Conclusion
+The data support about 14-17% lower typical residual RMS at 10 versus 2.5 MS/s,
+with essentially the same typical RMS at 5 and 10 MS/s. They do not establish
+that 10 MS/s locks more reliably, nor that the larger rate improves positioning.
+A causal comparison would require matched existing IQ replay through the same
+detector at all three effective bandwidths, with acquisition failures counted.
+No production rate settings were changed.
+
+Reproducibility and checks
+review.py reads only published JSON metadata. summarize.py creates tracks.csv,
+scans.csv, recordings.csv, summary.json, provenance.json and rms-comparison.png.
+provenance.json binds each used product to its source path and SHA-256.
+validation.json records nine full-manifest timestamp/rate checks (three per
+rate) and all excluded-product counts. Every included recording's sample rate
+was cross-checked against its tracking product. Counts and medians in tracks.csv
+were independently recomputed using Python's standard-library statistics module.
+No manifest parse errors occurred. The chart was visually inspected.
