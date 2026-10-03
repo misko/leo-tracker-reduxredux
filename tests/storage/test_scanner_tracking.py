@@ -8,25 +8,28 @@ from leo.contracts.scanner_tracking import (
     ScannerTrackingProductV6,
     ScannerTrackingProductV12,
     ScannerTrackingProductV13,
-    ScannerTrackingStatusV14,
+    ScannerTrackingProductV14,
+    ScannerTrackingStatusV15,
 )
 from leo.storage.adaptive_hop_analysis import _seal
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from tests.application.test_scanner_tracking import PNG, service
 
 
-def test_v14_backfill_preserves_v13_and_serves_position_diagnostic(tmp_path, monkeypatch):
+def test_v15_backfill_preserves_v13_and_serves_position_diagnostic(tmp_path, monkeypatch):
     runner, store = service(tmp_path, monkeypatch)
     current = runner.run("scan-test").product
     legacy = ScannerTrackingProductV13.model_validate(
         current.model_dump(exclude={"schema_version", "analysis_id", "position_diagnostic"})
         | {
             "artifacts": [
-                a.model_dump() for a in current.artifacts if a.name != "position-diagnostic"
+                a.model_dump()
+                for a in current.artifacts
+                if a.name not in ("position-diagnostic", "cfo-track-overlay")
             ]
         }
     )
-    source = tmp_path / "scanner-shared-tracking-v14" / "scan-test"
+    source = tmp_path / "scanner-shared-tracking-v15" / "scan-test"
     old = tmp_path / "scanner-shared-tracking-v13" / "scan-test"
     shutil.copytree(source, old)
     manifest = _seal(legacy)
@@ -36,7 +39,7 @@ def test_v14_backfill_preserves_v13_and_serves_position_diagnostic(tmp_path, mon
     assert store.status("scan-test").product == legacy
     assert store.artifact("scan-test", "trajectory") == PNG
     updated = runner.run("scan-test").product
-    assert updated.schema_version == 14
+    assert updated.schema_version == 15
     assert updated.position_diagnostic is not None
     assert updated.review_limit == 64
     assert updated.review_selection_policy == "longest-support-observations-identity-v1"
@@ -46,7 +49,7 @@ def test_v14_backfill_preserves_v13_and_serves_position_diagnostic(tmp_path, mon
     assert (old / "manifest.json").read_bytes() == manifest
 
 
-def test_v14_reader_preserves_v12_publication(tmp_path, monkeypatch):
+def test_v15_reader_preserves_v12_publication(tmp_path, monkeypatch):
     runner, store = service(tmp_path, monkeypatch)
     current = runner.run("scan-test").product
     legacy = ScannerTrackingProductV12.model_validate(
@@ -62,11 +65,11 @@ def test_v14_reader_preserves_v12_publication(tmp_path, monkeypatch):
             "artifacts": [
                 artifact.model_dump()
                 for artifact in current.artifacts
-                if artifact.name != "position-diagnostic"
+                if artifact.name not in ("position-diagnostic", "cfo-track-overlay")
             ]
         }
     )
-    source = tmp_path / "scanner-shared-tracking-v14" / "scan-test"
+    source = tmp_path / "scanner-shared-tracking-v15" / "scan-test"
     old = tmp_path / "scanner-shared-tracking-v12" / "scan-test"
     shutil.copytree(source, old)
     (old / "manifest.json").write_bytes(_seal(legacy))
@@ -77,6 +80,35 @@ def test_v14_reader_preserves_v12_publication(tmp_path, monkeypatch):
     assert store.analysis_status("scan-test").state == "pending"
 
 
+def test_v15_backfill_leaves_v14_bytes_and_contract_unchanged(tmp_path, monkeypatch):
+    runner, store = service(tmp_path, monkeypatch)
+    current = runner.run("scan-test").product
+    legacy = ScannerTrackingProductV14.model_validate(
+        current.model_dump(exclude={"schema_version", "analysis_id"})
+        | {
+            "artifacts": [
+                a.model_dump() for a in current.artifacts if a.name != "cfo-track-overlay"
+            ]
+        }
+    )
+    source = tmp_path / "scanner-shared-tracking-v15" / "scan-test"
+    old = tmp_path / "scanner-shared-tracking-v14" / "scan-test"
+    shutil.copytree(source, old)
+    sealed = _seal(legacy)
+    (old / "manifest.json").write_bytes(sealed)
+    shutil.rmtree(source.parent)
+    assert store.status("scan-test").product == legacy
+    assert store.artifact("scan-test", "cfo-track-overlay") is None
+    assert store.analysis_status("scan-test").state == "pending"
+    with pytest.raises(ValueError):
+        ScannerTrackingProductV14.model_validate(
+            legacy.model_dump() | {"artifacts": [a.model_dump() for a in current.artifacts]}
+        )
+    runner.run("scan-test")
+    assert store.artifact("scan-test", "cfo-track-overlay") == PNG
+    assert (old / "manifest.json").read_bytes() == sealed
+
+
 def test_pending_read_is_read_only_and_rejects_unsafe_ids(tmp_path):
     store = ScannerTrackingStore(tmp_path)
     assert store.status("scan-test").state == "pending"
@@ -84,7 +116,7 @@ def test_pending_read_is_read_only_and_rejects_unsafe_ids(tmp_path):
     with pytest.raises(ValueError):
         store.status("../escape")
     with pytest.raises(PermissionError):
-        store.save(ScannerTrackingStatusV14(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV15(session_id="scan-test"))
     with pytest.raises(ValueError):
         ScannerTrackingStore(Path("/mnt/qnap01"))
 
@@ -94,10 +126,10 @@ def test_sealed_publication_tamper_detection_and_immutability(tmp_path, monkeypa
     product = runner.run("scan-test").product
     store.publish(product)
     with pytest.raises(ValueError):
-        store.save(ScannerTrackingStatusV14(session_id="scan-test"))
+        store.save(ScannerTrackingStatusV15(session_id="scan-test"))
     with pytest.raises(ValueError):
         store.put_artifact("scan-test", "trajectory", PNG + b"changed")
-    (tmp_path / "scanner-shared-tracking-v14" / "scan-test" / "trajectory.png").write_bytes(
+    (tmp_path / "scanner-shared-tracking-v15" / "scan-test" / "trajectory.png").write_bytes(
         PNG + b"changed"
     )
     with pytest.raises(ValueError, match="digest"):
@@ -142,7 +174,7 @@ def test_legacy_utc_blocked_publication_is_pending_for_v2_reconstruction(tmp_pat
             "tle_match_config_digest": None,
         }
     )
-    current_root = tmp_path / "scanner-shared-tracking-v14"
+    current_root = tmp_path / "scanner-shared-tracking-v15"
     shutil.rmtree(current_root)
     directory = tmp_path / "scanner-shared-tracking-v1" / "scan-test"
     directory.mkdir(parents=True)
@@ -176,11 +208,13 @@ def test_public_status_keeps_v6_while_v7_worker_sees_pending(tmp_path, monkeypat
         )
         | {
             "artifacts": [
-                a.model_dump() for a in current.artifacts if a.name != "position-diagnostic"
+                a.model_dump()
+                for a in current.artifacts
+                if a.name not in ("position-diagnostic", "cfo-track-overlay")
             ]
         }
     )
-    current_root = tmp_path / "scanner-shared-tracking-v14"
+    current_root = tmp_path / "scanner-shared-tracking-v15"
     shutil.rmtree(current_root)
     directory = tmp_path / "scanner-shared-tracking-v6" / "scan-test"
     directory.mkdir(parents=True)

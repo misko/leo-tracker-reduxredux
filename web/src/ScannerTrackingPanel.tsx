@@ -28,7 +28,7 @@ type Product = {
     reasons: string[]; runtime_ms: number;
   };
   artifacts: Array<{
-    name: "trajectory" | "trajectory-tle" | "position-diagnostic" | `tle-review-${string}`;
+    name: "trajectory" | "trajectory-tle" | "cfo-track-overlay" | "position-diagnostic" | `tle-review-${string}`;
     sha256: string;
   }>;
 };
@@ -36,6 +36,7 @@ type Status = { session_id: string; state: string; phase: string; failure_summar
 
 function artifactCaption(name: Product["artifacts"][number]["name"]): string {
   if (name === "trajectory") return "Measured trajectories";
+  if (name === "cfo-track-overlay") return "GLRT candidates and fitted tracks by channel";
   if (name === "trajectory-tle") return "TLE comparison";
   if (name === "position-diagnostic") return "Bounded position diagnostic";
   return `Per-track TLE review ${Number(name.slice("tle-review-".length))}`;

@@ -29,18 +29,18 @@ from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleTrackReviewV2,
     ScannerTrackingInputs,
-    ScannerTrackingProductV14,
-    ScannerTrackingStatusV14,
+    ScannerTrackingProductV15,
+    ScannerTrackingStatusV15,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
 from leo.sky.propagation import count_element_sets
 
 
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV14: ...
-    def save(self, status: ScannerTrackingStatusV14) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV15: ...
+    def save(self, status: ScannerTrackingStatusV15) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV14) -> None: ...
+    def publish(self, product: ScannerTrackingProductV15) -> None: ...
 
 
 class ScannerTrackingService:
@@ -52,6 +52,7 @@ class ScannerTrackingService:
         tle_archive,
         observer_site: ObserverSiteV1,
         renderer,
+        overlay_renderer,
         position_renderer=None,
         review_renderer: Callable[
             [str], tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]
@@ -67,6 +68,7 @@ class ScannerTrackingService:
         self.review_limit = review_limit
         self.matcher, self.clock = matcher, clock
         self.position_renderer = position_renderer
+        self.overlay_renderer = overlay_renderer
 
     def run(self, session_id: str, *, maximum_seconds: float = 180, group_limit: int = 4):
         if not 0 < maximum_seconds <= 1800 or not 1 <= group_limit <= 32:
@@ -91,14 +93,14 @@ class ScannerTrackingService:
         policy_digest = canonical_digest(
             {
                 **matching_policy,
-                "algorithm": "scanner-shared-tracking-v14",
+                "algorithm": "scanner-shared-tracking-v15",
                 "position": "scanner-conditional-position-v1",
                 "review_limit": self.review_limit,
                 "review_selection_policy": "longest-support-observations-identity-v1",
                 "matching_policy_digest": matching_policy_digest,
             }
         )
-        product = status.product or ScannerTrackingProductV14(
+        product = status.product or ScannerTrackingProductV15(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -126,7 +128,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV14(
+                ScannerTrackingStatusV15(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -134,7 +136,7 @@ class ScannerTrackingService:
         def publish(trajectory=None, catalogue_payload=None):
             nonlocal product
             if self.position_renderer is None:
-                raise ValueError("tracking V14 requires a configured position diagnostic renderer")
+                raise ValueError("tracking V15 requires a configured position diagnostic renderer")
             diagnostic, png = self.position_renderer(
                 source=source,
                 trajectory=trajectory,
@@ -188,6 +190,16 @@ class ScannerTrackingService:
                     capture_end_utc_ns=source.capture_end_utc_ns,
                 ),
             )
+            overlay_ref = self.products.put_artifact(
+                session_id,
+                "cfo-track-overlay",
+                self.overlay_renderer(
+                    trajectory,
+                    candidates,
+                    capture_start_utc_ns=source.capture_start_utc_ns,
+                    capture_end_utc_ns=source.capture_end_utc_ns,
+                ),
+            )
             product = product.model_copy(
                 update={
                     "trajectory_state": "complete",
@@ -199,7 +211,7 @@ class ScannerTrackingService:
                         PersistentHopTrackingService._tracklet_summary(t)
                         for t in trajectory.tracklets
                     ),
-                    "artifacts": (ref,),
+                    "artifacts": (ref, overlay_ref),
                 }
             )
         if not timing_is_qualified_for_tle(source.timing):

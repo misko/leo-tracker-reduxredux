@@ -89,7 +89,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     preset = resolve_preset(site)
     return canonical_digest(
         {
-            "analysis_id": "scanner-shared-tracking-v14",
+            "analysis_id": "scanner-shared-tracking-v15",
             "position": "scanner-conditional-position-v1",
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",

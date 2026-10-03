@@ -20,13 +20,14 @@ from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
     ScannerTleReviewCandidateV1,
     ScannerTleTrackReviewV2,
-    ScannerTrackingStatusV14,
+    ScannerTrackingStatusV15,
 )
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.scanner_position import build_scan_position_diagnostic
 from leo.operations.scanner_tle_review_report import build_report
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.persistent_hop_tracking import render_persistent_hop_tracking_png
+from leo.presentation.scanner_track_overlay import render_scanner_track_overlay_png
 from leo.sky.sites import preset_names, resolve_preset
 from leo.storage.analysis_worker_lock import analysis_worker_lock
 from leo.storage.errors import BundleNotFoundError
@@ -214,6 +215,7 @@ def main():
                 label=site.label,
             ),
             renderer=render_persistent_hop_tracking_png,
+            overlay_renderer=render_scanner_track_overlay_png,
             position_renderer=build_scan_position_diagnostic,
             review_renderer=_review_renderer(
                 bulk_root=capture_root,
@@ -293,7 +295,7 @@ def main():
                     prior = products.analysis_status(sid)
                     if prior.state != "complete":
                         products.save(
-                            ScannerTrackingStatusV14(
+                            ScannerTrackingStatusV15(
                                 session_id=sid,
                                 state="failed",
                                 phase=prior.phase,

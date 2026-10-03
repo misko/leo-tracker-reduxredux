@@ -184,6 +184,7 @@ def service(
         tle_archive=SimpleNamespace(select_latest_before=select, read=lambda _: raw),
         observer_site=_site(),
         renderer=lambda *a, **k: PNG,
+        overlay_renderer=lambda *a, **k: PNG,
         position_renderer=build_scan_position_diagnostic,
         review_renderer=review_renderer,
         matcher=fail,
@@ -200,6 +201,7 @@ def test_catalogue_failure_keeps_trajectory_png_and_reason(tmp_path, monkeypatch
     assert result.product.tle_state == "unavailable"
     assert "no causal snapshot" in result.product.reasons[0]
     assert store.artifact("scan-test", "trajectory") == PNG
+    assert store.artifact("scan-test", "cfo-track-overlay") == PNG
     assert runner.run("scan-test") == result
 
 
@@ -300,7 +302,7 @@ def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, mo
     result = runner.run("scan-test")
 
     assert result.product.track_reviews == (review,)
-    assert result.product.analysis_id == "scanner-shared-tracking-v14"
+    assert result.product.analysis_id == "scanner-shared-tracking-v15"
     assert result.product.position_diagnostic is not None
     assert result.product.review_limit == 64
     assert result.product.review_selection_policy == "longest-support-observations-identity-v1"
