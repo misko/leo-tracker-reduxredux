@@ -96,3 +96,37 @@ API/worker/web pins. Retain all source-bound products and capture IQ. Drain or p
 this lane's queued jobs before reverting workers, since older workers do not
 understand its dispatch identity. Do not roll back by deleting products or by
 rewriting capture manifests.
+
+## Deployment record — 2026-10-03
+
+Installed immutable release `/opt/leo-partial-band/1af2cf5909dc`, with the
+current `f1bd41e6a` tracking overlay retained as its parent. API, all 15 analysis
+workers, and queue admission use `zzzzzzz-partial-band-analysis.conf` drop-ins.
+The installed manifest records the source and web asset hashes. Capture services,
+firmware, sample rates, and gain settings were not changed by this deployment.
+
+The complete rehearsal was verified and imported through the product store port.
+Live HTTP reports 2,215 completed visits and 26,580 probes for
+`scan-fw-5248143e8ece71d7`; its configuration/source binding is
+`sha256:b4daf8978ed8c50fbdb4ba52aad97273b2d3c74c917f36161ed8352a18e12e35`.
+A real shared-queue canary (job 47628) succeeded on its first attempt, verifying
+the deployed dispatch and sealed-artifact completion path. Automatic admission
+then queued four recent native scans, and live worker checkpoints were observed.
+The real browser rendered all four figures and downloaded both evidence files;
+all six HTTP artifact payloads matched their published hashes. All 1,324 installed
+source/asset hashes matched the release manifest. A higher-rate control continued
+to report `figures_ready`. Screenshot:
+`/srv/bulk/leo-dev/partial-band-browser-20261003.png`.
+
+The staged analyzer passed 56 targeted Python tests; the updated web suite passed
+214 tests. Earlier regression runs covered 101 legacy tests and 38 overlay/store/
+API/queue tests; five additional association-boundary tests passed against the
+installed analyzer. These are bounded validation results, not a claim that all radio
+conditions or false-alarm rates are qualified. The complete native replay and
+1,000-null/32-paired-probe qualification report remain under
+`/srv/bulk/leo-dev/partial-band-canary-20261003`.
+
+Separate operational observation: capture was already failed before this rollout,
+and its 15:43 UTC attempt also reported `state=FAILED reason=3 error=-110`.
+This deployment did not restart capture or diagnose that failure; saved-IQ
+analysis and its queue canary succeeded independently.
