@@ -170,7 +170,7 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
         site="test",
     )
     assert payloads[0]["association_gates"] == "nominal-catalogue-only-v1"
-    assert payloads[0]["analysis_id"] == "scanner-shared-tracking-v14"
+    assert payloads[0]["analysis_id"] == "scanner-shared-tracking-v15"
     assert payloads[0]["position"] == "scanner-conditional-position-v1"
     assert payloads[0]["additional_position_methods"] == "scanner-position-methods-v1"
     assert payloads[0]["adaptive_tle_position"] == "scanner-adaptive-tle-position-v2"

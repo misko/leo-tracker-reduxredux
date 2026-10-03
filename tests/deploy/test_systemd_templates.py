@@ -22,7 +22,7 @@ def test_adaptive_workers_provision_position_tracking_root() -> None:
         "recovery/leo-adaptive-analysis-worker@.service.d/80-immutable-release.conf.in",
     ):
         commands = (UNIT_ROOT / relative).read_text().splitlines()
-        command = next(line for line in commands if line.endswith("/scanner-shared-tracking-v14"))
+        command = next(line for line in commands if line.endswith("/scanner-shared-tracking-v15"))
         assert command.startswith("ExecStartPre=+/usr/bin/install -d ")
         assert "-o leo -g leo" in command
         assert "0750" in command

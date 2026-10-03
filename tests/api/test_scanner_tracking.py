@@ -13,7 +13,7 @@ def test_shared_endpoint_serves_partial_trajectory_and_closed_evidence(tmp_path,
     app.include_router(scanner_tracking_router(ScannerTrackingStore(tmp_path)))
     client = TestClient(app)
     product = client.get("/api/v1/scanner/tracking/scan-test").json()["product"]
-    assert product["schema_version"] == 14
+    assert product["schema_version"] == 15
     assert product["review_limit"] == 64
     assert product["review_selection_policy"] == "longest-support-observations-identity-v1"
     assert product["control_comparison_policy"] == "polynomial-and-wrong-time-diagnostic-only-v1"
@@ -26,6 +26,9 @@ def test_shared_endpoint_serves_partial_trajectory_and_closed_evidence(tmp_path,
         == "image/png"
     )
     assert product["position_diagnostic"]["position_fix_claimed"] is False
+    assert client.get(
+        "/api/v1/scanner/tracking/scan-test/cfo-track-overlay.png"
+    ).content.startswith(b"\x89PNG\r\n\x1a\n")
     assert (
         client.get("/api/v1/scanner/tracking/scan-test/position-diagnostic.png").headers[
             "content-type"
