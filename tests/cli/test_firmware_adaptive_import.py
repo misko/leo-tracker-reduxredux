@@ -147,7 +147,9 @@ def dual_document(
         "gain_modes": ["manual", "manual"],
         "gain_db": [40.0, 40.0],
     }
-    target_bandwidth = 10_000_000 if rate == 15_000_000 else rate
+    target_bandwidth = (
+        2_500_000 if rate == 1_250_000 else 10_000_000 if rate == 15_000_000 else rate
+    )
     first_frequency = importer.scheduled_low_band_targets(bandwidth_hz=target_bandwidth)[
         0
     ].if_center_hz
@@ -299,8 +301,10 @@ def test_protocol_three_long_visit_stays_below_chunk_limit(tmp_path) -> None:
         assert detail.json()["capture"]["recorded_gain_mode"] == "manual"
 
 
-def test_radio20_protocol_three_archive_publishes_without_false_geometry(tmp_path) -> None:
-    rate = 10_000_000
+@pytest.mark.parametrize("rate,manifest_version", [(10_000_000, 14), (1_250_000, 16)])
+def test_radio20_protocol_three_archive_publishes_without_false_geometry(
+    tmp_path, rate, manifest_version
+) -> None:
     dwell_ms = 240
     archive = tmp_path / "scan-fw-variable-radio20"
     archive.mkdir()
@@ -331,12 +335,31 @@ def test_radio20_protocol_three_archive_publishes_without_false_geometry(tmp_pat
     store = AdaptiveHopIqStore(bulk, read_only=True)
     try:
         manifest = store.inspect(session_id).manifest
-        assert manifest.schema_version == 14
+        assert manifest.schema_version == manifest_version
         assert manifest.receipt.radio_serial == importer.RADIO20_SERIAL
         assert not hasattr(manifest, "receiver_geometry")
         assert manifest.chunks[0].sample_count == samples
     finally:
         store.close()
+
+    if rate == 1_250_000:
+        from leo.scanner.adaptive_hop import AdaptiveHopReceiptV7
+        from tests.api.test_adaptive_hop_history_api import client_for
+
+        with pytest.raises(ValueError):
+            AdaptiveHopReceiptV7.model_validate(manifest.receipt.model_dump())
+        assert manifest.receipt.plan.geometry.samples_per_block == 500_000
+        history = AdaptiveHopPresentationStore(bulk)
+        with client_for(bulk, adaptive_hop_sessions_v2=history) as client:
+            for version in (2, 3):
+                base = f"/api/v{version}/scanner/adaptive-sessions"
+                page = client.get(base)
+                assert page.status_code == 200
+                assert page.json()["schema_version"] == 9
+                assert page.json()["items"][0]["sample_rate_hz"] == 1_250_000
+                detail = client.get(base + "/" + session_id)
+                assert detail.status_code == 200
+                assert detail.json()["capture"]["sample_rate_hz"] == 1_250_000
 
 
 @pytest.mark.parametrize(

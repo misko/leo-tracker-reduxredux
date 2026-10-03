@@ -13,7 +13,7 @@ const duty = (value: number | null) => value === null ? "Unavailable" : `${(valu
 const stateAtChoice = (v: AdaptiveVisit, target: number) => v.active_mask & (1 << target)
   ? "active" : v.quiet_mask & (1 << target) ? "quiet" : "unobserved";
 const recordedGain = (capture: AdaptiveDetail["capture"]): string => {
-  if ((capture.schema_version !== 8 && capture.schema_version !== 9)
+  if ((capture.schema_version !== 8 && capture.schema_version !== 9 && capture.schema_version !== 10)
     || capture.recorded_gain_mode === null) return "Unknown";
   if (capture.recorded_gain_mode === "slow_attack") return "Slow attack";
   return capture.recorded_manual_gain_db === null
@@ -157,7 +157,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
       <p>Radio <code>{c.radio_serial}</code> · allowed target mask <code>0x{c.allowed_target_mask.toString(16).padStart(2, "0")}</code>. Every actual and proposed hop in this receipt is confined to CH1–CH4 on this edge.</p>
     </section> : null}
     <section className="scanner-results-panel" aria-label="Actual adaptive visit timeline">
-      <header><h3>Where the radio actually looked</h3><small>{c.schema_version === 8 || c.schema_version === 9 ? `120 ms quiet / ${c.active_dwell_ms} ms active dwell` : "120 ms valid dwell"} · {hostAdaptive ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
+      <header><h3>Where the radio actually looked</h3><small>{c.schema_version === 8 || c.schema_version === 9 || c.schema_version === 10 ? `120 ms quiet / ${c.active_dwell_ms} ms active dwell` : "120 ms valid dwell"} · {hostAdaptive ? `RX${c.physical_receiver} retained` : "both receivers retained"}</small></header>
       <Timeline detail={detail} />
       <p>Green: active · grey: quiet · blue: unobserved at the decision. These are scheduling states, not per-dwell detection verdicts. Outlined marks show the beginning of incomplete hops, not retained IQ.</p>
       {c.mode === "shadow" ? <p>Shadow mode: the radio kept fixed order. Proposals did not change its actual tuning.</p> : null}
@@ -201,7 +201,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
           <button type="button" disabled={start + 50 >= detail.visits.length} onClick={() => setPage(page + 1)}>Next visits</button>
         </div></div> : null}
     </section>
-    <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />
+    {c.schema_version === 10 ? <p>Native 1.25 MS/s IQ is recorded. Scientific analysis at this rate is not yet qualified.</p> : <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />}
     <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     {c.schema_version === 1 ? <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" /> : null}

@@ -26,14 +26,18 @@ def test_seven_minute_slots_advance_across_hour_and_day_boundaries(runner):
 
 
 @pytest.mark.parametrize("branch", [0, 1])
-def test_fixed_rate_preserves_edge_selection(runner, monkeypatch, branch):
+@pytest.mark.parametrize("rate_choice", range(4))
+def test_rate_probability_preserves_edge_selection(runner, monkeypatch, branch, rate_choice):
     def choice(serial, ordinal, domain, size):
+        if domain == "rate-1p25-quarter-v1":
+            assert size == 4
+            return rate_choice
         assert domain == "edge" and size == 2
         return branch
 
     monkeypatch.setattr(runner, "deterministic_uniform_choice", choice)
     _, rate, edge, frequencies = runner.slot_configuration(1790467200, "radio")
-    assert rate == 2_500_000
+    assert rate == (1_250_000 if rate_choice == 0 else 2_500_000)
     assert edge == ("upper" if branch else "lower")
     assert frequencies == runner.FREQUENCIES_2P5[branch::2]
 
@@ -43,7 +47,8 @@ def test_rate_distribution_across_reproducible_slots(runner):
     rates = Counter(
         runner.slot_configuration(i * runner.SLOT_SECONDS, "rate-test")[1] for i in range(count)
     )
-    assert rates == {2_500_000: count}
+    assert set(rates) == {1_250_000, 2_500_000}
+    assert rates[1_250_000] / count == pytest.approx(0.25, abs=0.015)
 
 
 def test_same_slot_activations_cannot_reuse_recording_identity(runner):
@@ -54,14 +59,14 @@ def test_same_slot_activations_cannot_reuse_recording_identity(runner):
     assert first == runner.campaign_configuration(1790467200, "radio", None, capture_token="one")
 
 
-@pytest.mark.parametrize("rate", [2_500_000, 10_000_000])
+@pytest.mark.parametrize("rate", [1_250_000, 2_500_000])
 def test_spool_budget_covers_uncompressed_dual_rx(runner, rate):
     assert runner.minimum_capture_free_bytes(rate, 300000) == rate * 300 * 8 + 2 * 1024**3
     with pytest.raises(ValueError):
         runner.minimum_capture_free_bytes(rate, 0)
 
 
-@pytest.mark.parametrize("rate", [2_500_000])
+@pytest.mark.parametrize("rate", [1_250_000, 2_500_000])
 def test_rate_override_preserved(runner, rate):
     _, actual, edge, frequencies, _ = runner.campaign_configuration(
         1790467200, "radio", rate, capture_token="test"
@@ -72,7 +77,7 @@ def test_rate_override_preserved(runner, rate):
 
 @pytest.mark.parametrize("rate", [5_000_000, 7_500_000, 10_000_000])
 def test_other_rate_overrides_rejected(runner, rate):
-    with pytest.raises(ValueError, match="require 2.5 MS/s"):
+    with pytest.raises(ValueError, match="require 1.25 or 2.5 MS/s"):
         runner.campaign_configuration(1790467200, "radio", rate, capture_token="test")
 
 

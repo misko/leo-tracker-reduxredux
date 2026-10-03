@@ -106,7 +106,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             valid_ms = round(row.valid_seconds * 1000)
             active_ms = getattr(self, "active_dwell_ms", 120)
             minimum_ms = row.retained_visits * 120
-            variable_duration_invalid = self.schema_version == 8 and (
+            variable_duration_invalid = self.schema_version in (8, 10) and (
                 abs(row.valid_seconds * 1000 - valid_ms) > 1e-6
                 or valid_ms < minimum_ms
                 or valid_ms > row.retained_visits * active_ms
@@ -121,7 +121,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
                 row.target.channel != row.target_index % 4 + 1
                 or row.target.edge != ("lower" if row.target_index < 4 else "upper")
                 or (
-                    self.schema_version != 8
+                    self.schema_version not in (8, 10)
                     and row.valid_seconds
                     != row.retained_visits
                     * (self.sample_rate_hz * 120 // 1000)
@@ -222,7 +222,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
                 != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
             )
             or (
-                self.capture.schema_version in (3, 7, 8, 9)
+                self.capture.schema_version in (3, 7, 8, 9, 10)
                 and sum(v.retained for v in self.visits) != self.capture.retained_visits
             )
         ):
@@ -237,7 +237,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
                 )
                 allowed_duration_samples = (
                     {rate * 120 // 1000, rate * self.capture.active_dwell_ms // 1000}
-                    if self.capture.schema_version == 8
+                    if self.capture.schema_version in (8, 10)
                     else {rate * 120 // 1000}
                 )
                 if (
@@ -360,6 +360,17 @@ class FourRateVariableDwellHistoryItemV9(VariableDwellHistoryItemV8):
 class FourRateVariableDwellSessionDetailV9(AdaptiveHopSessionDetailV1):
     schema_version: Literal[9] = 9  # type: ignore[assignment]
     capture: FourRateVariableDwellHistoryItemV9  # type: ignore[assignment]
+
+
+class NativeLowRateHistoryItemV10(FourRateVariableDwellHistoryItemV9):
+    schema_version: Literal[10] = 10
+    sample_rate_hz: Literal[1_250_000] = 1_250_000
+    bandwidth_hz: Literal[1_250_000] = 1_250_000
+
+
+class NativeLowRateSessionDetailV10(AdaptiveHopSessionDetailV1):
+    schema_version: Literal[10] = 10
+    capture: NativeLowRateHistoryItemV10
 
 
 class AdaptiveHopPresentationReader(Protocol):

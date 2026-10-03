@@ -177,6 +177,7 @@ from leo.scanner.adaptive_hop_history import (
     Feature103SessionDetailV6,
     Feature104SessionDetailV7,
     FourRateVariableDwellSessionDetailV9,
+    NativeLowRateSessionDetailV10,
     VariableDwellSessionDetailV8,
 )
 from leo.scanner.adaptive_hop_presentation import (
@@ -200,6 +201,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV6,
     AdaptiveHistoryPageV7,
     AdaptiveHistoryPageV8,
+    AdaptiveHistoryPageV9,
     AdaptiveHistoryReaderV2,
     HostAdaptiveSessionDetailV2,
     HostAdaptiveSessionDetailV3,
@@ -493,7 +495,7 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8,
+        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
@@ -504,7 +506,7 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8,
+        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
@@ -516,7 +518,7 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8
+        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9
     ):
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
@@ -539,7 +541,7 @@ def create_app(
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
             | VariableDwellSessionDetailV8
-            | FourRateVariableDwellSessionDetailV9
+            | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
         ),
     )
     @v2_router.api_route(
@@ -554,7 +556,7 @@ def create_app(
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
             | VariableDwellSessionDetailV8
-            | FourRateVariableDwellSessionDetailV9
+            | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
         ),
     )
     def adaptive_detail_v2(
@@ -568,7 +570,7 @@ def create_app(
         | Feature103SessionDetailV6
         | Feature104SessionDetailV7
         | VariableDwellSessionDetailV8
-        | FourRateVariableDwellSessionDetailV9
+        | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
         | None
     ):
         if adaptive_hop_sessions_v2 is None:

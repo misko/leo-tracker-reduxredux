@@ -19,6 +19,7 @@ from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV8
 from leo.sky.sites import resolve_preset
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
@@ -135,6 +136,13 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
             if queued_sessions.get(session_id):
                 continue
             capture = captures.inspect(session_id)
+            if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV8):
+                print(
+                    json.dumps(
+                        {"session_id": session_id, "analysis": "unsupported_native_1p25_rate"}
+                    )
+                )
+                continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
             phase_pending = False
@@ -212,6 +220,13 @@ def enqueue_tracking_backfill(
             if until_utc_ns is not None and indexed_utc_ns > until_utc_ns:
                 continue
             capture = captures.inspect(session_id)
+            if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV8):
+                print(
+                    json.dumps(
+                        {"session_id": session_id, "analysis": "unsupported_native_1p25_rate"}
+                    )
+                )
+                continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
                 continue

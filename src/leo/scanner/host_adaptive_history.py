@@ -19,6 +19,7 @@ from leo.scanner.adaptive_hop_history import (
     Feature104SessionDetailV7,
     FourRateVariableDwellHistoryItemV9,
     FourRateVariableDwellSessionDetailV9,
+    NativeLowRateHistoryItemV10,
     Seconds,
     VariableDwellHistoryItemV8,
     VariableDwellSessionDetailV8,
@@ -245,6 +246,18 @@ class AdaptiveHistoryPageV8(AdaptiveHistoryPageV7):
             ...,
         ],
         Field(max_length=20),
+    ]
+
+
+class AdaptiveHistoryPageV9(AdaptiveHistoryPageV8):
+    schema_version: Literal[9] = 9
+    items: Annotated[
+        tuple[
+            AdaptiveHopHistoryItemV1 | HostAdaptiveHistoryItemV2 | HostAdaptiveHistoryItemV3
+            | EdgeAdaptiveHistoryItemV4 | DualRx10mAdaptiveHistoryItemV5 | Feature103HistoryItemV6
+            | Feature104HistoryItemV7 | VariableDwellHistoryItemV8
+            | FourRateVariableDwellHistoryItemV9 | NativeLowRateHistoryItemV10, ...,
+        ], Field(max_length=20),
     ]
 
 

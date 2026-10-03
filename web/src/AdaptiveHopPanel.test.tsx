@@ -8,10 +8,10 @@ const respond = (value: unknown, status = 200) => ({ ok: status === 200, status,
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("adaptive actual-visit presentation", () => {
-  it("accepts the schema-8 page and schema-9 four-rate adaptive detail", async () => {
+  it.each([7500000, 1250000] as const)("accepts native adaptive rate %s", async (rate) => {
     const legacy = adaptiveDetailFixture("four-rate-test", 3);
     const origin = BigInt(legacy.source_origin_counter!);
-    const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * 3n);
+    const scale = (counter: string) => String(origin + (BigInt(counter) - origin) * BigInt(rate) / 2500000n);
     const visits = legacy.visits.map(visit => ({
       ...visit,
       proposed_target_index: visit.target_index,
@@ -23,11 +23,11 @@ describe("adaptive actual-visit presentation", () => {
     }));
     const capture = {
       ...legacy.capture,
-      schema_version: 9 as const,
+      schema_version: rate === 1250000 ? 10 as const : 9 as const,
       mode: "adaptive" as const,
       nominal_duration_seconds: 20,
-      sample_rate_hz: 7500000 as const,
-      bandwidth_hz: 7500000 as const,
+      sample_rate_hz: rate,
+      bandwidth_hz: rate,
       analysis_state: "separate_product" as const,
       radio_serial: "10400056f695001322002d0010ad1719f2",
       selected_edge: "lower" as const,
@@ -37,16 +37,20 @@ describe("adaptive actual-visit presentation", () => {
       recorded_manual_gain_db: 40,
     };
     const page = {
-      schema_version: 8 as const, kind: "adaptive_hop_history_page" as const,
+      schema_version: rate === 1250000 ? 9 as const : 8 as const, kind: "adaptive_hop_history_page" as const,
       cursor: 0, limit: 10, total: 1, next_cursor: null, items: [capture],
     };
     const detail = {
-      ...legacy, schema_version: 9 as const, capture, visits,
+      ...legacy, schema_version: capture.schema_version, capture, visits,
     };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(respond(page)).mockResolvedValue(respond(detail)));
 
     await expect(getAdaptiveSessions(0)).resolves.toEqual(page);
     await expect(getAdaptiveSession("four-rate-test")).resolves.toEqual(detail);
+    if (rate === 1250000) {
+      render(<AdaptiveHopDetail sessionId={capture.session_id} />);
+      expect(await screen.findByText(/Scientific analysis at this rate is not yet qualified/)).toBeInTheDocument();
+    }
   });
 
   it("admits only the declared feature-104 schema-7 rates and page major", async () => {
