@@ -1,6 +1,7 @@
 from types import SimpleNamespace as NS
 
 from leo.cli import partial_band_backfill as subject
+from leo.storage.errors import BundleCorruptionError
 
 
 def test_backfill_all_dates_and_idempotent_admission(monkeypatch):
@@ -49,3 +50,18 @@ def test_backfill_all_dates_and_idempotent_admission(monkeypatch):
     assert result["pending"] == 2
     assert result["queued"] == 0
     assert calls == []
+
+
+def test_capture_store_error_is_reported_and_does_not_abort_inventory():
+    rows = []
+
+    def inspect(session_id):
+        if session_id == "corrupt":
+            raise BundleCorruptionError("invalid manifest seal")
+        return NS(manifest=NS(receipt=NS(plan=NS(geometry=NS(sample_rate_hz=2500000)))))
+
+    captures = NS(publication_index=lambda: [(1, "corrupt"), (0, "wide")], inspect=inspect)
+    result = subject.backfill(captures=captures, products=NS(), report=rows.append)
+    assert result["inspected"] == 2
+    assert result["errors"] == 1
+    assert rows == [dict(session_id="corrupt", outcome="error", error="invalid manifest seal")]
