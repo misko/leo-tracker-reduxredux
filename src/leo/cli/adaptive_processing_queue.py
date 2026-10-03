@@ -19,11 +19,13 @@ from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
+from leo.contracts.partial_band import PartialBandConfigurationV1, partial_band_identity
 from leo.scanner.adaptive_hop import AdaptiveHopReceiptV8
 from leo.sky.sites import resolve_preset
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
 from leo.storage.errors import BundleNotFoundError
+from leo.storage.partial_band import PartialBandStore
 from leo.storage.scanner_tracking import ScannerTrackingStore
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
@@ -114,6 +116,18 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
     )
 
 
+def _capture_allowed(capture) -> bool:
+    """Preserve the deployed capture-time cutoff, never substituting import time."""
+    minimum = os.environ.get("LEO_ADAPTIVE_MIN_CAPTURE_UTC_NS")
+    if not minimum:
+        return True
+    cutoff = int(minimum)
+    if cutoff < 0:
+        raise ValueError("adaptive minimum capture timestamp must be non-negative")
+    timing = capture.manifest.timing
+    return timing is not None and timing.first_sample_estimate_utc_ns >= cutoff
+
+
 def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str, ...]:
     """Enqueue missing metrics and tracking for captures from the live window."""
     captures = AdaptiveHopIqStore(bulk_root, read_only=True)
@@ -136,12 +150,18 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
             if queued_sessions.get(session_id):
                 continue
             capture = captures.inspect(session_id)
+            if not _capture_allowed(capture):
+                continue
             if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV8):
-                print(
-                    json.dumps(
-                        {"session_id": session_id, "analysis": "unsupported_native_1p25_rate"}
-                    )
-                )
+                status = PartialBandStore(bulk_root).status(session_id, capture.manifest_sha256)
+                if status.state != "figures_ready" and catalog.enqueue_adaptive_analysis_job(
+                    session_id=session_id,
+                    input_manifest_digest=capture.manifest_sha256,
+                    configuration_digest=status.binding_sha256,
+                    priority=100,
+                    resource_class="heavy",
+                ):
+                    queued.append(session_id)
                 continue
             status = presentation.status_for_capture(capture, probe_stride_ms=120)
             priority = 100 if capture.manifest.created_utc_ns > recent_cutoff else 0
@@ -160,6 +180,7 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                         }
                     ),
                     priority=priority,
+                    resource_class="heavy",
                 ):
                     queued.append(session_id)
                     queued_sessions[session_id] = frozenset(("adaptive_scan",))
@@ -220,6 +241,8 @@ def enqueue_tracking_backfill(
             if until_utc_ns is not None and indexed_utc_ns > until_utc_ns:
                 continue
             capture = captures.inspect(session_id)
+            if not _capture_allowed(capture):
+                continue
             if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV8):
                 print(
                     json.dumps(
@@ -256,6 +279,20 @@ def enqueue_tracking_backfill(
 
 
 def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
+    if _partial_band_lease(lease):
+        return [
+            sys.executable,
+            "-m",
+            "leo.cli.partial_band",
+            "--bulk-root",
+            str(bulk_root),
+            "--session-id",
+            lease.session_id,
+            "--maximum-workers",
+            "4",
+            "--maximum-seconds",
+            str(_SLICE_SECONDS),
+        ]
     if lease.job_kind == "adaptive_scan":
         return [
             sys.executable,
@@ -298,6 +335,16 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
     raise ValueError(f"unsupported adaptive queue job kind: {lease.job_kind}")
 
 
+def _partial_band_lease(lease) -> bool:
+    return lease.job_kind == "adaptive_scan" and getattr(
+        lease, "configuration_digest", None
+    ) == partial_band_identity(
+        lease.session_id,
+        getattr(lease, "input_manifest_digest", None),
+        PartialBandConfigurationV1(),
+    )
+
+
 def _last_json(stdout: str) -> dict[str, object]:
     payloads = [json.loads(line) for line in stdout.splitlines() if line.lstrip().startswith("{")]
     return payloads[-1] if payloads else {}
@@ -316,6 +363,8 @@ def _enqueue_tracking_after_analysis(
     tracking = ScannerTrackingStore(bulk_root, read_only=True)
     try:
         capture = captures.inspect(session_id)
+        if not _capture_allowed(capture):
+            return False
         status = presentation.status_for_capture(capture, probe_stride_ms=120)
         if status.state != "figures_ready" or status.metrics_manifest_sha256 is None:
             raise ValueError("completed adaptive analysis lacks sealed overview authority")
@@ -382,6 +431,26 @@ def run_once(
             retryable=True,
             retry_after=timedelta(minutes=2),
         )
+    elif _partial_band_lease(lease) and payload.get("state") == "figures_ready":
+        try:
+            status = PartialBandStore(bulk_root).status(
+                lease.session_id, lease.input_manifest_digest
+            )
+            if (
+                status.state != "figures_ready"
+                or status.binding_sha256 != lease.configuration_digest
+            ):
+                raise ValueError("low-rate worker lacks verified complete artifact authority")
+        except (ValueError, OSError) as error:
+            catalog.fail_job(
+                job_id=lease.job_id,
+                worker_id=worker_id,
+                error=str(error)[:1024],
+                retryable=True,
+                retry_after=timedelta(minutes=2),
+            )
+        else:
+            catalog.complete_job(job_id=lease.job_id, worker_id=worker_id, outcome="complete")
     elif (
         lease.job_kind == "adaptive_scan"
         and payload.get("state") == "metrics_complete"
