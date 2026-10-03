@@ -111,6 +111,16 @@ def test_missing_checkpoint_cannot_seal_and_read_only_cannot_write(tmp_path):
         pass
 
 
+def test_partial_band_replay_rejects_parallel_workers():
+    with pytest.raises(ValueError, match="bounded partial-band replay budget"):
+        replay_partial_band(
+            captures=None,
+            products=None,
+            session_id="scan-fw-0123456789abcdef",
+            maximum_workers=2,
+        )
+
+
 def test_different_configuration_has_separate_identity():
     captures = Captures()
     a = binding_for_capture(captures.capture)

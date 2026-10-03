@@ -1,10 +1,7 @@
 """Bounded saved-IQ replay through public capture/product ports."""
 
 import hashlib
-import multiprocessing
 import time
-from concurrent.futures import ProcessPoolExecutor
-from contextlib import nullcontext
 
 import numpy as np
 
@@ -109,10 +106,10 @@ def replay_partial_band(
     session_id,
     maximum_seconds=560.0,
     maximum_visits=3000,
-    maximum_workers=4,
+    maximum_workers=1,
     progress=None,
 ):
-    if not 0 < maximum_seconds <= 600 or not 1 <= maximum_workers <= 8 or maximum_visits < 1:
+    if not 0 < maximum_seconds <= 600 or maximum_workers != 1 or maximum_visits < 1:
         raise ValueError("invalid bounded partial-band replay budget")
     started = time.monotonic()
     capture = captures.inspect(session_id)
@@ -120,14 +117,7 @@ def replay_partial_band(
     processed = 0
     with products.writer(binding) as job:
         missing = [v for v in binding.visits if job.checkpoint(v.visit_index) is None]
-        executor = (
-            ProcessPoolExecutor(
-                max_workers=maximum_workers, mp_context=multiprocessing.get_context("spawn")
-            )
-            if maximum_workers > 1 and missing
-            else nullcontext()
-        )
-        with captures.reader(session_id, expected=capture) as reader, executor as pool:
+        with captures.reader(session_id, expected=capture) as reader:
             for offset in range(0, min(len(missing), maximum_visits), maximum_workers):
                 if time.monotonic() - started >= maximum_seconds:
                     break
@@ -145,11 +135,7 @@ def replay_partial_band(
                     tasks.append(
                         (binding.digest, binding.configuration, binding.first_counter, visit, ci16)
                     )
-                results = (
-                    pool.map(analyze_visit, tasks)
-                    if pool is not None
-                    else map(analyze_visit, tasks)
-                )
+                results = map(analyze_visit, tasks)
                 for result in results:
                     job.publish_checkpoint(result)
                     processed += 1

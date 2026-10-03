@@ -289,7 +289,7 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
             "--session-id",
             lease.session_id,
             "--maximum-workers",
-            "4",
+            "1",
             "--maximum-seconds",
             str(_SLICE_SECONDS),
         ]
