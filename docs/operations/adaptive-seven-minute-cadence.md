@@ -1,5 +1,21 @@
 # Automatic adaptive capture cadence
 
+## October 3 three-rate policy
+
+Each scheduling slot now selects **1.25 MS/s with 25% probability**, **2.5 MS/s
+with 50% probability**, or **5 MS/s with 25% probability**. The uniform four-way
+draw retains the existing low-rate outcome and assigns one former 2.5 MS/s
+outcome to 5 MS/s. Edge selection remains independent. These are probabilities,
+not a guaranteed count in every four captures.
+
+Five-minute captures, the three-minute wait after completion, manual 40 dB gain,
+120 ms dwells, and the v0.60 PPU runtime are retained. The 5 MS/s choice uses its
+existing rate-specific tuning centers. The installed runner SHA-256 is
+`0b562ad293f09fafab8e33a7a983d9682a9430d837434e9aa046354b062deb57`.
+Validation: 25 scheduler tests passed, including every rate/edge outcome,
+12,000-slot probability checks, spool sizing, and dry-run setup generation for
+all three rates using the deployed PPU runtime. These tests do not open RF.
+
 ## October 2 v0.60 deployment and native low-rate policy
 
 Radio .20 now runs `v0.60-plutoplus-spf-adaptive-native-fastlock`, installed

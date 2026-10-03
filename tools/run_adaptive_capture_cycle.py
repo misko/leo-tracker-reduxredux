@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a five-minute adaptive capture with native 1.25/2.5 MS/s selection.
+"""Run five-minute captures at 1.25/2.5/5 MS/s with 25/50/25 percent weights.
 
 Based on the installed v0.58 manual-gain runner, revision 1e7bebed. Each
 activation has a distinct recording identity, including retries in one slot.
@@ -27,7 +27,8 @@ if TYPE_CHECKING:
 
 SERIAL = "10400056f695001322002d0010ad1719f2"
 URI = "ip:192.168.1.21"
-RATES = (1_250_000, 2_500_000)
+RATES = (1_250_000, 2_500_000, 5_000_000)
+RATE_OUTCOMES = (1_250_000, 2_500_000, 2_500_000, 5_000_000)
 SLOT_SECONDS = 420
 ACTIVE_DWELLS_MS = (120,)
 FREQUENCIES_2P5 = (
@@ -80,10 +81,10 @@ def slot_configuration(
     epoch_seconds: int, serial: str = SERIAL
 ) -> tuple[int, int, str, tuple[int, ...]]:
     ordinal = epoch_seconds // SLOT_SECONDS
-    # One of four uniform outcomes chooses native 1.25 MS/s independently of edge.
-    rate = (1_250_000 if deterministic_uniform_choice(
+    # Preserve the low-rate quarter; assign one former 2.5 MS/s outcome to 5 MS/s.
+    rate = RATE_OUTCOMES[deterministic_uniform_choice(
         serial, ordinal, "rate-1p25-quarter-v1", 4
-    ) == 0 else 2_500_000)
+    )]
     edge = "upper" if deterministic_uniform_choice(serial, ordinal, "edge", 2) else "lower"
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
@@ -100,7 +101,7 @@ def campaign_configuration(
     ordinal, scheduled_rate, edge, _ = slot_configuration(epoch_seconds, serial)
     rate = scheduled_rate if sample_rate_hz is None else sample_rate_hz
     if rate not in RATES:
-        raise ValueError("adaptive captures require 1.25 or 2.5 MS/s")
+        raise ValueError("adaptive captures require 1.25, 2.5 or 5 MS/s")
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
     identity = hashlib.sha256(
@@ -183,7 +184,7 @@ def main() -> int:
         "--sample-rate",
         type=int,
         choices=RATES,
-        help="native sample rate; defaults to 25% at 1.25 MS/s and 75% at 2.5 MS/s",
+        help="native sample rate; defaults to 25% at 1.25, 50% at 2.5 and 25% at 5 MS/s",
     )
     parser.add_argument(
         "--timing-policy",
