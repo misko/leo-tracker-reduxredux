@@ -39,6 +39,20 @@ it.each([2500000, 5000000, 10000000])("shows every published figure and actual f
   expect(screen.getByRole("link", { name: "Download tracking evidence" })).toBeInTheDocument();
 });
 
+it("shows the channel GLRT track overlay as an additional downloadable PNG", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+    session_id: "scan-test", state: "complete", product: {
+      ...product, artifacts: [...product.artifacts, { name: "cfo-track-overlay", sha256: "overlay" }],
+    },
+  }) }));
+  render(<ScannerTrackingPanel sessionId="scan-test" />);
+  expect(await screen.findByText("GLRT candidates and fitted tracks by channel")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open cfo-track-overlay PNG" })).toHaveAttribute(
+    "href", "/api/v1/scanner/tracking/scan-test/cfo-track-overlay.png?sha256=overlay",
+  );
+  expect(screen.getAllByRole("img")).toHaveLength(4);
+});
+
 it("rejects a product belonging to another capture", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ session_id: "scan-test", product }) }));
   render(<ScannerTrackingPanel sessionId="scan-test" inputDigest="sha256:different" />);

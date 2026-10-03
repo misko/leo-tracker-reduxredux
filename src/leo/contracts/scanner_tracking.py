@@ -66,6 +66,7 @@ ArtifactNameV12 = Annotated[
     ),
 ]
 ArtifactNameV14 = ArtifactNameV12 | Literal["position-diagnostic"]
+ArtifactNameV15 = ArtifactNameV14 | Literal["cfo-track-overlay"]
 
 
 @dataclass(frozen=True)
@@ -128,6 +129,12 @@ class TrackingArtifactV2(ContractModel):
 
 class TrackingArtifactV14(ContractModel):
     name: ArtifactNameV14
+    sha256: Sha256Digest
+    byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
+
+
+class TrackingArtifactV15(ContractModel):
+    name: ArtifactNameV15
     sha256: Sha256Digest
     byte_count: Annotated[int, Field(gt=0, le=64 * 1024 * 1024)]
 
@@ -418,6 +425,22 @@ class ScannerTrackingProductV14(ScannerTrackingProductV13):
         return self
 
 
+class ScannerTrackingProductV15(ScannerTrackingProductV14):
+    """Channel CFO candidates with the fitted, TLE-blind tracking overlay."""
+
+    schema_version: Literal[15] = 15  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v15"] = "scanner-shared-tracking-v15"  # type: ignore[assignment]
+    artifacts: tuple[TrackingArtifactV15, ...] = ()  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _overlay_artifact(self) -> Self:
+        if self.trajectory_state == "complete" and not any(
+            artifact.name == "cfo-track-overlay" for artifact in self.artifacts
+        ):
+            raise ValueError("complete trajectories require the CFO track overlay")
+        return self
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -538,6 +561,10 @@ class ScannerTrackingStatusV14(ContractModel):
         return self
 
 
+class ScannerTrackingStatusV15(ScannerTrackingStatusV14):
+    product: ScannerTrackingProductV15 | None = None  # type: ignore[assignment]
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -556,8 +583,9 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV12
         | ScannerTrackingStatusV13
         | ScannerTrackingStatusV14
+        | ScannerTrackingStatusV15
     ): ...
-    def artifact(self, session_id: str, name: ArtifactNameV14) -> bytes | None: ...
+    def artifact(self, session_id: str, name: ArtifactNameV15) -> bytes | None: ...
 
 
 class ScannerTrackingInputs(Protocol):
