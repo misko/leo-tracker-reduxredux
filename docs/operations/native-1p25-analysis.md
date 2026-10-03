@@ -97,6 +97,23 @@ this lane's queued jobs before reverting workers, since older workers do not
 understand its dispatch identity. Do not roll back by deleting products or by
 rewriting capture manifests.
 
+### Historical backfill and downstream compatibility
+
+`python -m leo.cli.partial_band_backfill --bulk-root /srv/bulk/leo` inventories
+every published adaptive capture in a fixed snapshot. Add `--enqueue` to submit
+missing native 1.25 MS/s products, including captures outside the live two-hour
+window and admission-date cutoff. Existing complete products are verified and
+skipped. Source/configuration identities make repeated submission idempotent;
+`existing_job` does not assert that a previous job succeeded. Errors are retained
+per session and cause a nonzero exit. Historical jobs have priority 0, below live
+priority 100, and use the existing heavy-work capacity limit and resumable slices.
+
+This integrates with capture publication, the adaptive queue, checkpoints, artifact
+API, and scan UI. It does **not** adapt the new candidate scores/segments into the
+legacy full-band metrics contract or enqueue its TLE, dual-RX phase, or position
+stages. Those stages need an explicit versioned input adapter and independent
+qualification; the detector's 100 Hz grid is not a CFO uncertainty estimate.
+
 ## Deployment record — 2026-10-03
 
 Installed immutable release `/opt/leo-partial-band/1af2cf5909dc`, with the
