@@ -49,7 +49,7 @@ describe("adaptive actual-visit presentation", () => {
     await expect(getAdaptiveSession("four-rate-test")).resolves.toEqual(detail);
     if (rate === 1250000) {
       render(<AdaptiveHopDetail sessionId={capture.session_id} />);
-      expect(await screen.findByText(/Scientific analysis at this rate is not yet qualified/)).toBeInTheDocument();
+      expect(await screen.findByRole("heading", {name: /partial-band GLRT64/})).toBeInTheDocument();
     }
   });
 

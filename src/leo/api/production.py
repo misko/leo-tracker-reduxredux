@@ -60,6 +60,7 @@ from leo.storage.adaptive_hop_history import (
 from leo.storage.adaptive_hop_presentation import AdaptiveHopAnalysisPresentationStore
 from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore, AdaptiveTlePositionStoreV2
 from leo.storage.blind_regional import BlindRegionalStore
+from leo.storage.partial_band import PartialBandStore
 from leo.storage.position_methods import PositionMethodsStore
 from leo.storage.scanner_glrt import ScannerGlrtPresentationStore, ScannerGlrtStore
 from leo.storage.scanner_refinement import ScannerRefinementStore
@@ -231,6 +232,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             adaptive_hop_sessions_v2=AdaptiveHopPresentationStore(configured.bulk_root),
             adaptive_scanner_glrt=AdaptiveHopGlrtPresentationStore(configured.bulk_root),
             adaptive_hop_analysis=AdaptiveHopAnalysisPresentationStore(configured.bulk_root),
+            partial_band_analysis=PartialBandStore(configured.bulk_root),
             scanner_refinement=ScannerRefinementStore(configured.bulk_root),
             scanner_tracking=ScannerTrackingStore(configured.bulk_root),
             position_methods=PositionMethodsStore(configured.bulk_root),

@@ -3,6 +3,7 @@ import { getAdaptiveSession, getAdaptiveSessions } from "./adaptive-api";
 import type { AdaptiveDetail, AdaptivePage, AdaptiveVisit } from "./adaptive-api";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
+import { PartialBandPanel } from "./PartialBandPanel";
 import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import "./adaptive-hop.css";
@@ -201,8 +202,8 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
           <button type="button" disabled={start + 50 >= detail.visits.length} onClick={() => setPage(page + 1)}>Next visits</button>
         </div></div> : null}
     </section>
-    {c.schema_version === 10 ? <p>Native 1.25 MS/s IQ is recorded. Scientific analysis at this rate is not yet qualified.</p> : <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />}
-    <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
+    {c.schema_version === 10 ? <PartialBandPanel key={`${sessionId}:${c.input_manifest_sha256}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} /> : <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />}
+    {c.schema_version !== 10 ? <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} /> : null}
     <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     {c.schema_version === 1 ? <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" /> : null}
   </div>;
