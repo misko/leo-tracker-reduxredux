@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, Suspense, lazy } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
@@ -73,6 +73,13 @@ type PrimaryView = "adaptive" | "legacy" | "recordings" | "queue" | "native" | "
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("adaptive");
+  useEffect(() => {
+    const restoreScanView = () => {
+      if (new URLSearchParams(window.location.search).has("scan_id")) setView("adaptive");
+    };
+    window.addEventListener("popstate", restoreScanView);
+    return () => window.removeEventListener("popstate", restoreScanView);
+  }, []);
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [reprocessEnabled, setReprocessEnabled] = useState(false);
   const [researchEnabled, setResearchEnabled] = useState(false);
@@ -461,7 +468,27 @@ const persistentArtifactDetails: Record<PersistentHopArtifact, { title: string; 
 };
 
 function AdaptiveScannerView() {
-  const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(null);
+  const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("scan_id") || null,
+  );
+  useEffect(() => {
+    const restoreScan = () => setSelectedAdaptiveId(
+      new URLSearchParams(window.location.search).get("scan_id") || null,
+    );
+    window.addEventListener("popstate", restoreScan);
+    return () => window.removeEventListener("popstate", restoreScan);
+  }, []);
+  const selectScan = useCallback((sessionId: string) => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("scan_id") !== sessionId) {
+      const previous = url.searchParams.get("scan_id");
+      url.searchParams.set("scan_id", sessionId);
+      // Initial automatic selection should not add a duplicate browser-history entry.
+      if (previous) window.history.pushState(null, "", url);
+      else window.history.replaceState(null, "", url);
+    }
+    setSelectedAdaptiveId(sessionId);
+  }, []);
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Adaptive scan browser">
       <div className="browser-header">
@@ -469,11 +496,12 @@ function AdaptiveScannerView() {
       </div>
       <AdaptiveHopBrowser
         selectedId={selectedAdaptiveId}
-        onSelect={setSelectedAdaptiveId}
+        onSelect={selectScan}
         autoSelectFirst
       />
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Adaptive scan detail">
+      {selectedAdaptiveId !== null && <a href={window.location.href}>Link to this scan</a>}
       {selectedAdaptiveId === null
         ? <div className="empty-detail"><strong>Loading adaptive scans…</strong><span>The newest adaptive capture will open automatically.</span></div>
         : <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} />}
