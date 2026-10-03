@@ -369,6 +369,7 @@ const status: SystemStatusV1 = {
 
 describe("Observation Console", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/");
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
@@ -442,7 +443,51 @@ describe("Observation Console", () => {
     }));
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("opens a linked scan outside the history page and preserves its URL", async () => {
+    window.history.replaceState(null, "", "/?keep=yes&scan_id=older-scan#results");
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input), "http://localhost").pathname === "/api/v1/scanner/adaptive-sessions/older-scan") {
+        const detail = adaptiveDetailFixture();
+        return new Response(JSON.stringify({ ...detail, capture: { ...detail.capture, session_id: "older-scan" } }));
+      }
+      return normalFetch(input, init);
+    }));
+    render(<App />);
+    await screen.findByRole("heading", { name: "Actual channel visits" });
+    await screen.findByRole("table", { name: "Adaptive capture history" });
+    expect(screen.getByRole("link", { name: "Link to this scan" })).toHaveAttribute("href", expect.stringContaining("scan_id=older-scan"));
+    expect(window.location.search).toBe("?keep=yes&scan_id=older-scan");
+    fireEvent.click(screen.getByRole("button", { name: /adaptive-test/ }));
+    await waitFor(() => expect(window.location.search).toBe("?keep=yes&scan_id=adaptive-test"));
+    expect(window.location.hash).toBe("#results");
+    fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
+    await screen.findByRole("heading", { name: "Starlink channel scans" });
+    window.history.back();
+    await waitFor(() => expect(screen.getByRole("link", { name: "Link to this scan" })).toHaveAttribute("href", expect.stringContaining("scan_id=older-scan")));
+    expect(screen.getByRole("button", { name: "Adaptive scans" })).toHaveAttribute("aria-current", "page");
+    window.history.forward();
+    await waitFor(() => expect(screen.getByRole("link", { name: "Link to this scan" })).toHaveAttribute("href", expect.stringContaining("scan_id=adaptive-test")));
+  });
+
+  it("keeps an unavailable linked scan selected rather than replacing it with the newest", async () => {
+    window.history.replaceState(null, "", "/?scan_id=missing-scan");
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes("/adaptive-sessions/missing-scan")) return new Response(null, { status: 404 });
+      return normalFetch(input, init);
+    }));
+    render(<App />);
+    await screen.findByRole("alert");
+    await screen.findByRole("table", { name: "Adaptive capture history" });
+    expect(window.location.search).toBe("?scan_id=missing-scan");
+    expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
+  });
 
   it("opens adaptive scans by default and keeps fixed scans on the legacy page", async () => {
     render(<App />);
@@ -450,6 +495,7 @@ describe("Observation Console", () => {
     expect(await screen.findByRole("table", { name: "Adaptive capture history" })).toBeInTheDocument();
     await screen.findByRole("heading", { name: "Actual channel visits" });
     expect(screen.getByText("53 / 54")).toBeInTheDocument();
+    expect(new URLSearchParams(window.location.search).get("scan_id")).toBe("adaptive-test");
     expect(screen.queryByRole("table", { name: "Persistent hop history" })).not.toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Scanner history" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
