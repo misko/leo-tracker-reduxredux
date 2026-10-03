@@ -15,6 +15,7 @@ from leo.api.adaptive_tle_position import adaptive_tle_position_router
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.blind_regional import blind_regional_router
 from leo.api.native_recordings import native_recording_router
+from leo.api.partial_band import partial_band_router
 from leo.api.position_methods import position_methods_router
 from leo.api.scanner_refinement import scanner_refinement_router
 from leo.api.scanner_tracking import scanner_tracking_router
@@ -46,6 +47,7 @@ from leo.contracts.adaptive_tle_position import (
 )
 from leo.contracts.blind_regional import BlindRegionalReader
 from leo.contracts.capture_control import CaptureControlStateV1
+from leo.contracts.partial_band import PartialBandReader
 from leo.contracts.position_methods import PositionMethodsReader
 from leo.contracts.scanner_glrt_publication import GLRT_SESSION_PATTERN, ScannerGlrtPublicationV1
 from leo.contracts.scanner_refinement import ScannerRefinementReader
@@ -245,6 +247,7 @@ def create_app(
     adaptive_hop_sessions_v2: AdaptiveHistoryReaderV2 | None = None,
     adaptive_scanner_glrt: ScannerGlrtPublicationReader | None = None,
     adaptive_hop_analysis: AdaptiveHopAnalysisPresentationReader | None = None,
+    partial_band_analysis: PartialBandReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
     native_recordings: NativeRecordingReader | None = None,
     scanner_refinement: ScannerRefinementReader | None = None,
@@ -264,6 +267,7 @@ def create_app(
         openapi_url=None,
     )
     resolver = RegisteredArtifactResolver(artifact_root)
+    app.include_router(partial_band_router(partial_band_analysis))
     app.include_router(native_recording_router(native_recordings))
     app.include_router(scanner_refinement_router(scanner_refinement))
     app.include_router(scanner_refinement_router(scanner_refinement, version=2))
@@ -495,7 +499,8 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9,
+        | AdaptiveHistoryPageV8
+        | AdaptiveHistoryPageV9,
     )
     @v2_router.api_route(
         "/scanner/adaptive-sessions",
@@ -506,7 +511,8 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9,
+        | AdaptiveHistoryPageV8
+        | AdaptiveHistoryPageV9,
     )
     def adaptive_history_v2(
         cursor: Annotated[int, Query(ge=0)] = 0,
@@ -518,7 +524,8 @@ def create_app(
         | AdaptiveHistoryPageV5
         | AdaptiveHistoryPageV6
         | AdaptiveHistoryPageV7
-        | AdaptiveHistoryPageV8 | AdaptiveHistoryPageV9
+        | AdaptiveHistoryPageV8
+        | AdaptiveHistoryPageV9
     ):
         if adaptive_hop_sessions_v2 is None:
             raise HTTPException(status_code=404, detail="adaptive history is not available")
@@ -541,7 +548,8 @@ def create_app(
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
             | VariableDwellSessionDetailV8
-            | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
+            | FourRateVariableDwellSessionDetailV9
+            | NativeLowRateSessionDetailV10
         ),
     )
     @v2_router.api_route(
@@ -556,7 +564,8 @@ def create_app(
             | Feature103SessionDetailV6
             | Feature104SessionDetailV7
             | VariableDwellSessionDetailV8
-            | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
+            | FourRateVariableDwellSessionDetailV9
+            | NativeLowRateSessionDetailV10
         ),
     )
     def adaptive_detail_v2(
@@ -570,7 +579,8 @@ def create_app(
         | Feature103SessionDetailV6
         | Feature104SessionDetailV7
         | VariableDwellSessionDetailV8
-        | FourRateVariableDwellSessionDetailV9 | NativeLowRateSessionDetailV10
+        | FourRateVariableDwellSessionDetailV9
+        | NativeLowRateSessionDetailV10
         | None
     ):
         if adaptive_hop_sessions_v2 is None:

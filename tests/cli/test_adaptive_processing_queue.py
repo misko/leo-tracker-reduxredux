@@ -67,14 +67,21 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(
         ),
     )
 
+    monkeypatch.setattr(
+        subject,
+        "PartialBandStore",
+        lambda *_args: SimpleNamespace(
+            status=lambda *_args: SimpleNamespace(
+                state="not_started", binding_sha256="sha256:" + "3" * 64
+            )
+        ),
+    )
     result = subject.enqueue_pending(bulk_root=tmp_path)
-    if native_low_rate:
-        assert result == () and queued == []
-        assert "unsupported_native_1p25_rate" in capsys.readouterr().out
-        return
     assert result == ("scan-fw-variable",)
     assert queued[0]["session_id"] == "scan-fw-variable"
     assert queued[0]["input_manifest_digest"] == capture.manifest_sha256
+    if native_low_rate:
+        assert queued[0]["configuration_digest"] == "sha256:" + "3" * 64
 
 
 def test_enqueue_pending_does_not_reopen_sessions_owned_by_queue(monkeypatch, tmp_path) -> None:
@@ -248,6 +255,48 @@ def _lease() -> AdaptiveAnalysisJobLease:
         lease_expires_at=datetime.now(UTC),
         resource_class="memory",
     )
+
+
+@pytest.mark.parametrize("published", [True, False])
+def test_partial_band_queue_uses_versioned_command_and_requires_artifact_authority(
+    monkeypatch, tmp_path, published
+):
+    lease = _lease()
+    identity = subject.partial_band_identity(
+        lease.session_id, lease.input_manifest_digest, subject.PartialBandConfigurationV1()
+    )
+    lease = replace(lease, configuration_digest=identity)
+    command = subject._command_for_lease(lease=lease, bulk_root=tmp_path, site="unused")
+    assert "leo.cli.partial_band" in command
+    calls = []
+    catalog = SimpleNamespace(
+        claim_adaptive_job=lambda **kw: lease,
+        complete_job=lambda **kw: calls.append("complete"),
+        fail_job=lambda **kw: calls.append("failed"),
+    )
+    monkeypatch.setattr(
+        subject.subprocess,
+        "run",
+        lambda *a, **kw: SimpleNamespace(
+            returncode=0, stdout='{"state":"figures_ready"}', stderr=""
+        ),
+    )
+    monkeypatch.setattr(
+        subject,
+        "PartialBandStore",
+        lambda *a: SimpleNamespace(
+            status=lambda *a: SimpleNamespace(
+                state="figures_ready" if published else "partial", binding_sha256=identity
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        subject,
+        "_enqueue_tracking_after_analysis",
+        lambda **kw: pytest.fail("unqualified phase/position must not be queued"),
+    )
+    assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1", catalog=catalog)
+    assert calls == ["complete" if published else "failed"]
 
 
 def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
