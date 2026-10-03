@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--maximum-seconds", type=float, default=560.0)
     parser.add_argument("--maximum-visits", type=int, default=3000)
-    parser.add_argument("--maximum-workers", type=int, default=4)
+    parser.add_argument("--maximum-workers", type=int, choices=(1,), default=1)
     args = parser.parse_args()
     os.nice(10)
     captures = AdaptiveHopIqStore(args.bulk_root, read_only=True)
