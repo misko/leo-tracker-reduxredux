@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run a five-minute adaptive capture on the seven-minute scheduling policy.
+"""Run a five-minute adaptive capture with native 1.25/2.5 MS/s selection.
 
 Based on the installed v0.58 manual-gain runner, revision 1e7bebed. Each
 activation has a distinct recording identity, including retries in one slot.
-The systemd timer owns the two-minute gap after completion.
+The systemd timer owns the three-minute gap after completion.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 SERIAL = "10400056f695001322002d0010ad1719f2"
 URI = "ip:192.168.1.21"
-RATES = (2_500_000,)
+RATES = (1_250_000, 2_500_000)
 SLOT_SECONDS = 420
 ACTIVE_DWELLS_MS = (120,)
 FREQUENCIES_2P5 = (
@@ -51,6 +51,7 @@ FREQUENCIES_10M = (
     1_940_000_000,
 )
 FREQUENCIES_BY_RATE = {
+    1_250_000: FREQUENCIES_2P5,
     2_500_000: FREQUENCIES_2P5,
     5_000_000: FREQUENCIES_10M,
     7_500_000: FREQUENCIES_10M,
@@ -79,8 +80,10 @@ def slot_configuration(
     epoch_seconds: int, serial: str = SERIAL
 ) -> tuple[int, int, str, tuple[int, ...]]:
     ordinal = epoch_seconds // SLOT_SECONDS
-    # All future captures use the operator-selected 2.5 MS/s rate.
-    rate = 2_500_000
+    # One of four uniform outcomes chooses native 1.25 MS/s independently of edge.
+    rate = (1_250_000 if deterministic_uniform_choice(
+        serial, ordinal, "rate-1p25-quarter-v1", 4
+    ) == 0 else 2_500_000)
     edge = "upper" if deterministic_uniform_choice(serial, ordinal, "edge", 2) else "lower"
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
@@ -97,7 +100,7 @@ def campaign_configuration(
     ordinal, scheduled_rate, edge, _ = slot_configuration(epoch_seconds, serial)
     rate = scheduled_rate if sample_rate_hz is None else sample_rate_hz
     if rate not in RATES:
-        raise ValueError("adaptive captures require 2.5 MS/s")
+        raise ValueError("adaptive captures require 1.25 or 2.5 MS/s")
     all_frequencies = FREQUENCIES_BY_RATE[rate]
     frequencies = all_frequencies[0::2] if edge == "lower" else all_frequencies[1::2]
     identity = hashlib.sha256(
@@ -180,7 +183,7 @@ def main() -> int:
         "--sample-rate",
         type=int,
         choices=RATES,
-        help="sample rate in samples/second; only 2500000 (2.5 MS/s) is supported",
+        help="native sample rate; defaults to 25% at 1.25 MS/s and 75% at 2.5 MS/s",
     )
     parser.add_argument(
         "--timing-policy",
@@ -270,7 +273,7 @@ def main() -> int:
             mode=AdaptiveScanMode.ADAPTIVE,
             manual_gain_db=40.0,
             gain_mode=gain_mode,
-            samples_per_block=1_000_000,
+            samples_per_block=500_000 if rate == 1_250_000 else 1_000_000,
             feedback_period_visits=8,
             visit_sink=archive.append,
             session_clock_sink=record_clock_bracket,

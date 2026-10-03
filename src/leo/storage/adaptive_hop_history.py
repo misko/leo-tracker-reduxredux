@@ -14,6 +14,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
     AdaptiveHopReceiptV7,
+    AdaptiveHopReceiptV8,
 )
 from leo.scanner.adaptive_hop_history import (
     AdaptiveHopCoverageV1,
@@ -31,6 +32,8 @@ from leo.scanner.adaptive_hop_history import (
     Feature104SessionDetailV7,
     FourRateVariableDwellHistoryItemV9,
     FourRateVariableDwellSessionDetailV9,
+    NativeLowRateHistoryItemV10,
+    NativeLowRateSessionDetailV10,
     VariableDwellHistoryItemV8,
     VariableDwellSessionDetailV8,
 )
@@ -48,6 +51,7 @@ from leo.scanner.host_adaptive_history import (
     AdaptiveHistoryPageV6,
     AdaptiveHistoryPageV7,
     AdaptiveHistoryPageV8,
+    AdaptiveHistoryPageV9,
     HostAdaptiveHistoryItemV2,
     HostAdaptiveHistoryItemV3,
     HostAdaptiveSessionDetailV2,
@@ -138,7 +142,9 @@ def _summary(session: PublishedAdaptiveHopIqSession) -> AdaptiveHopHistoryItemV1
         )
     elif isinstance(receipt, AdaptiveHopReceiptV2):
         model = (
-            FourRateVariableDwellHistoryItemV9
+            NativeLowRateHistoryItemV10
+            if isinstance(receipt, AdaptiveHopReceiptV8)
+            else FourRateVariableDwellHistoryItemV9
             if isinstance(receipt, AdaptiveHopReceiptV7)
             else VariableDwellHistoryItemV8
             if isinstance(receipt, AdaptiveHopReceiptV6)
@@ -255,7 +261,9 @@ class AdaptiveHopPresentationStore:
         finally:
             store.close()
         model: type[AdaptiveHopHistoryPageV1] = (
-            AdaptiveHistoryPageV8
+            AdaptiveHistoryPageV9
+            if include_host and any(isinstance(item, NativeLowRateHistoryItemV10) for item in items)
+            else AdaptiveHistoryPageV8
             if include_host
             and any(isinstance(item, FourRateVariableDwellHistoryItemV9) for item in items)
             else AdaptiveHistoryPageV7
@@ -413,7 +421,9 @@ class AdaptiveHopPresentationStore:
             fields = dict(host_decisions=tuple(decision_views))
         elif isinstance(receipt, AdaptiveHopReceiptV2):
             model = (
-                FourRateVariableDwellSessionDetailV9
+                NativeLowRateSessionDetailV10
+                if isinstance(receipt, AdaptiveHopReceiptV8)
+                else FourRateVariableDwellSessionDetailV9
                 if isinstance(receipt, AdaptiveHopReceiptV7)
                 else VariableDwellSessionDetailV8
                 if isinstance(receipt, AdaptiveHopReceiptV6)

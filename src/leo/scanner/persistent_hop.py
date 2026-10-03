@@ -313,6 +313,13 @@ class FourRateDualRxTimingV5(PersistentHopUtcTimingAuthorityV1):
     sample_rate_hz: Literal[2_500_000, 5_000_000, 7_500_000, 10_000_000]  # type: ignore[assignment]
 
 
+class NativeLowRateTimingV6(FourRateDualRxTimingV5):
+    """Native 1.25 MS/s UTC authority; older timing contracts remain closed."""
+
+    schema_version: Literal[6] = 6
+    sample_rate_hz: Literal[1_250_000] = 1_250_000
+
+
 class Feature103DualRxPlanV3(PersistentHopPlanV1):
     """Feature-103 geometry where repeated targets can have no retune guard."""
 
@@ -495,6 +502,31 @@ class FourRateVariableDualRxPlanV6(VariableDualRxPlanV5):
         )
         if self.profiles != expected:
             raise ValueError("four-rate variable dual-RX targets must remain canonical")
+        return self
+
+
+class NativeLowRatePlanV7(VariableDualRxPlanV5):
+    """v0.60 native dual-RX geometry centered on the existing pilot targets."""
+
+    schema_version: Literal[7] = 7
+    sample_rate_hz: Literal[1_250_000] = 1_250_000
+    bandwidth_hz: Literal[1_250_000] = 1_250_000
+    samples_per_block: Literal[500_000] = 500_000
+
+    @model_validator(mode="after")
+    def _geometry_is_exact(self) -> Self:
+        if self.gain_mode is GainMode.MANUAL:
+            if self.gain_db is None or not math.isfinite(self.gain_db):
+                raise ValueError("native low-rate manual gain must be finite")
+        elif self.gain_db is not None:
+            raise ValueError("automatic gain cannot declare manual gain")
+        expected = tuple(
+            PersistentHopProfileV1(target_index=index, fastlock_profile_index=index, target=target)
+            for index, target in enumerate(scheduled_low_band_targets(
+                bandwidth_hz=2_500_000, lnb_lo_hz=self.lnb_lo_hz))
+        )
+        if self.profiles != expected:
+            raise ValueError("native low-rate targets must preserve pilot centers")
         return self
 
 

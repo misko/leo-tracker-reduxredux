@@ -26,12 +26,14 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV5,
     AdaptiveHopPlanV6,
     AdaptiveHopPlanV7,
+    AdaptiveHopPlanV8,
     AdaptiveHopPolicyV1,
     AdaptiveHopPolicyV2,
     AdaptiveHopReceiptV4,
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
     AdaptiveHopReceiptV7,
+    AdaptiveHopReceiptV8,
     AdaptiveHopTerminalV1,
     AdaptiveHopTerminalV2,
 )
@@ -57,6 +59,8 @@ from leo.scanner.persistent_hop import (
     Feature104DualRxTimingV4,
     FourRateDualRxTimingV5,
     FourRateVariableDualRxPlanV6,
+    NativeLowRatePlanV7,
+    NativeLowRateTimingV6,
     PersistentHopProfileV1,
     PersistentHopRestorationReceiptV1,
     VariableDualRxPlanV5,
@@ -104,7 +108,10 @@ def _load(path: Path) -> tuple[dict, bytes]:
     rate = document.get("setup", {}).get("source_rate_hz")
     dual = dual_shape and (
         (serial == DUAL_SERIAL and rate in (2_500_000, 10_000_000, 15_000_000))
-        or (serial == RADIO20_SERIAL and rate in (2_500_000, 5_000_000, 7_500_000, 10_000_000))
+        or (
+            serial == RADIO20_SERIAL
+            and rate in (1_250_000, 2_500_000, 5_000_000, 7_500_000, 10_000_000)
+        )
     )
     if not (legacy or dual):
         raise ValueError("firmware archive is not the pinned radio RX0 source")
@@ -210,8 +217,16 @@ def _plan(
 ):
     setup = document["setup"]
     rate = int(setup["source_rate_hz"])
+    if rate == 1_250_000 and not _is_protocol_three(document):
+        raise UnsupportedFirmwareArchiveError("native low-rate capture requires protocol three")
     target_bandwidth_hz = (
-        (10_000_000 if rate in (5_000_000, 7_500_000, 15_000_000) else rate)
+        (
+            2_500_000
+            if rate == 1_250_000
+            else 10_000_000
+            if rate in (5_000_000, 7_500_000, 15_000_000)
+            else rate
+        )
         if _is_dual(document)
         else 5_000_000
     )
@@ -233,18 +248,18 @@ def _plan(
         dual_policy = AdaptiveHopPolicyV2(
             mode="adaptive", generation=int(setup["generation"]), allowed_target_mask=allowed_mask
         )
-        if rate not in (2_500_000, 5_000_000, 7_500_000, 10_000_000, 15_000_000):
+        if rate not in (1_250_000, 2_500_000, 5_000_000, 7_500_000, 10_000_000, 15_000_000):
             raise UnsupportedFirmwareArchiveError("dual firmware archive rate is unsupported")
         geometry_fields = dict(
             sample_rate_hz=rate,
             bandwidth_hz=rate,
             transition_guard_samples=0,
             kernel_buffers=16,
-            samples_per_block=1_000_000,
+            samples_per_block=500_000 if rate == 1_250_000 else 1_000_000,
             profiles=profiles,
         )
         if _is_protocol_three(document):
-            if rate not in (2_500_000, 5_000_000, 7_500_000, 10_000_000):
+            if rate not in (1_250_000, 2_500_000, 5_000_000, 7_500_000, 10_000_000):
                 raise UnsupportedFirmwareArchiveError(
                     "protocol-three dual firmware rate is unsupported"
                 )
@@ -268,6 +283,12 @@ def _plan(
                 "active_valid_visit_ms": dwell_ms,
                 "nominal_duration_seconds": duration_ms // 1_000,
             }
+            if rate == 1_250_000:
+                return AdaptiveHopPlanV8(
+                    geometry=NativeLowRatePlanV7.model_validate(variable_fields),
+                    policy=dual_policy,
+                    classification_receiver=1,
+                )
             if rate in (5_000_000, 7_500_000):
                 return AdaptiveHopPlanV7(
                     geometry=FourRateVariableDualRxPlanV6.model_validate(variable_fields),
@@ -501,7 +522,11 @@ def _dual_receipt(document: dict):
             if index not in retained
         )
         receipt_model = (
-            AdaptiveHopReceiptV7 if isinstance(plan, AdaptiveHopPlanV7) else AdaptiveHopReceiptV6
+            AdaptiveHopReceiptV8
+            if isinstance(plan, AdaptiveHopPlanV8)
+            else AdaptiveHopReceiptV7
+            if isinstance(plan, AdaptiveHopPlanV7)
+            else AdaptiveHopReceiptV6
         )
         return receipt_model(
             **common,
@@ -647,6 +672,13 @@ def _timing(document: dict, receipt):
         receipt,
         (AdaptiveHopReceiptV4, AdaptiveHopReceiptV5, AdaptiveHopReceiptV6, AdaptiveHopReceiptV7),
     ):
+        if isinstance(receipt, AdaptiveHopReceiptV8):
+            return NativeLowRateTimingV6.from_host_bracket(
+                session_id=receipt.session_id,
+                session_start_device_sample_counter=receipt.terminal.first_counter,
+                sample_rate_hz=receipt.plan.geometry.sample_rate_hz,
+                **value,
+            )
         if isinstance(receipt, AdaptiveHopReceiptV7):
             return FourRateDualRxTimingV5.from_host_bracket(
                 session_id=receipt.session_id,

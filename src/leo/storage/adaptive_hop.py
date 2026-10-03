@@ -36,6 +36,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopPlanV5,
     AdaptiveHopPlanV6,
     AdaptiveHopPlanV7,
+    AdaptiveHopPlanV8,
     AdaptiveHopReceiptV1,
     AdaptiveHopReceiptV2,
     AdaptiveHopReceiptV3,
@@ -43,6 +44,7 @@ from leo.scanner.adaptive_hop import (
     AdaptiveHopReceiptV5,
     AdaptiveHopReceiptV6,
     AdaptiveHopReceiptV7,
+    AdaptiveHopReceiptV8,
     AdaptiveHopVisitV1,
     AdaptiveHopVisitV2,
     AdaptiveHopVisitV3,
@@ -65,6 +67,7 @@ from leo.scanner.persistent_hop import (
     Feature103DualRxTimingV3,
     Feature104DualRxTimingV4,
     FourRateDualRxTimingV5,
+    NativeLowRateTimingV6,
     PersistentHopUtcTimingAuthorityV1,
 )
 from leo.scanner.single_rx import SingleRxHopTimingV2, SingleRxHopTimingV3
@@ -163,7 +166,7 @@ class AdaptiveHopIqManifestV1(AdaptiveModel):
                     visit.valid_sample_count
                     for visit in visits[next_visit : next_visit + chunk.visit_count]
                 )
-                if self.schema_version in (11, 12, 14)
+                if self.schema_version in (11, 12, 14, 16)
                 else chunk.visit_count * g.valid_visit_samples
             )
             if (
@@ -377,6 +380,15 @@ class UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15(AdaptiveHopIqManifes
     chunks: Annotated[tuple[VariableDualRxAdaptiveHopIqChunkV12, ...], Field(max_length=2500)]
 
 
+class NativeLowRateIqManifestV16(UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15):
+    """Native 1.25 MS/s capture; no measured fixture geometry is implied."""
+
+    schema_version: Literal[16] = 16
+    _timing_model: ClassVar[type[PersistentHopUtcTimingAuthorityV1]] = NativeLowRateTimingV6
+    receipt: AdaptiveHopReceiptV8
+    timing: NativeLowRateTimingV6 | None
+
+
 class _ManifestSeal(AdaptiveModel):
     manifest: Annotated[
         AdaptiveHopIqManifestV1
@@ -393,7 +405,8 @@ class _ManifestSeal(AdaptiveModel):
         | VariableDualRxAdaptiveHopIqManifestV12
         | UnboundFeature103DualRxAdaptiveHopIqManifestV13
         | UnboundVariableDualRxAdaptiveHopIqManifestV14
-        | UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15,
+        | UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15
+        | NativeLowRateIqManifestV16,
         Field(discriminator="schema_version"),
     ]
     sha256: Digest
@@ -422,6 +435,7 @@ class PublishedAdaptiveHopIqSession:
         | UnboundFeature103DualRxAdaptiveHopIqManifestV13
         | UnboundVariableDualRxAdaptiveHopIqManifestV14
         | UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15
+        | NativeLowRateIqManifestV16
     )
     manifest_sha256: str
 
@@ -661,7 +675,9 @@ class AdaptiveHopIqStore:
             raise BundleStateError("adaptive IQ store is read-only")
         _identifier(session_id)
         plan_model = (
-            AdaptiveHopPlanV7
+            AdaptiveHopPlanV8
+            if isinstance(plan, AdaptiveHopPlanV8)
+            else AdaptiveHopPlanV7
             if isinstance(plan, AdaptiveHopPlanV7)
             else AdaptiveHopPlanV6
             if isinstance(plan, AdaptiveHopPlanV6)
@@ -1335,7 +1351,9 @@ class AdaptiveHopSessionWriter:
         self._require_open()
         try:
             receipt_model = (
-                AdaptiveHopReceiptV7
+                AdaptiveHopReceiptV8
+                if isinstance(self._plan, AdaptiveHopPlanV8)
+                else AdaptiveHopReceiptV7
                 if isinstance(self._plan, AdaptiveHopPlanV7)
                 else AdaptiveHopReceiptV6
                 if isinstance(self._plan, AdaptiveHopPlanV6)
@@ -1366,7 +1384,9 @@ class AdaptiveHopSessionWriter:
                 raise ValueError("adaptive IQ receipt disagrees with written actual visits")
             self._finish_chunk()
             manifest_model: type[AdaptiveHopIqManifestV1] = (
-                UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15
+                NativeLowRateIqManifestV16
+                if isinstance(receipt, AdaptiveHopReceiptV8) and self._receiver_geometry is None
+                else UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15
                 if isinstance(receipt, AdaptiveHopReceiptV7) and self._receiver_geometry is None
                 else UnboundVariableDualRxAdaptiveHopIqManifestV14
                 if isinstance(receipt, AdaptiveHopReceiptV6) and self._receiver_geometry is None

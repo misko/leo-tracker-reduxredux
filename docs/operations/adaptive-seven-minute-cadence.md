@@ -1,5 +1,52 @@
 # Automatic adaptive capture cadence
 
+## October 2 v0.60 deployment and native low-rate policy
+
+Radio .20 now runs `v0.60-plutoplus-spf-adaptive-native-fastlock`, installed
+through PPU's guarded LAN flash procedure. Each scheduling slot selects native
+**1.25 MS/s with 25% probability**, otherwise **2.5 MS/s**. Both use protocol
+v3, manual 40 dB gain, 120 ms active/quiet visits, five-minute captures, and the
+existing three-minute wait after completion. The low-rate path uses 500,000
+transport samples per block, as required by the release qualification; 2.5 MS/s
+retains 1,000,000. Target centers are unchanged. This is probabilistic selection,
+not a fixed repeating sequence of four scans.
+
+The installed runner is
+`8a85f9fafcf5db1b8af1f8ce598d42d61bf6a6d1731bc9b3bae3f1de4e88073d`,
+with PPU source `a491b1ca7ee021e3e0e19a8c98becd2c9b1dae8b`.
+Native low-rate records use new plan/receipt, geometry, timing, IQ manifest,
+history-item, and history-page versions. Existing published versions remain
+closed. The API and UI display the real 1.25 MS/s source rate. Scientific
+analysis of that rate remains unqualified: the UI states this explicitly and
+the queue logs `unsupported_native_1p25_rate` rather than submitting it to
+an incompatible analyzer. Raw dual-RX IQ is retained for subsequent analysis.
+
+The bounded ten-second .20 test `scan-fw-189c7fe0ef6e62cc` delivered all 73
+planned visits, with zero errors/skips/invalid/cancelled visits. Each visit
+contains 150,000 samples per receiver; total raw IQ is 87,600,000 bytes.
+This real archive passed import and is visible through the live v2/v3 API.
+No hardware qualification claim is inferred for the scientific detector.
+
+PPU verified protected regions, written FIT, reboot, returned serial/version,
+SSH key rotation, and TX-safe state. Its receipt is
+`54e738fc-dcde-4d37-91b6-9ea13f718d94`, retained with private deployment evidence
+under `/home/mouse9911/release-evidence/v060-radio20`.
+The published DFU SHA-256 is
+`521ab9d36ade7ff4f278e699be6c080a7e7af1b7353de7d62189300caea7fb20`.
+
+The reader/UI deployment at `/opt/leo-native-low-rate/a644cd4b778e` preserves
+the installed sparse-publication recovery checks, queue capture-date gate,
+and web baseline `4d7a403f9b3e135a98e01daad763aabd49aa81e2`. File hashes are
+recorded in its `overlay-files.json`. The `leo-native-low-rate-readers.conf`
+drop-in is installed on publication and queue services, and
+`leo-native-low-rate-api.conf` on the API, as `zzzzz-native-low-rate.conf`.
+The final repository formatting is semantically identical to the tested
+deployed Python overlay. Validation: 60 import/queue/API tests on that overlay,
+34 scheduling/qualification tests with the deployed PPU, 43 UI regression tests
+on the preserved live UI baseline, and a successful TypeScript/production build.
+
+Earlier policy changes below are historical.
+
 ## October 2 fixed sample rate
 
 The timer now waits **three minutes after each capture finishes**, replacing

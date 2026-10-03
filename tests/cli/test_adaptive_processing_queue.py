@@ -12,12 +12,18 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
-def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize("native_low_rate", [False, True])
+def test_enqueue_pending_schedules_variable_dwell_analysis(
+    monkeypatch, tmp_path, capsys, native_low_rate
+) -> None:
     class VariableReceipt:
         pass
 
+    receipt = (
+        subject.AdaptiveHopReceiptV8.model_construct() if native_low_rate else VariableReceipt()
+    )
     capture = SimpleNamespace(
-        manifest=SimpleNamespace(receipt=VariableReceipt(), created_utc_ns=1),
+        manifest=SimpleNamespace(receipt=receipt, created_utc_ns=1),
         manifest_sha256="sha256:" + "1" * 64,
     )
 
@@ -57,11 +63,16 @@ def test_enqueue_pending_schedules_variable_dwell_analysis(monkeypatch, tmp_path
         "_catalog",
         lambda: SimpleNamespace(
             adaptive_job_kinds_by_session=lambda: {},
-            enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True
+            enqueue_adaptive_analysis_job=lambda **kwargs: queued.append(kwargs) or True,
         ),
     )
 
-    assert subject.enqueue_pending(bulk_root=tmp_path) == ("scan-fw-variable",)
+    result = subject.enqueue_pending(bulk_root=tmp_path)
+    if native_low_rate:
+        assert result == () and queued == []
+        assert "unsupported_native_1p25_rate" in capsys.readouterr().out
+        return
+    assert result == ("scan-fw-variable",)
     assert queued[0]["session_id"] == "scan-fw-variable"
     assert queued[0]["input_manifest_digest"] == capture.manifest_sha256
 
@@ -95,18 +106,14 @@ def test_enqueue_pending_does_not_reopen_sessions_owned_by_queue(monkeypatch, tm
         subject,
         "_catalog",
         lambda: SimpleNamespace(
-            adaptive_job_kinds_by_session=lambda: {
-                "scan-fw-owned": frozenset(("adaptive_scan",))
-            }
+            adaptive_job_kinds_by_session=lambda: {"scan-fw-owned": frozenset(("adaptive_scan",))}
         ),
     )
 
     assert subject.enqueue_pending(bulk_root=tmp_path) == ()
 
 
-def test_enqueue_pending_does_not_open_captures_outside_live_window(
-    monkeypatch, tmp_path
-) -> None:
+def test_enqueue_pending_does_not_open_captures_outside_live_window(monkeypatch, tmp_path) -> None:
     class Captures:
         def __init__(self, *_args, **_kwargs):
             pass
