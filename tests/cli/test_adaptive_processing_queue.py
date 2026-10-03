@@ -268,6 +268,8 @@ def test_partial_band_queue_uses_versioned_command_and_requires_artifact_authori
     lease = replace(lease, configuration_digest=identity)
     command = subject._command_for_lease(lease=lease, bulk_root=tmp_path, site="unused")
     assert "leo.cli.partial_band" in command
+    worker_option = command.index("--maximum-workers")
+    assert command[worker_option + 1] == "1"
     calls = []
     catalog = SimpleNamespace(
         claim_adaptive_job=lambda **kw: lease,
