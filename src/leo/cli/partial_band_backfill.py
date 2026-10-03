@@ -7,6 +7,7 @@ from pathlib import Path
 from leo.application.partial_band import binding_for_capture
 from leo.cli.adaptive_processing_queue import _catalog
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
+from leo.storage.errors import RecordingStoreError
 from leo.storage.partial_band import PartialBandStore
 
 
@@ -49,7 +50,7 @@ def backfill(*, captures, products, catalog=None, report=print):
                     completed_visits=status.completed_visits,
                 )
             )
-        except (OSError, ValueError) as error:
+        except (OSError, ValueError, RecordingStoreError) as error:
             counts["errors"] += 1
             report(dict(session_id=session_id, outcome="error", error=str(error)))
     return counts
