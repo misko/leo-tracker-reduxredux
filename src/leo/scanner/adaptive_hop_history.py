@@ -84,7 +84,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             or self.sample_rate_hz != self.bandwidth_hz
             or self.retained_visits > self.started_visits
             or (
-                self.schema_version not in (3, 7, 8)
+                self.schema_version not in (3, 7, 8, 9, 10)
                 and self.retained_visits
                 != max(0, self.started_visits - (self.terminal_state == "cancelled"))
             )
@@ -106,7 +106,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
             valid_ms = round(row.valid_seconds * 1000)
             active_ms = getattr(self, "active_dwell_ms", 120)
             minimum_ms = row.retained_visits * 120
-            variable_duration_invalid = self.schema_version in (8, 10) and (
+            variable_duration_invalid = self.schema_version in (8, 9, 10) and (
                 abs(row.valid_seconds * 1000 - valid_ms) > 1e-6
                 or valid_ms < minimum_ms
                 or valid_ms > row.retained_visits * active_ms
@@ -121,7 +121,7 @@ class AdaptiveHopHistoryItemV1(AdaptiveModel):
                 row.target.channel != row.target_index % 4 + 1
                 or row.target.edge != ("lower" if row.target_index < 4 else "upper")
                 or (
-                    self.schema_version not in (8, 10)
+                    self.schema_version not in (8, 9, 10)
                     and row.valid_seconds
                     != row.retained_visits
                     * (self.sample_rate_hz * 120 // 1000)
@@ -217,7 +217,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
             or len(self.visits) != self.capture.started_visits
             or tuple(v.visit_index for v in self.visits) != tuple(range(len(self.visits)))
             or (
-                self.capture.schema_version not in (3, 7, 8, 9)
+                self.capture.schema_version not in (3, 7, 8, 9, 10)
                 and tuple(v.retained for v in self.visits)
                 != tuple(i < self.capture.retained_visits for i in range(len(self.visits)))
             )
@@ -237,7 +237,7 @@ class AdaptiveHopSessionDetailV1(AdaptiveModel):
                 )
                 allowed_duration_samples = (
                     {rate * 120 // 1000, rate * self.capture.active_dwell_ms // 1000}
-                    if self.capture.schema_version in (8, 10)
+                    if self.capture.schema_version in (8, 9, 10)
                     else {rate * 120 // 1000}
                 )
                 if (
