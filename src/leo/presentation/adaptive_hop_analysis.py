@@ -88,6 +88,7 @@ class AdaptiveOverviewData:
     # Columns: target, receiver, fractional time, margin/CFO respectively.
     winners: np.ndarray
     passed: np.ndarray
+    top_passed: np.ndarray
     observations: dict[tuple[int, int], tuple[TrajectoryObservation, ...]]
 
 
@@ -160,10 +161,12 @@ def _project_overview(
     ):
         raise ValueError("adaptive overview source and metrics binding differ")
     winners = np.empty((sum(r.probe_count for r in manifest.visits), 4), dtype=np.float64)
+    top_passed = np.empty_like(winners)
     passed = np.empty(
         (sum(r.passed_fractional_candidate_count for r in manifest.visits), 4), dtype=np.float64
     )
     winner_cursor = passed_cursor = visited = 0
+    top_passed_cursor = 0
     groups = defaultdict(list)
     expected_indexes = tuple(
         getattr(
@@ -226,6 +229,9 @@ def _project_overview(
                     canonical_cfo,
                 )
                 passed_cursor += 1
+                if candidate.candidate_rank == probe.winning_candidate_rank:
+                    top_passed[top_passed_cursor] = passed[passed_cursor - 1]
+                    top_passed_cursor += 1
                 previous = strongest.get(probe.receiver_id)
                 if previous is None or candidate.fractional_margin > previous[1].fractional_margin:
                     strongest[probe.receiver_id] = (probe, candidate)
@@ -252,9 +258,13 @@ def _project_overview(
     if visited != manifest.complete_visit_count or passed_cursor != len(passed):
         raise ValueError("adaptive overview metrics stream is incomplete")
     winners = winners[:winner_cursor]
+    top_passed = top_passed[:top_passed_cursor]
     winners.setflags(write=False)
     passed.setflags(write=False)
-    return AdaptiveOverviewData(winners, passed, {key: tuple(rows) for key, rows in groups.items()})
+    top_passed.setflags(write=False)
+    return AdaptiveOverviewData(
+        winners, passed, top_passed, {key: tuple(rows) for key, rows in groups.items()}
+    )
 
 
 def _save(
@@ -311,6 +321,7 @@ def _save(
             "Software": f"leo-tracker adaptive actual-visit overview-v{binding.schema_version}",
             "Session": binding.session_id,
             "Metrics": metrics_sha256,
+            "CFOScatterPolicy": "top-fractional-margin-per-probe-rx-if-passed-v1",
             "CFOCoordinate": (
                 "pilot-relative alias-canonical residual; "
                 f"alias-spacing-hz={CFO_ALIAS_SPACING_HZ:.12g}"
@@ -475,10 +486,20 @@ def _render_overview(
         figure = Figure(figsize=(15.5, 11.5), dpi=160, constrained_layout=True)
         axes = figure.subplots(4, 1, sharex=True)
         for channel, axis in enumerate(axes):
+            half_alias = CFO_ALIAS_SPACING_HZ / 2
+            for sign in (-1, 1):
+                lower, upper = sorted((sign * half_alias, sign * CFO_ALIAS_SPACING_HZ))
+                axis.axhspan(lower, upper, color="#edf1f6", zorder=0)
+                boundary = axis.axhline(
+                    sign * half_alias, color="#596579", linestyle=":", linewidth=0.8
+                )
+                boundary.set_gid("canonical-alias-boundary")
             for edge in (0, 1):
                 target = channel + edge * 4
                 for rx in binding.configuration.receiver_ids:
-                    rows = data.passed[(data.passed[:, 0] == target) & (data.passed[:, 1] == rx)]
+                    rows = data.top_passed[
+                        (data.top_passed[:, 0] == target) & (data.top_passed[:, 1] == rx)
+                    ]
                     if len(rows):
                         axis.scatter(
                             rows[:, 2],
@@ -491,28 +512,44 @@ def _render_overview(
                             label=f"{'LU'[edge]} RX{rx}",
                             rasterized=True,
                         )
+                        for sign in (-1, 1):
+                            shifted = rows[:, 3] + sign * CFO_ALIAS_SPACING_HZ
+                            visible = np.abs(shifted) <= CFO_ALIAS_SPACING_HZ
+                            axis.scatter(
+                                rows[visible, 2],
+                                shifted[visible],
+                                s=12,
+                                alpha=0.45,
+                                marker=_MARKERS[rx],
+                                color=_CFO_COLORS[edge][rx],
+                                linewidths=0.8,
+                                label="_nolegend_",
+                                rasterized=True,
+                            )
                     bank = banks.get((target, rx))
                     if bank:
                         for track in bank.trajectories:
                             times = np.linspace(track.start_s, track.end_s, 80)
-                            axis.plot(
-                                times,
-                                track.frequency_hz(times),
-                                color=_CFO_COLORS[edge][rx],
-                                linewidth=1.1,
-                                linestyle="--",
-                                alpha=0.8,
-                            )
+                            for sign in (-1, 0, 1):
+                                axis.plot(
+                                    times,
+                                    track.frequency_hz(times) + sign * CFO_ALIAS_SPACING_HZ,
+                                    color=_CFO_COLORS[edge][rx],
+                                    linewidth=1.1,
+                                    linestyle="--",
+                                    alpha=0.8 if sign == 0 else 0.45,
+                                )
             _axes_time(axis, binding)
             axis.set_xlabel("")
-            axis.set_ylabel(f"CH{channel + 1}\nCanonical residual (Hz)")
-            if not np.any((data.passed[:, 0] % 4) == channel):
+            axis.set_ylim(-CFO_ALIAS_SPACING_HZ, CFO_ALIAS_SPACING_HZ)
+            axis.set_ylabel(f"CH{channel + 1}\nPilot-relative CFO (Hz)")
+            if not np.any((data.top_passed[:, 0] % 4) == channel):
                 axis.set_yticks([])
                 if receipt.source_span_attested:
                     axis.text(
                         0.5,
                         0.5,
-                        "No passed fractional CFO candidates",
+                        "No passing top fractional CFO candidates",
                         transform=axis.transAxes,
                         horizontalalignment="center",
                     )
@@ -520,11 +557,12 @@ def _render_overview(
                 axis.legend(loc="upper right", ncol=4)
         axes[-1].set_xlabel("Device time since capture start (s); fractional candidate epochs")
         figure.suptitle(
-            "All passed fractional GLRT64 pilot-relative CFO candidates\n"
-            f"Capture tuning removed; canonical modulo {CFO_ALIAS_SPACING_HZ / 1000:.3f} kHz · "
-            "Dashed lines: strongest-per-visit candidate associations, not satellite IDs; "
-            "no L/U or cross-channel joins",
-            fontsize=14,
+            "Top fractional GLRT64 candidate per 20 ms probe / RX (passing margin gate)\n"
+            f"Canonical ±{CFO_ALIAS_SPACING_HZ / 2000:.3f} kHz; shaded bands add half an alias "
+            "above and below (shifted copies, not new detections)\n"
+            "Dashed: strongest-per-visit associations, not satellite IDs; "
+            "capture tuning removed; no L/U or cross-channel joins",
+            fontsize=12,
         )
         figures["cfo-trajectories"] = _save(figure, binding, metrics_sha, test_data)
     return RenderedAdaptiveOverview(
