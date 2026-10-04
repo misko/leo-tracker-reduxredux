@@ -1,4 +1,4 @@
-"""Build a single offline HTML report from the packaged evidence (stdlib only)."""
+"""Build offline HTML and companion Markdown from packaged evidence (stdlib only)."""
 from __future__ import annotations
 import base64
 import csv
@@ -9,6 +9,7 @@ import io
 import json
 import re
 from pathlib import Path
+from render_markdown import markdown
 
 HERE = Path(__file__).resolve().parent
 
@@ -43,7 +44,12 @@ def build():
     config = metadata["scan_A_configuration"]
     content = content.replace("@@CONFIG@@",table(["Saved Scan A detector setting", "Value"],
         [[key,config[key]] for key in ("analyzer_id","sample_rate_hz","probe_ms","probe_stride_ms","glrt64_margin_gate","maximum_acquisition_candidates","timing_refinement","decision_score")]))
-    labels = {"original": "Original GLRT; corrected timing", "refined": "Refined GLRT; all candidates", "top": "Refined GLRT; top per window"}
+    labels = {"original": "Original GLRT; corrected timing", "refined": "Refined GLRT; all candidates", "top": "T1-AT v1; refined top per window"}
+    replay = [load(f"B-t1-at-v1-replay-{arm}")["summary"] for arm in ("fitted-c", "zero-c")]
+    content = content.replace("@@B_REPLAY@@", table(
+        ["Calibration", "Assigned / windows", "Coverage", "Unassigned", "Satellites", "Assigned RMS (Hz)", "Exact historical match"],
+        [[r["arm"], f'{r["assigned"]:,} / {r["denominator"]:,}', f'{100*r["coverage"]:.2f}%',
+          r["unassigned"], r["satellites"], f'{r["rms_hz"]:.1f}', r["exact_historical_stages_match"]] for r in replay]))
     rows = []
     for r in metrics["results"]:
         rows.append([r["scan"], labels[r["stage"]], r["arm"], f'{r["assigned"]:,} / {r["denominator"]:,}',
@@ -82,8 +88,9 @@ def build():
     if "@@" in content:
         raise ValueError("Unresolved template placeholder")
     (HERE / "report.html").write_text(content)
+    (HERE / "report.md").write_text(markdown(content))
     return counter
 
 
 if __name__ == "__main__":
-    print(f"Built report.html with {build()} embedded figures and downloadable evidence.")
+    print(f"Built report.html and report.md with {build()} figures and downloadable evidence.")
