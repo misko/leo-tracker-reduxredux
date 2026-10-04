@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="An evidence-led report on DS13 GLRT candidate refinement, ambiguity, top-response selection, and greedy satellite association.">
+<title>From GLRT hypotheses to satellite tracks · DS13 evidence report</title>
+<style>
+:root{--ink:#172e40;--muted:#526777;--blue:#0072b2;--orange:#bd4e00;--line:#d9e3e9;--paper:#fff;--wash:#f1f6f9}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--paper);font:17px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}header{background:#112e42;color:white;padding:68px max(6vw,24px) 48px}header .inner{max-width:1120px;margin:auto}.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#85c9ed;font-weight:700}h1{font-size:clamp(32px,5vw,58px);line-height:1.12;letter-spacing:-.04em;max-width:930px;margin:18px 0 22px}header p{max-width:840px;color:#d2e4ef;font-size:20px}.meta{font-size:13px;color:#b7cdda}main{max-width:1180px;padding:0 30px 60px;margin:auto}nav{margin:30px 0;padding:22px 26px;background:var(--wash);border-radius:10px}nav ol{columns:2;column-gap:36px;margin:8px 0;padding-left:22px}a{color:#00649d;text-underline-offset:3px}nav a{text-decoration:none}section{padding-top:36px;margin-top:22px;border-top:1px solid var(--line);scroll-margin-top:20px}h2{font-size:30px;line-height:1.2;letter-spacing:-.025em;margin:0 0 22px}h3{font-size:21px;margin:30px 0 12px}p{margin:12px 0 18px;max-width:950px}li{margin:7px 0}ul,ol{padding-left:24px}.lead{font-size:21px}.callout{border-left:4px solid var(--blue);padding:16px 22px;background:var(--wash);margin:26px 0}.caution{border-left-color:var(--orange);background:#fff6ed}.callout p:last-child{margin-bottom:0}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:26px 0}.card{background:var(--wash);padding:22px;border-radius:8px}.value{display:block;font-size:36px;line-height:1.2;font-weight:750;letter-spacing:-.03em}.label{display:block;margin-top:10px;font-size:14px;line-height:1.5}.muted,small{color:var(--muted)}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}.flow div{border:1px solid var(--line);border-top:4px solid var(--blue);padding:17px;font-size:14px;line-height:1.5}.flow strong{display:block;font-size:17px;margin-bottom:8px}.step{color:var(--blue);font-weight:700}figure{margin:32px 0 42px;padding:12px 0 0}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:5px;background:white}figcaption{font-size:14px;line-height:1.55;color:var(--muted);margin-top:13px;max-width:1040px}figcaption b{color:var(--ink)}.table-wrap{overflow-x:auto;margin:22px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.45;text-align:left}th{background:#eaf2f7;color:#1a3a50;border-bottom:2px solid #b6cad8}td,th{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}tbody tr:nth-child(even){background:#f7fafc}code,pre,.equation{font-family:ui-monospace,"SFMono-Regular",Consolas,monospace}code{font-size:.85em;overflow-wrap:anywhere}pre{padding:20px;background:#122e41;color:#e0edf4;overflow:auto;font-size:13px;line-height:1.6;border-radius:6px}.equation{background:var(--wash);padding:18px 22px;font-size:16px;overflow-x:auto;margin:20px 0}details{border:1px solid var(--line);border-radius:8px;padding:16px 20px;margin:20px 0}summary{cursor:pointer;font-weight:650}details table{font-size:12px}details td{overflow-wrap:anywhere}details[open] summary{margin-bottom:20px}.downloads{font-size:13px;columns:2}footer{font-size:13px;color:var(--muted);padding-top:28px;border-top:1px solid var(--line)}.tag{display:inline-block;font-size:12px;font-weight:650;padding:3px 9px;background:#e7eff4;border-radius:4px;margin-bottom:14px}
+@media(max-width:720px){body{font-size:16px}main{padding:0 18px 40px}header{padding:40px 22px}.cards,.flow{grid-template-columns:1fr}nav ol,.downloads{columns:1}h2{font-size:26px}.value{font-size:30px}td,th{padding:9px}figure{margin:24px 0}}
+@media print{body{font-size:10pt;color:#111}header{background:white;color:#111;padding:0 0 20px}header p,.meta,.eyebrow{color:#333}h1{font-size:29pt}h2{font-size:20pt}main{padding:0;max-width:none}nav{display:none}section{break-before:page;border:0;padding-top:0}figure,.callout,.cards{break-inside:avoid}figure img{max-height:220mm;object-fit:contain}a{color:#111}.downloads{display:none}details{break-inside:auto}.table-wrap{overflow:visible}table{font-size:8pt}pre{white-space:pre-wrap;background:#eee;color:#111}@page{size:A4;margin:17mm}}
+</style>
+</head>
+<body>
+<header><div class="inner"><div class="eyebrow">DS13 · signal processing &amp; satellite association · research report</div>
+<h1>From GLRT hypotheses<br>to satellite tracks</h1>
+<p>What refinement fixes, what “unassigned” really means, and what we can—and cannot—conclude from 95% top-response coverage.</p>
+<div class="meta">Evidence snapshot: 4 October 2026 UTC · Two archived 300-second scans · Known-position development analysis · Offline, self-contained edition</div>
+</div></header>
+<main>
+<nav aria-label="Contents"><strong>Read the evidence in order—or jump to a question</strong><ol>
+<li><a href="#summary">Executive summary</a></li><li><a href="#units">What exactly are we counting?</a></li>
+<li><a href="#glrt">From IQ to a GLRT candidate</a></li><li><a href="#refinement">Candidate-only refinement</a></li>
+<li><a href="#ambiguity">The “missing” 66204 track</a></li><li><a href="#selection">Choosing the top GLRT response</a></li>
+<li><a href="#orbit">Orbit model and timing consistency</a></li><li><a href="#solver">Greedy and replacement search</a></li>
+<li><a href="#results">Results and matched controls</a></li><li><a href="#limits">Limits, lessons, and next experiments</a></li>
+<li><a href="#appendix">Track inventory and reproducibility</a></li></ol></nav>
+
+<section id="summary"><span class="tag">01 / Motivation and findings</span><h2>Explain signals, not just dots</h2>
+<p class="lead">We want a small, physically consistent set of satellite trajectories to explain the detected radio activity. The difficult part is deciding which dots represent different signals—and which are different hypotheses about the same signal.</p>
+<p>A single 20 ms IQ window can yield several acquisition/GLRT candidates. Several satellites can also be active in that same window. Those two facts look similar in a scatter plot but call for different treatment. Counting every candidate as an independent detection makes duplicate-like alternatives look like missing tracks; retaining only one candidate can hide genuinely simultaneous signals.</p>
+<div class="cards"><div class="card"><span class="value">7,382 → 3,837</span><span class="label">Scan A: canonical candidates → windows, after retaining the highest refined-margin candidate per window.</span></div><div class="card"><span class="value">94.97%</span><span class="label">3,644 / 3,837 top candidates assigned with fitted RF calibration coefficient <i>c</i>; 33 satellites.</span></div><div class="card"><span class="value">95.07%</span><span class="label">3,648 / 3,837 assigned with <i>c</i> = 0 under matched search; also 33 satellites.</span></div></div>
+<div class="callout caution"><strong>The headline is window coverage, not complete signal recovery.</strong><p>The 95% result covers the strongest retained hypothesis in each observed receiver/channel/window. It is not 95% of the original 7,382 hypotheses, not 95% of every recorded window, and not proof of correct satellite identity or accurate localization.</p></div>
+<div class="flow" aria-label="Analysis pipeline"><div><span class="step">1 · Detect</span><strong>IQ → candidates</strong>Several frequency/epoch hypotheses may survive for one 20 ms window.</div><div><span class="step">2 · Refine</span><strong>Recenter and rescore</strong>Use the candidate and raw IQ, without an orbit input. Keep hypothesis identities separate.</div><div><span class="step">3 · Select</span><strong>One top response</strong>Choose the maximum refined GLRT margin independently per receiver/channel/window.</div><div><span class="step">4 · Associate</span><strong>Orbits → compact set</strong>Greedy additions, then one-out/greedy-many-in repairs, with explicit support constraints.</div></div>
+<p>The experiments below reuse the existing radio corpus. No new capture or production detector deployment was performed to prepare this report. Unless explicitly stated otherwise, results are in-sample development diagnostics at the known receiver position.</p>
+@@FIG[top-coverage|Scan A, latest top-response experiment. Each percentage uses windows with at least one retained candidate in that lane. Fitted-c and c=0 use the same selected observations and timing-hypothesis union. No 0.6 cutoff was applied.]@@
+</section>
+
+<section id="units"><span class="tag">02 / Data and accounting</span><h2>A window is not a candidate, and a pair is neither</h2>
+<div class="table-wrap"><table><thead><tr><th>Term</th><th>Definition in this report</th><th>Accounting consequence</th></tr></thead><tbody>
+<tr><td>Window / probe</td><td>One 20 ms IQ segment from one receiver on one channel during a visit.</td><td>Simultaneous RX0 and RX1 windows remain distinct. The saved key is visit, receiver, probe; the visit identifies the channel.</td></tr>
+<tr><td>GLRT candidate</td><td>A retained acquisition-frequency and epoch hypothesis with its own GLRT scores.</td><td>Several candidates can come from the same samples. They do not all share a score.</td></tr>
+<tr><td>Canonical candidate</td><td>A candidate after the existing exact alias-copy grouping.</td><td>Exact alias copies are excluded; nearby but distinct hypotheses remain.</td></tr>
+<tr><td>Within-window pair</td><td>Any unordered pair of retained candidates from the same probe.</td><td>A window with n candidates contributes n(n−1)/2 pairs, not n.</td></tr>
+<tr><td>Assigned candidate</td><td>A candidate accepted for one satellite by the current solver.</td><td>At most one owner per candidate and one candidate per satellite/probe.</td></tr>
+<tr><td>Top-response window coverage</td><td>Fraction of eligible windows whose maximum refined-margin candidate is assigned.</td><td>Exactly one selected candidate per window; denominator 3,837 for Scan A.</td></tr>
+</tbody></table></div>
+<p><strong>Scan A:</strong> <code>scan-fw-911c4e5db9243281</code> (short name <code>db9243281</code>), 7,382 canonical candidates, 3,837 candidate-bearing windows, and 2,126 visits represented in refinement. <strong>Scan B:</strong> <code>scan-fw-ffa1cc19d8d7c09f</code>, 6,602 canonical candidates. Both cover approximately 0–300 seconds and use RX0/RX1 across CH1–CH4.</p>
+@@SCANS@@
+<p>Scan A has 1,946 multi-candidate windows and 1,891 single-candidate windows. The former contain 5,491 candidates and contribute 5,901 within-window pairs. This is why a histogram of pairs must not be read as a histogram of independent signals.</p>
+@@FIG[multiplicity|Scan A canonical candidate multiplicity before top-response selection. Every bar counts windows, not candidate pairs. The input cohort is unchanged by refinement, including five fallbacks.]@@
+@@FIG[all-candidates|Scan A: all 7,382 canonical candidates after candidate-guided refinement, in wrapped measured-frequency coordinates. All points are shown without association colors; this plot is not restricted to unassigned points. Multiple dots may use the same 20 ms IQ.]@@
+</section>
+
+<section id="glrt"><span class="tag">03 / Detector mechanics</span><h2>From IQ to a frequency-and-epoch hypothesis</h2>
+<p>The GLRT is a signal-evidence calculation, not an orbit detector. Acquisition proposes a frequency and signal epoch; the conditioned GLRT evaluates the signal model against a control response. In the saved interface the score used for filtering and top-response selection is the <strong>margin = exact score − control score</strong>. It is not a probability or a calibrated satellite-confidence score.</p>
+@@CONFIG@@
+<ol><li><strong>Extract a 20 ms segment.</strong> At the 10 MHz sample rate used for this replay, that is 200,000 complex samples. The replay asserts the saved probe index is zero and uses the first 20 ms of the corresponding visit/RX.</li>
+<li><strong>Acquire candidate frequency and epoch.</strong> The acquisition search is data-driven, not a random set of guesses. The scan configuration permits up to eight acquisition candidates; the representative records preserve their separate frequency/epoch hypotheses.</li>
+<li><strong>Evaluate a residual-frequency response.</strong> The original 512-bin GLRT grid has approximately 443.89 Hz spacing across the 227.273 kHz ambiguity period. Each candidate can return a different maximum and margin.</li>
+<li><strong>Form the reported frequency.</strong> Add the acquisition center to the GLRT residual, preserving the associated epoch. Equivalent frequency branches require explicit alias handling.</li>
+<li><strong>Apply the configured activity gate and canonical grouping.</strong> The saved scan cohort originally passed a 0.025 margin cutoff. It is not the complete population of every attempted or rejected acquisition.</li></ol>
+<h3>What the GLRT response actually sums</h3>
+<p>The installed replay scorer correlates the CFO-corrected samples with the exact known pilot template and a symbol-rolled control template at the candidate epoch. It selects symbols 2 through 65 inclusive—64 pilot symbols—within each supported frame. Fractional epochs use interpolated samples. For each trial residual frequency, it sums correlations coherently across those symbols, then sums squared magnitudes across frames. Absolute phase between frames is not forced to agree.</p>
+<div class="equation">S(f) = Σ<sub>frames m</sub> |Σ<sub>symbols k</sub> z<sub>m,k</sub> exp(−j2πf Δt<sub>k</sub>)|²<br>C = Σ<sub>frames m</sub> (Σ<sub>symbols k</sub> |z<sub>m,k</sub>|)²<br>exact_score = max<sub>f</sub> S<sub>exact</sub>(f) / C<sub>exact</sub><br>control_score = max<sub>f</sub> S<sub>control</sub>(f) / C<sub>control</sub><br>margin = exact_score − control_score</div>
+<p>The control has its own maximizing residual frequency. The returned frequency uses the exact-template maximum. A uniform FFT/autocorrelation implementation evaluates the same response efficiently; the source snapshot includes its direct phase-bank equivalent. The approximately 4.4 μs symbol spacing makes the residual phase response periodic in frequency. A whole 20 ms probe contains many pilot-symbol observations; “GLRT-64” does not mean 64 separate 20 ms windows.</p>
+<div class="equation">f<sub>reported</sub> = f<sub>acquisition</sub> + r<sub>GLRT</sub><br>P = 1 / (4.4 μs) = 227,272.727… Hz<br>d<sub>alias</sub>(f₁, f₂) = |wrap<sub>[−P/2, P/2)</sub>(f₁ − f₂)|</div>
+<h3>The concrete boundary example</h3>
+<p>At approximately 102.669 seconds in Scan A RX1/CH3, these three saved hypotheses came from the same probe. The orbit was used to investigate them, not to generate the acquisition centers.</p>
+<div class="table-wrap"><table><thead><tr><th>Hypothesis</th><th>Acquisition center (Hz)</th><th>GLRT residual (Hz)</th><th>Reported frequency (Hz)</th></tr></thead><tbody>
+<tr><td>Previously assigned candidate</td><td>104,853.5859</td><td>0</td><td>104,853.5859</td></tr>
+<tr><td>Positive-edge alternative</td><td>−8,030.1244</td><td>+113,192.4716</td><td>105,162.3472</td></tr>
+<tr><td>Negative-edge alternative</td><td>217,775.4575</td><td>−113,192.4716</td><td>104,582.9859</td></tr>
+</tbody></table></div>
+<p>The positive-edge residual lies close to the half-period boundary at +113,636.364 Hz. The three reported frequencies differ by hundreds of hertz even though their starting representations concern the same local ridge. Fractional epoch differences and center-dependent scoring matter as well: “subtract one exact alias period” is not a complete correction for these hypotheses.</p>
+<p>Increasing frequency-grid density alone at the original centers did not resolve the targeted disagreement. The successful prototype coupled recentering with alias-branch comparison and fractional-epoch refinement. That is evidence for a center/epoch-sensitive estimation issue, not evidence that the physical orbit itself suddenly changed.</p>
+</section>
+
+<section id="refinement"><span class="tag">04 / Estimation experiment</span><h2>Refine each candidate without telling it the orbit</h2>
+<p>The prototype starts from each saved tracking frequency and fractional epoch. Its scorer receives IQ, frequency, and epoch—not a satellite ID or predicted Doppler. The orbit enters only afterward, when calculating diagnostic residuals.</p>
+<pre>Start: own saved frequency f and epoch e
+Iteration 0: evaluate centers f − P, f, f + P at epoch e
+Iteration 1: recenter at the best frequency;
+             test epoch offsets [−0.5, −0.25, 0, +0.25, +0.5] samples
+Iteration 2: recenter again;
+             test offsets [−0.25, −0.125, 0, +0.125, +0.25] samples
+Each evaluation: recompute conditioned GLRT using the 4,096-bin grid
+Reject a returned maximum &gt;1,000 Hz circularly from its requested center
+Choose the highest-margin eligible trial; retain the previous best
+If no eligible local maximum exists, retain the original saved candidate</pre>
+<p>The nominal path makes 13 scorer calls per candidate, with approximately 55.49 Hz residual-grid spacing. This implementation still searches the full 4,096-bin response and then checks locality; it is <em>not</em> a specialized narrow-band optimizer. It neither merges candidates nor subtracts signals nor performs an orbit-guided correction.</p>
+<h3>Targeted result: strong agreement, not uniformly lower orbit RMS</h3>
+<p>For the 46 previously investigated probes, 135 hypotheses were refined. The 89 alternatives’ median separation from the originally assigned hypothesis fell from <strong>234.13 Hz to 14.16 Hz</strong>; maximum separation fell from 532.31 Hz to 50.57 Hz. All 89 ended within 60 Hz. The alternative set’s orbit-residual RMS fell from <strong>272.20 Hz to 57.99 Hz</strong>, while the originally assigned set’s RMS increased from <strong>38.66 Hz to 61.10 Hz</strong>.</p>
+@@FIG[refinement-case|Same 135 hypotheses and same saved orbit prediction, before and after candidate-only refinement. Gray points are originally unassigned alternatives; blue rings are originally assigned. No reassignment or consolidation is performed in this figure.]@@
+<div class="callout caution"><strong>No orbit input does not mean blind sample selection.</strong><p>These 46 probes were chosen during an orbit-based investigation of 66204. The refinement algorithm is orbit-independent, but the targeted experiment is a selected case study, not a population-level validation.</p></div>
+<h3>Whole-scan result: the denominator stays fixed</h3>
+<p>All 7,382 canonical Scan A candidates were processed. <strong>7,377 refined successfully; five retained their original measurement and margin.</strong> Margins improved for 6,031 candidates. Recorded wall time was 236.56 seconds with eight workers on the analysis host; this is a replay measurement, not an embedded real-time performance claim.</p>
+<p>With the old assignments and old orbit predictions held fixed, RMS increased from 153.12 to 176.02 Hz in the fitted-c arm and from 205.14 to 221.48 Hz in the c=0 arm. Re-running association on all refined candidates also did not improve coverage: fitted-c changed from 5,273 to 5,267 assigned candidates; c=0 changed from 5,246 to 5,238.</p>
+@@FIG[refinement-tradeoff|Signal-evidence improvement and orbit agreement measure different things. Left: post-refinement margin changes over the unchanged Scan A cohort, with a log count axis. Right: RMS against fixed old predictions and memberships—not the RMS of a newly selected set.]@@
+@@FIG[refined-coverage|Like-for-like denominator comparison: 7,382 canonical candidates in each bar, with the same penalty-10 solver and frozen receiver/RF calibration. Refinement alone did not raise raw candidate coverage.]@@
+</section>
+
+<section id="ambiguity"><span class="tag">05 / Diagnostic case studies</span><h2>Why an obvious gray ridge can already be recovered</h2>
+<p>After refinement, the RX1/CH3 region between 100 and 150 seconds still appeared prominently in the unassigned-only plot. The selected 66204 track was already present. In this interval, 100 candidates were assigned to it, and another 89 unassigned alternatives matched its selected orbit within the 600 Hz gate.</p>
+<p>Those 89 alternatives occupied 46 probe windows. <strong>Every one of those windows already had a candidate assigned to 66204.</strong> No other satellite was taking those specific satellite/probe slots. Nearby 66083 activity is a different track, not the explanation for this exclusion.</p>
+@@FIG[exclusivity|Actual saved refined-solver ownership. Top: 66204 and neighboring orbit predictions with both assigned and unassigned observations. Middle: residuals connect alternatives to the assigned candidate from the same probe. Bottom: one probe separated into rows for legibility; these are not different observation times.]@@
+<div class="callout"><strong>The exclusivity rule is per satellite/probe, not one satellite for the whole sky.</strong><p>Different candidates from one window may belong to different satellites. But assigning several alternative estimates from the same window to the same satellite would multiply the evidence without adding independent samples. Conversely, the later top-response experiment intentionally discards all but one candidate per window and therefore cannot retain two simultaneous signals from that window.</p></div>
+<h3>Not all alternatives converge—and not every large separation is an alias error</h3>
+<p>After refinement, 2,651 of the 5,901 within-window pairs were separated by less than 50 Hz. Another 3,135 pairs—53.1%—were separated by at least 1 kHz modulo the ambiguity period. That last bin spans a wide range; it does not mean all those pairs are “about 1 kHz” apart.</p>
+@@FIG[pair-distribution|All unordered within-window pairs after refinement. No margin re-filter is applied to the original cohort, and five failed refinements retain original frequencies. Proximity is not by itself a proof that two hypotheses are duplicates.]@@
+<p>Five illustrative pairs near the lower edge of the ≥1 kHz bin had roughly 1.03–1.31 kHz circular separations and substantial epoch separations. Cross-epoch rescoring supported the possibility of distinct detections: at a fixed epoch, different seeds could converge to that epoch’s response. However, the scorer retained a frequency search, and these were selected examples, not a formal one-source versus two-source likelihood test.</p>
+@@FIG[khz-pairs|Five deliberately selected near-1-kHz candidate pairs. Frequency and epoch information together are more informative than frequency alone. These in-sample owner labels and cross-epoch checks do not independently certify two physical sources or their satellite identities.]@@
+</section>
+
+<section id="selection"><span class="tag">06 / Observation-set choice</span><h2>Keep the strongest hypothesis—but state what is lost</h2>
+<p>The latest experiment chooses the maximum <strong>refined margin</strong> independently within each original receiver/channel/probe. A failed refinement uses its original margin; exact ties choose the smallest original row index. This choice uses no orbit residual and no satellite identity.</p>
+<div class="equation">winner(g) = arg max<sub>i in window g</sub> (refined_margin<sub>i</sub>, −original_row_index<sub>i</sub>)</div>
+<p>The rule retains 3,837 candidates and discards 3,545. There is <strong>no new 0.6 gate</strong>, no post-refinement 0.025 re-filter, and no silent duplicate clustering. Even a retained winner is drawn from the original already-gated acquisition cohort.</p>
+<p>This is an elegant baseline for the question “Can we explain the strongest detection in each window?” It is not sufficient for “Can we explain all independent simultaneous signals?” In the fitted-c full-refined result, 1,995 assigned candidate rows are discarded by top selection; some may be redundant alternatives, while others may be secondary signals. The current evidence does not establish the mixture.</p>
+<h3>What changing the GLRT cutoff showed</h3>
+<p>The following histograms re-filter the saved candidates by their post-refinement margins; both members must pass to contribute a pair. Each panel is normalized to its own surviving pair count. A cutoff of zero here <em>cannot recover candidates that failed the original acquisition cutoff</em>.</p>
+@@CUTOFFS@@
+@@FIG[margin-cutoffs|Conditional separation distributions at refined-margin cutoffs 0, 0.025, and 0.2. These are re-filters of the same saved cohort, not new acquisitions at different thresholds.]@@
+@@FIG[margin-06|At margin ≥0.6, 2,237 candidates produce 1,600 pairs in 482 multi-candidate windows; 81.6% of pairs are under 50 Hz. The more concentrated distribution is descriptive and does not prove duplicates or justify discarding weaker independent signals.]@@
+<p>Top-response selection and raising the cutoff are different operations: one picks one winner per window; the other can keep several or none. We did not combine them in the reported top-response solver run.</p>
+</section>
+
+<section id="orbit"><span class="tag">07 / Physical prediction and calibration</span><h2>One satellite must have one consistent timing shift</h2>
+<p>The conceptual frequency model used during this investigation combines an orbit prediction with receiver frequency offset/drift and RF-dependent calibration:</p>
+<div class="equation">ŷ<sub>i,s</sub> = D<sub>s</sub>(x, t<sub>i</sub> + τ + δ<sub>s</sub>; F<sub>i</sub>)<br>　　　 + a<sub>rᵢ</sub> + b<sub>rᵢ</sub>(t<sub>i</sub> − 150)<br>　　　 + c (F<sub>i</sub> − F<sub>ref</sub>) / (1 GHz)</div>
+<p>Here <i>x</i> is receiver position, <i>D</i> is orbit Doppler at the observation’s RF, <i>τ</i> and <i>δ</i> represent common and satellite-relative timing, and <i>a</i>, <i>b</i>, <i>c</i> represent nuisance calibration. The learned RF coefficient is not a substitute for computing physical frequency-dependent Doppler.</p>
+<div class="callout"><strong>The latest association replay is more specific than this conceptual equation.</strong><p>It keeps the known position and previously fitted, fold-specific receiver/RF calibration frozen, including the saved time-interpolated receiver corrections. It is not a new joint fit of location, linear drift, RF coefficient, and assignments. Candidate testing replaces the satellite timing entry with one <em>absolute</em> shift θ<sub>s</sub> in every fold, bounded to ±20 seconds.</p></div>
+<p>An earlier implementation added one relative candidate offset to each fold’s different common-timing reference. The same satellite could therefore be evaluated at different physical timing shifts across folds. Correcting that convention increased Scan A fitted-c assignments from 4,130 to 5,273, with observations unchanged. This was a model-consistency correction, not simply “loosening the prior.”</p>
+@@FIG[timing-fix|The 58622 timing-regression case that exposed inconsistent fold timing. This belongs to the pre-refinement timing correction, not to the later top-response experiment. It illustrates why a physically shared trajectory must use a consistent ephemeris evaluation shift.]@@
+<h3>Candidate-bank generation and eligibility</h3>
+<ol><li>Inspect every ID in the archived candidate inventory; use visibility from the orbit predictor. This is exhaustive over that saved inventory, not every object or possible TLE in existence.</li>
+<li>Evaluate coarse timing offsets from −20 to +20 seconds in one-second steps, using residuals and Doppler derivatives to propose local timing roots.</li>
+<li>Cluster timing support, then refine proposed offsets with three bounded local updates. A zero-centered, one-second-scale Gaussian timing penalty enters this proposal refinement.</li>
+<li>Take the union of timing hypotheses discovered by the fitted-c and c=0 arms, and score that identical union in both arms.</li>
+<li>Cache visible candidate-to-orbit edges within a 600 Hz circular residual gate. The selector does not repeatedly propagate every orbit during each greedy addition.</li></ol>
+@@POOLS@@
+<p>Each c comparison is matched within its own observation-set experiment: observations, candidate timings, gates, and search budgets are shared. The nuisance fits themselves are separately saved arms. Across original/refined/top experiments, candidate pools are regenerated because the observations change; that is not a frozen-pool ablation.</p>
+</section>
+
+<section id="solver"><span class="tag">08 / Association algorithms</span><h2>A count-first objective with explicit feasibility rules</h2>
+<div class="equation">Maximize J = N<sub>assigned</sub> − 10 N<sub>selected satellites</sub></div>
+<p>Here the reward per assigned retained candidate is one and the cost per unique satellite is ten. In the top-response experiment, retained candidates and windows are one-to-one. A candidate can have only one owner; a satellite can take at most one candidate from any probe; a satellite is selected with one timing mode.</p>
+<p>For each satellite/timing mode, eligibility is recomputed using currently unclaimed candidates. Within each receiver/channel lane, choose the closest available residual per probe, order by time, and split at gaps greater than five seconds. A segment must contain at least ten distinct probes and span at least five seconds. All retained residuals must be within 600 Hz and visible.</p>
+<p>The minimum segment size is ten, but an addition must explain <strong>more than ten</strong> currently available candidates overall to improve the penalty-10 objective. A mode with exactly ten does not pay a positive net reward.</p>
+<h3>Greedy: add the best available satellite</h3>
+<pre>selected = empty; all candidate rows are unclaimed
+evaluate each satellite/timing mode on currently unclaimed observations
+repeat:
+    pick the eligible new satellite/mode with the largest candidate count
+    stop if its count ≤ 10
+    claim its eligible candidates and add it to selected
+    refresh other modes whose available support was affected</pre>
+<p>Equal counts are broken using a residual/timing proxy, then deterministic catalog/mode ordering:</p>
+<div class="equation">tie score = −½ Σ(residual / 200 Hz)² − ½(θ<sub>s</sub> / 1 s)²</div>
+<p>This proxy is <strong>not added to the primary count objective</strong>. A timing prior influences proposal generation and count ties; it does not turn the final selector into a fully Bayesian likelihood fit. Already selected tracks are not continuously refitted after every addition.</p>
+<h3>Replacement: challenge an earlier choice</h3>
+<pre>start from greedy
+for each selected satellite:
+    temporarily remove it and release its observations
+    forbid that ID during this trial
+    greedily add one or more alternative satellites
+    accept only if the complete objective strictly improves
+    after acceptance, allow the removed ID to re-enter if it pays its cost
+repeat complete sweeps until none improve, or the three-sweep cap is reached</pre>
+<p>This can replace one broad, mediocre choice with multiple more useful satellites. It does not enumerate every subset, perform arbitrary multi-out swaps, or optimize a selected satellite’s timing in isolation. A no-improvement sweep proves only a fixed point for this particular greedy-repair neighborhood.</p>
+@@FIG[solver-progress|Scan A top-response search traces. Left: the objective after each greedy addition. Right: the objective change for each one-out/greedy-many-in trial, sorted within each arm. None was strictly positive, so replacement accepted no changes.]@@
+<p>All eight saved runs summarized here stopped after a no-improvement sweep. In the latest top-response runs, 33 removals were tested per arm and zero changes accepted. “Greedy + replacement” describes the algorithm run; it does not imply replacement improved these particular results.</p>
+@@SEARCH@@
+<p>Efficiency comes from cached sparse candidate-orbit edges and updating only modes affected by newly claimed or released rows. Recorded times above cover selection, not raw-IQ refinement or orbit-bank discovery. Cached discovery times appear separately in Section 7.</p>
+</section>
+
+<section id="results"><span class="tag">09 / Results and controlled comparisons</span><h2>Two scans, three observation sets—and no hidden denominator change</h2>
+<p>The original rows below already use the corrected absolute timing convention. “Refined” preserves every canonical candidate. “Top” keeps one refined-margin winner per window. Every row uses the same penalty-10, 600 Hz, coherence-constrained greedy/replacement family with frozen calibration.</p>
+@@RESULTS@@
+<p><small>Assigned RMS is √mean(residual²) over each row’s final assigned set, using saved circular residuals. Memberships differ between rows, so these RMS values are descriptive, not a controlled frequency-estimator comparison. The fixed-membership comparison is in Section 4. Objectives across different observation sets are not directly comparable.</small></p>
+<div class="callout caution"><strong>Scan B refinement and top-response experiments are not evaluated in this snapshot.</strong><p>We have a matched original-candidate/corrected-timing baseline for both scans. The full refinement and top-response results shown here are Scan A only. The absence of a Scan B row is not a zero result and must not be filled in by extrapolating Scan A.</p></div>
+<h3>What the c=0 control says</h3>
+<p>For Scan A top responses, c=0 assigns four more windows and has an objective four points higher. Fitted c has a lower assigned-set residual RMS (146.4 versus 214.6 Hz), but the assigned sets differ. Neither arm establishes superior satellite identification or localization. The RF coefficient may change residual fit without improving location accuracy; no position search was run for this report.</p>
+<h3>The new activity view</h3>
+@@FIG[top-orbits|Scan A fitted-c top-response assignments with the selected model predictions. Colors identify satellites; gray points are unassigned. Lines reconstruct the saved orbit-plus-calibration value as measurement minus saved residual at assigned times, with breaks at alias wraps and gaps over five seconds. They do not extrapolate a full orbit over unobserved intervals.]@@
+@@FIG[top-fit|Scan A top-response result, fitted c. Blue points are assigned and gray points unassigned; only one retained candidate per receiver/channel/window is present. This is a measured-frequency ownership plot, not an overlay of all orbit curves.]@@
+@@FIG[top-zero|The matched c=0 top-response result on the same windows and timing-hypothesis union. Similar coverage does not imply identical owners or identical residuals.]@@
+@@FIG[satellite-support|Assigned top-response windows per selected satellite, separately for both calibration arms. Counts combine receiver/channel support for each ID; they are not independent confirmations of satellite identity.]@@
+<h3>The remaining unassigned observations depend on the experiment</h3>
+@@FIG[refined-unassigned|Scan A, all refined candidates, fitted c: 2,115 unassigned candidate hypotheses. This older full-cohort view includes alternatives excluded by per-satellite/probe exclusivity; it must not be mistaken for the 193 unassigned top-response windows.]@@
+@@FIG[scan-b-unassigned|Scan B original-candidate baseline after the absolute timing correction, fitted c: 1,639 of 6,602 candidate hypotheses unassigned. This is not a refined or top-response Scan B result.]@@
+<p>The Scan A top-response fitted-c solution assigns 3,644 rows, equivalent to 49.36% of the original 7,382 candidate records. That fraction is also not independent-signal coverage: many original records are alternative hypotheses. The right next step is to classify or consolidate hypotheses using signal evidence, not to choose whichever denominator makes coverage appear largest.</p>
+</section>
+
+<section id="limits"><span class="tag">10 / Interpretation and next experiments</span><h2>What is resolved—and what still needs evidence</h2>
+<div class="table-wrap"><table><thead><tr><th>Question</th><th>Supported answer</th><th>Not yet established</th></tr></thead><tbody>
+<tr><td>Can candidate-only refinement reduce the selected boundary disagreement?</td><td>Yes: all 89 targeted alternatives end within 60 Hz of their window’s originally assigned candidate.</td><td>Universal frequency accuracy or orbit-residual improvement.</td></tr>
+<tr><td>Was the RX1/CH3 gray ridge a missing 66204 track?</td><td>The audited 89 alternatives share windows already assigned to 66204.</td><td>That every unassigned ridge elsewhere is a duplicate.</td></tr>
+<tr><td>Can the model explain the strongest response in most observed windows?</td><td>About 95% for Scan A under these matching and selection rules.</td><td>90%+ recovery of all independent simultaneous signals.</td></tr>
+<tr><td>Did replacement improve the latest greedy result?</td><td>No accepted changes in the tested neighborhood.</td><td>A global optimum or uniqueness of the selected configuration.</td></tr>
+<tr><td>Does a better frequency fit prove the correct location?</td><td>No. Calibration, timing, selection, and identity uncertainty remain confounded.</td><td>Improved position accuracy or an unbiased localization objective.</td></tr>
+</tbody></table></div>
+<h3>Recommended bounded follow-up</h3>
+<ol><li><strong>Replicate on Scan B first.</strong> Freeze the protocol, perform the same candidate-only refinement and top selection, and repeat matched c=0/fitted-c searches. This is replication, not a new collection campaign.</li>
+<li><strong>Separate duplicate-like hypotheses from distinct signals.</strong> Compare candidate solutions in frequency <em>and</em> epoch, and test single-source versus multi-source explanations on raw IQ. Avoid declaring duplicates from a 300 Hz distance rule alone.</li>
+<li><strong>Keep top-response coverage as one metric, add signal-component coverage.</strong> Consolidate only with an explicit auditable criterion; allow multiple independently supported components per window.</li>
+<li><strong>Audit identity and residual structure.</strong> Compare close competing satellite IDs, timing modes, channel-consistent curvature, and residual distributions. A 600 Hz acceptance gate is a matching tolerance, not a confidence interval.</li>
+<li><strong>Validate on reproducibly randomized independent groups.</strong> Keep all candidates and overlapping IQ from a probe/block together. Record the seed and split, fit calibration and preprocessing on training groups, and test on held-out groups or separate scans. The current reused-fold development search is not that validation.</li>
+<li><strong>Expand the local-search neighborhood only when needed.</strong> Test timing-only reconsideration or bounded two-out exchanges on ambiguous subsets, with a fixed budget. Compare score, identity stability, and held-out residuals—not just raw assigned counts.</li></ol>
+<p>The most useful design principle from this investigation is simple: <strong>keep measurement estimation, hypothesis consolidation, satellite association, and localization as separate evidence layers.</strong> A change that helps one layer must be measured—not assumed—to help the next.</p>
+</section>
+
+<section id="appendix"><span class="tag">11 / Reproducibility appendix</span><h2>Inspect the tracks and the receipts</h2>
+<p>This HTML contains its figures, downloadable evidence, and source snapshots. It can be copied and read offline without a server, CDN, JavaScript library, or access to the radio corpus. Figure numbering follows reading order. Expand the sections below for the underlying details.</p>
+<details><summary>Latest top-response satellite inventory: counts, timing, and RMS</summary>@@TRACKS@@<p>One absolute timing mode per selected ID, shared across receivers and folds. RMS is in-sample, circular, and conditional on selected memberships. Multiple lane segments may contribute to one satellite’s count.</p></details>
+<details><summary>Download numerical evidence and original solver receipts</summary><p>The eight solver receipts are preserved losslessly as gzip-compressed JSON, including initial/final assignments, timing modes, greedy traces, and replacement trials. The compact CSV includes all Scan A canonical candidates, original/refined measurements and margins, probe membership, top-selection flags, and owners across the saved experiments. Blank owner fields mean unassigned or not retained for that experiment.</p>@@DOWNLOADS@@</details>
+<details><summary>Download the exact analysis-script snapshots</summary><p>These are forensic copies of the scripts used in the saved analysis. They document implementation details but are not a turnkey raw-IQ replay package: their original calibration archives, orbit banks, installed analysis release, and IQ corpus are external dependencies. They do not run merely by opening this report.</p>@@SOURCES@@</details>
+<details><summary>Provenance, hashes, and scope</summary><p>Packaged assets are SHA-256 checked by the report builder. Original paths identify the analysis-host archive; they are provenance labels, not required runtime paths for viewing this HTML. Large timing pools and the full refinement trace are referenced by hash rather than bundled. Compact measurements and original solver receipts are bundled. No new raw-IQ verification or orbit fit was performed when building the report.</p>@@PROVENANCE@@</details>
+<h3>Rebuilding and testing the portable report</h3>
+<pre>cd reports/2026_10_04_ds13_glrt_evidence_report
+python3 build_report.py
+python3 -m unittest discover -s . -p 'test_report.py' -v</pre>
+<p>The builder and report tests use only the Python standard library. Recreating derived figures from the original archives uses <code>prepare_evidence.py</code> with NumPy and Matplotlib. Tests recompute pair distributions, winner selection, denominator accounting, solver objectives and residual summaries from packaged evidence; verify exclusivity and coherence; and check every embedded image and internal link.</p>
+</section>
+<footer><p>DS13 evidence report · Prepared from archived development experiments, 4 October 2026 UTC. Read the scope and denominator with every result. Frequency fit, coverage, satellite identity, and position accuracy are different claims.</p></footer>
+</main></body></html>
