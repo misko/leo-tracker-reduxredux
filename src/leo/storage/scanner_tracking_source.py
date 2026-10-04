@@ -28,7 +28,16 @@ class TrackingSourceMetadata:
 
 
 class ScannerTrackingInputStore:
-    def __init__(self, root: Path, *, adaptive_analysis_root: Path | None = None):
+    def __init__(
+        self,
+        root: Path,
+        *,
+        adaptive_analysis_root: Path | None = None,
+        adaptive_probe_stride_ms: int = 120,
+    ):
+        if adaptive_probe_stride_ms not in (10, 20, 40, 60, 120):
+            raise ValueError("unsupported adaptive probe stride")
+        self.adaptive_probe_stride_ms = adaptive_probe_stride_ms
         self.fixed = PersistentHopIqStore.open_read_only(root)
         self.fixed_analysis = PersistentHopAnalysisStoreV2.open_read_only(root)
         self.adaptive = AdaptiveHopIqStore(root, read_only=True)
@@ -146,7 +155,7 @@ class ScannerTrackingInputStore:
         binding = bind_actual_visit_analysis(
             receipt,
             input_manifest_sha256=published.manifest_sha256,
-            probe_stride_ms=120,
+            probe_stride_ms=self.adaptive_probe_stride_ms,
         )
         probes, cursor = [], 0
         with self.adaptive_analysis.job(binding) as job:

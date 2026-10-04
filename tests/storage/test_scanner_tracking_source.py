@@ -91,8 +91,9 @@ def test_single_rx_tracking_keeps_physical_id_and_native_clock(tmp_path, monkeyp
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
 @pytest.mark.parametrize("separate_analysis", [False, True])
+@pytest.mark.parametrize("stride", [10, 120])
 def test_adaptive_adapter_reads_verified_metrics_and_actual_counters(
-    tmp_path, monkeypatch, rate, separate_analysis
+    tmp_path, monkeypatch, rate, separate_analysis, stride
 ):
     capture = publish_capture(tmp_path, rate=rate, count=4)
     captures = AdaptiveHopIqStore(tmp_path, read_only=True)
@@ -102,14 +103,18 @@ def test_adaptive_adapter_reads_verified_metrics_and_actual_counters(
     monkeypatch.setattr(detector, "analyze_glrt64_dwell", _fake_fractional_dwell)
     result = AdaptiveHopAnalysisService(
         inputs=AdaptiveHopAnalysisInputStore(captures), products=products
-    ).analyze_session(capture.session_id, probe_stride_ms=120)
+    ).analyze_session(capture.session_id, probe_stride_ms=stride)
     assert result.state == "metrics_complete"
     reader = ScannerTrackingInputStore(
-        tmp_path, adaptive_analysis_root=analysis_root if separate_analysis else None
+        tmp_path,
+        adaptive_analysis_root=analysis_root if separate_analysis else None,
+        adaptive_probe_stride_ms=stride,
     )
     source = reader.load(capture.session_id)
     assert source.sample_rate_hz == rate and source.capture_mode == "adaptive"
-    assert len(source.probes) == capture.manifest.receipt.complete_visit_count * 2
+    starts = set(range(0, 101, stride))  # Each synthetic visit has 120 ms valid IQ, 20 ms probes.
+    assert len(source.probes) == capture.manifest.receipt.complete_visit_count * 2 * len(starts)
+    assert {p.probe_start_ms for p in source.probes} == starts
     for probe in source.probes:
         event = capture.manifest.receipt.events[probe.visit_index]
         assert probe.valid_start_counter == event.valid_start_counter

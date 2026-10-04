@@ -160,7 +160,29 @@ def main() -> None:
         action="store_true",
         help="Do not render the overview after metrics complete; metrics stay resumable.",
     )
+    t1_inputs = parser.add_mutually_exclusive_group()
+    t1_inputs.add_argument(
+        "--t1-at-input",
+        type=Path,
+        help=(
+            "Optional versioned T1-AT evidence: orbit-blind refined candidates and "
+            "qualified frozen calibration/timing pools. Requires --session-id."
+        ),
+    )
+    t1_inputs.add_argument(
+        "--t1-at-discovery-input",
+        type=Path,
+        help=(
+            "Run full-bank T1-AT discovery + selection from refined candidates and "
+            "frozen receiver/RF ephemeris evidence; no preselected modes."
+        ),
+    )
+    parser.add_argument("--t1-at-maximum-seconds", type=_seconds, default=120)
     args = parser.parse_args()
+    if (
+        args.t1_at_input is not None or args.t1_at_discovery_input is not None
+    ) and args.session_id is None:
+        parser.error("T1-AT requires an explicit --session-id")
     if args.capture_root is not None and args.metrics_root is None:
         parser.error("--capture-root requires a separate --metrics-root")
     capture_root = args.capture_root if args.capture_root is not None else args.bulk_root
@@ -258,6 +280,20 @@ def main() -> None:
                 tracking_root=tracking_root,
             ).phase_status(session_id, probe_stride_ms=args.probe_stride_ms)
             payload["dual_rx_phase_state"] = None if phase is None else phase.state
+            if args.t1_at_input is not None or args.t1_at_discovery_input is not None:
+                payload["t1_at"] = _run_t1_at_stage(
+                    metrics_complete=result.state == "metrics_complete",
+                    capture_root=capture_root,
+                    analysis_root=metrics_root,
+                    output_root=tracking_root,
+                    prepared_input=args.t1_at_input,
+                    discovery_input=args.t1_at_discovery_input,
+                    probe_stride_ms=args.probe_stride_ms,
+                    session_id=session_id,
+                    maximum_seconds=args.t1_at_maximum_seconds,
+                )
+                if payload["t1_at"]["state"] != "complete":
+                    payload["state"] = "partial"
             print(json.dumps(payload, sort_keys=True))
     except Exception as error:
         print(
@@ -267,6 +303,19 @@ def main() -> None:
             file=sys.stderr,
         )
         raise SystemExit(1) from error
+
+
+def _run_t1_at_stage(*, metrics_complete, **kwargs):
+    if not metrics_complete:
+        return dict(state="pending", reason="adaptive metrics are not complete")
+    from leo.cli.t1_at import run
+
+    try:
+        return run(**kwargs)
+    except TimeoutError:
+        return dict(
+            state="partial", reason="bounded T1-AT selection time limit; no completed product"
+        )
 
 
 def _render_overview(binding, metrics, visits):
