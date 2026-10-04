@@ -14,6 +14,7 @@ import re
 import unittest
 
 import build_report
+from render_markdown import markdown
 
 HERE = Path(__file__).resolve().parent
 ALIAS = 1 / 4.4e-6
@@ -178,8 +179,64 @@ class ReportTests(unittest.TestCase):
 
     def test_evidence_hashes_and_deterministic_build(self):
         before = hashlib.sha256((HERE / "report.html").read_bytes()).hexdigest()
+        before_md = (HERE / "report.md").read_bytes()
         self.assertEqual(build_report.build(),19)
         self.assertEqual(before,hashlib.sha256((HERE / "report.html").read_bytes()).hexdigest())
+        self.assertEqual(before_md, (HERE / "report.md").read_bytes())
+
+    def test_baseline_name_and_later_replay(self):
+        for extension in ('html', 'md'):
+            text = (HERE / f'report.{extension}').read_text()
+            self.assertIn('Top-1 Absolute-Timing Baseline (T1-AT v1)', text)
+            self.assertIn('t1_at_v1', text)
+            self.assertIn('Historical snapshot scope.', text)
+            self.assertIn('not IQ refinement, calibration, orbit discovery, or position estimation', text)
+            self.assertIn('3,460 / 3,602', text)
+        for arm in ('fitted-c', 'zero-c'):
+            receipt = build_report.load(f'B-t1-at-v1-replay-{arm}')
+            r, s = receipt['final'], receipt['summary']
+            self.assertEqual(receipt['upstream_source_hashes_verified'], 35)
+            self.assertTrue(s['exact_historical_stages_match'])
+            self.assertEqual(r['assigned'], 3460)
+            self.assertEqual(r['unassigned'], 142)
+            self.assertEqual(r['satellites'], 32)
+            self.assertEqual(r['objective'], 3140)
+            self.assertEqual(len({a['row_index'] for a in r['assignments']}), 3460)
+            self.assertAlmostEqual(s['rms_hz'], math.sqrt(sum(a['residual_hz']**2 for a in r['assignments'])/3460))
+            self.assertEqual(len(receipt['trials']), 32)
+            self.assertTrue(all(not t['accepted'] for t in receipt['trials']))
+
+    def test_markdown_has_all_figures_sections_and_portable_links(self):
+        text = (HERE / 'report.md').read_text()
+        self.assertNotIn('data:', text)
+        self.assertNotIn('@@', text)
+        self.assertNotIn('<style', text)
+        links = re.findall(r'\]\(([^)]+)\)', text)
+        images = [p for p in links if p.startswith('assets/')]
+        self.assertEqual(len(images), 19)
+        self.assertEqual(len(set(images)), 19)
+        for path in links:
+            if path.startswith('#'):
+                self.assertIn(f'id="{path[1:]}"', text)
+            else:
+                self.assertTrue((HERE/path).is_file(), path)
+        html_doc = Document((HERE/'report.html').read_text())
+        for ident in html_doc.ids:
+            self.assertIn(f'id="{ident}"', text)
+        self.assertIn('| --- |', text)
+        self.assertIn('```text', text)
+        self.assertIn('**94.97%** — 3,644', text)
+        self.assertIn('**IQ → candidates** Several', text)
+
+    def test_markdown_renderer_primitives(self):
+        value = markdown('<h2 id="x">Title</h2><p><strong>Bold</strong> and <code>x</code></p>'
+                         '<ul><li>One</li><li>Two</li></ul><table><tr><th>A</th><th>B</th></tr>'
+                         '<tr><td>1</td><td>2</td></tr></table><pre>a\n  b</pre>')
+        self.assertIn('## Title\n\n', value)
+        self.assertIn('**Bold** and `x`', value)
+        self.assertIn('\n\n- One\n- Two\n\n', value)
+        self.assertIn('| A | B |\n| --- | --- |\n| 1 | 2 |', value)
+        self.assertIn('```text\na\n  b\n```', value)
 
 
 if __name__ == "__main__":
