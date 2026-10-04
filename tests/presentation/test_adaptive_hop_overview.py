@@ -27,6 +27,9 @@ def test_cfo_receivers_have_distinct_consistent_marker_legend_and_track_colors(m
         passed=np.concatenate(
             [data.passed[data.passed[:, 0] < 4] + [4 * edge, 0, 0, 0] for edge in edges]
         ),
+        top_passed=np.concatenate(
+            [data.top_passed[data.top_passed[:, 0] < 4] + [4 * edge, 0, 0, 0] for edge in edges]
+        ),
         observations={
             (target + 4 * edge, rx): rows
             for edge in edges
@@ -44,13 +47,19 @@ def test_cfo_receivers_have_distinct_consistent_marker_legend_and_track_colors(m
     for axis in figures[-1].axes:
         for collection in axis.collections:
             label = collection.get_label()
+            if label == "_nolegend_":
+                continue
             color = to_hex(collection.get_facecolors()[0])
             assert colors_by_label.setdefault(label, color) == color
         legend = axis.get_legend()
         if legend is not None:
             for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True):
                 assert to_hex(handle.get_facecolors()[0]) == colors_by_label[text.get_text()]
-        line_colors.update(to_hex(line.get_color()) for line in axis.lines)
+        line_colors.update(
+            to_hex(line.get_color())
+            for line in axis.lines
+            if line.get_gid() != "canonical-alias-boundary"
+        )
     assert len(colors_by_label) == 2 * len(edges)
     assert len(set(colors_by_label.values())) == len(colors_by_label)
     assert line_colors == set(colors_by_label.values())
@@ -61,6 +70,65 @@ def test_passed_only_association_gate_is_explicit_and_tracks_configured_margin(g
     config = adaptive_trajectory_configuration(gate)
     assert config.methods[0].low_gate == config.methods[0].high_gate == gate
     assert config.digest != adaptive_trajectory_configuration(gate + 0.01).digest
+
+
+@pytest.mark.parametrize("first_margin,winning_rank", [(0.03, 1), (0.065, 0), (0.045, 0)])
+def test_cfo_scatter_keeps_only_fractional_winner_but_retains_all_passed_evidence(
+    monkeypatch, first_margin, winning_rank
+):
+    import leo.presentation.adaptive_hop_analysis as presentation
+
+    binding, manifest, products = overview_fixture(monkeypatch, count=3)
+    changed = []
+    for product in products:
+        probes = []
+        for probe in product.probes:
+            first = probe.candidates[0].model_copy(
+                update={
+                    "fractional_margin": first_margin,
+                    "fractional_exact_score": first_margin
+                    + probe.candidates[0].fractional_control_score,
+                    "passed_fractional_margin_gate": True,
+                }
+            )
+            probes.append(
+                probe.model_copy(
+                    update={
+                        "candidates": (first, probe.candidates[1]),
+                        "winning_candidate_rank": winning_rank,
+                    }
+                )
+            )
+        changed.append(product.model_copy(update={"probes": tuple(probes)}))
+    manifest = manifest.model_copy(
+        update={
+            "visits": tuple(
+                reference.model_copy(
+                    update={
+                        "passed_fractional_candidate_count": reference.fractional_candidate_count,
+                    }
+                )
+                for reference in manifest.visits
+            )
+        }
+    )
+    data = project_adaptive_overview(binding, manifest, changed)
+    assert len(data.passed) == 2 * len(data.top_passed)
+    assert len(data.top_passed) == sum(len(p.probes) for p in changed)
+    np.testing.assert_array_equal(data.top_passed, data.passed[winning_rank::2])
+    figures = []
+    monkeypatch.setattr(presentation, "_save", lambda fig, *args: figures.append(fig) or b"")
+    render_adaptive_hop_overview(binding, manifest, changed)
+    canonical_points = sum(
+        len(c.get_offsets())
+        for ax in figures[-1].axes
+        for c in ax.collections
+        if c.get_label() != "_nolegend_"
+    )
+    assert canonical_points == len(data.top_passed)
+    assert (
+        "Top fractional GLRT64 candidate per 20 ms probe / RX" in figures[-1]._suptitle.get_text()
+    )
 
 
 @pytest.mark.parametrize("context", ["synthetic", "saved-rx1"])
@@ -83,6 +151,10 @@ def test_report_test_context_is_explicit_in_every_png_without_changing_candidate
         assert payload != original.artifacts[name]
         with Image.open(io.BytesIO(original.artifacts[name])) as image:
             assert "TestData" not in image.info
+            assert (
+                image.info["CFOScatterPolicy"]
+                == "top-fractional-margin-per-probe-rx-if-passed-v1"
+            )
 
 
 @pytest.mark.parametrize("rate", [2_500_000, 5_000_000])
@@ -93,6 +165,8 @@ def test_projection_uses_actual_targets_gaps_fractional_winners_and_all_passed_c
     binding, manifest, products = overview_fixture(monkeypatch, rate=rate, mode=mode, count=30)
     data = project_adaptive_overview(binding, manifest, iter(products))
     assert data.winners.shape == data.passed.shape == (29 * 22, 4)
+    np.testing.assert_array_equal(data.top_passed, data.passed)
+    assert not data.top_passed.flags.writeable
     assert not data.passed.flags.writeable and not data.winners.flags.writeable
     assert np.all(data.winners[:, 3] == 0.045) and np.all(data.passed[:, 3] == 1960)
     row = 25 * 22
@@ -163,6 +237,8 @@ def test_full_300s_maximum_candidate_projection_is_bounded_and_keeps_every_passe
     assert count > 2200
     assert data.winners.shape == (count * 22, 4)
     assert data.passed.shape == (count * 22 * 16, 4)
+    assert data.top_passed.shape == (count * 22, 4)
+    np.testing.assert_array_equal(data.top_passed, data.passed[::16])
     assert data.winners.nbytes + data.passed.nbytes < 30_000_000
     assert sum(len(group) for group in data.observations.values()) == 2 * count
     assert set(data.passed[:, 0]) == set(range(8))
