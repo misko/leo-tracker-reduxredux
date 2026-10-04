@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -6,9 +7,12 @@ from fastapi.testclient import TestClient
 
 from leo.api.app import create_app
 from leo.presentation.fixtures import build_fixture_repository
+from leo.scanner.adaptive_hop import AdaptiveHopReceiptV7
 from leo.scanner.adaptive_hop_ports import AdaptiveHopVisitBlock
-from leo.scanner.persistent_hop import Feature103DualRxTimingV3
+from leo.scanner.models import scheduled_low_band_targets
+from leo.scanner.persistent_hop import Feature103DualRxTimingV3, FourRateVariableDualRxPlanV6
 from leo.station.geometry import AdaptiveReceiverGeometryBindingV1, StationReceiverGeometryV1
+from leo.storage import adaptive_hop_history as history_module
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.adaptive_hop_history import (
     AdaptiveHopGlrtPresentationStore,
@@ -19,6 +23,70 @@ from tests.scanner.adaptive_glrt_publication_fixtures import publication_fixture
 from tests.scanner.adaptive_hop_fixtures import timing_fixture
 from tests.scanner.test_variable_dual_rx_contracts import _receipt as variable_dwell_receipt
 from tests.storage.test_adaptive_hop_history import publish_capture
+
+
+@pytest.mark.parametrize("retained", [(0, 2), (1, 2), (2,)])
+def test_v3_four_rate_history_accepts_sparse_and_long_retained_visits(
+    monkeypatch, tmp_path, retained
+):
+    data = variable_dwell_receipt().model_dump()
+    data["schema_version"] = 7
+    data["plan"]["schema_version"] = 7
+    data["plan"]["geometry"]["schema_version"] = 6
+    for profile, target in zip(
+        data["plan"]["geometry"]["profiles"],
+        scheduled_low_band_targets(bandwidth_hz=10_000_000),
+        strict=True,
+    ):
+        profile["target"] = target.model_dump()
+    geometry = FourRateVariableDualRxPlanV6.model_validate(data["plan"]["geometry"])
+    for event in data["events"]:
+        target = geometry.profiles[event["target_index"]].target
+        event["target"] = target.model_dump()
+        event["actual_lo_frequency_hz"] = target.if_center_hz
+    durations = [
+        e["valid_end_counter_exclusive"] - e["valid_start_counter"] for e in data["events"]
+    ]
+    valid = sum(durations[i] for i in retained)
+    missing = sum(durations) - valid
+    data.update(
+        retained_visit_indices=retained,
+        complete_visit_count=len(retained),
+        valid_sample_count=valid,
+        transport_missing_sample_count=missing,
+        unclassified_sample_count=missing,
+        valid_duty_ppm=valid * 1_000_000 // data["duty_denominator_sample_count"],
+    )
+    receipt = AdaptiveHopReceiptV7.model_validate(data)
+    session = SimpleNamespace(
+        session_id=receipt.session_id,
+        manifest_sha256="sha256:" + "a" * 64,
+        manifest=SimpleNamespace(
+            receipt=receipt,
+            created_utc_ns=1800000000000000000,
+            finalized_utc_ns=1800000001000000000,
+            timing=None,
+        ),
+    )
+    monkeypatch.setattr(
+        history_module,
+        "AdaptiveHopIqStore",
+        lambda *_a, **_k: SimpleNamespace(
+            history_index=lambda: [(1, receipt.session_id)],
+            inspect=lambda _sid: session,
+            close=lambda: None,
+        ),
+    )
+    client = client_for(tmp_path, adaptive_hop_sessions_v2=AdaptiveHopPresentationStore(tmp_path))
+    base = "/api/v3/scanner/adaptive-sessions"
+    page = client.get(base)
+    assert page.status_code == 200, page.text
+    assert page.json()["items"][0]["retained_visits"] == len(retained)
+    detail = client.get(f"{base}/{receipt.session_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["capture"]["schema_version"] == 9
+    assert [v["retained"] for v in detail.json()["visits"]] == [i in retained for i in range(3)]
+    assert client.head(base).status_code == 200
 
 
 def client_for(root, **kwargs):
