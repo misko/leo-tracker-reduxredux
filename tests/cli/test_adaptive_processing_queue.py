@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from contextlib import suppress
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -243,6 +243,18 @@ def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
     ]
 
 
+@pytest.fixture(autouse=True)
+def heartbeat_fake_catalogs(monkeypatch):
+    original = subject.LeaseSupervisor
+
+    def supervisor(catalog, lease, **kwargs):
+        if not hasattr(catalog, "heartbeat_job"):
+            catalog.heartbeat_job = lambda **_kw: datetime.now(UTC) + timedelta(minutes=20)
+        return original(catalog, lease, **kwargs)
+
+    monkeypatch.setattr(subject, "LeaseSupervisor", supervisor)
+
+
 def _lease() -> AdaptiveAnalysisJobLease:
     return AdaptiveAnalysisJobLease(
         job_id=7,
@@ -252,7 +264,7 @@ def _lease() -> AdaptiveAnalysisJobLease:
         configuration_digest="sha256:" + "2" * 64,
         attempt_number=1,
         worker_id="worker-1",
-        lease_expires_at=datetime.now(UTC),
+        lease_expires_at=datetime.now(UTC) + timedelta(minutes=20),
         resource_class="memory",
     )
 
@@ -277,8 +289,8 @@ def test_partial_band_queue_uses_versioned_command_and_requires_artifact_authori
         fail_job=lambda **kw: calls.append("failed"),
     )
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *a, **kw: SimpleNamespace(
             returncode=0, stdout='{"state":"figures_ready"}', stderr=""
         ),
@@ -318,8 +330,8 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
         lambda **kwargs: calls.append(("enqueue-tracking", kwargs)) or True,
     )
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *args, **kwargs: SimpleNamespace(
             returncode=0,
             stdout='{"state":"metrics_complete","overview_state":"ready","relative_phase_state":"complete"}',
@@ -334,7 +346,7 @@ def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
     assert enqueue["bulk_root"] == tmp_path
     assert enqueue["session_id"] == "scan-fw-0123456789abcdef"
     assert enqueue["site"] == "spinnaker-sausalito"
-    assert isinstance(enqueue["catalog"], Catalog)
+    assert isinstance(enqueue["catalog"].catalog, Catalog)
     assert calls[1] == (
         "complete",
         {"job_id": 7, "worker_id": "worker-1", "outcome": "complete"},
@@ -360,8 +372,8 @@ def test_run_once_yields_checkpointed_slice(monkeypatch, tmp_path, payload) -> N
 
     monkeypatch.setattr(subject, "_catalog", Catalog)
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=payload, stderr=""),
     )
 
@@ -401,8 +413,8 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
         ),
     )
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda args, **kwargs: (
             command.extend(args)
             or SimpleNamespace(
@@ -449,8 +461,8 @@ def test_run_once_does_not_complete_tracking_from_stdout_without_persisted_sidec
     checks = iter((False, False))
     monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: next(checks))
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *args, **kwargs: SimpleNamespace(
             returncode=0,
             stdout='{"state":"complete","position_methods_state":"complete"}',
@@ -499,8 +511,8 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
         ),
     )
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("sealed V13 tracking must not be rerun")
         ),
@@ -606,8 +618,8 @@ def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(subject, "_catalog", Catalog)
     monkeypatch.setattr(
-        subject.subprocess,
-        "run",
+        subject,
+        "run_process",
         lambda *args, **kwargs: (_ for _ in ()).throw(KeyboardInterrupt),
     )
 
@@ -619,7 +631,9 @@ def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:
 
 def test_worker_reuses_one_bounded_catalog_pool_and_disposes_it(monkeypatch, tmp_path) -> None:
     class Catalog:
-        pass
+        def reclaim_expired_jobs(self, **kwargs):
+            assert kwargs["adaptive_only"] is True
+            return ()
 
     class Engine:
         disposed = False
@@ -667,9 +681,8 @@ def test_worker_catalog_limits_its_database_pool_to_one_connection(monkeypatch) 
     monkeypatch.setattr(subject, "CatalogRepository", lambda actual: catalog)
 
     assert subject._worker_catalog() == (catalog, engine)
-    assert calls == [
-        (
-            "postgresql+psycopg://catalog",
-            {"pool_size": 1, "max_overflow": 0},
-        )
-    ]
+    assert calls[0][1] == {"pool_size": 1, "max_overflow": 0}
+    query = subject.make_url(calls[0][0]).query
+    assert query["connect_timeout"] == "10"
+    assert "statement_timeout=10000" in query["options"]
+    assert query["tcp_user_timeout"] == "15000"

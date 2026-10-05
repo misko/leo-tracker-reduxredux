@@ -2173,6 +2173,7 @@ class CatalogRepository:
         *,
         as_of: datetime | None = None,
         limit: int = 1000,
+        adaptive_only: bool = False,
     ) -> tuple[int, ...]:
         if limit < 1 or limit > 1000:
             raise ValueError("expired job reclaim limit must be in [1, 1000]")
@@ -2184,6 +2185,8 @@ class CatalogRepository:
                 .where(
                     ProcessingJob.state == JobState.LEASED.value,
                     ProcessingJob.lease_expires_at <= expiry_cutoff,
+                    ProcessingJob.job_kind.in_(("adaptive_scan", "adaptive_tracking"))
+                    if adaptive_only else True,
                 )
                 .order_by(ProcessingJob.id)
                 .with_for_update(skip_locked=True)
