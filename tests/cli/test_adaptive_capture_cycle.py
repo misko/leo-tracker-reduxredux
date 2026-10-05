@@ -144,3 +144,46 @@ def test_full_spool_defers_before_opening_radio(runner, monkeypatch, capsys, tmp
     assert result["status"] == "deferred_insufficient_spool_space"
     assert result["required_bytes"] > 0
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.hardware  # Optional PPU package; every radio operation is mocked.
+def test_failure_receipt_survives_archive_abort_without_hiding_first_error(runner, monkeypatch, tmp_path):
+    import pluto_plus.adaptive_scan_archive as archive_module
+    import pluto_plus.adaptive_scan_campaign as campaign_module
+    events = []
+    original = RuntimeError("firmware ETIMEDOUT")
+
+    class Archive:
+        def __init__(self, *_args):
+            pass
+        def append(self, _visit):
+            pass
+        def abort(self):
+            assert list((tmp_path / "evidence").glob("adaptive-failure-*.json"))
+            events.append("abort")
+            raise OSError("abort failed")
+
+    def fail(*_args, **kwargs):
+        kwargs["failure_sink"]({
+            "schema": "pluto.adaptive-scan-failure/v1", "serial": "SERIAL",
+            "source_rate_hz": 10_000_000, "error": repr(original),
+            "diagnostics": {"first_error": -110, "restoration_error": -5},
+        })
+        events.append("receipt")
+        raise original
+
+    monkeypatch.setattr(archive_module, "AdaptiveScanArchive", Archive)
+    monkeypatch.setattr(campaign_module, "run_adaptive_scan_campaign", fail)
+    monkeypatch.setattr(sys, "argv", ["capture", "--sample-rate", "10000000",
+        "--evidence-root", str(tmp_path / "evidence"),
+        "--iq-spool-root", str(tmp_path / "spool")])
+    from types import SimpleNamespace
+    monkeypatch.setattr(runner.shutil, "disk_usage", lambda _: SimpleNamespace(free=10**12))
+    with pytest.raises(RuntimeError) as caught:
+        runner.main()
+    assert caught.value is original
+    assert events == ["receipt", "abort"]
+    report = json.loads(next((tmp_path / "evidence").glob("adaptive-failure-*.json")).read_text())
+    assert report["diagnostics"]["first_error"] == -110
+    assert report["selected_edge"] in {"lower", "upper"}
+    assert "abort failed" in original.__notes__[0]
