@@ -418,13 +418,18 @@ def run_once(
     if lease is None:
         return False
     with LeaseSupervisor(catalog, lease, lease_for=_LEASE) as supervisor:
-        return _run_claimed(
-            bulk_root=bulk_root,
-            worker_id=worker_id,
-            catalog=supervisor,
-            site=site,
-            lease=lease,
-        )
+        try:
+            return _run_claimed(
+                bulk_root=bulk_root,
+                worker_id=worker_id,
+                catalog=supervisor,
+                site=site,
+                lease=lease,
+            )
+        except KeyboardInterrupt:
+            with suppress(LeaseLostError):
+                supervisor.yield_adaptive_analysis_job(job_id=lease.job_id, worker_id=worker_id)
+            raise
 
 
 def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
@@ -446,10 +451,6 @@ def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
     command = _command_for_lease(lease=lease, bulk_root=bulk_root, site=site)
     try:
         completed = run_process(command, supervisor=catalog)
-    except KeyboardInterrupt:
-        with suppress(LeaseLostError):
-            catalog.yield_adaptive_analysis_job(job_id=lease.job_id, worker_id=worker_id)
-        raise
     except subprocess.TimeoutExpired:
         catalog.fail_job(
             job_id=lease.job_id,

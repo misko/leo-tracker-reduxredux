@@ -665,6 +665,22 @@ def test_worker_reuses_one_bounded_catalog_pool_and_disposes_it(monkeypatch, tmp
     assert engine.disposed
 
 
+def test_shutdown_during_result_validation_yields_owned_job(monkeypatch, tmp_path):
+    calls = []
+    catalog = SimpleNamespace(
+        claim_adaptive_job=lambda **kw: replace(_lease(), job_kind="adaptive_tracking"),
+        yield_adaptive_analysis_job=lambda **kw: calls.append(kw),
+    )
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(subject, "ScannerTrackingStore", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        subject.run_once(bulk_root=tmp_path, worker_id="worker-1", catalog=catalog)
+    assert calls == [{"job_id": 7, "worker_id": "worker-1"}]
+
+
 def test_worker_catalog_limits_its_database_pool_to_one_connection(monkeypatch) -> None:
     engine = object()
     factory = object()
@@ -675,7 +691,9 @@ def test_worker_catalog_limits_its_database_pool_to_one_connection(monkeypatch) 
         calls.append((database_url, kwargs))
         return engine
 
-    monkeypatch.setenv("LEO_DATABASE_URL", "postgresql+psycopg://catalog?options=-csearch_path%3Dcustom")
+    monkeypatch.setenv(
+        "LEO_DATABASE_URL", "postgresql+psycopg://catalog?options=-csearch_path%3Dcustom"
+    )
     monkeypatch.setattr(subject, "create_catalog_engine", create_engine)
     monkeypatch.setattr(subject, "create_session_factory", lambda actual: factory)
     monkeypatch.setattr(subject, "CatalogRepository", lambda actual: catalog)

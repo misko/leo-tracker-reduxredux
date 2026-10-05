@@ -1,6 +1,6 @@
 # Adaptive worker lease repair
 
-Status: OPEN. The repair is not implemented or deployed. This is a queue correctness priority independent of memory optimization or concurrency tuning.
+Status: DEPLOYED, long-running production verification in progress. This is a queue correctness priority independent of memory optimization or concurrency tuning.
 
 ## Problem and evidence
 
@@ -33,3 +33,13 @@ Evidence: systemd journals for `leo-adaptive-analysis-worker@10`, `@11`, and `@1
 - [ ] Record deployment revision, test results, recovered job IDs, and a verified long-running completion here before changing status to CLOSED.
 
 No new RF collection is needed. Scientific algorithms, precision, candidate sets, and persisted product contracts need not change for this repair.
+
+## Deployment evidence
+
+PR: https://github.com/misko/leo-tracker-reduxredux/pull/59
+
+On October 5, 2026, all legacy worker processes were stopped before the canary started at 15:55 America/Los_Angeles. The canary reclaimed jobs 47987, 48066, 48068, 48071, 48072, 48073, and 48075. The first four were completed using existing validated artifacts; the last three resumed processing. All 23 workers subsequently held fresh leases with no expired active rows or restarts during initial observation.
+
+The immutable deployment is `/opt/leo-adaptive-lease/01dca90b1/src`. The initial canary used `e498f0297`; its lease-supervision module is byte-identical. The final revision additionally preserves existing PostgreSQL session options while adding connection and query timeouts. The configured pool remains 20 signal-analysis and 3 tracking slots.
+
+Evidence directory: `/home/mouse9911/release-evidence/queue-lease-repair`. `before.json` records prior ownership, `recovered.json` records recovery, and `observation.jsonl` follows the three live tracking jobs. A real completion beyond the original 20-minute lease remains the final acceptance gate.
