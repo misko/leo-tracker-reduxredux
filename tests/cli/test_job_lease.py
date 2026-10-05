@@ -123,3 +123,27 @@ def test_local_deadline_rejects_stalled_renewal():
         time.sleep(0.35)
         with pytest.raises(LeaseLostError):
             supervisor.complete_job(job_id=1, worker_id="unique")
+
+
+def test_unresponsive_database_cannot_keep_child_running():
+    release = threading.Event()
+
+    class HungCatalog(Catalog):
+        def heartbeat_job(self, **kwargs):
+            if self.calls:
+                release.wait(10)
+            super().heartbeat_job(**kwargs)
+
+    catalog = HungCatalog()
+    started = time.monotonic()
+    try:
+        with guard(catalog) as supervisor, pytest.raises(LeaseLostError):
+            run_process(
+                [sys.executable, "-c", "import time; time.sleep(60)"],
+                supervisor=supervisor,
+                poll_seconds=0.02,
+            )
+    finally:
+        release.set()
+    assert time.monotonic() - started < 5
+    assert not catalog.finished
