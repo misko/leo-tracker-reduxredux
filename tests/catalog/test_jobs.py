@@ -170,3 +170,25 @@ def test_expired_final_attempt_exposes_run_for_terminal_recovery(
 
     assert catalog_harness.repository.job_state(lease.job_id) is JobState.FAILED
     assert catalog_harness.repository.failed_run_ids() == ("run-terminal-expiry",)
+
+
+def test_adaptive_recovery_does_not_reclaim_pipeline_jobs(catalog_harness):
+    _seed(
+        catalog_harness,
+        session_id="session-scope",
+        run_id="run-scope",
+        jobs=[JobDefinition(stage_key="quality")],
+    )
+    catalog = catalog_harness.repository
+    pipeline = catalog.claim_job(worker_id="pipeline", lease_for=timedelta(minutes=5))
+    catalog.enqueue_adaptive_analysis_job(
+        session_id="scan-fw-0123456789abcdef",
+        input_manifest_digest=DIGEST_A,
+        configuration_digest=DIGEST_B,
+    )
+    adaptive = catalog.claim_adaptive_job(worker_id="adaptive", lease_for=timedelta(minutes=5))
+    assert catalog.reclaim_expired_jobs(
+        adaptive_only=True, as_of=adaptive.lease_expires_at + timedelta(seconds=1)
+    ) == (adaptive.job_id,)
+    assert catalog.job_state(pipeline.job_id) is JobState.LEASED
+    assert catalog.job_state(adaptive.job_id) is JobState.PENDING
