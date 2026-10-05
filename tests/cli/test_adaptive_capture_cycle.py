@@ -26,20 +26,20 @@ def test_seven_minute_slots_advance_across_hour_and_day_boundaries(runner):
 
 
 @pytest.mark.parametrize("branch", [0, 1])
-@pytest.mark.parametrize("rate_choice", range(4))
+@pytest.mark.parametrize("rate_choice", range(2))
 def test_rate_probability_preserves_edge_selection(runner, monkeypatch, branch, rate_choice):
     def choice(serial, ordinal, domain, size):
-        if domain == "rate-1p25-quarter-v1":
-            assert size == 4
+        if domain == "rate-2p5-10-half-v1":
+            assert size == 2
             return rate_choice
         assert domain == "edge" and size == 2
         return branch
 
     monkeypatch.setattr(runner, "deterministic_uniform_choice", choice)
     _, rate, edge, frequencies = runner.slot_configuration(1790467200, "radio")
-    assert rate == (1_250_000, 2_500_000, 2_500_000, 5_000_000)[rate_choice]
+    assert rate == (2_500_000, 10_000_000)[rate_choice]
     assert edge == ("upper" if branch else "lower")
-    expected = runner.FREQUENCIES_10M if rate == 5_000_000 else runner.FREQUENCIES_2P5
+    expected = runner.FREQUENCIES_10M if rate == 10_000_000 else runner.FREQUENCIES_2P5
     assert frequencies == expected[branch::2]
 
 
@@ -48,10 +48,9 @@ def test_rate_distribution_across_reproducible_slots(runner):
     rates = Counter(
         runner.slot_configuration(i * runner.SLOT_SECONDS, "rate-test")[1] for i in range(count)
     )
-    assert set(rates) == {1_250_000, 2_500_000, 5_000_000}
-    assert rates[1_250_000] / count == pytest.approx(0.25, abs=0.015)
+    assert set(rates) == {2_500_000, 10_000_000}
     assert rates[2_500_000] / count == pytest.approx(0.50, abs=0.015)
-    assert rates[5_000_000] / count == pytest.approx(0.25, abs=0.015)
+    assert rates[10_000_000] / count == pytest.approx(0.50, abs=0.015)
 
 
 def test_same_slot_activations_cannot_reuse_recording_identity(runner):
@@ -62,14 +61,14 @@ def test_same_slot_activations_cannot_reuse_recording_identity(runner):
     assert first == runner.campaign_configuration(1790467200, "radio", None, capture_token="one")
 
 
-@pytest.mark.parametrize("rate", [1_250_000, 2_500_000, 5_000_000])
+@pytest.mark.parametrize("rate", [2_500_000, 10_000_000])
 def test_spool_budget_covers_uncompressed_dual_rx(runner, rate):
     assert runner.minimum_capture_free_bytes(rate, 300000) == rate * 300 * 8 + 2 * 1024**3
     with pytest.raises(ValueError):
         runner.minimum_capture_free_bytes(rate, 0)
 
 
-@pytest.mark.parametrize("rate", [1_250_000, 2_500_000, 5_000_000])
+@pytest.mark.parametrize("rate", [2_500_000, 10_000_000])
 def test_rate_override_preserved(runner, rate):
     _, actual, edge, frequencies, _ = runner.campaign_configuration(
         1790467200, "radio", rate, capture_token="test"
@@ -78,9 +77,9 @@ def test_rate_override_preserved(runner, rate):
     assert frequencies == runner.FREQUENCIES_BY_RATE[rate][0 if edge == "lower" else 1 :: 2]
 
 
-@pytest.mark.parametrize("rate", [7_500_000, 10_000_000])
+@pytest.mark.parametrize("rate", [1_250_000, 5_000_000, 7_500_000])
 def test_other_rate_overrides_rejected(runner, rate):
-    with pytest.raises(ValueError, match="require 1.25, 2.5 or 5 MS/s"):
+    with pytest.raises(ValueError, match="require 2.5 or 10 MS/s"):
         runner.campaign_configuration(1790467200, "radio", rate, capture_token="test")
 
 
@@ -101,7 +100,7 @@ def test_timer_waits_three_minutes_after_completion():
 
 
 @pytest.mark.hardware  # Requires the deployed acquisition runtime; never opens RF.
-@pytest.mark.parametrize("rate", [1_250_000, 2_500_000, 5_000_000])
+@pytest.mark.parametrize("rate", [2_500_000, 10_000_000])
 def test_dry_run_keeps_five_minute_dual_receiver_capture(runner, monkeypatch, capsys, tmp_path, rate):
     monkeypatch.setattr(
         sys,
@@ -122,6 +121,9 @@ def test_dry_run_keeps_five_minute_dual_receiver_capture(runner, monkeypatch, ca
     assert runner.main() == 0
     resolved = json.loads(capsys.readouterr().out)
     assert resolved["rate_hz"] == rate
+    assert resolved["setup"]["source_rate_hz"] == rate
+    assert resolved["setup"]["analog_bandwidth_hz"] == rate
+    assert resolved["setup"]["protocol_version"] == 3
     assert resolved["setup"]["duration_ms"] == 300_000
     assert resolved["setup"]["rx_mask"] == 3
     assert resolved["gain_mode"] == "manual"
