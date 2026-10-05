@@ -1,5 +1,22 @@
 # Automatic adaptive capture cadence
 
+## October 4 equal 2.5/10 MS/s policy
+
+Each scheduling slot now selects **2.5 MS/s with 50% probability** or **10 MS/s
+with 50% probability**. The rate draw is independent of the band-edge draw;
+these are probabilities, not a fixed alternating sequence. Other rate overrides
+are rejected. Five-minute captures, the three-minute wait after completion,
+manual 40 dB gain, 120 ms dwells, and the deployed v0.60 PPU runtime are retained.
+
+The runner SHA-256 is
+`9a98fcf4c38417156e024e8ac705988e69723a9c058105f2b6423011a8cb98f4`.
+Validation: 19 scheduler tests cover both rate/edge combinations, 12,000-slot
+probability checks, rate-specific tuning centers, spool sizing, rejected rates,
+recording identity, and dry-run protocol-v3 setup at both rates using the
+deployed PPU runtime. Dry runs verify source rate, bandwidth, both receivers,
+and five-minute duration without opening RF. The timer was already stopped at
+deployment; changing its rate policy does not itself resume captures.
+
 ## October 3 three-rate policy
 
 Each scheduling slot now selects **1.25 MS/s with 25% probability**, **2.5 MS/s
