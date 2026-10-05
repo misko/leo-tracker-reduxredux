@@ -675,7 +675,7 @@ def test_worker_catalog_limits_its_database_pool_to_one_connection(monkeypatch) 
         calls.append((database_url, kwargs))
         return engine
 
-    monkeypatch.setenv("LEO_DATABASE_URL", "postgresql+psycopg://catalog")
+    monkeypatch.setenv("LEO_DATABASE_URL", "postgresql+psycopg://catalog?options=-csearch_path%3Dcustom")
     monkeypatch.setattr(subject, "create_catalog_engine", create_engine)
     monkeypatch.setattr(subject, "create_session_factory", lambda actual: factory)
     monkeypatch.setattr(subject, "CatalogRepository", lambda actual: catalog)
@@ -685,4 +685,5 @@ def test_worker_catalog_limits_its_database_pool_to_one_connection(monkeypatch) 
     query = subject.make_url(calls[0][0]).query
     assert query["connect_timeout"] == "10"
     assert "statement_timeout=10000" in query["options"]
+    assert "search_path=custom" in query["options"]
     assert query["tcp_user_timeout"] == "15000"

@@ -88,10 +88,12 @@ def _worker_catalog() -> tuple[CatalogRepository, Engine]:
     database_url = os.environ.get("LEO_DATABASE_URL")
     if not database_url:
         raise RuntimeError("LEO_DATABASE_URL is required")
-    url = make_url(database_url).update_query_dict(
+    url = make_url(database_url)
+    prior_options = str(url.query.get("options", ""))
+    url = url.update_query_dict(
         {
             "connect_timeout": "10",
-            "options": "-c statement_timeout=10000 -c lock_timeout=5000",
+            "options": f"{prior_options} -c statement_timeout=10000 -c lock_timeout=5000".strip(),
             "tcp_user_timeout": "15000",
         }
     )
