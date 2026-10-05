@@ -1,0 +1,36 @@
+{
+  "scope": "Ten structural final-position experiments on frozen full-data N01--N16.\n\nIndependent 4 km searches. No new calibration, associations, observations or RF.\nFull associated top-one windows in every arm; no held-out rows. Known-roof\nupstream calibration and development-cohort evaluation, not blind validation.\nOne C1 reference and ten predeclared approaches, matched fitted-c/c=0 budgets.\n",
+  "modes": {
+    "C1": "Reference: unchanged soft Gaussian",
+    "A01": "Equal total weight per original satellite",
+    "A02": "Equal total weight per satellite/receiver",
+    "A03": "Equal weight per occupied satellite/RX/5 s bin",
+    "A04": "GLRT confidence weights, clipped 0.25--4",
+    "A05": "Wrapped Student-t4 frequency likelihood",
+    "A06": "90% narrow + 10% broad Gaussian frequency mixture",
+    "A07": "Frozen original owner or clutter; no identity switching",
+    "A08": "Independent extra receiver slope priors, sigma 1 Hz/s",
+    "A09": "Relative receiver slope prior, sigma 1 Hz/s",
+    "A10": "Per-receiver quadratic drift, endpoint sigma 100 Hz"
+  },
+  "baseline": {
+    "sigma_hz": 200.0,
+    "detection_budget": 0.8,
+    "clutter_rate": 2.0,
+    "common_sigma_s": 10.0,
+    "relative_sigma_s": 0.3333333333333333
+  },
+  "budgets": {
+    "roof_s": 2.0,
+    "search_starts": 3,
+    "search_s": 5.0,
+    "polish_s": 10.0,
+    "cross_fisher_s": 12.0,
+    "cross_slsqp_s": 8.0
+  },
+  "weights": "All positive, frozen from metadata; normalize to mean 1; no discarded rows",
+  "likelihood": "Exact one-observation finite-set specialization; Student-t and mixture match 200 Hz unwrapped variance",
+  "priors": "A08/A09 concern extra residual slopes, not raw hardware slopes; A10 adds two RX quadratics, sigma 100 Hz, bounds +/-500 Hz",
+  "seed_source": "All 36 preceding polished solutions per scan, in both RF arms",
+  "implementation_sha256": "sha256:95b47a1fb70b8aaf8f0fbb5acc4545ab12a51510128834b920872c852616ca59"
+}
