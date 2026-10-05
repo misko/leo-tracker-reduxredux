@@ -1,0 +1,175 @@
+{
+  "scope": "Sixteen final-score variants, two controls, frozen full-data N01--N16 inputs.\n\nAll scans independent. Same associated top-one windows, ephemerides, RX baseline,\nsatellite bank, hard bounds, seed pools and maximum search budgets in both RF arms.\nThis is in-sample development with known-roof upstream calibration, not validation.\nSelect positions by each objective, never by position error. Do not compare raw\nNLL across different likelihood hyperparameters as localization evidence.\n",
+  "specs": {
+    "C0": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 1.0
+    },
+    "C1": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V01": {
+      "sigma_hz": 75.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V02": {
+      "sigma_hz": 125.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V03": {
+      "sigma_hz": 300.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V04": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.2,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V05": {
+      "sigma_hz": 200.0,
+      "detection_budget": 1.6,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V06": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 0.5,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V07": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 8.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V08": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 1.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V09": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 30.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V10": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.15
+    },
+    "V11": {
+      "sigma_hz": 200.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.6
+    },
+    "V12": {
+      "sigma_hz": 125.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.15
+    },
+    "V13": {
+      "sigma_hz": 125.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 0.5,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V14": {
+      "sigma_hz": 125.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 8.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.3333333333333333
+    },
+    "V15": {
+      "sigma_hz": 300.0,
+      "detection_budget": 0.8,
+      "clutter_rate": 2.0,
+      "common_sigma_s": 10.0,
+      "relative_sigma_s": 0.15
+    },
+    "V16": {
+      "sigma_hz": 125.0,
+      "detection_budget": 1.6,
+      "clutter_rate": 0.5,
+      "common_sigma_s": 3.0,
+      "relative_sigma_s": 0.15
+    }
+  },
+  "budgets": {
+    "roof_s": 3.0,
+    "search_s": 6.0,
+    "search_starts": 3,
+    "polish_s": 15.0,
+    "polish_passes": 2,
+    "cross_s": 15.0,
+    "cross_passes": 2
+  },
+  "scans": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "N08",
+    "N09",
+    "N10",
+    "N11",
+    "N12",
+    "N13",
+    "N14",
+    "N15",
+    "N16"
+  ],
+  "arms": [
+    "fitted-c",
+    "zero-c"
+  ],
+  "dependencies": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/full_data_timing_priors.py": "sha256:69221dac0e4d1fa0adace4023c2c62fae76a8c720369ac24225acaa8d4088023",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/timing_prior_ablation.py": "sha256:72ad5084e3a7d9ce94e1590651374e5c230cf978f469209371d048f9dfaa267c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/convergence_fisher.py": "sha256:f58ad8f8f124c66ed5f1b9d09a0017bb17ea8729cde2c4205c4f7e2eedc635ae",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/timing_bound_comparison.py": "sha256:c127e9a17aeeb854cdf7e6e65b67fa40a9254fd24af26bd0facad7aea7084091",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/audit_post_scan_tle.py": "sha256:cea7cf3f226f2200532fffbf54f0aa457bf95ce88f66adeac6e854e2d85b11ef",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/render_leave_one_satellite_out.py": "sha256:1c1e0856d33aabbcf30c66d28b23a1d33b28e27649fc5ad8e27ee38ef687bc8c",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_02_ds13_timing_em/timing_model.py": "sha256:417a2df103845eabfd0864d64c192b396d786582966a71a18146516fbe8b97d1",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_02_ds13_timing_em/rf_calibration_diagnostic.py": "sha256:11da1dd65d2b0672721f4b3118b2db78fffbdc8f8aacc4c0f7c90a030e3b43cc",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_02_multiscan_localization/finite_set_likelihood.py": "sha256:8b1cdb20230ad25f76bb6e79550c97978f991781b268d9c6f710d86fc42aac66",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/timing_penalty_variants.py": "sha256:dad70829495ec4930918cc8088bd6fcbd368aa8a1c645c319538883812a217dc",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_04_t1_at_v1_replication/position_score_sweep.py": "sha256:bc6f786e8fbfd0bbfbbe2ef87c8ec0f568e656b7bc3c1cccbd7646762eacd679"
+  }
+}
