@@ -250,6 +250,17 @@ def main() -> int:
     archive = AdaptiveScanArchive(args.iq_spool_root, session_id, setup)
     clock_bracket: dict[str, int] = {}
     counter_clock: dict = {}
+    failure_document: dict = {}
+    failure_path = args.evidence_root / f"adaptive-failure-{session_id}.json"
+
+    def record_failure(document: dict) -> None:
+        failure_document.update(json_value(document))
+        failure_document.update(
+            selected_edge=selected_edge,
+            slot_ordinal=ordinal,
+            created_at=datetime.now(UTC).isoformat(),
+        )
+        publish(failure_path, failure_document)
 
     def record_clock_bracket(
         before_realtime_ns: int,
@@ -281,6 +292,7 @@ def main() -> int:
                 evidence.model_dump(mode="json")
             ),
             timing_policy=timing_policy,
+            failure_sink=record_failure,
         )
         terminal_realtime_ns = time.time_ns()
         terminal_monotonic_ns = time.monotonic_ns()
@@ -309,8 +321,24 @@ def main() -> int:
             "counter_utc_timing": counter_clock,
         }
         archive_path = archive.finish(receipt.terminal, evidence)
-    except BaseException:
-        archive.abort()
+    except BaseException as error:
+        # A failed archive is intentionally not published. Its small failure
+        # receipt survives independently, including failures before OPENM.
+        try:
+            if not failure_document:
+                record_failure({
+                    "schema": "pluto.adaptive-scan-failure/v1",
+                    "serial": args.serial, "uri": args.uri,
+                    "session": setup.session, "generation": setup.generation,
+                    "source_rate_hz": rate, "error": repr(error),
+                    "diagnostics": None, "terminal": None,
+                })
+        except BaseException as receipt_error:
+            error.add_note(f"failure receipt persistence failed: {receipt_error!r}")
+        try:
+            archive.abort()
+        except BaseException as abort_error:
+            error.add_note(f"IQ archive abort failed: {abort_error!r}")
         raise
     serial_key = hashlib.sha256(args.serial.encode()).hexdigest()[:12]
     path = args.evidence_root / (
