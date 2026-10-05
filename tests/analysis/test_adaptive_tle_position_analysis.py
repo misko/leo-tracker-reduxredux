@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -118,6 +119,50 @@ def test_score_matches_qualified_research_kernel_on_frozen_arrays():
 
 def test_effective_weight_uses_session_relative_bins_without_rebasing_track():
     assert effective_one_second_bin_weight([10.9, 11.1, 11.9, 13.0]) == 3
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("batch_size", [1, 32, 64])
+def test_batched_scoring_matches_full_array_reference(dtype, batch_size):
+    rng = np.random.default_rng(920)
+    values = rng.normal(0, 40, (97, 3, 12)).astype(dtype)[:, :, ::2]
+    track = replace(prediction(tuple(str(i) for i in range(97))), predictions_hz=values)
+    visible = rng.random((97, 3)) > 0.3
+    track = replace(track, visible=visible)
+    # Frozen pre-batching kernel, including training-only offset and tau fit.
+    residual = track.measured_hz[None, None, :] - np.asarray(values, dtype=float)
+    offsets = np.mean(residual[:, :, track.training_mask], axis=2)
+    centered = residual - offsets[:, :, None]
+    train = np.sqrt(np.mean(centered[:, :, track.training_mask] ** 2, axis=2))
+    held = np.sqrt(np.mean(centered[:, :, ~track.training_mask] ** 2, axis=2))
+    train = np.where(visible, train, np.inf)
+    taus = np.argmin(train, axis=1)
+    winner = min(
+        range(97),
+        key=lambda i: (
+            held[i, taus[i]] if np.isfinite(train[i, taus[i]]) else np.inf,
+            train[i, taus[i]],
+            i,
+        ),
+    )
+    actual = score_track_prediction(track, candidate_batch_size=batch_size)
+    assert actual.candidate_id == str(winner)
+    assert actual.tau_s == track.taus_s[taus[winner]]
+    assert actual.frequency_offset_hz == offsets[winner, taus[winner]]
+    assert actual.training_rms_hz == train[winner, taus[winner]]
+    assert actual.heldout_rms_hz == held[winner, taus[winner]]
+
+
+def test_batched_scoring_preserves_ties_across_batch_boundary():
+    track = prediction(tuple(str(i) for i in reversed(range(65))))
+    assert score_track_prediction(track).candidate_id == "0"
+    assert score_track_prediction(track).tau_s == -1.0
+    assert (
+        score_track_prediction(replace(track, visible=np.zeros(65, dtype=bool))).candidate_id
+        is None
+    )
+    with pytest.raises(ValueError, match="batch size"):
+        score_track_prediction(track, candidate_batch_size=0)
 
 
 def test_fixed_partition_is_order_stable_and_position_independent():

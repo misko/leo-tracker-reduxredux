@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
+import leo.analysis.adaptive_tle_prediction as prediction_module
 from leo.analysis.adaptive_tle_position import score_point
 from leo.analysis.adaptive_tle_prediction import (
     AdaptiveTrackInput,
     AdaptiveTrackStateBank,
     ReceiverPoint,
     RegionalTrackPredictionEvaluator,
+    build_prediction_banks,
     required_geometry_nodes,
 )
 
@@ -91,3 +95,80 @@ def test_endpoint_first_gather_matches_direct_union_node_interpolation():
     blocks = tuple(evaluator(0.0, 0.0))
 
     assert [block.candidate_ids.tolist() for block in blocks] == [[20]]
+
+
+@pytest.mark.parametrize("all_invalid", [False, True])
+@pytest.mark.parametrize("direct_allocation", [False, True])
+def test_bank_chunks_preserve_candidate_order_and_validity(
+    monkeypatch, all_invalid, direct_allocation
+):
+    calls = []
+
+    def propagate(catalogue, indices, epoch, times, taus):
+        calls.append(len(indices))
+        indices = np.asarray(indices)
+        valid = indices[(indices % (3 if len(times) == 1316 else 5)) != 0]
+        if all_invalid:
+            valid = valid[:0]
+        values = np.broadcast_to(
+            valid[:, None, None, None] * 10000
+            + taus[None, :, None, None]
+            + times[None, None, :, None],
+            (len(valid), len(taus), len(times), 3),
+        ).copy()
+        return values, values / 100, valid
+
+    monkeypatch.setattr(prediction_module, "propagate_candidate_states", propagate)
+    source = bank().source
+    indices = list(reversed(range(17)))
+    catalogue = SimpleNamespace(satellite_numbers=np.arange(100, 117))
+    allocations = []
+    finalized = []
+
+    def allocate(shape):
+        values = np.empty(shape)
+        allocations.append(values)
+        return values
+
+    def finalize(values, used):
+        assert any(values is allocated for allocated in allocations)
+        finalized.append(values)
+        result = values[:used]
+        result.flags.writeable = False
+        return result
+
+    ports = dict(allocate_array=allocate, finalize_array=finalize) if direct_allocation else {}
+    banks, receipt = build_prediction_banks(
+        catalogue, indices, 0, (source,), candidate_block=4, **ports
+    )
+    actual = banks[0]
+    assert max(calls) <= 4
+    if direct_allocation:
+        assert len(allocations) == len(finalized) == 3
+        assert not actual.position_km.flags.writeable
+    coarse_ids = [i for i in indices if i % 3] if not all_invalid else []
+    track_ids = [i for i in coarse_ids if i % 5]
+    np.testing.assert_array_equal(actual.candidate_ids, np.asarray(track_ids) + 100)
+    np.testing.assert_array_equal(
+        actual.coarse_candidate_rows, [coarse_ids.index(i) for i in track_ids]
+    )
+    expected_position, expected_velocity, _ = propagate(
+        catalogue, track_ids, 0, source.times_s, np.arange(-5.0, 6.0)
+    )
+    np.testing.assert_array_equal(actual.position_km, expected_position)
+    np.testing.assert_array_equal(actual.velocity_km_s, expected_velocity)
+    expected_coarse, _, _ = propagate(
+        catalogue, coarse_ids, 0, np.arange(-507.0, 809.0), np.array([0.0])
+    )
+    np.testing.assert_array_equal(
+        actual.coarse_position_km, expected_coarse[:, 0, actual.coarse_node_indices]
+    )
+    assert receipt.candidate_count == len(coarse_ids)
+    assert (
+        receipt.propagated_candidate_time_values == 1316 * len(coarse_ids) + len(track_ids) * 11 * 6
+    )
+
+
+def test_bank_allocation_ports_require_a_pair():
+    with pytest.raises(ValueError, match="paired"):
+        build_prediction_banks(None, [], 0, (bank().source,), allocate_array=np.empty)
