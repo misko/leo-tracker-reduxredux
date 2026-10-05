@@ -9,14 +9,19 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import timedelta
+import uuid
+from contextlib import suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import Engine
+from sqlalchemy.engine import make_url
 
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.catalog.errors import LeaseLostError
 from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
+from leo.cli.job_lease import LeaseSupervisor, run_process
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
 from leo.contracts.partial_band import PartialBandConfigurationV1, partial_band_identity
@@ -83,7 +88,16 @@ def _worker_catalog() -> tuple[CatalogRepository, Engine]:
     database_url = os.environ.get("LEO_DATABASE_URL")
     if not database_url:
         raise RuntimeError("LEO_DATABASE_URL is required")
-    engine = create_catalog_engine(database_url, pool_size=1, max_overflow=0)
+    url = make_url(database_url).update_query_dict(
+        {
+            "connect_timeout": "10",
+            "options": "-c statement_timeout=10000 -c lock_timeout=5000",
+            "tcp_user_timeout": "15000",
+        }
+    )
+    engine = create_catalog_engine(
+        url.render_as_string(hide_password=False), pool_size=1, max_overflow=0
+    )
     return CatalogRepository(create_session_factory(engine)), engine
 
 
@@ -401,6 +415,17 @@ def run_once(
     lease = catalog.claim_adaptive_job(worker_id=worker_id, lease_for=_LEASE)
     if lease is None:
         return False
+    with LeaseSupervisor(catalog, lease, lease_for=_LEASE) as supervisor:
+        return _run_claimed(
+            bulk_root=bulk_root,
+            worker_id=worker_id,
+            catalog=supervisor,
+            site=site,
+            lease=lease,
+        )
+
+
+def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
     if lease.job_kind == "adaptive_tracking":
         tracking_status = ScannerTrackingStore(bulk_root, read_only=True).analysis_status(
             lease.session_id
@@ -418,10 +443,20 @@ def run_once(
             return True
     command = _command_for_lease(lease=lease, bulk_root=bulk_root, site=site)
     try:
-        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+        completed = run_process(command, supervisor=catalog)
     except KeyboardInterrupt:
-        catalog.yield_adaptive_analysis_job(job_id=lease.job_id, worker_id=worker_id)
+        with suppress(LeaseLostError):
+            catalog.yield_adaptive_analysis_job(job_id=lease.job_id, worker_id=worker_id)
         raise
+    except subprocess.TimeoutExpired:
+        catalog.fail_job(
+            job_id=lease.job_id,
+            worker_id=worker_id,
+            error="analysis exceeded two-hour execution watchdog",
+            retryable=True,
+            retry_after=timedelta(minutes=2),
+        )
+        return True
     payload = _last_json(completed.stdout)
     if completed.returncode or payload.get("state") == "failed":
         catalog.fail_job(
@@ -491,10 +526,27 @@ def run_worker(
 ) -> None:
     """Run without allocating a new database pool for every idle poll."""
     catalog, engine = _worker_catalog()
+    # Restarted services must never impersonate an earlier attempt's owner.
+    worker_id = f"{worker_id}-{uuid.uuid4().hex[:12]}"
     previous_sigterm = signal.signal(signal.SIGTERM, _interrupt_worker)
+    next_reclaim = 0.0
     try:
         while True:
-            claimed = run_once(bulk_root=bulk_root, worker_id=worker_id, catalog=catalog, site=site)
+            if time.monotonic() >= next_reclaim:
+                reclaimed = catalog.reclaim_expired_jobs(
+                    adaptive_only=True,
+                    as_of=datetime.now(UTC) - timedelta(seconds=60),
+                )
+                if reclaimed:
+                    print(json.dumps({"reclaimed_jobs": reclaimed}), flush=True)
+                next_reclaim = time.monotonic() + 60
+            try:
+                claimed = run_once(
+                    bulk_root=bulk_root, worker_id=worker_id, catalog=catalog, site=site
+                )
+            except LeaseLostError as error:
+                print(json.dumps({"worker_id": worker_id, "lease_lost": str(error)}), flush=True)
+                claimed = False
             if not claimed:
                 time.sleep(poll_seconds)
     finally:
