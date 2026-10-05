@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import multiprocessing
+import os
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -22,6 +23,7 @@ from leo.contracts.adaptive_tle_position import (
 from leo.contracts.digests import canonical_digest
 from leo.presentation.adaptive_tle_position import render_adaptive_tle_position
 from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV2
+from leo.storage.prediction_scratch import PredictionScratch
 
 PRIORS = {
     "sacramento": (38.5816, -121.4944, 250.0),
@@ -171,7 +173,8 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
         current_source = source_reader.load(session_id)
     finally:
         source_reader.close()
-    with store.writer(session_id):
+    scratch_root = Path(os.environ.get("LEO_PREDICTION_SCRATCH_ROOT", str(destination)))
+    with store.writer(session_id), PredictionScratch(scratch_root) as scratch:
         if adaptive_tle_position_complete(
             destination,
             session_id,
@@ -210,6 +213,8 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
             prepared.candidate_indices,
             prepared.start_utc_ns,
             prepared.tracks,
+            allocate_array=scratch.allocate,
+            finalize_array=scratch.finalize,
         )
         prior_results, point_inventory, selected_tracks, finest_tracks = [], {}, {}, {}
         traces, frontiers = {}, {}

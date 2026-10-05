@@ -152,6 +152,7 @@ def score_track_prediction(
     track: AdaptiveTrackPrediction,
     *,
     qualifying_threshold_hz: float = 200.0,
+    candidate_batch_size: int = 32,
 ) -> AdaptiveTrackScore:
     """Profile tau/offset on training, then select identity on evaluation RMS.
 
@@ -160,7 +161,9 @@ def score_track_prediction(
     independent held-out likelihood or calibrated probability.
     """
     measured = np.asarray(track.measured_hz, dtype=float)
-    prediction = np.asarray(track.predictions_hz, dtype=float)
+    if candidate_batch_size < 1:
+        raise ValueError("positive candidate batch size required")
+    prediction = np.asarray(track.predictions_hz)
     training = np.asarray(track.training_mask, dtype=bool)
     visible = np.asarray(track.visible, dtype=bool)
     if not len(track.candidate_ids):
@@ -174,11 +177,18 @@ def score_track_prediction(
             None,
             (),
         )
-    residual = measured[None, None, :] - prediction
-    offsets = np.mean(residual[:, :, training], axis=2)
-    centered = residual - offsets[:, :, None]
-    train_rms = np.sqrt(np.mean(centered[:, :, training] ** 2, axis=2))
-    held_rms = np.sqrt(np.mean(centered[:, :, ~training] ** 2, axis=2))
+    shape = prediction.shape[:2]
+    offsets = np.empty(shape, dtype=float)
+    train_rms = np.empty(shape, dtype=float)
+    held_rms = np.empty(shape, dtype=float)
+    for start in range(0, len(track.candidate_ids), candidate_batch_size):
+        block = slice(start, start + candidate_batch_size)
+        residual = measured[None, None, :] - np.asarray(prediction[block], dtype=float)
+        offsets[block] = np.mean(residual[:, :, training], axis=2)
+        centered = residual - offsets[block, :, None]
+        train_rms[block] = np.sqrt(np.mean(centered[:, :, training] ** 2, axis=2))
+        held_rms[block] = np.sqrt(np.mean(centered[:, :, ~training] ** 2, axis=2))
+        del residual, centered
     if visible.ndim == 1:
         visible = np.broadcast_to(visible[:, None], train_rms.shape)
     train_rms = np.where(visible, train_rms, np.inf)
