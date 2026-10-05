@@ -91,10 +91,17 @@ def test_lease_loss_or_shutdown_terminates_child_and_grandchild(tmp_path, interr
     pid = int(pid_file.read_text())
     # An orphan can briefly remain a zombie until PID 1 reaps it; it cannot execute.
     status = Path(f"/proc/{pid}/stat")
+
+    def running():
+        try:
+            return status.read_text().split()[2] != "Z"
+        except (FileNotFoundError, ProcessLookupError):
+            return False
+
     deadline = time.monotonic() + 2
-    while status.exists() and status.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+    while running() and time.monotonic() < deadline:
         time.sleep(0.01)
-    assert not status.exists() or status.read_text().split()[2] == "Z"
+    assert not running()
     assert not catalog.finished
 
 
