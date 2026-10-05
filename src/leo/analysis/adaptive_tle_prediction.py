@@ -138,35 +138,70 @@ def build_prediction_banks(
     tracks: Sequence[AdaptiveTrackInput],
     *,
     taus_s: np.ndarray | None = None,
+    retain_array: Callable[[np.ndarray], np.ndarray] | None = None,
+    allocate_array: Callable[[tuple[int, ...]], np.ndarray] | None = None,
+    finalize_array: Callable[[np.ndarray, int], np.ndarray] | None = None,
+    candidate_block: int = 128,
 ) -> tuple[tuple[AdaptiveTrackStateBank, ...], PredictionBankReceipt]:
     """Propagate one state bank for reuse across every regional prior."""
     started = time.monotonic()
     taus = np.arange(-5.0, 6.0) if taus_s is None else np.asarray(taus_s, dtype=float)
     if not tracks:
         raise ValueError("tracks required")
+    if candidate_block < 1 or (allocate_array is None) != (finalize_array is None):
+        raise ValueError(
+            "positive candidate block and paired array allocation/finalization required"
+        )
+    if retain_array is not None and allocate_array is not None:
+        raise ValueError("choose retention or direct allocation, not both")
+
+    def allocate(shape):
+        return np.empty(shape, dtype=float) if allocate_array is None else allocate_array(shape)
+
+    def finalize(values, used):
+        if finalize_array is not None:
+            return finalize_array(values, used)
+        values = values[:used]
+        return values if retain_array is None else retain_array(values)
+
+    def chunks(times, offsets):
+        for start in range(0, len(candidate_indices), candidate_block):
+            yield propagate_candidate_states(
+                catalogue,
+                candidate_indices[start : start + candidate_block],
+                start_utc_ns,
+                times,
+                offsets,
+            )
+
     nodes = required_geometry_nodes([row.times_s for row in tracks], taus)
-    coarse, _, coarse_indices = propagate_candidate_states(
-        catalogue,
-        candidate_indices,
-        start_utc_ns,
-        np.arange(-507.0, 809.0),
-        np.asarray([0.0]),
-    )
-    coarse = coarse[:, 0, nodes]
+    coarse = allocate((len(candidate_indices), len(nodes), 3))
+    coarse_ids, used = [], 0
+    for position, velocity, valid in chunks(np.arange(-507.0, 809.0), np.asarray([0.0])):
+        coarse[used : used + len(valid)] = position[:, 0, nodes]
+        coarse_ids.extend(valid)
+        used += len(valid)
+        del position, velocity
+    coarse = finalize(coarse, used)
+    coarse_indices = np.asarray(coarse_ids, dtype=int)
     lookup = {int(value): index for index, value in enumerate(coarse_indices)}
     banks = []
     propagated = 1316 * len(coarse_indices)
     numbers = np.asarray(catalogue.satellite_numbers)
     for track in tracks:
-        position, velocity, valid = propagate_candidate_states(
-            catalogue,
-            candidate_indices,
-            start_utc_ns,
-            track.times_s,
-            taus,
-        )
-        keep = np.asarray([int(value) in lookup for value in valid])
-        valid, position, velocity = valid[keep], position[keep], velocity[keep]
+        shape = (len(coarse_indices), len(taus), len(track.times_s), 3)
+        position, velocity = allocate(shape), allocate(shape)
+        track_ids, used = [], 0
+        for chunk_position, chunk_velocity, valid in chunks(track.times_s, taus):
+            keep = np.asarray([int(value) in lookup for value in valid], dtype=bool)
+            valid = valid[keep]
+            position[used : used + len(valid)] = chunk_position[keep]
+            velocity[used : used + len(valid)] = chunk_velocity[keep]
+            track_ids.extend(valid)
+            used += len(valid)
+            del chunk_position, chunk_velocity
+        position, velocity = finalize(position, used), finalize(velocity, used)
+        valid = np.asarray(track_ids, dtype=int)
         banks.append(
             AdaptiveTrackStateBank(
                 track,
@@ -175,7 +210,7 @@ def build_prediction_banks(
                 velocity,
                 coarse,
                 nodes,
-                np.asarray([lookup[int(value)] for value in valid]),
+                np.asarray([lookup[int(value)] for value in valid], dtype=int),
             )
         )
         propagated += len(valid) * len(taus) * len(track.times_s)
