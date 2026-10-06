@@ -100,3 +100,22 @@ bulk-root, session, and output arguments. The runner is read-only and capped
 at 48 visits. Paired raw timings are in `paired-visits.json`. Additional
 profile receipts and experimental scripts are retained in
 `/home/mouse9911/release-evidence/glrt-10m-20261006/`.
+
+## Deployment
+
+PR #62 merged into main as `9a46a442d6b04e10e6d027801f05481f7df8413a`.
+At 00:33:11 UTC on October 6, the worker overlay's acquisition module was
+atomically linked to `/opt/leo-glrt-cfo-tiles/1507272de/acquisition.py`.
+The other overlay modules and native binary are unchanged. The original module
+is retained at `/opt/leo-glrt-cfo-tiles/1507272de/acquisition.before.py`; use that
+path as the benchmark baseline after deployment, or restore it atomically to
+roll back the module.
+
+All 26 worker PIDs remained unchanged. Queue workers launch a fresh interpreter
+for each analysis slice, so existing subprocesses finish with their loaded code
+and new subprocesses import the optimized module. Queue child PID 2228303 for
+`scan-fw-200bdf2228366f36` started after deployment with the updated overlay
+path. A four-visit replay through that production path retained exact final
+product parity. Admission remains 18 analysis / 8 tracking; there were zero
+expired active leases at verification. This verifies deployment and adoption,
+not a full-scan runtime reduction under live contention.
