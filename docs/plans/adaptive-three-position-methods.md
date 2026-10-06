@@ -96,8 +96,11 @@ Implemented product delivery components (not yet deployed):
 - `presentation/regional_position.py`: one map per method, with both RF estimates,
   likelihood units, reference-only markers, and explicit unavailable outcomes.
 - `api/regional_position.py`: read-only document and digest-bound PNG routes,
-  wired into the application and production reader configuration. WebUI panels
-  and automatic production of these products are still pending.
+  wired into the application and production reader configuration.
+- `web/src/RegionalPosition.tsx`: automatically polling T1AT/V16 panels alongside
+  the baseline, with both RF arms, digest-bound PNG links, capture/prior checks,
+  and explicit insufficient-evidence presentation. Automatic production of these
+  products by the queue is still pending.
 
 Validation evidence so far:
 
@@ -133,7 +136,9 @@ Validation evidence so far:
 4. Add per-method PNG rendering, read-only verified API routes, and automatically
    refreshing WebUI panels, including both RF arms and meaningful failure figures.
    Rendering, storage, and API now have 22 passing focused tests (including baseline
-   API regression checks); WebUI and end-to-end production remain unimplemented.
+   API regression checks). The complete WebUI suite passes 226 tests, including
+   eight new comparison-panel tests, and TypeScript/production build passes.
+   Live browser verification and end-to-end production remain outstanding.
 5. Run component-owned storage/API/UI/queue tests plus bounded real-scan replay.
    Verify actual PNG payloads, bindings, axes, score units, reference error, and
    browser display for all three methods. Measure memory/runtime under the chosen
@@ -143,6 +148,6 @@ Validation evidence so far:
    verify automatic processing and all PNGs through the live API/WebUI, then merge
    to remote main and verify the deployed source against the merged revision.
 
-At this checkpoint no new queue policy, WebUI panel, deployment, remote push, or
-merge has been performed. The API endpoints exist in the implementation worktree
+At this checkpoint no new queue policy, deployment, remote push, or merge has been
+performed. The API endpoints and WebUI panels exist in the implementation worktree
 only. The end-to-end goal remains active.

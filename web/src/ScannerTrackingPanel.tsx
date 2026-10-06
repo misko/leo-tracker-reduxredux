@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PositionMethods } from "./PositionMethods";
 import { BlindRegionalTracking } from "./BlindRegionalTracking";
 import { AdaptiveTlePosition } from "./AdaptiveTlePosition";
+import { RegionalPosition } from "./RegionalPosition";
 
 type Product = {
   session_id: string; input_manifest_sha256: string; sample_rate_hz: number;
@@ -116,5 +117,5 @@ export function ScannerTrackingPanel({ sessionId, inputDigest }: { sessionId: st
       <PositionMethods sessionId={sessionId} inputDigest={inputDigest} />
     </>}
     <p className="scanner-artifact-caption">Tracks are reconstructed before catalogue access. TLE comparisons use deterministic randomized evaluation samples, ±500 s wrong-time controls, and a radio-polynomial control. Candidate labels do not establish satellite identity.</p>
-  </section><BlindRegionalTracking sessionId={sessionId} inputDigest={inputDigest} /><AdaptiveTlePosition sessionId={sessionId} inputDigest={inputDigest} /></>;
+  </section><BlindRegionalTracking sessionId={sessionId} inputDigest={inputDigest} /><AdaptiveTlePosition sessionId={sessionId} inputDigest={inputDigest} /><RegionalPosition sessionId={sessionId} inputDigest={inputDigest} /></>;
 }
