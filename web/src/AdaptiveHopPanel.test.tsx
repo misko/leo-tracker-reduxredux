@@ -50,6 +50,8 @@ describe("adaptive actual-visit presentation", () => {
     if (rate === 1250000) {
       render(<AdaptiveHopDetail sessionId={capture.session_id} />);
       expect(await screen.findByRole("heading", {name: /partial-band GLRT64/})).toBeInTheDocument();
+      expect(screen.getByRole("heading", {name: "Adaptive all-track position search"})).toBeInTheDocument();
+      expect(screen.getByRole("heading", {name: "T1AT and V16 Sacramento positioning"})).toBeInTheDocument();
     }
   });
 
