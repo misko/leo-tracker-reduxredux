@@ -2,6 +2,7 @@
 
 import math
 from io import BytesIO
+from textwrap import fill
 
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
@@ -92,7 +93,7 @@ def regional_position_figure(document: RegionalPositionDocumentV1, method: str) 
     )
     axis.set(
         title=f"Sacramento {document.prior_radius_km:g} km prior · {document.windows} windows\n"
-        + "\n".join(descriptions),
+        + "\n".join(fill(description, width=90) for description in descriptions),
         xlabel="East of prior centre (km)",
         ylabel="North of prior centre (km)",
         xlim=(-document.prior_radius_km, document.prior_radius_km),
