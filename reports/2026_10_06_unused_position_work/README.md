@@ -44,6 +44,13 @@ The equivalent rendering helper is additionally covered by the component test.
 
 ## Deployment
 
+Deployed at 2026-10-06 01:49:22 UTC from commit
+`d41cba9a0285842377b394aea421f5641d867e1d`, pinned under
+`/opt/leo-unused-position/d41cba9a0`. `deployment.json` records before/after module
+hashes. All worker-service PIDs were unchanged. A fresh production Python process
+resolved all four modules to the pinned files; the queue had no expired leases.
+The 13/6 capacities and ten-minute timer remained effective.
+
 Deploy only the four changed modules into the existing production overlay,
 retaining backups. Install the report implementation before its CLI caller.
 Fresh job subprocesses import the changes; running processes finish with their
