@@ -111,7 +111,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "position": "scanner-conditional-position-v1",
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",
-            "adaptive_tle_position": "scanner-adaptive-tle-position-v2",
+            "adaptive_tle_position": "scanner-adaptive-tle-position-v3",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -498,7 +498,7 @@ def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
         lease.job_kind == "adaptive_tracking"
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
-        and payload.get("adaptive_tle_position_v2_state") == "complete"
+        and payload.get("adaptive_tle_position_v3_state") == "complete"
         and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(
