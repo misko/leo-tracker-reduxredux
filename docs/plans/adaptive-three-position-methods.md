@@ -84,6 +84,15 @@ Implemented numerical components:
   for full-bank discovery and shared discrete selection.
 - `application/regional_position_inputs.py`: public-port input preparation from
   existing GLRT products, without opening raw IQ.
+- `application/regional_position_runner.py`: independent search priorities, shared
+  per-point bootstrap, union of regional basins, full calibration/association and
+  matched two-start continuous C0/V16 RF fits. Worker slices yield before starting
+  a stage they cannot budget; completed stages resume through digest-scoped ports.
+- `application/regional_position_report.py`: penalized score selection precedes
+  reference-error evaluation. Missing point scores remain null, never a numeric
+  search sentinel in a published product.
+- `cli/regional_position.py`: saved-input CLI, causal TLE selection, full default
+  400-point budget per method, resumable stage execution and publication.
 
 Implemented product delivery components (not yet deployed):
 
@@ -92,7 +101,9 @@ Implemented product delivery components (not yet deployed):
   bindings, and explicit insufficient-evidence results.
 - `storage/regional_position.py`: immutable publication of both PNGs and the
   document under a pinned local namespace, with serialized writers, manifest-last
-  publication, and verified artifact reads. Checkpoint persistence is still pending.
+  publication, and verified artifact reads. `regional_position_checkpoints.py`
+  adds independently verified immutable stage receipts scoped to source/evidence,
+  ephemeris and configuration bindings.
 - `presentation/regional_position.py`: one map per method, with both RF estimates,
   likelihood units, reference-only markers, and explicit unavailable outcomes.
 - `api/regional_position.py`: read-only document and digest-bound PNG routes,
@@ -118,6 +129,17 @@ Validation evidence so far:
   At Sacramento and the fixed (50,50) km trial point, bootstrap took about 1 s;
   both scores reached stationarity <=0.001 in about 1.5-2.4 s per fixed-point fit.
   No full regional result or production performance claim follows from two points.
+- A connected 16-point integration smoke replay of the same saved scan completed
+  27 checkpoint stages and rendered both real PNGs. A restarted invocation reused
+  all numerical stages (about 12.4 s including input/orbit re-preparation). One of
+  two regional calibrations failed convergence. Selected reference errors were
+  40.47/40.63 km for T1AT fitted/zero-c (both not stationary), and 46.13/36.36 km for
+  V16 (stationary). This deliberately small smoke search does not qualify accuracy
+  or replace the required full search. Maps explicitly show these limitations.
+  Local receipts: `.leo/regional-position/runner-canary.json` and matching PNGs.
+- 54 regional numerical/application/contracts/storage/API tests passed, followed
+  by six CLI tests. Type and lint checks on the new components pass. Full-budget
+  replay is now being exercised in bounded worker slices.
 
 ## Remaining implementation and release gates
 
@@ -126,6 +148,7 @@ Validation evidence so far:
    stage checkpoints so bounded workers resume without repeating completed work.
    Account for any branch-dependent receiver-correction penalty when comparing
    regional hypotheses; do not silently compare differently filtered datasets.
+   Implemented; qualify full-budget runtime and scientific outcomes before release.
 2. Add immutable result/manifest/status contracts and narrow storage ports, binding
    capture, original analysis, prior, TLE snapshot, inputs, and code/configuration.
    Keep all existing published baseline/T1-AT contracts unchanged.
