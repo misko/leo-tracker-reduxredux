@@ -45,12 +45,15 @@ six starts to each model/RF-arm combination: 24 final fits, 17 stationary.
 
 Results for `scan-fw-4eaab4879fec576b`:
 
-| Method / RF arm | Reference error | Posterior frequency RMS | Selected fit |
-| --- | ---: | ---: | --- |
-| T1AT fitted-c | 2.149 km | 75.00 Hz | Stationary |
-| T1AT c=0 | 2.124 km | 145.04 Hz | Stationary |
-| V16 fitted-c | 1.766 km | 67.02 Hz | **Not converged** |
-| V16 c=0 | 1.729 km | 140.09 Hz | Stationary |
+| Method / RF arm | Reference error | Posterior frequency RMS | Selection score | Selected fit |
+| --- | ---: | ---: | ---: | --- |
+| T1AT fitted-c | 2.149 km | 75.00 Hz | 37033.65 | Stationary |
+| T1AT c=0 | 2.124 km | 145.04 Hz | 37532.32 | Stationary |
+| V16 fitted-c | 1.766 km | 67.02 Hz | 38500.65 | **Not converged** |
+| V16 c=0 | 1.729 km | 140.09 Hz | 37425.21 | Stationary |
+
+Selection scores include the receiver-correction penalty. Compare scores within
+a model; C0 and V16 use different likelihood and timing-prior settings.
 
 The existing baseline reference error is 5.79 km. Its capped RMS is a different
 quantity from the posterior RMS above. Fitted c improves frequency RMS in this
@@ -130,7 +133,7 @@ The API was switched with
 `/etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzz-regional-position.conf`.
 The final worker and queue source is
 `/opt/leo-regional-position/05ba40d4fd68-r2/worker/src`. The final API and WebUI use
-`/opt/leo-regional-position/70999d76fcd2-r2/api/src` and its sibling `web/dist`.
+`/opt/leo-regional-position/5600cd81e5f2-r2/api/src` and its sibling `web/dist`.
 Both stages have byte-identical Python sources; the later stage fixes intrinsic
 image sizing for browser lazy loading. Its 50 affected UI tests and production
 build pass. The API remains read-only on port 8090.
@@ -151,9 +154,11 @@ Live HTTP and Chromium checks verified:
 - The regional endpoint returns complete; both 1080-by-960 images decode in the
   recording detail view, their payloads match the advertised digests, and there
   are no regional-panel alerts. The table and PNG show V16 fitted-c as not converged.
-- Chromium initially exposed zero-sized lazy images. Explicit 1080-by-960 image
-  dimensions fixed loading; the final browser verification used unmodified DOM.
-- The served bundle is `index-CFH9HJ5E.js`; API and existing capture timer are active.
+- Chromium initially exposed zero-sized lazy images. Intrinsic dimensions plus an
+  explicit responsive width override the gallery's `width: auto`; `object-fit:
+  contain` preserves the image aspect ratio. Three fresh-browser runs passed with
+  unmodified DOM, including image decoding and digest checks.
+- The served bundle is `index-C7REbQC-.js`; API and existing capture timer are active.
 
 Local browser evidence is `.leo/regional-position/live-ui-check.json` and
 `live-regional-panel.png`. Production job **48369** was admitted through the public
