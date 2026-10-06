@@ -183,8 +183,9 @@ Production queue job 48369 completed through the ordinary tracking worker using
 verified qualification checkpoints. The worker generated both new PNGs; no final
 products were copied into production. Live Chromium checks decoded and verified
 the unchanged baseline and both new images without alerts, including the explicit
-V16 non-convergence label. Intrinsic image dimensions prevent zero-size lazy-loading
-deadlock. Partial-band exclusions are covered by component tests; the live canary
+V16 non-convergence label. Intrinsic image dimensions and explicit responsive width
+prevent zero-size lazy-loading deadlock; three fresh-browser checks pass.
+Partial-band exclusions are covered by component tests; the live canary
 qualifies the ordinary adaptive receipt family.
 
 PR #67 contains the reviewed source. Full scientific results, deployment selectors,
