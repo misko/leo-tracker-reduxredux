@@ -33,3 +33,15 @@ def test_checkpoint_tampering_and_nonfinite_values_fail(tmp_path):
     path.write_bytes(path.read_bytes().replace(b"42", b"43"))
     with pytest.raises(ValueError, match="verification"):
         store.get("test")
+
+
+def test_new_bindings_stay_below_one_worker_owned_namespace(tmp_path):
+    namespace = tmp_path / "scanner-regional-position-work-v1"
+    namespace.mkdir()
+    for digest in (DIGEST, "sha256:" + "b" * 64):
+        store = RegionalCheckpointStore(tmp_path, "scan-1", digest)
+        with store.writer():
+            store.put("point", {"complete": True})
+    assert [p.name for p in tmp_path.iterdir()] == [namespace.name]
+    assert (namespace / "scan-1" / ("a" * 64)).is_dir()
+    assert (namespace / "scan-1" / ("b" * 64)).is_dir()
