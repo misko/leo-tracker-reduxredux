@@ -84,10 +84,15 @@ def fit_position(
         raise ValueError("ephemeris bank must cover both timing bounds")
     start[7] = np.clip(start[7], -10, 10)
     shifts = matrix @ start
+    # The zero-sum basis and projection can round an exact +/-20 s seed a few
+    # ulps outside its bound. Start strictly inside, so the feasibility penalty
+    # cannot hide every objective evaluation from an otherwise valid seed.
+    timing_margin = min(1e-9, -minimum * 1e-6, maximum * 1e-6)
+    initial_minimum, initial_maximum = minimum + timing_margin, maximum - timing_margin
     factor = min(
         1.0,
-        maximum / max(maximum, float(shifts.max())),
-        minimum / min(minimum, float(shifts.min())),
+        initial_maximum / max(initial_maximum, float(shifts.max())),
+        initial_minimum / min(initial_minimum, float(shifts.min())),
     )
     start[7:] *= factor
     free = np.flatnonzero(lower != upper)

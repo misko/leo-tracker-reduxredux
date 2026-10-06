@@ -4,7 +4,30 @@ from test_regional_position_score import synthetic_inputs
 
 from leo.analysis.regional_position_fit import fit_position
 from leo.analysis.regional_position_score import PositionObjective
-from leo.contracts.regional_position import POSITION_SCORES
+from leo.contracts.regional_position import POSITION_SCORES, PositionOrbitBank
+
+
+@pytest.mark.parametrize("name", ["T1AT", "V16"])
+def test_projected_boundary_seed_receives_a_feasible_evaluation(name):
+    observations, bank, prior = synthetic_inputs()
+    indices = np.arange(14) % 3
+    bank = PositionOrbitBank(
+        np.arange(100, 114), bank.nodes_s, bank.position_km[indices], bank.velocity_km_s[indices]
+    )
+    objective = PositionObjective(observations, bank, prior, POSITION_SCORES[name])
+    # A real coarse-search seed whose Helmert reconstruction overshoots +20 s
+    # by one ulp. Even a one-iteration fit must evaluate the feasible seed.
+    shifts = np.array([-16, 6, 20, -2, 2, -6, 10, 19, 16, 0, -10, 9, 8, 10])
+    start = np.zeros(objective.size)
+    start[:2] = [3, -5]
+    start[7] = shifts.mean()
+    start[8:] = objective.basis.T @ shifts
+    fit = fit_position(
+        objective, start, fixed_position=True, maximum_seconds=5, maximum_iterations=1
+    )
+    assert fit.evaluations >= 1
+    assert np.isfinite(fit.objective)
+    assert np.max(abs(fit.vector[7] + objective.basis @ fit.vector[8:])) <= 20
 
 
 @pytest.mark.parametrize("name", ["T1AT", "V16"])
