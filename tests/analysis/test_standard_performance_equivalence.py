@@ -289,7 +289,9 @@ def test_forced_avx2_fma_coarse_grid_matches_portable(probe: np.ndarray) -> None
     )
 
     np.testing.assert_allclose(avx2_fma, portable, rtol=1e-12, atol=1e-12)
-    np.testing.assert_array_equal(automatic, avx2_fma)
+    # Automatic dispatch now tiles wide grids into the register kernel. Its
+    # explicit FMA can differ from the generic compiled loop by a few ulps.
+    np.testing.assert_allclose(automatic, avx2_fma, rtol=1e-12, atol=1e-12)
     assert tuple(int(np.argmax(row)) for row in avx2_fma) == tuple(
         int(np.argmax(row)) for row in portable
     )
