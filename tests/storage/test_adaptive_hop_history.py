@@ -30,6 +30,59 @@ def publish_capture(root, **kwargs):
 _DEFAULT_TIMING = object()
 
 
+def test_history_cache_reuses_index_and_pages_but_detects_publication(tmp_path, monkeypatch):
+    publish_capture(tmp_path, count=2, session_id="cache-first")
+    presentation = AdaptiveHopPresentationStore(tmp_path)
+    calls = {"index": 0, "inspect": 0}
+    original_index = AdaptiveHopIqStore.history_index
+    original_inspect = AdaptiveHopIqStore.inspect
+
+    def index(store):
+        calls["index"] += 1
+        return original_index(store)
+
+    def inspect(store, key):
+        calls["inspect"] += 1
+        return original_inspect(store, key)
+
+    monkeypatch.setattr(AdaptiveHopIqStore, "history_index", index)
+    monkeypatch.setattr(AdaptiveHopIqStore, "inspect", inspect)
+    first = presentation.page_v2(cursor=0, limit=1)
+    assert presentation.page_v2(cursor=0, limit=1) == first
+    assert calls == {"index": 1, "inspect": 1}
+    assert presentation.page_v2(cursor=1, limit=1).items == ()
+    assert calls == {"index": 1, "inspect": 1}
+    publish_capture(tmp_path, count=2, session_id="cache-second")
+    assert presentation.page_v2(cursor=0, limit=1).total == 2
+    assert calls["index"] == 2
+
+
+def test_history_cache_expires_and_coalesces_concurrent_requests(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    import leo.storage.adaptive_hop_history as history
+
+    publish_capture(tmp_path, count=2, session_id="cache-concurrent")
+    presentation = AdaptiveHopPresentationStore(tmp_path)
+    clock = [1000.0]
+    monkeypatch.setattr(history, "monotonic", lambda: clock[0])
+    original = AdaptiveHopIqStore.history_index
+    calls = []
+
+    def index(store):
+        calls.append(True)
+        return original(store)
+
+    monkeypatch.setattr(AdaptiveHopIqStore, "history_index", index)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        pages = list(pool.map(lambda _: presentation.page_v2(cursor=0, limit=1), range(4)))
+    assert all(page == pages[0] for page in pages)
+    assert len(calls) == 1
+    clock[0] += 301
+    assert presentation.page_v2(cursor=0, limit=1) == pages[0]
+    assert len(calls) == 2
+
+
 def _variable_dwell_summary():
     receipt = variable_dwell_receipt()
     manifest = SimpleNamespace(
