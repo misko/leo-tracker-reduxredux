@@ -1,8 +1,9 @@
 # Adaptive baseline, T1AT and V16 rollout
 
-Status: API/WebUI deployed; full-budget scientific replay, worker cutover and merge
-are still in progress. No new RF collection is authorized or needed. The unchanged
-baseline remains independently published.
+Status: analysis workers, queue, API and WebUI deployed and verified on 2026-10-06.
+The saved-scan production canary completed through the normal queue, and Chromium
+loaded all three PNGs. Source changes are tracked in PR #67. No new RF was collected;
+the unchanged baseline remains independently published.
 
 ## Qualification evidence
 
@@ -35,10 +36,56 @@ development uses Python 3.13.15 with the same numerical/Pydantic versions.
 
 The fixed-state scientific parity checks and bounded saved-scan smoke replay are
 documented in [the implementation plan](../plans/adaptive-three-position-methods.md).
-The full 400-point-per-method replay is running in bounded, resumable slices under
-`.leo/regional-position/full-budget`. It must finish before accuracy/runtime and
-actual generated PNGs can be assessed. Smoke results are not release accuracy
-evidence.
+The full 400-point-per-method replay completed under
+`.leo/regional-position/full-budget`, using the production interpreter and `leo`
+service user. It used 2,956 original GLRT windows, 648 distinct trial locations and
+four final regional hypotheses. One hypothesis failed the calibration prefit
+stationarity check and was explicitly excluded. The other three supplied the same
+six starts to each model/RF-arm combination: 24 final fits, 17 stationary.
+
+Results for `scan-fw-4eaab4879fec576b`:
+
+| Method / RF arm | Reference error | Posterior frequency RMS | Selected fit |
+| --- | ---: | ---: | --- |
+| T1AT fitted-c | 2.149 km | 75.00 Hz | Stationary |
+| T1AT c=0 | 2.124 km | 145.04 Hz | Stationary |
+| V16 fitted-c | 1.766 km | 67.02 Hz | **Not converged** |
+| V16 c=0 | 1.729 km | 140.09 Hz | Stationary |
+
+The existing baseline reference error is 5.79 km. Its capped RMS is a different
+quantity from the posterior RMS above. Fitted c improves frequency RMS in this
+comparison, while c=0 is slightly closer to the reference for both models. This
+single saved-scan diagnostic does not establish general localization improvement.
+The ablation is explicitly conditional on shared fitted-c upstream calibration
+and association. The reference enters only after estimate selection.
+
+V16 fitted-c returned optimizer success, but its independent stationarity residual
+is 8.339, above the 0.001 threshold. Its objective is also higher than the selected
+c=0 objective despite the fitted model's additional freedom. Retain this as a
+bounded, non-converged diagnostic; do not describe it as a certified optimum or a
+position fix. Both maps and the WebUI expose the convergence status. All selected
+estimates are inside their spatial boundaries. The searches leave 149/175 cells
+deferred and do not certify a global optimum.
+
+The seven resumable slices consumed 3,252.40 seconds (54.21 minutes) of processing,
+with a maximum RSS of 548,492 KiB (535.64 MiB), roughly one CPU core, and zero swaps.
+This is measured saved-scan processing time, not an interactive latency promise.
+Local receipts: `full-budget-summary.json`, `full-budget-resources.json`, and
+`qualified-T1AT.png` / `qualified-V16.png` under `.leo/regional-position`.
+
+Qualification found a projected 20-second timing seed rounded to
+`20.000000000000004`, causing every objective evaluation to be rejected. Numerical
+revision `05ba40d4fd689075519ae68e2b693d1539ed48f7` starts timing seeds strictly
+inside the unchanged bounds. Both score regressions and 19 related staged-runtime
+tests pass. The full replay restarted under a new binding; none of the superseded
+replay's checkpoints were reused. No coarse point in the corrected replay was
+unscoreable. Final mypy still reproduces exactly the same 28 main-control errors,
+with no added or resolved errors (`/tmp/leo-regional-final-mypy.log`).
+
+Scientific configuration:
+`sha256:692a799d6b6612deee23d15d4fb6bc0265f8f8fbd3e52d969a57936f2e8a603e`.
+Checkpoint binding:
+`sha256:6d56942f894d204389f032e2ba051a91ef7e5ec8bef09d2ae6ea0f7a0a89ef38`.
 
 ## Scoped runtime staging
 
@@ -47,10 +94,10 @@ checkout over the live overlays or acquire RF to qualify an unrelated full-radio
 release. Preserve the effective worker environment, scratch root, lease renewal,
 resource limits and capture admission cutoff.
 
-Current worker source: `/opt/leo-adaptive-memory/9181d637d/src`.
-Current API source: `/opt/leo-adaptive-history/97e28127b/api/src`, followed by
+Pre-cutover worker source: `/opt/leo-adaptive-memory/9181d637d/src`.
+Pre-cutover API source: `/opt/leo-adaptive-history/97e28127b/api/src`, followed by
 `/opt/leo-v060-adaptive/a491b1ca7ee021e3e0e19a8c98becd2c9b1dae8b/src`.
-Current WebUI: `/opt/leo-sacramento-only/f8ba2d1a1/web/dist`.
+Pre-cutover WebUI: `/opt/leo-sacramento-only/f8ba2d1a1/web/dist`.
 
 Build separate immutable worker/API source trees from these effective sources,
 copying their resolved files. Apply the reviewed source delta to each role:
@@ -68,7 +115,7 @@ SIGINT cancellation/requeue behavior; never steal a live lease.
 
 ## API/WebUI cutover
 
-The immutable staged trees are `/opt/leo-regional-position/aef0cb9477a9-r2`.
+The initial API staged trees were `/opt/leo-regional-position/aef0cb9477a9-r2`.
 `stage.json` records the source revision, complete file hashes, inherited trees,
 reviewed replacements and WebUI asset hashes. The worker tree passed 55 affected
 tests using its actual imports and production interpreter. The API tree passed
@@ -81,9 +128,19 @@ code changes. The r2 worker tree is hash-identical to the tested first stage.
 
 The API was switched with
 `/etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzz-regional-position.conf`.
-Its effective source starts with the r2 API tree; its static assets come from
-the r2 `web/dist`. The API remains read-only on port 8090. Worker and capture
-selectors have not changed.
+The final worker and queue source is
+`/opt/leo-regional-position/05ba40d4fd68-r2/worker/src`. The final API and WebUI use
+`/opt/leo-regional-position/70999d76fcd2-r2/api/src` and its sibling `web/dist`.
+Both stages have byte-identical Python sources; the later stage fixes intrinsic
+image sizing for browser lazy loading. Its 50 affected UI tests and production
+build pass. The API remains read-only on port 8090.
+
+Workers switched at 17:56 UTC. All 19 previously active instances remain active;
+scratch paths, capture cutoff, lease behavior and resource quotas are preserved.
+The queue timer uses the new source for prospective admission. The new static
+result/checkpoint namespaces are pre-created as `leo:leo`, mode 0750, by worker
+`ExecStartPre`; workers do not need write permission on the bulk root. The existing
+RF capture timer and its cadence were not changed.
 
 Live HTTP and Chromium checks verified:
 
@@ -91,32 +148,40 @@ Live HTTP and Chromium checks verified:
   pre-cutover response, and its 135,150-byte PNG retains digest
   `sha256:9000d4b352f2279dbbbc1bd8c853b6957fbe075ef25c5dec2edeaa4cddd95b46`.
 - Chromium decodes that image at 840 by 720 pixels.
-- The new regional endpoint returns pending and the actual recording detail view
-  displays the T1AT/V16 panel without alerts. No regional image is claimed yet.
-- The served bundle is `index-LR8f9R8p.js`; API and existing capture timer are active.
+- The regional endpoint returns complete; both 1080-by-960 images decode in the
+  recording detail view, their payloads match the advertised digests, and there
+  are no regional-panel alerts. The table and PNG show V16 fitted-c as not converged.
+- Chromium initially exposed zero-sized lazy images. Explicit 1080-by-960 image
+  dimensions fixed loading; the final browser verification used unmodified DOM.
+- The served bundle is `index-CFH9HJ5E.js`; API and existing capture timer are active.
 
 Local browser evidence is `.leo/regional-position/live-ui-check.json` and
-`live-regional-panel.png`. The full-budget replay continues separately under its
-original configuration binding. Actual live T1AT/V16 image decoding and automatic
-worker completion remain outstanding.
+`live-regional-panel.png`. Production job **48369** was admitted through the public
+bounded backfill CLI for this one saved capture and completed on worker 21 in one
+attempt. Its 679 verified numerical stages were seeded through checkpoint ports;
+no finished document or PNG was copied into production. The ordinary tracking
+worker generated and published the result. Production numerical methods and image
+digests match qualification exactly; the document's bank-preparation timing receipt
+naturally differs on replay.
 
-## Completion and rollback checks
+PNG digests:
 
-Require the following before declaring the task complete:
+- T1AT: `sha256:14ab564330e0fda82c30103c6e84c2ac4e74318aab0c7fb7a96fb7b0a6e9296f`
+- V16: `sha256:a12cea08121f7e6e0d8a57b11a8839aa67f20e98c3a41f5b95a99f369bba64fd`
 
-- Full-budget numerical replay with both RF arms, all stage failures, runtime and
-  memory recorded; reference position used only after selection.
-- Production API serves digest-verified baseline, T1AT and V16 PNGs, and browser
-  inspection confirms each image loads in the recording detail view.
-- A newly admitted adaptive job reaches verified three-method completion through
-  the automatic queue. Pending slices yield without hiding the completed baseline.
-- Native partial-band captures show three explicit insufficient-evidence figures,
-  consistent with their immutable `not_qualified_for_partial_band` source contract.
-- Live API, prior worker instances and capture cadence remain healthy; production
-  evidence is tied to the reviewed source and merged remote-main revision.
+## Coverage and rollback
 
-Rollback restores the previous worker/API source and WebUI drop-ins, reloads
-systemd and restarts only the changed services. Keep all new products and
-checkpoints; previous software ignores their versioned namespaces. Preserve the
-current worker source at `/opt/leo-adaptive-memory/9181d637d/src` and the API/UI
-selectors above as rollback authorities.
+Native partial-band inputs retain the immutable
+`not_qualified_for_partial_band` declaration and generate three explicit
+insufficient-evidence figures through their analysis completion path. Component
+tests cover that path, its queue completion checks and its WebUI panels. No native
+partial-band capture was found in the bounded inspection of 186 recent production
+captures, so the live browser canary above qualifies the ordinary adaptive path;
+it must not be described as a live partial-band qualification.
+
+Rollback removes only this rollout's `zzzzzzzzzzzzzz-regional-position.conf`
+drop-ins from the worker template, queue service and API service, reloads systemd,
+and restarts the affected services using their existing SIGINT/requeue behavior.
+The prior selectors remain in their earlier drop-ins. Keep all new products and
+checkpoints; previous software ignores their versioned namespaces. Do not change
+capture services, database schema or golden scientific fixtures.

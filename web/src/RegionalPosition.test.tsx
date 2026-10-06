@@ -38,6 +38,7 @@ it("shows both automatic maps, both RF arms and reference errors", async () => {
     const image = screen.getByRole("img", { name: `${name} Sacramento position search for scan-test` });
     expect(image).toHaveAttribute("width", "1080");
     expect(image).toHaveAttribute("height", "960");
+    expect(image).toHaveStyle({ width: "100%", objectFit: "contain" });
     expect(screen.getByRole("link", { name: `Open ${name} position PNG` })).toHaveAttribute("href",
       `/api/v1/scanner/tracking/scan-test/regional-position-v1/${name}.png?sha256=${encodeURIComponent(digest)}`);
   }
