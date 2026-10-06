@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from leo.application.partial_band import replay_partial_band
+from leo.cli.partial_band_position import publish_partial_band_positions
 from leo.storage.adaptive_hop import AdaptiveHopIqStore
 from leo.storage.partial_band import PartialBandStore
 
@@ -32,6 +33,12 @@ def main():
             maximum_workers=args.maximum_workers,
             progress=lambda p: print(json.dumps({"progress": p}), flush=True),
         )
+        if result.get("state") == "figures_ready":
+            capture = captures.inspect(args.session_id)
+            status = products.status(args.session_id, capture.manifest_sha256)
+            if status.manifest is None:
+                raise ValueError("partial-band figures lack a verified manifest")
+            publish_partial_band_positions(args.output_root or args.bulk_root, status.manifest)
     except BlockingIOError:
         result = dict(state="busy", session_id=args.session_id)
     finally:
