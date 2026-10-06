@@ -9,6 +9,19 @@ from tests.contracts.test_adaptive_tle_position import document, document_v2
 PNG = b"\x89PNG\r\n\x1a\nsmall"
 
 
+def test_v3_is_immutable_and_does_not_replace_legacy_results(tmp_path):
+    from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV3
+    from tests.contracts.test_adaptive_tle_position import document_v3
+
+    AdaptiveTlePositionStoreV2(tmp_path, read_only=False).publish(document_v2(), PNG)
+    writer = AdaptiveTlePositionStoreV3(tmp_path, read_only=False)
+    writer.publish(document_v3(), PNG)
+    assert len(writer.status("scan-1").manifest.document.priors) == 1
+    assert len(AdaptiveTlePositionStoreV2(tmp_path).status("scan-1").manifest.document.priors) == 2
+    with pytest.raises(ValueError, match="immutable"):
+        writer.publish(document_v3(), PNG + b"changed")
+
+
 def test_store_round_trip_and_immutable_conflict(tmp_path):
     writer = AdaptiveTlePositionStore(tmp_path, read_only=False)
     with writer.writer("scan-1"):
