@@ -5,6 +5,8 @@ import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { AdaptiveAnalysisPanel } from "./AdaptiveAnalysisPanel";
 import { PartialBandPanel } from "./PartialBandPanel";
 import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
+import { AdaptiveTlePosition } from "./AdaptiveTlePosition";
+import { RegionalPosition } from "./RegionalPosition";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import "./adaptive-hop.css";
 
@@ -205,7 +207,7 @@ export function AdaptiveHopDetail({ sessionId }: { sessionId: string }) {
         </div></div> : null}
     </section>
     {c.schema_version === 10 ? <PartialBandPanel key={`${sessionId}:${c.input_manifest_sha256}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} /> : <AdaptiveAnalysisPanel key={`${sessionId}:${c.input_manifest_sha256}`} capture={c} />}
-    {c.schema_version !== 10 ? <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} /> : null}
+    {c.schema_version !== 10 ? <ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} /> : <><AdaptiveTlePosition sessionId={sessionId} inputDigest={c.input_manifest_sha256} /><RegionalPosition sessionId={sessionId} inputDigest={c.input_manifest_sha256} /></>}
     <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} inputDigest={c.input_manifest_sha256} />
     {c.schema_version === 1 ? <ScannerGlrtPanel key={sessionId} sessionId={sessionId} sessionKind="adaptive" /> : null}
   </div>;

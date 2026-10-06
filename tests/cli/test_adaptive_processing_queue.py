@@ -270,9 +270,9 @@ def _lease() -> AdaptiveAnalysisJobLease:
     )
 
 
-@pytest.mark.parametrize("published", [True, False])
+@pytest.mark.parametrize("published,position_maps", [(True, True), (False, True), (True, False)])
 def test_partial_band_queue_uses_versioned_command_and_requires_artifact_authority(
-    monkeypatch, tmp_path, published
+    monkeypatch, tmp_path, published, position_maps
 ):
     lease = _lease()
     identity = subject.partial_band_identity(
@@ -301,17 +301,21 @@ def test_partial_band_queue_uses_versioned_command_and_requires_artifact_authori
         "PartialBandStore",
         lambda *a: SimpleNamespace(
             status=lambda *a: SimpleNamespace(
-                state="figures_ready" if published else "partial", binding_sha256=identity
+                state="figures_ready" if published else "partial",
+                binding_sha256=identity,
+                manifest=SimpleNamespace(model_dump=lambda **kwargs: {"partial": "evidence"}),
             )
         ),
     )
+    monkeypatch.setattr(subject, "adaptive_tle_position_complete", lambda *a, **kw: position_maps)
+    monkeypatch.setattr(subject, "regional_position_complete", lambda *a, **kw: position_maps)
     monkeypatch.setattr(
         subject,
         "_enqueue_tracking_after_analysis",
         lambda **kw: pytest.fail("unqualified phase/position must not be queued"),
     )
     assert subject.run_once(bulk_root=tmp_path, worker_id="worker-1", catalog=catalog)
-    assert calls == ["complete" if published else "failed"]
+    assert calls == ["complete" if published and position_maps else "failed"]
 
 
 def test_run_once_completes_figures_ready_slice(monkeypatch, tmp_path) -> None:
