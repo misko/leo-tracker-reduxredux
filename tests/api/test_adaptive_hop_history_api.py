@@ -72,6 +72,7 @@ def test_v3_four_rate_history_accepts_sparse_and_long_retained_visits(
         history_module,
         "AdaptiveHopIqStore",
         lambda *_a, **_k: SimpleNamespace(
+            publication_index=lambda: ((1, receipt.session_id),),
             history_index=lambda: [(1, receipt.session_id)],
             inspect=lambda _sid: session,
             close=lambda: None,

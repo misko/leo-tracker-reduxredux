@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from threading import Lock
+from time import monotonic
 from typing import Any
 
 from leo.contracts.scanner_glrt_publication import ScannerGlrtPublicationV1
@@ -207,6 +210,11 @@ class AdaptiveHopPresentationStore:
 
     def __init__(self, root: Path):
         self._root = root
+        self._history_lock = Lock()
+        self._history_signature: tuple[tuple[int, str], ...] | None = None
+        self._history_checked_at = 0.0
+        self._history_sessions: tuple[tuple[int, str], ...] | None = None
+        self._history_pages: OrderedDict[tuple[int, int], AdaptiveHopHistoryPageV1] = OrderedDict()
 
     def page(self, *, cursor: int, limit: int) -> AdaptiveHopHistoryPageV1:
         return self._page(cursor=cursor, limit=limit, include_host=False)
@@ -240,11 +248,43 @@ class AdaptiveHopPresentationStore:
     def _page(self, *, cursor: int, limit: int, include_host: bool) -> AdaptiveHopHistoryPageV1:
         if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError("adaptive history pagination is out of bounds")
+        if not include_host:
+            return self._load_page(cursor=cursor, limit=limit, include_host=False)
+        # Serialize cold requests so multiple browser tabs do not each read the
+        # entire archive. Published manifests are immutable; the public stat-only
+        # index detects new publications without rereading gigabytes of receipts.
+        with self._history_lock:
+            store = AdaptiveHopIqStore(self._root, read_only=True)
+            try:
+                signature = store.publication_index()
+            finally:
+                store.close()
+            now = monotonic()
+            if signature != self._history_signature or now - self._history_checked_at >= 300:
+                self._history_pages.clear()
+                self._history_sessions = None
+                self._history_signature = signature
+                self._history_checked_at = now
+            key = (cursor, limit)
+            if key not in self._history_pages:
+                self._history_pages[key] = self._load_page(
+                    cursor=cursor, limit=limit, include_host=True
+                )
+                if len(self._history_pages) > 32:
+                    self._history_pages.popitem(last=False)
+            self._history_pages.move_to_end(key)
+            return self._history_pages[key]
+
+    def _load_page(
+        self, *, cursor: int, limit: int, include_host: bool
+    ) -> AdaptiveHopHistoryPageV1:
         store = AdaptiveHopIqStore(self._root, read_only=True)
         try:
+            if include_host and self._history_sessions is None:
+                self._history_sessions = store.history_index()
             # Keep only ordering keys, not every scan's up-to-2,500-event manifest.
             sessions = (
-                list(store.history_index())
+                list(self._history_sessions or ())
                 if include_host
                 else [
                     (s.manifest.finalized_utc_ns, s.session_id)
