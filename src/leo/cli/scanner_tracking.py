@@ -15,6 +15,7 @@ from leo.cli.adaptive_tle_position import (
     run_adaptive_tle_position,
 )
 from leo.cli.blind_regional import blind_regional_complete, run_blind_regional
+from leo.cli.regional_position import regional_position_complete, run_regional_position_analysis
 from leo.cli.scan_position_methods import position_methods_complete, run_position_methods
 from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
@@ -55,6 +56,12 @@ def _position_methods_available(
                 expected_input_manifest_sha256=input_manifest_sha256,
             )
             and adaptive_tle_position_complete(
+                bulk_root,
+                session_id,
+                expected_input=input_manifest_sha256,
+                expected_analysis=analysis_manifest_sha256,
+            )
+            and regional_position_complete(
                 bulk_root,
                 session_id,
                 expected_input=input_manifest_sha256,
@@ -262,6 +269,7 @@ def main():
                     position_complete = False
                     blind_complete = False
                     adaptive_position_complete = False
+                    regional_complete = False
                     if status.state == "complete" and not split_roots:
                         source = sources.load(sid)
                         _publish_position_methods_verified(
@@ -290,6 +298,17 @@ def main():
                             raise ValueError(
                                 "adaptive TLE position publication failed verification"
                             )
+                        remaining = args.maximum_seconds - (time.monotonic() - started)
+                        if remaining > 30:
+                            run_regional_position_analysis(
+                                output_root, args.tle_root, sid, maximum_seconds=min(500, remaining)
+                            )
+                        regional_complete = regional_position_complete(
+                            output_root,
+                            sid,
+                            expected_input=source.input_manifest_sha256,
+                            expected_analysis=source.analysis_manifest_sha256,
+                        )
                 except BundleNotFoundError:
                     continue
                 except Exception as error:
@@ -328,6 +347,9 @@ def main():
                                 "adaptive_tle_position_v3_state": (
                                     "complete" if adaptive_position_complete else "pending"
                                 ),
+                                "regional_position_v1_state": "complete"
+                                if regional_complete
+                                else "pending",
                                 "trajectory": status.product.trajectory_state
                                 if status.product
                                 else None,

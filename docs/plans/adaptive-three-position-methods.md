@@ -93,6 +93,11 @@ Implemented numerical components:
   search sentinel in a published product.
 - `cli/regional_position.py`: saved-input CLI, causal TLE selection, full default
   400-point budget per method, resumable stage execution and publication.
+- Standard `scanner_tracking` and adaptive queue jobs now include regional products
+  in their completion checks. A pending regional slice yields its lease while
+  retaining baseline products. Twenty-seven queue/tracking CLI tests pass.
+  The separate native 1.25 MS/s partial-band path still needs explicit handling;
+  its filtered-pilot contracts cannot be silently treated as ordinary GLRT inputs.
 
 Implemented product delivery components (not yet deployed):
 
@@ -171,6 +176,7 @@ Validation evidence so far:
    verify automatic processing and all PNGs through the live API/WebUI, then merge
    to remote main and verify the deployed source against the merged revision.
 
-At this checkpoint no new queue policy, deployment, remote push, or merge has been
-performed. The API endpoints and WebUI panels exist in the implementation worktree
-only. The end-to-end goal remains active.
+At this checkpoint no deployment, remote push, or merge has been performed. The
+standard queue integration, API endpoints and WebUI panels exist in the
+implementation worktree only. Partial-band handling and full-budget replay
+qualification remain release gates. The end-to-end goal remains active.

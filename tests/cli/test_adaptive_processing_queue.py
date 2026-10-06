@@ -174,6 +174,7 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
     assert payloads[0]["position"] == "scanner-conditional-position-v1"
     assert payloads[0]["additional_position_methods"] == "scanner-position-methods-v1"
     assert payloads[0]["adaptive_tle_position"] == "scanner-adaptive-tle-position-v3"
+    assert payloads[0]["regional_position"] == "scanner-regional-position-v1"
 
 
 def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
@@ -404,6 +405,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(subject, "position_methods_complete", lambda *_, **__: True)
     monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
     monkeypatch.setattr(subject, "adaptive_tle_position_complete", lambda *_, **__: True)
+    monkeypatch.setattr(subject, "regional_position_complete", lambda *_, **__: True)
     monkeypatch.setattr(
         subject,
         "ScannerTrackingInputStore",
@@ -421,7 +423,8 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
                 returncode=0,
                 stdout=(
                     '{"state":"complete","position_methods_state":"complete",'
-                    '"adaptive_tle_position_v3_state":"complete"}'
+                    '"adaptive_tle_position_v3_state":"complete",'
+                    '"regional_position_v1_state":"complete"}'
                 ),
                 stderr="",
             )
@@ -479,6 +482,7 @@ def test_run_once_closes_duplicate_current_tracking_without_reprocessing(
 ) -> None:
     calls: list[dict[str, object]] = []
     observed = []
+    monkeypatch.setattr(subject, "regional_position_complete", lambda *_, **__: True)
     monkeypatch.setattr(subject, "blind_regional_complete", lambda *_, **__: True)
     monkeypatch.setattr(subject, "adaptive_tle_position_complete", lambda *_, **__: True)
     monkeypatch.setattr(
@@ -604,6 +608,67 @@ def test_completion_binds_current_tracking_analysis(monkeypatch, tmp_path):
         {"expected_input": digest},
         {"expected_input": digest, "expected_analysis": "analysis-current"},
     ]
+
+
+def test_completion_requires_both_regional_maps_bound_to_current_analysis(monkeypatch, tmp_path):
+    for name in (
+        "position_methods_complete",
+        "blind_regional_complete",
+        "adaptive_tle_position_complete",
+    ):
+        monkeypatch.setattr(subject, name, lambda *_, **__: True)
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingInputStore",
+        lambda *_: SimpleNamespace(
+            load=lambda _: SimpleNamespace(analysis_manifest_sha256="analysis-current"),
+            close=lambda: None,
+        ),
+    )
+    observed = []
+
+    def regional(*args, **kwargs):
+        observed.append(kwargs)
+        return False
+
+    monkeypatch.setattr(subject, "regional_position_complete", regional)
+    assert not subject._position_methods_complete(
+        tmp_path, "scan-test", expected_input_manifest_sha256="input"
+    )
+    assert observed == [{"expected_input": "input", "expected_analysis": "analysis-current"}]
+
+
+def test_pending_regional_slice_yields_tracking_lease_without_failing_baseline(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        subject,
+        "ScannerTrackingStore",
+        lambda *args, **kwargs: SimpleNamespace(
+            analysis_status=lambda _: SimpleNamespace(state="complete")
+        ),
+    )
+    monkeypatch.setattr(subject, "_position_methods_complete", lambda *args, **kwargs: False)
+    monkeypatch.setattr(
+        subject,
+        "run_process",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout='{"state":"complete","position_methods_state":"complete",'
+            '"adaptive_tle_position_v3_state":"complete","regional_position_v1_state":"pending"}',
+        ),
+    )
+    yielded = []
+    catalog = SimpleNamespace(yield_adaptive_analysis_job=lambda **kwargs: yielded.append(kwargs))
+    assert subject._run_claimed(
+        bulk_root=tmp_path,
+        worker_id="worker-1",
+        catalog=catalog,
+        site="sausalito",
+        lease=replace(_lease(), job_kind="adaptive_tracking"),
+    )
+    assert yielded == [{"job_id": 7, "worker_id": "worker-1"}]
 
 
 def test_run_once_yields_its_lease_when_stopped(monkeypatch, tmp_path) -> None:

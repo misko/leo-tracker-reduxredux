@@ -22,6 +22,7 @@ from leo.catalog.errors import LeaseLostError
 from leo.cli.adaptive_tle_position import adaptive_tle_position_complete
 from leo.cli.blind_regional import blind_regional_complete
 from leo.cli.job_lease import LeaseSupervisor, run_process
+from leo.cli.regional_position import regional_position_complete
 from leo.cli.scan_position_methods import position_methods_complete
 from leo.contracts.digests import canonical_digest
 from leo.contracts.partial_band import PartialBandConfigurationV1, partial_band_identity
@@ -71,6 +72,11 @@ def _position_methods_complete(
             session_id,
             expected_input=expected_input_manifest_sha256,
             expected_analysis=source.analysis_manifest_sha256,
+        ) and regional_position_complete(
+            bulk_root,
+            session_id,
+            expected_input=expected_input_manifest_sha256,
+            expected_analysis=source.analysis_manifest_sha256,
         )
     except (BundleNotFoundError, OSError, ValueError):
         return False
@@ -112,6 +118,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",
             "adaptive_tle_position": "scanner-adaptive-tle-position-v3",
+            "regional_position": "scanner-regional-position-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -499,6 +506,7 @@ def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
         and payload.get("adaptive_tle_position_v3_state") == "complete"
+        and payload.get("regional_position_v1_state") == "complete"
         and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(
