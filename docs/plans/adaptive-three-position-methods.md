@@ -96,8 +96,12 @@ Implemented numerical components:
 - Standard `scanner_tracking` and adaptive queue jobs now include regional products
   in their completion checks. A pending regional slice yields its lease while
   retaining baseline products. Twenty-seven queue/tracking CLI tests pass.
-  The separate native 1.25 MS/s partial-band path still needs explicit handling;
-  its filtered-pilot contracts cannot be silently treated as ordinary GLRT inputs.
+  The native 1.25 MS/s partial-band path publishes explicit insufficient-evidence
+  products and all three PNGs: its immutable source contract says positioning is
+  not qualified. Queue completion checks and the recording WebUI include these
+  products. Its filtered-pilot candidates are never relabeled as ordinary GLRT
+  evidence. Twenty-six partial-band/queue tests pass; the full 226-test WebUI suite
+  and build pass, with 41 affected UI tests repeated after adding visibility checks.
 
 Implemented product delivery components (not yet deployed):
 
@@ -144,7 +148,10 @@ Validation evidence so far:
   Local receipts: `.leo/regional-position/runner-canary.json` and matching PNGs.
 - 54 regional numerical/application/contracts/storage/API tests passed, followed
   by six CLI tests. Type and lint checks on the new components pass. Full-budget
-  replay is now being exercised in bounded worker slices.
+  replay is now being exercised in bounded worker slices. The first full-budget
+  CLI slice yielded normally at its deadline with immutable point receipts; the
+  second invocation resumes the same configuration/input binding. Output root:
+  `.leo/regional-position/full-budget` (not deployed production results).
 
 ## Remaining implementation and release gates
 
@@ -177,6 +184,7 @@ Validation evidence so far:
    to remote main and verify the deployed source against the merged revision.
 
 At this checkpoint no deployment, remote push, or merge has been performed. The
-standard queue integration, API endpoints and WebUI panels exist in the
-implementation worktree only. Partial-band handling and full-budget replay
-qualification remain release gates. The end-to-end goal remains active.
+queue integration, API endpoints and WebUI panels exist in the implementation
+worktree only. Full-budget replay, resource qualification, whole-change release
+checks and live browser verification remain release gates. The end-to-end goal
+remains active.

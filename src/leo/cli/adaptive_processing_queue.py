@@ -177,7 +177,21 @@ def enqueue_pending(*, bulk_root: Path, site: str = _TRACKING_SITE) -> tuple[str
                 continue
             if isinstance(capture.manifest.receipt, AdaptiveHopReceiptV8):
                 status = PartialBandStore(bulk_root).status(session_id, capture.manifest_sha256)
-                if status.state != "figures_ready" and catalog.enqueue_adaptive_analysis_job(
+                position_maps_ready = False
+                if status.state == "figures_ready" and status.manifest is not None:
+                    analysis_digest = canonical_digest(status.manifest.model_dump(mode="json"))
+                    position_maps_ready = adaptive_tle_position_complete(
+                        bulk_root,
+                        session_id,
+                        expected_input=capture.manifest_sha256,
+                        expected_analysis=analysis_digest,
+                    ) and regional_position_complete(
+                        bulk_root,
+                        session_id,
+                        expected_input=capture.manifest_sha256,
+                        expected_analysis=analysis_digest,
+                    )
+                if not position_maps_ready and catalog.enqueue_adaptive_analysis_job(
                     session_id=session_id,
                     input_manifest_digest=capture.manifest_sha256,
                     configuration_digest=status.binding_sha256,
@@ -484,8 +498,25 @@ def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
             if (
                 status.state != "figures_ready"
                 or status.binding_sha256 != lease.configuration_digest
+                or status.manifest is None
             ):
                 raise ValueError("low-rate worker lacks verified complete artifact authority")
+            analysis_digest = canonical_digest(status.manifest.model_dump(mode="json"))
+            if not (
+                adaptive_tle_position_complete(
+                    bulk_root,
+                    lease.session_id,
+                    expected_input=lease.input_manifest_digest,
+                    expected_analysis=analysis_digest,
+                )
+                and regional_position_complete(
+                    bulk_root,
+                    lease.session_id,
+                    expected_input=lease.input_manifest_digest,
+                    expected_analysis=analysis_digest,
+                )
+            ):
+                raise ValueError("partial-band positioning exclusions lack verified figures")
         except (ValueError, OSError) as error:
             catalog.fail_job(
                 job_id=lease.job_id,
