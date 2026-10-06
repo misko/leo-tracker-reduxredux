@@ -1328,17 +1328,40 @@ def _folded_anchor_score_grid_native(
         # lane gives the AVX2/FMA kernel a materially better vector shape while
         # leaving the searched grid and returned inventory unchanged.
         execution_cfo_hz = (*absolute_cfo_hz, absolute_cfo_hz[-1] + step)
-    scores = native_grid(
-        np.asarray(values, dtype=np.complex128),
-        np.asarray(template, dtype=np.complex128),
-        np.asarray(execution_cfo_hz, dtype=float),
-        local_starts,
-        local_stops,
-        np.asarray(frame_offsets, dtype=np.intp),
-        _power_prefix(values),
-        float(sample_rate_hz),
-        epoch_count,
-    )
+    received = np.asarray(values, dtype=np.complex128)
+    reference = np.asarray(template, dtype=np.complex128)
+    offsets = np.asarray(frame_offsets, dtype=np.intp)
+    prefix = _power_prefix(values)
+
+    def evaluate(frequencies):
+        return native_grid(
+            received,
+            reference,
+            np.asarray(frequencies, dtype=float),
+            local_starts,
+            local_stops,
+            offsets,
+            prefix,
+            float(sample_rate_hz),
+            epoch_count,
+        )
+
+    if (
+        backend == "auto"
+        and scientific_cfo_count > 12
+        and _folded_anchor_score_grid_backend() == "avx2_fma"
+    ):
+        # The 12-lane kernel retains its accumulators in registers. Wider
+        # searches (including the scanner's 21 CFOs) otherwise spill them.
+        # Each scientific lane keeps its original arithmetic and ordering;
+        # duplicate padding lanes are execution-only and never returned.
+        rows = []
+        for start in range(0, scientific_cfo_count, 12):
+            tile = absolute_cfo_hz[start : start + 12]
+            scores = evaluate((*tile, *((tile[-1],) * (12 - len(tile)))))
+            rows.extend(scores[index] for index in range(len(tile)))
+        return tuple(rows)
+    scores = evaluate(execution_cfo_hz)
     return tuple(scores[index] for index in range(scientific_cfo_count))
 
 
