@@ -61,7 +61,7 @@ class T1AtService:
             if remaining <= 0:
                 raise TimeoutError("T1-AT preparation budget exhausted")
             modes = discover_modes(
-                predictor.candidates, source.numbers, predictor, maximum_seconds=remaining
+                predictor.candidates, source.numbers.tolist(), predictor, maximum_seconds=remaining
             )
             prepared = prepared.model_copy(
                 update=dict(fitted_c_modes=modes["fitted-c"], zero_c_modes=modes["zero-c"])

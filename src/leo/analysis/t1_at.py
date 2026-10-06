@@ -14,7 +14,7 @@ from leo.contracts.t1_at import T1AtCandidateV1, T1AtInputV1
 
 
 def top_candidates(candidates: tuple[T1AtCandidateV1, ...]) -> tuple[T1AtCandidateV1, ...]:
-    winners = {}
+    winners: dict[str, T1AtCandidateV1] = {}
     for candidate in candidates:
         key = (candidate.refined_margin, -candidate.candidate_id)
         previous = winners.get(candidate.window_id)

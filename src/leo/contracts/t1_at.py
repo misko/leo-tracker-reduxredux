@@ -64,7 +64,7 @@ class T1AtInputV1(ContractModel):
         ids = {c.candidate_id for c in self.candidates}
         if len(ids) != len(self.candidates):
             raise ValueError("duplicate candidate ID")
-        windows = {}
+        windows: dict[str, tuple[int, int]] = {}
         for candidate in self.candidates:
             lane = candidate.receiver_id, candidate.channel
             if windows.setdefault(candidate.window_id, lane) != lane:

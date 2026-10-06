@@ -33,15 +33,19 @@ def run(
 ) -> dict:
     if (prepared_input is None) == (discovery_input is None):
         raise ValueError("provide exactly one T1-AT prepared or discovery input")
+    prepared: T1AtInputFile | T1AtDiscoveryFile
+    if prepared_input is not None:
+        prepared = T1AtInputFile(prepared_input)
+    else:
+        assert discovery_input is not None
+        prepared = T1AtDiscoveryFile(discovery_input)
     inputs = ScannerTrackingInputStore(
         capture_root, adaptive_analysis_root=analysis_root, adaptive_probe_stride_ms=probe_stride_ms
     )
     try:
         capture = inputs.load(session_id)
         product = T1AtService(
-            inputs=T1AtInputFile(prepared_input)
-            if prepared_input is not None
-            else T1AtDiscoveryFile(discovery_input),
+            inputs=prepared,
             products=T1AtProductStore(output_root),
         ).run(capture, maximum_seconds=maximum_seconds)
     finally:
