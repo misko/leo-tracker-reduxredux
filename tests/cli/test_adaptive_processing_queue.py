@@ -173,7 +173,7 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
     assert payloads[0]["analysis_id"] == "scanner-shared-tracking-v15"
     assert payloads[0]["position"] == "scanner-conditional-position-v1"
     assert payloads[0]["additional_position_methods"] == "scanner-position-methods-v1"
-    assert payloads[0]["adaptive_tle_position"] == "scanner-adaptive-tle-position-v2"
+    assert payloads[0]["adaptive_tle_position"] == "scanner-adaptive-tle-position-v3"
 
 
 def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
@@ -421,7 +421,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
                 returncode=0,
                 stdout=(
                     '{"state":"complete","position_methods_state":"complete",'
-                    '"adaptive_tle_position_v2_state":"complete"}'
+                    '"adaptive_tle_position_v3_state":"complete"}'
                 ),
                 stderr="",
             )

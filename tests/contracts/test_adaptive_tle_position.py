@@ -84,6 +84,35 @@ def document_v2():
     )
 
 
+def document_v3():
+    from leo.contracts.adaptive_tle_position import AdaptiveTlePositionDocumentV3
+
+    payload = document_v2().model_dump()
+    payload.update(schema_version=3, analysis_id="scanner-adaptive-tle-position-v3")
+    payload["priors"] = payload["priors"][:1]
+    for name in ("selected", "finest"):
+        payload["priors"][0][name]["horizontal_error_m"] = 1234.0
+    return AdaptiveTlePositionDocumentV3.model_validate(payload)
+
+
+def test_v3_is_sacramento_only_without_weakening_v2():
+    from leo.contracts.adaptive_tle_position import AdaptiveTlePositionDocumentV3
+
+    assert len(document_v3().priors) == 1
+    payload = document_v3().model_dump()
+    payload["priors"][0]["name"] = "reno"
+    with pytest.raises(ValidationError, match="prior inventory"):
+        AdaptiveTlePositionDocumentV3.model_validate(payload)
+    with pytest.raises(ValidationError, match="prior inventory"):
+        AdaptiveTlePositionDocumentV2.model_validate(
+            {**document_v2().model_dump(), "priors": document_v3().model_dump()["priors"]}
+        )
+    payload = document_v3().model_dump()
+    payload["priors"][0]["selected"]["horizontal_error_m"] = None
+    with pytest.raises(ValidationError, match="require reference error"):
+        AdaptiveTlePositionDocumentV3.model_validate(payload)
+
+
 def test_contract_requires_canonical_two_prior_inventory():
     assert [item.name for item in document().priors] == ["sacramento", "reno"]
     with pytest.raises(ValidationError, match="prior inventory"):

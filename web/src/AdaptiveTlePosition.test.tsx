@@ -9,13 +9,27 @@ const document = {
   known_position_used_for_inference: false, position_fix_claimed: false,
   priors: [{ name: "sacramento", region: { radius_km: 250 }, search_complete: false,
     accounting: { eligible_track_count: 34, eligible_observation_count: 750, evaluated_point_count: 400 },
-    selected: { latitude_deg: 37.9, longitude_deg: -122.4, capped_weighted_rmse_hz: 184.78, spacing_km: 50 } }],
+    selected: { latitude_deg: 37.9, longitude_deg: -122.4, capped_weighted_rmse_hz: 184.78, spacing_km: 50, horizontal_error_m: 1234 } }],
 };
 function response(doc = document) {
   return { ok: true, json: async () => ({ session_id: "scan-test", state: "complete", manifest: {
     document: doc, artifacts: [{ name: "map", sha256: "sha256:png" }],
   } }) };
 }
+it("shows Sacramento-only v3 and horizontal reference error", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response({ ...document, schema_version: 3, analysis_id: "scanner-adaptive-tle-position-v3" })));
+  render(<AdaptiveTlePosition sessionId="scan-test" />);
+  expect(await screen.findByText("1.23 km")).toBeInTheDocument();
+  expect(screen.getByRole("img")).toHaveAttribute("src", expect.stringContaining("adaptive-tle-position-v3/map.png"));
+  expect(screen.queryByText("Reno · 500 km")).not.toBeInTheDocument();
+});
+it("falls back to an existing two-scenario publication while v3 is pending", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ session_id: "scan-test", state: "pending", manifest: null }) }).mockResolvedValue(response());
+  vi.stubGlobal("fetch", fetcher);
+  render(<AdaptiveTlePosition sessionId="scan-test" />);
+  expect(await screen.findByRole("img")).toHaveAttribute("src", expect.stringContaining("adaptive-tle-position-v2/map.png"));
+  expect(fetcher).toHaveBeenNthCalledWith(2, expect.stringContaining("adaptive-tle-position-v2"), expect.anything());
+});
 it("publishes a digest-bound PNG and machine-readable result with selection limitations", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response()));
   render(<AdaptiveTlePosition sessionId="scan-test" inputDigest="sha256:input" />);

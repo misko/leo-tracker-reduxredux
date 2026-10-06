@@ -16,18 +16,17 @@ import numpy as np
 from leo.contracts.adaptive_tle_position import (
     AdaptiveTleAccountingV1,
     AdaptiveTleCandidateV1,
-    AdaptiveTlePositionDocumentV2,
+    AdaptiveTlePositionDocumentV3,
     AdaptiveTlePriorResultV2,
     AdaptiveTleRegionV2,
 )
 from leo.contracts.digests import canonical_digest
 from leo.presentation.adaptive_tle_position import render_adaptive_tle_position
-from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV2
+from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV3
 from leo.storage.prediction_scratch import PredictionScratch
 
 PRIORS = {
     "sacramento": (38.5816, -121.4944, 250.0),
-    "reno": (39.5296, -119.8138, 500.0),
 }
 REFERENCE = (37.84903264307456, -122.4856541910174)
 _WORKER_TRACKS = None
@@ -35,7 +34,7 @@ _WORKER_TRACKS = None
 
 def configuration():
     return {
-        "analysis_id": "scanner-adaptive-tle-position-v2",
+        "analysis_id": "scanner-adaptive-tle-position-v3",
         "priors": {
             name: {"latitude_deg": lat, "longitude_deg": lon, "radius_km": radius}
             for name, (lat, lon, radius) in PRIORS.items()
@@ -62,7 +61,7 @@ def adaptive_tle_position_complete(
     expected_input=None,
     expected_analysis=None,
 ):
-    store = AdaptiveTlePositionStoreV2(root)
+    store = AdaptiveTlePositionStoreV3(root)
     status = store.status(session_id)
     if status.manifest is None:
         return False
@@ -167,7 +166,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
     from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
     destination = output_root or root
-    store = AdaptiveTlePositionStoreV2(destination, read_only=False)
+    store = AdaptiveTlePositionStoreV3(destination, read_only=False)
     source_reader = ScannerTrackingInputStore(root)
     try:
         current_source = source_reader.load(session_id)
@@ -193,7 +192,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
                     session_id, inputs=source_store, archive=TleArchiveReader(tle_root)
                 )
             except AdaptiveTleInputUnavailable as error:
-                document = AdaptiveTlePositionDocumentV2(
+                document = AdaptiveTlePositionDocumentV3(
                     session_id=session_id,
                     input_manifest_sha256=source.input_manifest_sha256,
                     analysis_manifest_sha256=source.analysis_manifest_sha256,
@@ -296,7 +295,7 @@ def run_adaptive_tle_position(root, tle_root, session_id, *, output_root=None, w
                 },
             }
         )
-        document = AdaptiveTlePositionDocumentV2(
+        document = AdaptiveTlePositionDocumentV3(
             session_id=session_id,
             input_manifest_sha256=prepared.input_manifest_sha256,
             analysis_manifest_sha256=prepared.analysis_manifest_sha256,
