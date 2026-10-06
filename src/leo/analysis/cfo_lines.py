@@ -394,7 +394,7 @@ def weighted_hough_lines(
                 weights=weights[chosen],
                 minlength=config.intercept_bins,
             )
-        flat = np.argsort(accumulator.ravel(), kind="stable")[-config.peak_candidates :]
+        flat = _stable_top_indexes(accumulator.ravel(), config.peak_candidates)
         hypotheses: list[tuple[LineSegment, np.ndarray]] = []
         for flat_index in flat[::-1]:
             slope_index, intercept_bin = np.unravel_index(flat_index, accumulator.shape)
@@ -417,6 +417,22 @@ def weighted_hough_lines(
         detected.append(segment)
         _peel_alias_support(available, points, segment, common, arrays)
     return tuple(detected)
+
+
+def _stable_top_indexes(values: np.ndarray, count: int) -> np.ndarray:
+    """Return the stable ascending top-k indexes without sorting the full map.
+
+    Hough accumulators are finite. At the partition boundary, retain the last
+    indexes of a tie, exactly as stable argsort followed by [-count:] does.
+    """
+    if count <= 0 or count >= len(values):
+        return np.argsort(values, kind="stable")[-count:]
+    threshold = np.partition(values, len(values) - count)[len(values) - count]
+    above = np.flatnonzero(values > threshold)
+    needed = count - len(above)
+    boundary = np.flatnonzero(values == threshold)[-needed:] if needed else above[:0]
+    selected = np.concatenate((above, boundary))
+    return selected[np.lexsort((selected, values[selected]))]
 
 
 def _ransac_hypotheses(
