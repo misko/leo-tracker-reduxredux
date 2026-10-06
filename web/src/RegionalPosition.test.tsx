@@ -33,6 +33,11 @@ it("shows both automatic maps, both RF arms and reference errors", async () => {
   render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
   expect(await screen.findAllByRole("img")).toHaveLength(2);
   for (const name of ["T1AT", "V16"]) {
+    // Reserve the renderer's intrinsic size so lazy images can intersect the
+    // viewport before loading; a zero-size grid item never triggers Chromium.
+    const image = screen.getByRole("img", { name: `${name} Sacramento position search for scan-test` });
+    expect(image).toHaveAttribute("width", "1080");
+    expect(image).toHaveAttribute("height", "960");
     expect(screen.getByRole("link", { name: `Open ${name} position PNG` })).toHaveAttribute("href",
       `/api/v1/scanner/tracking/scan-test/regional-position-v1/${name}.png?sha256=${encodeURIComponent(digest)}`);
   }
