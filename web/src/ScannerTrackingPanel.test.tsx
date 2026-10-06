@@ -54,7 +54,11 @@ it("shows the channel GLRT track overlay as an additional downloadable PNG", asy
 });
 
 it("rejects a product belonging to another capture", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ session_id: "scan-test", product }) }));
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => ({
+    ok: true, json: async () => url.endsWith("regional-position-v1")
+      ? { session_id: "scan-test", state: "pending", manifest: null }
+      : { session_id: "scan-test", product },
+  })));
   render(<ScannerTrackingPanel sessionId="scan-test" inputDigest="sha256:different" />);
   expect(await screen.findByRole("alert")).toHaveTextContent("does not match");
   expect(screen.queryByRole("img")).not.toBeInTheDocument();
