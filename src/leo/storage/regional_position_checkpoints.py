@@ -1,6 +1,7 @@
 """Digest-scoped immutable numerical stage checkpoints on local storage."""
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 
 from pydantic import TypeAdapter
@@ -22,7 +23,18 @@ class RegionalCheckpointStore:
         self.session_id = session_id
         self.binding_sha256 = binding_sha256
         self._store = AdaptiveTlePositionStore(root, read_only=False)
-        self._store.namespace = "scanner-regional-position-work-v1-" + binding_sha256[7:]
+        self._store.namespace = "scanner-regional-position-work-v1"
+
+    @contextmanager
+    def _directory(self, *, create=False):
+        # Production workers own this one pre-created namespace, not bulk_root.
+        # Keep changing input/configuration bindings below the session directory.
+        with self._store._directory(self.session_id, create=create) as session:
+            directory = session.child(self.binding_sha256[7:], create=create)
+            try:
+                yield directory
+            finally:
+                directory.close()
 
     def writer(self):
         return self._store.writer(self.session_id)
@@ -35,7 +47,7 @@ class RegionalCheckpointStore:
     def get(self, key: str) -> dict | None:
         name = self._name(key)
         try:
-            with self._store._directory(self.session_id) as directory:
+            with self._directory() as directory:
                 raw = _read(directory, name, 16 * 1024 * 1024)
         except FileNotFoundError:
             return None
@@ -66,7 +78,7 @@ class RegionalCheckpointStore:
                 "value_sha256": canonical_digest(value),
             }
         )
-        with self._store._directory(self.session_id, create=True) as directory:
+        with self._directory(create=True) as directory:
             try:
                 existing = _read(directory, name, 16 * 1024 * 1024)
             except FileNotFoundError:
