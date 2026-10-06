@@ -100,7 +100,7 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
           <div className="scanner-artifact-gallery"><figure>
             <figcaption>{method.name} search, RF comparison and reference error</figcaption>
             <a href={url} target="_blank" rel="noreferrer" aria-label={`Open ${method.name} position PNG`}>
-              <div className="scanner-artifact-viewport"><img loading="lazy" width={1080} height={960} src={url} alt={`${method.name} Sacramento position search for ${sessionId}`} /></div>
+              <div className="scanner-artifact-viewport"><img loading="lazy" width={1080} height={960} style={{ width: "100%", objectFit: "contain" }} src={url} alt={`${method.name} Sacramento position search for ${sessionId}`} /></div>
             </a>
           </figure></div>
         </section>;

@@ -153,38 +153,40 @@ Validation evidence so far:
   second invocation resumes the same configuration/input binding. Output root:
   `.leo/regional-position/full-budget` (not deployed production results).
 
-## Remaining implementation and release gates
+## Delivery and validation
 
-1. Compose the shared preparation, independent hierarchies, regional calibration,
-   T1-AT association, and matched final fits. Persist configuration-bound cell and
-   stage checkpoints so bounded workers resume without repeating completed work.
-   Account for any branch-dependent receiver-correction penalty when comparing
-   regional hypotheses; do not silently compare differently filtered datasets.
-   Implemented; qualify full-budget runtime and scientific outcomes before release.
-2. Add immutable result/manifest/status contracts and narrow storage ports, binding
-   capture, original analysis, prior, TLE snapshot, inputs, and code/configuration.
-   Keep all existing published baseline/T1-AT contracts unchanged.
-3. Integrate prospective automatic queue admission and completion checks. Baseline
-   publication remains independent. Cover every adaptive receipt family explicitly,
-   including unsupported/insufficient evidence and missing prerequisite states.
-   Historical replay/backfill remains separately bounded and deliberate.
-4. Add per-method PNG rendering, read-only verified API routes, and automatically
-   refreshing WebUI panels, including both RF arms and meaningful failure figures.
-   Rendering, storage, and API now have 22 passing focused tests (including baseline
-   API regression checks). The complete WebUI suite passes 226 tests, including
-   eight new comparison-panel tests, and TypeScript/production build passes.
-   Live browser verification and end-to-end production remain outstanding.
-5. Run component-owned storage/API/UI/queue tests plus bounded real-scan replay.
-   Verify actual PNG payloads, bindings, axes, score units, reference error, and
-   browser display for all three methods. Measure memory/runtime under the chosen
-   frozen work budgets, rather than assuming coarse-point timings extrapolate.
-6. Create and attach a PR, run release-appropriate checks, deploy only the analysis
-   and WebUI changes while preserving live worker fixes and capture services,
-   verify automatic processing and all PNGs through the live API/WebUI, then merge
-   to remote main and verify the deployed source against the merged revision.
+The composed runner, immutable contracts/storage, prospective queue integration,
+per-method PNGs, read-only API routes and polling WebUI are implemented and
+deployed. Configuration-bound checkpoints preserve completed work across bounded
+worker slices. Baseline publication remains independent, and calibration penalties
+are included when comparing regional hypotheses. Existing public contracts and
+golden scientific fixtures remain unchanged.
 
-At this checkpoint no deployment, remote push, or merge has been performed. The
-queue integration, API endpoints and WebUI panels exist in the implementation
-worktree only. Full-budget replay, resource qualification, whole-change release
-checks and live browser verification remain release gates. The end-to-end goal
-remains active.
+The full saved-scan replay completed both 400-point hierarchies over 648 distinct
+locations. It produced 24 matched final fits from three supported basins; a fourth
+basin's calibration failed explicitly. Processing took 54.21 minutes across seven
+bounded slices, peaking at 535.64 MiB without swapping. Fitted-c reference errors
+were 2.15 km (T1AT) and 1.77 km (V16), versus 5.79 km for the unchanged baseline.
+The c=0 errors were 2.12/1.73 km. V16 fitted-c is **not converged** according to the
+independent stationarity check, and improved frequency RMS did not produce better
+position accuracy in this c ablation. These are single-scan diagnostics, not
+general accuracy guarantees or certified position fixes.
+
+All 27 selected pytest shards, Ruff checks and the 226-test WebUI suite passed
+before final qualification fixes. The timing initialization fix passed 21 affected
+tests under the staged production interpreter; the browser image-sizing fix
+passed 50 affected WebUI tests and the production build. Whole-repository mypy
+still reports exactly the same 28 errors as the main control, with no new errors.
+The failed whole-repository receipt is retained rather than relabeled as passing.
+
+Production queue job 48369 completed through the ordinary tracking worker using
+verified qualification checkpoints. The worker generated both new PNGs; no final
+products were copied into production. Live Chromium checks decoded and verified
+the unchanged baseline and both new images without alerts, including the explicit
+V16 non-convergence label. Intrinsic image dimensions prevent zero-size lazy-loading
+deadlock. Partial-band exclusions are covered by component tests; the live canary
+qualifies the ordinary adaptive receipt family.
+
+PR #67 contains the reviewed source. Full scientific results, deployment selectors,
+artifact digests, test limitations and rollback instructions are recorded in the
+[rollout report](../operations/adaptive-three-position-methods-2026-10-06.md).
