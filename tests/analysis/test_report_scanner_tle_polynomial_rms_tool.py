@@ -6,6 +6,7 @@ from PIL import Image
 
 from leo.operations.scanner_tle_review_report import (
     _qualified_start_utc_ns,
+    _render_report_figures,
     _render_track_plots,
     _select_review_tracks,
 )
@@ -92,3 +93,13 @@ def test_track_renderer_emits_separate_linear_scale_figure(tmp_path: Path) -> No
     assert names == ["scan-fw-example-track-01-ch2-upper-top5-tle-review.png"]
     with Image.open(tmp_path / names[0]) as image:
         assert image.size == (2250, 2100)
+
+    overview, full_names = _render_report_figures("scan-fw-example", tracks, tmp_path / "full")
+    omitted, lean_names = _render_report_figures(
+        "scan-fw-example", tracks, tmp_path / "lean", render_overview=False
+    )
+    assert overview is not None and (tmp_path / "full" / overview).is_file()
+    assert omitted is None and not (tmp_path / "lean" / overview).exists()
+    assert full_names == lean_names == names
+    for name in names:
+        assert (tmp_path / "full" / name).read_bytes() == (tmp_path / "lean" / name).read_bytes()
