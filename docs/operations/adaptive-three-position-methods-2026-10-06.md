@@ -1,8 +1,8 @@
 # Adaptive baseline, T1AT and V16 rollout
 
-Status: implementation complete; scientific replay, staged runtime qualification,
-deployment and merge are still in progress. No new RF collection is authorized or
-needed. The unchanged baseline remains independently published.
+Status: API/WebUI deployed; full-budget scientific replay, worker cutover and merge
+are still in progress. No new RF collection is authorized or needed. The unchanged
+baseline remains independently published.
 
 ## Qualification evidence
 
@@ -65,6 +65,40 @@ the previous drop-ins. Change only analysis workers, queue reconciliation and AP
 source/UI selectors. Do not change RF capture services, database schema, or
 concurrency quotas. Restart workers at job boundaries or use their existing
 SIGINT cancellation/requeue behavior; never steal a live lease.
+
+## API/WebUI cutover
+
+The immutable staged trees are `/opt/leo-regional-position/aef0cb9477a9-r2`.
+`stage.json` records the source revision, complete file hashes, inherited trees,
+reviewed replacements and WebUI asset hashes. The worker tree passed 55 affected
+tests using its actual imports and production interpreter. The API tree passed
+19 contract/storage/API tests, including unchanged baseline V2 and V3 routes.
+
+Staging exposed an old, unused V2-only baseline renderer in the live API tree.
+The r2 API stage additionally pins `presentation/adaptive_tle_position.py` to the
+already-deployed live-worker/current-main implementation. No baseline numerical
+code changes. The r2 worker tree is hash-identical to the tested first stage.
+
+The API was switched with
+`/etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzz-regional-position.conf`.
+Its effective source starts with the r2 API tree; its static assets come from
+the r2 `web/dist`. The API remains read-only on port 8090. Worker and capture
+selectors have not changed.
+
+Live HTTP and Chromium checks verified:
+
+- The screenshot scan's baseline document is byte-for-byte equivalent to the
+  pre-cutover response, and its 135,150-byte PNG retains digest
+  `sha256:9000d4b352f2279dbbbc1bd8c853b6957fbe075ef25c5dec2edeaa4cddd95b46`.
+- Chromium decodes that image at 840 by 720 pixels.
+- The new regional endpoint returns pending and the actual recording detail view
+  displays the T1AT/V16 panel without alerts. No regional image is claimed yet.
+- The served bundle is `index-LR8f9R8p.js`; API and existing capture timer are active.
+
+Local browser evidence is `.leo/regional-position/live-ui-check.json` and
+`live-regional-panel.png`. The full-budget replay continues separately under its
+original configuration binding. Actual live T1AT/V16 image decoding and automatic
+worker completion remain outstanding.
 
 ## Completion and rollback checks
 
