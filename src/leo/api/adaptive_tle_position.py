@@ -7,8 +7,10 @@ from fastapi import APIRouter, HTTPException, Path, Query, Response
 from leo.contracts.adaptive_tle_position import (
     AdaptiveTlePositionReader,
     AdaptiveTlePositionReaderV2,
+    AdaptiveTlePositionReaderV3,
     AdaptiveTlePositionStatusV1,
     AdaptiveTlePositionStatusV2,
+    AdaptiveTlePositionStatusV3,
 )
 from leo.contracts.digests import Sha256Digest
 
@@ -16,20 +18,27 @@ Identifier = Annotated[str, Path(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
 def adaptive_tle_position_router(
-    reader: AdaptiveTlePositionReader | AdaptiveTlePositionReaderV2 | None,
+    reader: AdaptiveTlePositionReader
+    | AdaptiveTlePositionReaderV2
+    | AdaptiveTlePositionReaderV3
+    | None,
     *,
     version: int = 1,
 ) -> APIRouter:
-    if version not in (1, 2):
-        raise ValueError("adaptive TLE position API version must be 1 or 2")
+    if version not in (1, 2, 3):
+        raise ValueError("adaptive TLE position API version must be 1, 2 or 3")
     router = APIRouter(prefix="/api/v1/scanner/tracking")
-    suffix = "adaptive-tle-position" if version == 1 else "adaptive-tle-position-v2"
+    suffix = "adaptive-tle-position" if version == 1 else f"adaptive-tle-position-v{version}"
 
     @router.api_route(
         f"/{{session_id}}/{suffix}",
         methods=["GET", "HEAD"],
         response_model=(
-            AdaptiveTlePositionStatusV1 if version == 1 else AdaptiveTlePositionStatusV2
+            {
+                1: AdaptiveTlePositionStatusV1,
+                2: AdaptiveTlePositionStatusV2,
+                3: AdaptiveTlePositionStatusV3,
+            }[version]
         ),
     )
     def status(session_id: Identifier):

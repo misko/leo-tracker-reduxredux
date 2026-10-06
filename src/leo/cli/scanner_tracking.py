@@ -325,7 +325,7 @@ def main():
                                 if position_complete
                                 else "pending",
                                 "blind_regional_state": "complete" if blind_complete else "pending",
-                                "adaptive_tle_position_v2_state": (
+                                "adaptive_tle_position_v3_state": (
                                     "complete" if adaptive_position_complete else "pending"
                                 ),
                                 "trajectory": status.product.trajectory_state

@@ -7,8 +7,9 @@ from matplotlib.figure import Figure
 
 
 def render_adaptive_tle_position(document) -> bytes:
-    figure = Figure(figsize=(13, 6), layout="constrained")
-    axes = figure.subplots(1, 2)
+    count = max(1, len(document.priors))
+    figure = Figure(figsize=(7 * count, 6), layout="constrained")
+    axes = figure.subplots(1, count, squeeze=False)[0]
     figure.suptitle(
         f"{document.session_id} · blind adaptive TLE position selection · not a position fix"
     )
@@ -79,10 +80,16 @@ def render_adaptive_tle_position(document) -> bytes:
                     markersize=9,
                     label="Reference (evaluation only)",
                 )
+            reference_error = (
+                "unavailable"
+                if prior.selected.horizontal_error_m is None
+                else f"{prior.selected.horizontal_error_m / 1000:.2f} km"
+            )
             axis.set(
                 title=(
                     f"{prior.name.title()} {prior.region.radius_km:g} km prior\n"
                     f"selected {prior.selected.capped_weighted_rmse_hz:.2f} Hz · "
+                    f"reference error {reference_error}\n"
                     f"{prior.accounting.eligible_track_count} tracks · "
                     f"{prior.accounting.eligible_observation_count} observations"
                 ),

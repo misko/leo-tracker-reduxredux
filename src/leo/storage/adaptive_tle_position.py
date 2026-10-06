@@ -14,10 +14,13 @@ from leo.contracts.adaptive_tle_position import (
     AdaptiveTleArtifactV1,
     AdaptiveTlePositionDocumentV1,
     AdaptiveTlePositionDocumentV2,
+    AdaptiveTlePositionDocumentV3,
     AdaptiveTlePositionManifestV1,
     AdaptiveTlePositionManifestV2,
+    AdaptiveTlePositionManifestV3,
     AdaptiveTlePositionStatusV1,
     AdaptiveTlePositionStatusV2,
+    AdaptiveTlePositionStatusV3,
     SessionId,
 )
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
@@ -29,12 +32,16 @@ _LIMIT = 16 * 1024 * 1024
 
 class AdaptiveTlePositionStore:
     namespace = "scanner-adaptive-tle-position-v1"
-    manifest_model: type[AdaptiveTlePositionManifestV1] | type[AdaptiveTlePositionManifestV2] = (
-        AdaptiveTlePositionManifestV1
-    )
-    status_model: type[AdaptiveTlePositionStatusV1] | type[AdaptiveTlePositionStatusV2] = (
-        AdaptiveTlePositionStatusV1
-    )
+    manifest_model: (
+        type[AdaptiveTlePositionManifestV1]
+        | type[AdaptiveTlePositionManifestV2]
+        | type[AdaptiveTlePositionManifestV3]
+    ) = AdaptiveTlePositionManifestV1
+    status_model: (
+        type[AdaptiveTlePositionStatusV1]
+        | type[AdaptiveTlePositionStatusV2]
+        | type[AdaptiveTlePositionStatusV3]
+    ) = AdaptiveTlePositionStatusV1
 
     def __init__(self, root: Path, *, read_only: bool = True):
         resolved = root.resolve()
@@ -100,7 +107,11 @@ class AdaptiveTlePositionStore:
                 os.close(descriptor)
 
     def publish(
-        self, document: AdaptiveTlePositionDocumentV1 | AdaptiveTlePositionDocumentV2, image: bytes
+        self,
+        document: AdaptiveTlePositionDocumentV1
+        | AdaptiveTlePositionDocumentV2
+        | AdaptiveTlePositionDocumentV3,
+        image: bytes,
     ):
         if self.read_only:
             raise PermissionError("adaptive TLE position store is read-only")
@@ -155,3 +166,9 @@ class AdaptiveTlePositionStoreV2(AdaptiveTlePositionStore):
     namespace = "scanner-adaptive-tle-position-v2"
     manifest_model = AdaptiveTlePositionManifestV2
     status_model = AdaptiveTlePositionStatusV2
+
+
+class AdaptiveTlePositionStoreV3(AdaptiveTlePositionStore):
+    namespace = "scanner-adaptive-tle-position-v3"
+    manifest_model = AdaptiveTlePositionManifestV3
+    status_model = AdaptiveTlePositionStatusV3
