@@ -123,11 +123,14 @@ def test_effective_weight_uses_session_relative_bins_without_rebasing_track():
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize("batch_size", [1, 32, 64])
-def test_batched_scoring_matches_full_array_reference(dtype, batch_size):
+@pytest.mark.parametrize("candidate_visibility", [False, True])
+def test_batched_scoring_matches_full_array_reference(dtype, batch_size, candidate_visibility):
     rng = np.random.default_rng(920)
     values = rng.normal(0, 40, (97, 3, 12)).astype(dtype)[:, :, ::2]
     track = replace(prediction(tuple(str(i) for i in range(97))), predictions_hz=values)
     visible = rng.random((97, 3)) > 0.3
+    if candidate_visibility:
+        visible[:] = visible[:, :1]
     track = replace(track, visible=visible)
     # Frozen pre-batching kernel, including training-only offset and tau fit.
     residual = track.measured_hz[None, None, :] - np.asarray(values, dtype=float)

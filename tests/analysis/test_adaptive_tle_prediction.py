@@ -172,3 +172,44 @@ def test_bank_chunks_preserve_candidate_order_and_validity(
 def test_bank_allocation_ports_require_a_pair():
     with pytest.raises(ValueError, match="paired"):
         build_prediction_banks(None, [], 0, (bank().source,), allocate_array=np.empty)
+
+
+@pytest.mark.parametrize("all_invisible", [False, True])
+def test_exact_visibility_filters_velocity_reads_and_keeps_unmatched_tracks(all_invisible):
+    source = bank()
+    positions = source.position_km.copy()
+    positions[0, ..., 2] = -7000
+    if all_invisible:
+        positions[1, ..., 2] = -7000
+    reads = []
+
+    class VelocityReader:
+        def __getitem__(self, indexes):
+            reads.extend(np.asarray(indexes).tolist())
+            return source.velocity_km_s[indexes]
+
+    evaluator = RegionalTrackPredictionEvaluator(
+        (replace(source, position_km=positions, velocity_km_s=VelocityReader()),),
+        lambda *_: ReceiverPoint(np.zeros(3), np.array([0, 0, 1])),
+    )
+    score = score_point(0, 0, evaluator(0, 0))
+    assert reads == ([] if all_invisible else [1])
+    assert score.matched_track_count == (0 if all_invisible else 1)
+    if all_invisible:
+        assert score.unmatched_track_count == 1
+        assert score.residual_rmse_hz == 800.0
+    else:
+        assert score.tracks[0].candidate_id == "20"
+
+
+def test_fixed_interpolation_metadata_is_prepared_only_once(monkeypatch):
+    evaluator = RegionalTrackPredictionEvaluator(
+        (bank(),), lambda *_: ReceiverPoint(np.zeros(3), np.array([0, 0, 1]))
+    )
+
+    def unexpected(*args, **kwargs):
+        raise AssertionError("point evaluation rebuilt fixed interpolation metadata")
+
+    monkeypatch.setattr(prediction_module.np, "vectorize", unexpected)
+    assert score_point(0, 0, evaluator(0, 0)).matched_track_count == 1
+    assert score_point(1, 1, evaluator(1, 1)).matched_track_count == 1
