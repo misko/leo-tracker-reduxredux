@@ -101,6 +101,7 @@ def _review_renderer(
                 tle_root=tle_root,
                 site_name=site_name,
                 maximum_tracks=review_limit,
+                render_overview=False,
             )
             rendered = []
             for index, (track, filename) in enumerate(

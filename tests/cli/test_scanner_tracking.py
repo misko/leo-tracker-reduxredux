@@ -117,6 +117,7 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
     )("scan-test")
 
     assert observed["maximum_tracks"] == 64
+    assert observed["render_overview"] is False
     assert observed["adaptive_analysis_root"] == tmp_path / "metrics"
     reviews, eligible_count = rendered
     assert eligible_count == 1
