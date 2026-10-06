@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import pytest
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
 from leo.contracts.regional_position_products import RegionalPositionDocumentV1
@@ -68,3 +69,19 @@ def test_maps_distinguish_rf_arms_reference_and_likelihood_units():
     bad["methods"][0]["arms"][1]["selected"]["coefficient_hz_per_ghz"] = 20
     with pytest.raises(ValueError, match="zero-c"):
         RegionalPositionDocumentV1.model_validate(bad)
+
+
+def test_long_partial_band_reason_fits_inside_png_canvas():
+    payload = document().model_dump(mode="json")
+    for method in payload["methods"]:
+        for arm in method["arms"]:
+            arm["reasons"] = [
+                "partial-band filtered-pilot evidence is candidate-only "
+                "and not qualified for positioning"
+            ]
+    figure = regional_position_figure(RegionalPositionDocumentV1.model_validate(payload), "T1AT")
+    canvas = FigureCanvasAgg(figure)
+    canvas.draw()
+    bounds = figure.axes[0].title.get_window_extent(canvas.get_renderer())
+    assert bounds.x0 >= 0
+    assert bounds.x1 <= figure.bbox.width
