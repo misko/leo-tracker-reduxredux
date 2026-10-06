@@ -65,3 +65,24 @@ production overlay. New job subprocesses import the optimized version; running
 jobs keep their already-loaded version and finish normally. Keep a backup of
 the previous file for atomic rollback. Do not replace the entire overlay, which
 also contains the lease, memory and GLRT improvements.
+
+## Deployment receipt
+
+The optimized module from commit `70ae50d3823a1c7586d1ace2b7f6aab0160b9ebb`
+was deployed at 2026-10-06 01:29:33 UTC. The overlay path is now an atomic symlink
+to `/opt/leo-hough-top-k/70ae50d38/cfo_lines.py`. The original module is retained
+at `/opt/leo-hough-top-k/70ae50d38/cfo_lines.before.py` and matched the repository
+baseline byte-for-byte before replacement. A fresh production-Python import
+resolved the pinned module and passed the boundary-tie check. All queue-worker
+service PIDs were unchanged across deployment.
+
+All 38 component tests passed. Four complete saved-session evidence comparisons
+(two captures per rate) passed exactly; their measured preparation CPU reductions
+were 8.59% at 2.5 MS/s and 33.17% at 10 MS/s across those pairs. See
+`reports/2026_10_06_server_runtime_profile/production-parity.json`. These small
+samples are not a guarantee of fleet or end-to-end tracking speedup.
+
+Rollback: atomically replace the overlay symlink with a symlink to the retained
+`cfo_lines.before.py`; newly started job processes will import the old code.
+Removing the `zzz-ten-minute-gap.conf` timer override and reloading/restarting
+only the timer restores the preceding three-minute setting.
