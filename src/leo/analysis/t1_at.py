@@ -197,6 +197,24 @@ class _Search:
         )
 
 
+def select_timing_modes(candidates, modes, *, maximum_seconds: float = 120) -> dict:
+    """Select from already top-one window/timing evidence, independent of location.
+
+    This numerical port also serves regional callers. It makes no known-site or
+    calibration claim; the caller owns those separately versioned input contracts.
+    """
+    if not np.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800:
+        raise ValueError("selection budget must be in (0, 1800] seconds")
+    if len({c.window_id for c in candidates}) != len(candidates):
+        raise ValueError("selection requires one candidate per window")
+    ids = {c.candidate_id for c in candidates}
+    if len(ids) != len(candidates):
+        raise ValueError("selection requires unique candidate IDs")
+    if any(not set(mode.candidate_ids) <= ids for mode in modes):
+        raise ValueError("selection mode references an unknown candidate")
+    return _Search(candidates, modes, time.monotonic() + maximum_seconds).run()
+
+
 def associate(source: T1AtInputV1, *, maximum_seconds: float = 120) -> dict:
     if not np.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800:
         raise ValueError("selection budget must be in (0, 1800] seconds")

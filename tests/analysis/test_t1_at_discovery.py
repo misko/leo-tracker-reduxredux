@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from leo.analysis.t1_at_discovery import discover_modes, timing_modes
+from leo.analysis.t1_at_discovery import discover_modes, discover_window_modes, timing_modes
 from tests.analysis.test_t1_at import candidates
 
 
@@ -52,3 +52,37 @@ def test_rejects_alternatives_and_bad_predictor_shape():
         discover_modes(points + points, [1], None)
     with pytest.raises(ValueError, match="shape"):
         discover_modes(points, [1], lambda *args: (np.zeros(2), np.ones(2, bool), np.ones(2)))
+
+
+def test_original_window_port_retains_external_candidate_ids():
+    def predict(arm, indices, offset):
+        shape = (20, len(indices))
+        return np.full(shape, offset * 1000), np.ones(shape, bool), np.full(shape, 1000.0)
+
+    result = discover_window_modes(
+        np.zeros(20), tuple(f"w{i}" for i in range(20)), tuple(range(100, 120)), [123], predict
+    )
+    assert result["fitted-c"]
+    assert all(m.candidate_ids == tuple(range(100, 120)) for m in result["fitted-c"])
+    with pytest.raises(ValueError, match="uniquely identified"):
+        discover_window_modes(np.zeros(20), ("w",) * 20, tuple(range(20)), [123], predict)
+
+
+def test_single_fitted_discovery_arm_does_not_compute_an_upstream_ablation():
+    calls = []
+
+    def predict(arm, indices, offset):
+        calls.append(arm)
+        shape = (20, len(indices))
+        return np.full(shape, offset * 1000), np.ones(shape, bool), np.full(shape, 1000.0)
+
+    result = discover_window_modes(
+        np.zeros(20),
+        tuple(f"w{i}" for i in range(20)),
+        tuple(range(20)),
+        [123],
+        predict,
+        arms=("fitted-c",),
+    )
+    assert set(result) == {"fitted-c"}
+    assert set(calls) == {"fitted-c"}

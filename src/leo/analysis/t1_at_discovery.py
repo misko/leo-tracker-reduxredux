@@ -44,23 +44,53 @@ def discover_modes(
     must stay evaluated at actual receive time when the orbit time is shifted.
     Both arms receive the union of their timing modes before discrete selection.
     """
-    if not np.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800:
-        raise ValueError("discovery budget must be in (0, 1800] seconds")
     if len({c.window_id for c in candidates}) != len(candidates):
         raise ValueError("discovery requires top-1 windows, not alternate peaks")
+    return discover_window_modes(
+        np.array([c.refined_cfo_hz for c in candidates]),
+        tuple(c.window_id for c in candidates),
+        tuple(c.candidate_id for c in candidates),
+        numbers,
+        predict,
+        maximum_seconds=maximum_seconds,
+    )
+
+
+def discover_window_modes(
+    measured,
+    window_ids,
+    candidate_ids,
+    numbers,
+    predict,
+    *,
+    maximum_seconds=600,
+    arms=("fitted-c", "zero-c"),
+):
+    """Location-independent numerical port, including unrefined original windows."""
+    if not np.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800:
+        raise ValueError("discovery budget must be in (0, 1800] seconds")
+    if not arms or len(set(arms)) != len(arms) or not set(arms) <= {"fitted-c", "zero-c"}:
+        raise ValueError("invalid discovery RF arms")
+    measured = np.asarray(measured, float)
+    if (
+        measured.shape != (len(window_ids),)
+        or not np.isfinite(measured).all()
+        or len(candidate_ids) != len(window_ids)
+        or len(set(window_ids)) != len(window_ids)
+        or len(set(candidate_ids)) != len(candidate_ids)
+    ):
+        raise ValueError("discovery requires finite uniquely identified windows")
     if len(set(numbers)) != len(numbers) or any(n <= 0 for n in numbers):
         raise ValueError("catalogue IDs must be positive and unique")
     deadline = time.monotonic() + maximum_seconds
-    measured = np.array([c.refined_cfo_hz for c in candidates])
-    _, groups = np.unique([c.window_id for c in candidates], return_inverse=True)
-    arms = ("fitted-c", "zero-c")
+    _, groups = np.unique(window_ids, return_inverse=True)
     results = {a: [] for a in arms}
 
     def prediction(arm, indices, offset):
         if time.monotonic() >= deadline:
             raise TimeoutError("T1-AT discovery deadline reached; no completed pool")
         p, visible, rate = map(np.asarray, predict(arm, indices, offset))
-        shape = (len(candidates), len(indices))
+        shape = (len(window_ids), len(indices))
         if p.shape != shape or visible.shape != shape or rate.shape != shape:
             raise ValueError("prediction port shape differs from observation/candidate bank")
         if visible.dtype != bool or not np.all(np.isfinite(p)) or not np.all(np.isfinite(rate)):
@@ -106,7 +136,7 @@ def discover_modes(
                         T1AtModeV1(
                             catalog_number=int(numbers[index]),
                             absolute_timing_s=offset,
-                            candidate_ids=tuple(candidates[i].candidate_id for i in rows),
+                            candidate_ids=tuple(candidate_ids[i] for i in rows),
                             residual_hz=tuple(float(e[i, 0]) for i in rows),
                         )
                     )

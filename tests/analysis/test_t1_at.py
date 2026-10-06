@@ -2,7 +2,7 @@
 
 import pytest
 
-from leo.analysis.t1_at import associate, top_candidates
+from leo.analysis.t1_at import associate, select_timing_modes, top_candidates
 from leo.contracts.t1_at import T1AtCandidateV1, T1AtInputV1, T1AtModeV1
 
 DIGEST = "sha256:" + "a" * 64
@@ -106,3 +106,16 @@ def test_no_modes_and_empty_input_have_truthful_denominators():
 def test_invalid_budget():
     with pytest.raises(ValueError, match="budget"):
         associate(source((), ()), maximum_seconds=float("nan"))
+
+
+def test_regional_selection_port_preserves_historical_greedy_semantics():
+    points = candidates(42)
+    modes = (
+        mode(100, list(range(30))),
+        mode(101, list(range(15)) + list(range(30, 36))),
+        mode(102, list(range(15, 30)) + list(range(36, 42))),
+    )
+    result = select_timing_modes(points, modes)
+    assert result == associate(source(points, modes))["arms"]["fitted-c"]
+    with pytest.raises(ValueError, match="one candidate"):
+        select_timing_modes(points + points, modes)
