@@ -59,7 +59,7 @@ This is a versioned Sacramento adaptation. Historical research results were
 conditional on known-roof calibration and associated-window selection. Mathematical
 score parity does not establish regional-search accuracy or end-to-end parity.
 
-## Implementation state (first increment)
+## Implementation state
 
 Implementation branch: `codex/adaptive-three-position-methods`, based on remote
 main `7b22e3fec3233ad23f1628771616dee6f56deda0`. It imports the tested opt-in T1-AT
@@ -84,6 +84,20 @@ Implemented numerical components:
   for full-bank discovery and shared discrete selection.
 - `application/regional_position_inputs.py`: public-port input preparation from
   existing GLRT products, without opening raw IQ.
+
+Implemented product delivery components (not yet deployed):
+
+- `contracts/regional_position_products.py`: fixed Sacramento prior, mandatory
+  T1AT/V16 and fitted-c/zero-c inventory, checked support/convergence, content
+  bindings, and explicit insufficient-evidence results.
+- `storage/regional_position.py`: immutable publication of both PNGs and the
+  document under a pinned local namespace, with serialized writers, manifest-last
+  publication, and verified artifact reads. Checkpoint persistence is still pending.
+- `presentation/regional_position.py`: one map per method, with both RF estimates,
+  likelihood units, reference-only markers, and explicit unavailable outcomes.
+- `api/regional_position.py`: read-only document and digest-bound PNG routes,
+  wired into the application and production reader configuration. WebUI panels
+  and automatic production of these products are still pending.
 
 Validation evidence so far:
 
@@ -118,6 +132,8 @@ Validation evidence so far:
    Historical replay/backfill remains separately bounded and deliberate.
 4. Add per-method PNG rendering, read-only verified API routes, and automatically
    refreshing WebUI panels, including both RF arms and meaningful failure figures.
+   Rendering, storage, and API now have 22 passing focused tests (including baseline
+   API regression checks); WebUI and end-to-end production remain unimplemented.
 5. Run component-owned storage/API/UI/queue tests plus bounded real-scan replay.
    Verify actual PNG payloads, bindings, axes, score units, reference error, and
    browser display for all three methods. Measure memory/runtime under the chosen
@@ -127,5 +143,6 @@ Validation evidence so far:
    verify automatic processing and all PNGs through the live API/WebUI, then merge
    to remote main and verify the deployed source against the merged revision.
 
-At this checkpoint no new queue policy, API endpoint, WebUI panel, deployment,
-remote push, or merge has been performed. The end-to-end goal remains active.
+At this checkpoint no new queue policy, WebUI panel, deployment, remote push, or
+merge has been performed. The API endpoints exist in the implementation worktree
+only. The end-to-end goal remains active.
