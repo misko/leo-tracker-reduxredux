@@ -212,6 +212,61 @@ def _render_track_plots(session_id: str, tracks: list[dict], output: Path) -> li
     return figures
 
 
+def _render_report_figures(session_id, tracks, output, *, render_overview=True):
+    output.mkdir(parents=True, exist_ok=True)
+    figure = output / f"{session_id}-top5-polynomial-rms.png"
+    if render_overview:
+        fig, axes = plt.subplots(len(tracks), 1, figsize=(14, 3.4 * len(tracks)), squeeze=False)
+        colours = {1: "#2166ac", 2: "#1b9e77", 3: "#7b3294"}
+        for axis, track in zip(axes[:, 0], tracks, strict=True):
+            x = np.arange(1, 6)
+            labels = [
+                f"#{row['standard_rank']}\n{row['catalog_number']}" for row in track["candidates"]
+            ]
+            for degree in (1, 2, 3):
+                train = [
+                    row["polynomial_residual_fits"][str(degree)]["training_rms_hz"]
+                    for row in track["candidates"]
+                ]
+                held = [
+                    row["polynomial_residual_fits"][str(degree)]["heldout_rms_hz"]
+                    for row in track["candidates"]
+                ]
+                axis.plot(x, train, "o-", color=colours[degree], label=f"degree {degree} train")
+                axis.plot(
+                    x,
+                    held,
+                    "s--",
+                    color=colours[degree],
+                    alpha=0.82,
+                    label=f"degree {degree} held-out",
+                )
+            axis.set_xticks(x, labels)
+            axis.set_ylabel("Measured − TLE RMS (Hz)")
+            axis.set_yscale("symlog", linthresh=1)
+            axis.grid(axis="y", alpha=0.25)
+            axis.set_title(
+                f"CH{track['channel']} {track['edge']} · "
+                f"{track['start_s']:.1f}–{track['end_s']:.1f} s · "
+                f"{track['observation_count']} observations "
+                f"({track['training_count']} train / {track['heldout_count']} held-out)",
+                loc="left",
+            )
+            axis.legend(ncol=3, fontsize=8)
+        axes[-1, 0].set_xlabel("Offset/tau training rank and NORAD catalogue number")
+        fig.suptitle(
+            f"{session_id} · top-five Starlink candidates per eligible track\n"
+            "Polynomial fitted to measured-minus-TLE residual on training rows only; "
+            "lower RMS is better",
+            fontsize=14,
+        )
+        fig.tight_layout(rect=(0, 0, 1, 0.97))
+        fig.savefig(figure, dpi=150)
+        plt.close(fig)
+    track_figures = _render_track_plots(session_id, tracks, output)
+    return figure.name if render_overview else None, track_figures
+
+
 def build_report(
     session_id: str,
     output: Path,
@@ -221,6 +276,7 @@ def build_report(
     tle_root: Path = Path("/var/lib/leo/tle"),
     site_name: str = "spinnaker-sausalito",
     maximum_tracks: int | None = None,
+    render_overview: bool = True,
 ) -> dict:
     if maximum_tracks is not None and not 1 <= maximum_tracks <= 128:
         raise ValueError("maximum tracks must be between 1 and 128")
@@ -384,56 +440,9 @@ def build_report(
             }
         )
 
-    fig, axes = plt.subplots(len(tracks), 1, figsize=(14, 3.4 * len(tracks)), squeeze=False)
-    colours = {1: "#2166ac", 2: "#1b9e77", 3: "#7b3294"}
-    for axis, track in zip(axes[:, 0], tracks, strict=True):
-        x = np.arange(1, 6)
-        labels = [
-            f"#{row['standard_rank']}\n{row['catalog_number']}" for row in track["candidates"]
-        ]
-        for degree in (1, 2, 3):
-            train = [
-                row["polynomial_residual_fits"][str(degree)]["training_rms_hz"]
-                for row in track["candidates"]
-            ]
-            held = [
-                row["polynomial_residual_fits"][str(degree)]["heldout_rms_hz"]
-                for row in track["candidates"]
-            ]
-            axis.plot(x, train, "o-", color=colours[degree], label=f"degree {degree} train")
-            axis.plot(
-                x,
-                held,
-                "s--",
-                color=colours[degree],
-                alpha=0.82,
-                label=f"degree {degree} held-out",
-            )
-        axis.set_xticks(x, labels)
-        axis.set_ylabel("Measured − TLE RMS (Hz)")
-        axis.set_yscale("symlog", linthresh=1)
-        axis.grid(axis="y", alpha=0.25)
-        axis.set_title(
-            f"CH{track['channel']} {track['edge']} · "
-            f"{track['start_s']:.1f}–{track['end_s']:.1f} s · "
-            f"{track['observation_count']} observations "
-            f"({track['training_count']} train / {track['heldout_count']} held-out)",
-            loc="left",
-        )
-        axis.legend(ncol=3, fontsize=8)
-    axes[-1, 0].set_xlabel("Offset/tau training rank and NORAD catalogue number")
-    fig.suptitle(
-        f"{session_id} · top-five Starlink candidates per eligible track\n"
-        "Polynomial fitted to measured-minus-TLE residual on training rows only; "
-        "lower RMS is better",
-        fontsize=14,
+    figure, track_figures = _render_report_figures(
+        session_id, tracks, output, render_overview=render_overview
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
-    output.mkdir(parents=True, exist_ok=True)
-    figure = output / f"{session_id}-top5-polynomial-rms.png"
-    fig.savefig(figure, dpi=150)
-    plt.close(fig)
-    track_figures = _render_track_plots(session_id, tracks, output)
     result = {
         "session_id": session_id,
         "protocol": "scanner-top5-tle-polynomial-residual-rms-v1",
@@ -450,7 +459,7 @@ def build_report(
         "deferred_track_count": eligible_track_count - len(tracks),
         "snapshot_digest": snapshot.digest,
         "snapshot_collected_utc_ns": snapshot.collected_utc_ns,
-        "figure": figure.name,
+        "figure": figure,
         "track_figures": track_figures,
         "tracks": tracks,
         "candidate_only": True,

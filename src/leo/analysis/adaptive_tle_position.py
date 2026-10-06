@@ -178,16 +178,22 @@ def score_track_prediction(
             (),
         )
     shape = prediction.shape[:2]
-    offsets = np.empty(shape, dtype=float)
-    train_rms = np.empty(shape, dtype=float)
-    held_rms = np.empty(shape, dtype=float)
+    offsets = np.zeros(shape, dtype=float)
+    train_rms = np.full(shape, np.inf, dtype=float)
+    eligible = visible if visible.ndim == 1 else np.any(visible, axis=1)
     for start in range(0, len(track.candidate_ids), candidate_batch_size):
-        block = slice(start, start + candidate_batch_size)
+        selection = eligible[start : start + candidate_batch_size]
+        if not np.any(selection):
+            continue
+        block = (
+            slice(start, start + candidate_batch_size)
+            if np.all(selection)
+            else np.flatnonzero(selection) + start
+        )
         residual = measured[None, None, :] - np.asarray(prediction[block], dtype=float)
         offsets[block] = np.mean(residual[:, :, training], axis=2)
         centered = residual - offsets[block, :, None]
         train_rms[block] = np.sqrt(np.mean(centered[:, :, training] ** 2, axis=2))
-        held_rms[block] = np.sqrt(np.mean(centered[:, :, ~training] ** 2, axis=2))
         del residual, centered
     if visible.ndim == 1:
         visible = np.broadcast_to(visible[:, None], train_rms.shape)
@@ -195,7 +201,6 @@ def score_track_prediction(
     tau_index = np.argmin(train_rms, axis=1)
     rows = np.arange(len(track.candidate_ids))
     selected_train = train_rms[rows, tau_index]
-    selected_held = held_rms[rows, tau_index]
     usable = np.isfinite(selected_train)
     if not np.any(usable):
         return AdaptiveTrackScore(
@@ -209,6 +214,13 @@ def score_track_prediction(
             (),
         )
     choices = np.flatnonzero(usable)
+    selected_held = np.full(len(track.candidate_ids), np.inf)
+    for start in range(0, len(choices), candidate_batch_size):
+        block = choices[start : start + candidate_batch_size]
+        tau = tau_index[block]
+        residual = measured[None, :] - prediction[block, tau]
+        centered = residual - offsets[block, tau, None]
+        selected_held[block] = np.sqrt(np.mean(centered[:, ~training] ** 2, axis=1))
     winner = min(
         choices,
         key=lambda index: (
