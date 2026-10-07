@@ -1,0 +1,34 @@
+{
+  "before_observed_utc": "2026-10-07T00:58:50.579988+00:00",
+  "after_observed_utc": "2026-10-07T00:59:07.260247+00:00",
+  "verification": "TleArchiveReader.list_snapshots and read, digest verified; actual line-1 element epochs parsed with TLE year rollover rule",
+  "timer_before": {"active": false, "enabled": true, "last_trigger_utc": "2026-10-04T21:02:27Z", "stop_logged_utc": "2026-10-04T21:16:08Z"},
+  "timer_after": {"active": true, "substate": "waiting", "enabled": true, "last_trigger_utc": "2026-10-07T00:58:56Z", "next_trigger_utc_at_observation": "2026-10-07T01:01:24Z"},
+  "action": "Started existing timer; Persistent=true automatically triggered one collector run, no separate manual service start",
+  "collector": {"result": "success", "errors": [], "wall_s": 4.893, "providers_published": ["space-track", "huggingface"]},
+  "before": [
+    {"provider": "space-track", "digest": "sha256:87f4ecb256c94e3f1049a1c5da5cf7b364a6fc30a2d7360a52c0a56cf5eee7aa", "collected_utc": "2026-10-04T20:03:06.008762Z", "snapshot_age_h": 52.9290475627, "object_count": 11148, "element_age_h": {"min": 54.3878144234, "median": 62.8215029834, "max": 133.6414097834}, "elements_over_24h": 11148},
+    {"provider": "huggingface", "digest": "sha256:7d7c18d99f139c05d6e058b3b171c01430f83baf833412a5c83ef66af096c5e6", "collected_utc": "2026-10-04T16:03:12.137904Z", "snapshot_age_h": 56.9273450234, "object_count": 10676, "element_age_h": {"min": 65.9520430634, "median": 79.6792100234, "max": 379.1602162634}, "elements_over_24h": 10676}
+  ],
+  "after": [
+    {"provider": "space-track", "digest": "sha256:880b67c160888672ff09cf669b6ef5e6b8130f120b88b9c57fa44f397548cee8", "collected_utc": "2026-10-07T00:58:58.384013Z", "snapshot_age_h": 0.0024656203, "object_count": 11139, "element_age_h": {"min": 1.2433779085, "median": 14.5472779885, "max": 102.8295499885}, "elements_over_24h": 1239},
+    {"provider": "huggingface", "digest": "sha256:cb72cf2bf6c098da781faf9fa6ef9a71c3641a48aef2283657d4ac0c146e4e35", "collected_utc": "2026-10-07T00:59:00.615516Z", "snapshot_age_h": 0.0018457584, "object_count": 10670, "element_age_h": {"min": 16.3155089485, "median": 24.2026060285, "max": 379.1648496685}, "elements_over_24h": 5505}
+  ],
+  "prior_review": {"snapshot_age_h_range": [46.5953003363, 50.8217909541], "used_element_age_h": {"min": 51.5747577569, "median_of_scan_medians": 62.0981428118, "max": 127.5590026085}, "provenance": "reports/2026_10_07_live_position_review/summary.json and cases.py; per-scan pinned snapshot digest, archive reader verification, epochs for satellites used across saved basins"},
+  "source_selection_issue": {
+    "verified_selector": "Deployed regional CLI calls select_latest_before(start_utc_ns - 505000000000) without provider; selector maximizes collection time strictly below cutoff",
+    "earliest_cutoff_ns_including_new_hf": 1791334740615516218,
+    "earliest_capture_start_ns_including_new_hf": 1791335245615516218,
+    "earliest_capture_start_utc_rounded_to_microseconds": "2026-10-07T01:07:25.615516Z",
+    "selected_provider": "huggingface",
+    "selected_digest": "sha256:cb72cf2bf6c098da781faf9fa6ef9a71c3641a48aef2283657d4ac0c146e4e35",
+    "overlapping_norad_count": 10665,
+    "space_track_only_count": 474,
+    "huggingface_only_count": 5,
+    "overlap_epoch_comparison": {"space_track_later": 9174, "equal": 1491, "huggingface_later": 0, "space_track_minus_hf_epoch_h": {"min": 0.0, "median": 9.396775919993718, "max": 72.18705191996362}},
+    "policy_effect": "Current policy selects new Hugging Face for eligible future captures until another causally eligible newer snapshot appears, even though Space-Track dominates overlapping element epochs",
+    "proposed_lean_fix": "Research-test explicit preferred-provider causal selection (Space-Track) with documented collection-age and element-age bounds and whole-snapshot fallback to Hugging Face. Expose provider, digest and actual epoch quality; preserve each selected full snapshot, no per-ID element mixing. Production policy unchanged.",
+    "required_research_tests": ["Later downloaded HF cannot mask eligible preferred ST", "Strict causal cutoff rejects equality and future snapshots", "Fallback only when preferred snapshot unavailable or violates explicit bounds", "Selected candidate inventory equals entire chosen snapshot", "Deterministic tie handling and explicit no-acceptable-snapshot failure"]
+  },
+  "limitations": ["Journal records a clean timer stop but does not identify the requester or reason.", "Full-provider element ages are distinct from prior review ages for satellites used in saved localization basins.", "Refreshing the archive does not rewrite existing pinned historical analysis receipts or demonstrate improved localization.", "Fresh collection is not the best ephemeris: latest collection-time selection currently prefers the inferior overlapping Hugging Face epochs."]
+}

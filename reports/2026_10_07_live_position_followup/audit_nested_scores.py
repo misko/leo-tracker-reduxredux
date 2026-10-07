@@ -1,0 +1,76 @@
+"""Audit the nested final RF arms from the frozen published scan receipts.
+
+A c=0 state is feasible in the fitted-c arm with exactly the same score because
+the live arms share all observations, banks, calibration, priors and bounds.
+This diagnoses missed feasible states; it does not certify stationarity or IDs.
+"""
+
+import json
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+
+def main():
+    source = json.loads((HERE.parent / "2026_10_07_live_position_review/snapshot.json").read_text())
+    ids = {r["session"] for r in source["captures"]}
+    rows = []
+    for scan in source["regional"]:
+        if scan["session"] not in ids:
+            continue
+        assert (
+            scan["configuration"]["rf_ablation_scope"]
+            == "final-score-shared-fitted-c-calibration-and-association"
+        )
+        for method in scan["methods"]:
+            arms = {a["name"]: a["selected"] for a in method["arms"]}
+            free, zero = arms["fitted-c"], arms["zero-c"]
+            excess = free["selection_score"] - zero["selection_score"]
+            rows.append(
+                dict(
+                    session=scan["session"],
+                    method=method["name"],
+                    fitted_minus_zero_score=excess,
+                    missed_feasible_state=excess > 1e-6,
+                    fitted_error_m=free["horizontal_error_m"],
+                    zero_error_m=zero["horizontal_error_m"],
+                    zero_basin=zero["source_basin"],
+                    fitted_basin=free["source_basin"],
+                )
+            )
+    groups = []
+    for method in ("T1AT", "V16"):
+        selected = [r for r in rows if r["method"] == method]
+        failures = [r for r in selected if r["missed_feasible_state"]]
+        groups.append(
+            dict(
+                method=method,
+                scans=len(selected),
+                violations=len(failures),
+                zero_state_would_improve_position=sum(
+                    r["zero_error_m"] < r["fitted_error_m"] for r in failures
+                ),
+                zero_state_would_worsen_position=sum(
+                    r["zero_error_m"] > r["fitted_error_m"] for r in failures
+                ),
+            )
+        )
+    result = dict(
+        snapshot_utc=source["snapshot_utc"],
+        groups=groups,
+        rows=rows,
+        meaning=(
+            "An existing zero-c feasible state beats the selected fitted-c state "
+            "under its unchanged objective."
+        ),
+        limitation=(
+            "A zero-c state need not satisfy free-c stationarity; "
+            "a score floor is not a location or identity guarantee."
+        ),
+    )
+    (HERE / "nested_scores.json").write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(groups))
+
+
+if __name__ == "__main__":
+    main()

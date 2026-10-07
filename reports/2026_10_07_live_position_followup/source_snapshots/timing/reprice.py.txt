@@ -1,0 +1,30 @@
+"""No-optimizer sensitivity check including both archived RF-arm seed pools."""
+import json,time
+from pathlib import Path
+from dataclasses import replace
+import numpy as np
+from inputs import load
+from run import SESSIONS,distance
+from leo.contracts.regional_position import POSITION_SCORES
+from leo.analysis.regional_position_score import PositionObjective,coordinates
+HERE=Path(__file__).resolve().parent
+def main():
+    begun=time.monotonic();rows=[]
+    for session in SESSIONS:
+        d=load(session);doc=d['doc'];prior=d['prior']
+        finals=[f for f in doc['diagnostics']['final_starts'] if f['method']=='V16' and f['fit']]
+        for sigma in (.15,1.):
+            for arm in ('zero-c','fitted-c'):
+                for f in finals:
+                    b=d['basins'][f['basin']];v=np.array(f['fit']['vector'])
+                    if arm=='zero-c':v[6]=0
+                    obj=PositionObjective(d['observations'],b['bank'],prior,replace(POSITION_SCORES['V16'],relative_sigma_s=sigma),receiver_baseline_hz=b['baseline'])
+                    value,gradient,terms=obj.evaluate(v);lat,lon=coordinates(prior,v[:2])
+                    rows.append(dict(session=session,relative_sigma_s=sigma,arm=arm,source_arm=f['arm'],source_start=f['start'],basin=f['basin'],score=value+b['calibration_penalty'],error_m=distance(lat,lon,(doc['reference_latitude_deg'],doc['reference_longitude_deg'])),c_hz=v[6],bank=b['numbers']))
+    winners=[]
+    for session in SESSIONS:
+        for sigma in (.15,1.):
+            for arm in ('zero-c','fitted-c'):winners.append(min((r for r in rows if (r['session'],r['relative_sigma_s'],r['arm'])==(session,sigma,arm)),key=lambda r:r['score']))
+    (HERE/'repricing.json').write_text(json.dumps(dict(protocol='No optimizer; all archived V16 fitted-c and zero-c final vectors; c projected to exactly zero for zero-c arm; same full pool across timing/c variants',elapsed_s=time.monotonic()-begun,rows=rows,winners=winners),indent=2))
+    print(json.dumps(winners,indent=2))
+if __name__=='__main__':main()

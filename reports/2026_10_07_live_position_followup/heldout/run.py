@@ -1,0 +1,110 @@
+"""Run 32 bounded fixed-proposal train fits, serially, without corpus search."""
+
+import json
+import sys
+import time
+from pathlib import Path
+
+from leo.analysis.regional_position_fit import fit_position
+from leo.analysis.regional_position_score import PositionObjective, coordinates
+from leo.contracts.regional_position import POSITION_SCORES
+from protocol import frozen_metrics, ids_digest, partition, subset_objective
+
+HERE = Path(__file__).resolve().parent
+
+
+def main():
+    sys.path.insert(0, str(HERE.parent / "timing"))
+    from inputs import load
+
+    begun = time.monotonic()
+    cases = json.loads(
+        (HERE.parent.parent / "2026_10_07_live_position_review/cases.json").read_text()
+    )["cases"]
+    results = []
+    for session in ("scan-fw-6bf407cfe8158445", "scan-fw-559a822227a6a71b"):
+        data = load(session)
+        obs, prior = data["observations"], data["prior"]
+        case = next(c for c in cases if c["session"] == session)
+        v16 = next(m for m in case["methods"] if m["method"] == "V16" and m["arm"] == "fitted-c")
+        proposals = {"near": v16["best_within_10km"]["basin"], "far": v16["winner"]["basin"]}
+        for fold in ("late-time", "channel"):
+            train, test = partition(obs, fold)
+            for hypothesis, basin in proposals.items():
+                b = data["basins"][basin]
+                for method in ("T1AT", "V16"):
+                    full = PositionObjective(
+                        obs,
+                        b["bank"],
+                        prior,
+                        POSITION_SCORES[method],
+                        receiver_baseline_hz=b["baseline"],
+                    )
+                    training, heldout = subset_objective(full, train), subset_objective(full, test)
+                    # Nuisance coordinates start at the association proposal for BOTH RF arms.
+                    start = b["initial_vector"].copy()
+                    start[6] = 0
+                    for arm in ("fitted-c", "zero-c"):
+                        if time.monotonic() - begun > 285:
+                            raise TimeoutError("five-minute total budget guard")
+                        fit = fit_position(
+                            training,
+                            start,
+                            rf_arm=arm,
+                            maximum_seconds=6,
+                            maximum_iterations=100,
+                            local_center=b["center"],
+                            local_radius_km=b["radius"],
+                        )
+                        lat, lon = coordinates(prior, fit.vector[:2])
+                        from math import asin, cos, radians, sin, sqrt
+
+                        ref = [
+                            data["doc"]["reference_latitude_deg"],
+                            data["doc"]["reference_longitude_deg"],
+                        ]
+                        a, c = map(radians, [lat, ref[0]])
+                        dl = radians(lon - ref[1])
+                        error = (
+                            2
+                            * 6371008.8
+                            * asin(
+                                sqrt(
+                                    min(
+                                        1,
+                                        sin((a - c) / 2) ** 2 + cos(a) * cos(c) * sin(dl / 2) ** 2,
+                                    )
+                                )
+                            )
+                        )
+                        row = dict(
+                            session=session,
+                            fold=fold,
+                            hypothesis=hypothesis,
+                            basin=basin,
+                            method=method,
+                            arm=arm,
+                            train_count=int(train.sum()),
+                            test_count=int(test.sum()),
+                            train_ids_sha256=ids_digest(obs, train),
+                            test_ids_sha256=ids_digest(obs, test),
+                            train=frozen_metrics(training, fit.vector),
+                            heldout=frozen_metrics(heldout, fit.vector),
+                            vector=fit.vector.tolist(),
+                            position_error_m=error,
+                            converged=fit.converged,
+                            stationarity=fit.stationarity,
+                            stop_reason=fit.stop_reason,
+                            evaluations=fit.evaluations,
+                            elapsed_s=fit.elapsed_s,
+                            calibration_penalty=b["calibration_penalty"],
+                        )
+                        results.append(row)
+                        print(json.dumps(row), flush=True)
+    (HERE / "results.json").write_text(
+        json.dumps(dict(elapsed_s=time.monotonic() - begun, results=results), indent=2)
+    )
+
+
+if __name__ == "__main__":
+    main()

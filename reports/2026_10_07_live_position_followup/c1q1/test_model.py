@@ -1,0 +1,102 @@
+import numpy as np
+import pytest
+from leo.analysis.regional_position_score import observer, predict_orbits, singleton_likelihood
+from leo.contracts.regional_position import PositionObservations, PositionOrbitBank, RegionalPrior
+from model import C1Q1_SCORE, C1Q1Objective, gate, geometry, likelihood
+
+
+def synthetic():
+    prior = RegionalPrior()
+    site, up = observer(prior, [0, 0])
+    tangent = np.cross(up, [0, 0, 1.0])
+    tangent /= np.linalg.norm(tangent)
+    nodes = np.arange(-25.0, 31.0, 0.25)
+    base = site + np.array([1800, -1900, 2100])[:, None] * tangent
+    base += np.array([10, 23, -15])[:, None] * up
+    velocity = (
+        np.array([2.0, -1.8, 2.2])[:, None] * tangent + np.array([1.0, -1.0, 0.7])[:, None] * up
+    )
+    positions = base[:, None, :] + nodes[None, :, None] * velocity[:, None, :]
+    bank = PositionOrbitBank(
+        np.array([101, 102, 103]),
+        nodes,
+        positions,
+        np.broadcast_to(velocity[:, None, :], positions.shape),
+    )
+    observations = PositionObservations(
+        tuple(str(i) for i in range(6)),
+        np.arange(6.0) + 0.13,
+        np.zeros(6),
+        np.linspace(11e9, 11.5e9, 6),
+        np.array([0, 1, 0, 1, 0, 1]),
+        np.arange(6),
+        np.ones(6),
+    )
+    predicted = predict_orbits(bank, observations, prior, [0.2, -0.3], np.zeros(3))[0]
+    observations = PositionObservations(
+        observations.window_ids,
+        observations.times_s,
+        predicted[:, 0] + 70,
+        observations.rf_hz,
+        observations.receiver,
+        observations.channel,
+        observations.margin,
+    )
+    return observations, bank, prior
+
+
+def test_gate_support_and_gradient():
+    sine = np.sin(np.deg2rad([-2, -0.1, 0, 0.1, 0.5, 0.9, 1, 2]))
+    weight, derivative = gate(sine)
+    assert np.all(weight[sine <= 0] == 0)
+    assert np.all(weight[sine >= np.sin(np.deg2rad(1))] == 1)
+    np.testing.assert_allclose(
+        derivative, (gate(sine + 1e-7)[0] - gate(sine - 1e-7)[0]) / 2e-7, atol=2e-7, rtol=1e-6
+    )
+
+
+def test_variable_likelihood_hard_gate_parity():
+    prediction = np.array([[12, 500, -720], [1230, -800, 19]], float)
+    measured = np.array([51, 67])
+    visible = np.array([[True, False, True], [False, False, False]])
+    old = singleton_likelihood(measured, prediction, visible, C1Q1_SCORE)
+    new, _ = likelihood(measured, prediction, visible * C1Q1_SCORE.detection_budget / 3, C1Q1_SCORE)
+    for key in ("nll", "responsibilities", "prediction_gradient", "clutter_probability"):
+        np.testing.assert_allclose(getattr(new, key), getattr(old, key), atol=1e-12)
+
+
+def test_probability_gradient_includes_nonempty_normalization():
+    prediction = np.array([[30, 700, 2100]], float)
+    q = np.array([[0.07, 0.2, 0.01]])
+    terms, gradient = likelihood([100.0], prediction, q, C1Q1_SCORE)
+    for j in range(3):
+        delta = np.eye(3)[j : j + 1] * 1e-6
+        numerical = (
+            likelihood([100.0], prediction, q + delta, C1Q1_SCORE)[0].nll
+            - likelihood([100.0], prediction, q - delta, C1Q1_SCORE)[0].nll
+        ) / 2e-6
+        assert numerical == pytest.approx(gradient[0, j], abs=1e-7)
+    np.testing.assert_allclose(terms.responsibilities.sum(axis=1) + terms.clutter_probability, 1)
+
+
+def test_complete_gradient_including_elevation_and_timing():
+    observations, bank, prior = synthetic()
+    objective = C1Q1Objective(observations, bank, prior)
+    vector = np.array([0.2, -0.3, 20.0, 0.5, -10.0, -0.2, 12.0, 0.04, 0.03, -0.07])
+    _, analytic, _ = objective.evaluate(vector)
+    for i in range(objective.size):
+        step = 1e-4 if i not in (0, 1) else 1e-3
+        delta = np.eye(objective.size)[i] * step
+        numerical = (
+            objective.evaluate(vector + delta)[0] - objective.evaluate(vector - delta)[0]
+        ) / (2 * step)
+        assert numerical == pytest.approx(analytic[i], abs=2e-6, rel=2e-5)
+
+
+def test_geometry_same_horizon_and_domain_as_predictor():
+    observations, bank, prior = synthetic()
+    sine, _, _ = geometry(bank, observations, prior, [0.2, -0.3], [0.0, 0.1, -0.1])
+    visible = predict_orbits(bank, observations, prior, [0.2, -0.3], [0.0, 0.1, -0.1])[1]
+    np.testing.assert_array_equal(sine >= 0, visible)
+    with pytest.raises(ValueError):
+        geometry(bank, observations, prior, [0.2, -0.3], [100.0, 0.0, 0.0])
