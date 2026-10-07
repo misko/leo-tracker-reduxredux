@@ -37,6 +37,11 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+Recent recorded-data experiment: [GLRT and shorter-segment confirmation on
+sixteen completed scans](../reports/2026_10_07_glrt_recent16/README.md), with
+figures, code references, and audit receipts. This is a temporal repeatability
+diagnostic, not randomized detection validation.
+
 | Reader question | Canonical page |
 |---|---|
 | What do we currently know about the transmissions? | [Starlink downlink and known-pilot evidence](concepts/starlink-transmissions.md) |
