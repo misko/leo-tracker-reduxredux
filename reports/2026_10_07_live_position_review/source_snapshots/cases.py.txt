@@ -1,0 +1,96 @@
+"""Explain published basin choices using verified checkpoints, without refitting."""
+import json
+import math
+from collections import Counter
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import numpy as np
+from sgp4.alpha5 import from_alpha5
+
+HERE=Path(__file__).resolve().parent
+ROOT=Path('/srv/bulk/leo')
+
+
+def main():
+    from leo.storage.regional_position import RegionalPositionStore
+    from leo.storage.regional_position_checkpoints import RegionalCheckpointStore
+    from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV3
+    from leo.contracts.digests import canonical_digest
+    from leo.operations.tle_archive import TleArchiveReader
+    source=json.loads((HERE/'snapshot.json').read_text())
+    recent={r['session'] for r in source['captures']}
+    store=RegionalPositionStore(ROOT);baseline=AdaptiveTlePositionStoreV3(ROOT)
+    archive=TleArchiveReader(Path('/var/lib/leo/tle'))
+    snapshots=archive.list_snapshots();cache={};cases=[]
+    for row in source['regional']:
+        if row['session'] not in recent:continue
+        doc=store.status(row['session']).manifest.document.model_dump(mode='json')
+        checkpoints=RegionalCheckpointStore(ROOT,row['session'],row['checkpoint_binding'])
+        config=canonical_digest(doc['configuration']['run']);basins={}
+        for s in doc['diagnostics']['final_starts']:
+            key=s['basin']
+            if key in basins:continue
+            a=checkpoints.get(config+':'+key+':association')['result']
+            c=checkpoints.get(config+':'+key+':calibration')['result']
+            final=a['selection']['final']
+            basins[key]=dict(satellites=final['satellites'],assignments=final['assignments'],
+                assigned=final['assigned'],denominator=final['denominator'],
+                modes=a['mode_count'],termination=a['selection']['termination'],
+                calibration_prefit_converged=c['prefit']['converged'],
+                calibration_postfit_converged=c['postfit']['converged'],
+                calibration_prefit_stationarity=c['prefit']['stationarity'],
+                calibration_postfit_stationarity=c['postfit']['stationarity'],
+                calibration_support=len(c['correction']['support_rows']))
+        result=dict(session=row['session'],basins=basins,methods=[])
+        for method in row['methods']:
+            score=doc['configuration']['scores'][method['name']]
+            for arm in method['arms']:
+                if not arm['starts']:continue
+                starts=[]
+                for s in arm['starts']:
+                    v=np.array(s['vector']);penalty=.5*(v[7]/score['common_sigma_s'])**2
+                    penalty+=.5*np.sum(v[8:]**2)/score['relative_sigma_s']**2
+                    f=next(f for f in doc['diagnostics']['final_starts'] if
+                        (f['method'],f['arm'],f['basin'],f['start'])==
+                        (method['name'],arm['name'],s['basin'],s['start']))
+                    starts.append(dict(s,timing_penalty=float(penalty),
+                        data_nll=s['score']-penalty-f['calibration_penalty'],
+                        calibration_penalty=f['calibration_penalty'],
+                        signal_windows=f['fit']['signal_windows'],
+                        posterior_rms_hz=f['fit']['posterior_rms_hz']))
+                winner=min(starts,key=lambda s:s['score'])
+                local=[s for s in starts if s['error_m']<10000]
+                result['methods'].append(dict(method=method['name'],arm=arm['name'],winner=winner,
+                    closest=min(starts,key=lambda s:s['error_m']),
+                    best_within_10km=min(local,key=lambda s:s['score']) if local else None,
+                    best_data_score=min(starts,key=lambda s:s['data_nll']+s['calibration_penalty'])))
+        a=next(x for x in result['methods'] if x['method']=='T1AT' and x['arm']=='fitted-c')
+        b=next(x for x in result['methods'] if x['method']=='V16' and x['arm']=='fitted-c')
+        aa={x['window_id']:x['catalog_number'] for x in basins[a['winner']['basin']]['assignments']}
+        bb={x['window_id']:x['catalog_number'] for x in basins[b['winner']['basin']]['assignments']}
+        changes=Counter((aa[k],bb[k]) for k in aa.keys()&bb.keys() if aa[k]!=bb[k])
+        result['discrete_label_comparison']=dict(same_basin=a['winner']['basin']==b['winner']['basin'],
+            common_assigned=len(aa.keys()&bb.keys()),relabeled=sum(changes.values()),
+            t1at_only=len(aa.keys()-bb.keys()),v16_only=len(bb.keys()-aa.keys()),
+            largest_label_switches=[dict(t1at_id=x,v16_id=y,windows=n) for (x,y),n in changes.most_common(8)])
+        status=baseline.status(row['session'])
+        if status.manifest:
+            result['baseline']=status.manifest.document.model_dump(mode='json')['priors']
+        snapshot=next(s for s in snapshots if s.digest==doc['diagnostics']['snapshot_sha256'])
+        if snapshot.digest not in cache:
+            epochs={}
+            for line in archive.read(snapshot).splitlines():
+                if line.startswith('1 '):
+                    number=from_alpha5(line[2:7]);year=int(line[18:20]);year+=1900 if year>=57 else 2000
+                    epochs[number]=(datetime(year,1,1,tzinfo=timezone.utc)+timedelta(days=float(line[20:32])-1)).timestamp()
+            cache[snapshot.digest]=epochs
+        used={s['catalog_number'] for b in basins.values() for s in b['satellites']}
+        ages=[(row['start_ns']/1e9-cache[snapshot.digest][n])/3600 for n in used if n in cache[snapshot.digest]]
+        result['element_age_hours']=dict(min=min(ages),median=float(np.median(ages)),max=max(ages),satellites=len(ages))
+        # Retain just compact assignment comparisons and support; raw IDs/receipts stay at source.
+        for b in basins.values():del b['assignments']
+        cases.append(result)
+    print(json.dumps(dict(snapshot_utc=source['snapshot_utc'],cases=cases),indent=2))
+
+
+if __name__=='__main__':main()

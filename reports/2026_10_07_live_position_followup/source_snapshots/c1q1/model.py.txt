@@ -1,0 +1,119 @@
+"""Research-only C1-Q1 score on the live regional numerical contracts.
+
+Keep the T1AT frequency model and common timing prior, use relative sigma 1/3 s,
+and a quintic detection gate from zero to one degree geometric elevation.
+No reference position, storage, acquisition, or production contract changes.
+"""
+from dataclasses import replace
+
+import numpy as np
+from scipy.special import logsumexp
+
+from leo.analysis.regional_position_score import (
+    ALIAS_HZ,
+    PositionObjective,
+    WindowLikelihood,
+    circular,
+    observer,
+    predict_orbits,
+)
+from leo.contracts.regional_position import POSITION_SCORES
+
+C1Q1_SCORE = replace(POSITION_SCORES["T1AT"], relative_sigma_s=1 / 3)
+
+
+def gate(sine):
+    scale = np.sin(np.deg2rad(1.0))
+    x = np.clip(np.asarray(sine) / scale, 0.0, 1.0)
+    return x**3 * (10 - 15*x + 6*x*x), 30*x*x*(1-x)**2 / scale
+
+
+def geometry(bank, observations, prior, point, shifts):
+    """Elevation sine, spatial derivative, and per-satellite time derivative."""
+    query = observations.times_s[:, None] + np.asarray(shifts)[None, :]
+    if np.any(query < bank.nodes_s[0]) or np.any(query > bank.nodes_s[-1]):
+        raise ValueError("orbit query outside ephemeris support")
+    step = bank.nodes_s[1] - bank.nodes_s[0]
+    fraction = (query - bank.nodes_s[0]) / step
+    lower = np.minimum(np.floor(fraction).astype(int), len(bank.nodes_s) - 2)
+    satellites = np.arange(len(bank.numbers))[None, :]
+    left = bank.position_km[satellites, lower]
+    right = bank.position_km[satellites, lower + 1]
+    position = left + (fraction-lower)[..., None] * (right-left)
+    rate = (right-left) / step
+    site, up = observer(prior, point)
+    delta = position-site
+    distance = np.linalg.norm(delta, axis=2)
+    direction = delta / distance[..., None]
+    sine = direction @ up
+    site_jac, up_jac = [], []
+    for d in np.eye(2) * .001:
+        plus, up_plus = observer(prior, np.asarray(point)+d)
+        minus, up_minus = observer(prior, np.asarray(point)-d)
+        site_jac.append((plus-minus)/.002)
+        up_jac.append((up_plus-up_minus)/.002)
+    spatial = -np.einsum("nkj,ij->nki", (up-direction*sine[..., None])/distance[..., None], site_jac)
+    spatial += np.einsum("nkj,ij->nki", direction, up_jac)
+    projected = np.sum(direction*rate, axis=2)
+    timing = ((rate-direction*projected[..., None])/distance[..., None]) @ up
+    return sine, spatial, timing
+
+
+def likelihood(measured, prediction, q, score):
+    """Conditioned finite-set Gaussian likelihood with variable detection q."""
+    q = np.asarray(q, float)
+    if q.shape != prediction.shape or not np.isfinite(q).all() or np.any((q < 0) | (q >= 1)):
+        raise ValueError("invalid detection probabilities")
+    residual = circular(np.asarray(measured)[:, None]-prediction)
+    sigma = score.sigma_hz
+    count = max(1, int(np.ceil((sigma*np.sqrt(-2*np.log(1e-15))+ALIAS_HZ/2)/ALIAS_HZ)))
+    images = residual[..., None] + np.arange(-count, count+1)*ALIAS_HZ
+    log_images = -.5*(images/sigma)**2 - np.log(sigma*np.sqrt(2*np.pi))
+    log_phi = logsumexp(log_images, axis=2)
+    mean_image = np.sum(np.exp(log_images-log_phi[..., None])*images, axis=2)
+    log_q = np.full_like(q, -np.inf)
+    np.log(q, out=log_q, where=q > 0)
+    log_signal = log_q-np.log1p(-q)+log_phi
+    clutter_log = np.log(score.clutter_rate/ALIAS_HZ)
+    log_h = np.logaddexp(clutter_log, logsumexp(log_signal, axis=1))
+    log_p0 = -score.clutter_rate + np.log1p(-q).sum(axis=1)
+    nonempty = -np.expm1(log_p0)
+    responsibility = np.exp(log_signal-log_h[:, None])
+    q_gradient = 1/((1-q)*nonempty[:, None]) - np.exp(log_phi-log_h[:, None])/(1-q)**2
+    terms = WindowLikelihood(float(-(log_p0-np.log(nonempty)+log_h).sum()),
+        responsibility, np.exp(clutter_log-log_h), -responsibility*mean_image/sigma**2, residual)
+    return terms, q_gradient
+
+
+class C1Q1Objective(PositionObjective):
+    def __init__(self, observations, bank, prior, *, receiver_baseline_hz=None):
+        super().__init__(observations, bank, prior, C1Q1_SCORE,
+                         receiver_baseline_hz=receiver_baseline_hz)
+
+    def evaluate(self, vector):
+        vector = np.asarray(vector, float)
+        if vector.shape != (self.size,) or not np.isfinite(vector).all():
+            raise ValueError("invalid position parameter vector")
+        relative = self.basis @ vector[8:]
+        shifts = vector[7] + relative
+        prediction, _, spatial, timing = predict_orbits(
+            self.bank, self.observations, self.prior, vector[:2], shifts)
+        prediction += (self.design @ vector[2:7] + self.baseline)[:, None]
+        sine, elevation_spatial, elevation_timing = geometry(
+            self.bank, self.observations, self.prior, vector[:2], shifts)
+        visibility, derivative = gate(sine)
+        q_scale = self.score.detection_budget / len(self.bank.numbers)
+        terms, q_gradient = likelihood(self.observations.measured_hz, prediction,
+                                       q_scale*visibility, self.score)
+        elevation_weight = q_gradient*q_scale*derivative
+        weight = terms.prediction_gradient
+        shift_gradient = np.sum(weight*timing + elevation_weight*elevation_timing, axis=0)
+        gradient = np.zeros(self.size)
+        gradient[:2] = np.einsum("nk,nki->i", weight, spatial)
+        gradient[:2] += np.einsum("nk,nki->i", elevation_weight, elevation_spatial)
+        gradient[2:7] = self.design.T @ weight.sum(axis=1)
+        gradient[7] = shift_gradient.sum() + vector[7]/self.score.common_sigma_s**2
+        gradient[8:] = self.basis.T @ (shift_gradient + relative/self.score.relative_sigma_s**2)
+        penalty = .5*(vector[7]/self.score.common_sigma_s)**2
+        penalty += .5*np.sum((relative/self.score.relative_sigma_s)**2)
+        return terms.nll + float(penalty), gradient, terms

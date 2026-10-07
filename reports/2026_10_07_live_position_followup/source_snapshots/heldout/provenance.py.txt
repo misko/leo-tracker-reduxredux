@@ -1,0 +1,27 @@
+"""Record immutable input receipts and source hashes without numerical refitting."""
+import hashlib
+import inspect
+import json
+from pathlib import Path
+from leo.storage.regional_position import RegionalPositionStore
+from leo.analysis import regional_position_score, regional_position_fit, regional_position_bank
+HERE=Path(__file__).resolve().parent
+
+
+def main():
+    store=RegionalPositionStore(Path('/srv/bulk/leo'))
+    receipts=[]
+    for session in ('scan-fw-6bf407cfe8158445','scan-fw-559a822227a6a71b'):
+        d=store.status(session).manifest.document.model_dump(mode='json')
+        receipts.append(dict(session=session,input_manifest_sha256=d['input_manifest_sha256'],
+            configuration_sha256=d['configuration_sha256'], snapshot_sha256=d['diagnostics']['snapshot_sha256'],
+            checkpoint_binding=d['diagnostics']['checkpoint_binding'], configuration=d['configuration']))
+    sources=list(HERE.glob('*.py'))+[HERE.parent/'timing/inputs.py',
+        *[Path(inspect.getfile(m)) for m in (regional_position_score,regional_position_fit,regional_position_bank)]]
+    value=dict(inputs=receipts,source_sha256={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
+        protocol_frozen_before_results=True, optimizer=dict(maximum_seconds=6,maximum_iterations=100,starts=1,workers=1),
+        leakage=['full-data bank/association','full-data receiver correction','evaluation-informed near-basin proposal'])
+    (HERE/'provenance.json').write_text(json.dumps(value,indent=2))
+
+
+if __name__=='__main__':main()

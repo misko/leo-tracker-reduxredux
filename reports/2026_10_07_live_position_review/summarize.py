@@ -1,0 +1,339 @@
+"""Summarize the frozen, verified live receipts; no fitting or store writes."""
+
+import csv
+import hashlib
+import json
+from collections import Counter
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+HERE = Path(__file__).resolve().parent
+
+
+def digest(path):
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    snapshot = json.loads((HERE / "snapshot.json").read_text())
+    cases = json.loads((HERE / "cases.json").read_text())
+    assert cases["snapshot_utc"] == snapshot["snapshot_utc"]
+    case_by_id = {row["session"]: row for row in cases["cases"]}
+    recent_ids = {row["session"] for row in snapshot["captures"]}
+    scans = [row for row in snapshot["regional"] if row["session"] in recent_ids]
+    assert len(scans) == len(case_by_id)
+    rows = []
+    for scan in scans:
+        case = case_by_id[scan["session"]]
+        for method in scan["methods"]:
+            for arm in method["arms"]:
+                selected = arm["selected"]
+                saved = next(
+                    r
+                    for r in case["methods"]
+                    if (r["method"], r["arm"]) == (method["name"], arm["name"])
+                )
+                winner = saved["winner"]
+                assert abs(winner["score"] - selected["selection_score"]) < 1e-6
+                assert abs(winner["error_m"] - selected["horizontal_error_m"]) < 0.1
+                rows.append(
+                    dict(
+                        session=scan["session"],
+                        start_utc=scan["start_utc"],
+                        sample_rate_hz=scan["sample_rate_hz"],
+                        method=method["name"],
+                        arm=arm["name"],
+                        error_m=selected["horizontal_error_m"],
+                        posterior_rms_hz=selected["posterior_rms_hz"],
+                        converged=selected["converged"],
+                        boundary=selected["boundary"],
+                        source_basin=selected["source_basin"],
+                        satellites=len(selected["satellites"]),
+                        coefficient_hz_per_ghz=selected["coefficient_hz_per_ghz"],
+                        selection_score=winner["score"],
+                        data_nll=winner["data_nll"],
+                        timing_penalty=winner["timing_penalty"],
+                        calibration_penalty=winner["calibration_penalty"],
+                        closest_completed_error_m=saved["closest"]["error_m"],
+                        closest_completed_converged=saved["closest"]["converged"],
+                        snapshot_age_hours=scan["snapshot_age_hours"],
+                        capture_to_regional_minutes=scan["capture_to_regional_minutes"],
+                    )
+                )
+    with (HERE / "per_scan.csv").open("w") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    groups = []
+    for method in ("T1AT", "V16"):
+        for arm in ("fitted-c", "zero-c"):
+            subset = [r for r in rows if (r["method"], r["arm"]) == (method, arm)]
+            errors = [r["error_m"] for r in subset]
+            groups.append(
+                dict(
+                    method=method,
+                    arm=arm,
+                    scans=len(errors),
+                    median_error_m=float(np.median(errors)),
+                    p90_error_m=float(np.percentile(errors, 90)),
+                    max_error_m=max(errors),
+                    over_10km=sum(x > 10000 for x in errors),
+                    converged=sum(r["converged"] for r in subset),
+                    boundary=sum(r["boundary"] for r in subset),
+                )
+            )
+    paired_rf = []
+    for method in ("T1AT", "V16"):
+        pairs = []
+        for scan in scans:
+            arms = {
+                r["arm"]: r
+                for r in rows
+                if r["session"] == scan["session"] and r["method"] == method
+            }
+            fit, zero = arms["fitted-c"], arms["zero-c"]
+            if fit["source_basin"] == zero["source_basin"]:
+                pairs.append(
+                    (
+                        fit["error_m"] - zero["error_m"],
+                        fit["posterior_rms_hz"] - zero["posterior_rms_hz"],
+                    )
+                )
+        paired_rf.append(
+            dict(
+                method=method,
+                same_bank_selected_pairs=len(pairs),
+                median_fitted_minus_zero_error_m=float(np.median([x[0] for x in pairs])),
+                median_fitted_minus_zero_posterior_rms_hz=float(np.median([x[1] for x in pairs])),
+            )
+        )
+    baseline_errors = [
+        case_by_id[s["session"]]["baseline"][0]["selected"]["horizontal_error_m"] for s in scans
+    ]
+    basins = [b for case in cases["cases"] for b in case["basins"].values()]
+    explanation = []
+    for suffix in ("6bf407cfe8158445", "559a822227a6a71b", "0695481606e1a3e8"):
+        case = case_by_id["scan-fw-" + suffix]
+        saved = next(r for r in case["methods"] if (r["method"], r["arm"]) == ("V16", "fitted-c"))
+        far, near = saved["winner"], saved["best_within_10km"]
+        explanation.append(
+            dict(
+                session=case["session"],
+                selected_error_m=far["error_m"],
+                selected_converged=far["converged"],
+                closer_error_m=near["error_m"],
+                closer_converged=near["converged"],
+                closer_minus_selected={
+                    k: near[k] - far[k]
+                    for k in ("score", "data_nll", "timing_penalty", "calibration_penalty")
+                },
+                closest_completed_error_m=saved["closest"]["error_m"],
+                discrete_label_comparison=case["discrete_label_comparison"],
+            )
+        )
+    summary = dict(
+        snapshot_utc=snapshot["snapshot_utc"],
+        cutoff_utc=snapshot["cutoff_utc"],
+        capture_count=len(snapshot["captures"]),
+        completed_count=len(scans),
+        pending=[r for r in snapshot["captures"] if not r["regional_complete"]],
+        all_completed_including_older=len(snapshot["regional"]),
+        configuration_digests=sorted({s["configuration_sha256"] for s in scans}),
+        methods=groups,
+        matched_selected_bank_rf_pairs=paired_rf,
+        baseline_v3=dict(
+            scans=len(scans),
+            median_error_m=float(np.median(baseline_errors)),
+            max_error_m=max(baseline_errors),
+            finest_spacing_km=12.5,
+        ),
+        search_termination=dict(Counter(m["stop"] for s in scans for m in s["methods"])),
+        search_point_counts=sorted({m["point_count"] for s in scans for m in s["methods"]}),
+        calibration_basins=len(basins),
+        failed_basin_stages=[dict(session=s["session"], **f) for s in scans for f in s["failures"]],
+        calibrated_basins_both_fits_converged=sum(
+            b["calibration_prefit_converged"] and b["calibration_postfit_converged"] for b in basins
+        ),
+        association_termination=dict(Counter(b["termination"] for b in basins)),
+        t1at_v16_same_selected_basin=sum(
+            c["discrete_label_comparison"]["same_basin"] for c in cases["cases"]
+        ),
+        t1at_v16_shared_windows_relabeled=sum(
+            c["discrete_label_comparison"]["relabeled"] for c in cases["cases"]
+        ),
+        median_capture_to_regional_minutes=float(
+            np.median([s["capture_to_regional_minutes"] for s in scans])
+        ),
+        max_capture_to_regional_minutes=max(s["capture_to_regional_minutes"] for s in scans),
+        snapshot_age_hours=[
+            min(s["snapshot_age_hours"] for s in scans),
+            max(s["snapshot_age_hours"] for s in scans),
+        ],
+        element_age_hours=dict(
+            min=min(c["element_age_hours"]["min"] for c in cases["cases"]),
+            median_of_scan_medians=float(
+                np.median([c["element_age_hours"]["median"] for c in cases["cases"]])
+            ),
+            max=max(c["element_age_hours"]["max"] for c in cases["cases"]),
+        ),
+        wrong_region_examples=explanation,
+        same_bank_method_comparisons=[
+            dict(
+                session=s["session"],
+                results=[
+                    {k: r[k] for k in ("method", "error_m", "posterior_rms_hz", "converged")}
+                    for r in rows
+                    if r["session"] == s["session"] and r["arm"] == "fitted-c"
+                ],
+            )
+            for s in scans
+            if case_by_id[s["session"]]["discrete_label_comparison"]["same_basin"]
+        ],
+        caveats=[
+            "Position error uses the fixed roof only for evaluation, not inference.",
+            "Satellite identity ground truth is unavailable; relabels are disagreements.",
+            "Aggregates include completed nonconverged selections; "
+            "convergence is reported separately.",
+            "RF ablation is final-score only, with shared fitted-c calibration and association.",
+            "Independently selected RF arms may choose different banks; "
+            "matched-bank pairs are separate.",
+            "Posterior frequency RMS changes weights between methods; "
+            "it is not a common held-out metric.",
+            "Saved-state score decomposition is not a timing-prior refit ablation.",
+            "Publication latency uses document modification time as observed, not worker runtime.",
+        ],
+        sources={
+            n: digest(HERE / n) for n in ("snapshot.json", "cases.json", "tle_timer_status.txt")
+        },
+    )
+    (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+
+    plt.rcParams.update(
+        {
+            "font.size": 11,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "figure.facecolor": "white",
+        }
+    )
+    out = HERE / "figures"
+    out.mkdir(exist_ok=True)
+    x = np.arange(len(scans))
+    times = [s["start_utc"][11:16] for s in scans]
+    colors = {"T1AT": "#167c80", "V16": "#c74a35"}
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True, sharey=True)
+    for ax, arm in zip(axes, ("fitted-c", "zero-c"), strict=False):
+        ax.plot(x, np.array(baseline_errors) / 1000, ":", color="#a8a8a8", label="Grid baseline V3")
+        for method in ("T1AT", "V16"):
+            values = [
+                next(
+                    r
+                    for r in rows
+                    if (r["session"], r["method"], r["arm"]) == (s["session"], method, arm)
+                )
+                for s in scans
+            ]
+            error = np.array([r["error_m"] for r in values]) / 1000
+            ax.plot(x, error, "o-", color=colors[method], label=method, lw=1.6, ms=5)
+            bad = [i for i, r in enumerate(values) if not r["converged"]]
+            ax.scatter(x[bad], error[bad], marker="x", s=100, c="black", zorder=5)
+        ax.axhline(10, color="#777777", ls="--", lw=0.7)
+        ax.set_yscale("log")
+        ax.set_ylim(0.3, 450)
+        ax.set_ylabel("Roof position error (km)")
+        ax.set_title(
+            "Fitted RF coefficient c" if arm == "fitted-c" else "RF coefficient c = 0", loc="left"
+        )
+        ax.grid(axis="y", alpha=0.18)
+    axes[0].legend(ncol=3, loc="upper center")
+    axes[1].set_xticks(x, times, rotation=45)
+    axes[1].set_xlabel("Capture start UTC • October 6, 2026")
+    fig.suptitle(
+        "Live regional inference: T1AT is more reliable than V16", fontsize=16, x=0.07, ha="left"
+    )
+    fig.text(
+        0.07,
+        0.015,
+        "17 completed scans as of Oct 7 00:33 UTC • × = convergence check failed "
+        "• 6 newer captures pending",
+        fontsize=10,
+    )
+    fig.tight_layout(rect=[0, 0.04, 1, 0.95])
+    fig.savefig(out / "recent_position_errors.png", dpi=170)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8), sharey=True)
+    for ax, example in zip(axes, explanation[:2], strict=False):
+        delta = example["closer_minus_selected"]
+        labels = [
+            "Frequency\nlikelihood",
+            "Timing\npenalty",
+            "Calibration\npenalty",
+            "Total\nscore",
+        ]
+        values = [delta[k] for k in ("data_nll", "timing_penalty", "calibration_penalty", "score")]
+        ax.bar(np.arange(4), values, color=["#167c80", "#c74a35", "#9da6ac", "#4c5966"])
+        ax.axhline(0, color="black", lw=0.8)
+        ax.set_xticks(np.arange(4), labels)
+        for i, v in enumerate(values):
+            ax.annotate(
+                f"{v:+,.0f}",
+                (i, v),
+                xytext=(0, 5 if v >= 0 else -15),
+                textcoords="offset points",
+                ha="center",
+                fontsize=10,
+            )
+        ax.set_title(
+            f"Selected: {example['selected_error_m'] / 1000:.1f} km error\n"
+            f"Closer candidate: {example['closer_error_m'] / 1000:.2f} km error",
+            loc="left",
+        )
+        ax.grid(axis="y", alpha=0.15)
+        ax.set_ylim(-9200, 12500)
+    axes[0].set_ylabel(
+        "Closer candidate − selected candidate score\n(negative favors the closer candidate)"
+    )
+    fig.suptitle(
+        "Tight timing penalties reverse the frequency-likelihood preference",
+        x=0.065,
+        ha="left",
+        fontsize=14,
+    )
+    fig.text(
+        0.065,
+        0.02,
+        "V16 fitted-c • both solutions converged • saved-state decomposition, not a refit ablation",
+        fontsize=10,
+    )
+    fig.tight_layout(rect=[0, 0.05, 1, 0.91])
+    fig.savefig(out / "timing_prior_reversals.png", dpi=170)
+    plt.close(fig)
+    print(
+        json.dumps(
+            {
+                k: summary[k]
+                for k in (
+                    "snapshot_utc",
+                    "capture_count",
+                    "completed_count",
+                    "methods",
+                    "matched_selected_bank_rf_pairs",
+                    "search_termination",
+                    "search_point_counts",
+                    "t1at_v16_same_selected_basin",
+                    "t1at_v16_shared_windows_relabeled",
+                )
+            },
+            indent=2,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

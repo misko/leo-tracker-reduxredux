@@ -1,0 +1,67 @@
+"""Fixed-bank conditional prediction diagnostic; no heldout parameter fitting."""
+
+import hashlib
+from dataclasses import replace
+
+import numpy as np
+
+FIELDS = ("times_s", "measured_hz", "rf_hz", "receiver", "channel", "margin")
+
+
+def partition(observations, fold):
+    if fold == "late-time":
+        threshold = observations.times_s.min() + 0.75 * np.ptp(observations.times_s)
+        test = observations.times_s >= threshold
+    elif fold == "channel":
+        # Reserve one populated channel per receiver; both receiver drifts remain estimable.
+        test = np.zeros(len(observations.window_ids), dtype=bool)
+        for rx in (0, 1):
+            rows = observations.receiver == rx
+            channels, counts = np.unique(observations.channel[rows], return_counts=True)
+            channel = channels[np.argmax(counts)]
+            test |= rows & (observations.channel == channel)
+    else:
+        raise ValueError(fold)
+    train = ~test
+    if not train.any() or not test.any():
+        raise ValueError("empty partition")
+    return train, test
+
+
+def subset_objective(full, mask):
+    """Keep the original clock/RF coordinate convention for frozen predictions."""
+    from leo.analysis.regional_position_score import PositionObjective
+
+    rows = np.flatnonzero(mask)
+    obs = replace(
+        full.observations,
+        window_ids=tuple(full.observations.window_ids[i] for i in rows),
+        **{field: getattr(full.observations, field)[rows] for field in FIELDS},
+    )
+    result = PositionObjective(
+        obs, full.bank, full.prior, full.score, receiver_baseline_hz=full.baseline[rows]
+    )
+    result.design = full.design[rows].copy()
+    return result
+
+
+def frozen_metrics(objective, vector):
+    # evaluate only: neither optimization nor reassignment/calibration on holdout.
+    frozen = np.array(vector, copy=True)
+    value, _, terms = objective.evaluate(frozen)
+    mass = float(terms.responsibilities.sum())
+    return dict(
+        data_nll=terms.nll,
+        nll_per_window=terms.nll / len(objective.observations.window_ids),
+        signal_mass=mass,
+        posterior_rms_hz=float(
+            np.sqrt(np.sum(terms.responsibilities * terms.residual_hz**2) / mass)
+        )
+        if mass
+        else None,
+        timing_penalty=float(value - terms.nll),
+    )
+
+
+def ids_digest(observations, mask):
+    return hashlib.sha256("\n".join(np.asarray(observations.window_ids)[mask]).encode()).hexdigest()

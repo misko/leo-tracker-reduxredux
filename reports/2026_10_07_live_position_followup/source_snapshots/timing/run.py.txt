@@ -1,0 +1,56 @@
+"""Bounded matched relative-timing and RF ablation from all archived V16 starts."""
+import json,csv,time,math
+from pathlib import Path
+from dataclasses import replace
+import numpy as np
+from inputs import load
+from leo.analysis.regional_position_score import PositionObjective,coordinates
+from leo.analysis.regional_position_fit import fit_position
+from leo.application.regional_position_runner import json_value
+from leo.contracts.regional_position import POSITION_SCORES
+
+HERE=Path(__file__).resolve().parent
+SESSIONS=('scan-fw-6bf407cfe8158445','scan-fw-559a822227a6a71b')
+def distance(lat,lon,ref):
+    a,b,c,d=map(math.radians,(lat,lon,*ref));h=math.sin((a-c)/2)**2+math.cos(a)*math.cos(c)*math.sin((b-d)/2)**2
+    return 12742017.6*math.asin(math.sqrt(min(1,h)))
+def main():
+    results=[];parity=[];begun=time.monotonic()
+    for session in SESSIONS:
+        data=load(session);doc=data['doc'];obs=data['observations'];prior=data['prior']
+        finals=[f for f in doc['diagnostics']['final_starts'] if f['method']=='V16' and f['fit']]
+        for basin,b in sorted(data['basins'].items()):
+            starts=[]
+            for f in finals:
+                if f['basin']!=basin or f['arm']!='fitted-c':continue
+                vector=np.asarray(f['fit']['vector'])
+                if not any(np.array_equal(vector,v) for _,v in starts):starts.append((f['arm']+':'+f['start'],vector))
+            control=PositionObjective(obs,b['bank'],prior,POSITION_SCORES['V16'],receiver_baseline_hz=b['baseline'])
+            relaxed=PositionObjective(obs,b['bank'],prior,replace(POSITION_SCORES['V16'],relative_sigma_s=1.),receiver_baseline_hz=b['baseline'])
+            for _,v in starts:
+                a,ga,_=control.evaluate(v);z,gz,_=relaxed.evaluate(v)
+                weight=1/.15**2-1.
+                np.testing.assert_allclose(a-z,.5*weight*np.sum(v[8:]**2),rtol=1e-8,atol=1e-6)
+                expected=np.zeros_like(v);expected[8:]=weight*v[8:]
+                np.testing.assert_allclose(ga-gz,expected,rtol=1e-8,atol=1e-7)
+            for f in finals:
+                if f['basin']==basin:
+                    delta=control.evaluate(np.asarray(f['fit']['vector']))[0]-f['fit']['objective']
+                    assert abs(delta)<1e-6,(session,basin,delta)
+                    parity.append(dict(session=session,basin=basin,delta=delta))
+            for sigma in (.15,1.):
+                score=replace(POSITION_SCORES['V16'],relative_sigma_s=sigma)
+                objective=PositionObjective(obs,b['bank'],prior,score,receiver_baseline_hz=b['baseline'])
+                for arm in ('zero-c','fitted-c'):
+                    for name,vector in starts:
+                        fit=fit_position(objective,vector,rf_arm=arm,maximum_seconds=5,maximum_iterations=300,local_center=b['center'],local_radius_km=b['radius'])
+                        v=fit.vector;penalty=.5*(v[7]/3)**2+.5*np.sum(v[8:]**2)/sigma**2
+                        lat,lon=coordinates(prior,v[:2])
+                        row=dict(session=session,basin=basin,start=name,relative_sigma_s=sigma,common_sigma_s=3.,arm=arm,score=fit.objective+b['calibration_penalty'],data_nll=fit.objective-penalty,timing_penalty=float(penalty),calibration_penalty=b['calibration_penalty'],error_m=distance(lat,lon,(doc['reference_latitude_deg'],doc['reference_longitude_deg'])),latitude_deg=lat,longitude_deg=lon,c_hz=v[6],common_s=v[7],relative_norm_s=float(np.linalg.norm(v[8:])),bank=b['numbers'],fit=json_value(fit))
+                        results.append(row)
+                        print(session,basin,sigma,arm,name,round(row['error_m']),fit.stop_reason,flush=True)
+                        (HERE/'results.json').write_text(json.dumps(dict(results=results,parity=parity,elapsed_s=time.monotonic()-begun),indent=2))
+    keys=['session','basin','start','relative_sigma_s','arm','score','data_nll','timing_penalty','error_m','c_hz','common_s','relative_norm_s']
+    with (HERE/'results.csv').open('w') as stream:
+        writer=csv.DictWriter(stream,keys);writer.writeheader();writer.writerows({k:r[k] for k in keys} for r in results)
+if __name__=='__main__':main()

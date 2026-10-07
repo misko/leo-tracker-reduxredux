@@ -1,0 +1,52 @@
+"""Read-only verified reconstruction of archived final-bank numerical inputs."""
+from pathlib import Path
+import numpy as np
+from leo.storage.regional_position import RegionalPositionStore
+from leo.storage.regional_position_checkpoints import RegionalCheckpointStore
+from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
+from leo.application.regional_position_inputs import prepare_position_windows
+from leo.contracts.digests import canonical_digest
+from leo.contracts.regional_position import RegionalPrior
+from leo.operations.tle_archive import TleArchiveReader
+from leo.analysis.catalogue_eligibility import exclude_labelled_starlink_debris
+from leo.analysis.regional_position_bank import build_regional_bank
+from leo.sky.propagation import parse_element_sets
+
+def load(session):
+    root=Path('/srv/bulk/leo')
+    doc=RegionalPositionStore(root).status(session).manifest.document.model_dump(mode='json')
+    source=ScannerTrackingInputStore(root)
+    try:
+        tracking=source.load(session)
+        assert tracking.input_manifest_sha256==doc['input_manifest_sha256']
+        assert tracking.analysis_manifest_sha256==doc['analysis_manifest_sha256']
+        prepared=prepare_position_windows(tracking)
+    finally: source.close()
+    prior=RegionalPrior(doc['prior_latitude_deg'],doc['prior_longitude_deg'],doc['prior_radius_km'])
+    archive=TleArchiveReader(Path('/var/lib/leo/tle'))
+    snapshot=next(s for s in archive.list_snapshots() if s.digest==doc['diagnostics']['snapshot_sha256'])
+    catalogue=parse_element_sets(exclude_labelled_starlink_debris(archive.read(snapshot))[0])
+    candidates=[int(catalogue.satellite_numbers[i]) for i,name in enumerate(catalogue.names) if name.upper().startswith('STARLINK')]
+    assert canonical_digest(dict(windows=prepared.evidence_sha256,tle=snapshot.digest,candidates=candidates))==doc['evidence_sha256']
+    checkpoints=RegionalCheckpointStore(root,session,doc['diagnostics']['checkpoint_binding'])
+    key=canonical_digest(doc['configuration']['run'])
+    basins={}
+    original_numbers=doc['diagnostics']['bank']['retained_numbers']
+    needed=set()
+    for f in doc['diagnostics']['final_starts']:
+        b=f['basin']
+        if b in basins: continue
+        a=checkpoints.get(key+':'+b+':association')['result']
+        c=checkpoints.get(key+':'+b+':calibration')['result']
+        numbers=[original_numbers[i] for i in a['selected_indices']]
+        needed.update(numbers)
+        center=np.asarray(a['initial_vector'])[:2]
+        e,n=map(float,b.split(':')[1:])
+        spacing=max(p['spacing_km'] for m in doc['methods'] for p in m['points'] if p['east_km']==e and p['north_km']==n)
+        knots=np.asarray(c['correction']['knots_hz'])
+        basins[b]=dict(numbers=numbers,baseline=np.asarray(c['receiver_baseline_hz']),initial_vector=np.asarray(a['initial_vector']),center=center,radius=max(12.5,spacing/np.sqrt(2)),calibration_penalty=float(.5*(np.sum(knots**2)/50**2+np.sum(np.diff(knots,n=2,axis=1)**2)/25**2)),association=a)
+    indices=[i for i,n in enumerate(catalogue.satellite_numbers) if int(n) in needed]
+    bank,_=build_regional_bank(catalogue,indices,prepared.start_utc_ns,prepared.observations,prior,maximum_seconds=30)
+    lookup={int(n):i for i,n in enumerate(bank.numbers)}
+    for b in basins.values(): b['bank']=bank.select([lookup[n] for n in b['numbers']])
+    return dict(observations=prepared.observations,prior=prior,doc=doc,basins=basins,prepared=prepared)
