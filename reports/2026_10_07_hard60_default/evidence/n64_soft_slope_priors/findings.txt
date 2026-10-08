@@ -1,0 +1,92 @@
+N01--N64: Gaussian and smooth affine-slope priors
+
+Primary six variants all use relative timing sigma 2 s, common timing sigma 3 s, corrected 40/20/10/5 km search.
+Historical baseline: timing sigma .15 s, unbounded affine slopes, 100/50/25/12.5 km and legacy edge priority. Historical 1-second controls use the corrected grid with hard +/-60 or +/-30 Hz/s.
+Hard 60 and Hard 30 have no soft slope penalty. Gaussian 60/30 use zero-mean standard deviations 20/10 Hz/s.
+Smooth 60/30 are flat through +/-30 or +/-15 Hz/s, then add .5*(excess/10)^2 or .5*(excess/5)^2.
+All retain their named hard outer limit. Both penalty shapes cost 4.5 NLL units per receiver at that limit.
+Priors act on separate fitted affine terms at every fitting stage. Combined physical drift is reported separately.
+Selection score includes final data NLL, timing prior, final affine prior, original piecewise calibration prior, and the frozen postfit affine prior once. The preliminary prefit prior is not counted again.
+All final fits are rerun per variant; only geometric bootstrap seeds are reused. Previous verified hard-bound results are immutable references.
+Each scan/variant has 400 grid attempts, three distinct regions and the same optimizer budgets and start rules.
+Final-stage c=0 versus fitted-c share observations, calibration, association banks, initial starts, priors and budgets within each variant. Discovery and calibration retain fitted c.
+Reference coordinates are only read after selection and never select the winning state.
+Frequency RMS is posterior-weighted in-sample fit, separate from geographic error. Objective totals across priors are not a localization metric.
+This is a comparison on the existing cohort, not an independent held-out estimate. Runtime is affected by cache reuse and concurrency.
+
+zero-c
+  Original baseline: accepted 64/64; median 2.948 km; p90 144.955; p95 221.077; max 324.950; mean 34.302; >100 km 7; <5 km 40; median frequency RMS 149.53686415293623 Hz.
+  1 s / hard 60: accepted 64/64; median 2.121 km; p90 3.410; p95 4.120; max 23.955; mean 2.452; >100 km 0; <5 km 61; median frequency RMS 139.98831923123083 Hz.
+  1 s / hard 30: accepted 64/64; median 1.955 km; p90 4.308; p95 4.964; max 8.954; mean 2.296; >100 km 0; <5 km 60; median frequency RMS 140.19017502212137 Hz.
+  Hard 60: accepted 64/64; median 2.001 km; p90 3.552; p95 4.089; max 5.403; mean 2.148; >100 km 0; <5 km 62; median frequency RMS 139.97727871013726 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  Gaussian 60: accepted 64/64; median 2.052 km; p90 3.997; p95 5.270; max 14.672; mean 2.456; >100 km 0; <5 km 60; median frequency RMS 140.98588069322506 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 27, worsened 37, unchanged 0; median paired change 0.002498181071125649 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 27, worsened 37, unchanged 0; median paired change 0.002498181071125649 km.
+  Smooth 60: accepted 64/64; median 1.975 km; p90 4.585; p95 6.061; max 27.379; mean 3.054; >100 km 0; <5 km 58; median frequency RMS 141.2606200978086 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 34, worsened 30, unchanged 0; median paired change -6.491457715807059e-08 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 34, worsened 30, unchanged 0; median paired change -6.491457715807059e-08 km.
+  Hard 30: accepted 64/64; median 2.022 km; p90 4.781; p95 6.024; max 92.717; mean 3.875; >100 km 0; <5 km 58; median frequency RMS 139.36698377004564 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 35, worsened 29, unchanged 0; median paired change -0.0018365318202285263 km.
+    versus_own_hard_control (hard30): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  Gaussian 30: accepted 64/64; median 2.443 km; p90 5.288; p95 8.825; max 107.225; mean 5.594; >100 km 1; <5 km 56; median frequency RMS 141.14791628240383 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 23, worsened 41, unchanged 0; median paired change 0.01479837776199966 km.
+    versus_own_hard_control (hard30): 64 paired; improved 27, worsened 37, unchanged 0; median paired change 0.008116657402715943 km.
+  Smooth 30: accepted 64/64; median 1.989 km; p90 4.086; p95 5.003; max 81.399; mean 3.610; >100 km 0; <5 km 60; median frequency RMS 140.59269635655863 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 35, worsened 29, unchanged 0; median paired change -0.00076919574183687 km.
+    versus_own_hard_control (hard30): 64 paired; improved 27, worsened 37, unchanged 0; median paired change 0.003502952921243807 km.
+
+fitted-c
+  Original baseline: accepted 64/64; median 2.448 km; p90 186.227; p95 213.835; max 316.071; mean 36.375; >100 km 9; <5 km 40; median frequency RMS 109.49417191117416 Hz.
+  1 s / hard 60: accepted 64/64; median 1.584 km; p90 3.374; p95 4.430; max 26.564; mean 2.244; >100 km 0; <5 km 63; median frequency RMS 101.39946450195467 Hz.
+  1 s / hard 30: accepted 64/64; median 1.457 km; p90 4.042; p95 4.912; max 9.577; mean 2.011; >100 km 0; <5 km 61; median frequency RMS 99.21741930978695 Hz.
+  Hard 60: accepted 64/64; median 1.490 km; p90 3.376; p95 3.943; max 5.621; mean 1.890; >100 km 0; <5 km 61; median frequency RMS 99.52746889332204 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  Gaussian 60: accepted 64/64; median 1.360 km; p90 4.223; p95 5.056; max 48.039; mean 2.612; >100 km 0; <5 km 59; median frequency RMS 100.1091250381611 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 34, worsened 30, unchanged 0; median paired change -0.0025288249036779786 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 34, worsened 30, unchanged 0; median paired change -0.0025288249036779786 km.
+  Smooth 60: accepted 64/64; median 1.517 km; p90 4.770; p95 5.274; max 26.791; mean 2.718; >100 km 0; <5 km 58; median frequency RMS 100.53084881148159 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 32, worsened 32, unchanged 0; median paired change 2.7920574630080353e-08 km.
+    versus_own_hard_control (sigma2_60): 64 paired; improved 32, worsened 32, unchanged 0; median paired change 2.7920574630080353e-08 km.
+  Hard 30: accepted 64/64; median 1.494 km; p90 4.562; p95 4.899; max 99.949; mean 3.564; >100 km 0; <5 km 61; median frequency RMS 100.35377462388652 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 42, worsened 22, unchanged 0; median paired change -0.021671541111448756 km.
+    versus_own_hard_control (hard30): 64 paired; improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  Gaussian 30: accepted 64/64; median 1.601 km; p90 5.058; p95 9.029; max 108.458; mean 5.138; >100 km 1; <5 km 57; median frequency RMS 100.82951678433044 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 32, worsened 32, unchanged 0; median paired change -0.000408537306700929 km.
+    versus_own_hard_control (hard30): 64 paired; improved 29, worsened 35, unchanged 0; median paired change 0.005932581638251833 km.
+  Smooth 30: accepted 64/64; median 1.568 km; p90 4.716; p95 5.492; max 83.189; mean 3.414; >100 km 0; <5 km 59; median frequency RMS 100.28286846084433 Hz.
+    versus_hard60 (sigma2_60): 64 paired; improved 36, worsened 28, unchanged 0; median paired change -0.002758404731807551 km.
+    versus_own_hard_control (hard30): 64 paired; improved 23, worsened 41, unchanged 0; median paired change 0.011011928978253094 km.
+
+Watch cases, error km for score-selected winner:
+  N02 zero-c: Hard 60 1.8876389524964323; reference covered True | Gaussian 60 1.6340407131863788; reference covered True | Smooth 60 1.558518777638559; reference covered True | Hard 30 13.223882163288971; reference covered True | Gaussian 30 13.347594574217862; reference covered True | Smooth 30 13.648018998057259; reference covered True
+  N02 fitted-c: Hard 60 1.3758988192227684; reference covered True | Gaussian 60 1.029455055441054; reference covered True | Smooth 60 1.4571205208966342; reference covered True | Hard 30 13.178383030424374; reference covered True | Gaussian 30 13.096482428658069; reference covered True | Smooth 30 13.160715193186228; reference covered True
+  N05 zero-c: Hard 60 2.185810207285951; reference covered True | Gaussian 60 14.671933520396431; reference covered True | Smooth 60 3.4360931443964438; reference covered True | Hard 30 3.34597587277879; reference covered True | Gaussian 30 3.0770580056761605; reference covered True | Smooth 30 3.473016041444365; reference covered True
+  N05 fitted-c: Hard 60 2.6188421732625167; reference covered True | Gaussian 60 3.1989205555170708; reference covered True | Smooth 60 3.862410697172876; reference covered True | Hard 30 3.1923785401704508; reference covered True | Gaussian 30 3.0387729691801866; reference covered True | Smooth 30 3.7044932564652724; reference covered True
+  N13 zero-c: Hard 60 1.355162402699424; reference covered True | Gaussian 60 0.4826556239468405; reference covered True | Smooth 60 0.8777182101723866; reference covered True | Hard 30 0.10594608427148264; reference covered True | Gaussian 30 1.229291334880713; reference covered True | Smooth 30 0.6627890945618871; reference covered True
+  N13 fitted-c: Hard 60 0.7300094011397865; reference covered True | Gaussian 60 0.5188937630223771; reference covered True | Smooth 60 0.4285620772706358; reference covered True | Hard 30 1.3734622131503242; reference covered True | Gaussian 30 0.632747001906988; reference covered True | Smooth 30 0.2327324537870746; reference covered True
+  N25 zero-c: Hard 60 4.599302611977562; reference covered True | Gaussian 60 4.625625746120638; reference covered True | Smooth 60 4.618807525488874; reference covered True | Hard 30 4.741975418099056; reference covered True | Gaussian 30 84.19341820108723; reference covered False | Smooth 30 81.39943732082473; reference covered False
+  N25 fitted-c: Hard 60 3.938927024931032; reference covered True | Gaussian 60 3.932285134124896; reference covered True | Smooth 60 3.959774512073058; reference covered True | Hard 30 4.455049272573382; reference covered True | Gaussian 30 83.7910283176932; reference covered False | Smooth 30 83.18941348610335; reference covered False
+  N29 zero-c: Hard 60 5.403427587471735; reference covered True | Gaussian 60 5.383990075328587; reference covered True | Smooth 60 5.198871609956446; reference covered True | Hard 30 5.085618553957182; reference covered True | Gaussian 30 5.406579519430846; reference covered True | Smooth 30 4.891146496499959; reference covered True
+  N29 fitted-c: Hard 60 5.621252347831085; reference covered True | Gaussian 60 5.018539902150404; reference covered True | Smooth 60 5.047661459971069; reference covered True | Hard 30 4.905222927618353; reference covered True | Gaussian 30 5.620147103821601; reference covered True | Smooth 30 4.959065341936868; reference covered True
+  N39 zero-c: Hard 60 2.177658676266899; reference covered True | Gaussian 60 1.2739607519711804; reference covered True | Smooth 60 27.37912326252618; reference covered True | Hard 30 2.4044254536100125; reference covered True | Gaussian 30 2.184351771702424; reference covered True | Smooth 30 2.0262152977140633; reference covered True
+  N39 fitted-c: Hard 60 1.5019050115073103; reference covered True | Gaussian 60 1.0944488523319271; reference covered True | Smooth 60 22.323180293653074; reference covered True | Hard 30 1.6492531085049464; reference covered True | Gaussian 30 1.5167496111144632; reference covered True | Smooth 30 1.1025709740459453; reference covered True
+  N49 zero-c: Hard 60 0.3131638853285823; reference covered True | Gaussian 60 7.721563914489926; reference covered False | Smooth 60 0.4832550105055829; reference covered True | Hard 30 92.71746939517512; reference covered False | Gaussian 30 0.5548794058520243; reference covered True | Smooth 30 0.33034588305550233; reference covered True
+  N49 fitted-c: Hard 60 2.6895307871006326; reference covered True | Gaussian 60 48.03884479221187; reference covered False | Smooth 60 1.3024101161373873; reference covered True | Hard 30 99.9494191688453; reference covered False | Gaussian 30 1.3488510314418634; reference covered True | Smooth 30 2.5223989084521654; reference covered True
+  N56 zero-c: Hard 60 3.17728676797689; reference covered True | Gaussian 60 2.437015237497038; reference covered True | Smooth 60 9.11774499035419; reference covered True | Hard 30 2.7286647123939334; reference covered True | Gaussian 30 9.288469707232075; reference covered True | Smooth 30 2.970541628919811; reference covered True
+  N56 fitted-c: Hard 60 3.3809653357187552; reference covered True | Gaussian 60 5.062833506472057; reference covered True | Smooth 60 9.34609344292214; reference covered True | Hard 30 4.608421122437767; reference covered True | Gaussian 30 9.580121502539475; reference covered True | Smooth 30 6.818220937523096; reference covered True
+  N64 zero-c: Hard 60 0.9522501752199461; reference covered True | Gaussian 60 1.2510322971548868; reference covered True | Smooth 60 24.454948883120036; reference covered False | Hard 30 1.3341878964743064; reference covered True | Gaussian 30 107.22498068075866; reference covered False | Smooth 30 0.742706781453028; reference covered True
+  N64 fitted-c: Hard 60 1.4302394044352442; reference covered True | Gaussian 60 1.0644598015395665; reference covered True | Smooth 60 26.790829756458383; reference covered False | Hard 30 1.3866720421380445; reference covered True | Gaussian 30 108.45848690096494; reference covered False | Smooth 30 1.4514223538505218; reference covered True
+
+Original baseline: reference in retained regions 48/64; failed grid scores 0; timed-out grid fits 2; failed regions 0.
+1 s / hard 60: reference in retained regions 63/64; failed grid scores 0; timed-out grid fits 4; failed regions 4.
+1 s / hard 30: reference in retained regions 64/64; failed grid scores 4; timed-out grid fits 9; failed regions 3.
+Hard 60: reference in retained regions 64/64; failed grid scores 12; timed-out grid fits 4; failed regions 8.
+Gaussian 60: reference in retained regions 63/64; failed grid scores 6; timed-out grid fits 27; failed regions 4.
+Smooth 60: reference in retained regions 63/64; failed grid scores 1; timed-out grid fits 24; failed regions 9.
+Hard 30: reference in retained regions 63/64; failed grid scores 2; timed-out grid fits 19; failed regions 5.
+Gaussian 30: reference in retained regions 62/64; failed grid scores 0; timed-out grid fits 25; failed regions 5.
+Smooth 30: reference in retained regions 63/64; failed grid scores 0; timed-out grid fits 26; failed regions 11.
+All failures remain in the fixed-budget result; no selective retries. Details: summary.json.

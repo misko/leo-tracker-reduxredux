@@ -8,15 +8,19 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Circle
 
 from leo.contracts.regional_position_products import RegionalPositionDocumentV1
+from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
 
 
-def regional_position_figure(document: RegionalPositionDocumentV1, method: str) -> Figure:
+def regional_position_figure(
+    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2, method: str
+) -> Figure:
     result = next((item for item in document.methods if item.name == method), None)
     if result is None:
         raise ValueError("unknown regional positioning method")
     figure = Figure(figsize=(9, 8), layout="constrained")
     axis = figure.subplots()
-    figure.suptitle(f"{document.session_id} · {method} · diagnostic, not a position fix")
+    label = "Hard60 / V16" if document.schema_version == 2 else method
+    figure.suptitle(f"{document.session_id} · {label} · diagnostic, not a position fix")
     axis.add_patch(Circle((0, 0), document.prior_radius_km, fill=False, color="gray", alpha=0.4))
     points = [point for point in result.points if point.objective is not None]
     if points:
@@ -111,7 +115,9 @@ def regional_position_figure(document: RegionalPositionDocumentV1, method: str) 
     return figure
 
 
-def render_regional_position(document: RegionalPositionDocumentV1, method: str) -> bytes:
+def render_regional_position(
+    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2, method: str
+) -> bytes:
     figure = regional_position_figure(document, method)
     stream = BytesIO()
     figure.savefig(stream, format="png", dpi=120)

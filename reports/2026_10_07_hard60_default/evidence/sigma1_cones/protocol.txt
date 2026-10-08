@@ -1,0 +1,66 @@
+Frozen receiver cones on the two remaining sigma1 failures
+
+Relative timing sigma stays1s; V16 frequency sigma125Hz, common timing sigma3s,
+detection budget1.6 and clutter0.5 unchanged. No RF or production writes.
+Capture labels1939 and2139 correspond to Oct6 12:39 and14:39 PDT.
+
+Use the existing Oct5 cone fit from20 older captures, without retraining on these
+two failures: primary elliptical half angles30.339/21.552degrees, nominal axes
+RX0west270/70 and RX1east90/70, frozen edge softness/rolls and support map.
+Capture-specific pose bindings are verified. Installed elevation is unmeasured;
+70deg assumes a level LT3D004B base. Connector mapping remains provisional.
+These are empirical conditional reception cones, not measured antenna gains.
+
+Three declared options: no cone(control); cone strength.5 (earlier study setting);
+cone strength1(stronger). Multiply each visible satellite's prior by
+(.1+.9*positive-receiver marginal)^(strength*support), then normalize to preserve
+the total detection mass for that observation. Unsupported sky is neutral.
+Keep all observations and all candidate satellites. No missing peer detections
+are invented. Use full position and timing geometry gradients. Do not impose
+hard east/west rejection: near-zenith opposite-half satellites can be in-cone.
+
+Retain all6 original final basins for1939 with their original local domains.
+Retain all4 basins for2139 with the already tested expanded domains, because
+all original final disks excluded the known location. BOTH cone options and
+control use exactly those same domains, frozen calibration and satellite banks.
+This is a conditional continuation test, not a new upstream association search.
+
+Each basin/c arm starts from its OWN lowest-score previously computed full-scan
+sigma1 incumbent. Both previous original timing branches and domain continuations
+are eligible. Oracle reference fits, row deletions and baseline-OFF runs are
+excluded. The seed is identical across the three options, with no cross-arm
+or cross-option sharing. All feasible old full-scan incumbents remain selectable
+after repricing under each option. Each continuation has30s/600iterations,
+single-thread BLAS:60 fits total, nominal aggregate30optimizer minutes spread
+over two case processes. Actual runtime and KKT failures remain reported.
+
+Selection uses each option's total score, never known-position accuracy. Reference
+coordinates enter only postselection evaluation/diagnostic sky plots. Compare
+accuracy to the matched new control, not only old results. Report uniform-prior
+frequency-data NLL separately from changed cone-prior likelihood, residual RMS,
+signal mass and cone geometry. Matched fitted-c/c=0 results always included.
+
+Mark every satellite/RX using posterior-weighted angular geometry at selected
+position and separately at known reference position, at raw receive time and
+fitted orbit time. Distinct flags: opposite east/west hemisphere; behind nominal
+axis(>90deg); outside empirical ellipse; nearer other receiver's axis. Markers
+are diagnostic evidence, not secure satellite identifications or proof that RF
+reception is impossible. Keep weak-support rows in CSV; readable examples require
+at least10 effective signal windows and majority flagged support.
+
+Validate exact no-cone parity, full analytic gradient finite differences,
+detection-mass preservation, receiver ENU mapping, cone front/back classification,
+source/evidence/TLE/bank/pose bindings, own-arm seed lineage, score-only selection,
+fixed-zero c, and independent constrained stationarity. No prior reports or
+published contracts are modified by the new experiment.
+
+Bounded convergence follow-up, decided while the primary matrix was running:
+Some candidate solutions reach the30s cap without stationarity. After primary
+score selection, continue ALL six selected option/arm fits per capture with
+another matched30s/600iterations, including control and already stationary fits.
+Use each option/arm's own selected state, preserve every incumbent, and select
+by score before reference evaluation. No change to cone shape/strength, evidence,
+domains or other priors. This is12 additional fits, maximum6aggregate optimizer
+minutes, separately recorded in polished.json alongside primary_selections and
+polish_runs. Original results.json remains immutable. Final geometry markers
+and comparison use the polished selections, retaining convergence failures.

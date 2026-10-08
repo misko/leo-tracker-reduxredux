@@ -1,0 +1,25 @@
+One bounded continuation stage, authorized by the original prototype request.
+Frozen before looking at completed screen comparisons.
+
+Reason: six-second screen selections in the two earlier failure cases still
+have scaled KKT residuals in the hundreds/thousands. Stationary results already
+exist for the 2252 outlier, so longer work is restricted to one finite follow-up.
+
+All options, six cases, both methods, both arms, and their same16 method/basin
+combinations get an identical continuation allocation. One start per arm/basin,
+selected by score among that option's own first-stage candidates. 32 calls per
+option, maximum18seconds and600iterations per call; <=9.6minutes fitting cap per
+option. All other objective/constraint settings unchanged. BLASthreads=1.
+
+Do not share an optimized vector between arms, options, methods or basins.
+The follow-up seeds therefore differ across options, but their first-stage
+lineage traces to the identical original seed protocol. Retain every feasible
+first-stage candidate, so continuation cannot worsen the best own-option score.
+Correct only floating-point excursions of <1e-6km at a spatial boundary before
+calling the solver. Do not relocate or otherwise improve seeds using truth.
+
+Audit all selected scores, bounds, KKT, and lineage. Compare control and widths
+using this common stage. No additional fitting beyond this stage: if results
+remain nonstationary, state that limitation and do not choose a production prior.
+Do not confuse a narrower option beating a wider model with a likelihood benefit
+from restriction; it is evidence of incomplete search in the wider model.

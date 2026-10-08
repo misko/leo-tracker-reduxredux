@@ -1,0 +1,151 @@
+RECEIVER CONES AND WRONG-SIDE SATELLITE MARKERS, SIGMA=1 SECOND
+
+Applied the previously fitted receiver cones to both remaining bad captures.
+They slightly reduce opposite-side/outside-cone posterior support, but do not
+meaningfully improve localization. The satellite flags identify specific
+assignments worth investigating, particularly61946 in the shared-bias capture.
+
+POSITION ERROR, KM (LOWER IS BETTER)
+Capture/arm             No cone       Soft cone .5     Stronger cone1
+12:39 PDT fitted c        7.0556          7.0383            7.0401
+12:39 PDT c=0             7.0595          7.0460            7.0416
+14:39 PDT fitted c       29.1970         29.2936           29.5430
+14:39 PDT c=0           302.7313        302.7771!         303.0497!
+
+UTC artifact labels1939/2139 correspond to12:39/14:39 PDT on Oct6.
+Relative timing sigma is1s in EVERY row. Cone.5/1 are dimensionless cone-prior
+strengths, not timing sigma. All fitted-c selections and all1939 selections
+are stationary/interior. ! marks nonstationary2139 zero-c cone selections,
+with scaled KKT residuals .2864/15.6128 after the bounded polish. Their apparent
+positions are not validated optimized estimates. No option fixes either failure.
+
+The shared-bias fitted-c changes are only17.3m and15.5m. The boundary fitted-c
+changes worsen error by96.6m and346.0m. Use the matched new control as comparison:
+ALL2139 options, including control, use the previously expanded search domains.
+Those domains already improved the older43.6km result to29.2km without cones.
+That previous domain benefit must not be attributed to this cone experiment.
+
+WHAT WAS APPLIED
+Frozen Oct5 empirical cone fit from20 earlier captures, with primary elliptical
+half-opening angles30.339/21.552deg, receiver-specific rolls and fitted soft edge.
+Nominal axes are RX0west(270deg azimuth,70deg elevation) and RX1east(90/70).
+These are conditional receiver-presence models, not measured absolute beam gains.
+
+For each observed receiver/window, the cone marginal supplies a positive prior
+multiplier (.1+.9*marginal)^(strength*support). Satellite priors are renormalized
+to preserve the original total detection mass. Unsupported empirical sky is
+neutral. All observation rows and satellites remain in the model. These are
+SOFT priors: outside-cone and opposite-side candidates are not hard excluded.
+No peer non-detections are invented. Cone parameters were not refit to these
+failures. The cone changes geometry-dependent assignment priors; all V16
+frequency/timing settings, frozen receiver calibration and bank choices remain.
+
+This distinction matters: a strong frequency match can retain responsibility
+outside a soft cone. The result does not test a hard cone-membership constraint.
+
+GEOMETRY FLAGS AT KNOWN LOCATION / RECEIVE TIME
+Percent of fitted-c posterior signal responsibility, not count of satellites:
+                           12:39 control -> strong     14:39 control -> strong
+opposite east/west half          15.168 ->14.483              40.439 ->38.032
+outside empirical ellipse       32.120 ->31.439              49.972 ->48.329
+behind nominal axis               .145 -> .217               1.482 -> 1.671
+below reference horizon             0 ->0                      0 ->0
+
+The cone's geometry effect is modest and does not track position accuracy.
+1939 uniform-prior frequency-data NLL slightly worsens29949.248->29950.652
+with the stronger cone, even though the changed cone-likelihood score improves.
+2139 uniform-prior frequency-data NLL worsens40616.378->40620.465; cone-weighted
+posterior RMS decreases132.989->129.853Hz while position error increases.
+RMS/score reductions are therefore not localization improvements.
+
+Unsupported sky alone does not explain weak cone impact. At the reference/raw
+diagnostic, zero-support signal mass is only .246%->.231% in1939 and
+1.418%->1.528% in2139(control->strong). Mean empirical support is about.976/.974
+and.858/.848 respectively. The soft priors retain most questionable assignments.
+
+SPECIFIC MARKED CANDIDATES AFTER STRONG CONE, FITTED c
+Satellite  RX       effective support   opposite-half fraction  outside-ellipse
+61946      0 west        102.2                 97.05%                100%
+61946      1 east        166.4                   --                  100%
+58947      0 west         38.7                 97.15%                100%
+48396      1 east         53.5                 95.72%                100%
+67076      1 east         51.0                 98.10%                100%
+The first three rows are1939; the final two are2139. Fractions weight each
+window by that satellite's selected-model posterior responsibility. These are
+candidate identities, not securely identified satellites. 61946 is especially
+useful to inspect because the preceding investigation found it had the largest
+position-gradient contribution, and it remains outside BOTH fitted cones here.
+Its mean angle from nominal axis is about58deg onRX0 and37.4deg onRX1.
+Satellite67076's mean RX1 angle25.8deg can still lie outside the narrower direction
+of the elliptical cone; a circular30deg threshold would miss that distinction.
+
+No individual fitted-c satellite/RX pair has BOTH at least10 effective signal
+windows and a majority of its weight behind the nominal axis. Aggregate behind
+fractions come from more dispersed/weak support. Opposite east/west is much more
+common than truly behind the receiver. For2139 zero-c, control support is57.56%
+opposite,81.23% outside ellipse and5.63% behind at the known reference; only.123%
+is below its reference horizon. The gross position error is not explained by
+large below-horizon support alone.
+
+WHAT EACH MARK MEANS
+opposite_east_west: RX0 observation assigned to a direction with east>0, or
+RX1 assigned to east<0. High directions can overlap cones; this is not proof of
+impossible reception. For these symmetric axes it also means nearer the other
+receiver's nominal axis.
+outside_empirical_ellipse: direction lies outside the frozen cone boundary,
+accounting for different major/minor openings and each receiver's axial roll.
+behind_nominal_boresight: angular separation from nominal axis exceeds90deg.
+below_horizon: local ENU up component is negative; independent of RX boresight.
+
+All3240 satellite/RX/model/scenario rows are in satellite_flags.csv, including
+low-support entries and both c arms. Four separate geometry scenarios preserve
+the same inference responsibilities: selected location/fitted orbit time;
+selected location/receive time; known reference/fitted time; reference/receive
+time. Known coordinates are used ONLY for diagnostic geometry and accuracy,
+never for fitting or candidate selection. The maps show reference/receive-time
+geometry for control and stronger-cone fitted-c results. Colors distinguish
+outside, opposite-but-inside, behind and below-horizon cases; numeric labels are
+candidate satellite IDs. Display filters are not analysis row deletions.
+
+CONTROLS, VALIDATION AND LIMITS
+Both captures' source/analysis manifests and pose companions bind to the verified
+LT3D004B fixture, radio serial, capture timestamps and authority interval. Actual
+installed elevation is unmeasured;70deg assumes a level base. Physical connector
+mapping is provisional, and empirical cones are not calibrated hardware masks.
+The pose authority and frozen benchmark reference differ by9.225m; diagnostic
+sky maps explicitly use the latter, matching prior accuracy evaluations.
+
+Both c arms retain identical observations/banks/domains/other priors and budgets.
+All original final basins are included:6 for1939,4 for2139. Each arm/basin uses
+its own best previously obtained full-scan sigma1 seed, fixed across options.
+No cross-arm/cross-option starts, oracle seeds, deletion fits or baseline-OFF
+fits enter. Every feasible original incumbent remains a selectable candidate
+after repricing. Selection uses the actual option score, not reference error.
+
+60 primary fits at30s/600iterations plus12 matched selected-candidate polishes
+at30s/600iterations; actual aggregate fit time1346.066s (22.4 minutes), distributed
+over case processes. Original primary receipts are preserved. All12 global
+free-versus-zero comparisons across primary/polished stages have no positive
+nested score gap; this does not establish global optimization. Two final zero-c
+cone selections remain nonstationary and are explicitly flagged.
+
+Five cone-objective tests, eight geometry/marker/plot tests and one polish
+lineage/retention test pass. Fourteen additional finite-difference checks on the
+actual captures pass, including empirical-support derivatives. The no-cone
+objective has exact deployed parity. Consolidated audits verify the72-run
+matrix, own-arm seeds, exactc=0, source hashes, mass preservation, feasibility,
+score-only selection and marker responsibility totals.
+
+This is a conditional continuation experiment with frozen upstream calibration
+and satellite sets, not a fresh geometry-aware association search or independent
+localization validation. The practical next diagnostic is reassessing high-support
+out-of-cone identities such as61946, rather than interpreting these small prior
+effects as a repair. Hard exclusion would be a separate stronger assumption.
+No production configuration, capture, QNAP path or golden fixture was changed.
+
+Files: selected.csv and summary.json give all12 final selections and metrics;
+satellite_flags.csv contains all3240 marked rows; geometry/markers-1939.json and
+markers-2139.json provide weighted summaries and specific examples;
+geometry/sky-1939.png/.svg and sky-2139.png/.svg are annotated sky maps;
+geometry/geometry.json records capture-specific pose authority and limitations;
+case/results.json and polished.json preserve every fit and primary/final selection.

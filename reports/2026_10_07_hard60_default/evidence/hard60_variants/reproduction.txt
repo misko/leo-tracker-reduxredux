@@ -1,0 +1,31 @@
+Numerical environment:
+  Interpreter: /opt/leo-tracker/current-api/.venv/bin/python
+  PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src
+  OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+  Working directory: /home/mouse9911/gits/leo-tracker-reduxredux
+
+All scripts and outputs below are relative to this report directory.
+Original controls and raw input metadata/arrays are read-only.
+
+1. python -m pytest -q test_variants.py
+2. python run_variants.py --labels N05 N25 N29 N39 N49 N64 --workers 8 --tag pilot_basic
+3. python run_variants.py --labels N05 N25 N29 N39 N49 N64 --phases rf_offsets --workers 4 --tag pilot_rf
+4. python validate.py --labels N05 N25 N29 N39 N49 N64 --tag pilot
+5. python holdout.py
+6. python run_variants.py --phases two_starts calibration_retry rf_offsets --workers 12 --tag full
+7. python diagnose_rf.py
+8. python analyze.py
+9. python validate.py
+10. python report.py
+
+Commands 5--7 may overlap. Wait for all three before steps 8--10.
+The full pass reuses the frozen pilot results; it does not silently rerun them.
+The N64 extra-start diagnostic never changes the benchmark's selected results.
+For a new numerical protocol or changed implementation, use a new directory.
+Wall-clock performance varies with machine load. Saved per-fit budgets and
+timeout counts are part of the experiment and are not selectively extended.
+
+Hard60 control: ../2026_10_07_n64_sigma_slope_variants/results/N*/sigma2_60
+Input corpus: ../2026_10_07_n64_before_after/inputs/N*
+Truth/reference position: ../2026_10_07_n64_before_after/evaluation.json
+Only analyze.py/report.py consume the reference coordinates.

@@ -37,6 +37,7 @@ def fit_position(
     maximum_iterations=100,
     local_center=None,
     local_radius_km=None,
+    slope_half_width_hz_s=None,
 ) -> PositionFit:
     """Hold position fixed for cell scoring, or release it within the prior disk.
 
@@ -69,6 +70,11 @@ def fit_position(
     scales = np.r_[1.0, 1.0, 200.0, 2.0, 200.0, 2.0, 200.0, np.ones(objective.size - 7)]
     lower, upper = np.full(objective.size, -np.inf), np.full(objective.size, np.inf)
     lower[:2], upper[:2] = -radius, radius
+    if slope_half_width_hz_s is not None:
+        if not np.isfinite(slope_half_width_hz_s) or slope_half_width_hz_s <= 0:
+            raise ValueError("slope half width must be finite and positive")
+        lower[[3, 5]], upper[[3, 5]] = -slope_half_width_hz_s, slope_half_width_hz_s
+        start[[3, 5]] = np.clip(start[[3, 5]], -slope_half_width_hz_s, slope_half_width_hz_s)
     lower[6], upper[6] = -5000, 5000
     lower[7], upper[7] = -10, 10
     if fixed_position:

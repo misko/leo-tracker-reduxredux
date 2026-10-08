@@ -26,10 +26,22 @@ function status() {
     },
   };
 }
+function hard60Status() {
+  const value = status();
+  value.manifest.document.schema_version = 2;
+  value.manifest.document.analysis_id = "scanner-regional-position-v2";
+  value.manifest.document.methods = value.manifest.document.methods.slice(1);
+  value.manifest.artifacts = value.manifest.artifacts.slice(1);
+  return { ...value, manifest: { ...value.manifest, document: { ...value.manifest.document,
+    configuration: { protocol: "sacramento-hard60-v1", run: { slope_half_width_hz_s: 60 } },
+  } } };
+}
+const pending = { session_id: "scan-test", state: "pending", manifest: null };
 const response = (value: unknown) => ({ ok: true, json: async () => value });
 
-it("shows both automatic maps, both RF arms and reference errors", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(status())));
+it("preserves historical maps with an explicit legacy label", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(response(url.endsWith("v2") ? pending : status()))));
   render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
   expect(await screen.findAllByRole("img")).toHaveLength(2);
   for (const name of ["T1AT", "V16"]) {
@@ -45,25 +57,42 @@ it("shows both automatic maps, both RF arms and reference errors", async () => {
   expect(screen.getAllByText("5.79 km")).toHaveLength(4);
   expect(screen.getAllByText("c = 0")).toHaveLength(2);
   expect(screen.getAllByText("123.0 Hz")).toHaveLength(4);
+  expect(screen.getByText(/Historical T1AT\/V16 comparison/)).toBeInTheDocument();
+});
+
+it("prefers Hard60, renders one map and retains both RF arms", async () => {
+  const fetcher = vi.fn().mockResolvedValue(response(hard60Status()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
+  const images = await screen.findAllByRole("img");
+  expect(images).toHaveLength(1);
+  expect(images[0]).toHaveAttribute("width", "1080");
+  expect(images[0]).toHaveAttribute("height", "960");
+  expect(images[0]).toHaveStyle({ width: "100%", objectFit: "contain" });
+  expect(images[0]).toHaveAttribute("src",
+    `/api/v1/scanner/tracking/scan-test/regional-position-v2/V16.png?sha256=${encodeURIComponent(digest)}`);
+  expect(screen.getByText("Hard60 / V16")).toBeInTheDocument();
+  expect(screen.getAllByText("5.79 km")).toHaveLength(2);
+  expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
 it("polls pending results and cancels polling on unmount", async () => {
   vi.useFakeTimers();
-  const fetcher = vi.fn().mockResolvedValueOnce(response({ session_id: "scan-test", state: "pending", manifest: null }))
-    .mockResolvedValue(response(status()));
+  const fetcher = vi.fn().mockResolvedValueOnce(response(pending))
+    .mockResolvedValueOnce(response(pending)).mockResolvedValue(response(hard60Status()));
   vi.stubGlobal("fetch", fetcher);
   const view = render(<RegionalPosition sessionId="scan-test" />);
   await act(async () => {});
   expect(screen.queryByRole("img")).not.toBeInTheDocument();
   await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
-  expect(screen.getAllByRole("img")).toHaveLength(2);
+  expect(screen.getAllByRole("img")).toHaveLength(1);
   view.unmount();
   await vi.advanceTimersByTimeAsync(30000);
-  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(fetcher).toHaveBeenCalledTimes(3);
 });
 
 it.each(["capture", "prior", "inventory", "truth", "arms"])("rejects incompatible %s evidence", async kind => {
-  const value = status();
+  const value = hard60Status();
   if (kind === "capture") value.manifest.document.input_manifest_sha256 = "other";
   if (kind === "prior") value.manifest.document.prior_radius_km = 500;
   if (kind === "inventory") value.manifest.artifacts.pop();
@@ -76,13 +105,13 @@ it.each(["capture", "prior", "inventory", "truth", "arms"])("rejects incompatibl
 });
 
 it("keeps diagnostic maps visible when evidence is insufficient", async () => {
-  const value = status();
+  const value = hard60Status();
   for (const method of value.manifest.document.methods) {
     method.state = "insufficient";
     for (const arm of method.arms) { arm.selected = null; arm.reasons = ["no-qualified-windows"]; }
   }
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(value)));
   render(<RegionalPosition sessionId="scan-test" />);
-  expect(await screen.findAllByRole("img")).toHaveLength(2);
-  expect(screen.getAllByText("Unavailable: no-qualified-windows")).toHaveLength(4);
+  expect(await screen.findAllByRole("img")).toHaveLength(1);
+  expect(screen.getAllByText("Unavailable: no-qualified-windows")).toHaveLength(2);
 });

@@ -6,6 +6,7 @@ from leo.analysis.regional_position_score import coordinates
 from leo.contracts.digests import canonical_digest
 from leo.contracts.regional_position import RegionalPrior
 from leo.contracts.regional_position_products import RegionalPositionDocumentV1
+from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
 
 
 def regional_position_document(
@@ -22,8 +23,9 @@ def regional_position_document(
     diagnostics=None,
 ):
     prior = RegionalPrior()
+    hard60 = configuration.get("protocol") == "sacramento-hard60-v1"
     methods = []
-    for name in ("T1AT", "V16"):
+    for name in ("V16",) if hard60 else ("T1AT", "V16"):
         search = result["searches"][name]
         points = []
         for row in search["evaluations"]:
@@ -48,11 +50,14 @@ def regional_position_document(
                 row for row in result["finals"] if row["method"] == name and row["arm"] == arm
             ]
             completed = [row for row in starts if row["fit"] is not None]
+            eligible = (
+                [row for row in completed if row["fit"]["converged"]] if hard60 else completed
+            )
             selected = None
-            if completed:
+            if eligible:
                 # Reference is deliberately absent from this ordering.
                 best = min(
-                    completed,
+                    eligible,
                     key=lambda row: (
                         row["fit"]["objective"] + row["calibration_penalty"],
                         row["basin"],
@@ -89,6 +94,12 @@ def regional_position_document(
                     stop_reason=fit["stop_reason"],
                 )
             reasons = [row["reason"] for row in starts if row["reason"]]
+            if hard60:
+                reasons.extend(
+                    f"nonstationary:{row['basin']}:{row['start']}"
+                    for row in completed
+                    if not row["fit"]["converged"]
+                )
             reasons.extend(row["reason"] for row in result["failures"])
             if selected is None and not reasons:
                 reasons = ["no-supported-regional-basin"]
@@ -112,6 +123,9 @@ def regional_position_document(
         )
     receipt = dict(diagnostics or {})
     receipt["regional_failures"] = result["failures"]
+    if hard60:
+        receipt["calibrations"] = result.get("calibrations", {})
+        receipt["retained_basins"] = result.get("basins", [])
     receipt["final_starts"] = [
         dict(
             method=row["method"],
@@ -124,7 +138,8 @@ def regional_position_document(
         )
         for row in result["finals"]
     ]
-    return RegionalPositionDocumentV1.model_validate(
+    model = RegionalPositionDocumentV2 if hard60 else RegionalPositionDocumentV1
+    return model.model_validate(
         dict(
             session_id=session_id,
             input_manifest_sha256=input_digest,

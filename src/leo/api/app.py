@@ -52,6 +52,7 @@ from leo.contracts.capture_control import CaptureControlStateV1
 from leo.contracts.partial_band import PartialBandReader
 from leo.contracts.position_methods import PositionMethodsReader
 from leo.contracts.regional_position_products import RegionalPositionReader
+from leo.contracts.regional_position_v2 import RegionalPositionReaderV2
 from leo.contracts.scanner_glrt_publication import GLRT_SESSION_PATTERN, ScannerGlrtPublicationV1
 from leo.contracts.scanner_refinement import ScannerRefinementReader
 from leo.contracts.scanner_tracking import ScannerTrackingReader
@@ -261,6 +262,7 @@ def create_app(
     adaptive_tle_position_v2: AdaptiveTlePositionReaderV2 | None = None,
     adaptive_tle_position_v3: AdaptiveTlePositionReaderV3 | None = None,
     regional_position: RegionalPositionReader | None = None,
+    regional_position_v2: RegionalPositionReaderV2 | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -283,6 +285,7 @@ def create_app(
     app.include_router(adaptive_tle_position_router(adaptive_tle_position_v2, version=2))
     app.include_router(adaptive_tle_position_router(adaptive_tle_position_v3, version=3))
     app.include_router(regional_position_router(regional_position))
+    app.include_router(regional_position_router(regional_position_v2, version=2))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")

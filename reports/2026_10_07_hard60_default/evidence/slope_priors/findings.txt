@@ -1,0 +1,100 @@
+Completed three Sol-agent slope-prior prototypes
+==============================================
+
+Coverage correction from subsequent review: the original 296.82 km and
+189.44 km V16 fitted-c failures were NOT in this six-case experiment. Both
+archived wrong states already satisfy +/-10 Hz/s. See
+original_failures_review.txt and original_failures_review.json. The results
+below do not establish a slope-prior benefit for those original two examples.
+
+Further coverage note: the earlier 14:39 paired-clock repair yielding 4.50 km
+used a V16 search region absent from this experiment's V16 basin pool. These
+runs do not test slope limits on that repaired branch. See anchor_case_review.txt.
+
+Tested independent hard windows +/-60, +/-30, and +/-10 Hz/s on RX0/RX1's
+additional frequency slopes, alongside an unrestricted control. The extra
+slope is added after the frozen calibration. Both methods use relative timing
+sigma = 1 s. All comparisons include matched c=0 and fitted-c arms. No production
+settings changed. No new RF was collected.
+
+Execution: six fixed retrospective cases, frozen observations/candidates and
+calibration, same original starts and budgets. A 64-call screen per option was
+followed by 32 own-option/own-arm continuations because early results were not
+stationary. Total: 384 fitting calls across all four options. No fitted output
+was passed between arms or windows. Reference positions were used only after
+score-based selection. The frozen protocol and one bounded continuation plan
+are in protocol.txt and polish_protocol.txt.
+
+Main finding
+------------
+There is no established winning prior width. Every selected unrestricted fit
+already has |additional slope| <= 9.5375 Hz/s, so all control selections are
+feasible in all three windows. Most position estimates are unchanged. Different
+answers under wider inactive bounds expose optimizer path dependence, not an
+identified physical clock restriction benefit.
+
+At the difficult Oct 6, 14:39 PDT (21:39 UTC) capture:
+                              control       +/-60        +/-30        +/-10
+V16 fitted-c error, km          30.234        18.955        12.325       19.482
+V16 zero-c error, km            24.628        24.960        24.860       24.603
+Fitted-c posterior RMS, Hz     131.439       124.497       104.562      124.090
+Fitted-c frequency data NLL  35561.035     35213.072     33696.915    35217.457
+Fitted-c timing penalty       1402.700      1514.443      1581.056     1510.393
+Fitted-c KKT residual            .000390       .000129       .022395      .004876
+
+KKT convergence threshold is 0.001. The +/-30 and +/-10 fitted-c results remain
+nonstationary. +/-60 and +/-30 have no selected slope-bound hits anywhere in
+the six cases. +/-10 hits RX1 = +10 only in that unresolved V16 fitted-c result.
+The +/-60 selected fit there has additional slopes [-8.326, 11.133] Hz/s but
+total linear slopes [12.817, -16.239] Hz/s after adding calibration. Nonlinear
+piecewise calibration is separate. Therefore a small additional slope is not
+evidence of a small total modeled clock trend.
+
+The earlier Oct 6, 12:39 PDT failure stays approximately 6.99 km in V16 under every
+window. The Oct 6, 15:52 PDT case provides a counterexample: V16 zero-c error
+worsens from 0.921 km to 1.754 km under all three windows, despite frequency RMS
+improving from 136.49 Hz to 135.28 Hz and data NLL improving by 1.068. Frequency
+agreement alone is not localization accuracy.
+
+Validation and limits
+---------------------
+Thirteen solver/runner tests passed, including unrestricted parity and correct
+KKT handling at both receiver bounds. All 96 saved published fits used for input
+validation repriced exactly. The common numerical adapter checked 256 initial
+candidate evaluations. Independent comparison checked all 96 final selections'
+scores, feasibility, KKT, selection ordering and position errors. Continuation
+seeds were verified against their own first-stage receipts. All 384 fit calls
+completed without recorded fit exceptions.
+
+Final selected KKT-converged counts out of 24: control 24, +/-60 24, +/-30 23,
++/-10 23. All 96 selected results are feasible. The audit records 25 width-nesting
+gaps above 1e-6 score units; a narrower feasible set beating a wider search
+indicates incomplete optimization, even if both returned local stationary
+points. These local stationary points are not certificates of global optimality.
+
+Both c arms retain the shared fitted-c upstream calibration, so this is a
+final-stage ablation. Searches are conditional on published winning-basin unions
+and a shared 25 km local radius; they do not explore a new global candidate set.
+The test deliberately includes failures plus two previously accurate guard
+scans; it is not representative of all 22 completed scans or future captures.
+Fresh control scores use sigma = 1 s, so improvements versus original published
+sigma = 0.15 s V16 results cannot be attributed to these slope bounds.
+
+Next useful plan
+----------------
+Keep the prototype experimental. First investigate why the same feasible model
+finds different stationary solutions from the same original starts when only
+inactive bounds change. If the intended physical constraint is receiver-clock
+stability, separately test a prior on total calibration-plus-correction drift
+or on paired-receiver differential drift, with its definition frozen first.
+Then evaluate any justified candidate over the full frozen 22-scan cohort and
+chronologically held-out scans. Do not select a production width from the best
+single nonstationary position result.
+
+Files
+-----
+polished/position_comparison.png and .svg: all six cases/methods/arms.
+polished/comparison.csv: errors, separate data/timing terms, RMS, slopes, flags.
+polished/summary.json and audit.txt: matched-run and independent numeric audits.
+polished/{control,window60,window30,window10}/results.json: complete final receipts.
+window60/review.txt, window30_review.txt, window10_review.txt: Sol-agent reviews.

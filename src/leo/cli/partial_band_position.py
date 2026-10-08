@@ -11,7 +11,7 @@ from leo.contracts.partial_band import PartialBandManifestV1
 from leo.presentation.adaptive_tle_position import render_adaptive_tle_position
 from leo.presentation.regional_position import render_regional_position
 from leo.storage.adaptive_tle_position import AdaptiveTlePositionStoreV3
-from leo.storage.regional_position import RegionalPositionStore
+from leo.storage.regional_position_v2 import Hard60Store
 
 
 def publish_partial_band_positions(root, manifest: PartialBandManifestV1):
@@ -53,7 +53,7 @@ def publish_partial_band_positions(root, manifest: PartialBandManifestV1):
                 "deferred_cells": 0,
                 "stop_reason": "partial-band-not-qualified",
             }
-            for name in ("T1AT", "V16")
+            for name in ("V16",)
         },
         "points": {},
         "finals": [],
@@ -71,6 +71,6 @@ def publish_partial_band_positions(root, manifest: PartialBandManifestV1):
         reference_evidence="Configured baseline receiver reference; evaluation only",
         diagnostics=diagnostics,
     )
-    RegionalPositionStore(root, read_only=False).publish(
-        document, {name: render_regional_position(document, name) for name in ("T1AT", "V16")}
+    Hard60Store(root, read_only=False).publish(
+        document, {name: render_regional_position(document, name) for name in ("V16",)}
     )

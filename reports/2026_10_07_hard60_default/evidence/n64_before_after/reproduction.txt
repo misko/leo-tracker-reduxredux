@@ -1,0 +1,41 @@
+Offline N01--N64 replay
+
+All files are report artifacts. The experiment does not collect RF, update the
+published analyzer, or write to QNAP. Inputs are frozen under inputs/N01--N64.
+The deployed package used as the numerical oracle is pinned by protocol.json.
+
+Native helper build (from the repository root):
+  c++ -O3 -std=c++17 -shared -fPIC -ffp-contract=off reports/2026_10_07_n64_before_after/orbits.cpp -o reports/2026_10_07_n64_before_after/orbits.so
+
+Use /opt/leo-tracker/current-api/.venv/bin/python, with:
+  OPENBLAS_NUM_THREADS=1
+  OMP_NUM_THREADS=1
+  MKL_NUM_THREADS=1
+  PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src
+
+Tests:
+  python -m unittest discover -s reports/2026_10_07_n64_before_after -p 'test_*.py' -v
+
+Replay (20 processes, 12 concurrent scan/phase searches; resumes pinned caches):
+  python reports/2026_10_07_n64_before_after/experiment.py
+
+Final independent audit and scientific figures:
+  python reports/2026_10_07_n64_before_after/summarize.py --audit
+
+Partial progress, without changing fits or selection:
+  python reports/2026_10_07_n64_before_after/summarize.py --partial
+
+Existing outputs require the file owner's access. Do not alter a frozen protocol
+to silently accept new code or changed inputs. A changed experiment belongs in a
+new report directory. The documented association migration is the one exception
+within this report: it archives the pilot, retains unchanged grid computations,
+and repeats all final fits with one common association implementation.
+
+The old cohort labels contain N01--N80. This report follows the user's literal
+N01--N64 request. It does not substitute the older 64-extension set N17--N80.
+
+Timing names: sigma is the satellite-relative timing prior in seconds. The common
+timing prior stays at 3 s. Slope terms are Hz/s. The +/-60 hard box applies to
+each fitted stage's affine terms; the frozen calibration plus final correction
+and piecewise residual drift are reported separately, without claiming a hard
+limit on their sum.

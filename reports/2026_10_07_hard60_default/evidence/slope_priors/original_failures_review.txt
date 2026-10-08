@@ -1,0 +1,54 @@
+Correction: original >100 km examples versus slope-prior test coverage
+====================================================================
+
+The original two catastrophic fitted-c examples discussed in
+2026_10_07_live_position_followup/timing/findings.md were:
+
+Oct 6, 11:38 PDT / 18:38 UTC: scan-fw-6bf407cfe8158445, V16 fitted-c,
+296.817735 km error. Additional slopes RX0 +0.696505, RX1 +0.456671 Hz/s.
+
+Oct 6, 14:24 PDT / 21:24 UTC: scan-fw-559a822227a6a71b, V16 fitted-c,
+189.436253 km error. Additional slopes RX0 +0.808058, RX1 -4.473060 Hz/s.
+
+NEITHER scan was included in the six-case slope-window experiment. It tested
+the later residual cases labeled 1939/2139 instead. The previous response did
+not adequately distinguish this change of cases. That experiment cannot answer
+whether a fresh slope-constrained search helps the original two examples.
+
+Moreover, BOTH archived wrong solutions lie strictly inside every tested slope
+window (+/-60, +/-30, +/-10 Hz/s). These hard uniform priors therefore neither
+exclude those states nor change their objective at fixed other settings. This
+is not proof that bounds cannot influence an optimizer's path, but does rule
+out claiming that the proposed bounds directly reject the original wrong fits.
+
+Earlier timing-prior/search experiments did help these cases. The expanded
+bad-sample timing experiment reports 296.818 -> 4.459 km for sigma = 1 s, converged;
+the initial two-case timing study reports 189.436 -> 5.813 km for sigma = 1 s,
+not quite converged (KKT 0.00148 vs 0.001). Those are timing/search results, not
+slope-prior improvements. They must not be credited to the new slope bounds.
+
+The separately discussed 305.642557 km zero-c failure at Oct 6, 14:39 PDT
+(scan-fw-e3bebc228093a125) WAS included in the slope experiment. Its original
+additional slopes were +51.871564/+119.461904 Hz/s, so every tested window
+rejects that particular archived state. But new matched final results were:
+
+               control        +/-60        +/-30        +/-10
+V16 c=0 km     24.628         24.960        24.860        24.603
+
+Use original_failures_review.json for exact values. All four selected new
+zero-c results are converged and have slopes inside +/-10. The removal of the
+>300 km outcome already occurs in the unrestricted fresh control. Additional
+benefit from slope limits is not demonstrated for this case either.
+
+The earlier final answer's 30.23 -> 18.96/12.33/19.48 km comparison describes
+V16 FITTED-c at 14:39, whose original published error was 43.619 km, not the
+305.64 km ZERO-c failure. Reporting the fitted arm alone did not answer the
+question about the catastrophic zero-c result.
+
+Conclusion: no demonstrated cure of the original >100 km examples from these
+slope priors. The limits can prevent specific excessive-drift states, but small
+additional slopes do not guarantee correct satellite assignments or position.
+A direct follow-up must include the original two exact session IDs, keep timing
+sigma = 1 s, compare unrestricted/+/-60/+/-30/+/-10 with both c arms, and preserve
+the same original near/far basin inventory and budgets. No new fits were run
+for this review; the omitted-case coverage remains explicitly unresolved.

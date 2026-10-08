@@ -1,9 +1,10 @@
 """Verified, immutable T1AT/V16 products in a pinned local namespace."""
 
 import os
+from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.regional_position_products import (
@@ -12,6 +13,11 @@ from leo.contracts.regional_position_products import (
     RegionalPositionManifestV1,
     RegionalPositionStatusV1,
 )
+from leo.contracts.regional_position_v2 import (
+    RegionalPositionDocumentV2,
+    RegionalPositionManifestV2,
+    RegionalPositionStatusV2,
+)
 from leo.storage.adaptive_hop_analysis import _publish, _read, _seal, _unseal
 from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore
 
@@ -19,10 +25,16 @@ _LIMIT = 16 * 1024 * 1024
 _METHODS: tuple[Literal["T1AT", "V16"], ...] = ("T1AT", "V16")
 
 
-class RegionalPositionStore:
+class _RegionalPositionStore[
+    Status: RegionalPositionStatusV1 | RegionalPositionStatusV2,
+    Manifest: RegionalPositionManifestV1 | RegionalPositionManifestV2,
+]:
     """Reuse the storage component's pinned-directory and writer-lock machinery."""
 
-    namespace = "scanner-regional-position-v1"
+    namespace: str
+    methods: tuple[Literal["T1AT", "V16"], ...]
+    status_model: Callable[..., Status]
+    manifest_model: type[Manifest]
 
     def __init__(self, root: Path, *, read_only: bool = True):
         self.read_only = read_only
@@ -32,41 +44,48 @@ class RegionalPositionStore:
     def _directory(self, session_id: str, *, create: bool = False):
         return self._backing._directory(session_id, create=create)
 
-    def status(self, session_id: str) -> RegionalPositionStatusV1:
+    def status(self, session_id: str) -> Status:
         try:
             with self._directory(session_id) as directory:
-                manifest = _unseal(
-                    _read(directory, "manifest.json", _LIMIT), RegionalPositionManifestV1
-                )
+                manifest = _unseal(_read(directory, "manifest.json", _LIMIT), self.manifest_model)
                 raw = _read(directory, "document.json", _LIMIT)
             if raw != canonical_json_bytes(manifest.document.model_dump(mode="json")):
                 raise ValueError("regional position document encoding differs")
-            return RegionalPositionStatusV1(
-                session_id=session_id, state="complete", manifest=manifest
-            )
+            return self.status_model(session_id=session_id, state="complete", manifest=manifest)
         except FileNotFoundError:
-            return RegionalPositionStatusV1(session_id=session_id)
+            return self.status_model(session_id=session_id)
         except ValueError as error:
             if isinstance(error.__cause__, FileNotFoundError):
-                return RegionalPositionStatusV1(session_id=session_id)
+                return self.status_model(session_id=session_id)
             raise
 
-    def publish(self, document: RegionalPositionDocumentV1, images: dict[str, bytes]):
+    def publish(
+        self,
+        document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2,
+        images: dict[str, bytes],
+    ) -> Manifest:
         if self.read_only:
             raise PermissionError("regional position store is read-only")
-        if set(images) != set(_METHODS):
+        if set(images) != set(self.methods):
             raise ValueError("both method PNGs are required")
         if any(not payload.startswith(b"\x89PNG\r\n\x1a\n") for payload in images.values()):
             raise ValueError("regional position artifact is not PNG")
         raw = canonical_json_bytes(document.model_dump(mode="json"))
-        manifest = RegionalPositionManifestV1(
-            document=document,
-            document_sha256=sha256_digest(raw),
-            artifacts=tuple(
-                RegionalArtifactV1(
-                    name=name, sha256=sha256_digest(images[name]), byte_count=len(images[name])
+        manifest = cast(
+            Manifest,
+            self.manifest_model.model_validate(
+                dict(
+                    document=document.model_dump(mode="json"),
+                    document_sha256=sha256_digest(raw),
+                    artifacts=tuple(
+                        RegionalArtifactV1(
+                            name=name,
+                            sha256=sha256_digest(images[name]),
+                            byte_count=len(images[name]),
+                        )
+                        for name in self.methods
+                    ),
                 )
-                for name in _METHODS
             ),
         )
         sealed = _seal(manifest)
@@ -82,12 +101,12 @@ class RegionalPositionStore:
             if existing is not None:
                 if existing != sealed:
                     raise ValueError("immutable regional position publication conflict")
-                for name in _METHODS:
+                for name in self.methods:
                     if _read(directory, f"{name}.png", _LIMIT) != images[name]:
                         raise ValueError("regional position PNG differs")
                 return manifest
             payloads = [("document.json", raw)] + [
-                (f"{name}.png", images[name]) for name in _METHODS
+                (f"{name}.png", images[name]) for name in self.methods
             ]
             for filename, payload in payloads:
                 temporary = f".{filename}.{os.getpid()}.partial"
@@ -107,7 +126,7 @@ class RegionalPositionStore:
         return manifest
 
     def artifact(self, session_id: str, method: str) -> bytes | None:
-        if method not in _METHODS:
+        if method not in self.methods:
             raise ValueError("unknown regional positioning method")
         status = self.status(session_id)
         if status.manifest is None:
@@ -118,3 +137,12 @@ class RegionalPositionStore:
         if len(payload) != reference.byte_count or sha256_digest(payload) != reference.sha256:
             raise ValueError("regional position PNG digest differs")
         return payload
+
+
+class RegionalPositionStore(
+    _RegionalPositionStore[RegionalPositionStatusV1, RegionalPositionManifestV1]
+):
+    namespace = "scanner-regional-position-v1"
+    methods = _METHODS
+    status_model = RegionalPositionStatusV1
+    manifest_model = RegionalPositionManifestV1

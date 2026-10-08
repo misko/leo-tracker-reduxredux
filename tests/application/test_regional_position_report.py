@@ -75,3 +75,47 @@ def test_unscored_search_is_explicit_and_does_not_publish_internal_sentinel(monk
         for point in method.points
     )
     assert "1e+100" not in doc.model_dump_json()
+
+
+def test_hard60_rejects_better_score_without_stationarity_and_never_uses_reference(monkeypatch):
+    from leo.cli.regional_position import configuration
+
+    obs, bank, prior, _ = fixture(monkeypatch)
+    result = run_regional_position(
+        obs,
+        bank,
+        prior,
+        (),
+        Checkpoints(),
+        configuration=RegionalRunConfiguration(point_budget=16, basins_per_method=1),
+    )
+    for row in result["finals"]:
+        row["fit"]["objective"] = 1 if row["start"] == "associated" else 100
+        if row["start"] == "associated":
+            row["fit"].update(stationarity=0.002, converged=False)
+
+    def report(reference):
+        return regional_position_document(
+            result,
+            session_id="scan-1",
+            input_digest=DIGEST,
+            analysis_digest=DIGEST,
+            evidence_digest=DIGEST,
+            configuration=configuration(),
+            windows=len(obs.window_ids),
+            reference=reference,
+            reference_evidence="evaluation only",
+        )
+
+    first, second = report((38, -122)), report((39, -121))
+    assert first.schema_version == 2 and len(first.methods) == 1
+    for arm, other in zip(first.methods[0].arms, second.methods[0].arms, strict=True):
+        assert arm.selected.converged and arm.selected.objective == 100
+        assert arm.selected.east_km == other.selected.east_km
+        assert arm.selected.horizontal_error_m != other.selected.horizontal_error_m
+        assert any("nonstationary" in reason for reason in arm.reasons)
+    for row in result["finals"]:
+        row["fit"].update(stationarity=0.002, converged=False)
+    rejected = report((38, -122))
+    assert rejected.methods[0].state == "insufficient"
+    assert all(arm.selected is None for arm in rejected.methods[0].arms)

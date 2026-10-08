@@ -1,0 +1,187 @@
+SIGMA = 1 SECOND: ROOT-CAUSE INVESTIGATION OF TWO REMAINING FAILURES
+
+All new V16 evaluations retain relative timing sigma1s. No production settings
+were deployed or reconfigured. Capture names retain their established UTC labels:
+1939 = Oct6 12:39 PDT;2139 = Oct6 14:39 PDT.
+
+Main findings
+The shared-bias case remains wrong at stationary interior solutions. Within the
+timing/association modes explored, the data likelihood favors a location about
+7km away over the known location; the timing prior favors the known location.
+This is evidence/model disagreement, not just the previous continuation artifact.
+The specific physical or assignment defect is NOT yet identified.
+
+The boundary case has confirmed search-coverage and optimization-budget defects.
+None of its four original final search disks contains the known receiver location.
+The nearest disk excludes it by6.716km in search coordinates. Twelve seconds
+was insufficient for its nuisance optimization; a longer continuation converges
+but remains43.660km wrong. Expanded search improves the fitted-c selection to
+29.197km, still unacceptable, and misses a demonstrably better feasible state
+at the known position. A persistent gradient/solver code bug is not established.
+
+SELECTED POSITION RESULTS, KM
+                                              fitted c       c=0
+1939 previous sigma1 saved candidate             6.453!       6.417!
+1939 both own original timing branches refined   7.056        7.059
+1939 nonlinear receiver correction removed      7.188        7.195
+2139 prior sigma1 candidate                    43.619!     304.224
+2139 longer original-domain continuation       43.660      304.224
+2139 all-basin expanded-domain search           29.197      302.731
+! = failed independent stationarity audit. All other displayed new selections
+pass the audit. Original-domain2139 stationary solutions remain on boundaries;
+expanded winners and1939 winners are interior. These are local results, not
+proof of global optimality or reliable localization.
+
+SHARED BIAS: SEARCH ARTIFACT REMOVED, DATA DISAGREEMENT REMAINS
+
+The earlier sigma sweep continued each arm's best ORIGINAL .15s candidate,
+fixed across all options. At sigma1, an associated candidate became preferable
+but was only repriced, leaving a large gradient. We now refined both original
+associated and zero-timing starts separately within each arm, across all six
+original final basins. The resulting best fits are stationary and about7.06km
+away. Score improves by265.507 in the fitted arm while position gets worse.
+Simply completing that missing optimization does not cure the bias.
+
+We then held position fixed and optimized nuisance parameters at both the biased
+location and known receiver location, using the same bank, calibration andsigma1.
+Direct8s reference fits did not converge. A separate eight-step position profile
+from each own-arm optimized winner to the reference obtained stationary nuisance
+fits at both endpoints. Six intermediate steps remain unconverged and flagged.
+Known-location states are diagnostic-only and never enter inference selection.
+
+Reference score MINUS wrong-location score (positive means score prefers wrong):
+                         fitted c         c=0
+frequency-data NLL       +1107.127      +1109.020
+common+relative timing     -38.957        -53.778
+total objective          +1068.170      +1055.241
+Calibration penalty is identical at both endpoints and cancels.
+
+Thus timing costs do not explain this remaining preference: they actually favor
+the known position. The wrong position obtains greater modeled signal support
+and better aggregate data likelihood. The same preference occurs in both arms.
+The reference free-c profile is about9.68 objective units worse than its feasible
+zero-c counterpart, showing another finite-search gap. These conditional profiles
+do NOT prove the globally optimized likelihood prefers the wrong location.
+
+The preference is distributed, not confined to one channel or scan half.
+Fitted-c reference-minus-wrong data NLL by channel:
+channel1 +347.769;channel2 +252.280;channel3 +293.115;channel4 +213.962.
+RX0 +836.038;RX1 +271.089. Early +520.935;late +586.192.
+Each partition sums exactly to the full1107.127 difference. This is a score
+decomposition under the same full-scan nuisance fits, not independent block fits
+or proof that each block would separately estimate the same position.
+
+Matched conditional RX/time deletions provide a complementary check:
+RX0-only errors6.235/6.248km;RX1-only5.699/5.673km (fitted/zero).
+Early-half3.707/2.759km;late-half7.947/7.974km. All selected block fits are
+stationary and interior, but upstream evidence remains trained on the full scan.
+In particular, RX1 channel3 contributes188 early observations and only1 late,
+while RX1 channel2 contributes74 early and237 late. Time and RF composition
+are confounded. These differences must not be labeled clock drift without
+controlling that observation mix.
+
+A concrete mechanism was tested and did not explain the bias. The winning point
+is near its calibration grid point, suggesting the frozen receiver correction
+might absorb geographic information. We removed only the nonlinear correction,
+retained the affine baseline, and adjusted the own-arm offset/slope seeds to
+preserve their affine prediction contribution. Matched ON/OFF fits, both arms,
+same bank/domain/budget all converge. OFF increases errors by132-136m and worsens
+data fit slightly. This does not support nonlinear receiver-baseline anchoring
+as the main cause in this bank/local solution. It does not test upstream effects
+of calibration on bank selection. The free affine receiver terms absorb the
+retained affine baseline, so it is not a hidden fixed affine position constraint.
+
+Remaining leads are strained satellite assignments and joint RF/time geometry.
+Satellite61946 has the largest position-gradient contribution;56289 has strong
+support with an opposing contribution. Some fitted relative timing shifts remain
+many seconds. These are targets for inspecting cross-channel/RX Doppler tracks
+and identity consistency, not established incorrect satellite identities. The
+next attribution test should balance RF/time coverage and isolate association
+evidence. Deleting observations because they improve reference error is not a
+validated remedy.
+
+BOUNDARY CASE: CORRECT POSITION WAS OUTSIDE EVERY ORIGINAL FINAL REGION
+
+Reference search coordinates are[-87.035795883,-80.990860347]km.
+Original final region                radius km   reference distance km  outside by
+[-106.25,-81.25]                       12.500             19.216             6.716
+[-112.50,-212.50]                      17.678            133.952           116.274
+[-68.75,-106.25]                       12.500             31.183            18.683
+[225.00,25.00]                        35.355            329.546           294.190
+These are distances in the optimizer's east/north coordinates, not an exact
+great-circle error lower bound. The known receiver is inside the global regional
+prior but outside the union of these four final refinement domains. Convergence
+within those original domains cannot recover the exact known position.
+
+All four basins, both original timing starts and both c arms were tested under
+matched original versus expanded domains. Expansion doubles each actual radius,
+with minimum25km, preserving center/bank/baseline. Four own-arm1m inward probes
+separately tested boundary initialization. No starts crossed c arms.
+
+The original fitted winner had a real nonzero timing gradient, not just a
+questionable spatial-boundary flag. Coordinate20 analytic derivative
+-218.849040539 agrees with finite difference-218.849039811. A feasible timing-only
+step reduces objective at unchanged position. Original12s runs hit the cap.
+An additional60s-cap/1000-iteration own-arm continuation converged after16.159s
+for fitted c and8.609s for zero c. Errors remain43.660km/304.224km. The fitted
+endpoint has outward spatial descent blocked by its local disk, and tangential
+derivative is essentially zero. Therefore the prior KKT failure was budget
+truncation; fixing convergence does not fix search coverage or location.
+
+Expanded fitted-c selection comes from the already-retained near-T1AT bank.
+It improves score to40700.091 and position error to29.197km. That endpoint is
+11.685km from its center, INSIDE the original12.5km disk. Expansion therefore
+also changes the nonconvex optimization path; its benefit here is not simply
+admitting that endpoint. The original near-bank solution lost final ranking
+because its score was42376.109. The bank itself was never missing.
+
+The expanded near-bank25km disk DOES contain the known receiver. A separate
+fixed-position diagnostic found a feasible reference candidate with score
+40574.860, beating the expanded selected40700.091 by125.231. This reference
+candidate is not stationary, but feasibility and its lower score suffice to
+demonstrate that the selected fit is not globally optimal over this domain.
+It is not a usable truth-free localization result. Other wrong-position fixed
+profiles also find lower feasible scores, so this does not establish that the
+globally optimized model would select the reference position. All12 boundary
+fixed-position oracle selections fail the8s stationarity audit; no profile
+global-optimality or physical-model verdict is claimed from them.
+
+Practical search work supported by evidence: allow score/constraint-driven
+expansion from active local boundaries while retaining incumbents; refine both
+timing starts; and give nonstationary candidates enough bounded continuation
+before ranking them as completed fits. These measures require matched-cohort
+evaluation. Wider domains alone already failed to produce an accurate position
+here, and c=0 remains roughly303km wrong.
+
+VERIFICATION, LIMITATIONS AND ARTIFACTS
+
+130 new bounded fits:44 shared-bias,38 boundary including two longer controls,
+32 fixed-position oracle fits,16 incremental-profile fits. Single-thread BLAS.
+Original input/analysis, deployed source, composite evidence and archived TLE
+bindings checked; retained bank ordering and original score repricing verified.
+Both c arms have matched observations/candidates/other priors/search budgets.
+Full original calibration and bank selection are frozen, so this remains a
+conditional study, not a fresh end-to-end calibration ablation or holdout test.
+No cross-arm warm-start repair and no reference-based inference selection.
+
+Seven focused tests pass across root/shared-bias/boundary scripts. Consolidated
+receipt audits also verify oracle selection, exactc=0, feasibility, score
+decomposition, profile endpoint stationarity and reference/domain geometry.
+No RF was collected, and no production capture, QNAP path, golden fixture,
+published contract or service configuration was changed.
+
+Artifacts:
+shared_bias/report.txt and results.json: branch, RX/time and calibration tests.
+boundary/report.txt and results.json: domain/path tests and gradient audits.
+boundary/long_budget.json: stationary original-domain continuation controls.
+oracle_results.json: all32 short fixed-position attempts, including failures.
+bias_profile_results.json: stepwise reference profiles and convergence flags.
+profile_breakdown.json: block contributions and20 high-influence window IDs/arm.
+summary.json: compact root results and independent geometry/receipt assertions.
+likelihood_diagnosis.png/.svg: frequency-versus-timing and channel decomposition.
+boundary_geometry.png/.svg: reference exclusion and original/expanded regions.
+
+Continuous-filter implication: these cases remain unsuitable as confidently
+calibrated point measurements. A stationary fit can still be7km or300km wrong.
+Innovation/outlier checks, search-domain coverage and empirically calibrated
+uncertainty remain necessary before treating these outputs as Kalman updates.

@@ -1,0 +1,74 @@
+Review of the quoted 14:39 receiver-clock repair
+==============================================
+
+Capture: scan-fw-e3bebc228093a125.
+First sample: 2026-10-06 14:39:41.786744 PDT = 21:39:41.786744 UTC.
+Research artifact label: 2139 (UTC label).
+Original published V16 errors: zero-c 305.642557 km, fitted-c 43.619118 km.
+This is a different capture from the 296.817735 km fitted-c failure at 11:38 PDT.
+
+The roughly 5.9 km branch
+------------------------
+The frequency-width continuation reached 5.899131 km zero-c error, with extra
+receiver slopes RX0 -2.627075 and RX1 -129.237886 Hz/s. Its paired successor,
+used as the anchor experiment's source state, had 5.939969 km error, RX0
+-2.558288 and RX1 -129.154834 Hz/s. Its 236 admitted receiver pairs had median
+absolute residual 5999.946750 Hz and robust residual slope +125.576855 Hz/s.
+These are nearby stages of the same bad branch; the precise values should not
+be conflated into one exact vector. The quoted approximately 5.9 km / 6000 Hz
+description covers this branch, not a measured -129 Hz/s hardware clock drift.
+
+The repair
+----------
+The same-RF paired observations estimated the additional relative RX1-minus-RX0
+frequency slope as -1.054801 Hz/s after accounting for frozen calibration.
+Preserving RX0's initial -2.558288 Hz/s and setting RX1 to -3.613089 Hz/s made
+the initializer agree with that differential estimate. Frequency offsets were
+adjusted analogously. Position, satellite timing and c were initially preserved.
+Both anchor choices were tested with equal budgets and selected by model score;
+the known reference position did not select the anchor.
+
+Then ordinary optimization released the fitted parameters under the unchanged
+independent zero-c likelihood, with relative satellite timing sigma = 1 s.
+No hard slope bounds were used in this repair.
+
+Selected result: position error 4.502847 km; median absolute paired residual
+67.230545 Hz; converged (KKT 0.000156, threshold 0.001); additional RX0/RX1
+slopes -2.064829/-2.523213 Hz/s. Pair residual p90 is 134.809618 Hz and robust
+residual slope -0.561307 Hz/s. Better receiver consistency still leaves a
+multi-kilometre localization error.
+
+What the three slope windows establish
+-------------------------------------
+Every +/-60, +/-30 and +/-10 Hz/s window would reject the bad source vector
+with RX1 near -129 Hz/s. Every window permits the repaired final vector.
+That is a fixed-state feasibility statement, not proof that bounded optimization
+recovers the repaired solution or its 67 Hz pair residual.
+
+The later slope-prior screen did use this same capture and matched evidence
+hashes. However, V16 was limited to the union of its two original winning
+regions: point:-68.75:-106.25 and point:225:25. The earlier clock repair used
+point:-106.25:-81.25, radius 25 km, with that region's bank and calibration.
+The later experiment included this region only for T1AT, not V16. It also used
+original association starts rather than the paired-clock initializer.
+
+Therefore the later V16 zero-c errors (unrestricted 24.628 km; +/-60 24.960 km;
++/-30 24.860 km; +/-10 24.603 km) do not show that adding slope limits worsened
+the 4.50 km repair. They test different V16 search regions/starts. Nor do they
+demonstrate a useful gain from slope restriction over their own matched control.
+
+Answer: the quoted improvement came from measurement-informed clock
+initialization, not from a frequency-slope limit. A direct bounded-vs-unbounded
+test of that exact repaired region and initialization has not been performed.
+Any such comparison should freeze the same region, candidate bank, baseline,
+paired measurement set, sigma = 1 s, starts and budgets, retain both c arms,
+and report paired consistency separately from frequency fit and position error.
+
+Sources verified:
+2026_10_07_cone_failure_debug/annealing/2139.json
+2026_10_07_cone_failure_debug/paired_identity/2139.json
+2026_10_07_cone_failure_debug/paired_background/anchor_results.json
+2026_10_07_cone_failure_debug/paired_background/anchor_probe.py
+2026_10_07_slope_priors/inputs/manifest.json
+2026_10_07_slope_priors/polished/{control,window60,window30,window10}/results.json
+All checks were read-only; no new fits or production changes in this review.

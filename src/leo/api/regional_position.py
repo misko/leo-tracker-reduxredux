@@ -10,15 +10,24 @@ from leo.contracts.regional_position_products import (
     RegionalPositionReader,
     RegionalPositionStatusV1,
 )
+from leo.contracts.regional_position_v2 import RegionalPositionReaderV2, RegionalPositionStatusV2
 
 Identifier = Annotated[str, Path(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
 
 
-def regional_position_router(reader: RegionalPositionReader | None) -> APIRouter:
+def regional_position_router(
+    reader: RegionalPositionReader | RegionalPositionReaderV2 | None, *, version=1
+) -> APIRouter:
+    if version not in (1, 2):
+        raise ValueError("unknown regional result version")
     router = APIRouter(prefix="/api/v1/scanner/tracking")
-    base = "/{session_id}/regional-position-v1"
+    base = "/{session_id}/regional-position-v" + str(version)
 
-    @router.api_route(base, methods=["GET", "HEAD"], response_model=RegionalPositionStatusV1)
+    @router.api_route(
+        base,
+        methods=["GET", "HEAD"],
+        response_model=RegionalPositionStatusV1 if version == 1 else RegionalPositionStatusV2,
+    )
     def status(session_id: Identifier):
         if reader is None:
             raise HTTPException(404, "regional position evidence is unavailable")
@@ -35,7 +44,9 @@ def regional_position_router(reader: RegionalPositionReader | None) -> APIRouter
             current = reader.status(session_id)
             if current.manifest is None:
                 raise HTTPException(404, "regional position PNG has not been published")
-            reference = next(a for a in current.manifest.artifacts if a.name == method)
+            reference = next((a for a in current.manifest.artifacts if a.name == method), None)
+            if reference is None:
+                raise HTTPException(404, "method is not present in this publication")
             if reference.sha256 != sha256:
                 raise HTTPException(409, "regional position PNG digest query differs")
             payload = reader.artifact(session_id, method)

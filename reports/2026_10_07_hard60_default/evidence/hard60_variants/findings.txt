@@ -1,0 +1,82 @@
+N01--N64: three isolated Hard60 variants
+
+Every configuration uses relative timing sigma 2 s, common timing sigma 3 s, hard +/-60 Hz/s additional affine slopes, corrected 40/20/10/5 km search, 400 grid locations and three retained regions.
+Hard60 is the original immutable control. Each variant adds exactly one mechanism; these are not combined variants.
+Two starts: geometry bootstrap plus independent zero timing/slopes at each coarse location; 5 s/200 iterations per start. The best objective is used for coarse ranking as in the control. New downstream regions are refit.
+Calibration recovery: retain original successful regions; failed prefit/postfit gets one continuation, then one zero-timing restart if still rejected. Strict stationarity 0.001 and all bounds remain unchanged.
+RF offsets: retain control grid, calibration and association. Fit receiver-by-RF residual offsets only at final stage, Gaussian SD 50 Hz and hard group bounds +/-150 Hz. The design excludes receiver mean and shared linear RF coefficient c directions. Same three final starts and 20 s/600-iteration budget per arm as control.
+Both final c arms use matched observations, candidate banks, calibration, priors and search/fit budgets within each variant. Discovery and calibration use fitted c. This is a final-stage c ablation, not end-to-end c=0.
+Reference coordinates are used only by evaluation. Selection uses score and unchanged numerical certification. The known difficult cases are retained in the full 64; no tuning after looking at their results.
+Previous study artifacts were hash-verified and left unchanged. No new RF collection or production code changes.
+
+zero-c
+  Hard60: accepted 64/64; median 2.001 km; p90 3.552; max 5.403 (N29); mean 2.148; <5 km 62; >10 km 0; median frequency RMS 139.977 Hz.
+    Paired with Hard60: improved 0, worsened 0, unchanged within 1 m 64; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  Two coarse starts: accepted 64/64; median 1.946 km; p90 3.552; max 5.403 (N29); mean 2.115; <5 km 61; >10 km 0; median frequency RMS 139.977 Hz.
+    Paired with Hard60: improved 8, worsened 5, unchanged within 1 m 51; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  Calibration recovery: accepted 64/64; median 2.001 km; p90 3.652; max 5.403 (N29); mean 2.170; <5 km 62; >10 km 0; median frequency RMS 139.977 Hz.
+    Paired with Hard60: improved 0, worsened 1, unchanged within 1 m 63; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  RF offsets: accepted 60/64; median 2.261 km; p90 5.303; max 299.192 (N64); mean 8.078; <5 km 51; >10 km 4; median frequency RMS 129.675 Hz.
+    Paired with Hard60: improved 28, worsened 32, unchanged within 1 m 0; median paired change 0.015 km.
+    Median paired frequency RMS change: -5.641 Hz; fit metric only, over accepted paired scans.
+
+fitted-c
+  Hard60: accepted 64/64; median 1.490 km; p90 3.376; max 5.621 (N29); mean 1.890; <5 km 61; >10 km 0; median frequency RMS 99.527 Hz.
+    Paired with Hard60: improved 0, worsened 0, unchanged within 1 m 64; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  Two coarse starts: accepted 64/64; median 1.502 km; p90 3.217; max 5.298 (N34); mean 1.809; <5 km 62; >10 km 0; median frequency RMS 98.896 Hz.
+    Paired with Hard60: improved 10, worsened 3, unchanged within 1 m 51; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  Calibration recovery: accepted 64/64; median 1.490 km; p90 3.376; max 5.999 (N21); mean 1.920; <5 km 61; >10 km 0; median frequency RMS 99.348 Hz.
+    Paired with Hard60: improved 1, worsened 2, unchanged within 1 m 61; median paired change 0.000 km.
+    Median paired frequency RMS change: 0.000 Hz; fit metric only, over accepted paired scans.
+  RF offsets: accepted 64/64; median 1.590 km; p90 3.597; max 5.665 (N29); mean 1.931; <5 km 60; >10 km 0; median frequency RMS 98.449 Hz.
+    Paired with Hard60: improved 31, worsened 33, unchanged within 1 m 0; median paired change 0.005 km.
+    Median paired frequency RMS change: -1.143 Hz; fit metric only, over accepted paired scans.
+
+Stage and work diagnostics:
+  Hard60: reference covered 64/64; failed region pipelines 8; recovered regions 0; regions without accepted zero-c/fitted-c result 11/9; recorded coarse fits 25588; coarse timeouts 4; final timeouts 2; summed coarse-fit seconds 22464.2; summed final-fit seconds 2141.5.
+  Two coarse starts: reference covered 64/64; failed region pipelines 7; recovered regions 0; regions without accepted zero-c/fitted-c result 8/7; recorded coarse fits 51176; coarse timeouts 5; final timeouts 1; summed coarse-fit seconds 40718.6; summed final-fit seconds 1812.7.
+    Second initialization wins 1185 of 25588 recorded two-fit comparisons; 31 retained regions differ from the control.
+  Calibration recovery: reference covered 64/64; failed region pipelines 0; recovered regions 8; regions without accepted zero-c/fitted-c result 3/2; recorded coarse fits 25588; coarse timeouts 4; final timeouts 2; summed coarse-fit seconds 22464.2; summed final-fit seconds 2272.9.
+  RF offsets: reference covered 64/64; failed region pipelines 8; recovered regions 0; regions without accepted zero-c/fitted-c result 54/13; recorded coarse fits 25588; coarse timeouts 4; final timeouts 44; summed coarse-fit seconds 22464.2; summed final-fit seconds 3924.1.
+
+Timing caveat: these fit-seconds are diagnostic work totals, not elapsed full-pipeline latency. Immutable control stages were reused; concurrency and machine load differ. Two starts doubles the allowed coarse fits, not necessarily total pipeline runtime.
+
+Difficult scans:
+  N05 zero-c: Hard60 2.185810207285951 km | Two coarse starts 2.185810207285951 km | Calibration recovery 2.185810207285951 km | RF offsets 2.264806640268949 km
+  N05 fitted-c: Hard60 2.6188421732625167 km | Two coarse starts 2.6188421732625167 km | Calibration recovery 2.6188421732625167 km | RF offsets 2.7379607680677145 km
+  N25 zero-c: Hard60 4.599302611977562 km | Two coarse starts 2.074292350474151 km | Calibration recovery 4.599302611977562 km | RF offsets 0.43710026342369196 km
+  N25 fitted-c: Hard60 3.938927024931032 km | Two coarse starts 2.1354202491294982 km | Calibration recovery 3.938927024931032 km | RF offsets 4.0126678582623745 km
+  N29 zero-c: Hard60 5.403427587471735 km | Two coarse starts 5.403427587471735 km | Calibration recovery 5.403427587471735 km | RF offsets 5.2664760983098375 km
+  N29 fitted-c: Hard60 5.621252347831085 km | Two coarse starts 4.752724610105843 km | Calibration recovery 5.621252347831085 km | RF offsets 5.665050885285591 km
+  N39 zero-c: Hard60 2.177658676266899 km | Two coarse starts 2.177658676266899 km | Calibration recovery 2.177658676266899 km | RF offsets 3.113575058056932 km
+  N39 fitted-c: Hard60 1.5019050115073103 km | Two coarse starts 1.5019050115073103 km | Calibration recovery 1.5019050115073103 km | RF offsets 1.4610431557915387 km
+  N49 zero-c: Hard60 0.3131638853285823 km | Two coarse starts 0.4958764114825049 km | Calibration recovery 0.3131638853285823 km | RF offsets 0.38987857370524626 km
+  N49 fitted-c: Hard60 2.6895307871006326 km | Two coarse starts 1.309621767787013 km | Calibration recovery 2.6895307871006326 km | RF offsets 2.149379685854171 km
+  N64 zero-c: Hard60 0.9522501752199461 km | Two coarse starts 0.9522501752199461 km | Calibration recovery 0.9522501752199461 km | RF offsets 299.1923059330332 km
+  N64 fitted-c: Hard60 1.4302394044352442 km | Two coarse starts 1.4302394044352442 km | Calibration recovery 1.4302394044352442 km | RF offsets 1.4259123115989165 km
+
+Calibration-recovery regression on N21:
+The recovered region (-77.5,-87.5) beats the previous selected region (-90,-90) by model score. Zero-c error increases from 2.314 to 3.681 km and fitted-c from 5.119 to 5.999 km. Two coarse starts leaves N21 unchanged. This is a downstream model-ranking effect, not rejection or lack of grid coverage.
+
+Conditional held-out final-stage frequency checks:
+Six difficult captures, two contiguous time-half folds and four leave-one-RF-group-out folds per capture. Final parameters refit on training windows. Search region, bank and frozen calibration still came from the full capture, so this is not independent end-to-end validation. It diagnoses whether additional final RF freedom transfers beyond the fitted windows.
+Negative held-out NLL change favors RF offsets. Only paired converged fits enter means; rejection counts are reported rather than hidden.
+  zero-c time: {'total': 12, 'control_accepted': 12, 'rf_accepted': 11, 'paired_accepted': 11, 'improved': 5, 'worsened': 6, 'mean_delta_nll_per_window': 0.059988354268331295}
+  zero-c rf: {'total': 24, 'control_accepted': 24, 'rf_accepted': 12, 'paired_accepted': 12, 'improved': 0, 'worsened': 12, 'mean_delta_nll_per_window': 1.230386924925458}
+  fitted-c time: {'total': 12, 'control_accepted': 12, 'rf_accepted': 12, 'paired_accepted': 12, 'improved': 6, 'worsened': 6, 'mean_delta_nll_per_window': 0.12435138733493543}
+  fitted-c rf: {'total': 24, 'control_accepted': 24, 'rf_accepted': 24, 'paired_accepted': 24, 'improved': 15, 'worsened': 9, 'mean_delta_nll_per_window': -0.09921318663109399}
+
+N64 RF-offset numerical failure:
+The zero-c nearby region has a feasible candidate at 0.588 km error with score about 26,832, better than the selected remote score about 34,016, but its best fits fail the unchanged 0.001 stationarity criterion (roughly 0.0034--0.0048). This yields approximately 299 km error. It is numerical acceptance failure, not evidence that the likelihood prefers that remote solution over the nearby feasible state.
+Additional final-state continuation probes are separate diagnostics and never enter the benchmark.
+  Extra diagnostic zero-c: no accepted result.
+  Extra diagnostic fitted-c: best accepted error 1.426 km, score 26098.707, start rf-feasible:fitted-c.
+  Along one tested projected-gradient direction, local quadratic curvature implies only 2.19e-11 score units of remaining improvement. The terminal optimizer state still fails strict stationarity. This supports a numerical conditioning/precision issue, without certifying a global optimum or changing acceptance.
+
+Validation: analytic/finite-difference RF gradients, original/native objective agreement, known constrained optimum including active RF bounds and exact zero-c, recovery acceptance behavior, full search replays, score-only winner reconstruction, and original-likelihood selected-state audits.
+All results describe this development cohort. Better in-sample frequency fit alone does not establish better position accuracy or performance on new captures.

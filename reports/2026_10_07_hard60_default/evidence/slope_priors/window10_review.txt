@@ -1,0 +1,68 @@
+Independent review: +/-10 Hz/s additional receiver slopes
+=========================================================
+
+Final receipt: polished/window10/results.json. Screening receipt remains
+window10/results.json. All paths here are relative to the report root.
+
+Preparation froze six cases, twelve distinct basins, and sixteen method/basin
+combinations. Source, original observation manifests, frozen TLE/candidates,
+bank retention, and public checkpoint digests were verified. All 96 published
+fits in the retained basins repriced with exactly zero objective discrepancy;
+posterior RMS also matched within 1e-7 Hz. Original final fits were audit inputs
+only, never first-stage starts. The common manifest SHA256 is
+f62347421b8a833021d905b0eac475286b1f8c836388d8d72e69a7c044fd64ed.
+
+Execution: 64 screening fits at <=6 seconds/300 iterations, then the authorized
+32 continuations at <=18 seconds/600 iterations. Screen elapsed 337.934 seconds
+(332.156 fitting); continuation elapsed 137.120 seconds (135.448 fitting).
+There were no fit exceptions. Final 24 selections are feasible; 23 meet the
+independent scaled KKT convergence criterion. Verified all 32 continuation seed
+lineages use that option/method/arm/basin's own lowest-score screen candidate,
+all zero-c equalities are exact, all additional slopes satisfy +/-10, and all
+selected scores retain the screen score floors. No further fitting was done.
+
+Selected position errors in km, zero-c / fitted-c:
+
+case       V16               T1AT
+1939       6.986 / 6.990      6.212 / 6.205
+2139      24.603 /19.482      1.852 / 3.813
+2252       1.754 / 0.455      0.542 / 0.497
+2322       4.479 / 4.506      3.893 / 3.896
+guard2109  5.699 / 4.272      5.396 / 4.264
+guard0223  0.496 / 0.824      1.041 / 0.937
+
+Only 2139 V16 fitted-c reaches a slope bound: RX1 additional b=+10 Hz/s;
+RX0 b=-8.4769, differential additional b1-b0=+18.4769 Hz/s. It remains
+nonstationary (KKT residual about 0.004876), with score 36730.858, data NLL
+35217.457, posterior RMS 124.09 Hz, and 19.482 km error. Frozen calibration
+slopes remain separate from this additional correction. This result is
+unfinished local optimization, not an established optimum of the tight model.
+
+Across all final selected fits the additional slopes span -8.4769 to +10 Hz/s,
+while total-linear slopes span -25.7576 to +23.9843 Hz/s. Tightening the final
+correction cannot bound the upstream calibration contribution. Full per-fit
+NLL, RMS, differential slope, calibration slopes, nonlinear correction summary,
+bounds, time budget, and stationarity are in the receipts.
+
+Against the matched polished unrestricted control, 2139 V16 fitted-c improves
+position error by 10.752 km, data NLL by 343.578, score by 235.884, and RMS by
+7.349 Hz. Since its feasible set is contained in the control's feasible set,
+its lower unchanged score proves the control search missed this lower solution;
+it does not demonstrate a likelihood improvement caused by restricting a global
+optimum. Its tight solution is also nonstationary. No cross-option optimized
+vector was used to repair that gap.
+
+2252 V16 zero-c instead worsens error from 0.921 to 1.754 km despite improving
+data NLL by 1.068 and RMS by 1.213 Hz; total score worsens 2.817 due to timing.
+This is a concrete frequency-fit versus position-accuracy distinction. The
+2139 T1AT fitted-c error changes 4.050 to 3.813 km but its total score worsens
+379.195 even though data NLL improves 21.752. Most other results match control
+closely. Both guards avoid a material new failure, but their improvements also
+cannot establish a physical prior: guard0223 T1AT zero-c changes 2.574 to
+1.041 km with 23.361 lower score, another wider-model search gap.
+
+All twelve within-window fitted-c versus zero-c score nesting gaps are zero.
+The narrower-versus-wider search gaps and selected retrospective six-case set
+prevent choosing a production prior from this run. The +/-10 option is useful
+as an optimization diagnostic; position errors and frequency scores must remain
+separate in any broader frozen-cohort or chronological evaluation.
