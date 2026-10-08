@@ -1,0 +1,283 @@
+{
+  "duration_seconds": 3.458825,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "0e121b5f2beaf2d0c6a0ba3581836217e408fc851804d82a2a63fd08e937484f",
+  "overlay_digest": "0ada0dc9b7e5764ec2a874dda3707d0e029190a03f0577191b4e39cfd9059cae",
+  "passed": false,
+  "plan": {
+    "components": [
+      "analysis",
+      "api",
+      "python-general"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_hard60_bounded_fit.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_regional_position_fit.py"
+        ],
+        "name": "pytest-changed-2",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/application/test_hard60_recovery.py"
+        ],
+        "name": "pytest-changed-3",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_regional_position_cli.py"
+        ],
+        "name": "pytest-changed-4",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/presentation/test_hard60_png.py"
+        ],
+        "name": "pytest-changed-5",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "src/leo/analysis/hard60_bounded_fit.py",
+          "src/leo/analysis/regional_position_fit.py",
+          "src/leo/application/hard60_recovery.py",
+          "src/leo/application/hard60_runner.py",
+          "src/leo/application/regional_position_report.py",
+          "src/leo/cli/regional_position.py",
+          "src/leo/presentation/regional_position.py",
+          "tests/analysis/test_hard60_bounded_fit.py",
+          "tests/analysis/test_regional_position_fit.py",
+          "tests/application/test_hard60_recovery.py",
+          "tests/cli/test_regional_position_cli.py",
+          "tests/presentation/test_hard60_png.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "src/leo/analysis/hard60_bounded_fit.py",
+          "src/leo/analysis/regional_position_fit.py",
+          "src/leo/application/hard60_recovery.py",
+          "src/leo/application/hard60_runner.py",
+          "src/leo/application/regional_position_report.py",
+          "src/leo/cli/regional_position.py",
+          "src/leo/presentation/regional_position.py",
+          "tests/analysis/test_hard60_bounded_fit.py",
+          "tests/analysis/test_regional_position_fit.py",
+          "tests/application/test_hard60_recovery.py",
+          "tests/cli/test_regional_position_cli.py",
+          "tests/presentation/test_hard60_png.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "src/leo/analysis/hard60_bounded_fit.py",
+      "src/leo/analysis/regional_position_fit.py",
+      "src/leo/application/hard60_recovery.py",
+      "src/leo/application/hard60_runner.py",
+      "src/leo/application/regional_position_report.py",
+      "src/leo/cli/regional_position.py",
+      "src/leo/presentation/regional_position.py",
+      "tests/analysis/test_hard60_bounded_fit.py",
+      "tests/analysis/test_regional_position_fit.py",
+      "tests/application/test_hard60_recovery.py",
+      "tests/cli/test_regional_position_cli.py",
+      "tests/presentation/test_hard60_png.py"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 2.160761,
+      "exit_code": 1,
+      "name": "mypy",
+      "output_sha256": "c64576133d20b1b30e81c35c997a937512440c88b3337089cc65849c830f1e98"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_hard60_bounded_fit.py"
+      ],
+      "duration_seconds": 0.992007,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "204ee964b0c568221de00001d49155c46708c86169d670972934021295357d8a"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_regional_position_fit.py"
+      ],
+      "duration_seconds": 0.966029,
+      "exit_code": 0,
+      "name": "pytest-changed-2",
+      "output_sha256": "55493507b7aa18a8cc82091b1ff98b8c42bd6ab2fff3e518139c9c364bccb147"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/application/test_hard60_recovery.py"
+      ],
+      "duration_seconds": 2.77005,
+      "exit_code": 0,
+      "name": "pytest-changed-3",
+      "output_sha256": "f1e43ed19d1685219160e564ee70bc04a73ede942205705e3f5f13be6db3146f"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_regional_position_cli.py"
+      ],
+      "duration_seconds": 3.452613,
+      "exit_code": 0,
+      "name": "pytest-changed-4",
+      "output_sha256": "ddf78803cf3b1daafcbca5aaad14a8d92e5ec8f27bad32f75d7ec08c809e3b95"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/presentation/test_hard60_png.py"
+      ],
+      "duration_seconds": 1.274704,
+      "exit_code": 0,
+      "name": "pytest-changed-5",
+      "output_sha256": "e0f99c009e3f0cb266186091c50ea73692ee91d8e6be128e02c71a43032856ce"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "src/leo/analysis/hard60_bounded_fit.py",
+        "src/leo/analysis/regional_position_fit.py",
+        "src/leo/application/hard60_recovery.py",
+        "src/leo/application/hard60_runner.py",
+        "src/leo/application/regional_position_report.py",
+        "src/leo/cli/regional_position.py",
+        "src/leo/presentation/regional_position.py",
+        "tests/analysis/test_hard60_bounded_fit.py",
+        "tests/analysis/test_regional_position_fit.py",
+        "tests/application/test_hard60_recovery.py",
+        "tests/cli/test_regional_position_cli.py",
+        "tests/presentation/test_hard60_png.py"
+      ],
+      "duration_seconds": 0.009034,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-hard60-bounded-stage/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "src/leo/analysis/hard60_bounded_fit.py",
+        "src/leo/analysis/regional_position_fit.py",
+        "src/leo/application/hard60_recovery.py",
+        "src/leo/application/hard60_runner.py",
+        "src/leo/application/regional_position_report.py",
+        "src/leo/cli/regional_position.py",
+        "src/leo/presentation/regional_position.py",
+        "tests/analysis/test_hard60_bounded_fit.py",
+        "tests/analysis/test_regional_position_fit.py",
+        "tests/application/test_hard60_recovery.py",
+        "tests/cli/test_regional_position_cli.py",
+        "tests/presentation/test_hard60_png.py"
+      ],
+      "duration_seconds": 0.013797,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "cfe5c6461b42a90595a492aed11f2c8e6eb98b7c4caf2cc9f47e3333185e3f33"
+    }
+  ],
+  "revision": "7d296d36d733a18fbc4ec28c63dc579ef2f7f136",
+  "schema_version": 1
+}

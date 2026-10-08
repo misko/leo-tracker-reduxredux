@@ -1,0 +1,49 @@
+Traceback (most recent call last):
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/storage/pinned.py", line 101, in _open_directory_chain
+    next_descriptor = os.open(
+        component,
+        os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+        dir_fd=descriptor,
+    )
+FileNotFoundError: [Errno 2] No such file or directory: 'hard60-bounded-recovery-20261008'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/cli/regional_position.py", line 216, in <module>
+    main()
+    ~~~~^^
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/cli/regional_position.py", line 204, in main
+    run_regional_position_analysis(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        args.bulk_root,
+        ^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        maximum_seconds=args.maximum_seconds,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/cli/regional_position.py", line 167, in run_regional_position_analysis
+    with checkpoints.writer():
+         ~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/storage/adaptive_tle_position.py", line 92, in writer
+    with self._directory(session_id, create=True) as directory:
+         ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/storage/adaptive_tle_position.py", line 57, in _directory
+    root = PinnedLocalRoot(self.root)
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/storage/pinned.py", line 20, in __init__
+    self._fd = _open_directory_chain(normalized)
+               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/mouse9911/gits/leo-hard60-default/src/leo/storage/pinned.py", line 107, in _open_directory_chain
+    raise ValueError(
+    ...<2 lines>...
+    ) from error
+ValueError: pinned storage root contains an inaccessible or symlink component: hard60-bounded-recovery-20261008
+{"session_id": "scan-fw-2917f7344e48ba39", "state": "pending", "phase": "sha256:faf70f935e8a26a3f07f3a2a84a51589045da0397a4e6e71d2ca51c91486b7b6:point:95:175:association"}
+{"session_id": "scan-fw-2917f7344e48ba39", "state": "complete"}
