@@ -3,17 +3,18 @@
 The unlimited goal is active. Do not restart live jobs, mark the goal complete,
 or replace the frozen candidate with diagnostic oracle results.
 
-The published summary is a checkpoint: DS18 34/34, DS17 51/51, DS16 50/63.
+The first published summary was a checkpoint: DS18 34/34, DS17 51/51, DS16 50/63.
 DS18 fitted-c mean is 2.739331 km versus baseline 4.422188 km. The newly included
 DS16-046 has a 265.789353 km candidate error, making the current DS16 50-member
 candidate mean 6.342566 km. All remaining members stay in coverage denominators.
 
-Three live resumable completion jobs run in the `leo-hard60-default` worktree:
+Two live resumable completion jobs remain in the `leo-hard60-default` worktree;
+the second original lane has finished:
 
 - exec session `73048`, Python PID `3985160`: original completion lane starting
   DS18-033, DS16-001, DS16-009, DS16-013, DS16-023, DS16-041, DS16-045,
   DS16-047, DS16-055.
-- exec session `86438`, Python PID `3985173`: original completion lane starting
+- Completed exec session `86438`, former Python PID `3985173`: original lane starting
   DS18-034, DS16-008, DS16-011, DS16-015, DS16-034, DS16-042, DS16-046,
   DS16-050.
 - exec session `58997`, Python PID `3985901`: frozen setup-failure retries,
@@ -23,7 +24,10 @@ Poll these handles or check processes before any new invocation. The isolated
 baseline root is `local/standard-baselines`; it was initially absent, causing
 seven pre-fit failures. First attempts are retained in `results/`, retry outputs
 in `retry/results/`. The directory now exists. Completed original cases include
-DS18-033, DS16-009 and DS16-046; the DS18-034 retry also completed successfully.
+DS18-033, DS16-009, DS16-013, DS16-046 and DS16-050; the DS18-034 retry also completed
+successfully. DS16-001's retry baseline is complete and its candidate is running.
+The next published snapshot includes at least 52/63 DS16 members; use summary.json
+for exact current checkpoint metrics, not the initial 50-member figures above.
 Each baseline invocation is limited to four resumable 500-second slices. Preserve
 pending slice receipts; do not label a checkpoint timeout an input exclusion.
 

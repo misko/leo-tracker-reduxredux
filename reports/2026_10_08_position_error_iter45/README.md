@@ -12,10 +12,10 @@ later oracle-region rescue results replaces an operational result.
 
 | Dataset evaluated/full | Arm | Method | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 50/63 | fitted-c | baseline | 7.129 | 1.518 | 5.103 | 265.277 |
-| DS16 50/63 | fitted-c | candidate | 6.343 | 1.013 | 2.334 | 265.789 |
-| DS16 50/63 | zero-c | baseline | 7.511 | 1.655 | 7.205 | 264.604 |
-| DS16 50/63 | zero-c | candidate | 6.585 | 1.184 | 3.428 | 261.743 |
+| DS16 53/63 | fitted-c | baseline | 6.832 | 1.430 | 4.891 | 265.277 |
+| DS16 53/63 | fitted-c | candidate | 6.046 | 0.996 | 2.411 | 265.789 |
+| DS16 53/63 | zero-c | baseline | 7.222 | 1.660 | 7.204 | 264.604 |
+| DS16 53/63 | zero-c | candidate | 6.306 | 1.204 | 3.278 | 261.743 |
 | DS17 51/51 | fitted-c | baseline | 4.477 | 1.132 | 4.789 | 152.840 |
 | DS17 51/51 | fitted-c | candidate | 0.864 | 0.708 | 2.009 | 2.635 |
 | DS17 51/51 | zero-c | baseline | 4.585 | 1.434 | 4.048 | 151.707 |
@@ -36,8 +36,8 @@ Reference coordinates enter error reporting after inference only.
 
 | Dataset | Arm | Better/worse/tied | Base failed | Raw failed/fallback | RMS before → after Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 39/11/0 | 0 | 1/1 | 90.92 → 70.73 |
-| DS16 | zero-c | 39/11/0 | 0 | 1/1 | 120.44 → 103.83 |
+| DS16 | fitted-c | 42/11/0 | 0 | 1/1 | 91.04 → 70.89 |
+| DS16 | zero-c | 42/11/0 | 0 | 1/1 | 120.91 → 104.49 |
 | DS17 | fitted-c | 39/12/0 | 0 | 0/0 | 79.96 → 64.88 |
 | DS17 | zero-c | 28/23/0 | 0 | 1/1 | 130.49 → 122.87 |
 | DS18 | fitted-c | 27/7/0 | 0 | 0/0 | 101.06 → 75.65 |
@@ -70,8 +70,8 @@ proof of unseen validation. No outcome-based membership filter was applied.
 |---|---|---:|---:|
 | DS16-historical 48/48 | fitted-c | 1.886 | 1.057 |
 | DS16-historical 48/48 | zero-c | 2.245 | 1.347 |
-| DS16-completion 2/15 | fitted-c | 132.973 | 133.206 |
-| DS16-completion 2/15 | zero-c | 133.876 | 132.310 |
+| DS16-completion 5/15 | fitted-c | 54.321 | 53.949 |
+| DS16-completion 5/15 | zero-c | 54.992 | 53.919 |
 | DS18-historical 24/24 | fitted-c | 5.486 | 3.293 |
 | DS18-historical 24/24 | zero-c | 5.728 | 3.546 |
 | DS18-completion 10/10 | fitted-c | 1.870 | 1.411 |
@@ -99,7 +99,7 @@ recorded with the results; full membership and coverage follows.
 
 | Member | Session | Outcome | Fitted-c error km | Zero-c error km |
 |---|---|---|---:|---:|
-| DS16-001 | scan-fw-ba4cd19379329520 | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
+| DS16-001 | scan-fw-ba4cd19379329520 | complete  | 0.154 | 0.908 |
 | DS16-002 | scan-fw-a326fb07c0e9b6e2 | complete_prior_consumed  | 0.885 | 1.389 |
 | DS16-003 | scan-fw-1ad7f3926e9a03e5 | complete_prior_consumed  | 0.082 | 0.623 |
 | DS16-004 | scan-fw-3ad2719629e7c60d | complete_prior_consumed  | 0.884 | 2.036 |
@@ -111,7 +111,7 @@ recorded with the results; full membership and coverage follows.
 | DS16-010 | scan-fw-aa77506012889211 | complete_prior_consumed  | 0.189 | 0.845 |
 | DS16-011 | scan-fw-8e8033677042ba97 | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
 | DS16-012 | scan-fw-9284d4f6ce040d80 | complete_prior_consumed  | 1.826 | 1.563 |
-| DS16-013 | scan-fw-330829d1e597d288 | pending  | — | — |
+| DS16-013 | scan-fw-330829d1e597d288 | complete  | 0.733 | 1.566 |
 | DS16-014 | scan-fw-dbf401c02543f194 | complete_prior_consumed  | 0.909 | 0.485 |
 | DS16-015 | scan-fw-392b4f493b7c3c0e | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
 | DS16-016 | scan-fw-3b61d64df77251ca | complete_prior_consumed  | 0.173 | 1.926 |
@@ -148,7 +148,7 @@ recorded with the results; full membership and coverage follows.
 | DS16-047 | scan-fw-98990902df445215 | pending  | — | — |
 | DS16-048 | scan-fw-7e51f48fa65d6f81 | complete_prior_consumed  | 0.657 | 0.902 |
 | DS16-049 | scan-fw-3bf66f35e3a07685 | complete_prior_consumed  | 1.567 | 1.665 |
-| DS16-050 | scan-fw-7e6fe9f57ae2562c | pending  | — | — |
+| DS16-050 | scan-fw-7e6fe9f57ae2562c | complete  | 2.445 | 2.500 |
 | DS16-051 | scan-fw-899e83e995c96cdf | complete_prior_consumed  | 2.389 | 2.437 |
 | DS16-052 | scan-fw-7b796c5b898df6bf | complete_prior_consumed  | 0.940 | 0.932 |
 | DS16-053 | scan-fw-a88b75d9a4cad4ff | complete_prior_consumed  | 0.816 | 1.214 |
