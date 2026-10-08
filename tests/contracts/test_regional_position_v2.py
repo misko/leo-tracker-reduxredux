@@ -1,7 +1,6 @@
 import pytest
 from pydantic import ValidationError
 
-from leo.cli.regional_position import configuration
 from leo.contracts.digests import canonical_digest
 from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
 from tests.contracts.test_regional_position_products import document as legacy_document
@@ -11,7 +10,10 @@ def document():
     payload = legacy_document().model_dump(mode="json")
     payload.update(schema_version=2, analysis_id="scanner-regional-position-v2")
     payload["methods"] = payload["methods"][1:]
-    payload["configuration"] = configuration()
+    payload["configuration"] = {
+        "protocol": "sacramento-hard60-v1",
+        "run": {"slope_half_width_hz_s": 60},
+    }
     payload["configuration_sha256"] = canonical_digest(payload["configuration"])
     return RegionalPositionDocumentV2.model_validate(payload)
 
