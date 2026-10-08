@@ -172,7 +172,7 @@ def main():
     parser.add_argument("--session-id")
     parser.add_argument("--maximum-seconds", type=float, default=180)
     parser.add_argument("--maximum-sessions", type=int, default=2)
-    parser.add_argument("--review-limit", type=int, default=64)
+    parser.add_argument("--review-limit", type=int, default=16)
     parser.add_argument(
         "--queue-worker",
         action="store_true",
@@ -265,6 +265,19 @@ def main():
                 if remaining <= 0 or attempted >= args.maximum_sessions:
                     break
                 try:
+                    # Resume existing publications with their sealed rendering policy.
+                    # New sessions use the requested limit; old checkpoints stay valid.
+                    existing = products.analysis_status(sid).product
+                    service.review_limit = (
+                        existing.review_limit if existing is not None else args.review_limit
+                    )
+                    service.review_renderer = _review_renderer(
+                        bulk_root=capture_root,
+                        adaptive_analysis_root=analysis_root,
+                        tle_root=args.tle_root,
+                        site_name=args.site,
+                        review_limit=service.review_limit,
+                    )
                     status = service.run(sid, maximum_seconds=remaining)
                     position_complete = False
                     blind_complete = False

@@ -12,7 +12,8 @@ from leo.operations.scanner_tle_review_report import (
 )
 
 
-def test_review_selection_keeps_longest_64_with_deterministic_ties() -> None:
+@pytest.mark.parametrize("limit", [16, 64])
+def test_review_selection_keeps_longest_with_deterministic_ties(limit: int) -> None:
     tracks = [
         (f"track-{index:03d}", object(), tuple(range(14)), object(), float(index))
         for index in range(67)
@@ -25,9 +26,9 @@ def test_review_selection_keeps_longest_64_with_deterministic_ties() -> None:
         ]
     )
 
-    selected = _select_review_tracks(tracks, 64)
+    selected = _select_review_tracks(tracks, limit)
 
-    assert len(selected) == 64
+    assert len(selected) == limit
     assert [item[0] for item in selected[:3]] == ["tie-a", "tie-b", "tie-c"]
     assert [item[4] for item in selected] == sorted((item[4] for item in selected), reverse=True)
     assert "track-005" not in {item[0] for item in selected}

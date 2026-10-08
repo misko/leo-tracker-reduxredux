@@ -128,7 +128,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "metrics_manifest": metrics_manifest_sha256,
             "observer_site": preset.model_dump(mode="json"),
             "group_limit": _TRACKING_GROUP_LIMIT,
-            "review_limit": 64,
+            "review_limit": 16,
             "review_selection_policy": "longest-support-observations-identity-v1",
             "tle_residual_partition": "deterministic-randomized-observation-v1",
             "control_comparison": "minimum-0.01-nll-per-evaluation-observation-v1",
@@ -366,7 +366,7 @@ def _command_for_lease(*, lease, bulk_root: Path, site: str) -> list[str]:
             "--maximum-sessions",
             "1",
             "--review-limit",
-            "64",
+            "16",
             "--queue-worker",
         ]
     raise ValueError(f"unsupported adaptive queue job kind: {lease.job_kind}")
