@@ -1,0 +1,31 @@
+{
+  "frozen_at": "2026-10-08T18:55:42.840901+00:00",
+  "labels": [
+    "S11",
+    "S16",
+    "S24",
+    "S44",
+    "S10",
+    "S14",
+    "DS17-004",
+    "DS17-048",
+    "NEW-003",
+    "NEW-008",
+    "DS17-008"
+  ],
+  "variants": [
+    "warm-control",
+    "remove-5",
+    "remove-10",
+    "cap-5"
+  ],
+  "role": "Small development diagnostic and controls before broad evaluation; six later validation recordings remain locked",
+  "rules": "Gates use fitted-c joint-wide relative satellite shifts without reference. Keep all observations. Both RF arms get same selected bank, mapped total shifts, shared fitted-c nuisance and clock seed,100/50Hz smooth-clock prior,2s timing prior,+-60Hz/s slopes,20s600iterations.",
+  "cap": "Hard +-5s total shift about unshifted ephemeris; candidate removal uses relative shift about fitted common time. Baseline total bound20s.",
+  "selection": "Each variant separate; no score comparisons across changed banks, no per-scan truth-based choice. Nonstationary operational fallback is deployed baseline. Warm-control isolates changes from a restart using the previous joint solution.",
+  "source_sha256": {
+    "test_timing.py": "42f9e1c764ee47c4e073d0c239e8a695a3685a3e9fb13395567addbe8f055a8d",
+    "timing_fit.py": "748affb6d6a3d8512e3d64eec03db0798732d1bad2156725d7c12d0e3f675912",
+    "experiment.py": "9685a954e67a48319bce06baf6fda247b420af93a9798a0f2952d1591e732bad"
+  }
+}
