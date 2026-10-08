@@ -1,0 +1,25 @@
+{
+  "labels": [
+    "N05",
+    "N25",
+    "N29",
+    "N39",
+    "N49",
+    "N64"
+  ],
+  "folds": "Two contiguous time halves and each rounded-MHz RF group.",
+  "scope": "Conditional final-stage predictive checks, not end-to-end held-out validation.\n\nSearch region, satellite bank and frozen calibration came from the full capture.\nOnly final position/clock/RF parameters are refit with each block excluded.\nNo reference position is read. Both c arms share the same region and bank.\n",
+  "sources": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_hard60_variants/run_variants.py": "sha256:fe6399a1c80e337a48939af5128156a0849eb1cd1fc8b4f6eb566c404c90644b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_hard60_variants/rf_model.py": "sha256:95d09cc3b12bdcd94305ff165da82730b3d20437146f2e683d7f00390271351d",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_hard60_variants/holdout.py": "sha256:9faa9c79a01465801121ec3fac5f64fd6708b6354317645d32f218d816638d04"
+  },
+  "selection": "Training objective only; require strict convergence for paired reporting.",
+  "starts": [
+    "association",
+    "zero-timing",
+    "own-continuation"
+  ],
+  "seconds_per_fit": 20,
+  "iterations_per_fit": 600
+}

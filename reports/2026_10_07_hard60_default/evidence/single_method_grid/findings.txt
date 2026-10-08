@@ -1,0 +1,141 @@
+Single-method discovery, grid schedules, and edge-priority diagnosis
+==================================================================
+
+Capture: scan-fw-e3bebc228093a125, Oct 6 2026, 14:39 PDT (research label 2139).
+The same 2,917 original windows and full 860-satellite eligible orbit bank were
+used throughout. All four searches use V16 alone, relative timing sigma=1 s,
+and hard +/-60 Hz/s limits on the fitted receiver affine slopes. Final slopes
+are additional to the region's frozen calibration baseline. Frequency sigma
+125 Hz and common timing sigma 3 s are unchanged.
+
+Results selected by model objective plus calibration penalty, then evaluated
+against the reference position:
+
+Schedule / edge policy           zero-c error km    fitted-c error km
+100/50/25/12.5, original                  2.789942              3.144651
+50/25/12.5/6.25, original                 4.211744              4.449121
+50/20/5, original                        9.450594             13.658968
+50/20/5, measured edge priority          3.633124              4.038025
+
+Each search evaluated exactly 400 distinct positions. The three first-stage
+comparisons and the follow-up each retained up to three regions using the same
+12.5 km minimum separation, used local radius max(25 km, cell_width/sqrt(2)),
+and used the same calibration, association, final starts, and optimizer budgets.
+All selected final results are feasible and locally stationary, with no active
+slope or spatial bounds. This is not a certificate of global optimality.
+
+What we learned about one-method discovery
+The current 100/50/25/12.5 hierarchy found and retained [-87.5,-87.5] km itself,
+and that region supplied both winning c arms. No T1AT regional discovery,
+T1AT likelihood fit, imported published winning region, true-position start,
+or special paired-clock initializer was used. Unlike the earlier replay, this
+experiment also uses V16 for the receiver calibration likelihood. Existing
+generic track bootstrap and discrete timing-mode association routines remain
+shared numerical algorithms. Verified original bootstrap checkpoints may be
+reused only at a coordinate independently requested by the new search; they
+contain no other method's ranking in the consumed data.
+
+The initial three comparisons demonstrate that finer grids alone did not improve
+this capture. The original 50/20/5 search came no closer than 13.444 km in its
+evaluated centers; the 50 km halving search reached 3.911 km but ranked that
+particular center 126th. Center proximity alone does not determine final accuracy.
+
+Specific edge-priority issue
+The deployed hierarchy gives initial cells whose centers are outside the allowed
+circle an artificial score of zero, while retaining them because their squares
+intersect the circle. Real negative-log-likelihood scores here are positive,
+around tens of thousands. These unmeasured cells therefore receive unconditional
+priority. Their unmeasured descendants inherit this optimistic score.
+
+With 50/20/5 this caused 212/400 evaluations (53%) within the outermost 10 km of
+the 250 km prior disk; 198 were at the 5 km level. Replaying the original search
+from its frozen scores reproduced every evaluation and ordering exactly and
+identified 208 evaluations introduced by an unmeasured parent. The same mechanism
+exists for halving: the 100 km and 50 km halving searches spent 45 and 44 points,
+respectively, in that outer 10 km band. The finer final grid amplified it.
+
+Controlled edge-priority follow-up
+Only the initial unmeasured edge priority changed: it inherits the score of the
+nearest actually evaluated coarse center (deterministic tie breaking). Inside
+cells retain their measured scores and descendants retain the existing inherited
+score rule. This is a heuristic, not a proven lower bound on unexplored cells.
+Boundary regions remain eligible; the tests verify that an attractive boundary
+region can still be refined. No reference coordinate or distance is consulted.
+
+On the same 50/20/5 geometry and same 400-point budget:
+  - Evaluations in the outer 10 km fell from 212 to 41 (53% to 10.25%).
+  - 207 shared point scores were exactly identical between the two runs.
+  - The closest evaluated center was 1.579 km from the reference and ranked first.
+  - The selected center was [-87.5,-82.5] km, discovered by the new search.
+  - Final errors improved from 9.451 to 3.633 km (zero-c) and from 13.659 to
+    4.038 km (fitted-c). All three retained regions passed calibration.
+
+This isolates an avoidable search-priority bias. It does not establish an
+unbiased estimator or guarantee complete coverage. The repaired 50/20/5 run
+still had worse position accuracy than the 100 km hierarchy on this capture.
+
+Frequency fit, timing cost, and geography are separate endpoints
+                                    zero-c RMS Hz     fitted-c RMS Hz
+100/50/25/12.5                             137.382              99.205
+50/25/12.5/6.25                            133.156              91.060
+50/20/5 original                          136.475             107.531
+50/20/5 measured edges                    127.125              84.162
+
+The repaired grid's total scores (34496.193 zero-c; 33132.046 fitted-c) are
+better than the 100 km hierarchy's (34540.282; 33186.517), but its position
+errors are worse. Fitted-c also improves frequency fit within each schedule
+while worsening position error. Neither a better score nor a closer grid start
+can be assumed to improve geographic accuracy. Remaining calibration,
+association, and likelihood effects need separate diagnosis.
+
+Should every grid divide by two?
+Halving is a good default because each square has four equal children with one
+parent, no overlap, and simple budget accounting. Other integer subdivision
+factors can also tile exactly. The tested 50/20/5 implementation handles the
+noninteger 50/20 ratio with globally aligned overlapping child squares; coverage
+and duplicate-evaluation tests pass. Halving itself does not remove score-driven
+search bias, the edge-priority issue, or dependence on grid origin and budget.
+For an exact 5 km final level with halving, 40/20/10/5 is a possible next test;
+it was NOT evaluated in this experiment. No global claim about the best grid
+schedule follows from one capture.
+
+Cost and validation
+Initial centers within the same prior disk: 100 km = 16; 50 km = 80;
+20 km = 484; 5 km = 7,860. Uniform 20 km and 5 km starting grids were not run,
+because their initial pass already exceeds the matched 400-point budget.
+
+Four 400-point search receipts and 66 final optimizer calls were completed.
+Identical point evaluations and identical retained regions can be cached across
+variants; the logical point budgets still charge each requested position.
+First three searches/refinements completed in 804.9 s with eight worker processes;
+the edge follow-up took 236.5 s with shared cached evaluations. These concurrent
+and cached wall times are not standalone production latency measurements.
+
+All point evaluations returned finite scores, but only 307/301/311/305 of the
+400 short coarse fits converged for the four schedules respectively. This limits
+confidence in coarse rankings. One retained region in the 50 km halving run
+failed calibration prefit convergence and was excluded; it remains explicitly
+recorded. Three of the original 48 final fit attempts were nonstationary and did
+not win. The eight score-selected final outputs passed independent repricing,
+feasibility and constrained-stationarity audits. Ten regression tests passed,
+including exact legacy search parity, noninteger coverage, deduplication,
+budget limits, slope-bound stationarity, and edge exploration.
+
+The c=0/fitted-c ablation is in the final position fit: each arm shares that
+schedule's V16 fitted-c discovery, calibration, and association. Observations,
+candidate subsets, priors, starts, domains, and final budgets are matched within
+each comparison. The arms never share optimized final outputs. Reference
+coordinates are introduced only after fitting and score-based selection.
+
+Artifacts
+inputs.json/inputs.npz: frozen original observation/orbit ports (no true location).
+evaluation.json: separate reference used only by completed-run evaluation.
+experiment.py, grid.py, protocol.json: first three matched searches.
+summary.json, comparison.csv: independent selected-fit audit and separate metrics.
+grid_search.png: discovered points and retained domains for the first three grids.
+edge_experiment.py, edge_grid.py: controlled edge-priority prototype.
+edge_priority/summary.json: follow-up independent audit and measured effect.
+edge_priority/edge_priority_comparison.png: before/after search coverage.
+
+All changes are offline research prototypes. No production service was changed,
+no new RF was collected, and the completed earlier receipts were preserved.

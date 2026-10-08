@@ -1,0 +1,83 @@
+Worst-case stage diagnosis for Hard 60 and five alternatives
+
+This is a diagnostic study of eight scan/configuration cases covering both c arms, not a new N64 benchmark.
+Original inputs, searches, calibration records and selected results remain unchanged.
+Truth is used only for evaluation, fixed-position likelihood profiles, and choosing an existing reference-covering grid point for a causal rescue test.
+A geographically improved rescue is not a real pipeline improvement unless its model score beats the old winner. The CSV records both.
+Final-stage c=0/fitted-c use matched observations, banks, baselines and budgets. Calibration remains fitted-c. No new RF collection.
+
+Why Hard 60 is robust on this cohort:
+Hard 60 has no interior slope penalty. It imposes a box bound on each stage-specific affine slope; it is not a physical cap on the full receiver drift.
+All six primary configurations have timing sigma 2 s and the same corrected 40/20/10/5 km hierarchy and 400-point budget.
+Hard 60 hits a coarse bound in 141/25,600 attempts (0.55%); Hard 30 in 1,635/25,600 (6.39%). Smooth 60 adds a nonzero coarse penalty in 6,535/25,600 attempts (25.53%); Gaussian acts in virtually every successful coarse fit.
+Hard 60 retained a region covering the reference in 64/64 scans. Hard30, Gaussian60, Smooth60 and Smooth30 cover 63/64; Gaussian30 covers 62/64.
+These are empirical observations on the same development cohort, not proof that +/-60 is a universally optimal physical prior.
+The historical before/after comparison also changed timing sigma and grid policy, so its benefit cannot be attributed to the slope cap alone.
+
+Same-point coarse replay:
+At N64 (-80,-80), all methods have the identical geometric bootstrap; initial slopes are 13.064 and -6.203 Hz/s.
+Hard60 and Smooth60 temporarily reach 60 Hz/s. Smooth60 incurs its penalty at eight evaluations and finishes with small slopes at a worse local minimum.
+The saved Hard60 state is feasible under the alternative objectives and beats Smooth60 by 67.05 score units and Gaussian30 by 822.57 at that SAME point.
+At N49 (-80,-80), Hard60 also provides feasible lower scores than Hard30 (1,797.95 units) and Gaussian60 (1,947.87 units) under each target model.
+All six instrumented coarse replays reproduced their saved scores to 1e-6. This directly demonstrates optimizer-path/local-minimum effects, not merely an intended prior preference.
+
+N05 / gaussian60: Final candidate ranking across regional calibrations; adequate grid coverage.
+  Errors zero-c / fitted-c: 14.672 km / 3.199 km
+  Nearest evaluated point 3.518 km; 79 grid points within 25 km; best covering point rank 1.
+N25 / smooth30: Coarse/grid pruning plus downstream ranking; a restored 1.02 km fitted-c candidate still loses by score.
+  Errors zero-c / fitted-c: 81.399 km / 83.189 km
+  Nearest evaluated point 7.114 km; 2 grid points within 25 km; best covering point rank 234.
+  zero-c grid_rescue: 23.187 km, score change +186.386; would replace old winner: False.
+  fitted-c grid_rescue: 1.020 km, score change +458.631; would replace old winner: False.
+N29 / sigma2_60: Final calibrated likelihood / association preference; adequate grid coverage.
+  Errors zero-c / fitted-c: 5.403 km / 5.621 km
+  Nearest evaluated point 1.579 km; 70 grid points within 25 km; best covering point rank 1.
+N39 / smooth60: Calibration convergence rejection discards both reference-covering regions.
+  Errors zero-c / fitted-c: 27.379 km / 22.323 km
+  Nearest evaluated point 1.579 km; 47 grid points within 25 km; best covering point rank 1.
+  zero-c calibration_retry: 2.234 km, score change -6195.983; would replace old winner: True.
+  fitted-c calibration_retry: 1.715 km, score change -5363.910; would replace old winner: True.
+N49 / gaussian60: Grid coverage plus final convergence rejection of a better-scoring nearby feasible state.
+  Errors zero-c / fitted-c: 7.722 km / 48.039 km
+  Nearest evaluated point 7.114 km; 1 grid points within 25 km; best covering point rank 350.
+  zero-c grid_rescue: 12.815 km, score change +6169.358; would replace old winner: False.
+  fitted-c grid_rescue: 3.022 km, score change +1381.124; would replace old winner: False.
+N49 / hard30: Coarse/grid pruning plus calibration failures; restoring a covering region is sufficient in this diagnostic.
+  Errors zero-c / fitted-c: 92.717 km / 99.949 km
+  Nearest evaluated point 7.114 km; 1 grid points within 25 km; best covering point rank 340.
+  zero-c grid_rescue: 0.292 km, score change -3407.591; would replace old winner: True.
+  zero-c calibration_retry: 24.029 km, score change -2216.679; would replace old winner: True.
+  fitted-c grid_rescue: 1.071 km, score change -4538.901; would replace old winner: True.
+  fitted-c calibration_retry: 44.946 km, score change -84.307; would replace old winner: True.
+N64 / gaussian30: Coarse/grid pruning plus downstream calibration/association/ranking; one restored coarse region is insufficient.
+  Errors zero-c / fitted-c: 107.225 km / 108.458 km
+  Nearest evaluated point 7.114 km; 1 grid points within 25 km; best covering point rank 294.
+  zero-c grid_rescue: 8.834 km, score change +469.309; would replace old winner: False.
+  fitted-c grid_rescue: 9.167 km, score change +723.808; would replace old winner: False.
+N64 / smooth60: Coarse local minima and grid pruning; restoring a covering region is sufficient in this diagnostic.
+  Errors zero-c / fitted-c: 24.455 km / 26.791 km
+  Nearest evaluated point 7.114 km; 1 grid points within 25 km; best covering point rank 195.
+  zero-c grid_rescue: 1.528 km, score change -845.203; would replace old winner: True.
+  fitted-c grid_rescue: 0.722 km, score change -1078.647; would replace old winner: True.
+
+N29: the final calibrated data likelihood, not the timing penalty, explains the observed displacement on the explored branch.
+The fitted-c reference endpoint raises data NLL by 543.201 and lowers the timing penalty by 1.849, for total +541.352. The zero-c counterpart is +668.696 data and -1.121 timing, total +667.575.
+Small-step nuisance profiling reaches the reference and then returns near 5.4--5.6 km when position is released. This is evidence of model/association/calibration preference, not a global-minimum certificate.
+The 11.4596875 GHz RF group contributes +341.633 fitted-c NLL units against the reference; the 10.959687498 GHz group contributes -56.570 in favor of it. Both receivers contribute to the total disagreement.
+Halving or removing the frozen piecewise receiver correction did not eliminate the approximately 5 km bias. This rules out that simple explanation; independent RF calibration or association evidence is still needed to identify the physical cause.
+N05 zero-c: the accepted 3.772 km candidate loses to 14.672 km by only 16.54 score units. Grid coverage is adequate; across-region ranking is the relevant failure.
+N49 Gaussian60: a feasible 4.760 km boundary candidate scores about 2,835 units better than the selected 48.039 km state, but fails the unchanged 0.001 stationarity threshold. Extra continuation and inspection of SLSQP terminal states do not certify it.
+SLSQP reports success for the rejected N39/N49 calibration states; independent stationarity residuals range from approximately 0.00104 to 1.014. These were not deadline failures. Terminal-state inspection does not resolve them by simply returning the last state.
+The reset-timing calibration recovery preserves the existing convergence threshold; it can choose a higher-scoring calibration local minimum that subsequently yields a much better full association/position fit.
+
+Three proposed Hard60 variants (not evaluated on all 64 in this report):
+1. Coarse multi-start: retain Hard60, sigma 2 s, the grid and point budget. At each coarse location compare the current bootstrap with one deterministic reset of nuisance timing/slopes. Choose by model score. This tests whether better coarse local minima improve discovery/association quality. Report its extra fit cost.
+2. Calibration recovery: when a coarse candidate fails prefit/postfit stationarity, try one continuation, then one zero-timing restart, while keeping the same caps and acceptance checks. N39 provides a direct diagnostic example; apply uniformly, without truth-based retries.
+3. Small RF residual correction: retain the Hard60 search; during final fitting add strongly regularized receiver-by-RF residual frequency offsets (initial prior SD 50 Hz, outer bound 150 Hz). Remove directions duplicated by receiver offsets and the existing linear RF coefficient c. This targets the observed RF disagreement; it is a hypothesis, not a demonstrated fix.
+For variant 3, test first on the bad cases with blocked validation over time/RF, then all N01--N64. Extra RF freedom can absorb geometric information; require geographic median, p90 and worst-case improvement, not only lower training NLL.
+For all variants retain both final c arms with matched observations/banks/priors/budgets within each variant, and compare runtime, coverage and calibration failures as well as position and frequency fit.
+
+Validation: 17 stage-probe jobs, 3 paired local-continuation profiles, 6 matched clock-baseline scale groups, 6 exact coarse replays, 4 finite-difference calibration inspections and 5 SLSQP terminal-state inspections.
+Nonconverged diagnostic fits are retained and marked, including some profile points. They are never silently accepted as repaired localization results.
+Reproduction: use the deployed numerical interpreter /opt/leo-tracker/current-api/.venv/bin/python with PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src and single-threaded BLAS.
+Run diagnose.py, profile_paths.py, inspect_scores.py, terminal_audit.py, baseline_scale.py, coarse_replay.py, make_report.py in this folder. Existing raw engine caches may be reused on repeats; the first run is preserved here.

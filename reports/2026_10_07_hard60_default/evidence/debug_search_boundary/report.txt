@@ -1,0 +1,84 @@
+Oct 6 21:39:41 UTC / scan-fw-e3bebc228093a125: boundary diagnostic
+
+The local search disk truncates the T1AT basin. Doubling it to 25 km gives
+converged fits for both RF arms, with better objectives and better evaluated
+positions. The V16 basin also reaches converged interior fits in the wider
+disk, but its position gets worse. Numerical convergence and frequency fit
+therefore do not justify a localization claim.
+
+Controlled experiment
+Used deployed 5600cd81e5f2-r2 numerical implementation, public saved-input and
+checkpoint readers, exact frozen TLE digest/time and original observation
+inventory. Saved fitted-c associated vector is the shared continuation start
+for both arms; zero-c changes only c to zero. Receiver baseline, candidate
+subset, prior, timing state, score and constraints other than local radius are
+held fixed. Each fit has equal 35 s / 600 iteration budget; BLAS is single
+threaded and fits run sequentially. No RF was collected and production stores
+were never written. The reference position enters only evaluation afterward.
+
+Both selected fitted starts were the saved associated rows. Their original
+objectives reprice exactly: T1AT 38299.732897682734 with 34 satellites;
+V16 41550.91800665939 with 48. Basin grid coordinates uniquely identify the
+12.5 km hierarchy spacing, so the deployed max(12.5,spacing/sqrt(2)) rule gives
+an original 12.5 km disk even after union of the two searches. Centers remain
+the saved association initial positions, not the continuation positions.
+
+Method arm      disk   objective       stationarity   error m  converged/boundary
+T1AT fitted-c   12.5   38299.732898     0.006154       6759.70  no/yes
+T1AT zero-c     12.5   38555.908960     0.001724       7061.56  no/yes
+T1AT fitted-c   25.0   37860.284274     0.000129       3644.50  yes/no
+T1AT zero-c     25.0   38312.195266     0.000164       1661.88  yes/no
+V16  fitted-c   12.5   41550.918007     0.003562      43619.12  no/yes
+V16  zero-c     12.5   41557.610842     0.005924      43615.63  no/yes
+V16  fitted-c   25.0   41458.726214     0.000023      47485.48  yes/no
+V16  zero-c     25.0   41206.576053     0.000066      48917.44  yes/no
+
+T1AT wider fits land 22.257 km and 20.725 km from local center. The fitted arm
+improves objective by 439.449 versus its original saved fit. Compared with
+the matched zero-c fit, its objective is 451.911 lower while position error is
+1982.616 m higher. Fitted frequency RMS 108.235 Hz versus zero-c 155.798 Hz
+likewise does not establish better localization. Calibration selection penalties
+are constant within each basin (T1AT 2.858543; V16 3.007290), so adding them
+does not change any within-basin comparison.
+
+V16 wider fits land 16.305 km and 17.844 km from center. Fitted objective gains
+92.192, but error grows 3866.358 m. Zero-c has a further 252.150 lower objective
+than fitted-c while error is another 1431.965 m worse. This is evidence that
+local disk expansion alone cannot repair the V16 inference. It is not proof
+of a particular physical-model defect or of global optimality.
+
+Extra fixed-disk budget leaves both fitted objectives unchanged to roundoff.
+All fixed-disk rows fail the independent stationarity threshold; V16 zero-c
+even reports optimizer-success while the KKT audit reports not converged.
+At fixed-disk machine precision, stationarity can vary without material score
+or position change. A larger wall budget alone is not a supported remedy.
+
+Limits and next bounded tests
+These are local diagnostics at two frozen candidate/baseline banks, not a
+complete all-basin selection rerun. The published V16 zero-c winner from
+point:225:25 (305.643 km error) is not retested here. Warm-starting zero-c from
+the saved fitted solution changes its initialization relative to that original
+published arm, but both arms here have the same controlled start and budget.
+No inference winner was chosen using reference error. There is no independent
+held-out localization validation. Each 25 km result is stationary locally,
+not demonstrated globally optimal.
+
+Next test a bounded, truth-free expansion policy only when local disk is
+active: preserve the association center, expand to 25 km, rerun both arms with
+matched starts and budgets, and include converged receipts in all-basin
+selection. Report domain changes explicitly. Audit V16 timing/association
+and scoring against independent observations before claiming a fix; its score
+improvement demonstrably trades against accuracy here.
+
+Reproduction (repository root)
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+ PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src \
+ /opt/leo-tracker/current-api/.venv/bin/python \
+ reports/2026_10_07_debug_search_boundary/experiment.py
+Add --audit-only for frozen-objective/grid audit without fits.
+python3 -m unittest discover -s reports/2026_10_07_debug_search_boundary -p 'test_*.py' -v
+Validation: one receipt invariant test passes, checking all eight controlled
+arms, domain feasibility, exact c=0, nonempty evaluations and independent
+convergence threshold. Repricing/grid audits pass exactly. No component code
+or published persisted contract changed. results.json retains full vectors;
+results.csv is compact. Total optimizer wall time: 155.38 seconds.

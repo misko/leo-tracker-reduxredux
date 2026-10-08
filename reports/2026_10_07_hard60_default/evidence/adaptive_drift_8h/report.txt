@@ -1,0 +1,48 @@
+Oct 06, 2026 · 14:04–22:04 PDT (8 hours)
+22 completed of 31 scans; 9 pending.
+
+Additional final-fit drift, Hz/s:
+V16/fitted-c: 19/22 converged; 2 boundary; relative timing sigma [0.15] s
+  rx0: median +0.406; min -44.635; max +15.760; |b|>10: 5/22
+  rx1: median -0.034; min -7.936; max +16.813; |b|>10: 1/22
+  differential: median -0.185; min -10.473; max +47.975; |b|>10: 2/22
+V16/zero-c: 19/22 converged; 1 boundary; relative timing sigma [0.15] s
+  rx0: median +0.475; min -5.947; max +51.872; |b|>10: 1/22
+  rx1: median -0.219; min -95.272; max +119.462; |b|>10: 2/22
+  differential: median -0.296; min -95.935; max +67.590; |b|>10: 2/22
+T1AT/fitted-c: 21/22 converged; 2 boundary; relative timing sigma [1.0] s
+  rx0: median +0.854; min -4.303; max +4.810; |b|>10: 0/22
+  rx1: median -0.008; min -7.499; max +4.291; |b|>10: 0/22
+  differential: median -0.337; min -9.440; max +0.714; |b|>10: 0/22
+T1AT/zero-c: 22/22 converged; 1 boundary; relative timing sigma [1.0] s
+  rx0: median +1.175; min -3.558; max +5.397; |b|>10: 0/22
+  rx1: median +0.477; min -7.501; max +4.958; |b|>10: 0/22
+  differential: median -0.244; min -9.412; max +1.659; |b|>10: 0/22
+
+Largest additional receiver slopes:
+2026-10-06T14:39:41.786744-07:00 scan-fw-e3bebc228093a125 V16/zero-c RX1: +119.462 Hz/s; converged=False; position error=305.643 km
+2026-10-06T15:52:24.456197-07:00 scan-fw-ffe5accf2d020263 V16/zero-c RX1: -95.272 Hz/s; converged=True; position error=7.336 km
+2026-10-06T14:39:41.786744-07:00 scan-fw-e3bebc228093a125 V16/zero-c RX0: +51.872 Hz/s; converged=False; position error=305.643 km
+2026-10-06T16:22:33.030029-07:00 scan-fw-7503dce5ad59cac2 V16/fitted-c RX0: -44.635 Hz/s; converged=False; position error=8.956 km
+2026-10-06T17:37:54.133669-07:00 scan-fw-ea6d27f9f5712399 V16/fitted-c RX1: +16.813 Hz/s; converged=True; position error=5.362 km
+2026-10-06T17:37:54.133669-07:00 scan-fw-ea6d27f9f5712399 V16/fitted-c RX0: +15.760 Hz/s; converged=True; position error=5.362 km
+2026-10-06T14:39:41.786744-07:00 scan-fw-e3bebc228093a125 V16/fitted-c RX0: -13.410 Hz/s; converged=False; position error=43.619 km
+2026-10-06T16:07:28.887440-07:00 scan-fw-87c303fa4942bfa8 V16/fitted-c RX0: +13.027 Hz/s; converged=True; position error=2.276 km
+
+Definitions:
+Final physical vector b0 = vector[3], b1 = vector[5], in Hz/s, added to frozen receiver baseline.
+Calibration postfit b + final-fit b. Nonlinear piecewise correction remains separate; not an instantaneous total derivative.
+RX1 minus RX0 for the same selected fit.
+
+Limitations:
+Empirical scan-level fitted-parameter distribution, not a hardware clock measurement or posterior uncertainty distribution.
+Only published selected results, one per scan/method/arm. No offline repair trials or other optimizer starts included.
+Missing recent regional results can bias coverage; no missing value was imputed.
+Unconverged and boundary selections are retained and marked, not silently filtered.
+Both c arms use the published shared fitted-c upstream calibration protocol; winning basins can differ.
+These are original published fits, not the offline sigma=1s, cones, or paired-clock experiments.
+Extra correction can be small despite a large upstream calibration slope.
+Scan estimates are correlated and cannot directly define a Kalman process-noise prior.
+
+Validation: exact published selection reproduced for all 88 scan/method/arm rows; input digests and calibration checkpoint digests verified; no nonfinite slopes; zero-c coefficients equal zero.
+Run collect.py once with deployed worker PYTHONPATH; run analyze.py using API virtualenv. Source snapshot is frozen and collection refuses to overwrite it.

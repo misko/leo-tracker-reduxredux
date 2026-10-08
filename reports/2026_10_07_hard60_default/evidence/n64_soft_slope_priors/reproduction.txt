@@ -1,0 +1,34 @@
+Offline N01--N64 comparison: five new passes plus verified historical controls.
+Working directory: /home/mouse9911/gits/leo-tracker-reduxredux
+
+All six primary configurations use timing sigma 2 s. The four new priors are:
+Gaussian60: hard +/-60, Gaussian slope sd 20 Hz/s.
+Smooth60: hard +/-60, zero penalty through +/-30, quadratic excess scale 10 Hz/s.
+Gaussian30: hard +/-30, Gaussian slope sd 10 Hz/s.
+Smooth30: hard +/-30, zero penalty through +/-15, quadratic excess scale 5 Hz/s.
+The fifth new pass is Hard30 with no soft penalty. The existing sigma2_60 pass
+is the Hard60 control. Three older baseline/1-second passes are retained too.
+
+Use this numerical interpreter prefix for the commands below:
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python
+
+1. -m pytest -q reports/2026_10_07_n64_soft_slope_priors/test_soft.py
+2. -u reports/2026_10_07_n64_soft_slope_priors/run_soft.py
+3. reports/2026_10_07_n64_soft_slope_priors/analyze_soft.py
+4. -u reports/2026_10_07_n64_soft_slope_priors/validate_soft.py
+
+analyze_soft.py --partial reports terminal cases during execution, caching only
+post-selection evaluation keyed by result hash, analysis source and reference.
+The reference is never loaded by run_soft.py or used to choose a fit.
+validate_soft.py --pilot-label N02 audits only that scan's five new variants.
+Final validation replays 576 grids and verifies 1,152 possible arm selections.
+
+No new RF collection, service changes, or modifications to older reports.
+Frozen observations, causal orbit banks, original scorer and numerical engine
+are reused. Each variant gets 400 grid attempts, three regions and the same
+fit deadlines/iteration budgets. Failures remain in the analysis.
+Both final c arms share each region's calibration, association bank and starts.
+The c=0 ablation is final-stage only; discovery/calibration still fit c.
+Priors apply to separate affine terms, not the total modeled receiver drift.
+The retained calibration affine prior is included exactly once in the final
+selection score. The final affine prior's gradient is included in convergence.

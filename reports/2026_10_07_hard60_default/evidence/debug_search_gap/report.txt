@@ -1,0 +1,57 @@
+Case: 2026-10-06 18:38:49 UTC, scan-fw-6bf407cfe8158445
+
+Finding: V16 originally selected a stationary but wrong local optimum. Keeping
+the already feasible saved zero-c incumbent in the fitted-c candidate set changes
+the score-only selection from 44170.23806984934 / 296817.735322 m error to
+44111.832695745645 / 5195.076836 m error. This restores nested-model dominance
+without optimization. Transferred fixed-c stationarity does not certify a free-c
+stationary point; receipts therefore mark that candidate feasible-only.
+
+Matched continuation: six saved basins, identical observations, per-basin orbit
+subset, calibration baseline, prior disks and local disks. Each arm receives
+the same two seeds: the best saved fitted-c and zero-c vector for that basin.
+Zero arm fixes only index 6 to zero; fit_position preserves the original timing
+feasibility handling. Budgets match at 10 seconds and 300 iterations per seed,
+24 fits in total, single-thread BLAS. Original incumbents are retained. Frozen
+TLE digest/collection time and full retained-number ordering are verified;
+every saved arm/basin objective reprices within 1e-6. Input and analysis digests
+are separately verified against the frozen document. No production writes.
+
+Direct fitted-c optimizer selection: basin point:-87.5:-87.5, saved-zero seed,
+score 44099.99232542125, objective 44090.396074756514, calibration penalty
+9.596250664733162, error 5151.808694154402 m. c=50.4979873566 Hz/GHz,
+posterior RMS=111.5830339288 Hz, stationarity=4.711233234e-6,
+optimizer-success after 6.825219679 s. The final free feasible envelope equals
+this direct result and dominates all newly completed zero results.
+
+Zero selection remains its original incumbent, score 44111.832695745645,
+error 5195.076836028556 m, posterior RMS111.87193705964916 Hz. Relative to
+the original free winner the new free score improves 70.2457444281; compared
+with the saved zero point it improves 11.8403703244. The extra free optimization
+changes position accuracy only 43.268141874 m; the major correction came from
+retaining the existing zero basin. Scores and position effects are reported
+separately. Truth coordinates are read for error evaluation only after score
+selection, and tests ensure selection ignores position truth.
+
+Recommendation: retain evaluated feasible candidates across nested arms and
+cross-seed shared union starts within each frozen basin. Preserve direct free
+optimizer audits separately from feasible envelopes. This case supports the
+change empirically but does not establish general localization accuracy; compare
+all captures with matched budgets before a production change. Neither successful
+SLSQP exit nor small stationarity protects against another basin being better.
+
+Limitations: exploratory continuation adds matched compute beyond the original
+run; it is not an end-to-end rerun at the original total budget. Wall-clock capped
+fits may differ under machine load. Only final V16 optimization was repeated;
+calibration, association, T1AT and spatial discovery stayed frozen. Other basins
+retain distinct candidate sets and calibration; equality is between arms within
+each basin. No claim of independent frequency-validation or global optimality.
+
+Reproduce from repository root:
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python reports/2026_10_07_debug_search_gap/experiment.py
+sudo -n env OPENBLAS_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python reports/2026_10_07_debug_search_gap/finalize_receipt.py
+sudo -n env OPENBLAS_NUM_THREADS=1 PYTHONPATH=reports/2026_10_07_debug_search_gap /opt/leo-tracker/current-api/.venv/bin/python -m unittest discover -s reports/2026_10_07_debug_search_gap -p 'test_*.py'
+
+Tests: 3 passed (shared copied seeds, index-6-only projection, truth-independent
+selection). Saved-score repricing, TLE ordering and binding are runtime assertions.
+Changes are limited to this report directory; no component runtime code changed.

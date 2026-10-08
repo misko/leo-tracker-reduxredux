@@ -28,7 +28,15 @@ class RegionalAssociation:
     mode_count: int
 
 
-def associate_calibration(observations, bank, prior, calibration, *, maximum_seconds=60.0):
+def associate_calibration(
+    observations,
+    bank,
+    prior,
+    calibration,
+    *,
+    maximum_seconds=60.0,
+    orbit_predictor=predict_orbits,
+):
     """Freeze one fitted-c association for both final score models and RF arms.
 
     The zero-c arm is a final-score ablation. Upstream calibration and discrete
@@ -50,7 +58,7 @@ def associate_calibration(observations, bank, prior, calibration, *, maximum_sec
 
     def predict(arm, indices, offset):
         subset = selected_bank(tuple(int(i) for i in indices))
-        prediction, visible, _, timing = predict_orbits(
+        prediction, visible, _, timing = orbit_predictor(
             subset, observations, prior, point, np.full(len(indices), offset)
         )
         # Upstream calibration remains fitted-c for the final-score ablation.

@@ -1,4 +1,4 @@
-"""Run or resume automatic Sacramento T1AT/V16 analysis from saved GLRT products."""
+"""Run or resume automatic Hard60 analysis from saved GLRT products."""
 
 import argparse
 import json
@@ -9,24 +9,23 @@ import numpy as np
 
 from leo.analysis.catalogue_eligibility import exclude_labelled_starlink_debris
 from leo.analysis.regional_position_bank import build_regional_bank
+from leo.application.hard60_runner import HARD60_SCORE, Hard60Configuration, run_hard60
 from leo.application.regional_position_inputs import (
     PositionInputUnavailable,
     prepare_position_windows,
 )
 from leo.application.regional_position_report import regional_position_document
 from leo.application.regional_position_runner import (
-    RegionalRunConfiguration,
     RegionalSliceExpired,
     json_value,
-    run_regional_position,
 )
 from leo.contracts.digests import canonical_digest, sha256_digest
-from leo.contracts.regional_position import POSITION_SCORES, RegionalPrior
+from leo.contracts.regional_position import RegionalPrior
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.regional_position import render_regional_position
 from leo.sky.propagation import parse_element_sets
-from leo.storage.regional_position import RegionalPositionStore
 from leo.storage.regional_position_checkpoints import RegionalCheckpointStore
+from leo.storage.regional_position_v2 import Hard60Store
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 REFERENCE = (37.84903264307456, -122.4856541910174)
@@ -38,10 +37,18 @@ def configuration():
     paths += sorted(package.glob("analysis/t1_at*.py"))
     paths += sorted(package.glob("application/regional_position*.py"))
     paths += [package / "contracts/regional_position.py"]
+    paths += sorted(package.glob("analysis/hard60*.py"))
+    paths += [
+        package / "analysis/_regional_orbits.cpp",
+        package / "application/hard60_runner.py",
+        package / "contracts/regional_position_v2.py",
+    ]
     return {
-        "protocol": "sacramento-original-glrt-c0-v16-v1",
-        "run": json_value(RegionalRunConfiguration()),
-        "scores": json_value(POSITION_SCORES),
+        "protocol": "sacramento-hard60-v1",
+        "run": json_value(Hard60Configuration()),
+        "scores": {"V16": json_value(HARD60_SCORE)},
+        "slope_scope": "each-stage-added-affine-slope-not-total-receiver-drift",
+        "selection": "stationary-only-model-score-no-reference",
         "prior": json_value(RegionalPrior()),
         "refinement": "off",
         "rf_ablation_scope": "final-score-shared-fitted-c-calibration-and-association",
@@ -52,7 +59,7 @@ def configuration():
 
 
 def regional_position_complete(root, session_id, *, expected_input=None, expected_analysis=None):
-    store = RegionalPositionStore(root)
+    store = Hard60Store(root)
     status = store.status(session_id)
     if status.manifest is None:
         return False
@@ -61,7 +68,7 @@ def regional_position_complete(root, session_id, *, expected_input=None, expecte
         doc.configuration_sha256 == canonical_digest(configuration())
         and (expected_input is None or doc.input_manifest_sha256 == expected_input)
         and (expected_analysis is None or doc.analysis_manifest_sha256 == expected_analysis)
-        and all(store.artifact(session_id, method) is not None for method in ("T1AT", "V16"))
+        and store.artifact(session_id, "V16") is not None
     )
 
 
@@ -72,7 +79,7 @@ def run_regional_position_analysis(
         raise ValueError("invalid regional worker time budget")
     begun = time.monotonic()
     destination = output_root or root
-    store = RegionalPositionStore(destination, read_only=False)
+    store = Hard60Store(destination, read_only=False)
     inputs = ScannerTrackingInputStore(root)
     try:
         source = inputs.load(session_id)
@@ -103,7 +110,7 @@ def run_regional_position_analysis(
         result = {
             "searches": {
                 name: {"evaluations": [], "deferred_cells": 0, "stop_reason": "insufficient-input"}
-                for name in POSITION_SCORES
+                for name in ("V16",)
             },
             "points": {},
             "finals": [],
@@ -158,7 +165,7 @@ def run_regional_position_analysis(
         checkpoints = RegionalCheckpointStore(destination, session_id, binding)
         try:
             with checkpoints.writer():
-                result = run_regional_position(
+                result = run_hard60(
                     prepared.observations,
                     bank,
                     RegionalPrior(),
@@ -180,9 +187,7 @@ def run_regional_position_analysis(
         reference_evidence="Configured baseline receiver reference; evaluation only",
         diagnostics=diagnostics,
     )
-    store.publish(
-        document, {name: render_regional_position(document, name) for name in POSITION_SCORES}
-    )
+    store.publish(document, {"V16": render_regional_position(document, "V16")})
     return {"session_id": session_id, "state": "complete"}
 
 

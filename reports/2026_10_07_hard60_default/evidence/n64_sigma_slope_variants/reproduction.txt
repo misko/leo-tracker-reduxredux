@@ -1,0 +1,19 @@
+Working directory: /home/mouse9911/gits/leo-tracker-reduxredux
+
+Offline only; frozen inputs in reports/2026_10_07_n64_before_after/inputs.
+No new collection, reference-informed starts, production configuration changes,
+or changes to the original report. Original sources and artifacts are hash-pinned.
+
+Use the deployed numerical interpreter and single-threaded BLAS for each command:
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python ...
+
+1. -m pytest -q reports/2026_10_07_n64_sigma_slope_variants/test_variants.py reports/2026_10_07_slope_priors/test_bounded_fit.py
+2. -u reports/2026_10_07_n64_sigma_slope_variants/run_variants.py
+3. reports/2026_10_07_n64_sigma_slope_variants/compare_variants.py
+4. -u reports/2026_10_07_n64_sigma_slope_variants/validate_comparison.py
+
+run_variants.py resumes only matching-protocol cached work. It copies verified,
+geometry-only bootstrap seeds from the prior report; it refits all point scores
+and final regions for each new setting. There are 128 new scan/variant jobs.
+compare_variants.py --partial is safe during execution; it reports completed cases only.
+Final outputs contain all 64 labels, both c arms, and all four configurations.

@@ -1,0 +1,127 @@
+Root-cause investigation: the 2026-10-06 18:38:49 V16 297 km failure
+Capture scan-fw-6bf407cfe8158445. All work is offline and read-only against the
+original source/checkpoint/TLE ports; only this research report tree is written.
+
+Finding
+The original pipeline found a near solution but scored it worse than a distant
+solution because it retained costly satellite-specific timing modes. The final
+continuous optimizer was genuinely trapped in a local minimum. Its numerical
+convergence was not evidence that it had adequately searched alternative timing
+hypotheses. Sharing the zero-c solution exposed this failure but did not explain
+it; the following audits identify and intervene on the mechanism directly.
+
+1. Reproduction rules out timeout or changed inputs for the near failure.
+The trajectory audit reproduces all four original V16 near-basin fits exactly,
+from the original association/zero-timing starts, with the original 20-second,
+300-iteration budgets. Input, analysis, TLE and deployed source hashes match.
+Both associated arms finish with optimizer-success and pass stationarity checks.
+
+2. Upstream association and downstream refinement prioritize different things.
+The T1-AT discrete selector prioritizes assigned-window count minus a per-satellite
+charge; absolute timing and Gaussian residual terms break selection ties. It
+does not select modes using V16's 0.15-second relative timing prior. V16 then
+receives that selected bank and timing initialization. Responsibilities remain
+soft and can change, but no explicit search over individual timing alternatives
+occurs during the local continuous fit. The alternate original zero-timing start
+resets all timings together; it also fails to recover the lower-score solution.
+
+3. Four concrete weakly supported timing modes survive almost unchanged.
+Catalogue hypotheses 67112, 62144, 58803 and 62753 retain their upstream absolute
+timings within 0.10 seconds. Their final relative shifts are +6.568, -6.485,
++4.821 and -4.445 seconds, with effective posterior support only 53, 56, 61 and
+23 windows. Relative to sigma=0.15 seconds, these are very expensive. They are
+model hypotheses; this analysis does not independently establish their identities
+or prove physical clock/ephemeris errors of those magnitudes.
+
+The original near fitted-c solution has BETTER data NLL than the far winner:
+                                      near original free    far original free
+frequency-data negative log likelihood       38682.162             43960.592
+common + relative timing penalty              7571.983               200.867
+receiver correction penalty                      9.596                 8.779
+total selection score                         46263.741             44170.238
+reference position error                         5.941 km            296.818 km
+Lower scores win. Thus the timing penalty reverses the observed-data ranking.
+The two basins use different frozen satellite sets and calibrations; this is an
+exact decomposition of the published comparison, not a matched-set ablation.
+The likelihood normalization contribution differs by only 14.715 points.
+
+4. The optimizer is stuck for a measurable reason.
+336 finite-difference checks over 16 starts/fits found no gradient defect or
+visibility crossing. Interpolation-knot secant errors contract at smaller steps.
+The near bad solution has a positive local Hessian at two finite-difference
+scales and is interior to the bounds. Along a feasible line toward the saved
+lower-score zero-c solution, the objective initially rises by 471.635 points and
+effective signal mass drops by 183 before the lower-penalty alternative wins.
+The full fit must shed/reassign some satellite support to escape this timing
+configuration; repeatedly starting at the same stationary point cannot do that.
+This diagnostic path does not establish that every possible route has the same
+barrier. The positive local curvature independently supports a local minimum.
+
+5. Simple rescaling is not a supported repair.
+Matched tests from the original associated starts changed the optimizer's c
+scale from 200 to 20, or reduced all parameter scales by ten. The first improved
+the free objective but still lost to the distant published winner; the second
+worsened both arms. No scaling change is recommended from those tests.
+
+Causal intervention: reconsider timing modes without cross-arm warm starts.
+mode_escape.py takes each arm's OWN original associated fit. In the same frozen
+catalogue order, it tries setting one satellite's absolute shift to the mean of
+the other shifts, re-expresses the common/zero-sum timing coordinates, and keeps
+the change only if the complete unchanged V16 objective decreases. Every original
+observation and satellite remains, and RF/receiver/position parameters are held
+fixed during this sweep. Both arms receive 31 trials and one 20-second/300-iteration
+refinement under the same bounds. No reference position enters those decisions.
+
+                                   fitted-c                 zero-c
+own original objective             46254.145                44102.236
+after discrete timing sweep        42841.050                42677.645
+after continuous refinement        42511.297                42557.950
+selection score including cal      42520.893                42567.547
+frequency-data NLL                 40686.153                40720.482
+common + relative timing cost       1825.144                 1837.469
+posterior frequency RMS               107.021 Hz               107.649 Hz
+effective signal support            2433.913                 2424.163
+position error                         4.796 km                 4.992 km
+independent stationarity               0.00005271              0.00000449
+converged                              yes                     yes
+
+The discrete sweep alone beats the original far solution's objective, without
+moving position at all. Subsequent free refinement beats the original far
+selection score by 1649.345 points and locates at 4.796 km error. The major score
+improvement comes from lower timing penalties even though aggregate frequency
+data NLL worsens. Lower posterior RMS reflects a changed responsibility set;
+it does not establish better prediction. The experiment took 27.961 seconds
+including reconstruction; final continuous fits used 6.50 and 6.35 seconds.
+
+This is a mechanism test and a promising targeted search change, not a validated
+production fix: it adds continuation work to the original fits, considers one
+capture and basin, and reuses upstream full-capture calibration/association. No
+same-total-budget end-to-end or held-out comparison has been performed. The
+roughly 5 km residual error and large timing strain on some strongly supported
+satellites remain unexplained physically. A timing search improvement does not
+validate the catalogue identities, timing priors, or measurement covariance.
+
+Recommended implementation direction
+Make discrete association/timing decisions aware of the final model's score,
+and explicitly allow individually costly modes to be reconsidered. Test the
+bounded timing-sweep idea from original pipeline starts across the frozen
+capture cohort with equal total budgets and matched c0/free controls. Preserve
+data-fit, total-score and position-accuracy metrics separately. Independently
+check the physical explanation for the remaining many-sigma timing corrections
+before treating these outputs as calibrated Kalman measurements. No production
+implementation or deployment was made in this investigation.
+
+Artifacts
+trajectory/: exact original paths, matched scaling tests, callback feasibility
+audit, source binding checks; two tests passed.
+derivatives/: finite-difference, interpolation, curvature and path-barrier audit;
+three tests passed.
+model/: per-row likelihood, per-satellite support/prior decomposition, original
+association checkpoint and upstream timing evidence.
+mode_escape.py / mode_escape.json: intervention reproduction and all 62 trials.
+test_mode_escape.py: two physical timing/gauge integrity tests passed.
+diagnosis.png / diagnosis.svg: score decomposition and feasible-path diagnostic.
+
+Reproduce intervention from repository root:
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python reports/2026_10_07_fit_root_cause/mode_escape.py
+sudo -n env OPENBLAS_NUM_THREADS=1 PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src /opt/leo-tracker/current-api/.venv/bin/python -m unittest discover -s reports/2026_10_07_fit_root_cause -p 'test_mode_escape.py'

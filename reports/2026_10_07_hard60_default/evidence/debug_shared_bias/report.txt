@@ -1,0 +1,84 @@
+Fourth case: scan-fw-6a376b600fc2f542, Oct 6 19:39:07 UTC
+
+The strongest cheap diagnosis is temporal disagreement, rather than one defective
+receiver or the RF coefficient alone. The predeclared early-half conditional fit
+is about 0.66-0.72 km from the roof, while the late-half fit is about 7.8 km away.
+Both receiver-only fits remain about 5.4-5.6 km away. This is an evaluation finding,
+not grounds for selecting the early rows for production.
+
+Verification and procedure
+The original scanner input and analysis manifest hashes were checked against the
+frozen snapshot. The exact archived TLE digest and collection timestamp were
+matched, and the rebuilt retained bank numbers matched the saved bank. Both saved
+T1AT incumbents repriced within 1e-6 objective units before new claims. The all-row
+fit reproduces the saved 6204.89 m fitted-c / 6211.72 m c0 errors.
+No original data, checkpoint, deployed service, or contract was modified.
+
+All 20 fits use one solver at a time, single-thread BLAS, 12-second/300-iteration
+limits, the same saved local center and 12.5-km radius, the same two archived
+starting vectors in each arm, and the same 32-satellite bank and timing priors.
+For each row mask, fitted-c and c0 see identical observations and starts (with c
+projected to zero). Full-scan receiver calibration is frozen. Original RF and
+time centers in the receiver design are preserved under deletion. Receiver terms
+for an absent receiver remain at their seed values and have identically zero
+gradient; they are an unconstrained nuisance gauge, not information about that RX.
+The sum of fit elapsed times was 46.39 seconds. All reported optimizer stops were
+optimizer-success; different starts still find distinct nearby local minima.
+
+Minimum objective among the two attempted starts per mask/arm:
+mask          arm       windows   objective    posterior RMS Hz  roof error m
+all           fitted-c    2621    33552.8162       140.107            6204.89
+all           c0          2621    33552.8238       139.932            6211.72
+RX0 only      fitted-c    1586    20354.4676       122.017            5577.38
+RX0 only      c0          1586    20354.7548       122.188            5625.47
+RX1 only      fitted-c    1035    13218.5988       133.416            5373.28
+RX1 only      c0          1035    13225.8218       134.248            5466.21
+early half    fitted-c    1274    16273.1419       132.867             721.21
+early half    c0          1274    16274.9153       133.183             658.00
+late half     fitted-c    1347    17231.6465       123.037            7804.08
+late half     c0          1347    17224.7702       124.111            7816.33
+
+Errors use production coordinate conversion and the production Earth radius
+6371008.8 m great-circle calculation. Objective values across different masks
+are not comparable because observation counts differ. RMS is posterior weighted
+frequency residual RMS, not a localization accuracy measure. Late-half frequency
+RMS improves while position error worsens relative to the full observation fit.
+
+At the full fitted-c incumbent, RX0/RX1 likelihood position gradients are opposing
+(-9.962,-15.242) and (9.962,15.242) objective units/km. Their receiver-offset fits
+force their mean residuals nearly to zero, hiding geographic tension.
+Early/late gradients are (27.110,-18.313) and (-27.110,18.313).
+Channel 3 has the largest block pull (64.579,-0.380), a posterior mean residual
+-16.74 Hz and 375.17 effective signal windows. Other channels balance that pull:
+channel1 (-28.711,-11.978), channel2 (-4.665,4.357), channel4 (-31.203,8.001).
+Satellite 61946 has the largest individual pull (21.405,25.131), with 224.29
+effective signal windows; 56289 has 239.39 support but a smaller pull. These are
+conditional gradient contributions, not proof that any block/satellite is wrong.
+The full posterior signal mass is 2052.29, distinct from the saved hard association
+count of 2402. The catalogue support/residual/gradient inventory is in results.json.
+
+The fitted-c coefficient changes substantially with time: early -43.06 Hz/GHz,
+late +20.03 Hz/GHz, full +3.35 Hz/GHz. Common timing moves from -2.29 s early to
+-4.46 s late, versus -3.20 s full. That is consistent with nuisance/geometry or
+association mismatch varying over time; this test does not identify its cause.
+
+Limitations and next step
+These are conditional influence fits, not independent holdouts: all rows informed
+the frozen calibration, selected satellite bank, basin and archived starts.
+Association responsibilities are recomputed, but upstream selection leakage is
+retained. No full global search or V16 repetition was performed. The late-half
+free-c optimizer minimum is 6.8763 objective units ABOVE its zero-c minimum, even
+though the c0 solution is feasible for free-c. That is a real nested-arm search
+gap, so the free-c table row must not be treated as a global minimum. All attempts
+are retained; none was selected by roof distance. The finite-start comparison
+does not establish statistically significant receiver or channel defects.
+
+Next practical test: inspect time/channel/satellite residual and assignment
+stability around the predeclared midpoint, then rerun a bounded chronological
+cross-fit with calibration/association trained exclusively on the opposite time
+block, both matched c arms, and the zero-c incumbent explicitly admitted as a
+feasible free-c envelope. Report held-block predictive frequency score and position
+stability separately. Do not deploy early-row deletion based on this roof result.
+
+Artifacts: experiment.py, results.json, run.log, test_experiment.py. The row-subset
+integrity test passed (1 test); no component change was made.

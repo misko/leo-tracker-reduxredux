@@ -1,0 +1,173 @@
+CONES, SATELLITE IDENTITIES AND RECEIVER CLOCKS: ROOT-CAUSE FOLLOW-UP
+
+Outcome
+We found and repaired a specific receiver-clock search failure in the second
+capture, but have NOT solved either capture's remaining localization error.
+The first still has a roughly7km bias under the original likelihood. The second
+can now reach a physically more consistent4.50km zero-c solution without changing
+that likelihood. Fitted-c still misses better feasible zero-c scores. Neither
+result is established as an accurate, calibrated tracking measurement.
+
+All experiments keep relative timing sigma=1 second. Artifact labels1939/2139
+mean October6 12:39/14:39 PDT. These are216 bounded offline optimizer calls over
+the existing corpus, including temporary frequency-width stages and controls.
+No RF, production deployment, original report replacement, golden-fixture edit
+or QNAP mutation occurred. Research implementations and receipts are in this tree.
+
+1. WHY THE ORIGINAL CONES DID ALMOST NOTHING
+The learned cone describes which receiver sees a signal GIVEN that at least one
+receiver sees it. It is not an absolute probability that the satellite is visible
+to the equipment. Both absolute reception propensities can be tiny while the
+conditional receiver probabilities are both0.5. The additional0.1 floor limits
+rejection, and preserving total candidate detection mass cancels a uniform
+penalty across all satellites. These are verified semantics, not a coordinate
+rotation or derivative bug. The nominal70-degree-elevation axes also overlap
+near zenith: opposite east/west is not equivalent to behind the antenna.
+
+We tested removing normalization and applying a sharper absolute cone gate with
+the frozen cone parameters. All final selections converged. The sharper gate
+improved12:39 fitted/zero errors7.056/7.059 ->4.840/5.034km, but moved14:39 fitted
+error29.197 ->138.808km. Its comparable uniform frequency likelihood worsened in
+both captures. It changes the detection model and promotes a different bad bank;
+it is not a general repair. Do not adopt hard east/west rejection from this test.
+
+2. THE SPECIFIC SECOND-CAPTURE FAILURE: IDENTITY AND RECEIVER DRIFT CONFUSED
+Each original observation chooses a satellite independently in the final mixture.
+The receiver offset/slope terms can absorb different mistaken assignments on the
+two receivers. Convergence only certifies a local stationary fit of that model.
+
+We extracted actual retained top-one pairs on the same visit/probe/exact RF,
+with inferred acquisition pilot/frame epoch separation<=100ns:173 pairs in12:39,
+236 in14:39. Pair admission uses no frequency-agreement test and no orbit or known
+position. These are inferred signal epochs, not processing-window timestamps.
+Actual frequency support centroids differ by at most90/57ns, negligible here.
+Common750Hz pilot phase is soft common-emission evidence, not decoded satellite ID.
+
+In the original14:39 fitted-c solution, these observations contradict the fitted
+receiver difference by a robust -5.520Hz/s residual trend. Same-RF c cancels, so
+the discrepancy directly tests receiver/assignment consistency rather than c.
+The earlier frequency-width continuation produced an apparently attractive5.899km
+zero-c solution, but its paired residual median was6000.6Hz and trend+125.59Hz/s.
+Its extra RX slopes were approximately-2.56 and-129.15Hz/s in the paired successor.
+That near position was not evidence of a sound physical fit.
+
+We fitted the differential receiver intercept/slope directly from the paired
+measurements, without orbit or reference position. Keeping RX0's own offset and
+slope while initializing RX1 from that measured difference escaped the bad mode.
+We also tried the opposite anchor with identical budgets; it lost by score.
+Position, satellite timing, c and all observations/candidates were preserved in
+the initializer. No solution was passed between c arms. The location was then
+allowed to move normally during optimization.
+
+The unchanged independent V16 likelihood, zero-c:
+  Original sigma1 all-basin selection:     302.731km error
+  Frequency-width continuation:              5.899km, paired median6000.6Hz
+  RX0-anchored receiver initialization:      4.503km, paired median67.2Hz
+  Final selection score39237.380, data NLL39142.315, timing penalty92.206,
+  posterior frequency RMS135.49Hz, signal fraction41.55%, stationary/interior.
+This is a concrete clock/search repair, not a complete localization solution.
+These chronological values include different search stages; they are not an
+equal-total-budget end-to-end benchmark. Individual experiment controls are saved.
+
+3. WHAT THE PAIRED LIKELIHOOD CHANGES ACHIEVE
+Two tested research models replace the independent likelihood for an admitted
+pair with one joint likelihood; the measurements are never counted twice.
+The first favors a common catalogued satellite when both measurements are real
+signals, with10% independent-identity escape. It preserves total prior mass.
+The second also permits a common unidentified emission when neither measurement
+is explained by a catalogued satellite. Its unknown frequency is uniform over
+the alias interval, but the receiver difference still supplies clock evidence.
+This added gradient acts only on receiver corrections, not position/orbit timing;
+same-RF global c has zero added gradient. The90% sharing assumptions are research
+choices, not measured identity probabilities or validated deployment settings.
+
+Final receiver-anchor experiment, selected by each model's score:
+                         12:39 error km          14:39 error km
+Model                    fitted c    c=0         fitted c       c=0
+Independent               7.056      7.059        18.503!        4.503
+Paired catalogued ID       7.047      7.047        18.503         4.967
+Paired + unknown emission  7.095      7.098        19.548         4.906
+! The independent fitted-c winner is an old state repriced under this model,
+  with KKT residual108.9: it is feasible but NOT converged. It remains visible
+  because discarding a better incumbent would misrepresent the search.
+All other displayed selections and all24 newly fitted anchor endpoints pass KKT.
+The anchor follow-up is conditional on the prior score-selected basin per case.
+
+The final unknown-emission model reduces14:39 paired median errors to56.4/61.1Hz
+(fitted/zero), but54.6–62.4% of pairs rely on its unidentified common-background
+component. Improved receiver consistency does not establish correct identities
+or better position. Uniform frequency NLL at these new fits is39419.369/39156.624,
+reported separately from their different-model total scores38368.625/38150.738.
+
+Fitted-c's score remains worse than its feasible zero-c submodel by376.863,
+1140.127 and217.887 units for independent, paired and unknown-emission models.
+That is direct evidence of unfinished nonconvex search, not evidence that fitting
+c inherently makes the data worse. We did not conceal it with cross-arm seeds.
+
+4. WHY THE FIRST CAPTURE REMAINS UNSOLVED
+The main cone-conflicting candidate61946 has substantial coherent support:
+273 effective signal windows, four bootstrap tracks with228 active memberships,
+and both receivers across late channels1/2/4. Only eight hard-assigned windows
+have an alternative satellite posterior>=0.2. It is not just isolated noise.
+Candidate58947 also has a coherent late track;48396 in the second capture has
+much weaker cross-receiver corroboration. None is a decoded identity.
+
+Integer CFO alias representatives do not fix this: adding the227272.727Hz period
+leaves the circular likelihood unchanged. Timing resets/grids and temporary
+500->250->125Hz frequency continuation return the same7.06km first-capture mode.
+A joint quadratic receiver correction improves its error to4.622/4.741km, but
+an independent paired-frequency time-holdout diagnostic worsens162.7->195.9Hz
+under a generic quadratic. That is insufficient evidence to adopt curvature.
+Stronger cones also help this capture alone while severely harming the other.
+The physical cause of the remaining common frequency/identity/position bias is
+therefore unresolved; the two captures should not be assigned the same cause.
+
+A final read-only coverage check also argues against blindly enlarging the bank.
+At the14:39 fitted background solution, the regional bank has860 candidates
+versus34 selected. Adding omitted candidates with a small timing grid finds a
+two-receiver frequency match for153/154 previously unexplained pairs. However,
+arbitrary common frequency shifts of5 or10kHz still find151–153/154 matches.
+The witness IDs scatter across123 satellites, at most four pairs per ID. This
+dense-bank coincidence rate does not identify a missing real satellite; track
+coherence and independent evidence are necessary before adding such hypotheses.
+
+5. IMPLEMENTATION DIRECTION SUPPORTED BY THESE TESTS
+Retain the1s timing prior. Use paired receiver differences to initialize and
+check differential receiver clock states before accepting a spatial fit. Try
+both receiver anchors, retain incumbents, and rank by the full objective.
+Carry common unidentified signal evidence explicitly when satellite identity is
+uncertain; do not silently discard its receiver-clock information as independent
+noise. Preserve alternate timing/c modes and expose a failed nested-model check.
+
+For continuous tracking, these checks should inform measurement acceptance and
+receiver-clock state estimation. They are not yet calibrated thresholds or a
+validated Kalman measurement covariance. A near ground-truth point with an
+inconsistent clock, or a converged low-score point, is not sufficient validation.
+The remaining work concerns coherent track identity, candidate-bank coverage,
+and common receiver/frequency model errors. Independent or held-out evidence is
+needed before selecting a more flexible model based on these two bad examples.
+
+Validation and reproducibility
+Every fitted-c comparison has matched c=0 observations/candidates/other priors
+and budgets within its declared experiment. All zero-c vectors remain exactly0.
+Reference coordinates enter only after score selection. Source/input/analysis,
+archived TLE, bank order and frozen calibration bindings are checked through
+public deployed ports; prior artifacts and production modules remain unchanged.
+Component tests cover analytic derivatives, posterior/integrated normalization,
+unchanged-model parity, receiver/epoch admission, initializer invariants and
+receipt selection. Actual-capture gradients and independent KKT/clock repricing
+are audited. A transient documentation filename collision was restored byte for
+byte; both frozen pair evidence and experiment protocol match their run hashes.
+
+Artifacts
+selected.csv / summary.json:72 selected results from216 optimizer calls.
+geometry_fix/report.txt: cone semantics, gates, derivative checks and72fits.
+identity/report.txt and paired_topone.json: candidate lineage and exact paired data.
+timing_search/report.txt:16 discrete timing probes.
+timing_search/quadratic/report.txt:eight conditional receiver-curvature fits.
+annealing/{1939,2139}.json:24 frequency-width stage/control fits.
+paired_identity/{1939,2139}.json:48 all-basin paired-ID fits and matched polish.
+paired_background/{1939,2139}.json:24 common-background/clock-seed fits.
+paired_background/anchor_report.txt:24 one-receiver-anchor fits, limits and tests.
+verification/: independent numerical/provenance audits and bank-coverage diagnostic.
+clock_repair.png/.svg: measured receiver-clock failure and targeted repair.

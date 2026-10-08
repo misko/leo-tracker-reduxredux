@@ -44,7 +44,15 @@ def observation_subset(observations, rows):
 
 
 def bootstrap_position(
-    observations, bank, prior, point, tracks, *, maximum_seconds=5.0, samples_per_track=12
+    observations,
+    bank,
+    prior,
+    point,
+    tracks,
+    *,
+    maximum_seconds=5.0,
+    samples_per_track=12,
+    orbit_predictor=predict_orbits,
 ):
     if not np.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800 or samples_per_track < 3:
         raise ValueError("invalid bootstrap work bounds")
@@ -86,7 +94,7 @@ def bootstrap_position(
     for timing in np.arange(-20.0, 20.001, 2.0):
         if time.monotonic() - begun >= maximum_seconds:
             raise TimeoutError("regional bootstrap time budget")
-        prediction, visible, _, _ = predict_orbits(
+        prediction, visible, _, _ = orbit_predictor(
             bank, sparse, prior, point, np.full(len(bank.numbers), timing), derivatives=False
         )
         prediction, visible = prediction[inverse], visible[inverse]
@@ -130,7 +138,7 @@ def bootstrap_position(
     shifts *= min(1.0, 20 / max(20, float(np.max(abs(shifts)))))
     common = float(shifts.mean())
     selected_bank = bank.select(list(indices))
-    predicted = predict_orbits(
+    predicted = orbit_predictor(
         selected_bank, observations, prior, point, shifts, derivatives=False
     )[0]
     vector = np.zeros(8 + len(indices) - 1)

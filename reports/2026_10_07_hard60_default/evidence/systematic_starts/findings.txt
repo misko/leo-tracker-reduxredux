@@ -1,0 +1,52 @@
+Selected working settings and standard-start replay
+==================================================
+
+Working offline defaults: relative timing sigma=1 s; hard +/-60 Hz/s on each
+receiver's additional affine slope; 25 km local refinement radius. These are
+consumed by replay.py from recipe.json. Production services were not changed.
+
+Capture: scan-fw-e3bebc228093a125 (research label 2139).
+Fresh replay: all three saved regions, V16, both c arms, two standard initial
+states per region/arm plus one own-arm continuation. No paired-clock repair
+initializers and no retained archived optimized endpoints were used.
+
+All 18 fits converged and passed independent objective, feasibility and KKT
+checks. Five focused regression tests passed. Wall time: 164.7 seconds.
+Source hashes and equal standard starts across arms were verified.
+
+Score-selected results:
+                         zero-c                 fitted-c
+Position error km        2.152314               3.942037
+Additional RX0 Hz/s     -2.089426              -4.128951
+Additional RX1 Hz/s     -2.709327              -5.141133
+Frequency RMS Hz       138.470                 96.050
+Pair median error Hz    80.489                 47.990
+Data NLL             34429.668              33145.770
+Timing penalty         926.166                980.933
+
+Both selected states reproduce the previous +/-60 experiment's winners to
+within 1 mm in position-error comparison and 1e-6 in score. Both trace to the
+original association state at point:-106.25:-81.25, with no active slope bounds
+or near-boundary flags. Fitted-c improves frequency fit but has worse localization.
+
+Interpretation
+The fixed recipe recovers the successful solution without a hand-repaired clock
+start. The useful geographic start was already present in the original candidate
+pool. It had been omitted from V16's earlier slope replay; adding it back and
+allowing a 25 km refinement disk made the successful region available. The
+production runner already combines discovery basins across methods, so that
+particular omission must not be described as a production union bug.
+
+The known receiver is 19.216 km from that grid center. This explains retrospectively
+why the original 12.5 km disk was too small. The replay fits and ranks candidates
+without reference coordinates and evaluates geographic error afterward.
+
+The +/-60 bound is a selected guardrail, not the demonstrated main cause of the
+large gain: the corrected unrestricted search already reached 2.322 km. A bad
+local branch can still satisfy +/-60 while having severe receiver-pair mismatch.
+Standard starts and region coverage are essential alongside the slope limit.
+
+This remains an offline, one-capture confirmation using frozen candidate banks
+and calibration. Automatic region expansion, general paired-residual gates,
+full discovery with the new prior, and continuous-filter integration remain
+unimplemented. See protocol.txt for the repeatable procedure and next-step rules.

@@ -1,0 +1,151 @@
+BAD-SAMPLE TIMING OPTIONS: CONTROLLED RESULTS, 2026-10-07
+
+Two of the four diagnosed failures improve substantially. Relaxing the relative
+timing prior or explicitly reconsidering individual satellite timing choices
+rescues the 18:38 and 22:09 V16 selections. Extra continuous optimization with
+the original settings does not. The 19:39 shared bias and 21:39 boundary failure
+remain unresolved. These results support further evaluation, not deployment.
+
+The four captures are from Oct 6. This experiment uses the recent failures, not
+the older A/B/N01-N80 cohort. Session IDs and exact receipts are in summary.json
+and each case's results.json.
+
+POSITION ACCURACY
+
+Position error in km; lower is better. Control uses the original relative timing
+sigma of 0.15 s with the same extra optimization budget as the alternatives.
+All baseline/control errors agree to the displayed precision.
+
+Fitted c:
+Capture  Control .15  Sigma .30  Sigma .50  Sigma 1.00  Timing sweep .15  Sweep .50
+18:38       296.818      4.754      4.545       4.459             4.796       4.545
+19:39         7.875      6.453!     6.453!      6.453!            7.841       6.453!
+21:39        43.619!B   43.619!B   43.619!B    43.619!B          43.619!B    43.619!B
+22:09        40.361      0.722      0.829       0.873             0.993       0.829
+
+Matched c = 0:
+Capture  Control .15  Sigma .30  Sigma .50  Sigma 1.00  Timing sweep .15  Sweep .50
+18:38         5.195      4.087      3.642       3.574             4.992       3.692
+19:39         7.306      6.417!     6.417!      6.417!            7.269       6.417!
+21:39       305.643!B  305.136B   304.493B    304.224B          305.267!B   304.424!B
+22:09         6.811      1.749      1.816       1.845             2.224       1.816
+
+! = failed independent constrained stationarity audit under the actual option.
+B = spatial boundary. All 18:38 and 22:09 selections are stationary and interior.
+Stationarity establishes a local result, not a global optimum or correct position.
+
+WHAT THE OPTIONS CHANGE
+
+Sigma .30/.50/1.00 weakens the relative satellite timing penalty. For the same
+timing offsets, .30 has one quarter of the .15 relative penalty; .50 has 9% and
+1.00 has 2.25%. Frequency sigma stays at 125 Hz. The common timing prior, clutter
+model, detection setting, candidate regions, and upstream evidence stay fixed.
+
+The timing sweep tries replacing one satellite's absolute time shift with the
+mean shift of the others, retaining the change only when the complete objective
+improves. It then runs the same continuous optimizer. This changes a timing choice
+within the same arm; it does not copy another arm's fitted position or drop any
+observations or satellites. Sweep .15 therefore tests a search improvement under
+the original objective, separately from relaxing the timing prior.
+
+INTERPRETATION OF EACH FAILURE
+
+18:38: original-prior timing search reduces error 296.818 -> 4.796 km and total
+score 44170.238 -> 42520.893. This is a direct improvement under one unchanged
+objective. Its data NLL improves 43960.592 -> 40686.153 and posterior frequency
+RMS 121.389 -> 107.021 Hz; timing cost rises 200.867 -> 1825.144. The better
+frequency explanation now outweighs that timing cost. Weaker timing priors also
+select nearby positions, but fitted c remains less accurate than c = 0 for those
+options. Removing the catastrophic selection does not remove the remaining
+roughly 3.6-4.8 km position bias.
+
+19:39: original-prior timing search improves fitted-c error by only 34 m and
+zero-c error by 37 m. Weaker priors select an archived associated candidate at
+6.453/6.417 km. That candidate is repriced, not converged under the weaker prior:
+scaled stationarity is roughly 414-540, versus the 0.001 threshold. The protocol
+continues each arm's best ORIGINAL incumbent, fixed across options; it does not
+restart from every candidate whose ranking changes after repricing. Accordingly
+the apparent 1.4 km fitted-c gain is unresolved and must not be claimed as a
+validated optimized solution. A follow-up can refine both original timing
+branches with matched budgets before investigating the residual shared bias.
+
+21:39: neither timing intervention solves this case within the frozen search
+domains. Fitted-c error stays 43.619 km and all its selected states fail the
+stationarity audit at a spatial boundary. Zero-c stays roughly 304-306 km away.
+Some zero-c boundary optima are stationary, showing that passing convergence
+alone does not establish position accuracy. Relaxation mostly reduces the
+penalty mechanically: fitted-c data NLL changes only 40880.322 -> 40876.911
+between control and sigma 1.00, while timing cost falls 670.596 -> 15.424.
+Spatial discovery, local-region constraints, and upstream calibration were
+not changed here; those remain separate hypotheses to test.
+
+22:09: sigma .30 reduces fitted-c error 40.361 -> 0.722 km and zero-c error
+6.811 -> 1.749 km. Original-prior timing search independently reaches 0.993 km
+fitted-c and 2.224 km zero-c. Under that unchanged prior, fitted-c total score
+improves 36518.767 -> 34045.581, data NLL 36130.153 -> 32960.175, and posterior
+frequency RMS 125.938 -> 105.913 Hz. Both data fit and measured position improve.
+Increasing sigma beyond .30 slightly worsens accuracy despite improving the
+objective/data NLL. That is a concrete counterexample to equating better
+in-sample fit with better localization.
+
+Combination: sweep .50 gives the same fitted-c selection as sigma .50 alone on
+all four cases. There is no demonstrated extra fitted-c benefit from combining
+them in this experiment.
+
+REMAINING SEARCH GAPS
+
+The free-c model includes c = 0, so a higher best free score than the matched
+zero score is evidence of incomplete search. Global positive gaps remain:
+18:38 control 58.405 and sigma .30 122.515;
+19:39 sigma .50/sweep .50 0.555 and sigma 1.00 1.248;
+21:39 control 153.811 and sweep .15 56.462.
+All other global gaps are zero; zero gap does not prove global optimality.
+The 22:09 sweep .15 also retains a 450.934 gap in one losing region, which does
+not overturn its winning nearby selection. No cross-arm repair was performed.
+
+CONTROLS AND VALIDATION
+
+264 continuations cover all 22 original final regions, six declared options,
+and both c arms. Each arm uses its own original best fit in each region, with
+the same seed across all options. All feasible original associated and
+zero-timing candidates are also retained and repriced. Selection uses only the
+option's objective; reference position is evaluated after selections finish.
+
+Each continuation has a nominal inclusive 12 s cap and 300-iteration limit.
+Timing proposals consume that same cap. Measured aggregate continuation time
+was 2236.872 s (37.3 minutes), distributed across four single-thread processes;
+the maximum measured run was 12.123 s, including stopping overhead. No fit
+exceptions occurred. Individual losing or selected fits may fail convergence;
+those are retained and flagged, not represented as successful optima.
+
+Original input/analysis hashes, deployed source digests, composite evidence
+bindings, retained satellite ordering, and archived TLE bindings were checked.
+Archived original scores reprice within 1e-6. Four shared scientific-control
+tests pass (score-only selection, timing gauge, free/fixed-c stationarity,
+active spatial bounds); three 22:09 receipt tests pass. summarize.py audits
+the complete run matrix, shared protocol hash, seeds, repricing, fixed-zero c,
+and score-selected winners across all four captures.
+
+Shared scientific runner SHA256:
+ebbb2034051e55fc102ddfdf4f69c3b49441412ed21025f0acba1059164aa73b
+
+This is a conditional continuation experiment. Upstream calibration and
+association remain frozen and include the original shared fitted-c calibration.
+It is not a fresh end-to-end c ablation or a new spatial search. These four
+failures were used during diagnosis and method development, so they cannot
+establish generalization or choose a production prior on their own. Comparing
+raw total scores across different prior strengths is not a model-quality test.
+
+NEXT EVALUATION
+
+Carry original-prior timing search and sigma .30/.50 into a broader predeclared
+comparison including good captures, always with matched c = 0 controls. Before
+making continuous-filter claims, evaluate chronological innovations, outlier
+handling and uncertainty calibration. Two large outliers now become much
+smaller, but two unresolved failures and residual multi-km bias prevent treating
+these fits as calibrated Kalman measurements.
+
+No production settings, persisted source captures, golden fixtures, QNAP paths,
+or RF collection were changed. Artifacts: selected.csv (all 48 selections with
+score decomposition), summary.json, comparison.png/.svg, protocol.txt,
+experiment.py, and each case's detailed results.json.

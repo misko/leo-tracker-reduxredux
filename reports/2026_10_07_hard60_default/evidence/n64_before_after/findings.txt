@@ -1,0 +1,53 @@
+N01--N64: paired before/after position evaluation
+
+Cohort: the literal N01--N64 labels, not the older N17--N80 extension.
+Before: V16 relative timing sigma 0.15 s; unbounded added affine slopes; 100/50/25/12.5 km; legacy zero priority on unmeasured edge cells.
+After: V16 relative timing sigma 1 s; hard +/-60 Hz/s on fitted affine terms; 40/20/10/5 km; nearest measured coarse score for unmeasured edge cells.
+Matched: original observations, causal regional TLE bank, Sacramento-centered 250 km prior, 400 evaluated points, top three distinct regions, fitting budgets, frequency likelihood and all other priors.
+Both use V16 for grid scoring and calibration. The shared discrete association routine has a T1-AT name; it does not introduce a second T1AT likelihood search.
+This is a fresh controlled before baseline, not a reproduction of historical roof-seeded results.
+The reference location is read only after candidate selection, never for search starts or ranking.
+
+Matched c ablation: c=0 versus fitted c in the final stage, sharing candidate banks, calibration, starts and budgets within each phase. Discovery/calibration/association retain fitted c.
+The slope bound applies separately to calibration and final fitted terms. Combined affine and piecewise drift can exceed +/-60 Hz/s; results_long.csv reports both.
+The package is tested as a bundle. This experiment does not identify the individual contribution of each of the three fixes.
+Objective totals across phases are not directly comparable because the timing prior changes. Geographic errors and frequency residuals are reported separately.
+Position error is horizontal great-circle distance. Frequency RMS is in-sample and weighted by posterior satellite responsibility; signal fractions are included in summary.json.
+All selected positions were repriced and checked using the original deployed likelihood and gradient.
+Native orbit interpolation and equivalent narrow-Gaussian evaluation accelerate both phases. Numerical parity is tested; nonlinear optimizer trajectories need not match older runs bit for bit.
+A runtime-only pilot hit association deadlines. Its final fits were archived, the validated native orbit evaluator was applied to association in both phases, and every final region fit was rerun. Grid caches and searches were retained unchanged; see association_replay_migration.json.
+Reported stage wall times include concurrency and cache reuse and should not be treated as standalone runtime benchmarks.
+
+zero-c
+  before: accepted 64/64; failed 0; error median 2.948 km, p90 144.955, p95 221.077, max 324.950; >100 km 7; <5 km 40; frequency RMS median 149.54 Hz.
+  after: accepted 64/64; failed 0; error median 2.121 km, p90 3.410, p95 4.120, max 23.955; >100 km 0; <5 km 61; frequency RMS median 139.99 Hz.
+  Paired accepted scans 64: improved 48, worsened 16, unchanged 0; median per-scan improvement 0.44070235436979555 km.
+  Largest regressions:
+    N64 scan-fw-cf8c0236d99c3e68: 1.221 -> 23.955 km
+    N17 scan-fw-9d97ea200c12ab01: 1.707 -> 3.007 km
+    N34 scan-fw-a1c15665e0e23e22: 1.942 -> 3.174 km
+    N32 scan-fw-2e91ef74160c0f50: 1.450 -> 2.561 km
+    N38 scan-fw-abbc223e91b1b189: 1.426 -> 2.465 km
+
+fitted-c
+  before: accepted 64/64; failed 0; error median 2.448 km, p90 186.227, p95 213.835, max 316.071; >100 km 9; <5 km 40; frequency RMS median 109.49 Hz.
+  after: accepted 64/64; failed 0; error median 1.584 km, p90 3.374, p95 4.430, max 26.564; >100 km 0; <5 km 63; frequency RMS median 101.40 Hz.
+  Paired accepted scans 64: improved 40, worsened 24, unchanged 0; median per-scan improvement 0.5389934811476575 km.
+  Largest regressions:
+    N64 scan-fw-cf8c0236d99c3e68: 1.116 -> 26.564 km
+    N13 scan-fw-6d7ec2a86f60d797: 0.269 -> 3.958 km
+    N34 scan-fw-a1c15665e0e23e22: 1.682 -> 3.161 km
+    N50 scan-fw-13bf031ee61be179: 0.700 -> 1.779 km
+    N32 scan-fw-2e91ef74160c0f50: 1.493 -> 2.529 km
+
+before search: 25600 grid scores; 0 failed points; 2 timed-out point fits; reference covered by retained regions on 48/64 scans; mean outer-10-km evaluations 51.3.
+after search: 25600 grid scores; 0 failed points; 4 timed-out point fits; reference covered by retained regions on 63/64 scans; mean outer-10-km evaluations 27.5.
+
+Regression diagnostics:
+N64: all three revised refinement regions exclude the reference; the nearest allowed region edge is 6.270 km away in the search chart. Both selected final solutions are stationary and their slope bounds are inactive. The revised search missed the correct region; wider coverage alone still requires validation before claiming a fix.
+N13 fitted-c: the score-selected result has 3.958 km error, while another converged candidate has 0.206 km error and a worse model score. This exposes a fit/scoring issue beyond geographic coverage. See N13_regression_diagnostic.json; the reference did not select the reported winner.
+
+Failed candidate regions: 4. These remain in summary.json and are not silently dropped.
+Independent accepted-position audits: 256.
+
+Artifacts: comparison.csv (64 scans, both arms), comparison_by_arm.csv (one row per scan/arm), results_long.csv (positions/drift/fit diagnostics), search_diagnostics.csv, summary.json, protocol.json, position_comparison.png, per_scan_errors.png.

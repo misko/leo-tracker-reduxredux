@@ -1,0 +1,29 @@
+Hard additional slope cutoffs: corrected 2139 test
+Capture Oct 6 14:39 PDT, scan-fw-e3bebc228093a125; V16 relative timing sigma=1s.
+Both c arms, three fixed geographic regions, including the previously omitted clock-anchor region.
+Limits apply to additional slopes after calibration, not total instantaneous drift.
+Comparison format: error km / median absolute pair residual Hz / convergence
+
+zero-c
+scope | unrestricted | +/-60 | +/-30 | +/-10
+start:pre-repair-own-state | 5.899 / 6000.6 / True | 6.941 / 2600.4 / True | 6.069 / 1582.0 / True | 5.385 / 71.6 / True
+start:anchor-rx0 | 4.503 / 67.2 / True | 4.581 / 66.0 / True | 4.614 / 66.5 / True | 4.593 / 65.9 / True
+start:anchor-rx1 | 9.362 / 50.3 / True | 3.618 / 1006.3 / True | 14.559 / 157.2 / True | 7.407 / 60.9 / False
+anchor-region-best | 2.322 / 83.6 / True | 2.152 / 80.5 / True | 2.367 / 83.0 / True | 2.195 / 83.2 / True
+overall-three-regions | 2.322 / 83.6 / True | 2.152 / 80.5 / True | 2.367 / 83.0 / True | 2.195 / 83.2 / True
+
+fitted-c
+scope | unrestricted | +/-60 | +/-30 | +/-10
+start:pre-repair-own-state | 25.036 / 173.3 / True | 25.036 / 173.3 / True | 25.036 / 173.3 / True | 25.036 / 173.3 / True
+start:anchor-rx0 | 23.942 / 197.0 / True | 22.369 / 261.6 / True | 22.331 / 264.3 / True | 23.095 / 267.0 / True
+start:anchor-rx1 | 18.133 / 266.2 / True | 20.948 / 191.9 / True | 5.231 / 121.5 / True | 16.567 / 66.1 / True
+anchor-region-best | 3.978 / 49.7 / True | 3.942 / 48.0 / True | 3.916 / 49.3 / True | 3.978 / 49.7 / True
+overall-three-regions | 3.978 / 49.7 / True | 3.942 / 48.0 / True | 3.916 / 49.3 / True | 3.978 / 49.7 / True
+
+Per-arm historical seeds are kept fixed across widths; no solution is copied across c arms.
+Region-specific retained incumbents are identical across options where feasible.
+Overall score selection is distinct from best reference-position accuracy.
+Completed 96 fits; audited 56 selection entries including repeated overall/regional rows.
+Width nesting gaps above 1e-5: 8. These expose finite-search differences.
+See comparison.csv for separate frequency NLL, timing penalty, RMS, slopes, bound and convergence flags.
+Single retrospective capture and three frozen regions; not full global search or deployment validation.

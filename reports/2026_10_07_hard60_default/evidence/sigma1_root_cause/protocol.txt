@@ -1,0 +1,47 @@
+Remaining-failure root-cause investigation; relative timing sigma fixed at1s.
+
+User direction: retain1s and investigate the two unresolved recent failures.
+Case1939 is Oct6 12:39 PDT (19:39 UTC), scan-fw-6a376b600fc2f542.
+Case2139 is Oct6 14:39 PDT (21:39 UTC), scan-fw-e3bebc228093a125.
+Names1939/2139 retain the established UTC artifact labels.
+
+All new V16 diagnostics use relative_sigma_s=1. Frequency sigma remains125Hz;
+common timing sigma3s, detection budget1.6, clutter rate0.5 remain fixed.
+No production service is deployed or reconfigured. This fixes the setting for
+the ongoing scientific investigation. No RF collection or capture modifications.
+
+Two existing Sol agents work separately on shared_bias/ and boundary/.
+Shared bias: refine both original own-arm timing branches in every original
+final basin; matched c=0/fitted-c, 12s/300iterations each. Then bounded conditional
+early/late and RX diagnostics, preserving full-scan calibration/design centers.
+Boundary: original/expanded domains in all original final basins, both own-arm
+original timing branches, both c arms, 12s/300iterations each. Original region
+centers stay fixed. Test a small inward displacement separately to diagnose
+starting-on-boundary numerical effects. Record feasibility and stationarity.
+Keep original feasible incumbents. Select by objective before looking at truth.
+Do not copy another c arm's solutions into starts as a repair.
+
+Root oracle diagnostic: fixed-position nuisance profiles at each arm's prior
+sigma1 selected position and at the known reference position, in the SAME bank
+and frozen receiver baseline. Include the prior sigma1 winning banks for both
+arms and, for2139, the original T1AT fitted-c winning bank selected by its score.
+That is four bank contexts: one1939 and three2139. Two original own-arm timing
+starts, two positions, two c arms, 8s/300iterations =32 bounded fits. All nuisance
+terms are refit; c stays exactly0 in the zero arm. Position equality is excluded
+from the independent stationarity audit. This oracle answers a diagnostic
+question about the conditional score; it is NEVER a truth-based inference
+candidate and is not an end-to-end localization or independent holdout test.
+Compare within-bank fixed-position likelihoods, timing costs, residual RMS and
+early/late/RX/channel score contributions. Failure to find a good truth profile
+with finite starts does not prove there is none.
+
+Original data/source/evidence/TLE/bank bindings are verified read-only using
+public deployed ports. Keep original observations, satellite sets, baselines,
+other priors and budgets matched between c arms. Record all attempts and failed
+convergence checks. Score improvements and reference position accuracy must be
+reported separately. No global-optimality claims from local convergence.
+
+Bounded on-disk analysis only. Hand-written scripts use apply_patch. Numerical
+helpers may be imported read-only from prior reports and deployed source. Each
+new diagnostic includes focused tests, and consolidated receipts validate the
+run matrix and scientific controls. Existing reports remain unchanged.

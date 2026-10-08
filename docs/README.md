@@ -37,6 +37,9 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+Adaptive positioning default: [Hard60 experiment review and rollout](../reports/2026_10_07_hard60_default/README.md),
+including N01–N64 comparisons, failure diagnoses, figures and deployment receipts.
+
 Recent recorded-data experiment: [GLRT and shorter-segment confirmation on
 sixteen completed scans](../reports/2026_10_07_glrt_recent16/README.md), with
 figures, code references, and audit receipts. This is a temporal repeatability

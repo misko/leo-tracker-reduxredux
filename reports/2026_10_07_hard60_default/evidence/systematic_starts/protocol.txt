@@ -1,0 +1,85 @@
+Systematic starts with the selected sigma=1 s, +/-60 Hz/s recipe
+==============================================================
+
+Scope
+This is a reusable offline refinement recipe for the frozen numerical fixtures
+from the six-scan slope experiment. It changes no production services, published
+contracts, upstream calibration, observations, or golden scientific fixtures.
+It collects no RF. The selected settings are defaults in recipe.json and are
+consumed by replay.py. Older completed experiment scripts/receipts stay intact.
+
+What the settings mean
+relative_sigma_s=1 applies to the relative satellite timing prior in the final
+position objective. It does not change V16's frequency noise or common timing
+prior. +/-60 Hz/s is a hard bound on each receiver's additional affine frequency
+slope after the frozen calibration baseline, not on the total baseline drift.
+
+What fixed the start on scan-fw-e3bebc228093a125
+The helpful region was an existing coarse grid point, east=-106.25 km and
+north=-81.25 km from the Sacramento search origin. The earlier slope experiment
+used per-method published winning regions and omitted this T1AT region from V16.
+The production regional runner already unions discovery basins across methods;
+the omission was in our replay experiment, not a missing union in production.
+
+That center is 19.216 km from the evaluation reference. The original 12.5 km
+local disk excluded it, while the tested 25 km disk includes it. The 25 km radius
+was investigated during failure diagnosis; it is not a generally validated
+coverage guarantee. In the corrected cutoff experiment the winning states came
+from the original association vector at this grid point. They did not use the
+true position, the paired-clock repair initializer, or another c arm's output.
+
+The earlier paired-clock experiment did something different: it adjusted RX1's
+clock offset/slope using simultaneous receiver differences while preserving RX0.
+It did not repair the geographic start by supplying the receiver's true position.
+
+Automated offline procedure implemented here
+1. Form the union of all region keys recorded under both methods in the frozen
+   manifest. Preserve that union even if only V16 is requested. Fail explicitly
+   if a referenced region's fixture is absent. This is the available saved region
+   pool, not a rerun of the entire original global search.
+2. For every region and c arm, use the original association vector and a second
+   copy with timing shifts set to zero. Keep the original geographic grid point.
+   Clip the two initial additional slopes to +/-60 and fix c=0 in the zero-c arm.
+   There are no manual clock-repair seeds or archived optimized endpoints.
+3. Use a 25 km local disk within the original global prior. Give each start the
+   same maximum 20 s / 600 iterations. Continue each region/arm's own best
+   feasible candidate once with the same budget. Never move optimized outputs
+   from one arm into another.
+4. Recompute feasibility, objective, and stationarity independently of the solver
+   receipt. Select by objective plus calibration penalty among converged feasible
+   candidates. Retain the best feasible candidate separately, so a better unfinished
+   fit is visible. Flag near-boundary solutions, active slope bounds, and better
+   unconverged candidates. Convergence certifies a local stationary point only.
+5. Introduce reference coordinates only after fitting and score selection. Report
+   position error separately from frequency fit. Both arms still share the original
+   fitted-c upstream calibration; the ablation is the final-position c parameter.
+
+Follow-up production design, not implemented or validated here
+Preserve the production discovery union and a minimum 25 km refinement radius,
+without shrinking coarser cells whose existing radius is larger. If a competitive
+solution is at a local boundary, enqueue neighboring/expanded regions on objective
+and geometry evidence within a fixed retry budget. Refresh their calibration and
+satellite candidates if coverage changes. Do not choose regions using true-location
+error. Broad/ambiguous likelihoods still require multiple geographic hypotheses.
+
+Where valid simultaneous receiver pairs exist, retain their residual diagnostic:
+the +/-60 slope cap alone did not eliminate the bad branch's kilohertz mismatch.
+A continuous tracker can add its predicted position as another start, while
+retaining independent regional alternatives and flagging incomplete searches.
+Filter admission/uncertainty rules and automatic boundary expansion remain future
+work. The present one-scan replay does not validate those decisions across scans.
+
+Execution
+The deployed numerical environment is required because regional_position modules
+are in that isolated worker package, not in this checkout's main src directory.
+
+sudo -n env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONPATH=/opt/leo-regional-position/5600cd81e5f2-r2/worker/src \
+  /opt/leo-tracker/current-api/.venv/bin/python \
+  reports/2026_10_07_systematic_starts/replay.py --case 2139 --methods V16 \
+  --output reports/2026_10_07_systematic_starts/2139-standard-starts
+
+The output directory must be new. Omitting --methods evaluates both V16 and T1AT.
+Five report-owned regression tests cover region preservation, missing-fixture
+failure, reference-independent planning, matched starts, and convergence-aware
+selection. They passed before the replay was launched.

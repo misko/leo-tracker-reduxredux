@@ -1,0 +1,68 @@
+N01--N64: baseline and three variants
+
+Baseline: sigma .15 s, no affine-slope bound, 100/50/25/12.5 km, legacy edge priority.
+All variants: corrected edge priority, 40/20/10/5 km; 400 scores, three regions, same fitting budgets.
+after = sigma 1 s / +/-60 Hz/s; sigma2_60 = sigma 2 s / +/-60 Hz/s; sigma1_30 = sigma 1 s / +/-30 Hz/s.
+Original baseline and after results are reused verbatim from the hash-verified prior comparison.
+New passes refit all point scores and regions; only method-independent geometric bootstrap seeds are reused.
+Relative satellite timing sigma changes; common timing sigma remains 3 s.
+Slope bounds are hard, separately on each fitted affine term. Frozen baseline plus final and piecewise drift may exceed them.
+Reference coordinates are used only after fitting and model-score selection.
+Final-stage c ablation: both arms share discovery/calibration/association, observations, satellite bank, starts, priors and budgets.
+Discovery/calibration/association retain fitted c. This is not an end-to-end zero-c ablation.
+Frequency RMS is posterior-weighted in-sample; scores across different priors are not a localization metric.
+Runtime is affected by concurrency and cache reuse; these wall times are not independent performance benchmarks.
+
+zero-c
+  Baseline: accepted 64/64; median 2.948 km; p90 144.955; p95 221.077; max 324.950; >100 km 7; <5 km 40; median frequency RMS 149.53686415293623 Hz.
+  1 s / ±60 Hz/s: accepted 64/64; median 2.121 km; p90 3.410; p95 4.120; max 23.955; >100 km 0; <5 km 61; median frequency RMS 139.98831923123083 Hz.
+    versus_baseline: 64 paired scans, improved 48, worsened 16, unchanged 0; median paired change -0.44070235436979555 km.
+    versus_sigma1_60: 64 paired scans, improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  2 s / ±60 Hz/s: accepted 64/64; median 2.001 km; p90 3.552; p95 4.089; max 5.403; >100 km 0; <5 km 62; median frequency RMS 139.97727871013726 Hz.
+    versus_baseline: 64 paired scans, improved 48, worsened 16, unchanged 0; median paired change -0.5733898981857416 km.
+    versus_sigma1_60: 64 paired scans, improved 25, worsened 39, unchanged 0; median paired change 0.02599081988873908 km.
+  1 s / ±30 Hz/s: accepted 64/64; median 1.955 km; p90 4.308; p95 4.964; max 8.954; >100 km 0; <5 km 60; median frequency RMS 140.19017502212137 Hz.
+    versus_baseline: 64 paired scans, improved 47, worsened 17, unchanged 0; median paired change -0.730946574902941 km.
+    versus_sigma1_60: 64 paired scans, improved 29, worsened 35, unchanged 0; median paired change 0.003393577591404462 km.
+
+fitted-c
+  Baseline: accepted 64/64; median 2.448 km; p90 186.227; p95 213.835; max 316.071; >100 km 9; <5 km 40; median frequency RMS 109.49417191117416 Hz.
+  1 s / ±60 Hz/s: accepted 64/64; median 1.584 km; p90 3.374; p95 4.430; max 26.564; >100 km 0; <5 km 63; median frequency RMS 101.39946450195467 Hz.
+    versus_baseline: 64 paired scans, improved 40, worsened 24, unchanged 0; median paired change -0.5389934811476575 km.
+    versus_sigma1_60: 64 paired scans, improved 0, worsened 0, unchanged 64; median paired change 0.0 km.
+  2 s / ±60 Hz/s: accepted 64/64; median 1.490 km; p90 3.376; p95 3.943; max 5.621; >100 km 0; <5 km 61; median frequency RMS 99.52746889332204 Hz.
+    versus_baseline: 64 paired scans, improved 40, worsened 24, unchanged 0; median paired change -0.4930537679641753 km.
+    versus_sigma1_60: 64 paired scans, improved 29, worsened 35, unchanged 0; median paired change 0.017022680241555233 km.
+  1 s / ±30 Hz/s: accepted 64/64; median 1.457 km; p90 4.042; p95 4.912; max 9.577; >100 km 0; <5 km 61; median frequency RMS 99.21741930978695 Hz.
+    versus_baseline: 64 paired scans, improved 40, worsened 24, unchanged 0; median paired change -0.5066304691109877 km.
+    versus_sigma1_60: 64 paired scans, improved 25, worsened 39, unchanged 0; median paired change 0.012148152373904653 km.
+
+Cases N13, N56 and N64 (selected error / best accepted candidate error; truth never selects winner):
+  N13 zero-c: Baseline 0.6737595011702218 / 0.6737595010716407 km; reference covered True | 1 s / ±60 Hz/s 1.233570046975624 / 0.5333386406589766 km; reference covered True | 2 s / ±60 Hz/s 1.355162402699424 / 0.19737065935630968 km; reference covered True | 1 s / ±30 Hz/s 1.2318100136116292 / 0.5347292917366779 km; reference covered True
+  N13 fitted-c: Baseline 0.2687421108961515 / 0.2687421108961515 km; reference covered True | 1 s / ±60 Hz/s 3.957526262989955 / 0.2062544750742723 km; reference covered True | 2 s / ±60 Hz/s 0.7300094011397865 / 0.28201523811806484 km; reference covered True | 1 s / ±30 Hz/s 0.6836248946725922 / 0.18074108921483895 km; reference covered True
+  N56 zero-c: Baseline 2.868732979539735 / 2.868732979539735 km; reference covered True | 1 s / ±60 Hz/s 2.6062827967769846 / 2.6062827967769846 km; reference covered True | 2 s / ±60 Hz/s 3.17728676797689 / 2.5603981420615183 km; reference covered True | 1 s / ±30 Hz/s 2.6488311632896293 / 2.648831163274097 km; reference covered True
+  N56 fitted-c: Baseline 3.4510516336253496 / 1.0526753883174282 km; reference covered True | 1 s / ±60 Hz/s 4.472732868979644 / 2.8092891983025097 km; reference covered True | 2 s / ±60 Hz/s 3.3809653357187552 / 3.3809653356984977 km; reference covered True | 1 s / ±30 Hz/s 9.576820998472327 / 3.8867937814423534 km; reference covered True
+  N64 zero-c: Baseline 1.2205404778614266 / 0.426071254930857 km; reference covered True | 1 s / ±60 Hz/s 23.955235776216295 / 23.955235776216295 km; reference covered False | 2 s / ±60 Hz/s 0.9522501752199461 / 0.9522501751955753 km; reference covered True | 1 s / ±30 Hz/s 0.9954799496938805 / 0.4334187895781061 km; reference covered True
+  N64 fitted-c: Baseline 1.1160121457359151 / 1.019764477962561 km; reference covered True | 1 s / ±60 Hz/s 26.56428902427975 / 17.466886963051692 km; reference covered False | 2 s / ±60 Hz/s 1.4302394044352442 / 1.1415674097192978 km; reference covered True | 1 s / ±30 Hz/s 1.2467848498113978 / 1.063982899019245 km; reference covered True
+
+Baseline: reference in retained regions 48/64; failed grid scores 0; timed-out grid fits 2; failed regions 0.
+1 s / ±60 Hz/s: reference in retained regions 63/64; failed grid scores 0; timed-out grid fits 4; failed regions 4.
+2 s / ±60 Hz/s: reference in retained regions 64/64; failed grid scores 12; timed-out grid fits 4; failed regions 8.
+1 s / ±30 Hz/s: reference in retained regions 64/64; failed grid scores 4; timed-out grid fits 9; failed regions 3.
+New grid failures remain in the fixed 400-attempt budget; they were not selectively retried:
+  N40 sigma2_60 [70.0, 30.0]: regional bootstrap time budget
+  N40 sigma2_60 [70.0, 50.0]: regional bootstrap time budget
+  N40 sigma2_60 [90.0, 30.0]: regional bootstrap time budget
+  N40 sigma2_60 [90.0, 50.0]: regional bootstrap time budget
+  N48 sigma2_60 [-135.0, -95.0]: regional bootstrap time budget
+  N48 sigma2_60 [-135.0, -85.0]: regional bootstrap time budget
+  N48 sigma2_60 [-125.0, -95.0]: regional bootstrap time budget
+  N48 sigma2_60 [-125.0, -85.0]: regional bootstrap time budget
+  N48 sigma1_30 [-135.0, -75.0]: regional bootstrap time budget
+  N48 sigma1_30 [-135.0, -65.0]: regional bootstrap time budget
+  N48 sigma1_30 [-125.0, -75.0]: regional bootstrap time budget
+  N48 sigma1_30 [-125.0, -65.0]: regional bootstrap time budget
+  N49 sigma2_60 [-27.5, -67.5]: regional bootstrap time budget
+  N49 sigma2_60 [-27.5, -62.5]: regional bootstrap time budget
+  N49 sigma2_60 [-22.5, -67.5]: regional bootstrap time budget
+  N49 sigma2_60 [-22.5, -62.5]: regional bootstrap time budget

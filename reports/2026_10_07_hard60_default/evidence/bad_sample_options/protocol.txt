@@ -1,0 +1,67 @@
+Frozen bad-capture option comparison, declared before examining new results
+
+Cases: Oct 6 18:38 (297 km V16 failure), 19:39 (shared multi-km bias),
+21:39 (boundary/nonconvergence), and 22:09 (40 km V16 failure).
+These are the four already diagnosed recent failures, not A/B/N01-N80.
+
+Question: do weaker relative timing penalties, explicit individual satellite
+timing alternatives, or their combination improve the selected V16 positions?
+
+Predeclared options:
+sigma015: original V16 relative timing sigma 0.15 seconds, continued control.
+sigma030: relative timing sigma 0.30 seconds.
+sigma050: relative timing sigma 0.50 seconds.
+sigma100: relative timing sigma 1.00 second.
+modes015: sigma 0.15 plus one catalogue-order individual timing sweep.
+modes050: sigma 0.50 plus the same individual timing sweep.
+Frequency sigma remains 125 Hz, common timing sigma 3 seconds, detection budget
+1.6 and clutter rate 0.5 for all options. Spatial search domains stay unchanged.
+
+All original final candidate regions are retained: 6, 6, 4, and 6 respectively
+for 18:38, 19:39, 21:39, and 22:09, with original calibrated baselines, satellite
+sets, and local disks. Every original associated and zero-timing solution is
+repriced under every option and remains a selectable candidate if feasible.
+There is no choice of regions by reference-position accuracy.
+
+Each option continues the best ORIGINAL fit of its OWN c arm within every region.
+That seed is fixed across the six options by its original objective score.
+No solution is transferred between c arms, between options, or between captures.
+This is a conditional continuation experiment, not a fresh end-to-end rerun:
+its c controls inherit the original matched searches and shared fitted-c upstream
+calibration/association. It does not expand spatial discovery or rerun calibration.
+
+Each region/arm/option receives a 12-second continuation cap and at most300
+continuous optimizer iterations. For mode-search options, timing evaluations
+consume that same cap, leaving less time for continuous refinement. The timing
+sweep keeps every window and satellite, tries resetting one absolute orbit shift
+to the mean of the others, and accepts only decreases of the complete unchanged
+score for that option. It stops at the shared deadline if necessary. Controls
+can spend their whole cap on continuous optimization. All original incumbents
+remain available, so a timed-out continuation cannot erase earlier evidence.
+There are264 arm/region/option continuations in total; nominal aggregate cap
+52.8 optimizer minutes, distributed over four single-thread processes.
+
+Selections use each option's own total score. Truth is used only after every
+selection, for great-circle position error. Fixed-c convergence is never copied
+to free-c. All candidates, including repriced old states, receive an independent
+KKT/feasibility audit under the actual option. Boundary, time-limit, and unresolved
+nested-model score gaps remain reported. No zero-c candidate envelope is used.
+
+Compare position accuracy against BOTH the published original and the equally
+budgeted sigma015 continuation. Report every option, both c arms, convergence,
+boundary status, data NLL, posterior residual RMS, signal responsibility fraction,
+and timing cost. Raw total scores across different timing priors are not a fair
+measure of model quality. Better in-sample frequency fit does not establish
+better localization. More relaxed priors can lower score mechanically.
+
+These four failures have been used for diagnosis and method development. They
+are not independent validation. No changes will be promoted to production from
+this experiment alone. No new RF, capture writes, QNAP changes, or deployments.
+
+Verification: original input and analysis hashes, composite evidence binding,
+exact archived TLE digest/collection time, original retained bank ordering,
+deployed source digests, and original V16 objective repricing within1e-6.
+The first launch stopped before fitting because the harness compared the window
+evidence digest with the composite document digest. This was corrected to match
+the deployed CLI's windows/TLE/candidate digest. All scientific runs use the same
+corrected protocol hash; no source data or original products were changed.

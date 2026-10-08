@@ -1,0 +1,47 @@
+2139 corrected slope-cutoff comparison, frozen before fitting
+============================================================
+Capture scan-fw-e3bebc228093a125, Oct 6 14:39:41 PDT.
+V16 only, relative satellite timing sigma = 1 s, other published score settings.
+Both fitted-c and zero-c. The latter fixes c exactly to zero; upstream fitted-c
+calibration remains frozen in both arms. No new RF or production changes.
+
+Four options: unrestricted, hard additional-slope half-width 60, 30, 10 Hz/s.
+These bounds constrain vector[3] and vector[5], not the calibration postfit slope
+or nonlinear baseline. There is no added soft penalty inside the allowed box.
+
+Use all THREE basins already frozen in the prior 2139 manifest, with unchanged
+observations/banks/calibration and a matched 25 km local radius in every option.
+The additional basin point:-106.25:-81.25 is the one used by the clock-anchor
+experiment but omitted from the previous V16 slope experiment. The original
+point:-112.5:-212.5 losing basin is outside this targeted three-basin scope.
+Report regional selections and overall score selection separately: obtaining
+a better position in one basin does not ensure the model would select it.
+
+Each region/arm starts from association and zero-timing initializations.
+In the anchor region additionally run THREE diagnostic starts per arm: that
+arm's archived pre-repair paired-model state, its RX0-preserving pair-clock
+initializer, and its RX1-preserving initializer. Both arms receive equal counts
+and budgets, but these three historical starts are arm-specific. No copying
+optimized vectors between c arms or options. Every width uses exactly the same
+pre-clipping vector for its corresponding trial. Hard-box initialization clips
+only the two extra slope coefficients. Other solver projections are unchanged.
+
+Retain each feasible initial vector and both prior independent-model anchor
+endpoints within the anchor region when feasible under the tested width. These
+are existing own-arm incumbents; they are not new seeds or extra optimization
+for one option. Audit them under the actual objective and bounds before ranking.
+
+18 fresh fits per option, each maximum 20 s/600 iterations. Then six continuations
+per option, one own-best state per region/arm, maximum 20 s/600 iterations.
+Keep all feasible incumbents throughout. Single-thread BLAS, maximum 8 min
+aggregate fitting time per option, four independent options may run concurrently.
+No further optimizer stages in this experiment. Report nonstationarity honestly.
+
+Selection uses objective plus fixed calibration penalty, never reference error
+or receiver-pair mismatch. Reference used only for post-selection evaluation.
+The pair residual is an observable diagnostic, not an extra likelihood term.
+Separate data NLL, timing penalty, posterior RMS, pair median/slope, position
+error, additional/calibration/total-linear slopes, bound hits and KKT residuals.
+Audit nested c and width score gaps as evidence of incomplete nonconvex search.
+Verify known anchor score and pair statistics, fixture hashes, and shared seeds.
+This is a selected single-capture diagnostic, not generalization validation.

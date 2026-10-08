@@ -36,10 +36,12 @@ def hierarchical_search(
     radius_km=250.0,
     levels_km=(100.0, 50.0, 25.0, 12.5),
     budget_points=400,
+    edge_priority="legacy-zero",
 ):
     levels = np.asarray(levels_km, float)
     if (
-        not np.isfinite(radius_km)
+        edge_priority not in ("legacy-zero", "nearest")
+        or not np.isfinite(radius_km)
         or not 0 < radius_km <= 500
         or isinstance(budget_points, bool)
         or not isinstance(budget_points, int)
@@ -73,7 +75,21 @@ def hierarchical_search(
     for e, n in inside:
         record(e, n, 0)
     for e, n in cells:
-        score = rows[(e, n)].score if (e, n) in rows else 0.0
+        if (e, n) in rows:
+            score = rows[(e, n)].score
+        elif edge_priority == "nearest":
+            nearest = min(
+                rows.values(),
+                key=lambda p: (
+                    (p.east_km - e) ** 2 + (p.north_km - n) ** 2,
+                    p.score,
+                    p.east_km,
+                    p.north_km,
+                ),
+            )
+            score = nearest.score
+        else:
+            score = 0.0
         heapq.heappush(heap, (score, e, n, 0))
     while heap and len(rows) < budget_points:
         parent_score, e, n, depth = heapq.heappop(heap)

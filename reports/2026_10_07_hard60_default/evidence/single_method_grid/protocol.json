@@ -1,0 +1,42 @@
+{
+  "method": "V16",
+  "schedules": {
+    "current100": [
+      100.0,
+      50.0,
+      25.0,
+      12.5
+    ],
+    "start50": [
+      50.0,
+      25.0,
+      12.5,
+      6.25
+    ],
+    "proposed50_20_5": [
+      50.0,
+      20.0,
+      5.0
+    ]
+  },
+  "points_per_schedule": 400,
+  "relative_sigma_s": 1.0,
+  "slope_half_width_hz_s": 60.0,
+  "coarse_seconds": 5.0,
+  "coarse_iterations": 200,
+  "calibration_likelihood": "V16",
+  "coarse_arm": "fitted-c",
+  "final_arms": [
+    "zero-c",
+    "fitted-c"
+  ],
+  "ablation_scope": "final c only; shared V16 fitted-c discovery calibration and association",
+  "workers": 8,
+  "reference_usage": "after all score selection",
+  "source_hashes": {
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_single_method_grid/experiment.py": "sha256:92d527449e2fe1c843035f3dcbbf3a93b7f3adb9e255ae4a2d37862b17f46fce",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_single_method_grid/grid.py": "sha256:127816c26aaefac5e811d158d390e7698c76c9759b7f2c4b4a4c7cfeaf2505fa",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_single_method_grid/inputs.json": "sha256:bd259f5faa03f2b38b5480c153fb1b5f2e4ad7c1195e8364956a31e590b9916b",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_07_slope_priors/bounded_fit.py": "sha256:495bf4ba5d7e90d8c94b76ff514dfb742c0f75ec369c325a60ffd7bfb725cdc8"
+  }
+}

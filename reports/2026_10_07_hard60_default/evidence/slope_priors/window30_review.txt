@@ -1,0 +1,77 @@
+Window30 interpretation review
+==============================
+
+Scope and receipts
+------------------
+The bound is +/-30 Hz/s on each ADDITIONAL receiver slope b0=vector[3] and
+b1=vector[5], after frozen upstream calibration. Differential additional slope
+can span +/-60 Hz/s. Total linear slopes add the exact calibration postfit
+coefficients; the unchanged nonlinear calibration correction is separate.
+The baseline regression diagnostic is not the same physical quantity.
+
+Screen: window30/results.json, 64 calls, 24 selections, 336.23 s elapsed.
+Continuation: polished/window30/results.json, 32 calls, 24 selections,
+152.89 s elapsed (150.99 s in fits). Combined elapsed: 489.12 s.
+All calls and candidates passed the runner's separate objective/KKT audit.
+The 13 shared solver/runner tests passed before fitting, followed by 256 frozen
+initial-vector repricings across all options, cases, arms and starts.
+No services, RF collection, production edits, or additional fits were used.
+
+Final search status
+-------------------
+23/24 final selections meet scaled KKT <=0.001. The exception is 2139 V16
+fitted-c, KKT=0.022395. Its result remains a finite-search candidate.
+All selections are feasible. None has an active slope bound, spatial disk
+bound, timing bound, c bound, or common-timing box bound. The largest selected
+absolute additional slope is 25.397 Hz/s (2139 V16 fitted-c receiver 1).
+All twelve per-case/method fitted-c versus zero-c nested score gaps are zero.
+This does not prove complete search: width nesting exposes different minima.
+
+Position errors after score-based selection, km (zero-c / fitted-c)
+-----------------------------------------------------------------
+case          T1AT             V16
+1939          6.212 / 6.205     6.986 / 6.990
+2139          1.456 / 3.820    24.860 /12.325
+2252          0.542 / 0.497     1.754 / 0.455
+2322          3.896 / 3.896     4.479 / 4.506
+guard2109     5.400 / 4.317     5.699 / 4.272
+guard0223     1.041 / 0.937     0.496 / 0.824
+
+Comparison with the matched unrestricted continuation
+-----------------------------------------------------
+1939, 2322, and most 2252/guard0223 selections match unrestricted results to
+rounding precision. Selected basins match control for all 24 comparisons.
+Useful differences to inspect, with window30 minus control quantities:
+
+2139 V16 fitted-c: error 30.234 -> 12.325 km; data NLL -1864.120;
+timing penalty +178.357. This remains nonstationary, and its lower objective
+inside the unrestricted feasible set demonstrates incomplete control search.
+It does not establish evidence favoring the narrower prior.
+
+2139 T1AT zero-c: error 1.562 -> 1.456 km; data NLL +34.495;
+timing penalty -443.614. Better objective here comes from timing penalty,
+not a better frequency data fit.
+
+2139 T1AT fitted-c: error 4.050 -> 3.820 km; data NLL -22.080;
+timing penalty +409.774. The opposite objective tradeoff appears in this arm.
+
+2252 V16 zero-c: error 0.921 -> 1.754 km; data NLL -1.068;
+timing penalty +3.885. Frequency-fit improvement accompanies worse position.
+
+guard0223 T1AT zero-c: error 2.574 -> 1.041 km; data NLL -24.257;
+timing penalty +0.897. Both optima have inactive slope bounds, again exposing
+search/basin sensitivity within the same objective rather than identifying a
+necessary physical slope restriction.
+
+Within window30, fitted-c reduces 2139 T1AT posterior RMS from 151.21 to
+107.41 Hz while position error grows from 1.456 to 3.820 km. In-sample
+frequency fit alone cannot be used as a localization success measure.
+
+Conclusion
+----------
+Window30 is a reproducible diagnostic candidate, with no selected hard-bound
+pileup. Its differences from control are driven by finite local-search paths
+among interior solutions. The earlier 1939 failure and guard2109 errors remain.
+These six retrospectively selected captures do not justify choosing or
+deploying a production slope prior. Further evaluation should preserve all
+matched c ablations, input/seed provenance, and width-nesting failure flags.

@@ -1,0 +1,75 @@
+Session scan-fw-0695481606e1a3e8, Oct 6 22:09:51 UTC
+
+Promising fix: use objective-ranked shared saved starts, then test a less restrictive
+relative-timing prior. This session demonstrates BOTH a search miss and a prior
+ranking effect. It does not establish a universally correct timing sigma.
+
+Frozen observations and receiver baselines were loaded through public storage
+ports, exact saved TLE digest plus collection timestamp verified, and matching
+input and analysis hashes asserted. Archived V16 objective reconstruction has
+maximum absolute discrepancy 0.0. Production and published contracts unchanged.
+
+Saved-point repricing, all other parameters held fixed:
+                       sigma .15      sigma .5       sigma 1.0
+far basin best total   36518.767       32891.487      32503.438
+near basin best total  39663.944       31345.877      30728.878
+The far basin is point:-56.25:-68.75; near is point:-93.75:-81.25.
+Best saved start can differ across sigmas. At .15 the far winner's data NLL is
+36130.153, timing penalty 368.582, calibration penalty20.031. Near associated
+solution has data NLL30510.625, timing penalty9141.577, calibration penalty11.742.
+Its timing penalty decreases to823.510 at .5 and206.511 at1.0. This alone reverses
+the saved competing-point ranking, without changing frequency residuals.
+
+Physical offsets reconstructed with the deployed orthonormal zero-sum basis:
+Far .15 winning zero-timing start: common1.036s, relative RMS.784s, max2.161s,
+27 satellites. Near accurate associated start: common-3.898s, relative RMS3.833s,
+max7.634s, 28 satellites. These are model timing shifts; they are not independent
+clock or TLE error measurements. Responsibility-weighted support per satellite
+is in block_audit.json. No fresh-TLE experiment was performed.
+
+Matched optimization: exactly the same observation inventory, satellite set,
+receiver baseline, calibration penalty, local basin disk, and top-two saved-start
+pool for both c arms at each basin/sigma. Pool includes all saved final vectors
+at that basin and its associated initial vector, ranked by SUM of fitted and
+zero-c objective after projecting c=0 for the zero term. Ranking never uses truth.
+Fits have8s maximum/300 iterations, run sequentially with single-thread BLAS.
+24 fits consumed130.824 optimizer seconds; initial bank4.785s. Two basins only.
+
+Best by total objective across those basins:
+sigma arm      total       data NLL    error(m) RMS(Hz) signal fraction KKT converged
+.15   zero-c   36600.776    35394.801   1320.621 159.218 .576811         true
+.15   fitted-c 35590.521    33949.529   2068.670  93.450 .636725         true
+.5    zero-c   32540.429    31699.528   1774.388 147.897 .901119         false
+.5    fitted-c 31297.355    30452.567    828.700 107.303 .947370         true
+1.0   zero-c   31918.912    31699.166   1811.750 147.878 .901086         true
+1.0   fitted-c 30672.928    30452.156    873.389 107.406 .947579         true
+All selected rows stop optimizer-success; .5 zero-c nevertheless FAILS the
+independent KKT convergence threshold. Some far-basin runs hit time budgets.
+The fitted model beats the feasible optimized zero-c result at every basin/sigma;
+no remaining nested-model score miss is detected in this limited comparison.
+
+At unchanged .15 prior, shared starts find35590.521, beating production's
+36518.767 far winner and reducing reference error40360.5m to2068.7m. Thus the
+original prior alone does not force the production winner: final search starts
+also matter. Relaxing to .5 then favors a much higher-responsibility near solution,
+828.7m error. However lower in-sample score does not monotonically improve accuracy:
+1.0 improves score further but worsens error to873.4m; at .15 fitted-c improves
+frequency score/RMS but is less accurate than zero-c.
+
+Independent 60-second-block repricing uses frozen final vectors and no refitting.
+These blocks participated in model selection and fitting. They are explicitly
+POSTSELECTION DIAGNOSTICS, not a true holdout. block_audit.py asserts block NLLs
+sum to full NLL and records each block's support fraction separately from error.
+This checks temporal concentration of the residual explanation without claiming
+out-of-sample localization validation.
+At .15, optimized near fitted-c has lower data NLL in4/5 blocks (one block worse
+by4.36). At .5 and1.0 it has lower data NLL in5/5 blocks versus optimized far
+fitted-c, with summed advantages1871.03 and1365.63 respectively. The .5 block
+advantages range147.37 to607.81 NLL, suggesting broad temporal support rather than
+one block supplying the entire gain. This remains an in-sample observation.
+
+Validation: three audit tests pass (orthonormal timing basis, physical zero-sum
+offsets/norm, common-vs-relative repricing, feasible zero-c timing equality), frozen
+input hashes match, archived objective equality exact, block likelihood sums
+checked. Saved JSON receipts, selected.csv, runnable scripts and tests are owned
+by this report directory. No RF collection, network TLE fetch or production writes.

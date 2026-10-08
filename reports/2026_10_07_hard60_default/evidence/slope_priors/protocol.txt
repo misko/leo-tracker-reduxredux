@@ -1,0 +1,105 @@
+Slope-window prototype: frozen before outcome inspection
+=======================================================
+
+User request: prototype three restrictions on the plotted receiver slope,
+using Sol agents. User-selected window half-widths: 30, 10, and 60 Hz/s.
+Presentation order: unrestricted control, +/-60, +/-30, +/-10 Hz/s.
+
+Hypothesis
+----------
+Large additional receiver frequency slopes sometimes compensate for wrong
+satellite assignments or an optimization failure. Constraining them might help
+localization, but could also discard a useful correction. Test position error
+separately from frequency fit; a tighter distribution alone is not success.
+
+Prior definition
+----------------
+Independent bounded-uniform priors on the additional frequency slopes:
+  -B <= b0 <= B and -B <= b1 <= B, B in {60, 30, 10} Hz/s.
+The physical vector positions are b0=vector[3], b1=vector[5]. These parameters
+are additional slopes after the frozen upstream receiver calibration. The
+prior is centered at zero. It adds no penalty inside the interval; outside it
+the parameter is infeasible. These are strict half-widths, not Gaussian sigmas.
+Both receivers get the same bound. The differential b1-b0 can range +/-2B.
+The unrestricted control uses the same solver without these two bounds.
+
+This is a diagnostic prior on a model correction, not a claimed hardware clock
+specification. Report calibration postfit slopes and their sum with final b;
+the nonlinear piecewise calibration correction is separate and unchanged.
+Absolute normalization constants of the uniform priors are omitted: do not
+interpret the resulting optimizer scores as evidence for choosing a width.
+
+Frozen evaluation set
+---------------------
+1939: scan-fw-6a376b600fc2f542, earlier failure outside latest eight-hour window.
+2139: scan-fw-e3bebc228093a125, earlier failure and +119.46 Hz/s published RX1.
+2252: scan-fw-ffe5accf2d020263, -95.27 Hz/s published V16 zero-c RX1.
+2322: scan-fw-7503dce5ad59cac2, -44.63 Hz/s published V16 fitted-c RX0.
+guard2109: scan-fw-e634af901bed5cd3, accurate scan near start of recent window.
+guard0223: scan-fw-037100c3a1aa6ca8, accurate scan near end of completed window.
+
+This is a deliberately selected retrospective debugging set, not an unbiased
+sample or held-out validation set. Do not tune window widths after inspecting
+these outcomes. Before any deployment, broaden to the frozen 22-scan cohort,
+then evaluate chronologically held-out captures, including missing/pending ones.
+
+Controlled comparison
+---------------------
+For every option, run both V16 and T1AT, each with c=0 and fitted-c. Force the
+relative timing prior sigma to 1 s for both methods; preserve other score
+parameters. These fresh controls supersede published sigma=0.15 s V16 fits for
+effect comparisons. No geometry/cone or paired-clock objective changes here.
+
+For each method, use the union of that method's published winning basins across
+both c arms, selected by score, not reference position. Reuse exactly the same
+observations, frozen TLEs, satellite subsets, and receiver baselines for every
+option and arm in each basin. Upstream calibration remains fitted-c: this is a
+final-stage c ablation only. Different selected basins can have different frozen
+calibration slopes; report this rather than interpreting all b as one gauge.
+
+Use the two original association initializations in each basin: associated
+timing and zero timing. They are identical across methods/arms/options apart
+from the required c=0 equality and clipping slopes to the tested feasible box.
+Do not seed from a previous optimized arm or window output. No truth-based
+starts. Retain an initial candidate only after consistent feasibility checks.
+
+Global prior unchanged. Local search radius 25 km centered at association
+initial position, identically for control and all window options. This is a
+conditional local search, not a new global basin or satellite inventory search.
+Match per-fit caps: 6 seconds and 300 iterations; BLAS threads=1. Wall-clock
+caps under concurrent load are maximum budgets, not equal evaluation counts.
+Report actual counts, timeouts, and stationarity; unresolved search failures
+must not be claimed as an identified physical prior effect.
+
+Select each case/method/arm result by data/timing objective plus the unchanged
+calibration penalty. Reference location is used only after selection to report
+position error. Do not mix comparison scores between methods.
+
+Outputs and decision criteria
+-----------------------------
+Save all trial vectors and input/seed digests, not only successful results.
+For selected results report position error, frequency data NLL, posterior RMS,
+signal mass, timing penalty, c, both additional/total-linear slopes, slope-bound
+hits, spatial boundary hits, optimizer reason and KKT stationarity.
+Audit nested-model search gaps: fitted-c contains c=0 at every width. If a
+fitted-c solution scores worse, record a search failure without sharing its
+counterpart's optimized vector as a repair seed.
+Also audit width nesting: the unrestricted feasible set contains +/-60, which
+contains +/-30, which contains +/-10. A tighter window obtaining a lower
+unchanged objective identifies incomplete search in the wider option. It can
+still be a useful optimization effect, but is not evidence that restricting a
+global optimum improved the likelihood.
+
+Look for reduced large-error cases without degrading accurate guards. Explain
+frequency-fit/position tradeoffs and hard-bound pileups. A useful width is only
+a candidate for further evaluation, never automatically deployed from this set.
+
+Execution ownership
+-------------------
+Sol agent slope_window10: generic bounded solver + tests, then window60 runs.
+Sol agent slope_window5: shared runner + tests, then window30 runs.
+Sol agent slope_window2: frozen input preparation, then window10 runs.
+Root: protocol, unrestricted control, independent matched-run audit, comparison.
+Agent task names predate the user's revised values; output option names use the
+actual final bounds. All handwritten work stays in this report directory.
+No new RF capture, production setting changes, service restarts or QNAP writes.

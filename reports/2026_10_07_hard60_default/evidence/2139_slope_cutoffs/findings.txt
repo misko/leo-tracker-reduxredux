@@ -1,0 +1,84 @@
+Corrected hard-slope experiment on scan-fw-e3bebc228093a125
+========================================================
+
+The capture is Oct 6, 2026 at 14:39:41 PDT (21:39:41 UTC), research label 2139.
+All 96 requested optimizer calls completed. All eight overall score-selected
+results passed independent feasibility and KKT checks. Three focused new tests
+passed; saved independent anchor objective and pair residuals reproduced.
+
+Are the cutoffs soft?
+No. They are hard limits +/-60, +/-30, +/-10 Hz/s on each receiver's ADDITIONAL
+affine frequency slope, applied after frozen calibration. A soft prior instead
+adds a gradually increasing cost and permits larger slopes. Soft priors were
+not tested here. These bounds are not limits on the total receiver baseline.
+
+Original published additional RX0/RX1 slopes (Hz/s):
+V16 zero-c, 305.643 km error: +51.871564 / +119.461904.
+V16 fitted-c, 43.619 km error: -13.409956 / -5.571681.
+The later experimental near-5.9 km bad branch had about -2.56 / -129.15;
+that is a later fitted state, not the original published clock estimate.
+
+What missing region meant
+The capture and measurements were available. The earlier six-scan slope test
+used only each method's published winning regions. For V16 on this capture,
+that meant the regions centered at [-68.75,-106.25] and [225,25] km relative to
+the Sacramento search origin. It omitted [-106.25,-81.25], the original T1AT
+region used by the successful paired-clock initialization experiment.
+
+Each region has a frozen satellite subset/calibration and a local search disk.
+With the tested 25 km radius, the known receiver is 19.216 km from the omitted
+region's center, so inside it. It is 31.183 and 329.546 km from the other two
+centers, outside those disks. This was an experimental search-coverage omission,
+not missing RF data. This rerun includes all three regions for V16 and both c
+arms, with matched inputs and budgets. It is still not a new global search.
+
+Does limiting slope help the suspicious branch?
+Starting at the same own-arm bad pre-repair zero-c state, after refitting:
+                          unrestricted    +/-60       +/-30       +/-10
+Position error km             5.899        6.941       6.069       5.385
+Median pair residual Hz    6000.6       2600.4      1582.0         71.6
+Final RX1 slope Hz/s       -129.238      -57.870     -30.000       -2.956
+All four results converged. The +/-10 bound therefore does help escape this
+specific excessive-drift solution and recover receiver consistency. +/-60 and
++/-30 reduce drift but leave severe pair mismatches. Clipping alone changes only
+the slope start; offsets and other parameters are then freely refitted.
+
+Does it improve the previous paired-clock repair?
+Using the RX0-preserving pair-clock initializer that previously gave 4.503 km:
+errors are 4.503 / 4.581 / 4.614 / 4.593 km under unrestricted/60/30/10.
+Pair mismatches are 67.2 / 66.0 / 66.5 / 65.9 Hz, respectively. All converge.
+Thus no position improvement is demonstrated from adding these cutoffs to that
+particular successful initializer. Improving pair consistency alone is not
+equivalent to improving position.
+
+What wins across all matched starts and three regions?
+                          unrestricted    +/-60       +/-30       +/-10
+V16 zero-c error km            2.322        2.152       2.367       2.195
+V16 fitted-c error km          3.978        3.942       3.916       3.978
+Zero-c pair median Hz         83.6         80.5        83.0        83.2
+Fitted-c pair median Hz       49.7         48.0        49.3        49.7
+All eight are feasible, stationary and interior to the slope bounds. All winners
+are in the previously omitted region. The best states trace to its original
+association initialization and matched own-arm continuation, not copied
+optimized outputs from another arm or option. The new unrestricted result is
+already 2.322 km; do not attribute this large gain over the earlier 24.628 km
+unrestricted test to slope priors. Search coverage and fresh starts/budgets differ
+from that earlier experiment. Within this new controlled comparison, cutoff
+effects on final position are only tens to hundreds of metres and are not
+monotonic. No general winning physical prior can be selected from this one scan.
+
+Frequency fit and location remain different endpoints. In the unrestricted
+case, fitted-c has posterior frequency RMS 96.02 Hz vs zero-c 138.91 Hz, but
+position error 3.978 km vs 2.322 km. Detailed frequency NLL, timing cost, RMS,
+calibration/extra/total-linear slopes and pair diagnostics are in comparison.csv.
+
+Remaining limitations
+Final-state inactive limits can still alter an optimizer's path. Eight
+width-nesting score gaps (counting overall and regional reports) show incomplete
+nonconvex optimization; KKT convergence does not certify global optimality.
+All methods retain the original fitted-c upstream calibration. Previous own-arm
+anchor endpoints were retained where feasible to prevent discarding better
+existing states. One losing anchor-RX1 +/-10 trial is nonstationary; it is
+reported and not selected. No production changes or RF collections occurred.
+Total native fitting time 935.5 s across four concurrent option jobs; each job
+completed in 228-253 s. No further fitting stages were run.
