@@ -75,8 +75,39 @@ def main():
                     fallback=sum(r["fallback"] for r in rows),
                     worst_label=group[int(errors.argmax())]["label"],
                 )
+    strict_shared = {}
+    for cohort in aggregates:
+        group = [c for c in cases if c["cohort"] == cohort]
+        paired = [
+            c
+            for c in group
+            if not any(
+                c["arms"][arm][variant]["fallback"]
+                for arm in ("fitted-c", "zero-c")
+                for variant in VARIANTS[1:]
+            )
+        ]
+        strict_shared[cohort] = dict(
+            count=len(paired),
+            excluded=[c["label"] for c in group if c not in paired],
+            arms={
+                arm: {
+                    variant: dict(
+                        mean_km=float(
+                            np.mean([c["arms"][arm][variant]["error_km"] for c in paired])
+                        ),
+                        mean_rms_hz=float(
+                            np.mean([c["arms"][arm][variant]["rms_hz"] for c in paired])
+                        ),
+                    )
+                    for variant in VARIANTS[1:]
+                }
+                for arm in ("fitted-c", "zero-c")
+            },
+        )
     (HERE / "summary.json").write_text(
-        json.dumps(dict(cases=cases, aggregates=aggregates), indent=2) + "\n"
+        json.dumps(dict(cases=cases, aggregates=aggregates, strict_shared=strict_shared), indent=2)
+        + "\n"
     )
     fig, axes = plt.subplots(2, 3, figsize=(13, 7), layout="constrained")
     for col, cohort in enumerate(("DS16", "DS17-development", "newer")):

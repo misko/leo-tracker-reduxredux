@@ -57,7 +57,11 @@ def main():
                 capture_start_window_utc=window,
                 captures=rows,
                 excluded=excluded,
-                membership="All published recordings in fixed capture window, published by cutoff; no localization or analysis-readiness admission gate; unpublished/spooled recordings outside this cohort",
+                membership=(
+                    "All published recordings in fixed capture window, published by cutoff; "
+                    "no localization or analysis-readiness admission gate; "
+                    "unpublished/spooled recordings outside this cohort"
+                ),
                 role="Reserved later validation; no outcomes opened and no RF collection launched",
             ),
             indent=2,
