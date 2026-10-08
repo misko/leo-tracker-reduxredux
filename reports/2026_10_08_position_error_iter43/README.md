@@ -24,8 +24,8 @@ All 148 session IDs are distinct. The DS18 mint's separate verification records
 cross-dataset IQ-digest disjointness; this reconciliation does not reread raw IQ.
 
 The [complete member table](membership.md) includes every assigned member and
-maps historical labels. DS16-M001…M063 are report inventory indices, not replacements
-for the historical S01…S48 evaluation labels. The mapping preserves those labels.
+maps historical labels. DS16-001…DS16-063 are the full manifest labels;
+S01…S48 are the historical subset evaluation labels. The mapping preserves both.
 DS17's original random development/validation assignments are retained as history;
 all 51 are now consumed research data. DS18 includes all 24 previously evaluated
 NEW/FRESH/LATER/RESERVED recordings. Their historical random or chronological roles
