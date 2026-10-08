@@ -1,0 +1,482 @@
+{
+  "created_utc": "2026-10-08T02:31:41.201846+00:00",
+  "objective": "Improve position accuracy on DS16 without reference-guided runtime selection",
+  "baseline_evaluation_sha256": "sha256:56d2eaffef3792e3ac51e30c195a8a31e703e9892a047cdb95c14d1dfa6b4431",
+  "baseline_policy_sha256": "sha256:1d21343399012bd783da3e7d01a93a5ed88251f8795df494bd32e967637ac2aa",
+  "seed": 2026100801,
+  "generator": "numpy.PCG64",
+  "sampling_unit": "whole nonoverlapping recording/session_id",
+  "known_development": [
+    "S14",
+    "S16",
+    "S24",
+    "S27"
+  ],
+  "known_development_reason": "Four highest fitted-c errors already identified in the published baseline; S27 had prior RCA.",
+  "randomized_population_order": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S15",
+    "S17",
+    "S18",
+    "S19",
+    "S20",
+    "S21",
+    "S22",
+    "S23",
+    "S25",
+    "S26",
+    "S28",
+    "S29",
+    "S30",
+    "S31",
+    "S32",
+    "S33",
+    "S34",
+    "S35",
+    "S36",
+    "S37",
+    "S38",
+    "S39",
+    "S40",
+    "S41",
+    "S42",
+    "S43",
+    "S44",
+    "S45",
+    "S46",
+    "S47",
+    "S48"
+  ],
+  "development_draw_indices": [
+    6,
+    2,
+    31,
+    33,
+    29,
+    11,
+    30,
+    12,
+    40,
+    3,
+    21,
+    7
+  ],
+  "development": [
+    {
+      "label": "S03",
+      "dataset_label": "DS16-004",
+      "session_id": "scan-fw-3ad2719629e7c60d",
+      "draw_rank": 45,
+      "recording_manifest_sha256": "sha256:f77a759746fea59e1a680968b7364c182b9dd7f7c218ca056ce0844d4e33e3b0",
+      "capture_start_utc_ns": 1791368746196916249
+    },
+    {
+      "label": "S04",
+      "dataset_label": "DS16-005",
+      "session_id": "scan-fw-194e6f064a898b85",
+      "draw_rank": 37,
+      "recording_manifest_sha256": "sha256:49668137c61db10693f7698e2629e502a7658cd146a1590934ccc5c514afbdec",
+      "capture_start_utc_ns": 1791369650955805873
+    },
+    {
+      "label": "S07",
+      "dataset_label": "DS16-010",
+      "session_id": "scan-fw-aa77506012889211",
+      "draw_rank": 13,
+      "recording_manifest_sha256": "sha256:dbac6d9e11ea803f7868e4ed8cb39a4b0c399d38c291322fc064532c0d915da1",
+      "capture_start_utc_ns": 1791374173399394369
+    },
+    {
+      "label": "S08",
+      "dataset_label": "DS16-012",
+      "session_id": "scan-fw-9284d4f6ce040d80",
+      "draw_rank": 41,
+      "recording_manifest_sha256": "sha256:dc452eeb730d4180ca5c56ebce65ad76004a4da1d64eaadea3ae91ff4a82a3de",
+      "capture_start_utc_ns": 1791375980914848625
+    },
+    {
+      "label": "S12",
+      "dataset_label": "DS16-018",
+      "session_id": "scan-fw-13998828c952f265",
+      "draw_rank": 6,
+      "recording_manifest_sha256": "sha256:cf6650bbaea283beb4ed1f2e08acad4a35ac0b916a14a8e8c6ff8300492a56e1",
+      "capture_start_utc_ns": 1791381408857114277
+    },
+    {
+      "label": "S13",
+      "dataset_label": "DS16-019",
+      "session_id": "scan-fw-96d70bdc5aef38ed",
+      "draw_rank": 44,
+      "recording_manifest_sha256": "sha256:ef037f68ce857d9fddce5e40ddf292a83663a6c3f2283ec5ec43317519a3445b",
+      "capture_start_utc_ns": 1791382312199821544
+    },
+    {
+      "label": "S14",
+      "dataset_label": "DS16-020",
+      "session_id": "scan-fw-151ee2be70b82235",
+      "draw_rank": 29,
+      "recording_manifest_sha256": "sha256:3c1ccfac517db30c081b51faa9ce45ea436c789c923603be96063cea49315fa3",
+      "capture_start_utc_ns": 1791383216995749622
+    },
+    {
+      "label": "S16",
+      "dataset_label": "DS16-022",
+      "session_id": "scan-fw-79f5280d20dd9e65",
+      "draw_rank": 4,
+      "recording_manifest_sha256": "sha256:32c1ad44266e485162779dff2ac19c34f319be47b7c4b2dca4ebf3ca33a6692b",
+      "capture_start_utc_ns": 1791385025973060129
+    },
+    {
+      "label": "S24",
+      "dataset_label": "DS16-031",
+      "session_id": "scan-fw-9f4e8b72d567c0bb",
+      "draw_rank": 8,
+      "recording_manifest_sha256": "sha256:2444783d654da7ecf213cd61458e30b69cd7095f30dba76ad37ee34ef3ddb7b0",
+      "capture_start_utc_ns": 1791393164430319735
+    },
+    {
+      "label": "S25",
+      "dataset_label": "DS16-032",
+      "session_id": "scan-fw-eb9ba03847cd10fb",
+      "draw_rank": 16,
+      "recording_manifest_sha256": "sha256:aa64d1da17aa2dc9267eb680c770456aa4e7e713869c4ac0755b592361bc1031",
+      "capture_start_utc_ns": 1791394069127012959
+    },
+    {
+      "label": "S27",
+      "dataset_label": "DS16-035",
+      "session_id": "scan-fw-2917f7344e48ba39",
+      "draw_rank": 9,
+      "recording_manifest_sha256": "sha256:2ccfe9b42063b77417ec113c55c0c4a1198717da328e5f678f4a38c2dad78c33",
+      "capture_start_utc_ns": 1791396783444165123
+    },
+    {
+      "label": "S34",
+      "dataset_label": "DS16-044",
+      "session_id": "scan-fw-64163dfbcc531a50",
+      "draw_rank": 7,
+      "recording_manifest_sha256": "sha256:424190813cea61118756f5daec99bd78509787a3d72da99d2d45d08b0a186c13",
+      "capture_start_utc_ns": 1791404926009635668
+    },
+    {
+      "label": "S35",
+      "dataset_label": "DS16-048",
+      "session_id": "scan-fw-7e51f48fa65d6f81",
+      "draw_rank": 20,
+      "recording_manifest_sha256": "sha256:0511b6bf0d3d1e6de5e06d331ed18eaf037b776badb52597f0166ee26563aca3",
+      "capture_start_utc_ns": 1791408543591108839
+    },
+    {
+      "label": "S36",
+      "dataset_label": "DS16-049",
+      "session_id": "scan-fw-3bf66f35e3a07685",
+      "draw_rank": 34,
+      "recording_manifest_sha256": "sha256:9d27ec7c6b32abd3a08ec6348ffcf50cc14e79cfed17f9afe327e5a67badb376",
+      "capture_start_utc_ns": 1791409448064002758
+    },
+    {
+      "label": "S38",
+      "dataset_label": "DS16-052",
+      "session_id": "scan-fw-7b796c5b898df6bf",
+      "draw_rank": 1,
+      "recording_manifest_sha256": "sha256:08fa73f80a01a368e64621331723b92cbf109eebb27af99cb951c8d5367332d0",
+      "capture_start_utc_ns": 1791412162133840147
+    },
+    {
+      "label": "S45",
+      "dataset_label": "DS16-060",
+      "session_id": "scan-fw-19a8822932068f7a",
+      "draw_rank": 46,
+      "recording_manifest_sha256": "sha256:4e577b9ec973372f066a7ad54d32f60c5b0778694cd1fe2dbb454f976af616ee",
+      "capture_start_utc_ns": 1791419404025027684
+    }
+  ],
+  "validation": [
+    {
+      "label": "S01",
+      "dataset_label": "DS16-002",
+      "session_id": "scan-fw-a326fb07c0e9b6e2",
+      "draw_rank": 48,
+      "recording_manifest_sha256": "sha256:25ccc6cb951b1fa1c49a0c3b257ed28655eea6543238ea4599d741dfcda598e6",
+      "capture_start_utc_ns": 1791366937821874697
+    },
+    {
+      "label": "S02",
+      "dataset_label": "DS16-003",
+      "session_id": "scan-fw-1ad7f3926e9a03e5",
+      "draw_rank": 22,
+      "recording_manifest_sha256": "sha256:ff34aab1de532fc887e96556449c65897c34b8dc3b3fe1e98449c4d3284343af",
+      "capture_start_utc_ns": 1791367841291178649
+    },
+    {
+      "label": "S05",
+      "dataset_label": "DS16-006",
+      "session_id": "scan-fw-e90e71153f3be029",
+      "draw_rank": 38,
+      "recording_manifest_sha256": "sha256:dd6a93e4ab47750f77a7180e3345df52aa6a217f0a4fb05b92b5c61e6ce80290",
+      "capture_start_utc_ns": 1791370555256992264
+    },
+    {
+      "label": "S06",
+      "dataset_label": "DS16-007",
+      "session_id": "scan-fw-0b8d0887b97b192b",
+      "draw_rank": 18,
+      "recording_manifest_sha256": "sha256:0221500430b1f699b413d77bfa73fa0b23610ded587e54bb9c3c1dd8075fc980",
+      "capture_start_utc_ns": 1791371459951637608
+    },
+    {
+      "label": "S09",
+      "dataset_label": "DS16-014",
+      "session_id": "scan-fw-dbf401c02543f194",
+      "draw_rank": 24,
+      "recording_manifest_sha256": "sha256:5ffdb628ecf0c4f8236c17538909aed54b53490d1027824e3de9938ce99b9f7a",
+      "capture_start_utc_ns": 1791377790796462546
+    },
+    {
+      "label": "S10",
+      "dataset_label": "DS16-016",
+      "session_id": "scan-fw-3b61d64df77251ca",
+      "draw_rank": 47,
+      "recording_manifest_sha256": "sha256:831ce8f71f20cd2e132d2267432b600ff1bb46557f5f3477d9ba9f0b7be641af",
+      "capture_start_utc_ns": 1791379598932374667
+    },
+    {
+      "label": "S11",
+      "dataset_label": "DS16-017",
+      "session_id": "scan-fw-5fab2b5974ce6bfb",
+      "draw_rank": 32,
+      "recording_manifest_sha256": "sha256:dd242f55f8066527c12a88a7f0c997aa1dd2089f156601bbad84e7dd80af925b",
+      "capture_start_utc_ns": 1791380503796519903
+    },
+    {
+      "label": "S15",
+      "dataset_label": "DS16-021",
+      "session_id": "scan-fw-389713be72cd8450",
+      "draw_rank": 33,
+      "recording_manifest_sha256": "sha256:b83a3a61aee2c3cd3aca3d8ff4fdbfd528ac81493913f4e58d4e5b9c94929dce",
+      "capture_start_utc_ns": 1791384120339302068
+    },
+    {
+      "label": "S17",
+      "dataset_label": "DS16-024",
+      "session_id": "scan-fw-0e40d0535caa0b16",
+      "draw_rank": 17,
+      "recording_manifest_sha256": "sha256:1ad991e5e8aefcb848178f8004491805969f597dcdce2c452a89d59f3411997e",
+      "capture_start_utc_ns": 1791386835362516910
+    },
+    {
+      "label": "S18",
+      "dataset_label": "DS16-025",
+      "session_id": "scan-fw-6ad6175fa731231e",
+      "draw_rank": 43,
+      "recording_manifest_sha256": "sha256:a664176b2a686bb0a11524ff9ab0bbe3cb903ba130c3618b5c3d8f19db696ea8",
+      "capture_start_utc_ns": 1791387739401343367
+    },
+    {
+      "label": "S19",
+      "dataset_label": "DS16-026",
+      "session_id": "scan-fw-320fa74020b04d85",
+      "draw_rank": 15,
+      "recording_manifest_sha256": "sha256:aa1e6eca01eb060548c72ab4d38e10510a6d6924763a17374c6c35cf623b16c2",
+      "capture_start_utc_ns": 1791388643163796045
+    },
+    {
+      "label": "S20",
+      "dataset_label": "DS16-027",
+      "session_id": "scan-fw-84eb24f335b96c64",
+      "draw_rank": 3,
+      "recording_manifest_sha256": "sha256:985c36803e0d4f92f51a308ce543e2dd3546e0cbd16086c906957c8f834ad876",
+      "capture_start_utc_ns": 1791389546956350386
+    },
+    {
+      "label": "S21",
+      "dataset_label": "DS16-028",
+      "session_id": "scan-fw-6cfa779ffd41637a",
+      "draw_rank": 31,
+      "recording_manifest_sha256": "sha256:deffa03fa31e21ed7b4c8f5dc42ce99b38f1aae992136861071fefb43b8e88ab",
+      "capture_start_utc_ns": 1791390450911117930
+    },
+    {
+      "label": "S22",
+      "dataset_label": "DS16-029",
+      "session_id": "scan-fw-d3b1edc33cb8210d",
+      "draw_rank": 21,
+      "recording_manifest_sha256": "sha256:77666749519dfb0b1b98fb5ca9fa5b71346353a2ab75115629c80154e467fff7",
+      "capture_start_utc_ns": 1791391355771346063
+    },
+    {
+      "label": "S23",
+      "dataset_label": "DS16-030",
+      "session_id": "scan-fw-de9320ef0602bad8",
+      "draw_rank": 19,
+      "recording_manifest_sha256": "sha256:19bedb4a0680749d2ff98c00a83143adb3a7adfd57e4984c9e8c046357886738",
+      "capture_start_utc_ns": 1791392260212808131
+    },
+    {
+      "label": "S26",
+      "dataset_label": "DS16-033",
+      "session_id": "scan-fw-0ffe1eede92820a9",
+      "draw_rank": 36,
+      "recording_manifest_sha256": "sha256:0f2481aa18f72160ef9c9b8d5ae2cc4ceaf5dc9f00efcc101ae9f8d2d5931880",
+      "capture_start_utc_ns": 1791394973776961593
+    },
+    {
+      "label": "S28",
+      "dataset_label": "DS16-036",
+      "session_id": "scan-fw-a8fbd8c43834a765",
+      "draw_rank": 27,
+      "recording_manifest_sha256": "sha256:8e570e28c6c5ec968965d94661d2c9e42bb95b45060af4331ea79ee470cfdf13",
+      "capture_start_utc_ns": 1791397688383103104
+    },
+    {
+      "label": "S29",
+      "dataset_label": "DS16-037",
+      "session_id": "scan-fw-9061ae11d2702df3",
+      "draw_rank": 30,
+      "recording_manifest_sha256": "sha256:72b8c01c30072969569534b026a79cb941865c0f72dc5167728c01317e96b222",
+      "capture_start_utc_ns": 1791398593512832148
+    },
+    {
+      "label": "S30",
+      "dataset_label": "DS16-038",
+      "session_id": "scan-fw-d6e344d47603fb34",
+      "draw_rank": 35,
+      "recording_manifest_sha256": "sha256:11c8a3dc24f1eabddbe9bf0efc3586ae9f89ef385f20e903c143540627bf4207",
+      "capture_start_utc_ns": 1791399498111758297
+    },
+    {
+      "label": "S31",
+      "dataset_label": "DS16-039",
+      "session_id": "scan-fw-6f9e553db123bebd",
+      "draw_rank": 25,
+      "recording_manifest_sha256": "sha256:470c107b0b35817947d2d4e1c1641b634f239e5e542d7f86ae397dfed769658f",
+      "capture_start_utc_ns": 1791400402128817603
+    },
+    {
+      "label": "S32",
+      "dataset_label": "DS16-040",
+      "session_id": "scan-fw-fedf239661900a5a",
+      "draw_rank": 26,
+      "recording_manifest_sha256": "sha256:7939ce03ce4197de26ba4c5d5e3e14b70e0e7db0140a75a169e910658783d9a5",
+      "capture_start_utc_ns": 1791401307217557747
+    },
+    {
+      "label": "S33",
+      "dataset_label": "DS16-043",
+      "session_id": "scan-fw-c937db2e26dad0aa",
+      "draw_rank": 28,
+      "recording_manifest_sha256": "sha256:d66064e387db7a810aaaafe2a9d08e1f57d0f0af7fcf7fc4909c0f82de7b4d70",
+      "capture_start_utc_ns": 1791404022126096999
+    },
+    {
+      "label": "S37",
+      "dataset_label": "DS16-051",
+      "session_id": "scan-fw-899e83e995c96cdf",
+      "draw_rank": 12,
+      "recording_manifest_sha256": "sha256:696b2ffeb5ab7fd68fce51aa15e0c6920dc24c51f9b3fdec2846f05ef7761f78",
+      "capture_start_utc_ns": 1791411257337775051
+    },
+    {
+      "label": "S39",
+      "dataset_label": "DS16-053",
+      "session_id": "scan-fw-a88b75d9a4cad4ff",
+      "draw_rank": 10,
+      "recording_manifest_sha256": "sha256:e904bc7a8f796e214414659a67910b352f00076ca65a2604a8d419a1f79abd04",
+      "capture_start_utc_ns": 1791413066187342711
+    },
+    {
+      "label": "S40",
+      "dataset_label": "DS16-054",
+      "session_id": "scan-fw-4dbadefb5dadb59d",
+      "draw_rank": 39,
+      "recording_manifest_sha256": "sha256:670b0d67b3eeb3b6e3858f1e49c36752c19713c7c0b68d3301271032929d175f",
+      "capture_start_utc_ns": 1791413971418993881
+    },
+    {
+      "label": "S41",
+      "dataset_label": "DS16-056",
+      "session_id": "scan-fw-8d94198baa058d67",
+      "draw_rank": 23,
+      "recording_manifest_sha256": "sha256:ecb640314cc85b1f66a4b76b8a2f6795a22209489b323b168449269fe736dede",
+      "capture_start_utc_ns": 1791415781503067977
+    },
+    {
+      "label": "S42",
+      "dataset_label": "DS16-057",
+      "session_id": "scan-fw-6aa645776351507d",
+      "draw_rank": 2,
+      "recording_manifest_sha256": "sha256:eeccc0aac19933948df76df4ba2080169370a261dbe8538216dd96a25d00b1eb",
+      "capture_start_utc_ns": 1791416685366395852
+    },
+    {
+      "label": "S43",
+      "dataset_label": "DS16-058",
+      "session_id": "scan-fw-4099ab8ea46fad71",
+      "draw_rank": 14,
+      "recording_manifest_sha256": "sha256:ab30dc4c4c264fbd787ce55b0a7298bb10a9caeb0079579563bcf9053493af9e",
+      "capture_start_utc_ns": 1791417593660572288
+    },
+    {
+      "label": "S44",
+      "dataset_label": "DS16-059",
+      "session_id": "scan-fw-aeea3ef6d81d637f",
+      "draw_rank": 5,
+      "recording_manifest_sha256": "sha256:b5bb7be6cffa0c8c556f576bd54852fbb4a2abb9ba72869321c87be6586d6251",
+      "capture_start_utc_ns": 1791418499072235747
+    },
+    {
+      "label": "S46",
+      "dataset_label": "DS16-061",
+      "session_id": "scan-fw-f8a93156e16bf663",
+      "draw_rank": 11,
+      "recording_manifest_sha256": "sha256:9b696c638f36dff0d86c9a7b719b71aebca5935d67836529ba88029894d608bd",
+      "capture_start_utc_ns": 1791420308129820306
+    },
+    {
+      "label": "S47",
+      "dataset_label": "DS16-062",
+      "session_id": "scan-fw-ecb0b93df67421a9",
+      "draw_rank": 42,
+      "recording_manifest_sha256": "sha256:c48b8df2d6309a3ee05eaa09b39922abcf7d1da8d3e037d87a5ed71ba5a5d01f",
+      "capture_start_utc_ns": 1791421212162281049
+    },
+    {
+      "label": "S48",
+      "dataset_label": "DS16-063",
+      "session_id": "scan-fw-82df8e587b0af01b",
+      "draw_rank": 40,
+      "recording_manifest_sha256": "sha256:5f8eb2ead58666bd5d3bc3c6884c14831bb0c65d3abb2be598b8c903a15fc7e0",
+      "capture_start_utc_ns": 1791422116890341466
+    }
+  ],
+  "validation_limit": "Reserved for new-policy testing, not previously unseen data: baseline outcomes were already published. The four known failures are deliberately in development; other assignments are randomized.",
+  "policy_selection": "Screen changes on development only; freeze proposed algorithm, thresholds, search budgets and source digests before validation. No reference coordinates in seeds, candidates, retries, model scoring or winner selection.",
+  "ablation": "Matched final fitted-c and zero-c arms; shared observations, upstream calibration, candidate sets, other priors and search budgets. Any broader calibration ablation must be explicitly identified.",
+  "metrics": [
+    "accepted/48",
+    "error_over_100_km",
+    "error_over_10_km",
+    "mean_error_km",
+    "median_error_km",
+    "p95_error_km",
+    "maximum_error_km",
+    "per_scan_paired_change",
+    "frequency_rms_hz_separate",
+    "objective_separate",
+    "compute_budget"
+  ],
+  "acceptance": "Demonstrate lower aggregate position error with fewer catastrophic failures and assess median/p95 and every regression; report development, validation and all48 separately. Numerical score improvement alone is insufficient.",
+  "unchanged_primary": "Baseline dataset and publications remain immutable. Experiments use saved inputs, no new RF or production deployment."
+}
