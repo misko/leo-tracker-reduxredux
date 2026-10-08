@@ -118,8 +118,11 @@ parameterization and independent stationarity audit. Three tests pass in both
 development and deployed Python, checking fixed coordinates, physical bounds,
 zero-c enforcement and invalid clock seeds. Every fit also verifies the
 per-window likelihood decomposition against the original objective. Source
-hashes bind the original, continuation and retry protocols. Lint passes with
-E501/I001 excluded for two cosmetic issues in frozen diagnostic sources.
+hashes bind the original, continuation and retry protocols. Lint reports three
+cosmetic findings in frozen sources: E501 (line length), I001 (import ordering),
+and B007 (unused retry-loop index). It passes with those three rules excluded;
+the original report's two-rule statement was corrected without changing any
+frozen source or numerical result.
 All inputs, results, paths, summaries and figures are sealed by `integrity.json`.
 
 Next, prototype three reference-free consistency policies on these failures
