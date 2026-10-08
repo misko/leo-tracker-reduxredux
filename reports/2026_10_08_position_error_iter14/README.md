@@ -113,4 +113,3 @@ The independent density-weighting experiment in iteration 17 remains underway.
 Production bounded numerical recovery, fitted-c default and longest-16
 per-track TLE review PNG rendering remain unchanged. No RF collection was
 started and QNAP remained read-only.
-
