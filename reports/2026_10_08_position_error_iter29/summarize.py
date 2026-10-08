@@ -123,6 +123,42 @@ def main():
         ax.legend(fontsize=8)
         ax.grid(axis="y", alpha=0.2)
     fig.savefig(HERE / "completion-comparison.png", dpi=160)
+    stage_names = (
+        "published",
+        "joint-100",
+        "remove-5",
+        "post-200",
+        "drift-50",
+        "control-refit",
+        "slope-0.25",
+        "operational",
+    )
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8), layout="constrained")
+    for ax, record in zip(axes.flat, cases, strict=True):
+        label = record["member"]["label"]
+        ax.set_title(label + " — " + record["member"]["group"])
+        if record["status"] != "complete":
+            ax.text(0.5, 0.5, record["status"], transform=ax.transAxes, ha="center")
+            continue
+        raw = json.loads((HERE / "results" / f"{label}.json").read_text())
+        stages = {**raw["upstream"]["stages"], **raw["result"]["stages"]}
+        for arm in ARMS:
+            values = [record["arms"][arm]["variants"]["published"]["error_km"]]
+            values.extend(
+                stages.get(s, {}).get(arm, {}).get("error_km", np.nan) for s in stage_names[1:-1]
+            )
+            values.append(raw["result"]["operational"][arm]["error_km"])
+            ax.plot(stage_names, values, marker="o", label=arm)
+            for i, s in enumerate(stage_names[1:-1], 1):
+                r = stages.get(s, {}).get(arm)
+                if r is not None and not r["converged"]:
+                    ax.scatter(i, r["error_km"], marker="x", s=90, color="red", zorder=5)
+        ax.set(ylabel="Position error (km)")
+        ax.axhline(1, color="gray", linewidth=1)
+        ax.tick_params(axis="x", rotation=35, labelsize=8)
+        ax.legend(fontsize=8)
+        ax.grid(alpha=0.2)
+    fig.savefig(HERE / "stage-comparison.png", dpi=160)
     print(json.dumps({k: output[k] for k in ("metrics", "gates", "qualified")}, indent=2))
 
 
