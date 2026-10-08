@@ -24,9 +24,10 @@ Poll these handles or check processes before any new invocation. The isolated
 baseline root is `local/standard-baselines`; it was initially absent, causing
 seven pre-fit failures. First attempts are retained in `results/`, retry outputs
 in `retry/results/`. The directory now exists. Completed original cases include
-DS18-033, DS16-009, DS16-013, DS16-046 and DS16-050; the DS18-034 retry also completed
-successfully. DS16-001's retry baseline is complete and its candidate is running.
-The next published snapshot includes at least 52/63 DS16 members; use summary.json
+DS18-033, DS16-009, DS16-013, DS16-023, DS16-046 and DS16-050; retries DS18-034,
+DS16-001 and DS16-008 also completed successfully. Original lane is proceeding
+through DS16-041/045/047/055; retry lane through DS16-011/015/034/042.
+The next published snapshot includes at least 55/63 DS16 members; use summary.json
 for exact current checkpoint metrics, not the initial 50-member figures above.
 Each baseline invocation is limited to four resumable 500-second slices. Preserve
 pending slice receipts; do not label a checkpoint timeout an input exclusion.
@@ -48,8 +49,32 @@ but discarded before final fitting. A good nearby coarse point ranks 13th;
 retains the correct neighborhood. The next useful diagnostic is complete fitting
 of an additional 50 km-separated region set while preserving original choices,
 with matched c arms and unchanged likelihood, followed by score-based selection.
-This is not yet a proven correction. DS18's common-bank zero-c likelihood still
-prefers its distant solution even after optimization.
+Iteration48 has now completed that diagnostic: preserving the wider region
+reduces DS16-046 from 265.789353 to 0.798370 km fitted-c, and 261.742792 to
+2.128007 km zero-c. The new region wins by unchanged regional score; all 12
+downstream fits converge. This is a consumed-case success, not a benchmark
+replacement or dataset-wide qualified correction.
+
+Iteration49 audited all eight iteration46 outputs with finite differences. All
+four failed fitted-c endpoints flip hard horizon visibility under tiny geometric
+perturbations; all four converged c0 controls do not at scaled step 1e-4. Smooth
+frequency/clock directional gradients agree with finite differences. Numerical
+source and all outputs are frozen; no new optimization in49. Next model diagnostic:
+smooth above-horizon detection taper including the derivative of the no-detection
+normalization, with hard zero below horizon and gradient tests before fits.
+DS18's common-bank zero-c likelihood still prefers its distant solution even
+after optimization; fixing nonsmoothness alone is not proven to fix ranking.
+
+Next cohort policy work: add sep50 regions while preserving baseline and sep25,
+select per-arm eligible regional winners by unchanged score, then run the
+unchanged downstream pipeline from the selected fitted-region model/seed. Keep
+the shared candidate bank for c ablation. Avoid replacing the full benchmark
+with one diagnostic result. Qualify the three-region-set assembly on unchanged
+controls and DS16-046 before extending across all148. A lean research-only copy
+of iteration20's stage runner can change just initial region selection to accept
+three documents and keep explicit source provenance, rather than synthesizing
+a public persisted regional document. For unchanged selected inputs, exact
+archived results may be reused with verified bindings; report added fit cost.
 
 No production settings, published contracts, golden fixtures, QNAP data or RF
 collection changed. Preserve hard60 bounded recovery, fitted-c default and
