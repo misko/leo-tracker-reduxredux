@@ -1,0 +1,11 @@
+{
+  "label": "FRESH-005",
+  "session_id": "scan-fw-a43bbffc6826cdc5",
+  "observed_at": "2026-10-08T20:46:48.417625+00:00",
+  "hard60_status": "pending",
+  "tracking_input_ready": true,
+  "input_manifest_sha256": "sha256:bbba9da690a9d17199dcadbbc8d29b9c2eb5f375647f3a3d64d935b996bd11b4",
+  "analysis_manifest_sha256": "sha256:7211e532cf29b75e1fdbdf9b948355e70385b292fd2a2457a66595a8617beea5",
+  "diagnosis": "Existing production analysis process 3917638 owns the public checkpoint writer lease. Supplemental CLI process 3918314 was waiting on that lease and was terminated without interrupting the production process. No missing-data substitution or model change.",
+  "action": "Retain first-attempt failure; evaluate identical frozen candidate in a separately reported completion when the existing publication becomes available."
+}
