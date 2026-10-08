@@ -38,6 +38,7 @@ def fit_position(
     local_center=None,
     local_radius_km=None,
     slope_half_width_hz_s=None,
+    diagnostics=None,
 ) -> PositionFit:
     """Hold position fixed for cell scoring, or release it within the prior disk.
 
@@ -165,6 +166,7 @@ def fit_position(
             best = value, vector.copy(), gradient.copy(), terms, z.copy()
         return value, gradient
 
+    result = None
     reason = "iteration-limit"
     try:
         result = minimize(
@@ -182,20 +184,56 @@ def fit_position(
     if best is None:
         raise TimeoutError("fit ended before a feasible objective evaluation")
     value, vector, gradient, terms, z = best
-    # Independent first-order KKT audit, including active disk/timing constraints.
-    normals = list(constraint_jac(z)[constraints(z) <= 1e-6])
-    for i in range(len(free)):
-        if z[i] <= low[i] + 1e-7:
-            normals.append(np.eye(len(free))[i])
-        if z[i] >= high[i] - 1e-7:
-            normals.append(-np.eye(len(free))[i])
-    if normals:
-        active = np.asarray(normals).T
-        multipliers, _ = nnls(active, gradient, maxiter=100 * max(1, active.shape[1]))
-        residual = gradient - active @ multipliers
-    else:
-        residual = gradient
-    stationarity = float(np.max(abs(residual), initial=0))
+
+    def audit(candidate, derivative):
+        # Independent first-order KKT audit, in the original scaled coordinates.
+        normals = list(constraint_jac(candidate)[constraints(candidate) <= 1e-6])
+        for i in range(len(free)):
+            if candidate[i] <= low[i] + 1e-7:
+                normals.append(np.eye(len(free))[i])
+            if candidate[i] >= high[i] - 1e-7:
+                normals.append(-np.eye(len(free))[i])
+        if normals:
+            active = np.asarray(normals).T
+            multipliers, _ = nnls(active, derivative, maxiter=100 * max(1, active.shape[1]))
+            derivative = derivative - active @ multipliers
+        return float(np.max(abs(derivative), initial=0))
+
+    stationarity = audit(z, gradient)
+    if diagnostics is not None:
+        terminal = None
+        if result is not None:
+            terminal_vector = expand(result.x)
+            terminal = {"vector": terminal_vector, "feasible": False, "converged": False}
+            shifts = matrix @ terminal_vector
+            if (
+                np.min(constraints(result.x)) >= -1e-7
+                and np.all(result.x >= low - 1e-9)
+                and np.all(result.x <= high + 1e-9)
+                and shifts.min() >= minimum
+                and shifts.max() <= maximum
+            ):
+                terminal_value, terminal_gradient, _ = objective.evaluate(terminal_vector)
+                terminal_stationarity = audit(result.x, (terminal_gradient * scales)[free])
+                terminal.update(
+                    objective=float(terminal_value),
+                    stationarity=terminal_stationarity,
+                    feasible=True,
+                    converged=terminal_stationarity <= 0.001,
+                )
+        diagnostics.update(
+            solver_reason=reason,
+            solver_success=bool(result is not None and result.success),
+            terminal=terminal,
+            returned={
+                "vector": vector.copy(),
+                "objective": float(value),
+                "stationarity": stationarity,
+                "converged": stationarity <= 0.001,
+            },
+        )
+    if reason == "optimizer-success" and stationarity > 0.001:
+        reason = "optimizer-success-returned-state-nonstationary"
     mass = float(terms.responsibilities.sum())
     rms = (
         float(np.sqrt(np.sum(terms.responsibilities * terms.residual_hz**2) / mass))

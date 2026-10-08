@@ -1,10 +1,52 @@
 import numpy as np
 import pytest
+from scipy.optimize import OptimizeResult
 from test_regional_position_score import synthetic_inputs
 
 from leo.analysis.regional_position_fit import fit_position
 from leo.analysis.regional_position_score import PositionObjective
 from leo.contracts.regional_position import POSITION_SCORES, PositionOrbitBank
+
+
+def test_solver_success_is_not_attached_to_a_different_returned_state(monkeypatch):
+    from types import SimpleNamespace
+
+    from leo.analysis import regional_position_fit as module
+    from leo.analysis.regional_position_score import zero_sum_basis
+
+    class TwoWells:
+        size = 10
+        basis = zero_sum_basis(3)
+        bank = SimpleNamespace(numbers=np.arange(3), nodes_s=np.array([-21.0, 31.0]))
+        observations = SimpleNamespace(times_s=np.array([0.0, 10.0]))
+        prior = SimpleNamespace(radius_km=250.0)
+
+        def evaluate(self, vector):
+            x = vector[2] / 200
+            value = (x * x - 1) ** 2 + 0.3 * (x * x * x / 3 - x)
+            gradient = np.zeros(self.size)
+            gradient[2] = (x * x - 1) * (4 * x + 0.3) / 200
+            terms = SimpleNamespace(responsibilities=np.ones((1, 1)), residual_hz=np.ones((1, 1)))
+            return value, gradient, terms
+
+    def fake_minimize(fun, z, **kwargs):
+        fun(z)
+        trial = z.copy()
+        trial[0] = 0.9
+        fun(trial)
+        return OptimizeResult(x=z, success=True, status=0, nit=1)
+
+    monkeypatch.setattr(module, "minimize", fake_minimize)
+    seed = np.zeros(10)
+    seed[2] = -200
+    diagnostics = {}
+    answer = fit_position(TwoWells(), seed, fixed_position=True, diagnostics=diagnostics)
+    assert diagnostics["solver_success"]
+    assert diagnostics["terminal"]["converged"]
+    assert not answer.converged
+    assert answer.objective < diagnostics["terminal"]["objective"]
+    assert answer.vector[2] == 180
+    assert answer.stop_reason == "optimizer-success-returned-state-nonstationary"
 
 
 @pytest.mark.parametrize("name", ["T1AT", "V16"])

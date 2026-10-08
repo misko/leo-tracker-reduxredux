@@ -106,9 +106,17 @@ def regional_position_figure(
     axis.set_aspect("equal")
     axis.grid(alpha=0.2)
     axis.legend(fontsize=8)
+    recovery = document.diagnostics.get("recovery")
+    recovery_text = (
+        f"Timing recovery: {recovery['converged_points']}/{recovery['attempted_points']} "
+        "failed coarse fits converged.\n"
+        if isinstance(recovery, dict)
+        else ""
+    )
     figure.supxlabel(
         f"Search: {result.search_stop_reason}; {result.deferred_cells} deferred cells.\n"
-        "Final RF ablation shares fitted-c calibration and association. "
+        + recovery_text
+        + "Final RF ablation shares fitted-c calibration and association. "
         "Scores are in-sample; no global optimum certified.",
         fontsize=8,
     )
