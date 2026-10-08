@@ -17,8 +17,11 @@ used to diagnose and select policies. It is **not an independent generalization
 test**, a global-optimum certificate, a calibrated uncertainty estimate, or proof
 that 60 Hz/s is the physically correct clock limit.
 
-Deployment and browser verification receipts are recorded in
-[deployment.md](deployment.md). The compact source evidence, including all
+The default was deployed on October 8 at 00:12 UTC. A normal queue job published
+the saved N29 result at 00:34 UTC, and real Chromium verified the live 1080×960
+PNG and both c arms. Full qualification, deployment, type-check limitations and
+browser receipts are recorded in [deployment.md](deployment.md).
+The compact source evidence, including all
 localization experiment reports in this chain, is indexed by
 [evidence_manifest.json](evidence_manifest.json). That index records original
 relative paths, byte counts and SHA-256 digests. Raw IQ, large orbit arrays and
