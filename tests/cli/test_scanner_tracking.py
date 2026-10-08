@@ -113,10 +113,10 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
         adaptive_analysis_root=tmp_path / "metrics",
         tle_root=tmp_path,
         site_name="spinnaker-sausalito",
-        review_limit=64,
+        review_limit=16,
     )("scan-test")
 
-    assert observed["maximum_tracks"] == 64
+    assert observed["maximum_tracks"] == 16
     assert observed["render_overview"] is False
     assert observed["adaptive_analysis_root"] == tmp_path / "metrics"
     reviews, eligible_count = rendered

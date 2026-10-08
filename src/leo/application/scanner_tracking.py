@@ -57,7 +57,7 @@ class ScannerTrackingService:
         review_renderer: Callable[
             [str], tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]
         ] = lambda _session_id: ((), 0),
-        review_limit: int = 64,
+        review_limit: int = 16,
         matcher=match_persistent_hop_track_to_tles,
         clock=time.monotonic,
     ):
