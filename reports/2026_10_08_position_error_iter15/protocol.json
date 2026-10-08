@@ -1,0 +1,22 @@
+{
+  "frozen_at": "2026-10-08T19:42:49.417385+00:00",
+  "labels": [
+    "S41",
+    "DS17-040"
+  ],
+  "selection": "Two largest post-200 fitted-c errors among all 107 development scans, chosen before new profiles",
+  "source_sha256": {
+    "2026_10_08_position_error_iter15/diagnose.py": "6b59147d4d00593ace5ad8a96cd482f54efbde498c6aa97ec0331c8a4b36fd61",
+    "2026_10_08_position_error_iter09/profile.py": "484c439f9390eedae714711a1aa3af4fd1e4c5dcb4833cabe1c3acde70c6ad4f",
+    "2026_10_08_position_error_iter09/profile_fit.py": "854433cc9ed2349ab95b3e8b70fedfccb0b180881224a7dd63fb4ddac37b3286",
+    "2026_10_08_position_error_iter13/post_prune.py": "cd8424c4864dea6c182c4705acd62b07b6b006e6a4dde8b81db14e1173b586ba"
+  },
+  "inputs": {
+    "S41": "ff0f5602618ea85f7109c9a00ec93ee74395bf65a0295031dbedbca297a069f5",
+    "DS17-040": "113c17352942011a56ebb8bfa1cf733b051e34ff1689ff2d7f8b9bb897011117"
+  },
+  "method": "Fixed-bank, fixed 200/100 Hz clock priors; <=250m reference continuation; both c arms share fitted-c initial seed; at most two same-point warm retries after nonstationarity; release final reference position if continuation succeeds",
+  "budget": "20 seconds and 600 iterations per fit; at most 20 steps plus initial point, three attempts per point per arm",
+  "reference_use": "Oracle diagnostics only; never operational initialization or winner selection",
+  "next_action": "Use score decomposition to distinguish model preference from missed nuisance minima; do not promote any reference-assisted result"
+}
