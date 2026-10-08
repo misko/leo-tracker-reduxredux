@@ -20,6 +20,7 @@ from leo.analysis.regional_position_search import (
     distinct_basins,
     hierarchical_search,
 )
+from leo.application.hard60_recovery import recover_failed_coarse
 from leo.application.regional_position_runner import (
     RegionalSliceExpired,
     _bootstrap,
@@ -51,10 +52,13 @@ class Hard60Configuration:
     final_iterations: int = 600
     backend: str = "audited-native-orbits-narrow-gaussian-v1"
     final_starts: tuple[str, ...] = ("association", "zero-timing", "own-continuation")
+    recovery_policy: str = "failed-coarse-box-v1"
 
     def __post_init__(self):
         if self.policy != "hard60-v1" or self.slope_half_width_hz_s != 60:
             raise ValueError("Hard60 requires its named hard slope bound")
+        if self.recovery_policy not in ("off", "failed-coarse-box-v1"):
+            raise ValueError("unknown Hard60 recovery policy")
         if self.point_budget < 1 or self.basins < 1:
             raise ValueError("invalid Hard60 search budget")
         if self.coarse_iterations < 1 or self.final_iterations < 1:
@@ -122,10 +126,19 @@ def run_hard60(
                 prior,
                 HARD60_SCORE,
             )
-            fitted = fit(objective, seed.vector, coarse=True, fixed_position=True)
+            optimizer = {}
+            fitted = fit(
+                objective, seed.vector, coarse=True, fixed_position=True, diagnostics=optimizer
+            )
             return {
                 "bootstrap": json_value(seed),
-                "fits": {"V16": {"fit": json_value(fitted), "reason": None}},
+                "fits": {
+                    "V16": {
+                        "fit": json_value(fitted),
+                        "reason": None,
+                        "optimizer": json_value(optimizer),
+                    }
+                },
             }
 
         return stage(
@@ -260,7 +273,7 @@ def run_hard60(
                         "association": selected["selection"],
                     }
                 )
-    return {
+    result = {
         "searches": {"V16": json_value(search)},
         "points": {
             key_for(p.east_km, p.north_km): point(p.east_km, p.north_km) for p in search.evaluations
@@ -270,3 +283,8 @@ def run_hard60(
         "finals": finals,
         "failures": failures,
     }
+    if config.recovery_policy != "off":
+        return recover_failed_coarse(
+            observations, bank, prior, result, score=HARD60_SCORE, config=config, stage=stage
+        )
+    return result

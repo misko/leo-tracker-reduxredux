@@ -126,6 +126,15 @@ def regional_position_document(
     if hard60:
         receipt["calibrations"] = result.get("calibrations", {})
         receipt["retained_basins"] = result.get("basins", [])
+        if "recovery" in result:
+            receipt["recovery"] = result["recovery"]
+        receipt["coarse_optimizer_mismatches"] = {
+            key: p["result"]["fits"]["V16"]["optimizer"]
+            for key, p in result["points"].items()
+            if p["result"]
+            and p["result"]["fits"]["V16"].get("optimizer", {}).get("solver_success")
+            and not p["result"]["fits"]["V16"]["fit"]["converged"]
+        }
     receipt["final_starts"] = [
         dict(
             method=row["method"],

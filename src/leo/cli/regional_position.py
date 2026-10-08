@@ -38,9 +38,9 @@ def configuration():
     paths += sorted(package.glob("application/regional_position*.py"))
     paths += [package / "contracts/regional_position.py"]
     paths += sorted(package.glob("analysis/hard60*.py"))
+    paths += sorted(package.glob("application/hard60*.py"))
     paths += [
         package / "analysis/_regional_orbits.cpp",
-        package / "application/hard60_runner.py",
         package / "contracts/regional_position_v2.py",
     ]
     return {
