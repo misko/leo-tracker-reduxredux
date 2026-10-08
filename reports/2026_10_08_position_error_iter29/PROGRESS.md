@@ -1,4 +1,16 @@
-# Saved continuation: unchanged reserved validation pending baseline completion
+# Saved continuation: validation completed and rejected
+
+Iteration29 is now complete. The second baseline slice exited successfully.
+Development handle46994 and validation handles67938/32430/45335 all exited
+successfully; no analysis process from this iteration remains running.
+All48 local fits converge, but validation mean is19.584006km and worst53.140384km.
+Do not deploy. All123 recordings are now consumed for any revised model.
+Read README.md and summary.json for authoritative results. Next investigate
+RESERVED-001's coarse coverage, regional finalist rejection and branch survival
+before joint fitting, then the other two errors. The following is the preserved
+earlier operational checkpoint, superseded by this completion notice.
+
+## Earlier checkpoint (historical)
 
 Goal lifecycle is active with no remaining-token limit. Do not mark complete:
 independent validation, integrated deployment and live PNG verification of the
