@@ -1,5 +1,13 @@
 # Active continuation after iterations59/60
 
+Latest continuation: paired reporter now implemented and two selection tests pass.
+It requires all4model/arm results per endpoint, selects by convergedscore/index
+before computing referenceerror, and publishes full32endpointcoverage and raw
+failure/computationalmetrics. Re-run summarize.py inworker runtime as results
+arrive. Firstsnapshot1/32region: bothmodelsallarmsconvergedaround268km (notrescue).
+New60PythonPID4021011 verifiedlive,exec53489. Other3jobsstilllive. Latest51snapshot
+103/148=DS16 36,DS17 33,DS18 34. Do not duplicate jobs. Earlier notesfollow.
+
 Goal active/unachieved. This turn resolved finite-step timing-gradient discrepancy
 and launched smooth pilot, no position accuracy claim.59audit exec78712 terminal0.
 59source freezea02e192c9,60pilot freeze3b3170248. Largest common-timing discrepancy
