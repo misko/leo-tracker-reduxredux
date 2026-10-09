@@ -1,0 +1,40 @@
+# Post-DS18 reserve frozen; continue current ordinary clock experiment
+
+75METADATA-ONLY reserve complete. Existingsealedrecordings only; noRFcollection,
+analysis,publicationorretentionoperation initiatedforreserveddata. No positioning
+values extracted/inspected/used. Futurecandidate+validationprotocolmustbefrozen
+before revealingoutcomes. Do NOTclaimindependentvalidationfromnomatchesalone.
+
+Authority75/local/manifest.json,seal.json; SHA256
+71e7477408e31449c14f85a7ae87155780e88c2503dc06544ab00a59016483af.
+Datasetidentifier POST18-RESERVE, notDS19. Window[2026-10-08T23:08:51Z,
+2026-10-09T02:02:21Z),endclockfrozenbeforeinventory atc7184a7ea.
+11recordings,24237visits,2908.44valids/RX,8at10MS/s+3at2.5MS/s,allpublished,
+0excluded/partials. SourceDS17mintunchanged withsuccessorarguments; parentDS18
+userauthoritysha894a...verified. Allsealverificationpasses;source/parenthashespass.
+DisjointfromfullDS16=63,DS17=51,DS18=34bysessionandIQdigest.
+membership.jsonpublishesall11IDs/metadatabindings,notpositionoutcomes.
+
+Exposuresearchcompletedrootread-onlyexactIDsacrossbothreportroots,JSON/MD/PY/CSV,
+defaultignore rules,filename/ID-onlyoutput:0priorfilematches. Noauditofexternal
+notebooks/othermachines/conversations,notcertifiedunseen. Firstunprivilegedattempt
+failedonroot-owned45cachepermissions;sourcepreservedexposure-attempt1.txt.
+SecondprivilegedlaunchlackedrgPATH;finalexplicitrgpathcompletedexit0.
+Nooutcomeconclusionfromfailedsearches. Metadatareserve usefulforfuturefrozen
+candidatevalidation,notaconvenientsplit fromalreadyconsumedDS18members.
+
+ONLYLIVEfits71two workers:
+shard0 exec33403/PID4042412;shard1 exec98176/PID4042411.
+Latestobserved22:30elapsed,249fitreceipts17completesources/63;publishedsnapshot
+still10sources160receipts(74commit). Continueunchanged90s6002workers. No ramping.
+71report.py comparescompletedsourcepipelinesonly,all64slots+explicitmissing,
+scoreselectionbeforeerror,RMSseparate,controlsverifiedagainst55andruntimecapcounts.
+Don'trestartontimeout; inspectlivePID/handlebeforeresume. Resultsnotfinal.
+
+55/60TERMINALcompletepublished72(norescue58km).69STOPPEDneverresume,70controls
+qualificationcomplete.73decomposition/74continuitydiagnosticshaveoracleancestry
+andclosesttruthselectedstatesonlyforpostfitevaluation,neveroperationalseeds.
+Full14865mean1.360148fitted/1.738896zero unchanged;goalACTIVEunachieved.
+DS16(48+15),DS17all51,DS18(consumed24+other10notunseen)labelsremain.
+Uniform3datasetpolicy+independentvalidationrequired. Preserveproductionhard60
+recovery,fitted-cdefault,longest16PNGdeployment. No newRFauthorized.
