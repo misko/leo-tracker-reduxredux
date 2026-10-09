@@ -1,4 +1,18 @@
-# Frozen experiment published; initial four members launched
+# Initial four recovery cases complete; ambiguity census running
+
+Latest completion update: sessions49794 and35532 both exited0 after all four
+metadata-ordered members completed both phases. All four are trigger-negative;
+matched candidate/control position/clock vectors and objectives are identical.
+See CANARY.md/canary.png and the full193 coverage snapshot (4 complete,189 pending).
+Do not restart these initial controllers or infer full-census accuracy.
+
+The freed slots now run the separately frozen108 no-fit census: session54914
+is shard0 and session69265 is shard1. Both are live at this update;26 complete
+member receipts and no failures were observed. Finish this bounded census, then
+continue107's two shards under their unchanged protocol; existing terminal
+members will be verified and skipped. At most two numerical research workers.
+
+The earlier launch/publication record below is historical and superseded.
 
 Latest update: session44000 finished successfully, publishing f92dee323.
 The follow-up push (session20060, exit0) published d2fbebbfc; remote main was

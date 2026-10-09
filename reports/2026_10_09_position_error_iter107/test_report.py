@@ -94,6 +94,7 @@ class ReportTest(unittest.TestCase):
         self.assertNotIn("baseline", value["arms"]["fitted-c"])
         rows[0]["paired_terminal"] = True
         rows[0]["arms"]["fitted-c"]["candidate"] = None
+        self.assertTrue(report.aggregate(rows)["full_census_position_metrics_withheld"])
         self.assertTrue(report.aggregate(rows)["arms"]["fitted-c"]["full_census_metrics_withheld"])
 
     def test_complete_dataset_withheld_until_census_terminal(self):
