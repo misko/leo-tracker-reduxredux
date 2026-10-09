@@ -1,4 +1,22 @@
-# User-authorized ablation running
+# User-authorized ablation COMPLETE
+
+## Completion
+
+All148 complete, no input failures,3,256 fresh attempts. Both exec2683/55837
+TERMINAL exit0 and PythonPIDs4133962/4133963 absent. Full report and plots generated;
+fitted-c pooled B0=5.097594, B1=2.309262, B3=1.863155, B4=1.465914,
+B4W=1.407796, B5=1.399896, B6=1.360148, B7=1.317354km. B7 c0=1.666471km.
+Both B7 arms all148 raw fits qualify without fallback. Remaining worst fitted
+DS18-022=53.400741km stays in every aggregate. No below1km pooled claim.
+All148 C5/B5 zero-c controls exactly reproduce objective/convergence; baseline
+errors match archive. Ten model/report tests and Ruff pass. Numerical source
+closure unchanged; DS18 authoritative manifest SHA verified. See DECISION.md.
+No production change. Prior84 remains suspended;83 checkpointed. Do not resume
+either automatically as part of publishing the now-completed requested ablation.
+The leave-one-component-out follow-up and independent deployment qualification
+remain outstanding; never claim this forward ladder has performed them.
+
+## Historical execution record
 
 ## Completed DS16 checkpoint
 
