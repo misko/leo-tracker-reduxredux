@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { getAdaptiveSessions, type AdaptivePage } from "./adaptive-api";
-import { histogram, loadErrors, PositionErrorPanel } from "./PositionErrorPanel";
+import { histogram, logDomain, loadErrors, PositionErrorPanel } from "./PositionErrorPanel";
 vi.mock("./adaptive-api", () => ({ getAdaptiveSessions: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); vi.unstubAllGlobals(); });
 const digest = `sha256:${"a".repeat(64)}`;
@@ -20,8 +20,14 @@ function status(id: string, error: number | null = 1200) {
       selected: error === null ? null : { horizontal_error_m: error, converged: true } })) }],
   } } };
 }
-it("histogram retains zero, bin boundaries and the maximum exactly once", () => {
-  expect(histogram([0, 1, 2, 12], 12)).toEqual([1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+it("histogram uses logarithmic bins and retains the upper endpoint", () => {
+  expect(histogram([.01, .1, 1, 10, 100], [-2, 2], 4)).toEqual([1, 1, 1, 2]);
+});
+it("excludes zeros and invalid values without inventing a log coordinate", () => {
+  expect(histogram([0, -1, NaN, Infinity, 1], [0, 1], 2)).toEqual([1, 0]);
+  expect(logDomain([0, NaN])).toEqual([-3, 0]);
+  expect(logDomain([1, 1])).toEqual([0, 1]);
+  expect(logDomain([.03, 42])).toEqual([-2, 2]);
 });
 it("paginates, deduplicates and converts metres; never replaces missing results with zero", async () => {
   vi.mocked(getAdaptiveSessions).mockResolvedValueOnce(page(["a", "b"], 10)).mockResolvedValueOnce(page(["a", "c"]));
