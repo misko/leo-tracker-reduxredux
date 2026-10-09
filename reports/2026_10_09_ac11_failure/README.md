@@ -1,12 +1,36 @@
 # Why scan-fw-ac11ac00c0676d1b failed
 
-The published B7 result is **55.685 km wrong with fitted-c**, and **53.945 km
-wrong with c=0**. Both final fits satisfy the independent convergence test.
-The confirmed failure chain begins earlier: a promising ordinary search region
-was discarded during calibration, and the final joint fit refined another
-region. Restoring the discarded region has **not yet demonstrated a position
-rescue**. This distinction matters: a reproducible calibration qualification failure is not
-proof that it explains the entire position error.
+The controlled replay reduces position error from **55.685 to 1.031 km with
+fitted-c**, and **53.945 to 1.927 km with c=0**. The ordinary baseline replay
+reproduces the published errors. Both recovered final fits satisfy the unchanged
+independent convergence test, and the restored region wins by the existing
+model-score selection rule. Reference coordinates were used only afterward to
+measure these errors.
+
+The confirmed failure chain begins before final fitting: a useful ordinary
+search region was discarded during calibration, and recovery eligibility omitted
+its fine-grid location. The final joint fit then converged in another region.
+Preserving and numerically qualifying that region removes most of this scan's
+error. The remaining 1–2 km error is not explained by this investigation, and
+this consumed single-scan diagnostic does not establish a general improvement.
+
+| Arm | Published / replayed baseline | Restored-region B7 | Final stationarity |
+|---|---:|---:|---:|
+| Fitted-c | 55.685 km | 1.031 km | 0.000130 |
+| c=0 | 53.945 km | 1.927 km | 0.000537 |
+
+The final stationarity requirement remains 0.001. Production B7 and the scan's
+published result have not been changed by these research replays.
+
+![Controlled replay: position, support and frequency fit](../2026_10_09_position_error_iter98/comparison.png)
+
+The recovered regional fitted-c estimate is initially still 40.6 km wrong.
+The existing B7 sequence then reduces error to 15.6 km after timing pruning and
+0.826 km after its relaxed clock-prior stage, finishing at 1.031 km. Thus the
+repair restores a useful position/calibration hypothesis that the existing
+downstream model can refine; it does not inject the true position. We retain
+the normal final B7 result rather than choosing the earlier stage with the
+smallest reference error.
 
 ## Evidence in the published pipeline
 
@@ -42,6 +66,8 @@ by their convergence diagnostics.
 | Continue the corrected calibration | Optimizer reports success; independent stationarity 0.016401 | A second calibration state still blocks downstream testing |
 | Apply the same scalar polish to that state | All Newton corrections violate a coupled timing constraint | Scalar coordinate correction is inadequate at this boundary |
 | Move in the feasible tangent direction | Stationarity 0.016401 → 0.002408; still fails 0.001 | Coupled motion helps, but scalar curvature is insufficient in this test |
+| Solve the reduced joint curvature system | Stationarity 0.002408 → 0.000000207 in 46 evaluations | Corrected calibration qualifies with unchanged constraints and gate |
+| Continue association, both regional arms and B7 | Restored region wins; 1.031 / 1.927 km | Region loss explains the dominant position failure in this scan |
 
 The successful prefit correction changed a relative timing **basis coefficient**
 by approximately 16 ns. Its objective changed by six floating-point increments
@@ -57,8 +83,9 @@ as a same-model improvement. The latest failed scalar polish changed neither
 its parameters nor its score. A subsequent constraint-preserving tangent
 correction accepted four steps and slightly lowered the objective, but did not
 qualify. Its remaining trial steps lower the objective while increasing the
-largest stationarity residual. A joint curvature correction is the next isolated
-test; no threshold relaxation is justified by the present result.
+largest stationarity residual. The subsequent joint curvature correction solved
+the coupled residual in one accepted Newton round. Its reduced Hessian was
+positive definite; no ridge or acceptance-threshold relaxation was introduced.
 
 ## Interpretation and limits
 
@@ -69,10 +96,19 @@ prevents unqualified fits from being treated as converged, but currently causes
 the entire region to be lost. The final optimizer's local convergence does not
 establish global regional correctness.
 
-The next causal check must qualify the ordinary calibration, run association
-and matched c=0/fitted-c finals, retain the original operational candidates, and
-select by comparable model score. Until then, the known position error remains
-55.685/53.945 km; no repaired result has been substituted into production.
+The causal replay qualified the ordinary calibration, ran association and
+matched c=0/fitted-c finals, retained the original operational candidates, and
+selected by the unchanged score rule. Both arms selected the recovered region.
+It then passed through unchanged B7 stages to the results above. No repaired
+research result has been substituted into production.
+
+This motivates a general, bounded recovery for **failed retained regions at
+every grid level**, with constraint-aware numerical qualification and original
+candidate preservation. It does not justify dropping the convergence check,
+selecting by known position error, changing the satellite bank using ground
+truth, or adding more final-fit time to already-converged wrong-region fits.
+The generalized recovery still needs matched dataset evaluation and independent
+validation before any deployment recommendation.
 
 This scan is newer-cohort member 051 and is now consumed development data.
 Reference receiver coordinates remain evaluation-only. No truth-guided seeds,
@@ -92,6 +128,9 @@ used. Reserved recordings remain closed.
 - [Exact timing constraint and valid KKT projection](../2026_10_09_position_error_iter97/CONSTRAINT_AUDIT.md)
 - [Tangent correction protocol](../2026_10_09_position_error_iter99/README.md)
   and [raw receipt](../2026_10_09_position_error_iter99/result.json)
+- [Successful joint curvature correction](../2026_10_09_position_error_iter100/RESULTS.md)
+- [Matched downstream results and plots](../2026_10_09_position_error_iter98/RESULTS.md)
+  and [complete result](../2026_10_09_position_error_iter98/result.json)
 
 Research protocols and receipts are append-only. Each negative attempt remains
 visible. Iteration 96 was frozen in a local commit before execution; a concurrent
