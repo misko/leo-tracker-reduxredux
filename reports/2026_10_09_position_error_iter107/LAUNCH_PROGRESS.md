@@ -1,5 +1,20 @@
 # Full193 recovery resumed after ambiguity census completion
 
+Latest continuation: both full107 batch processes remain live (Python PIDs375761
+and377954; original sessions13368/26088). The published immutable coverage snapshot
+has12 complete members. A later read-only audit found15 complete candidates,
+four recovery triggers, no terminal failures and no operational vector changes;
+see PARTIAL_RECOVERY_AUDIT.md for its timestamp and one preserved regional-final
+qualification failure. Do not infer full-cohort accuracy from these early rows.
+
+Iteration110 is now frozen and published in9907cba16, protocol SHA256
+64797ea7bdb2b04f0561fc876e7bb82b3911b27456b0702cc4ceb9b4be18758c.
+It selects12 consumed historical recordings without outcomes and compares fixed
+persistence rho0.5 against rho0 in matched c arms. No110 recording job has run;
+both numerical slots remain occupied by107. Its reporting tests and111 synthetic
+observability preparation do not consume recording-worker slots. Production B7,
+the frozen107/110 numerical sources and both reserves remain unchanged.
+
 Latest update:108 sessions54914/69265 both exited0 with all148 complete, no
 failures. Its results are in the adjacent108 report. Full107 shard0 now runs in
 session13368 and shard1 in session26088, each single-thread/nice10 and no initial
