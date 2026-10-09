@@ -1,4 +1,16 @@
-# Iteration83 RUNNING; iteration82 complete
+# Iteration83 CHECKPOINTED AND UNFINISHED; iteration84 running
+
+## Current scheduling state
+
+Runnerexec29748/40811 bothTERMINAL exit0 at3-invocationbound. Parents4105802/4105803
+and latestchildren4115659/4115664 confirmedgone. second-checkpoint.json pins577files
+including460clockfits; first136checkpointhashes unchanged. No83numericaljobslive.
+Do notalterfrozen83sources ordiscardreceipts. Resume these SAME frozen shards after
+the queued full148geometry-prior comparison84 finishes. Goalremainsactive, notpaused.
+84ONLYLIVE: exec43900/PID4121459 shard0 andexec81101/PID4121460 shard1.
+See84/PROGRESS.md forcurrentexecution. No83fullcandidateaccuracyclaimyet.
+
+## Historical continuation record
 
 ## Current continuation runners
 
