@@ -1,0 +1,55 @@
+# Frozen experiment published; initial four members launched
+
+Latest update: session44000 finished successfully, publishing f92dee323.
+The follow-up push (session20060, exit0) published d2fbebbfc; remote main was
+verified equal to that full HEAD before either numerical worker launched.
+This includes frozen107/108 protocols and their reporting helpers/tests.
+
+The initial107 batch is now running: session49794 is shard0 and session35532
+is shard1, each with `--max-members 2`, the exact47e numerical interpreter,
+one thread per library and nice10. Poll these existing handles before any
+continuation. At most two numerical research workers; do not launch108 while
+these run. No position accuracy is claimed for this pending four-member check.
+
+Iteration108 protocol is now frozen in d74605f9f: SHA256
+5cf89743440555b3ce807d19953d4f8192399ec9e56f06c9ce5b3e45d44e4453,
+2,314 verified source bindings, all148 members, rho0 and zero optimizer calls.
+Its26 kernel/adapter/audit tests and4 reporting tests passed. The107 reporter's
+8 tests passed. No108 recording evaluation has started.
+
+The historical upload/preparation record below is superseded by this update.
+
+Iteration106 completed all148 members/592 fits. Results, plot, decision, audits
+and all1,036 archived receipts were committed in f92dee323. Both width arms fail
+their frozen criteria; retain125 Hz. Sixteen reporting/archive tests passed.
+The report and archive hashes were reverified before staging.
+
+`git push origin HEAD:main` was launched while HEAD was f92dee323. Tool session
+44000 is still live at this update; OS git push PID349426 and HTTPS PID349447
+are authoritative live handles. The socket had acknowledged about69.6 MB and
+remained established, so the slow upload is not a failed push. Poll the existing
+session before taking any further publication action; do not launch a duplicate.
+Remote main last observed f43b4a301. This upload does not include later commits.
+
+Iteration107 was frozen after22 preparation tests. Protocol SHA256 is
+24df105bf4618947162f9438ea2a77115d1baa134a00b5f7b48279942848d227;
+all5,573 sources verify. Commit f8555d7ce contains the frozen193-member protocol.
+Commit b920a5424 adds iteration108 synthetic kernel/segment preparation; all20
+tests pass. Neither107 numerical work nor108 recording evaluations have run.
+
+After session44000 completes successfully, push the newer HEAD to remote main
+and verify its hash before starting107. Launch at most two single-thread shard
+processes, initially with `--max-members 2` each. This covers DS16-001, DS17-001,
+DS18-001 and POST18-NEWER-20261009-001 without outcome priority. Use the exact
+47e numerical interpreter documented in DRIVER.md and record process/session
+handles. Inspect failures and source admission before expanding the cap.
+
+The geometry agent is preparing a107 report helper outside the immutable frozen
+closure; it must not run evaluation yet. The model agent is preparing a108 no-fit
+ambiguity-census driver, without freezing or running recording evaluations.
+All immutable numerical protocols, source receipts and production B7 remain
+unchanged. There are currently zero numerical research workers.
+
+This goal turn made progress through completed publication artifacts, validated
+full193 protocol and tested reference-free sequence preparation. The0.4 km
+objective remains active and unachieved. No RF collection or reserve access.
