@@ -4,6 +4,11 @@ This is an untested localization hypothesis, with a tested model-layer prototype
 No recording has been evaluated with it, no fitting has started, and no accuracy
 improvement is claimed. Iteration83's frozen recovery workers remain unchanged.
 
+The full148 evaluator and protocol are prepared before new outcomes:592 fits,
+uniform0.5 versus protected0.25, each matched in c0/fitted-c. Do not launch until
+the active83 runners and numerical children have terminated; only two single-thread
+numerical workers may run. This experiment is separate from the83 search recovery.
+
 ## Motivation from completed sensitivity
 
 The full148 experiment78/82 improved fitted mean1.360->1.317km by widening the
@@ -68,10 +73,14 @@ under later parameter perturbations. All11 synthetic tests pass using
 These tests evaluate synthetic objectives only; they do not run an optimizer or
 consume recordings or reserve outcomes.
 
-Before fitting real recordings: check existing
-uniform-prior objective reproduction, freeze shared seed/projector and full148
-protocol, and compare against the already matched0.25/0.5 controls. Keep budgets,
-candidate banks, observations, other priors and failure handling matched. Report
+Before fitting each recording, the evaluator reconstructs both archived0.5 objectives
+within1e-6 and verifies the uniform geometry wrapper's objective/core/nuisance
+gradients against the original uniform model within1e-10. Both variants start from
+the same archived upstream seed/clock, never each other's new fitted endpoint.
+The shared projector is frozen before either arm is fit. An unqualified attempt
+keeps its fixed archived0.5 result, and raw failures remain explicit. An input
+failure prevents a full candidate claim rather than disappearing from membership.
+Budgets90s/600iterations, banks, observations and other priors remain matched. Report
 frequency fit separately, all regressions and dataset/exposure groups. This remains
 consumed-data tuning requiring independent randomized whole-recording validation.
 
