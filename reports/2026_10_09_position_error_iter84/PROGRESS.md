@@ -1,5 +1,22 @@
 # Iteration84 RUNNING; iteration83 safely checkpointed
 
+## Completed DS16 checkpoint (full experiment still running)
+
+At64/148 completed, all63 DS16 members have results, DS17 has1/51 and DS18
+has0/34. Both worker PIDs4121459/4121460 were confirmed live. All1375 frozen
+source/input hashes match. No input or raw qualification failures in these64
+members. Fresh uniform-control objectives reproduce the archived controls.
+
+DS16 fitted-c: uniform0.5 mean0.979007km versus protected0.25 mean0.986470km;
+25 improved/37 regressed/1 tied. Median0.834879->0.880849, p952.088464->2.201473,
+worst3.204798->3.078813km. Frequency RMS67.065771->67.254591Hz, separately.
+c0 mean1.321051->1.323053km;22 improved/40 regressed/1 tied; worst4.263626->4.206167.
+The motivating DS16-051 improves3.204798->3.078813km, but this does not establish
+broad benefit: DS16-004 regresses0.204099->0.420833km and DS16-050 regresses
+2.245629->2.450794km. No per-case prior selection or policy change is made.
+Full148 conclusions remain pending. After both84shards terminate, publish complete
+comparison and resume83's immutable checkpoint. Do not launch extra fit workers.
+
 ## Current execution
 
 83runnerexec29748 and40811 both TERMINAL exit0 at3-invocation bound; parents
