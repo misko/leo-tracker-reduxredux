@@ -59,3 +59,13 @@ additional numerical workers concurrently. Preserve every attempt on failure;
 retries requiring code changes get a new protocol and report. Publish all148
 coverage, per-dataset mean/median/p95/worst, paired1m regressions, raw failures and
 fallbacks, and frequency RMS separately versus the new0.25 control and baseline.
+
+The prepared reporter retains every member when outcomes are missing and uses
+identical available-member sets for paired comparisons. Its four additional
+tests cover missing-versus-zero outcomes, retaining large errors, paired1m
+tolerances and membership, and explicit rejection of nonfinite metrics. All
+eight preparation/reporting tests pass. An empty-state integration check returns
+all148 pending, no candidate means, and the exact48/15 and24/10 subgroups. This
+is a reporter check only; no sensitivity result is available yet. The reporter
+also retains historical-versus-new raw0.25 objective and convergence comparisons
+to disclose any effect of the changed per-fit allowance.
