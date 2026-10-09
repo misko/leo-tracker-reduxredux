@@ -1,0 +1,49 @@
+[FAIL] mypy 0.19s
+src/leo/radio/scanner_iio_compat.py:64: error: Cannot find implementation or library stub for module named "pluto_plus.hardware.iio_persistent_hop"  [import-not-found]
+src/leo/radio/scanner_iio_compat.py:65: error: Cannot find implementation or library stub for module named "pluto_plus.persistent_hop"  [import-not-found]
+src/leo/contracts/partial_band.py:20: error: Parameter 1 of Literal[...] cannot be of type "float"  [valid-type]
+src/leo/contracts/partial_band.py:28: error: Parameter 1 of Literal[...] cannot be of type "float"  [valid-type]
+src/leo/storage/prediction_scratch.py:35: error: "memmap[Any, Any]" has no attribute "_mmap"  [attr-defined]
+src/leo/storage/prediction_scratch.py:36: error: Argument 1 to "load" has incompatible type "str | None"; expected "str | bytes | PathLike[str] | PathLike[bytes] | _SupportsReadSeek[bytes]"  [arg-type]
+src/leo/radio/host_decision_worker.py:14: error: Cannot find implementation or library stub for module named "pluto_plus.host_adaptive_hop"  [import-not-found]
+src/leo/radio/host_decision_worker.py:14: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+src/leo/radio/scanner_glrt_metadata.py:25: error: Cannot find implementation or library stub for module named "pluto_plus.persistent_hop"  [import-not-found]
+src/leo/radio/scanner_glrt_metadata.py:285: error: Cannot find implementation or library stub for module named "pluto_plus.adaptive_hop"  [import-not-found]
+src/leo/scanner/persistent_hop.py:319: error: Incompatible types in assignment (expression has type "Literal[6]", base class "FourRateDualRxTimingV5" defined the type as "Literal[5]")  [assignment]
+src/leo/scanner/persistent_hop.py:320: error: Incompatible types in assignment (expression has type "Literal[1250000]", base class "FourRateDualRxTimingV5" defined the type as "Literal[2500000, 5000000, 7500000, 10000000]")  [assignment]
+src/leo/scanner/persistent_hop.py:511: error: Incompatible types in assignment (expression has type "Literal[7]", base class "VariableDualRxPlanV5" defined the type as "Literal[5]")  [assignment]
+src/leo/scanner/persistent_hop.py:512: error: Incompatible types in assignment (expression has type "Literal[1250000]", base class "VariableDualRxPlanV5" defined the type as "Literal[2500000, 10000000]")  [assignment]
+src/leo/scanner/persistent_hop.py:513: error: Incompatible types in assignment (expression has type "Literal[1250000]", base class "VariableDualRxPlanV5" defined the type as "Literal[2500000, 10000000]")  [assignment]
+src/leo/scanner/adaptive_hop.py:169: error: Incompatible types in assignment (expression has type "Literal[8]", base class "AdaptiveHopPlanV7" defined the type as "Literal[7]")  [assignment]
+src/leo/scanner/adaptive_hop.py:170: error: Incompatible types in assignment (expression has type "NativeLowRatePlanV7", base class "AdaptiveHopPlanV7" defined the type as "FourRateVariableDualRxPlanV6")  [assignment]
+src/leo/scanner/adaptive_hop.py:707: error: Incompatible types in assignment (expression has type "Literal[8]", base class "AdaptiveHopReceiptV7" defined the type as "Literal[7]")  [assignment]
+src/leo/scanner/adaptive_hop_history.py:239: error: "AdaptiveHopHistoryItemV1" has no attribute "active_dwell_ms"  [attr-defined]
+src/leo/scanner/adaptive_hop_history.py:366: error: Incompatible types in assignment (expression has type "Literal[10]", base class "FourRateVariableDwellHistoryItemV9" defined the type as "Literal[9]")  [assignment]
+src/leo/scanner/adaptive_hop_history.py:367: error: Incompatible types in assignment (expression has type "Literal[1250000]", base class "FourRateVariableDwellHistoryItemV9" defined the type as "Literal[2500000, 5000000, 7500000, 10000000]")  [assignment]
+src/leo/scanner/adaptive_hop_history.py:368: error: Incompatible types in assignment (expression has type "Literal[1250000]", base class "FourRateVariableDwellHistoryItemV9" defined the type as "Literal[2500000, 5000000, 7500000, 10000000]")  [assignment]
+src/leo/scanner/adaptive_hop_history.py:372: error: Incompatible types in assignment (expression has type "Literal[10]", base class "AdaptiveHopSessionDetailV1" defined the type as "Literal[1]")  [assignment]
+src/leo/scanner/host_adaptive_history.py:253: error: Incompatible types in assignment (expression has type "Literal[9]", base class "AdaptiveHistoryPageV8" defined the type as "Literal[8]")  [assignment]
+src/leo/storage/adaptive_hop.py:386: error: Incompatible types in assignment (expression has type "Literal[16]", base class "UnboundFourRateVariableDualRxAdaptiveHopIqManifestV15" defined the type as "Literal[15]")  [assignment]
+src/leo/catalog/repository.py:2188: error: Argument 3 to "where" of "Select" has incompatible type "BinaryExpression[bool] | bool"; expected "ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | ExpressionElementRole[bool] | TypedColumnsClauseRole[bool] | Callable[[], ColumnElement[bool]] | LambdaElement"  [arg-type]
+src/leo/cli/firmware_adaptive_import.py:679: error: Argument "sample_rate_hz" to "from_host_bracket" of "PersistentHopUtcTimingAuthorityV1" has incompatible type "Literal[1250000]"; expected "Literal[2500000, 5000000]"  [arg-type]
+src/leo/radio/pluto_host_adaptive.py:14: error: Cannot find implementation or library stub for module named "pluto_plus.host_adaptive_hop"  [import-not-found]
+src/leo/analysis/starlink/trajectories.py:479: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/leo/analysis/starlink/acquisition.py:1358: error: Need type annotation for "rows" (hint: "rows: list[<type>] = ...")  [var-annotated]
+src/leo/analysis/starlink/glrt_refinement_prototype.py:172: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Found 28 errors in 14 files (checked 650 source files)
+[PASS] pytest-changed-1 2.22s
+[PASS] pytest-changed-10 0.56s
+[PASS] pytest-changed-11 1.33s
+[PASS] pytest-changed-2 2.86s
+[PASS] pytest-changed-3 2.61s
+[PASS] pytest-changed-4 3.03s
+[PASS] pytest-changed-5 2.10s
+[PASS] pytest-changed-6 3.00s
+[PASS] pytest-changed-7 3.87s
+[PASS] pytest-changed-8 3.03s
+[PASS] pytest-changed-9 3.51s
+[PASS] ruff-check 0.01s
+[PASS] ruff-format 0.01s
+[PASS] web-build 5.39s
+[PASS] web-test 4.51s
+receipt: /home/mouse9911/gits/leo-b7-release/.leo/test-receipts/cbfff01a5fca3599a8d922448a00ad1bbc93b60ff8a85c40324254878ad453d3.json

@@ -1,0 +1,579 @@
+{
+  "duration_seconds": 7.630281,
+  "kind": "leo-test-receipt",
+  "manifest_sha256": "0e121b5f2beaf2d0c6a0ba3581836217e408fc851804d82a2a63fd08e937484f",
+  "overlay_digest": "cbfff01a5fca3599a8d922448a00ad1bbc93b60ff8a85c40324254878ad453d3",
+  "passed": false,
+  "plan": {
+    "components": [
+      "analysis",
+      "api",
+      "documentation",
+      "python-general",
+      "web"
+    ],
+    "gates": [
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/mypy",
+          "src"
+        ],
+        "name": "mypy",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_hard60_b7_models.py"
+        ],
+        "name": "pytest-changed-1",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/contracts/test_regional_position_v3.py"
+        ],
+        "name": "pytest-changed-10",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/storage/test_regional_position_v3_store.py"
+        ],
+        "name": "pytest-changed-11",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_hard60_joint.py"
+        ],
+        "name": "pytest-changed-2",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/analysis/test_hard60_satellite_correction.py"
+        ],
+        "name": "pytest-changed-3",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/api/test_regional_position_v3_api.py"
+        ],
+        "name": "pytest-changed-4",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/application/test_hard60_b7.py"
+        ],
+        "name": "pytest-changed-5",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/application/test_regional_position_report.py"
+        ],
+        "name": "pytest-changed-6",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_adaptive_processing_queue.py"
+        ],
+        "name": "pytest-changed-7",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_b7_tracking_policy.py"
+        ],
+        "name": "pytest-changed-8",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "-m",
+          "not real_corpus and not legacy_oracle and not postgres",
+          "tests/cli/test_regional_position_cli.py"
+        ],
+        "name": "pytest-changed-9",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/ruff",
+          "check",
+          "--force-exclude",
+          "src/leo/analysis/hard60_dynamic_rf.py",
+          "src/leo/analysis/hard60_joint_clock.py",
+          "src/leo/analysis/hard60_joint_initial.py",
+          "src/leo/analysis/hard60_satellite_correction.py",
+          "src/leo/analysis/hard60_slope_prior.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/regional_position.py",
+          "src/leo/application/hard60_b7.py",
+          "src/leo/application/regional_position_report.py",
+          "src/leo/cli/adaptive_processing_queue.py",
+          "src/leo/cli/regional_position.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/regional_position_v3.py",
+          "src/leo/presentation/regional_position.py",
+          "src/leo/storage/regional_position.py",
+          "src/leo/storage/regional_position_v3.py",
+          "tests/analysis/test_hard60_b7_models.py",
+          "tests/analysis/test_hard60_joint.py",
+          "tests/analysis/test_hard60_satellite_correction.py",
+          "tests/api/test_regional_position_v3_api.py",
+          "tests/application/test_hard60_b7.py",
+          "tests/application/test_regional_position_report.py",
+          "tests/cli/test_adaptive_processing_queue.py",
+          "tests/cli/test_b7_tracking_policy.py",
+          "tests/cli/test_regional_position_cli.py",
+          "tests/contracts/test_regional_position_v3.py",
+          "tests/storage/test_regional_position_v3_store.py"
+        ],
+        "name": "ruff-check",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/home/mouse9911/gits/leo-b7-release/.venv/bin/ruff",
+          "format",
+          "--check",
+          "--force-exclude",
+          "src/leo/analysis/hard60_dynamic_rf.py",
+          "src/leo/analysis/hard60_joint_clock.py",
+          "src/leo/analysis/hard60_joint_initial.py",
+          "src/leo/analysis/hard60_satellite_correction.py",
+          "src/leo/analysis/hard60_slope_prior.py",
+          "src/leo/api/app.py",
+          "src/leo/api/production.py",
+          "src/leo/api/regional_position.py",
+          "src/leo/application/hard60_b7.py",
+          "src/leo/application/regional_position_report.py",
+          "src/leo/cli/adaptive_processing_queue.py",
+          "src/leo/cli/regional_position.py",
+          "src/leo/cli/scanner_tracking.py",
+          "src/leo/contracts/regional_position_v3.py",
+          "src/leo/presentation/regional_position.py",
+          "src/leo/storage/regional_position.py",
+          "src/leo/storage/regional_position_v3.py",
+          "tests/analysis/test_hard60_b7_models.py",
+          "tests/analysis/test_hard60_joint.py",
+          "tests/analysis/test_hard60_satellite_correction.py",
+          "tests/api/test_regional_position_v3_api.py",
+          "tests/application/test_hard60_b7.py",
+          "tests/application/test_regional_position_report.py",
+          "tests/cli/test_adaptive_processing_queue.py",
+          "tests/cli/test_b7_tracking_policy.py",
+          "tests/cli/test_regional_position_cli.py",
+          "tests/contracts/test_regional_position_v3.py",
+          "tests/storage/test_regional_position_v3_store.py"
+        ],
+        "name": "ruff-format",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "run",
+          "build"
+        ],
+        "name": "web-build",
+        "postgres": false
+      },
+      {
+        "command": [
+          "/usr/bin/npm",
+          "test",
+          "--",
+          "--run"
+        ],
+        "name": "web-test",
+        "postgres": false
+      }
+    ],
+    "paths": [
+      "reports/2026_10_09_hard60_b7_rollout/qualify.py",
+      "src/leo/analysis/hard60_dynamic_rf.py",
+      "src/leo/analysis/hard60_joint_clock.py",
+      "src/leo/analysis/hard60_joint_initial.py",
+      "src/leo/analysis/hard60_satellite_correction.py",
+      "src/leo/analysis/hard60_slope_prior.py",
+      "src/leo/api/app.py",
+      "src/leo/api/production.py",
+      "src/leo/api/regional_position.py",
+      "src/leo/application/hard60_b7.py",
+      "src/leo/application/regional_position_report.py",
+      "src/leo/cli/adaptive_processing_queue.py",
+      "src/leo/cli/regional_position.py",
+      "src/leo/cli/scanner_tracking.py",
+      "src/leo/contracts/regional_position_v3.py",
+      "src/leo/presentation/regional_position.py",
+      "src/leo/storage/regional_position.py",
+      "src/leo/storage/regional_position_v3.py",
+      "tests/analysis/test_hard60_b7_models.py",
+      "tests/analysis/test_hard60_joint.py",
+      "tests/analysis/test_hard60_satellite_correction.py",
+      "tests/api/test_regional_position_v3_api.py",
+      "tests/application/test_hard60_b7.py",
+      "tests/application/test_regional_position_report.py",
+      "tests/cli/test_adaptive_processing_queue.py",
+      "tests/cli/test_b7_tracking_policy.py",
+      "tests/cli/test_regional_position_cli.py",
+      "tests/contracts/test_regional_position_v3.py",
+      "tests/storage/test_regional_position_v3_store.py",
+      "web/src/RegionalPosition.test.tsx",
+      "web/src/RegionalPosition.tsx",
+      "web/src/ScannerTrackingPanel.test.tsx"
+    ],
+    "tier": "deployment"
+  },
+  "results": [
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/mypy",
+        "src"
+      ],
+      "duration_seconds": 0.190161,
+      "exit_code": 1,
+      "name": "mypy",
+      "output_sha256": "085a1aed6941966a94d531bf374ebd3fc0be29272c10717efe13d2868fb03c13"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_hard60_b7_models.py"
+      ],
+      "duration_seconds": 2.219282,
+      "exit_code": 0,
+      "name": "pytest-changed-1",
+      "output_sha256": "ede3105d5befab1d1bf057b75ad6492c485516cbaf7b315aa4b2876b0fba20b6"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/contracts/test_regional_position_v3.py"
+      ],
+      "duration_seconds": 0.556408,
+      "exit_code": 0,
+      "name": "pytest-changed-10",
+      "output_sha256": "aa779ab29c79464be52ac99280231538603b6da668a0df6198c317b8cd352bc7"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/storage/test_regional_position_v3_store.py"
+      ],
+      "duration_seconds": 1.326759,
+      "exit_code": 0,
+      "name": "pytest-changed-11",
+      "output_sha256": "ec3c61992e3bb1a5aac88c5f3c5619a6eccaa445b8e776896e3c8c676f9f6278"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_hard60_joint.py"
+      ],
+      "duration_seconds": 2.855012,
+      "exit_code": 0,
+      "name": "pytest-changed-2",
+      "output_sha256": "7ec9fab53848fd95a7e960567314658e52f1dc709b8855178b8c093865299071"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/analysis/test_hard60_satellite_correction.py"
+      ],
+      "duration_seconds": 2.610807,
+      "exit_code": 0,
+      "name": "pytest-changed-3",
+      "output_sha256": "f246fe97191e208890ee54c333c739ea48b234c333cea8c1c988946a33d9799c"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/api/test_regional_position_v3_api.py"
+      ],
+      "duration_seconds": 3.03153,
+      "exit_code": 0,
+      "name": "pytest-changed-4",
+      "output_sha256": "1cae9efe8bf90414991271ea6e99b752deb34d161ead890e8765af79572733ba"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/application/test_hard60_b7.py"
+      ],
+      "duration_seconds": 2.101089,
+      "exit_code": 0,
+      "name": "pytest-changed-5",
+      "output_sha256": "5d4fbaf25493201b022366f323b9baa4d0ffa7ed1283b0b7979a0b3871962cdf"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/application/test_regional_position_report.py"
+      ],
+      "duration_seconds": 2.996131,
+      "exit_code": 0,
+      "name": "pytest-changed-6",
+      "output_sha256": "40e112fb4855992d1e4b9057a25aae344ab1fe9a30290a40b2c5708084c06594"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_adaptive_processing_queue.py"
+      ],
+      "duration_seconds": 3.874087,
+      "exit_code": 0,
+      "name": "pytest-changed-7",
+      "output_sha256": "90f0bfb56a84fa303302777404609fa6f88b58f3308b854c6f192f5d61c4b672"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_b7_tracking_policy.py"
+      ],
+      "duration_seconds": 3.030099,
+      "exit_code": 0,
+      "name": "pytest-changed-8",
+      "output_sha256": "2dec04a4870e9479abf2ee766c1df048c1e26442c65b0ae4d9b0b75ed5d7be66"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not real_corpus and not legacy_oracle and not postgres",
+        "tests/cli/test_regional_position_cli.py"
+      ],
+      "duration_seconds": 3.508659,
+      "exit_code": 0,
+      "name": "pytest-changed-9",
+      "output_sha256": "30a77f0298a0f6837a877dd80d5655f41684f181f78b6dfb09852042359ce923"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/ruff",
+        "check",
+        "--force-exclude",
+        "src/leo/analysis/hard60_dynamic_rf.py",
+        "src/leo/analysis/hard60_joint_clock.py",
+        "src/leo/analysis/hard60_joint_initial.py",
+        "src/leo/analysis/hard60_satellite_correction.py",
+        "src/leo/analysis/hard60_slope_prior.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/regional_position.py",
+        "src/leo/application/hard60_b7.py",
+        "src/leo/application/regional_position_report.py",
+        "src/leo/cli/adaptive_processing_queue.py",
+        "src/leo/cli/regional_position.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/regional_position_v3.py",
+        "src/leo/presentation/regional_position.py",
+        "src/leo/storage/regional_position.py",
+        "src/leo/storage/regional_position_v3.py",
+        "tests/analysis/test_hard60_b7_models.py",
+        "tests/analysis/test_hard60_joint.py",
+        "tests/analysis/test_hard60_satellite_correction.py",
+        "tests/api/test_regional_position_v3_api.py",
+        "tests/application/test_hard60_b7.py",
+        "tests/application/test_regional_position_report.py",
+        "tests/cli/test_adaptive_processing_queue.py",
+        "tests/cli/test_b7_tracking_policy.py",
+        "tests/cli/test_regional_position_cli.py",
+        "tests/contracts/test_regional_position_v3.py",
+        "tests/storage/test_regional_position_v3_store.py"
+      ],
+      "duration_seconds": 0.009174,
+      "exit_code": 0,
+      "name": "ruff-check",
+      "output_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        "/home/mouse9911/gits/leo-b7-release/.venv/bin/ruff",
+        "format",
+        "--check",
+        "--force-exclude",
+        "src/leo/analysis/hard60_dynamic_rf.py",
+        "src/leo/analysis/hard60_joint_clock.py",
+        "src/leo/analysis/hard60_joint_initial.py",
+        "src/leo/analysis/hard60_satellite_correction.py",
+        "src/leo/analysis/hard60_slope_prior.py",
+        "src/leo/api/app.py",
+        "src/leo/api/production.py",
+        "src/leo/api/regional_position.py",
+        "src/leo/application/hard60_b7.py",
+        "src/leo/application/regional_position_report.py",
+        "src/leo/cli/adaptive_processing_queue.py",
+        "src/leo/cli/regional_position.py",
+        "src/leo/cli/scanner_tracking.py",
+        "src/leo/contracts/regional_position_v3.py",
+        "src/leo/presentation/regional_position.py",
+        "src/leo/storage/regional_position.py",
+        "src/leo/storage/regional_position_v3.py",
+        "tests/analysis/test_hard60_b7_models.py",
+        "tests/analysis/test_hard60_joint.py",
+        "tests/analysis/test_hard60_satellite_correction.py",
+        "tests/api/test_regional_position_v3_api.py",
+        "tests/application/test_hard60_b7.py",
+        "tests/application/test_regional_position_report.py",
+        "tests/cli/test_adaptive_processing_queue.py",
+        "tests/cli/test_b7_tracking_policy.py",
+        "tests/cli/test_regional_position_cli.py",
+        "tests/contracts/test_regional_position_v3.py",
+        "tests/storage/test_regional_position_v3_store.py"
+      ],
+      "duration_seconds": 0.005815,
+      "exit_code": 0,
+      "name": "ruff-format",
+      "output_sha256": "2bcbe8e6e763d11737554aa861ef6606aea9d87114a002aa9bd426ec920674cf"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "run",
+        "build"
+      ],
+      "duration_seconds": 5.39074,
+      "exit_code": 0,
+      "name": "web-build",
+      "output_sha256": "01b5180aa996572b29308e07146606f5d4b4846bcc61c5523061a0a38d07364c"
+    },
+    {
+      "command": [
+        "/usr/bin/npm",
+        "test",
+        "--",
+        "--run"
+      ],
+      "duration_seconds": 4.50718,
+      "exit_code": 0,
+      "name": "web-test",
+      "output_sha256": "4a2cf8f936b9a08098f9d190398b4f0bf47c21a2fc330d18ca676e462805e37e"
+    }
+  ],
+  "revision": "aa296fd9491a96bcd2e223770e3e527cd284cefa",
+  "schema_version": 1
+}
