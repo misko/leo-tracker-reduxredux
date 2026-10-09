@@ -1,32 +1,31 @@
-# Iteration64: metadata-only retries preserve full cohort coverage
+# Iteration64: isolated metadata retries, 2/2 complete
 
-DS16-020 (historical S14) and DS16-035 (S27) failed iteration51 replay output
-serialization with `KeyError('bank')`. Their corrected historical baseline
-documents omit bank metadata; the numerical baseline and recorded inputs remain
-available. These are setup/output failures, not localization convergence failures.
+The original DS16-020/S14 and DS16-035/S27 failures remain immutable in
+iteration51/results. Both were `KeyError('bank')` during output serialization:
+corrected historical baseline documents omit diagnostic bank metadata. They are
+not numerical convergence failures and neither member is excluded.
 
-Both original immutable failure receipts remain in iteration51/results. This
-separately frozen retry uses the original case document's bank and TLE snapshot
-metadata only when serializing a new replay. It asserts matching session, input
-and analysis digests and equality of the reconstructed bank's satellite IDs.
-The baseline scores, observations, starts, priors, c locks, regional budgets,
-selection rule and downstream model are unchanged. New caches/results are isolated
-under this iteration. No original numerical source or result is overwritten.
+The separately frozen retry uses the original case document's bank/TLE snapshot
+metadata for serialization. Session/input/analysis digests and reconstructed bank
+IDs are asserted equal. Numerical baseline, observations, priors, starts, c locks,
+regional budgets, score selection and downstream model remain unchanged. New
+results and caches are isolated; no original executed source/result is overwritten.
 
-The retry was launched for both members; no successful outcome is claimed in
-this launch report. The cohort reporter incorporates only completed, protocol-
-bound retries and retains original attempts plus the exact completion source.
-Failed or pending retries remain explicit; neither member is excluded.
+![Cohort distributions](../2026_10_09_position_error_iter51/comparison.png)
 
-![Current full-cohort comparison](../2026_10_09_position_error_iter51/comparison.png)
+| Member | Retry status | Arm | Previous research km | Retry km | RMS Hz | Final converged |
+|---|---|---|---:|---:|---:|---|
+| DS16-020 | complete | fitted-c | 0.075822 | 0.075822 | 75.463 | True |
+| DS16-020 | complete | zero-c | 0.663907 | 0.663907 | 141.250 | True |
+| DS16-035 | complete | fitted-c | 1.879006 | 1.879006 | 62.918 | True |
+| DS16-035 | complete | zero-c | 1.884881 | 1.884881 | 63.493 | True |
 
-The cohort report now includes separate DS16 original48/added15 metrics and
-DS18 prior-registry24/unmatched10 metrics, with exact membership assertions,
-coverage, paired regressions and convergence/fallback counts. No earlier registry
-match is not evidence of independent validation. All evaluated recordings are
-consumed research. The scientific goal still requires full148 coverage and
-further improvements; subgroup means never replace full-dataset results.
+Iteration51 incorporates only completed protocol-bound retries, retaining the
+original attempt, retry status and result source. Its full148 membership and
+DS16 original48/added15 and DS18 prior-registry24/unmatched10 subgroup counts
+remain unchanged. No prior registry match is not evidence of independent
+validation. Subgroup means never substitute for full-dataset results.
 
-Frozen retry commit0d13db115. Public contracts, production settings, fixtures,
-QNAP corpus and RF collection are unchanged. The live hard/smooth pilots retain
-their original frozen numerical implementations and budgets.
+This corrects result serialization, not an inference model or numerical prior.
+Freeze0d13db115. Production, public contracts, fixtures, QNAP and RF collection
+remain unchanged. The below1km goal is active and not achieved.
