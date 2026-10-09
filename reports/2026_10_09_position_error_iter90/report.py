@@ -258,10 +258,14 @@ def render(summary, output):
     fig, axes = plt.subplots(2, 2, figsize=(11, 7), constrained_layout=True)
     for column, arm in enumerate(ARMS):
         rows = [c["arms"][arm]["methods"] for c in summary["cases"] if c["status"] == "complete"]
+        all_values = [
+            v for r in rows for method in METHODS for v in r[method]["signed_contrasts_hz"]
+        ]
+        common_bins = np.histogram_bin_edges(all_values, bins=35) if all_values else 35
         for method in METHODS:
             values = [v for r in rows for v in r[method]["signed_contrasts_hz"]]
             if values:
-                axes[0, column].hist(values, bins=35, histtype="step", label=method)
+                axes[0, column].hist(values, bins=common_bins, histtype="step", label=method)
         for method in METHODS[2:]:
             values = [
                 r[method]["rank_fraction"] for r in rows if r[method]["rank_fraction"] is not None
