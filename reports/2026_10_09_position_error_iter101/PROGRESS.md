@@ -35,3 +35,28 @@ recorded separately from immutable cohort mint receipts. At most two single-thre
 numerical research workers may run; none were left running by the ac11 replay.
 The stopped iteration83 search and prepared iteration92 contrast experiment
 remain preserved, without automatic restart.
+
+## Completed follow-through
+
+Iteration102 directly qualified both saved ac11 calibration states in 46
+evaluations each (0.135/0.126 seconds of refinement on this server). Iteration103
+then rebuilt receiver correction from the direct prefit, qualified the fresh
+postfit with the same rule, and completed the matched continuation. Its final
+errors are 1.030621 km fitted-c and 1.927094 km c=0, reproducing the original
+research-chain recovery. Ordinary B7 parameter vectors/objectives match exactly.
+This remains one consumed diagnostic; no cohort mean has been updated.
+
+The completed inventory covers 193 membership rows, with calibration failures in
+17 DS16, 9 DS17, 6 DS18 and 5 newer development members. Iteration104 resolved
+bootstrap sources for all 56 pass-level failure entries across those 37 members,
+including frozen research adapters for historical cases. All 148 historical B7
+endpoint bindings remain available. Source availability does not by itself prove
+full model reconstruction or successful recovery.
+
+Iteration105 is preparing a generic five-member newer-development pilot, selected
+by calibration failure without reference errors. Three older hard60 publications
+require a full unchanged B7 baseline, including all regional separation passes;
+the two existing B7 publications require parity checks. New failures discovered
+by those baseline runs must follow the same retained-region trigger, rather than
+an ac11-specific point list. No iteration105 fits have started. At completion of
+the direct103 replay, no numerical worker remains running.

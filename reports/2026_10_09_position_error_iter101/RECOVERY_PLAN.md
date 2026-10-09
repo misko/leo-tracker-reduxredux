@@ -94,6 +94,14 @@ or winner selection is authorized. Reference coordinates belong only in subseque
 post-fit evaluation reports. Broad deployment requires measured regression and
 cost evidence from this frozen general rule; a single rescued example is not enough.
 
+Follow-through: [iteration103](../2026_10_09_position_error_iter103/RESULTS.md)
+confirms the direct calibration path on ac11, and
+[iteration104](../2026_10_09_position_error_iter104/README.md) resolves all 56
+failure-pass bootstrap sources across 37 members through the documented public
+and research adapters. That resolves the raw-checkpoint lookup gaps identified
+above; it does not replace full model reconstruction or the required newer B7
+baseline runs.
+
 Inventory qualification: [the metadata inventory](INVENTORY_README.md) covers all
 193 membership rows, but the newer cohort contains six B7 and 39 older hard60
 documents. Their archived results are not a matched B7 baseline. Explicit baseline
