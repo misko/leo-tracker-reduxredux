@@ -1,0 +1,190 @@
+{
+  "label": "DS16-017",
+  "dataset": "DS16",
+  "session_id": "scan-fw-5fab2b5974ce6bfb",
+  "exposure": "previously_evaluated_consumed",
+  "loader_kind": "legacy_ds16",
+  "baseline_status": "complete",
+  "candidate_status": "complete",
+  "paired_terminal": true,
+  "baseline_failure": null,
+  "candidate_failure": null,
+  "identity_limitations": {},
+  "candidate_fallback": false,
+  "trigger_count": 3,
+  "trigger_failures": null,
+  "recoveries": [
+    {
+      "region": "direct107:1553217b298220302476422dff50a706154e6c37597e523aa5715f0b4024d23b",
+      "calibration_status": "qualified",
+      "calibration_qualified": true,
+      "failure_reason": null,
+      "association_available": true,
+      "final_qualified_counts": {
+        "fitted-c": 3,
+        "zero-c": 1
+      }
+    },
+    {
+      "region": "direct107:5b67b04b392801a7c0028fbd0e7fa0e8898fc703a517bd1f8133be0b884064ce",
+      "calibration_status": "qualified",
+      "calibration_qualified": true,
+      "failure_reason": null,
+      "association_available": true,
+      "final_qualified_counts": {
+        "fitted-c": 3,
+        "zero-c": 3
+      }
+    },
+    {
+      "region": "direct107:f70144dbe92b4a991ac27583472c9aa68ded57c333ae6ca6aaed71f9028dd8d6",
+      "calibration_status": "qualified",
+      "calibration_qualified": true,
+      "failure_reason": null,
+      "association_available": true,
+      "final_qualified_counts": {
+        "fitted-c": 3,
+        "zero-c": 3
+      }
+    }
+  ],
+  "stage_failures": {
+    "baseline": [],
+    "candidate": []
+  },
+  "arms": {
+    "fitted-c": {
+      "baseline": {
+        "error_km": 1.169118544064495,
+        "objective": 26181.460620157235,
+        "posterior_rms_hz": 79.14334633852553,
+        "signal_windows": 1824.6443261376376,
+        "converged": true,
+        "stationarity": 0.00016816000331400412,
+        "evaluations": 195,
+        "elapsed_s": 0.5480463700369,
+        "stop_reason": "joint-stationary",
+        "selection": {
+          "region_source": "baseline",
+          "basin": "point:-92.5:-97.5",
+          "accepted_stage": "B7",
+          "start": "B7",
+          "calibration_penalty": 0.0
+        },
+        "bank_count": 23,
+        "vector_sha256": "da1f3a719d74d765e8a0f6740c774b426d9a2aff840f779119fdf0c64b5dd13d",
+        "clock_sha256": "0b9f62a5815ae7f174d1126458f3e832e0ba5abf552d6cc0e781d2e5d46d5d66"
+      },
+      "candidate": {
+        "error_km": 1.0235241192582312,
+        "objective": 24764.802202068735,
+        "posterior_rms_hz": 71.95917583675795,
+        "signal_windows": 2174.517666321069,
+        "converged": true,
+        "stationarity": 5.682251426730213e-05,
+        "evaluations": 206,
+        "elapsed_s": 0.6915073832497001,
+        "stop_reason": "joint-stationary",
+        "selection": {
+          "region_source": "direct107:5b67b04b392801a7c0028fbd0e7fa0e8898fc703a517bd1f8133be0b884064ce",
+          "basin": "point:-87.5:-82.5",
+          "accepted_stage": "B7",
+          "start": "B7",
+          "calibration_penalty": 0.0
+        },
+        "bank_count": 26,
+        "vector_sha256": "13f4b5e1cdb7b8cd7bab95034395c5693965b0fe5ed050d2c9c904331ce8034b",
+        "clock_sha256": "48e48820085584abd8986f4a75712605f23557103f610f9c0e4a6865b2bab93a"
+      },
+      "error_delta_km": -0.14559442480626372,
+      "recovered_region_selected": true,
+      "frequency_fit_stage_matched": true,
+      "frequency_fit_caveat": "Operational regions/associations/banks may differ even at the same stage; score improvement is not evidence of better position accuracy",
+      "objective_delta_same_stage_only": -1416.6584180885002,
+      "archived85_control": {
+        "error_km": 1.1691188537009256,
+        "objective": 26181.46062017418,
+        "posterior_rms_hz": 79.14334754445362,
+        "signal_windows": 1824.644326867874,
+        "converged": true,
+        "stage": "B7"
+      },
+      "archive_to_current_baseline": {
+        "error_delta_km": -3.0963643071757474e-07,
+        "vector_exact": false,
+        "objective_delta": -1.69457052834332e-08,
+        "scope": "Archived85 control vs newly reproduced current B7; not assumed identical"
+      }
+    },
+    "zero-c": {
+      "baseline": {
+        "error_km": 2.072297999619176,
+        "objective": 26876.350137587502,
+        "posterior_rms_hz": 122.28595986212032,
+        "signal_windows": 1774.830197071346,
+        "converged": true,
+        "stationarity": 9.311193724406773e-05,
+        "evaluations": 184,
+        "elapsed_s": 0.6169259720481932,
+        "stop_reason": "joint-stationary",
+        "selection": {
+          "region_source": "baseline",
+          "basin": "point:-92.5:-97.5",
+          "accepted_stage": "B7",
+          "start": "B7",
+          "calibration_penalty": 0.0
+        },
+        "bank_count": 23,
+        "vector_sha256": "2ebbde17a9d1a00497221bc51718cb4a2c3f6fbdc9e1d4f9915e488a3a858f11",
+        "clock_sha256": "1508719d9a17bd7c2c01ddd4d60bf2ac1fc4e2368589d1e1b47332909f8faf33"
+      },
+      "candidate": {
+        "error_km": 1.8151283770909807,
+        "objective": 25518.930363139036,
+        "posterior_rms_hz": 114.96323723991507,
+        "signal_windows": 2121.692681878086,
+        "converged": true,
+        "stationarity": 0.0003761381896956635,
+        "evaluations": 206,
+        "elapsed_s": 0.784792410209775,
+        "stop_reason": "joint-stationary",
+        "selection": {
+          "region_source": "direct107:5b67b04b392801a7c0028fbd0e7fa0e8898fc703a517bd1f8133be0b884064ce",
+          "basin": "point:-87.5:-82.5",
+          "accepted_stage": "B7",
+          "start": "B7",
+          "calibration_penalty": 0.0
+        },
+        "bank_count": 26,
+        "vector_sha256": "7f10e6c54f4589502367b8f878e48263e671cb364715bd24b851e47b58eda1b5",
+        "clock_sha256": "69ce148626bbf379591ceef3c3181ce1238f2279ec711a83bb425d7c71f5a82c"
+      },
+      "error_delta_km": -0.2571696225281954,
+      "recovered_region_selected": true,
+      "frequency_fit_stage_matched": true,
+      "frequency_fit_caveat": "Operational regions/associations/banks may differ even at the same stage; score improvement is not evidence of better position accuracy",
+      "objective_delta_same_stage_only": -1357.4197744484663,
+      "archived85_control": {
+        "error_km": 2.0722979831403583,
+        "objective": 26876.350137613037,
+        "posterior_rms_hz": 122.28595994097272,
+        "signal_windows": 1774.8301982032765,
+        "converged": true,
+        "stage": "B7"
+      },
+      "archive_to_current_baseline": {
+        "error_delta_km": 1.6478817865817064e-08,
+        "vector_exact": false,
+        "objective_delta": -2.5534973246976733e-08,
+        "scope": "Archived85 control vs newly reproduced current B7; not assumed identical"
+      }
+    }
+  },
+  "evaluation_status": "post-fit-evaluation-only",
+  "reproducibility_hashes": {
+    "reports/2026_10_09_position_error_iter107/results/DS16-017/baseline.json": "2461c31a4ec4df4a2f3ece3a2f57017da67fb3a500c9ae90229502ecae697791",
+    "reports/2026_10_09_position_error_iter107/results/DS16-017/candidate.json": "007ff8752ac57d5c4bd9a0d8a812d59fe5bd7b9baa4038b2f0333a8ab8ebaf2c",
+    "protocol": "24df105bf4618947162f9438ea2a77115d1baa134a00b5f7b48279942848d227",
+    "reporter": "0ab0168fb6d08701cfbc03e05f3549bda0520a0efb4c028577d88611bc81a200"
+  }
+}
