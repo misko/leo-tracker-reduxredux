@@ -1,5 +1,14 @@
 # Resume actual numerical continuation test
 
+SUPERSEDED EXECUTION STATUS:69explicitlySTOPPED, all8sessions terminal143.
+157receipts,8complete sources preserved. Do NOTresume69. Four of16controls lost
+convergence at20s under8workers. SeeEXECUTION.md.70qualification terminalcomplete:
+2workers90s restoredall16exact55objectives/vectors/clocks,14/16convvs69ten.
+71freshfullrerun launched with2workers90s, same scientificpolicy. See71PROGRESS.
+60exec53489terminal0 all64smoothfits complete;55stilllive. No cohortreplacement.
+
+## Historical launch record (no longer live)
+
 69 now running eight independent single-thread workers. Frozen cf442c2e4,
 preexecution budget count correctione7efe6940. No numerical source edits after
 launch. 63 feasible source endpoints from64slots (32regions×association/zero
