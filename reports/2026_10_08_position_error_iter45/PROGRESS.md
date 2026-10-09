@@ -27,8 +27,12 @@ in `retry/results/`. The directory now exists. Completed original cases include
 DS18-033, DS16-009, DS16-013, DS16-023, DS16-046 and DS16-050; retries DS18-034,
 DS16-001 and DS16-008 also completed successfully. Original lane is proceeding
 through DS16-041/045/047/055; retry lane through DS16-011/015/034/042.
-The next published snapshot includes at least 55/63 DS16 members; use summary.json
+The next published snapshot includes at least 60/63 DS16 members; use summary.json
 for exact current checkpoint metrics, not the initial 50-member figures above.
+Current remaining members are DS16-042 (retry lane), DS16-047 and DS16-055
+(original lane). DS16-011, DS16-015, DS16-034, DS16-041 and DS16-045 have completed.
+Uniform region-policy comparison and current continuation details now live in
+`../2026_10_09_position_error_iter51/PROGRESS.md`.
 Each baseline invocation is limited to four resumable 500-second slices. Preserve
 pending slice receipts; do not label a checkpoint timeout an input exclusion.
 

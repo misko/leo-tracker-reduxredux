@@ -12,10 +12,10 @@ later oracle-region rescue results replaces an operational result.
 
 | Dataset evaluated/full | Arm | Method | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 55/63 | fitted-c | baseline | 6.633 | 1.430 | 4.750 | 265.277 |
-| DS16 55/63 | fitted-c | candidate | 5.864 | 0.996 | 2.406 | 265.789 |
-| DS16 55/63 | zero-c | baseline | 7.033 | 1.660 | 7.203 | 264.604 |
-| DS16 55/63 | zero-c | candidate | 6.145 | 1.204 | 3.178 | 261.743 |
+| DS16 60/63 | fitted-c | baseline | 6.172 | 1.317 | 4.397 | 265.277 |
+| DS16 60/63 | fitted-c | candidate | 5.457 | 0.968 | 2.392 | 265.789 |
+| DS16 60/63 | zero-c | baseline | 6.570 | 1.655 | 7.202 | 264.604 |
+| DS16 60/63 | zero-c | candidate | 5.721 | 1.184 | 2.927 | 261.743 |
 | DS17 51/51 | fitted-c | baseline | 4.477 | 1.132 | 4.789 | 152.840 |
 | DS17 51/51 | fitted-c | candidate | 0.864 | 0.708 | 2.009 | 2.635 |
 | DS17 51/51 | zero-c | baseline | 4.585 | 1.434 | 4.048 | 151.707 |
@@ -36,8 +36,8 @@ Reference coordinates enter error reporting after inference only.
 
 | Dataset | Arm | Better/worse/tied | Base failed | Raw failed/fallback | RMS before → after Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 44/11/0 | 0 | 1/1 | 90.91 → 70.83 |
-| DS16 | zero-c | 44/11/0 | 0 | 1/1 | 121.17 → 104.93 |
+| DS16 | fitted-c | 48/12/0 | 0 | 1/1 | 90.04 → 70.31 |
+| DS16 | zero-c | 48/12/0 | 0 | 1/1 | 120.71 → 104.70 |
 | DS17 | fitted-c | 39/12/0 | 0 | 0/0 | 79.96 → 64.88 |
 | DS17 | zero-c | 28/23/0 | 0 | 1/1 | 130.49 → 122.87 |
 | DS18 | fitted-c | 27/7/0 | 0 | 0/0 | 101.06 → 75.65 |
@@ -53,12 +53,12 @@ Full member-paired deltas are in summary.json. Largest fitted-c regressions:
 | DS16-054 | 0.574 | 1.901 | 1.328 |
 | DS16-058 | 0.149 | 1.083 | 0.934 |
 | DS16-005 | 0.290 | 1.071 | 0.780 |
+| DS16-034 | 0.479 | 1.186 | 0.707 |
 | DS16-014 | 0.329 | 0.909 | 0.580 |
 | DS17-037 | 1.070 | 1.639 | 0.569 |
 | DS17-040 | 2.079 | 2.635 | 0.556 |
 | DS16-046 | 265.277 | 265.789 | 0.513 |
 | DS17-038 | 0.547 | 1.038 | 0.491 |
-| DS18-018 | 0.584 | 1.057 | 0.473 |
 
 ## Historical subsets and completion members
 
@@ -70,8 +70,8 @@ proof of unseen validation. No outcome-based membership filter was applied.
 |---|---|---:|---:|
 | DS16-historical 48/48 | fitted-c | 1.886 | 1.057 |
 | DS16-historical 48/48 | zero-c | 2.245 | 1.347 |
-| DS16-completion 7/15 | fitted-c | 39.182 | 38.827 |
-| DS16-completion 7/15 | zero-c | 39.866 | 39.051 |
+| DS16-completion 12/15 | fitted-c | 23.315 | 23.058 |
+| DS16-completion 12/15 | zero-c | 23.870 | 23.217 |
 | DS18-historical 24/24 | fitted-c | 5.486 | 3.293 |
 | DS18-historical 24/24 | zero-c | 5.728 | 3.546 |
 | DS18-completion 10/10 | fitted-c | 1.870 | 1.411 |
@@ -109,11 +109,11 @@ recorded with the results; full membership and coverage follows.
 | DS16-008 | scan-fw-59521cec45054a41 | complete  | 0.880 | 1.075 |
 | DS16-009 | scan-fw-99f3c2befba57d44 | complete  | 0.623 | 2.877 |
 | DS16-010 | scan-fw-aa77506012889211 | complete_prior_consumed  | 0.189 | 0.845 |
-| DS16-011 | scan-fw-8e8033677042ba97 | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
+| DS16-011 | scan-fw-8e8033677042ba97 | complete  | 0.839 | 0.369 |
 | DS16-012 | scan-fw-9284d4f6ce040d80 | complete_prior_consumed  | 1.826 | 1.563 |
 | DS16-013 | scan-fw-330829d1e597d288 | complete  | 0.733 | 1.566 |
 | DS16-014 | scan-fw-dbf401c02543f194 | complete_prior_consumed  | 0.909 | 0.485 |
-| DS16-015 | scan-fw-392b4f493b7c3c0e | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
+| DS16-015 | scan-fw-392b4f493b7c3c0e | complete  | 0.615 | 1.408 |
 | DS16-016 | scan-fw-3b61d64df77251ca | complete_prior_consumed  | 0.173 | 1.926 |
 | DS16-017 | scan-fw-5fab2b5974ce6bfb | complete_prior_consumed  | 1.200 | 1.774 |
 | DS16-018 | scan-fw-13998828c952f265 | complete_prior_consumed  | 1.034 | 0.792 |
@@ -132,18 +132,18 @@ recorded with the results; full membership and coverage follows.
 | DS16-031 | scan-fw-9f4e8b72d567c0bb | complete_prior_consumed  | 0.721 | 0.700 |
 | DS16-032 | scan-fw-eb9ba03847cd10fb | complete_prior_consumed  | 1.558 | 1.499 |
 | DS16-033 | scan-fw-0ffe1eede92820a9 | complete_prior_consumed  | 0.031 | 0.107 |
-| DS16-034 | scan-fw-90722ab71ea4e7bd | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
+| DS16-034 | scan-fw-90722ab71ea4e7bd | complete  | 1.186 | 1.115 |
 | DS16-035 | scan-fw-2917f7344e48ba39 | complete_prior_consumed  | 1.879 | 1.885 |
 | DS16-036 | scan-fw-a8fbd8c43834a765 | complete_prior_consumed  | 1.081 | 1.161 |
 | DS16-037 | scan-fw-9061ae11d2702df3 | complete_prior_consumed  | 1.150 | 1.165 |
 | DS16-038 | scan-fw-d6e344d47603fb34 | complete_prior_consumed  | 1.421 | 1.394 |
 | DS16-039 | scan-fw-6f9e553db123bebd | complete_prior_consumed  | 0.996 | 1.117 |
 | DS16-040 | scan-fw-fedf239661900a5a | complete_prior_consumed  | 0.478 | 0.504 |
-| DS16-041 | scan-fw-85f7398f9b9461ec | pending  | — | — |
+| DS16-041 | scan-fw-85f7398f9b9461ec | complete  | 1.679 | 1.667 |
 | DS16-042 | scan-fw-a52fc8f717bd9f76 | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
 | DS16-043 | scan-fw-c937db2e26dad0aa | complete_prior_consumed  | 2.751 | 3.880 |
 | DS16-044 | scan-fw-64163dfbcc531a50 | complete_prior_consumed  | 0.795 | 0.604 |
-| DS16-045 | scan-fw-58975d3328a47507 | pending  | — | — |
+| DS16-045 | scan-fw-58975d3328a47507 | complete  | 0.588 | 0.695 |
 | DS16-046 | scan-fw-c6c51bfeb6a7c3d9 | complete  | 265.789 | 261.743 |
 | DS16-047 | scan-fw-98990902df445215 | pending  | — | — |
 | DS16-048 | scan-fw-7e51f48fa65d6f81 | complete_prior_consumed  | 0.657 | 0.902 |
