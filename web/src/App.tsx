@@ -47,6 +47,7 @@ const TleInterface = lazy(() =>
 );
 import { StandardAnalysis } from "./StandardAnalysis";
 import { NativeRecordings } from "./NativeRecordings";
+import { PositionErrorPanel } from "./PositionErrorPanel";
 import type {
   AnalysisState,
   ActiveQueueV1,
@@ -69,7 +70,7 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "adaptive" | "legacy" | "recordings" | "queue" | "native" | "sky" | "tle";
+type PrimaryView = "adaptive" | "position-error" | "legacy" | "recordings" | "queue" | "native" | "sky" | "tle";
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("adaptive");
@@ -219,6 +220,8 @@ export default function App() {
       />
       {view === "adaptive" ? (
         <AdaptiveScannerView />
+      ) : view === "position-error" ? (
+        <PositionErrorPanel />
       ) : view === "recordings" ? (
         <main className="workspace">
           <RecordingBrowser
@@ -312,6 +315,10 @@ function Header({
           onClick={() => onView("adaptive")}
         >
           Adaptive scans
+        </button>
+        <button type="button" aria-current={view === "position-error" ? "page" : undefined}
+          onClick={() => onView("position-error")}>
+          Adaptive scans position error
         </button>
         <button
           type="button"
