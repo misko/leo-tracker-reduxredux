@@ -83,3 +83,8 @@ archived results may be reused with verified bindings; report added fit cost.
 No production settings, published contracts, golden fixtures, QNAP data or RF
 collection changed. Preserve hard60 bounded recovery, fitted-c default and
 longest-16-track PNG rendering. No new RF collection is authorized.
+# Completed full cohort
+
+All63 DS16,51 DS17 and34 DS18 members now have matched results. Original setup
+failures and separate retry receipts remain preserved. Current continuation is
+../2026_10_09_position_error_iter53/PROGRESS.md; older checkpoint text follows.

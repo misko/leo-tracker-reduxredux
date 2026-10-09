@@ -1,6 +1,6 @@
-# Iteration 51: uniform additive region policy, 29/148 completed
+# Iteration 51: uniform additive region policy, 58/148 completed
 
-This is a descriptive completion checkpoint at 2026-10-09T00:16:51.527521+00:00.
+This is a descriptive completion checkpoint at 2026-10-09T00:28:19.005745+00:00.
 All 63 DS16, 51 DS17 and 34 DS18 members remain in the denominator. Pending,
 unstarted and failed members are listed explicitly; subset means are not
 full-dataset results. No new independent validation claim is made.
@@ -11,24 +11,24 @@ full-dataset results. No new independent validation claim is made.
 
 | Dataset evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 10/63 | fitted-c | baseline | 1.138 | 0.897 | 2.749 | 3.926 |
-| DS16 10/63 | fitted-c | previous | 0.864 | 0.882 | 1.822 | 2.266 |
-| DS16 10/63 | fitted-c | candidate | 0.864 | 0.882 | 1.822 | 2.266 |
-| DS16 10/63 | zero-c | baseline | 1.538 | 1.235 | 3.659 | 4.079 |
-| DS16 10/63 | zero-c | previous | 1.501 | 1.232 | 2.871 | 2.877 |
-| DS16 10/63 | zero-c | candidate | 1.501 | 1.232 | 2.871 | 2.877 |
-| DS17 9/51 | fitted-c | baseline | 18.073 | 1.295 | 92.896 | 152.840 |
-| DS17 9/51 | fitted-c | previous | 1.043 | 0.877 | 2.295 | 2.616 |
-| DS17 9/51 | fitted-c | candidate | 1.043 | 0.877 | 2.295 | 2.616 |
-| DS17 9/51 | zero-c | baseline | 17.953 | 1.333 | 92.182 | 151.707 |
-| DS17 9/51 | zero-c | previous | 1.051 | 0.853 | 2.057 | 2.256 |
-| DS17 9/51 | zero-c | candidate | 1.051 | 0.853 | 2.057 | 2.256 |
-| DS18 10/34 | fitted-c | baseline | 2.110 | 1.952 | 4.686 | 5.912 |
-| DS18 10/34 | fitted-c | previous | 0.982 | 1.223 | 1.502 | 1.523 |
-| DS18 10/34 | fitted-c | candidate | 0.982 | 1.223 | 1.502 | 1.523 |
-| DS18 10/34 | zero-c | baseline | 2.649 | 1.993 | 5.276 | 6.549 |
-| DS18 10/34 | zero-c | previous | 1.325 | 1.300 | 2.742 | 3.518 |
-| DS18 10/34 | zero-c | candidate | 1.325 | 1.300 | 2.742 | 3.518 |
+| DS16 20/63 | fitted-c | baseline | 1.288 | 0.945 | 3.946 | 4.326 |
+| DS16 20/63 | fitted-c | previous | 0.907 | 0.882 | 1.999 | 2.266 |
+| DS16 20/63 | fitted-c | candidate | 0.907 | 0.882 | 1.999 | 2.266 |
+| DS16 20/63 | zero-c | baseline | 1.961 | 1.235 | 4.368 | 9.870 |
+| DS16 20/63 | zero-c | previous | 1.416 | 1.398 | 2.864 | 2.877 |
+| DS16 20/63 | zero-c | candidate | 1.416 | 1.398 | 2.864 | 2.877 |
+| DS17 16/51 | fitted-c | baseline | 10.730 | 0.964 | 40.715 | 152.840 |
+| DS17 16/51 | fitted-c | previous | 0.896 | 0.690 | 2.015 | 2.616 |
+| DS17 16/51 | fitted-c | candidate | 0.896 | 0.690 | 2.015 | 2.616 |
+| DS17 16/51 | zero-c | baseline | 10.614 | 1.088 | 40.564 | 151.707 |
+| DS17 16/51 | zero-c | previous | 1.024 | 0.864 | 2.143 | 2.256 |
+| DS17 16/51 | zero-c | candidate | 1.024 | 0.864 | 2.143 | 2.256 |
+| DS18 22/34 | fitted-c | baseline | 5.709 | 1.809 | 26.186 | 58.694 |
+| DS18 22/34 | fitted-c | previous | 3.376 | 1.122 | 1.619 | 53.140 |
+| DS18 22/34 | fitted-c | candidate | 3.376 | 1.122 | 1.619 | 53.140 |
+| DS18 22/34 | zero-c | baseline | 5.960 | 1.767 | 26.573 | 58.727 |
+| DS18 22/34 | zero-c | previous | 3.625 | 1.209 | 3.432 | 54.922 |
+| DS18 22/34 | zero-c | candidate | 3.625 | 1.209 | 3.432 | 54.922 |
 
 Baseline is deployed bounded-recovery hard60 (including qualified historical
 replays). Previous is the frozen joint-clock/RF-time/satellite-slope research
@@ -40,12 +40,12 @@ choices are never discarded because of their reference error.
 
 | Dataset | Arm | Better/worse/tied | Failed/not reached | Fallbacks | RMS base/previous/new Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 0/0/10 | 0/0 | 0 | 81.19/65.54/65.54 |
-| DS16 | zero-c | 0/0/10 | 0/0 | 0 | 132.65/120.66/120.66 |
-| DS17 | fitted-c | 0/0/9 | 0/0 | 0 | 92.08/75.88/75.88 |
-| DS17 | zero-c | 0/0/9 | 0/0 | 0 | 129.44/119.68/119.68 |
-| DS18 | fitted-c | 0/0/10 | 0/0 | 0 | 101.93/74.49/74.49 |
-| DS18 | zero-c | 0/0/10 | 0/0 | 0 | 134.10/115.27/115.27 |
+| DS16 | fitted-c | 0/0/20 | 0/0 | 0 | 82.75/66.82/66.82 |
+| DS16 | zero-c | 0/0/20 | 0/0 | 0 | 136.64/124.88/124.88 |
+| DS17 | fitted-c | 0/0/16 | 0/0 | 0 | 84.16/68.11/68.11 |
+| DS17 | zero-c | 0/0/16 | 0/0 | 0 | 125.93/117.54/117.54 |
+| DS18 | fitted-c | 0/0/22 | 0/0 | 0 | 103.89/76.43/76.43 |
+| DS18 | zero-c | 0/0/22 | 0/0 | 0 | 118.93/95.55/95.55 |
 
 Position ties use 1 m tolerance. Frequency RMS is separate from localization;
 objectives from different models/banks are not treated as position accuracy.
@@ -78,17 +78,17 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS16-007 | scan-fw-0b8d0887b97b192b | complete  | 1.278 | 0.821 | previously_evaluated_consumed |
 | DS16-008 | scan-fw-59521cec45054a41 | complete  | 0.880 | 1.075 | not_matched_in_reviewed_registry_not_unseen_claim |
 | DS16-009 | scan-fw-99f3c2befba57d44 | complete  | 0.623 | 2.877 | not_matched_in_reviewed_registry_not_unseen_claim |
-| DS16-010 | scan-fw-aa77506012889211 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-011 | scan-fw-8e8033677042ba97 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
-| DS16-012 | scan-fw-9284d4f6ce040d80 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-013 | scan-fw-330829d1e597d288 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
-| DS16-014 | scan-fw-dbf401c02543f194 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-015 | scan-fw-392b4f493b7c3c0e | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
-| DS16-016 | scan-fw-3b61d64df77251ca | not_run  | — | — | previously_evaluated_consumed |
-| DS16-017 | scan-fw-5fab2b5974ce6bfb | not_run  | — | — | previously_evaluated_consumed |
-| DS16-018 | scan-fw-13998828c952f265 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-019 | scan-fw-96d70bdc5aef38ed | not_run  | — | — | previously_evaluated_consumed |
-| DS16-020 | scan-fw-151ee2be70b82235 | not_run  | — | — | previously_evaluated_consumed |
+| DS16-010 | scan-fw-aa77506012889211 | complete  | 0.189 | 0.845 | previously_evaluated_consumed |
+| DS16-011 | scan-fw-8e8033677042ba97 | complete  | 0.839 | 0.369 | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-012 | scan-fw-9284d4f6ce040d80 | complete  | 1.826 | 1.563 | previously_evaluated_consumed |
+| DS16-013 | scan-fw-330829d1e597d288 | complete  | 0.733 | 1.566 | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-014 | scan-fw-dbf401c02543f194 | complete  | 0.909 | 0.485 | previously_evaluated_consumed |
+| DS16-015 | scan-fw-392b4f493b7c3c0e | complete  | 0.615 | 1.408 | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-016 | scan-fw-3b61d64df77251ca | complete  | 0.173 | 1.926 | previously_evaluated_consumed |
+| DS16-017 | scan-fw-5fab2b5974ce6bfb | complete  | 1.200 | 1.774 | previously_evaluated_consumed |
+| DS16-018 | scan-fw-13998828c952f265 | complete  | 1.034 | 0.792 | previously_evaluated_consumed |
+| DS16-019 | scan-fw-96d70bdc5aef38ed | complete  | 1.985 | 2.592 | previously_evaluated_consumed |
+| DS16-020 | scan-fw-151ee2be70b82235 | failed KeyError('bank') | — | — | previously_evaluated_consumed |
 | DS16-021 | scan-fw-389713be72cd8450 | not_run  | — | — | previously_evaluated_consumed |
 | DS16-022 | scan-fw-79f5280d20dd9e65 | not_run  | — | — | previously_evaluated_consumed |
 | DS16-023 | scan-fw-356acff46cd12764 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
@@ -141,13 +141,13 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS17-007 | scan-fw-489c6a2a9c099f1f | complete  | 0.521 | 0.853 | previously_evaluated_consumed |
 | DS17-008 | scan-fw-f6399482c82aa4ae | complete  | 2.616 | 2.256 | previously_evaluated_consumed |
 | DS17-009 | scan-fw-3aeb80c956be3aa4 | complete  | 1.098 | 0.954 | previously_evaluated_consumed |
-| DS17-010 | scan-fw-a8c6131bf5668000 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-011 | scan-fw-b730e91a3bc15f50 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-012 | scan-fw-90cf9bd2e3bdf17a | not_run  | — | — | previously_evaluated_consumed |
-| DS17-013 | scan-fw-3998f1ce91552465 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-014 | scan-fw-80e0b5ff0c2281bd | not_run  | — | — | previously_evaluated_consumed |
-| DS17-015 | scan-fw-02fa8ae90161a54e | not_run  | — | — | previously_evaluated_consumed |
-| DS17-016 | scan-fw-cd431e86366d1a4c | not_run  | — | — | previously_evaluated_consumed |
+| DS17-010 | scan-fw-a8c6131bf5668000 | complete  | 1.631 | 2.105 | previously_evaluated_consumed |
+| DS17-011 | scan-fw-b730e91a3bc15f50 | complete  | 0.776 | 0.417 | previously_evaluated_consumed |
+| DS17-012 | scan-fw-90cf9bd2e3bdf17a | complete  | 0.389 | 1.345 | previously_evaluated_consumed |
+| DS17-013 | scan-fw-3998f1ce91552465 | complete  | 0.100 | 0.342 | previously_evaluated_consumed |
+| DS17-014 | scan-fw-80e0b5ff0c2281bd | complete  | 0.491 | 0.893 | previously_evaluated_consumed |
+| DS17-015 | scan-fw-02fa8ae90161a54e | complete  | 0.336 | 0.501 | previously_evaluated_consumed |
+| DS17-016 | scan-fw-cd431e86366d1a4c | complete  | 1.232 | 1.323 | previously_evaluated_consumed |
 | DS17-017 | scan-fw-edfd1d12c2197eb2 | not_run  | — | — | previously_evaluated_consumed |
 | DS17-018 | scan-fw-9cc717ef20e35ab4 | not_run  | — | — | previously_evaluated_consumed |
 | DS17-019 | scan-fw-311f43e4ce6623c9 | not_run  | — | — | previously_evaluated_consumed |
@@ -193,18 +193,18 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS18-008 | scan-fw-db6e1b4079322617 | complete  | 1.258 | 1.647 | previously_evaluated_consumed |
 | DS18-009 | scan-fw-1317eab1ab1dd263 | complete  | 1.477 | 1.603 | not_matched_in_reviewed_registry_not_unseen_claim |
 | DS18-010 | scan-fw-a7930b52d1b01dff | complete  | 1.187 | 1.287 | previously_evaluated_consumed |
-| DS18-011 | scan-fw-c5558b9d9ba7691e | not_run  | — | — | previously_evaluated_consumed |
-| DS18-012 | scan-fw-7ce336d48ad3409b | not_run  | — | — | previously_evaluated_consumed |
-| DS18-013 | scan-fw-b8ccfda98272ebe0 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-014 | scan-fw-5b1967c41451a971 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-015 | scan-fw-19235796dc3f06a2 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-016 | scan-fw-818f5d3b8ca6cbbe | not_run  | — | — | previously_evaluated_consumed |
-| DS18-017 | scan-fw-fd728d9087fe35e2 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-018 | scan-fw-f5bf95a1570bece0 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-019 | scan-fw-e43a5641cecd1863 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-020 | scan-fw-a43bbffc6826cdc5 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-021 | scan-fw-f7f863971e4aa0b8 | not_run  | — | — | previously_evaluated_consumed |
-| DS18-022 | scan-fw-f1a32cacd910c005 | not_run  | — | — | previously_evaluated_consumed |
+| DS18-011 | scan-fw-c5558b9d9ba7691e | complete  | 1.286 | 1.131 | previously_evaluated_consumed |
+| DS18-012 | scan-fw-7ce336d48ad3409b | complete  | 1.479 | 1.442 | previously_evaluated_consumed |
+| DS18-013 | scan-fw-b8ccfda98272ebe0 | complete  | 0.564 | 0.575 | previously_evaluated_consumed |
+| DS18-014 | scan-fw-5b1967c41451a971 | complete  | 1.053 | 1.114 | previously_evaluated_consumed |
+| DS18-015 | scan-fw-19235796dc3f06a2 | complete  | 0.743 | 0.800 | previously_evaluated_consumed |
+| DS18-016 | scan-fw-818f5d3b8ca6cbbe | complete  | 0.980 | 1.290 | previously_evaluated_consumed |
+| DS18-017 | scan-fw-fd728d9087fe35e2 | complete  | 1.375 | 1.355 | previously_evaluated_consumed |
+| DS18-018 | scan-fw-f5bf95a1570bece0 | complete  | 1.057 | 1.034 | previously_evaluated_consumed |
+| DS18-019 | scan-fw-e43a5641cecd1863 | complete  | 0.165 | 0.172 | previously_evaluated_consumed |
+| DS18-020 | scan-fw-a43bbffc6826cdc5 | complete  | 0.977 | 0.914 | previously_evaluated_consumed |
+| DS18-021 | scan-fw-f7f863971e4aa0b8 | complete  | 1.624 | 1.764 | previously_evaluated_consumed |
+| DS18-022 | scan-fw-f1a32cacd910c005 | complete  | 53.140 | 54.922 | previously_evaluated_consumed |
 | DS18-023 | scan-fw-8d37c3b59f1ca7d1 | not_run  | — | — | previously_evaluated_consumed |
 | DS18-024 | scan-fw-d406a510f5473348 | not_run  | — | — | previously_evaluated_consumed |
 | DS18-025 | scan-fw-c17fbfacad538641 | not_run  | — | — | previously_evaluated_consumed |
