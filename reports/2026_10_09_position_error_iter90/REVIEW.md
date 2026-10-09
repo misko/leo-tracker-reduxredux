@@ -149,3 +149,32 @@ metrics and regressions, then freeze independent validation. If the completed90
 audit leaves only tiny or poorly supported contrasts, that is reason to expect a
 small effect and retain B7 simplicity unless the controlled test demonstrates
 otherwise. It is not permission to increase the prior per recording.
+
+## Completed diagnostic: comparative recommendation
+
+All **148/148** receipts are now complete. Both arms contain **33,665 exact pairs**.
+Across recording-specific contrast spaces, linear/channel projection leaves
+624 of 680 possible numerical directions; adding existing smooth clocks leaves
+546 of 680. The projected diagnostics record 14 linear and 21 smooth no-ops.
+These totals describe algebraic support, not independent physical parameters.
+
+The median per-recording mean absolute eligible contrast falls from **5.583 to
+1.874 Hz** in fitted-c, and **9.498 to 1.709 Hz** in c0, when the smooth span is
+included. Largest per-recording mean absolute smooth contrasts are 11.948 and
+20.089 Hz respectively. These descriptions use the fixed 30 Hz prior and working
+pair precision; they are not calibrated measurements of true receiver bias.
+
+The evidence therefore supports **a small, controlled fixed-contrast sensitivity
+test**, rather than a claim of a large position correction or a new satellite
+clock mechanism. Its survivors are outside the chosen clock span but generally
+small. Do not raise the prior to manufacture a stronger effect. Prefer it over
+repeating affine pair-clock starts because it tests a distinct model mechanism;
+the structured existing-clock block remains a separate embedded-computation
+prototype with a different purpose.
+
+The newly user-requested ac11 case supplies direct upstream regional-exclusion
+evidence and takes precedence over this proposed broad refit. Keep iteration92
+at its prepared checkpoint while testing that failure mechanism. None of the
+completed90 frequency diagnostics proves a position improvement or the 0.4 km
+target; only matched post-fit position metrics and subsequent independent
+validation can establish that.

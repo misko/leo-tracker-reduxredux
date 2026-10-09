@@ -19,3 +19,20 @@ convergence check in all three regional-separation policies. That is a confirmed
 upstream region loss, not yet proof that recovering it fixes the position error.
 Next: inspect its persisted numerical state and the convergence failure, then
 freeze a bounded matched-arm replay before any numerical recovery experiment.
+
+## Prefit replay completed
+
+The [four-prefit replay](PREFIT_RESULTS.md) reproduces immediate optimizer
+termination above the unchanged stationarity threshold. Both ordinary-start
+solvers remain unqualified; zero-timing restarts qualify but reach much worse
+scores. No downstream position improvement has been established.
+
+Two bounded receipts preserve a post-fit diagnostic type error. A separate
+[terminal-audit supplement](prefit-terminal-supplement.json) proves that their
+saved terminal vectors and objectives exactly equal the already-audited returned
+states, so those audits can be reused without refitting or changing the original
+receipts. Three regression tests cover mapping and typed terminal records.
+
+Next is a separately frozen, small numerical refinement of the ordinary
+unqualified state, followed by downstream matched-arm testing only if justified.
+The published B7 position and production configuration remain unchanged.
