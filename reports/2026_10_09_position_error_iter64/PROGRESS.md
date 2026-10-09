@@ -1,5 +1,14 @@
 # Active continuation after iteration64
 
+Latest continuation: BOTH64retriescompleted successfully,exec19178exit0,
+PID4029143gone. Bothpreviousresearcherrors exactly reproduced,c0locksverified:
+DS16-020 .075821951/.663906803km;DS16-035 1.879005649/1.884881244km.
+Original51KeyErrorfailures retained,51summary nowincludes completed64sources.
+64summarize.py recordsoriginalattempts+paired outcomes,2/2complete.
+Latest51snapshot143/148=DS16 60/63,DS17 49/51,DS18 34/34. Remainingare
+ordinaryqueueonly. Latest55snapshot103paired207receipts;60snapshot17/32paired.
+Four originaljobs stilllive, no retryjob remains. Earliercheckpointtextbelow.
+
 Goal active/unachieved. This turn auditedcoverage, found2earlier51setupfailures,
 froze/launchedmetadata-onlyretries andaddedsubgroupreporting. Noqualityexclusions.
 

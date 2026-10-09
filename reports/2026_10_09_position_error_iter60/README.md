@@ -1,6 +1,6 @@
 # Iteration60: ordinary-start smooth-horizon pilot
 
-**Partial: 14/32 fully paired regions.** Each region requires hard and
+**Partial: 17/32 fully paired regions.** Each region requires hard and
 smooth results in both c arms before entering this comparison. All32 planned
 regions remain in coverage. This is consumed DS18 development, not independent
 validation; no result replaces a cohort error or establishes an operational fix.
@@ -11,10 +11,10 @@ validation; no result replaces a cohort error or establishes an operational fix.
 
 | Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
-| hard | fitted-c | 6 | 224.195728 | 117.399 | 13/1 | 631.5 | 10.55 |
-| hard | zero-c | 6 | 221.415046 | 114.216 | 8/6 | 711.5 | 11.84 |
-| smooth | fitted-c | 6 | 223.717951 | 117.123 | 14/0 | 608.5 | 42.65 |
-| smooth | zero-c | 6 | 221.519233 | 114.271 | 14/0 | 605.0 | 42.22 |
+| hard | fitted-c | 6 | 224.195728 | 117.399 | 15/2 | 629.0 | 10.60 |
+| hard | zero-c | 6 | 221.415046 | 114.216 | 10/7 | 663.0 | 10.78 |
+| smooth | fitted-c | 6 | 223.717951 | 117.123 | 17/0 | 609.0 | 42.37 |
+| smooth | zero-c | 6 | 221.519233 | 114.271 | 17/0 | 606.0 | 41.86 |
 
 ## Paired regional changes
 
@@ -23,8 +23,8 @@ Gained/lost convergence is reported separately and is not an accuracy improvemen
 
 | Arm | Improved/regressed/tied | Gained/lost convergence | Both failed |
 |---|---:|---:|---:|
-| fitted-c | 7/6/0 | 1/0 | 0 |
-| zero-c | 2/6/0 | 6/0 | 0 |
+| fitted-c | 9/6/0 | 2/0 | 0 |
+| zero-c | 3/7/0 | 7/0 | 0 |
 
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated
@@ -64,10 +64,10 @@ independent validation remain required. Production/RF/contracts unchanged.
 | 66 | converged | failed | converged | converged |
 | 72 | converged | converged | converged | converged |
 | 78 | failed | converged | converged | converged |
-| 84 | failed | converged | converged | pending |
-| 90 | converged | failed | pending | pending |
-| 96 | pending | pending | pending | pending |
-| 102 | pending | pending | pending | pending |
+| 84 | failed | converged | converged | converged |
+| 90 | converged | failed | converged | converged |
+| 96 | converged | converged | converged | converged |
+| 102 | converged | failed | pending | pending |
 | 108 | pending | pending | pending | pending |
 | 114 | pending | pending | pending | pending |
 | 120 | pending | pending | pending | pending |
