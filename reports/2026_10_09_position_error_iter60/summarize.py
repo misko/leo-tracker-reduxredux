@@ -10,7 +10,7 @@ import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-from report_policy import ARMS, MODELS, paired_indices, winner  # noqa: E402
+from report_policy import ARMS, MODELS, compare_pairs, paired_indices, winner  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 REPORTS = HERE.parent
@@ -54,7 +54,14 @@ prior = RegionalPrior()
 for row in receipts.values():
     if row.get("fit"):
         row["error_km"] = error_km(prior, row["fit"]["vector"], reference)
+paired_changes = {
+    arm: compare_pairs(
+        [receipts["hard", i, arm] for i in paired], [receipts["smooth", i, arm] for i in paired]
+    )
+    for arm in ARMS
+}
 summary = dict(
+    paired_changes=paired_changes,
     paired_indices=paired,
     planned_indices=plan["endpoint_indices"],
     winners=winners,
@@ -112,6 +119,21 @@ for model in MODELS:
                 f"| {model} | {arm} | none | — | — | "
                 f"{metric['converged']}/{metric['failed']} | — | — |\n"
             )
+text += """
+## Paired regional changes
+
+Position changes below use only pairs where both fits converged (1m tie tolerance).
+Gained/lost convergence is reported separately and is not an accuracy improvement.
+
+| Arm | Improved/regressed/tied | Gained/lost convergence | Both failed |
+|---|---:|---:|---:|
+"""
+for arm, changes in paired_changes.items():
+    text += (
+        f"| {arm} | {changes['improved']}/{changes['regressed']}/{changes['tied']} | "
+        f"{changes['gained_convergence']}/{changes['lost_convergence']} | "
+        f"{changes['both_failed']} |\n"
+    )
 text += """
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated

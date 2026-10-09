@@ -1,5 +1,11 @@
 # Active continuation after iterations59/60
 
+Latest snapshot:51now107/148 (DS16 38,DS17 35,DS18 34),all completed candidate
+positions stilltied toprevious.60now3/32 fullypaired; smooth gainedone c0
+convergence but retainedpoorpositions. Reporter nowseparates regional position
+improved/regressed/tied (bothconvonly) fromgained/lostconvergence;3tests pass.
+All4jobsconfirmedlive thisturn. No experiment source/settings changed.
+
 Latest continuation: paired reporter now implemented and two selection tests pass.
 It requires all4model/arm results per endpoint, selects by convergedscore/index
 before computing referenceerror, and publishes full32endpointcoverage and raw

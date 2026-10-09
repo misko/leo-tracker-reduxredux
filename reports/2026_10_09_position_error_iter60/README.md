@@ -1,6 +1,6 @@
 # Iteration60: ordinary-start smooth-horizon pilot
 
-**Partial: 1/32 fully paired regions.** Each region requires hard and
+**Partial: 3/32 fully paired regions.** Each region requires hard and
 smooth results in both c arms before entering this comparison. All32 planned
 regions remain in coverage. This is consumed DS18 development, not independent
 validation; no result replaces a cohort error or establishes an operational fix.
@@ -9,12 +9,22 @@ validation; no result replaces a cohort error or establishes an operational fix.
 
 ## Provisional score-selected winners and computation
 
-| Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evaluations | Median seconds |
+| Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
-| hard | fitted-c | 0 | 267.787720 | 119.780 | 1/0 | 597.0 | 9.84 |
-| hard | zero-c | 0 | 267.899140 | 120.434 | 1/0 | 630.0 | 10.39 |
-| smooth | fitted-c | 0 | 267.955719 | 119.488 | 1/0 | 598.0 | 40.82 |
-| smooth | zero-c | 0 | 267.966413 | 120.709 | 1/0 | 625.0 | 42.26 |
+| hard | fitted-c | 6 | 224.195728 | 117.399 | 3/0 | 601.0 | 10.16 |
+| hard | zero-c | 6 | 221.415046 | 114.216 | 2/1 | 630.0 | 10.44 |
+| smooth | fitted-c | 6 | 223.717951 | 117.123 | 3/0 | 598.0 | 40.82 |
+| smooth | zero-c | 6 | 221.519233 | 114.271 | 3/0 | 625.0 | 42.26 |
+
+## Paired regional changes
+
+Position changes below use only pairs where both fits converged (1m tie tolerance).
+Gained/lost convergence is reported separately and is not an accuracy improvement.
+
+| Arm | Improved/regressed/tied | Gained/lost convergence | Both failed |
+|---|---:|---:|---:|
+| fitted-c | 1/2/0 | 0/0 | 0 |
+| zero-c | 0/2/0 | 1/0 | 0 |
 
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated
@@ -41,15 +51,15 @@ independent validation remain required. Production/RF/contracts unchanged.
 | Endpoint | Hard fitted-c | Hard c0 | Smooth fitted-c | Smooth c0 |
 |---:|---|---|---|---|
 | 0 | converged | converged | converged | converged |
-| 6 | converged | converged | converged | pending |
-| 12 | converged | failed | pending | pending |
-| 18 | converged | failed | pending | pending |
+| 6 | converged | converged | converged | converged |
+| 12 | converged | failed | converged | converged |
+| 18 | converged | failed | converged | pending |
 | 24 | converged | failed | pending | pending |
 | 30 | converged | converged | pending | pending |
 | 36 | converged | failed | pending | pending |
 | 42 | converged | failed | pending | pending |
-| 48 | pending | pending | pending | pending |
-| 54 | pending | pending | pending | pending |
+| 48 | converged | converged | pending | pending |
+| 54 | converged | converged | pending | pending |
 | 60 | pending | pending | pending | pending |
 | 66 | pending | pending | pending | pending |
 | 72 | pending | pending | pending | pending |
