@@ -158,6 +158,11 @@ summary = dict(
     control_counts=control_counts,
     failed_fits=sum(not r["fit"]["converged"] for r in receipts.values()),
     elapsed_fit_seconds=sum(r["fit"]["elapsed_s"] for r in receipts.values()),
+    maximum_fit_seconds=max((r["fit"]["elapsed_s"] for r in receipts.values()), default=0),
+    fits_at_wall_allowance=sum(r["fit"]["elapsed_s"] >= 90 for r in receipts.values()),
+    solver_success_but_unqualified=sum(
+        r["fit"]["solver_success"] and not r["fit"]["converged"] for r in receipts.values()
+    ),
     receipt_files=[f"results/{i:03d}-{o:02d}-{a}.json" for i, o, a in receipts],
 )
 (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -185,6 +190,10 @@ one further source unavailable.**
 Only completed source pipelines enter the three-way comparison. All64 planned
 slots remain in coverage. There are{len(receipts)} fit receipts so far,
 including{summary["failed_fits"]} independent-convergence failures.
+The longest recorded fit is{summary['maximum_fit_seconds']:.3f}seconds;
+{summary['fits_at_wall_allowance']} reach the90-second allowance.
+{summary['solver_success_but_unqualified']} failed fits reported optimizer success
+but did not pass the independent convergence gate; they remain ineligible.
 
 ![Matched source results](comparison.png)
 
