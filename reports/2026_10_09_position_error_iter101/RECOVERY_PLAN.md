@@ -93,3 +93,12 @@ No new RF collection or reference-guided seed, bank, retention, per-scan thresho
 or winner selection is authorized. Reference coordinates belong only in subsequent
 post-fit evaluation reports. Broad deployment requires measured regression and
 cost evidence from this frozen general rule; a single rescued example is not enough.
+
+Inventory qualification: [the metadata inventory](INVENTORY_README.md) covers all
+193 membership rows, but the newer cohort contains six B7 and 39 older hard60
+documents. Their archived results are not a matched B7 baseline. Explicit baseline
+bindings are presently available for only 17 DS16, 51 DS17 and 10 DS18 members;
+70 missing bindings remain explicit. Public checkpoint extraction and a matched
+ordinary-only B7 replay are prerequisites where necessary. Nonbaseline separation
+passes expose failure metadata without complete retained-region geometry; do not
+infer their recovery eligibility or fine-grid membership from the baseline pass.
