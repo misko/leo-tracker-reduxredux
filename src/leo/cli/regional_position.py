@@ -9,7 +9,8 @@ import numpy as np
 
 from leo.analysis.catalogue_eligibility import exclude_labelled_starlink_debris
 from leo.analysis.regional_position_bank import build_regional_bank
-from leo.application.hard60_runner import HARD60_SCORE, Hard60Configuration, run_hard60
+from leo.application.hard60_b7 import B7_POLICY, run_b7
+from leo.application.hard60_runner import HARD60_SCORE, Hard60Configuration
 from leo.application.regional_position_inputs import (
     PositionInputUnavailable,
     prepare_position_windows,
@@ -25,7 +26,7 @@ from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.regional_position import render_regional_position
 from leo.sky.propagation import parse_element_sets
 from leo.storage.regional_position_checkpoints import RegionalCheckpointStore
-from leo.storage.regional_position_v2 import Hard60Store
+from leo.storage.regional_position_v3 import B7Store
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 REFERENCE = (37.84903264307456, -122.4856541910174)
@@ -42,9 +43,11 @@ def configuration():
     paths += [
         package / "analysis/_regional_orbits.cpp",
         package / "contracts/regional_position_v2.py",
+        package / "contracts/regional_position_v3.py",
     ]
     return {
-        "protocol": "sacramento-hard60-v1",
+        "protocol": "sacramento-hard60-b7-v1",
+        "joint_policy": B7_POLICY,
         "run": json_value(Hard60Configuration()),
         "scores": {"V16": json_value(HARD60_SCORE)},
         "slope_scope": "each-stage-added-affine-slope-not-total-receiver-drift",
@@ -59,7 +62,7 @@ def configuration():
 
 
 def regional_position_complete(root, session_id, *, expected_input=None, expected_analysis=None):
-    store = Hard60Store(root)
+    store = B7Store(root)
     status = store.status(session_id)
     if status.manifest is None:
         return False
@@ -79,7 +82,7 @@ def run_regional_position_analysis(
         raise ValueError("invalid regional worker time budget")
     begun = time.monotonic()
     destination = output_root or root
-    store = Hard60Store(destination, read_only=False)
+    store = B7Store(destination, read_only=False)
     inputs = ScannerTrackingInputStore(root)
     try:
         source = inputs.load(session_id)
@@ -165,7 +168,7 @@ def run_regional_position_analysis(
         checkpoints = RegionalCheckpointStore(destination, session_id, binding)
         try:
             with checkpoints.writer():
-                result = run_hard60(
+                result = run_b7(
                     prepared.observations,
                     bank,
                     RegionalPrior(),

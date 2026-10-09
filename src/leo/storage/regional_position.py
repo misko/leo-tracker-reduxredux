@@ -18,6 +18,11 @@ from leo.contracts.regional_position_v2 import (
     RegionalPositionManifestV2,
     RegionalPositionStatusV2,
 )
+from leo.contracts.regional_position_v3 import (
+    RegionalPositionDocumentV3,
+    RegionalPositionManifestV3,
+    RegionalPositionStatusV3,
+)
 from leo.storage.adaptive_hop_analysis import _publish, _read, _seal, _unseal
 from leo.storage.adaptive_tle_position import AdaptiveTlePositionStore
 
@@ -26,8 +31,8 @@ _METHODS: tuple[Literal["T1AT", "V16"], ...] = ("T1AT", "V16")
 
 
 class _RegionalPositionStore[
-    Status: RegionalPositionStatusV1 | RegionalPositionStatusV2,
-    Manifest: RegionalPositionManifestV1 | RegionalPositionManifestV2,
+    Status: RegionalPositionStatusV1 | RegionalPositionStatusV2 | RegionalPositionStatusV3,
+    Manifest: RegionalPositionManifestV1 | RegionalPositionManifestV2 | RegionalPositionManifestV3,
 ]:
     """Reuse the storage component's pinned-directory and writer-lock machinery."""
 
@@ -61,7 +66,9 @@ class _RegionalPositionStore[
 
     def publish(
         self,
-        document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2,
+        document: RegionalPositionDocumentV1
+        | RegionalPositionDocumentV2
+        | RegionalPositionDocumentV3,
         images: dict[str, bytes],
     ) -> Manifest:
         if self.read_only:

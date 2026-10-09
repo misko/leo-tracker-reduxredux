@@ -7,6 +7,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.regional_position import RegionalPrior
 from leo.contracts.regional_position_products import RegionalPositionDocumentV1
 from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
+from leo.contracts.regional_position_v3 import RegionalPositionDocumentV3
 
 
 def regional_position_document(
@@ -23,7 +24,8 @@ def regional_position_document(
     diagnostics=None,
 ):
     prior = RegionalPrior()
-    hard60 = configuration.get("protocol") == "sacramento-hard60-v1"
+    b7 = configuration.get("protocol") == "sacramento-hard60-b7-v1"
+    hard60 = b7 or configuration.get("protocol") == "sacramento-hard60-v1"
     methods = []
     for name in ("V16",) if hard60 else ("T1AT", "V16"):
         search = result["searches"][name]
@@ -93,6 +95,11 @@ def regional_position_document(
                     source_basin=best["basin"],
                     stop_reason=fit["stop_reason"],
                 )
+                if b7:
+                    selected.update(
+                        accepted_stage=best.get("accepted_stage", "B1"),
+                        joint_state=fit.get("joint_state"),
+                    )
             reasons = [row["reason"] for row in starts if row["reason"]]
             if hard60:
                 reasons.extend(
@@ -123,6 +130,8 @@ def regional_position_document(
         )
     receipt = dict(diagnostics or {})
     receipt["regional_failures"] = result["failures"]
+    if b7:
+        receipt["b7"] = result.get("b7", {})
     if hard60:
         receipt["calibrations"] = result.get("calibrations", {})
         receipt["retained_basins"] = result.get("basins", [])
@@ -147,7 +156,13 @@ def regional_position_document(
         )
         for row in result["finals"]
     ]
-    model = RegionalPositionDocumentV2 if hard60 else RegionalPositionDocumentV1
+    model = (
+        RegionalPositionDocumentV3
+        if b7
+        else RegionalPositionDocumentV2
+        if hard60
+        else RegionalPositionDocumentV1
+    )
     return model.model_validate(
         dict(
             session_id=session_id,

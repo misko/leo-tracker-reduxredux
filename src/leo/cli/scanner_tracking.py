@@ -360,7 +360,7 @@ def main():
                                 "adaptive_tle_position_v3_state": (
                                     "complete" if adaptive_position_complete else "pending"
                                 ),
-                                "regional_position_v2_state": "complete"
+                                "regional_position_v3_state": "complete"
                                 if regional_complete
                                 else "pending",
                                 "trajectory": status.product.trajectory_state

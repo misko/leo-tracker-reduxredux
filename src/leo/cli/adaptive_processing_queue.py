@@ -118,7 +118,7 @@ def _tracking_digest(*, capture, metrics_manifest_sha256: str, site: str) -> str
             "additional_position_methods": "scanner-position-methods-v1",
             "blind_association_and_position": "scanner-blind-regional-v1",
             "adaptive_tle_position": "scanner-adaptive-tle-position-v3",
-            "regional_position": "scanner-regional-position-v2:hard60-v1",
+            "regional_position": "scanner-regional-position-v3:hard60-b7-v1",
             "trajectory_minimum_span_s": 4.0,
             "tle_minimum_support_observations": 14,
             "tle_minimum_support_span_s": 7.0,
@@ -453,8 +453,43 @@ def run_once(
             raise
 
 
+def _supersede_tracking_policy(*, bulk_root, worker_id, catalog, site, lease):
+    """Create a fresh job identity rather than run B7 under an older policy digest."""
+    captures = AdaptiveHopIqStore(bulk_root, read_only=True)
+    try:
+        capture = captures.inspect(lease.session_id)
+    finally:
+        captures.close()
+    if capture.manifest_sha256 != lease.input_manifest_digest:
+        raise ValueError("tracking lease input differs from sealed capture")
+    status = AdaptiveHopAnalysisPresentationStore(bulk_root).status_for_capture(
+        capture, probe_stride_ms=120
+    )
+    if status.metrics_manifest_sha256 is None:
+        raise ValueError("tracking lease lacks sealed metrics authority")
+    digest = _tracking_digest(
+        capture=capture, metrics_manifest_sha256=status.metrics_manifest_sha256, site=site
+    )
+    if digest == lease.configuration_digest:
+        return False
+    # Enqueue is idempotent: a retry after interruption finds the same replacement.
+    catalog.enqueue_adaptive_tracking_job(
+        session_id=lease.session_id,
+        input_manifest_digest=lease.input_manifest_digest,
+        configuration_digest=digest,
+    )
+    catalog.complete_job(
+        job_id=lease.job_id, worker_id=worker_id, outcome="superseded-by-current-tracking-policy"
+    )
+    return True
+
+
 def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
     if lease.job_kind == "adaptive_tracking":
+        if _supersede_tracking_policy(
+            bulk_root=bulk_root, worker_id=worker_id, catalog=catalog, site=site, lease=lease
+        ):
+            return True
         tracking_status = ScannerTrackingStore(bulk_root, read_only=True).analysis_status(
             lease.session_id
         )
@@ -537,7 +572,7 @@ def _run_claimed(*, bulk_root, worker_id, catalog, site, lease):
         and payload.get("state") == "complete"
         and payload.get("position_methods_state") == "complete"
         and payload.get("adaptive_tle_position_v3_state") == "complete"
-        and payload.get("regional_position_v2_state") == "complete"
+        and payload.get("regional_position_v3_state") == "complete"
         and ScannerTrackingStore(bulk_root, read_only=True).analysis_status(lease.session_id).state
         == "complete"
         and _position_methods_complete(

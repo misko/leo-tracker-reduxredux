@@ -68,6 +68,7 @@ from leo.storage.partial_band import PartialBandStore
 from leo.storage.position_methods import PositionMethodsStore
 from leo.storage.regional_position import RegionalPositionStore
 from leo.storage.regional_position_v2 import Hard60Store
+from leo.storage.regional_position_v3 import B7Store
 from leo.storage.scanner_glrt import ScannerGlrtPresentationStore, ScannerGlrtStore
 from leo.storage.scanner_refinement import ScannerRefinementStore
 from leo.storage.scanner_tracking import ScannerTrackingStore
@@ -248,6 +249,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             adaptive_tle_position_v3=AdaptiveTlePositionStoreV3(configured.bulk_root),
             regional_position=RegionalPositionStore(configured.bulk_root),
             regional_position_v2=Hard60Store(configured.bulk_root),
+            regional_position_v3=B7Store(configured.bulk_root),
             scanner_glrt=ScannerGlrtPresentationStore(
                 persistent_hop_iq,
                 ScannerGlrtStore.open_read_only(configured.bulk_root),

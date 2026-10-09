@@ -11,14 +11,17 @@ from leo.contracts.regional_position_products import (
     RegionalPositionStatusV1,
 )
 from leo.contracts.regional_position_v2 import RegionalPositionReaderV2, RegionalPositionStatusV2
+from leo.contracts.regional_position_v3 import RegionalPositionReaderV3, RegionalPositionStatusV3
 
 Identifier = Annotated[str, Path(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
 
 
 def regional_position_router(
-    reader: RegionalPositionReader | RegionalPositionReaderV2 | None, *, version=1
+    reader: RegionalPositionReader | RegionalPositionReaderV2 | RegionalPositionReaderV3 | None,
+    *,
+    version=1,
 ) -> APIRouter:
-    if version not in (1, 2):
+    if version not in (1, 2, 3):
         raise ValueError("unknown regional result version")
     router = APIRouter(prefix="/api/v1/scanner/tracking")
     base = "/{session_id}/regional-position-v" + str(version)
@@ -26,7 +29,11 @@ def regional_position_router(
     @router.api_route(
         base,
         methods=["GET", "HEAD"],
-        response_model=RegionalPositionStatusV1 if version == 1 else RegionalPositionStatusV2,
+        response_model={
+            1: RegionalPositionStatusV1,
+            2: RegionalPositionStatusV2,
+            3: RegionalPositionStatusV3,
+        }[version],
     )
     def status(session_id: Identifier):
         if reader is None:

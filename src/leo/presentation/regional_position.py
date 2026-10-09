@@ -9,17 +9,25 @@ from matplotlib.patches import Circle
 
 from leo.contracts.regional_position_products import RegionalPositionDocumentV1
 from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
+from leo.contracts.regional_position_v3 import RegionalEstimateV3, RegionalPositionDocumentV3
 
 
 def regional_position_figure(
-    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2, method: str
+    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2 | RegionalPositionDocumentV3,
+    method: str,
 ) -> Figure:
     result = next((item for item in document.methods if item.name == method), None)
     if result is None:
         raise ValueError("unknown regional positioning method")
     figure = Figure(figsize=(9, 8), layout="constrained")
     axis = figure.subplots()
-    label = "Hard60 / V16" if document.schema_version == 2 else method
+    label = (
+        "B7 / Hard60"
+        if document.schema_version == 3
+        else "Hard60 / V16"
+        if document.schema_version == 2
+        else method
+    )
     figure.suptitle(f"{document.session_id} · {label} · diagnostic, not a position fix")
     axis.add_patch(Circle((0, 0), document.prior_radius_km, fill=False, color="gray", alpha=0.4))
     points = [point for point in result.points if point.objective is not None]
@@ -69,6 +77,11 @@ def regional_position_figure(
         descriptions.append(
             f"{arm.name}: reference error {selected.horizontal_error_m / 1000:.2f} km; "
             f"residual RMS {rms}; {convergence}{boundary}"
+            + (
+                f"; accepted {selected.accepted_stage}"
+                if isinstance(selected, RegionalEstimateV3)
+                else ""
+            )
         )
     lat0, lon0 = map(math.radians, (document.prior_latitude_deg, document.prior_longitude_deg))
     lat, lon = map(
@@ -124,7 +137,8 @@ def regional_position_figure(
 
 
 def render_regional_position(
-    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2, method: str
+    document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2 | RegionalPositionDocumentV3,
+    method: str,
 ) -> bytes:
     figure = regional_position_figure(document, method)
     stream = BytesIO()
