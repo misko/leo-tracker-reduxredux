@@ -125,7 +125,6 @@ def aggregate(rows):
                 [row["margin"]["correlation_abs_residual"] for row in rows]
             ),
         ),
-        per_scan=rows,
         frequency_residuals={
             key: distribution([row.get("residuals", {}).get(key) for row in rows])
             for key in ("mean_hz", "median_hz", "rms_hz", "median_abs_hz", "p95_abs_hz")
