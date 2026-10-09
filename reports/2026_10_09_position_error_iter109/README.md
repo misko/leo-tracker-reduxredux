@@ -22,11 +22,16 @@ between linked observations.
 
 [The derivation](MARGINAL_PERSISTENCE.md), [integration review](PERSISTENCE_INTEGRATION_REVIEW.md)
 and [independent kernel review](KERNEL_REVIEW.md) document the assumptions.
-Eight synthetic tests pass, including changing visibility, new/disappearing
-states, clutter, exhaustive sequence enumeration, emission gradients and the
-complete detection-normalized independent limit. These do not replace future
-composed physical/clock derivative, c=0 lock, extreme-probability and memory
-checks. Rho remains a per-row retention parameter, not a measured physical
+Fourteen kernel tests and three composed-objective tests pass, including changing
+visibility, new/disappearing states, clutter, exhaustive sequence enumeration,
+emission gradients, extreme probabilities and the complete independent limit.
+The research wrapper's synthetic tests cover full physical/clock derivatives,
+nonzero priors, exact zero-control parity and c=0 lock validation. Actual fitter
+integration must still preserve those locks; validation does not set fit bounds.
+The [numerical stress report](NUMERICAL_STRESS.md) records a cancellation issue
+and its algebraically equivalent stable calculation, plus synthetic memory/time
+measurements. These are not embedded or recording-fit benchmarks.
+Rho remains a per-row retention parameter, not a measured physical
 coherence time. No recording protocol for this model is frozen.
 
 The [separate prior fusion audit](PRIOR_FUSION_AUDIT.md) preserves older batch

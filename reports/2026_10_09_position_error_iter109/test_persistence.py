@@ -97,3 +97,94 @@ def test_all_reset_independent_and_invalid_inputs():
     for rho in (-1, 1, np.nan):
         with pytest.raises(ValueError):
             kernel.transport([0.5, 0.5], [0.5, 0.5], rho)
+
+
+def test_subnormal_prior_mass_and_disjoint_support():
+    for previous, current in (
+        ([0.5, 1e-320, 0.5], [0.5, 0.5, 1e-320]),
+        ([0.0, 1.0, 0.0], [0.0, 0.0, 1.0]),
+        ([1e-300, 1.0, 0.0], [1e-300, 0.0, 1.0]),
+    ):
+        previous, current = np.array(previous), np.array(current)
+        with np.errstate(over="raise", invalid="raise", divide="raise"):
+            s, r = kernel.transport(previous, current, np.nextafter(1.0, 0.0))
+        transition = np.diag(s) + (1 - s)[:, None] * r[None, :]
+        assert np.isfinite(transition).all() and np.all(transition >= 0)
+        np.testing.assert_allclose(transition.sum(axis=1), 1, atol=1e-14)
+        np.testing.assert_allclose(previous @ transition, current, atol=1e-14)
+        if np.dot(previous[1:], current[1:]) == 0:
+            np.testing.assert_array_equal(s, 0)
+
+
+@pytest.mark.parametrize(
+    "prior",
+    [
+        [1e-12, 0.3, 0.7 - 1e-12],
+        [1e-20, 0.3, 0.7],
+        [0.0, 0.1, 0.2, 0.7],
+    ],
+)
+def test_near_unit_retention_avoids_cancellation(prior):
+    prior = np.asarray(prior)
+    s, r = kernel.transport(prior, prior, np.nextafter(1.0, 0.0))
+    transition = np.diag(s) + (1 - s)[:, None] * r[None, :]
+    np.testing.assert_allclose(r.sum(), 1, atol=1e-14, rtol=0)
+    np.testing.assert_allclose(prior @ transition, prior, atol=1e-15, rtol=0)
+
+
+def test_extreme_rho_all_clutter_emissions_and_long_segments():
+    n = 1500
+    y = np.zeros(n)
+    p = np.full((n, 3), ALIAS_HZ / 2)
+    visible = np.ones_like(p, bool)
+    visible[500:510] = False
+    reset = np.zeros(n, bool)
+    reset[[0, 700, 1400]] = True
+    with np.errstate(over="raise", invalid="raise", divide="raise"):
+        result = kernel.evaluate(
+            y, p, visible, HARD60_SCORE, rho=np.nextafter(1.0, 0.0), reset=reset
+        )
+    assert np.isfinite(result["nll"])
+    np.testing.assert_array_equal(result["occupancy"][:, 0], 1)
+    np.testing.assert_array_equal(result["prediction_gradient"], 0)
+    values = []
+    for start, stop in ((0, 700), (700, 1400), (1400, 1500)):
+        row = kernel.evaluate(
+            y[start:stop],
+            p[start:stop],
+            visible[start:stop],
+            HARD60_SCORE,
+            rho=np.nextafter(1.0, 0.0),
+            reset=np.r_[True, np.zeros(stop - start - 1, bool)],
+        )
+        values.append(row["nll"])
+    assert result["nll"] == pytest.approx(sum(values), abs=1e-9)
+
+
+def test_long_confident_path_visibility_changes_and_reset_gradients():
+    n = 1200
+    y = np.sin(np.arange(n) / 30) * 50
+    p = np.column_stack([y + 3, y + 1000, y - 900])
+    visible = np.ones_like(p, bool)
+    visible[::11, 0] = False
+    reset = np.zeros(n, bool)
+    reset[::100] = True
+    result = kernel.evaluate(y, p, visible, HARD60_SCORE, rho=0.999999, reset=reset)
+    assert np.isfinite(result["occupancy"]).all()
+    np.testing.assert_allclose(result["occupancy"].sum(axis=1), 1, atol=1e-14)
+    for start in range(0, n, 100):
+        end = start + 100
+        single = kernel.evaluate(
+            y[start:end],
+            p[start:end],
+            visible[start:end],
+            HARD60_SCORE,
+            rho=0.999999,
+            reset=np.r_[True, np.zeros(99, bool)],
+        )
+        np.testing.assert_allclose(
+            result["prediction_gradient"][start:end],
+            single["prediction_gradient"],
+            atol=1e-14,
+            rtol=0,
+        )

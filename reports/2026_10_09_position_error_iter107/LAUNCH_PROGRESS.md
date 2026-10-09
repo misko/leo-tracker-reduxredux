@@ -1,4 +1,15 @@
-# Initial four recovery cases complete; ambiguity census running
+# Full193 recovery resumed after ambiguity census completion
+
+Latest update:108 sessions54914/69265 both exited0 with all148 complete, no
+failures. Its results are in the adjacent108 report. Full107 shard0 now runs in
+session13368 and shard1 in session26088, each single-thread/nice10 and no initial
+member cap. Existing completed members are checked and skipped. Original frozen
+500-second/six-slice per-phase budgets remain unchanged. At most two numerical
+research workers; poll those handles before any new launch.
+
+No full193 accuracy conclusion is available. The initial four-case no-trigger
+check remains documented in CANARY.md. Earlier runtime records below are retained
+as history and their session state is superseded by this update.
 
 Latest completion update: sessions49794 and35532 both exited0 after all four
 metadata-ordered members completed both phases. All four are trigger-negative;
