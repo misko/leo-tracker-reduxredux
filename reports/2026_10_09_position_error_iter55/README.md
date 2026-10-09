@@ -1,6 +1,6 @@
 # Iteration55: ordinary-start common-bank refits
 
-**Partial: 19/192 endpoint pairs; 38/384 receipts.** This is
+**Partial: 35/192 endpoint pairs; 71/384 receipts.** This is
 consumed DS18 development evidence, not independent validation, and does not
 replace any dataset benchmark result. Only endpoints completed in both arms
 participate in the provisional comparison. All192 remain in the denominator.
@@ -56,23 +56,23 @@ continues unchanged. No production, RF, public-contract or fixture changes.
 | 16 | 3 | fitted-c/zero-timing | complete nonconverged | complete nonconverged |
 | 17 | 3 | fitted-c/own-continuation | complete nonconverged | complete converged |
 | 18 | 4 | zero-c/association | complete converged | complete nonconverged |
-| 19 | 4 | zero-c/zero-timing | pending | pending |
-| 20 | 4 | zero-c/own-continuation | pending | pending |
-| 21 | 4 | fitted-c/association | pending | pending |
-| 22 | 4 | fitted-c/zero-timing | pending | pending |
-| 23 | 4 | fitted-c/own-continuation | pending | pending |
-| 24 | 5 | zero-c/association | pending | pending |
-| 25 | 5 | zero-c/zero-timing | pending | pending |
-| 26 | 5 | zero-c/own-continuation | pending | pending |
-| 27 | 5 | fitted-c/association | pending | pending |
-| 28 | 5 | fitted-c/zero-timing | pending | pending |
-| 29 | 5 | fitted-c/own-continuation | pending | pending |
-| 30 | 6 | zero-c/association | pending | pending |
-| 31 | 6 | zero-c/zero-timing | pending | pending |
-| 32 | 6 | zero-c/own-continuation | pending | pending |
-| 33 | 6 | fitted-c/association | pending | pending |
-| 34 | 6 | fitted-c/zero-timing | pending | pending |
-| 35 | 6 | fitted-c/own-continuation | pending | pending |
+| 19 | 4 | zero-c/zero-timing | complete converged | complete converged |
+| 20 | 4 | zero-c/own-continuation | complete converged | complete nonconverged |
+| 21 | 4 | fitted-c/association | complete nonconverged | complete converged |
+| 22 | 4 | fitted-c/zero-timing | complete nonconverged | complete converged |
+| 23 | 4 | fitted-c/own-continuation | complete nonconverged | complete nonconverged |
+| 24 | 5 | zero-c/association | complete converged | complete nonconverged |
+| 25 | 5 | zero-c/zero-timing | complete converged | complete converged |
+| 26 | 5 | zero-c/own-continuation | complete converged | complete nonconverged |
+| 27 | 5 | fitted-c/association | complete converged | complete converged |
+| 28 | 5 | fitted-c/zero-timing | complete converged | complete converged |
+| 29 | 5 | fitted-c/own-continuation | complete converged | complete converged |
+| 30 | 6 | zero-c/association | complete converged | complete converged |
+| 31 | 6 | zero-c/zero-timing | complete converged | complete nonconverged |
+| 32 | 6 | zero-c/own-continuation | complete nonconverged | complete converged |
+| 33 | 6 | fitted-c/association | complete nonconverged | complete converged |
+| 34 | 6 | fitted-c/zero-timing | complete converged | complete nonconverged |
+| 35 | 6 | fitted-c/own-continuation | complete converged | pending |
 | 36 | 7 | zero-c/association | pending | pending |
 | 37 | 7 | zero-c/zero-timing | pending | pending |
 | 38 | 7 | zero-c/own-continuation | pending | pending |
