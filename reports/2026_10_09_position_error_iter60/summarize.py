@@ -94,7 +94,7 @@ validation; no result replaces a cohort error or establishes an operational fix.
 
 ## Provisional score-selected winners and computation
 
-| Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evaluations | Median seconds |
+| Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
 """
 for model in MODELS:
@@ -103,7 +103,8 @@ for model in MODELS:
         if row:
             text += (
                 f"| {model} | {arm} | {row['index']} | {row['error_km']:.6f} | "
-                f"{row['fit']['posterior_rms_hz']:.3f} | {metric['converged']}/{metric['failed']} | "
+                f"{row['fit']['posterior_rms_hz']:.3f} | "
+                f"{metric['converged']}/{metric['failed']} | "
                 f"{metric['median_evaluations']:.1f} | {metric['median_seconds']:.2f} |\n"
             )
         else:
