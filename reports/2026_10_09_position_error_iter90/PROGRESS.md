@@ -1,5 +1,11 @@
 # Iteration90 execution checkpoint
 
+**Completed:** all148 receipts are complete, both worker sessions exited0, and
+all296 endpoint objectives reproduce exactly. See DECISION.md and RESULTS.md.
+Iteration92 remains prepared but unlaunched while the explicitly requested ac11
+failure is investigated in iteration93. The following is the earlier launch
+checkpoint, retained as execution history rather than current worker status.
+
 The diagnostic protocol was frozen and published to remote main in `ece60672d`
 before evaluation. All22 synthetic tests passed under the deployed Python3.14.4
 interpreter. The inherited sources and inputs are hash-verified by each shard.
