@@ -1,6 +1,6 @@
 # Iteration60: ordinary-start smooth-horizon pilot
 
-**Partial: 20/32 fully paired regions.** Each region requires hard and
+**Partial: 23/32 fully paired regions.** Each region requires hard and
 smooth results in both c arms before entering this comparison. All32 planned
 regions remain in coverage. This is consumed DS18 development, not independent
 validation; no result replaces a cohort error or establishes an operational fix.
@@ -11,10 +11,10 @@ validation; no result replaces a cohort error or establishes an operational fix.
 
 | Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
-| hard | fitted-c | 6 | 224.195728 | 117.399 | 17/3 | 626.0 | 10.55 |
-| hard | zero-c | 6 | 221.415046 | 114.216 | 12/8 | 646.5 | 10.78 |
-| smooth | fitted-c | 6 | 223.717951 | 117.123 | 20/0 | 604.5 | 41.94 |
-| smooth | zero-c | 6 | 221.519233 | 114.271 | 20/0 | 606.0 | 41.83 |
+| hard | fitted-c | 126 | 14.795589 | 107.348 | 19/4 | 621.0 | 10.51 |
+| hard | zero-c | 6 | 221.415046 | 114.216 | 13/10 | 663.0 | 10.78 |
+| smooth | fitted-c | 126 | 15.350396 | 106.803 | 23/0 | 605.0 | 41.90 |
+| smooth | zero-c | 126 | 16.189070 | 108.284 | 23/0 | 606.0 | 41.79 |
 
 ## Paired regional changes
 
@@ -23,8 +23,8 @@ Gained/lost convergence is reported separately and is not an accuracy improvemen
 
 | Arm | Improved/regressed/tied | Gained/lost convergence | Both failed |
 |---|---:|---:|---:|
-| fitted-c | 10/7/0 | 3/0 | 0 |
-| zero-c | 3/9/0 | 8/0 | 0 |
+| fitted-c | 11/8/0 | 4/0 | 0 |
+| zero-c | 3/10/0 | 10/0 | 0 |
 
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated
@@ -70,10 +70,10 @@ independent validation remain required. Production/RF/contracts unchanged.
 | 102 | converged | failed | converged | converged |
 | 108 | failed | converged | converged | converged |
 | 114 | converged | converged | converged | converged |
-| 120 | pending | pending | converged | pending |
-| 126 | pending | pending | pending | pending |
-| 132 | pending | pending | pending | pending |
-| 138 | pending | pending | pending | pending |
+| 120 | converged | converged | converged | converged |
+| 126 | converged | failed | converged | converged |
+| 132 | failed | failed | converged | converged |
+| 138 | pending | pending | converged | converged |
 | 144 | pending | pending | pending | pending |
 | 150 | pending | pending | pending | pending |
 | 156 | pending | pending | pending | pending |
