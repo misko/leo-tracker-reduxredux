@@ -1,13 +1,13 @@
 # Iteration71 results: ordinary clock proposals and continuation
 
-**Partial: 25/63 feasible sources complete;
+**Partial: 38/63 feasible sources complete;
 one further source unavailable.**
 Only completed source pipelines enter the three-way comparison. All64 planned
-slots remain in coverage. There are362 fit receipts so far,
-including64 independent-convergence failures.
-The longest recorded fit is39.866seconds;
+slots remain in coverage. There are537 fit receipts so far,
+including95 independent-convergence failures.
+The longest recorded fit is46.450seconds;
 0 reach the90-second allowance.
-64 failed fits reported optimizer success
+94 failed fits reported optimizer success
 but did not pass the independent convergence gate; they remain ineligible.
 
 ![Matched source results](comparison.png)
@@ -28,19 +28,19 @@ hypotheses for one consumed recording, not independent dataset samples.
 Lower objective or RMS does not establish better position accuracy. The direct
 controls are new90-second unchanged-start runs; historical20-second iteration55 differences
 are separately retained in summary.json, not silently ignored or substituted.
-Currently50 controls are compared, with
-0 convergence-flag changes and maximum
-absolute objective difference0.
+Currently76 controls are compared, with
+1 convergence-flag changes and maximum
+absolute objective difference1.3602.
 This is a numerical reproducibility audit, not an accuracy selection rule.
 
 ## Paired source changes relative to the new direct controls
 
 | Arm | Stage | Improved / regressed / tied | Gained / lost convergence | Both unqualified |
 |---|---|---:|---:|---:|
-| fitted-c | proposals | 6 / 6 / 11 | 2 / 0 | 0 |
-| fitted-c | continuation | 7 / 7 / 9 | 2 / 0 | 0 |
-| zero-c | proposals | 3 / 7 / 7 | 8 / 0 | 0 |
-| zero-c | continuation | 4 / 9 / 4 | 8 / 0 | 0 |
+| fitted-c | proposals | 9 / 9 / 15 | 5 / 0 | 0 |
+| fitted-c | continuation | 12 / 10 / 11 | 5 / 0 | 0 |
+| zero-c | proposals | 5 / 10 / 11 | 12 / 0 | 0 |
+| zero-c | continuation | 7 / 12 / 7 | 12 / 0 | 0 |
 
 Position comparisons require both alternatives qualified, with1m tie tolerance.
 Convergence gains are not counted as accuracy gains. Earlier eligible candidates
@@ -76,20 +76,20 @@ disks. Both arms share starts and stage budgets. No convergence gate is relaxed.
 | 66 | 12 | complete |
 | 67 | 12 | complete |
 | 72 | 13 | complete |
-| 73 | 13 | pending |
+| 73 | 13 | complete |
 | 78 | 14 | complete |
-| 79 | 14 | pending |
-| 84 | 15 | pending |
-| 85 | 15 | pending |
-| 90 | 16 | pending |
-| 91 | 16 | pending |
-| 96 | 17 | pending |
-| 97 | 17 | pending |
-| 102 | 19 | pending |
-| 103 | 19 | pending |
-| 108 | 21 | pending |
-| 109 | 21 | pending |
-| 114 | 22 | pending |
+| 79 | 14 | complete |
+| 84 | 15 | complete |
+| 85 | 15 | complete |
+| 90 | 16 | complete |
+| 91 | 16 | complete |
+| 96 | 17 | complete |
+| 97 | 17 | complete |
+| 102 | 19 | complete |
+| 103 | 19 | complete |
+| 108 | 21 | complete |
+| 109 | 21 | complete |
+| 114 | 22 | complete |
 | 115 | 22 | pending |
 | 120 | 23 | pending |
 | 121 | 23 | pending |
