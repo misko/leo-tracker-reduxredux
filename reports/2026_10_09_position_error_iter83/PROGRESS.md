@@ -1,5 +1,30 @@
 # Iteration83 CHECKPOINTED AND UNFINISHED; iteration84 running
 
+## 2026-10-09 research resumed after B7 deployment
+
+The user resumed the active goal with a 0.4 km mean target. Iteration84 workers
+43900/81101 both completed with exit0, all148 members. Iteration86 repeated the
+two pause-exposed members under its separately frozen policy, also exit0; its
+eight objectives reproduce the originals exactly. The complete protected-prior
+comparison worsens mean error and does not change deployed B7.
+
+The unchanged83 shards are now resumed for one600-second checkpointed invocation
+each, allowing the current bounded fit to finish:
+- shard0 exec43624, runnerPID232284 (sudo232271).
+- shard1 exec60450, runnerPID232300 (sudo232289).
+
+Both runners were authoritatively verified live after launch. No other research
+numerical experiment is active. All1231 frozen83 hashes and both preexisting
+checkpoints were independently verified before resumption. Preserve these
+processes and receipts; poll these handles and inspect parent/child state before
+resuming another invocation. Do not restart on observation timeout.
+
+83 remains a separate frozen slope0.25/control experiment, not a B7 composition.
+No reference-based seed, per-scan tuning, reserve outcome access, RF collection,
+or production change is authorized by this resume. See iteration86 for the
+completed comparison and new model hypotheses. Older scheduling notes below
+are historical.
+
 ## Current scheduling state
 
 Runnerexec29748/40811 bothTERMINAL exit0 at3-invocationbound. Parents4105802/4105803
