@@ -1,5 +1,7 @@
 import importlib.util
 import unittest
+import tempfile
+import json
 from pathlib import Path
 
 spec=importlib.util.spec_from_file_location('pilot_report',Path(__file__).with_name('report.py'))
@@ -28,6 +30,20 @@ class ReportTest(unittest.TestCase):
     def test_regression_is_reported(self):
         rows=self.rows();rows[2]['arms']['zero-c']['error_delta_km']=2
         self.assertEqual(report.aggregate(rows)['zero-c']['regressions'],[{'label':'2','delta_km':2}])
+
+    def test_failed_baseline_candidate_is_report_only_not_run(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);(root/'baseline.json').write_text(json.dumps({'status':'failed','protocol_sha256':'frozen'}))
+            phases,hashes=report.load_phases(root,'frozen')
+            self.assertEqual(phases['candidate']['status'],'not-run-baseline-failed')
+            self.assertTrue(phases['candidate']['report_only'])
+            self.assertNotIn('candidate',hashes)
+            self.assertFalse((root/'candidate.json').exists())
+
+    def test_complete_baseline_missing_candidate_remains_pending(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);(root/'baseline.json').write_text(json.dumps({'status':'complete','protocol_sha256':'frozen'}))
+            with self.assertRaises(RuntimeError):report.load_phases(root,'frozen')
 
 
 if __name__=='__main__':unittest.main()

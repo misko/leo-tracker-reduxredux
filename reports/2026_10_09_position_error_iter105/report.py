@@ -12,7 +12,27 @@ from leo.storage.regional_position_v3 import B7Store
 
 HERE=Path(__file__).resolve().parent
 ARMS=('fitted-c','zero-c')
-TERMINAL={'complete','failed','budget-exhausted'}
+TERMINAL={'complete','failed','budget-exhausted','input-failed','not-run-baseline-failed'}
+
+
+def load_phases(directory,protocol_sha256):
+    """Missing candidate is report-only not-run when controller stopped on baseline."""
+    phases={};hashes={}
+    for phase in ('baseline','candidate'):
+        path=directory/(phase+'.json')
+        if not path.exists():
+            if phase=='candidate' and phases.get('baseline',{}).get('status') in {'failed','budget-exhausted','input-failed'}:
+                phases[phase]=dict(status='not-run-baseline-failed',protocol_sha256=protocol_sha256,
+                                   reason='Controller stops after non-complete baseline; no candidate engine receipt exists',
+                                   report_only=True)
+                continue
+            raise RuntimeError(f'{directory.name} {phase} not terminal; reference access withheld')
+        value=json.loads(path.read_text())
+        if value.get('status') not in TERMINAL-{'not-run-baseline-failed'}:
+            raise RuntimeError(f'{directory.name} {phase} not terminal; reference access withheld')
+        assert value['protocol_sha256']==protocol_sha256,'Fit belongs to another protocol'
+        phases[phase]=value;hashes[phase]=hashlib.sha256(path.read_bytes()).hexdigest()
+    return phases,hashes
 
 
 def describe(operation,document):
@@ -44,6 +64,9 @@ def comparison(member,baseline,candidate,document):
         if member['source_version']=='B7' and base:
             stage=base.get('accepted_stage');old=document['diagnostics']['b7']['attempts'].get(stage,{}).get(arm)
             value['archived_parity']=dict(available=old is not None,vector_exact=old is not None and np.array_equal(old['vector'],base['fit']['vector']),objective_delta=None if old is None else base['fit']['objective']-old['objective'])
+            value['archived_parity']['passed']=bool(old is not None and value['archived_parity']['vector_exact'] and value['archived_parity']['objective_delta']==0)
+            if not value['archived_parity']['passed']:
+                value['archived_parity']['limitation']='Archived B7 endpoint parity is unavailable or differs; do not claim exact replay parity'
         row['arms'][arm]=value
     return row
 
@@ -80,12 +103,8 @@ def main():
     # Check all fit statuses before any reference metadata is opened.
     loaded=[]
     for member in snapshot['members']:
-        directory=HERE/'results'/member['label'];phases={}
-        for phase in ('baseline','candidate'):
-            path=directory/(phase+'.json');phases[phase]=json.loads(path.read_text()) if path.exists() else {'status':'missing'}
-            if phases[phase]['status'] not in TERMINAL:raise RuntimeError(f"{member['label']} {phase} not terminal; reference access withheld")
-            assert phases[phase]['protocol_sha256']==protocol_sha256,'Fit belongs to another protocol'
-            hashes[str(path.relative_to(HERE))]=hashlib.sha256(path.read_bytes()).hexdigest()
+        directory=HERE/'results'/member['label'];phases,phase_hashes=load_phases(directory,protocol_sha256)
+        for phase,digest in phase_hashes.items():hashes[str((directory/(phase+'.json')).relative_to(HERE))]=digest
         loaded.append((member,directory,phases))
     for member,directory,phases in loaded:
         cls=B7Store if member['source_version']=='B7' else Hard60Store

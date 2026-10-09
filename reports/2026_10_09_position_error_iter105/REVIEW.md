@@ -123,3 +123,31 @@ make such flips rare, and the receipt will reveal them. Qualification has a boun
 evaluation count rather than a hard per-call wall timer, so realized slice runtimes
 must still be reported. Research pilot success would not by itself justify default
 deployment or a population-wide accuracy claim.
+
+## Runtime monitoring and criteria for a broader extension
+
+The first read-only runtime inspection sees member006 reproducing an ordinary
+retained calibration prefit failure and member050 advancing through baseline
+B3–C6 joint receipts without recorded exceptions. Both have only their first
+baseline slice claim at that point. These are partial receipts: source-cache hit
+counts, renderer exclusions, aliases and final parity require terminal phase
+receipts. No accuracy conclusion follows from this progress.
+
+A full193-membership extension is justified by a frozen general recovery rule
+working on multiple distinct non-ac11 failures, with explicit negative outcomes,
+matched baseline completion and no unacceptable regressions or resource overrun.
+The important distribution is not just recovered position errors: separate
+missing/incompatible model inputs, unsupported tangent dimensions, infeasible
+saved states, objective-binding failures, prefit nonqualification, corrected
+postfit nonqualification, association failure, final nonqualification, no winner
+change and successful winner change. Count no-trigger members separately.
+
+Before extending, quantify full membership checkpoint readiness and cold-stage
+cost without introducing a quality filter. Retain all193 coverage rows and their
+failure reasons even if some cannot complete within the frozen budget. Pilot
+success alone cannot estimate a population mean because membership was selected
+by failure metadata. A broader matched comparison must include trigger-negative
+controls, paired regressions and per-dataset denominators, including DS16's extra15.
+No success criterion should use reference error to tune eligibility, region seeds,
+hyperparameters or operational selection. References may assess the frozen policy
+after inference; record any subsequent development tuning and keep reserves closed.
