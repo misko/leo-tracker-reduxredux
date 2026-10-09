@@ -64,3 +64,32 @@ and matched-c protocol; the kernel supplies no justification for choosing them.
 Compare in-block score, out-of-block predictive evidence and position separately.
 Do not compare normalized objectives across rho as an operational winner selector.
 Kernel correctness is not evidence of localization gain or independent validation.
+
+## Adapter and no-fit census review
+
+The prepared adapter now supplies disjoint segments from shared bootstrap track
+membership, with receiver, channel, exact RF and positive at-most-two-second gap
+checks. Overlaps and uncovered observations remain independent; packing is
+reversed before gradient comparison. Both archived B7 arms retain their original
+endpoints and candidate bank. The c=0 arm checks static c and the two RF clock
+coefficients, matching the production clock layout.
+
+Full objective reconstruction includes common timing, relative timing and clock
+quadratic priors. New synthetic controls exercise nonzero priors, detect omitted
+priors and check prediction composition including satellite, baseline and clock
+terms. All 26 kernel, segmentation and adapter tests passed in 1.64 seconds.
+These synthetic checks do not replace per-recording saved-objective and gradient
+parity assertions; the census records those checks or explicit failures.
+
+The protocol correctly discloses inherited archived-error equality and
+reference-bearing artifact digest checks as provenance admission dependencies.
+Those values do not guide grouping, geometry, starts or winner selection. Calling
+the complete import path wholly free of reference reads would be inaccurate.
+
+The prepared freezer verifies the immutable iteration106 closure, copies all
+148 bindings (63 DS16, 51 DS17, 34 DS18), and adds current iteration108 Python and
+Markdown sources. It declares rho=0, zero optimizer calls, two single-thread
+workers and append-only full membership coverage. It does not substitute the
+iteration106 100 Hz fits or recovered endpoints. No blocking issue remains for
+freezing this descriptive census. No freezer, recording reconstruction or
+recording evaluation was executed during this review.
