@@ -1,4 +1,23 @@
-# Iteration83 CHECKPOINTED AND UNFINISHED; iteration84 running
+# Iteration83 checkpointed and unfinished; iteration87 audit running
+
+## Current state after bounded resume
+
+Both runners43624/60450 terminated with exit0 at their600-second invocation
+bound; all parent/child PIDs232284/232285/232300/232301 are gone. The new
+third-checkpoint.json pins710 receipts, including593 clock-fit attempts, up
+from460 before this resume. All hashes in both earlier checkpoints remain
+unchanged. There are still45 retained member receipts and no full recovered
+cohort claim. No83 worker is live.
+
+Iteration87 now occupies the two research worker slots, auditing immutable
+B7 residuals without optimization. Do not overlap another83 invocation with
+that audit. The user's updated objective strongly values embedded runtime,
+simple algorithms and geometry/RF reasoning. Before allocating more broad
+recovery computation, assess the inexpensive profiled-clock and breadth-first
+search proposals in87/EMBEDDED_SEARCH.md. Preserve the frozen83 experiment
+and all attempts; do not alter its policy or select favorable partial cases.
+
+The earlier runtime notes below are historical.
 
 ## 2026-10-09 research resumed after B7 deployment
 
