@@ -1,4 +1,17 @@
-# Full148 no-fit ambiguity census running
+# Full148 no-fit ambiguity census complete
+
+Completion update: sessions54914 and69265 both exited0; all148 matched-arm
+receipts are complete with no failures. The report and plot have been generated,
+and independent review reproduced every dataset/arm statistic and all2,314
+frozen hashes. See DECISION.md and RESULTS.md. No positive-persistence model was
+evaluated on recordings. The0.4 km goal remains unachieved.
+
+The freed slots now run full107 recovery shards: session13368 is shard0 and
+session26088 is shard1, both without the initial four-case member cap. Existing
+terminal members are preserved/skipped, and all original per-member phase budgets
+remain unchanged. Poll these exact sessions; do not duplicate the numerical jobs.
+
+The following running-census record is historical and superseded.
 
 The protocol was frozen in d74605f9f and published through d2fbebbfc before any
 recording evaluation. All2,314 source hashes still match. This is a descriptive

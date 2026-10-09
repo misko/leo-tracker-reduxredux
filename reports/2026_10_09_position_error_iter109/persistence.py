@@ -30,8 +30,10 @@ def transport(previous, current, rho):
     retained_mass = rho * np.minimum(previous, current)
     retained_mass[0] = 0  # Clutter never retains its state through the diagonal term.
     retention = np.divide(retained_mass, previous, out=np.zeros_like(current), where=previous > 0)
-    z = 1 - retained_mass.sum()
-    redraw = (current - retained_mass) / z
+    remaining_mass = current - retained_mass
+    # Algebraically Z=1-sum(h), but sum(q-h) avoids catastrophic cancellation.
+    z = remaining_mass.sum()
+    redraw = remaining_mass / z
     assert z > 0 and np.all(redraw >= 0)
     np.testing.assert_allclose(redraw.sum(), 1, atol=1e-12, rtol=0)
     return retention, redraw
@@ -64,7 +66,8 @@ def evaluate(measured, prediction, visible, score, *, rho, reset):
         else:
             retention[n], redraw[n] = transport(pi[n - 1], pi[n], rho)
             sticky = retention[n] * alpha[n - 1]
-            beta = sticky + (1 - sticky.sum()) * redraw[n]
+            # Sum the residual probabilities directly instead of subtracting from one.
+            beta = sticky + ((1 - retention[n]) * alpha[n - 1]).sum() * redraw[n]
         weighted = beta * emission[n]
         normalizer[n] = weighted.sum()
         alpha[n] = weighted / normalizer[n]
