@@ -479,7 +479,7 @@ def _supersede_tracking_policy(*, bulk_root, worker_id, catalog, site, lease):
         configuration_digest=digest,
     )
     catalog.complete_job(
-        job_id=lease.job_id, worker_id=worker_id, outcome="superseded-by-current-tracking-policy"
+        job_id=lease.job_id, worker_id=worker_id, outcome="superseded-tracking-policy"
     )
     return True
 

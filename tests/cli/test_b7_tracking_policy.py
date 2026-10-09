@@ -22,9 +22,14 @@ def test_policy_migration_enqueues_before_finishing_old_identity(monkeypatch, tm
     )
     monkeypatch.setattr(subject, "_tracking_digest", lambda **_: "new")
     calls = []
+
+    def complete(**kwargs):
+        assert len(kwargs["outcome"]) <= 32, "Persisted catalog outcome is VARCHAR(32)"
+        calls.append(("complete", kwargs))
+
     catalog = SimpleNamespace(
         enqueue_adaptive_tracking_job=lambda **k: calls.append(("enqueue", k)),
-        complete_job=lambda **k: calls.append(("complete", k)),
+        complete_job=complete,
     )
     lease = SimpleNamespace(
         session_id="scan-1",
@@ -39,4 +44,4 @@ def test_policy_migration_enqueues_before_finishing_old_identity(monkeypatch, tm
     assert [c[0] for c in calls] == (["enqueue", "complete"] if old else [])
     if old:
         assert calls[0][1]["configuration_digest"] == "new"
-        assert calls[1][1]["outcome"] == "superseded-by-current-tracking-policy"
+        assert calls[1][1]["outcome"] == "superseded-tracking-policy"
