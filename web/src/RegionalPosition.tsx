@@ -10,7 +10,7 @@ type Method = {
   points: unknown[]; search_stop_reason: string; deferred_cells: number;
   arms: Array<{ name: "fitted-c" | "zero-c"; selected: Estimate | null; reasons: string[] }>;
 };
-type Status = {
+export type Status = {
   session_id: string; state: "pending" | "complete";
   manifest: null | {
     document: {
@@ -26,7 +26,7 @@ type Status = {
   };
 };
 
-function verify(value: Status, sessionId: string, inputDigest?: string, version = 1) {
+export function verify(value: Status, sessionId: string, inputDigest?: string, version = 1) {
   const doc = value.manifest?.document;
   if (value.session_id !== sessionId || (doc && (doc.session_id !== sessionId ||
     (inputDigest && doc.input_manifest_sha256 !== inputDigest))))
