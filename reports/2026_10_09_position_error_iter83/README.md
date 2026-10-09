@@ -1,8 +1,11 @@
-# Iteration83 preparation: generalize ordinary-region clock recovery
+# Iteration83: uniform ordinary-region clock recovery protocol
 
-This is implementation preparation, not a frozen numerical experiment or a new
-accuracy result. No fitting has started. The full execution protocol and source
-closure must be frozen before running. Iteration82 remains the only live experiment.
+The numerical adapter and seven policy/orchestration tests are implemented. The
+execution protocol and source closure are frozen before fitting. No new accuracy
+result is claimed here. Iteration82 is complete; this experiment runs at most two
+single-thread numerical workers in600-second checkpointed invocations, allowing
+the current bounded fit to finish before returning. Each later invocation resumes
+immutable receipts. No new RF is collected.
 
 ```mermaid
 flowchart TD
@@ -77,7 +80,12 @@ sigma2 fallback model. Unflagged members keep their prior result by policy.
 
 The present pure policy tests cover timing-trigger inputs, missing/nonfinite fits,
 qualification, bounded retry selection, and retention of distinct source regions.
-The generic numerical adapter and its reproduction checks remain to be implemented.
+The generic adapter reproduces the historical ordinary inventory,145-satellite
+union,192 transported endpoint vectors/clocks/objectives and63 selected sources.
+Each endpoint also passes prediction/visibility preservation checks. It uses
+final-fit satellite banks, following the corrected53 census; calibration bootstrap
+banks are smaller and must not be substituted. The53 original failed implementation
+remains archived. The metadata loader uses the qualified82 fix.
 An archived-data check reproduces all63 iteration71 endpoint indices exactly and
 the three iteration81 retry states (126/6 fitted,115/6 fitted,115/2 zero). This
 qualifies the selector on that consumed case, not the unimplemented full pipeline.
