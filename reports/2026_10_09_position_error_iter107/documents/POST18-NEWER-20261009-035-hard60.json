@@ -1,0 +1,2887 @@
+{
+  "analysis_manifest_sha256": "sha256:689a1761dbd022e74533b20271b51683cf4d48f386aaec885769517eb8447a28",
+  "configuration": {
+    "prior": {
+      "altitude_m": 0.0,
+      "latitude_deg": 38.5816,
+      "longitude_deg": -121.4944,
+      "radius_km": 250.0
+    },
+    "protocol": "sacramento-hard60-v1",
+    "refinement": "off",
+    "rf_ablation_scope": "final-score-shared-fitted-c-calibration-and-association",
+    "run": {
+      "association_seconds": 60.0,
+      "backend": "audited-native-orbits-narrow-gaussian-v1",
+      "basin_separation_km": 12.5,
+      "basins": 3,
+      "bootstrap_seconds": 5.0,
+      "coarse_fit_seconds": 5.0,
+      "coarse_iterations": 200,
+      "edge_priority": "nearest",
+      "final_iterations": 600,
+      "final_starts": [
+        "association",
+        "zero-timing",
+        "own-continuation"
+      ],
+      "levels_km": [
+        40.0,
+        20.0,
+        10.0,
+        5.0
+      ],
+      "minimum_local_radius_km": 25.0,
+      "point_budget": 400,
+      "policy": "hard60-v1",
+      "recovery_policy": "failed-coarse-box-v1",
+      "slope_half_width_hz_s": 60.0,
+      "stage_fit_seconds": 20.0
+    },
+    "scores": {
+      "V16": {
+        "clutter_rate": 0.5,
+        "common_sigma_s": 3.0,
+        "detection_budget": 1.6,
+        "name": "V16",
+        "relative_sigma_s": 2.0,
+        "sigma_hz": 125.0
+      }
+    },
+    "selection": "stationary-only-model-score-no-reference",
+    "slope_scope": "each-stage-added-affine-slope-not-total-receiver-drift",
+    "source_digests": {
+      "analysis/_regional_orbits.cpp": "sha256:19bc1c3d22441bac41e8abb438b11a4784dc6071a298d9a0cc0ea515f733bee8",
+      "analysis/hard60_bounded_fit.py": "sha256:12b4a494991ba052e4146ba0b916ae3d98dff209bad7a84c5cffc6a7604e4a57",
+      "analysis/hard60_score.py": "sha256:4d23d429233d39c6a63ae7e105d8cb9c64d56755bb0b7a19f2c071b380fcea09",
+      "analysis/regional_position_association.py": "sha256:654866c0448a971cf14cd80ebce49d1f255b7cd9ea7d0016c768bb076afe01fc",
+      "analysis/regional_position_bank.py": "sha256:be5cd8ee363b53469dc8d651206c34895246c9435cde4d6969f6bce402fc7d5a",
+      "analysis/regional_position_bootstrap.py": "sha256:70396ebd7e327695cec0bbced3dcaa0af1b01e638064a1ff765e81fec1ae5173",
+      "analysis/regional_position_calibration.py": "sha256:b5bb028059cf983e1e69b59ce0d34aa015e1f1236a4f404a6bb2c4f1497adbd5",
+      "analysis/regional_position_fit.py": "sha256:15bc0a33acc9e747ee0c8be9d3b45301d1689d4af60421310a7f805d9907dbb2",
+      "analysis/regional_position_score.py": "sha256:0ea7bf646896658488c7615a7a22f90597371a0a4f7634a4b75dc9303a8bcb79",
+      "analysis/regional_position_search.py": "sha256:63f800c7be02e36f153c9ee421485a134224f63567925dd4c5eca3672a9233bf",
+      "analysis/t1_at.py": "sha256:ec7fcf45e4e8be649a66d89563546a5991a9461f42bd08b48d313debcbe2ffdb",
+      "analysis/t1_at_discovery.py": "sha256:1fe4b759c53a4fae40745be82032448899281704a93a065be23e3f353df91bf4",
+      "analysis/t1_at_prediction.py": "sha256:5f54611dd0440bd8ea6c99dccbe436899320e20e34d887f5941e57e85324c00d",
+      "application/hard60_recovery.py": "sha256:7dafb9a7895f3458e4803c1ac930985736729ec802a7774b49117dd8c5e19d59",
+      "application/hard60_runner.py": "sha256:aeb7ba28159be8687aefb28b710ffbe60bd0318d8a36b2cbc305bba9e50a3536",
+      "application/regional_position_inputs.py": "sha256:c0a69924e2146ccd430f13aaa7d92d671cff164ba1f33de9b7d26dd582475455",
+      "application/regional_position_report.py": "sha256:faa05f2e53554303ad95d2ee2d53942304340fe6befb052daf03f2e195405a8e",
+      "application/regional_position_runner.py": "sha256:8fcc3ff33468559a072dbbc88a5661834a133c9d662226736dbe580f092055b0",
+      "contracts/regional_position.py": "sha256:d7ce86b96bc9c0eec3f588ecb12cf568f198945789563e89bb7e85e7df0585fc",
+      "contracts/regional_position_v2.py": "sha256:3eac5dc69db22feab564528b38bece10e5f089f4a8c15c641ac263d0fec13fc7"
+    }
+  },
+  "diagnostics": {
+    "bank": {
+      "retained_numbers": [
+        44723,
+        44968,
+        45047,
+        45048,
+        45060,
+        45088,
+        45223,
+        45754,
+        47760,
+        47771,
+        47772,
+        47790,
+        47800,
+        47806,
+        47807,
+        47824,
+        47825,
+        47901,
+        47904,
+        47907,
+        48094,
+        48099,
+        48101,
+        48112,
+        48121,
+        48400,
+        48435,
+        48445,
+        48455,
+        48462,
+        48472,
+        48474,
+        48482,
+        49409,
+        49421,
+        49425,
+        49438,
+        49443,
+        49449,
+        49455,
+        49456,
+        49733,
+        49737,
+        49744,
+        49762,
+        49769,
+        50186,
+        50190,
+        50195,
+        50198,
+        50199,
+        50816,
+        50830,
+        50831,
+        50836,
+        50844,
+        50845,
+        50851,
+        51136,
+        51140,
+        51464,
+        51757,
+        51758,
+        51759,
+        52335,
+        52345,
+        52347,
+        52349,
+        52370,
+        52377,
+        52378,
+        52380,
+        52598,
+        52600,
+        52605,
+        52610,
+        52623,
+        52628,
+        52630,
+        52632,
+        52639,
+        52656,
+        52673,
+        52679,
+        52681,
+        52685,
+        52686,
+        52697,
+        52699,
+        52702,
+        53050,
+        53062,
+        53086,
+        53138,
+        53145,
+        53154,
+        53155,
+        53156,
+        53160,
+        53168,
+        53178,
+        53247,
+        53255,
+        53286,
+        53288,
+        53294,
+        53465,
+        53472,
+        53484,
+        53486,
+        53491,
+        53595,
+        53598,
+        53610,
+        53623,
+        53628,
+        53629,
+        53637,
+        53704,
+        53715,
+        53716,
+        53722,
+        53726,
+        53727,
+        53734,
+        53740,
+        53746,
+        53775,
+        53793,
+        53828,
+        53836,
+        53861,
+        53864,
+        53867,
+        53890,
+        53916,
+        53924,
+        53932,
+        53964,
+        53966,
+        53967,
+        53974,
+        53978,
+        53981,
+        53993,
+        53997,
+        54008,
+        54010,
+        54012,
+        54826,
+        54831,
+        54842,
+        54845,
+        54846,
+        54850,
+        54851,
+        54853,
+        54855,
+        54858,
+        54861,
+        54868,
+        55273,
+        55294,
+        55393,
+        55396,
+        55399,
+        55410,
+        55414,
+        55416,
+        55418,
+        55434,
+        55436,
+        55439,
+        55653,
+        55746,
+        55752,
+        55772,
+        55775,
+        55777,
+        55781,
+        55784,
+        56017,
+        56019,
+        56030,
+        56035,
+        56096,
+        56102,
+        56108,
+        56133,
+        56134,
+        56136,
+        56142,
+        56462,
+        56824,
+        56837,
+        56877,
+        56884,
+        56886,
+        56889,
+        56899,
+        56900,
+        56902,
+        56922,
+        56924,
+        57050,
+        57061,
+        57064,
+        57066,
+        57075,
+        57079,
+        57082,
+        57087,
+        57090,
+        57092,
+        57220,
+        57233,
+        57235,
+        57244,
+        57246,
+        57433,
+        57500,
+        57503,
+        57514,
+        57605,
+        57633,
+        57635,
+        57640,
+        57667,
+        57671,
+        57683,
+        57699,
+        57701,
+        57703,
+        57708,
+        57710,
+        57714,
+        57739,
+        57740,
+        57842,
+        57849,
+        57850,
+        58037,
+        58051,
+        58052,
+        58085,
+        58086,
+        58087,
+        58091,
+        58096,
+        58098,
+        58111,
+        58115,
+        58151,
+        58155,
+        58158,
+        58163,
+        58175,
+        58176,
+        58191,
+        58196,
+        58364,
+        58380,
+        58405,
+        58406,
+        58415,
+        58447,
+        58450,
+        58451,
+        58452,
+        58454,
+        58473,
+        58475,
+        58478,
+        58482,
+        58485,
+        58486,
+        58487,
+        58489,
+        58523,
+        58524,
+        58525,
+        58526,
+        58590,
+        58592,
+        58593,
+        58603,
+        58604,
+        58605,
+        58606,
+        58627,
+        58634,
+        58671,
+        58678,
+        58686,
+        58689,
+        58744,
+        58794,
+        58826,
+        58840,
+        58841,
+        58844,
+        58845,
+        58883,
+        58890,
+        58893,
+        58940,
+        58951,
+        58968,
+        58977,
+        58983,
+        59030,
+        59041,
+        59043,
+        59045,
+        59154,
+        59156,
+        59157,
+        59158,
+        59160,
+        59169,
+        59182,
+        59190,
+        59199,
+        59208,
+        59213,
+        59220,
+        59222,
+        59234,
+        59240,
+        59241,
+        59242,
+        59249,
+        59252,
+        59254,
+        59256,
+        59261,
+        59264,
+        59379,
+        59380,
+        59386,
+        59387,
+        59403,
+        59411,
+        59412,
+        59414,
+        59417,
+        59418,
+        59433,
+        59441,
+        59459,
+        59463,
+        59470,
+        59473,
+        59474,
+        59612,
+        59633,
+        59634,
+        59644,
+        59646,
+        59653,
+        59654,
+        59661,
+        59664,
+        59667,
+        59674,
+        59687,
+        59688,
+        59689,
+        59697,
+        59713,
+        59714,
+        59897,
+        59902,
+        59948,
+        59950,
+        60046,
+        60047,
+        60119,
+        60120,
+        60141,
+        60142,
+        60144,
+        60198,
+        60315,
+        60316,
+        60321,
+        60361,
+        60367,
+        60370,
+        60373,
+        60375,
+        60412,
+        60415,
+        60427,
+        60430,
+        60435,
+        60439,
+        60444,
+        60594,
+        60597,
+        60599,
+        60737,
+        60918,
+        60921,
+        60926,
+        60928,
+        60996,
+        60997,
+        60998,
+        61054,
+        61055,
+        61217,
+        61219,
+        61256,
+        61261,
+        61541,
+        61542,
+        61577,
+        61578,
+        61627,
+        61632,
+        61634,
+        61636,
+        61689,
+        61690,
+        61877,
+        61939,
+        61940,
+        61948,
+        61961,
+        61968,
+        61969,
+        61978,
+        61979,
+        61982,
+        62026,
+        62070,
+        62071,
+        62076,
+        62118,
+        62121,
+        62126,
+        62132,
+        62141,
+        62142,
+        62143,
+        62155,
+        62232,
+        62302,
+        62304,
+        62309,
+        62409,
+        62410,
+        62437,
+        62438,
+        62439,
+        62463,
+        62466,
+        62475,
+        62482,
+        62560,
+        62562,
+        62566,
+        62595,
+        62740,
+        62743,
+        62745,
+        62746,
+        62752,
+        62754,
+        62768,
+        62774,
+        62775,
+        62776,
+        62810,
+        62821,
+        62828,
+        62849,
+        62883,
+        62887,
+        62922,
+        62925,
+        62956,
+        62957,
+        62998,
+        63011,
+        63015,
+        63035,
+        63042,
+        63066,
+        63107,
+        63110,
+        63122,
+        63137,
+        63140,
+        63143,
+        63200,
+        63270,
+        63274,
+        63327,
+        63411,
+        63414,
+        63420,
+        63423,
+        63554,
+        63558,
+        63680,
+        63681,
+        63699,
+        63700,
+        63701,
+        63706,
+        63711,
+        63723,
+        63765,
+        63777,
+        63789,
+        63790,
+        63793,
+        63794,
+        63802,
+        63803,
+        63819,
+        63820,
+        63821,
+        63843,
+        63846,
+        63847,
+        63851,
+        63853,
+        63857,
+        63874,
+        63875,
+        63894,
+        63902,
+        63916,
+        63952,
+        63955,
+        63959,
+        64026,
+        64027,
+        64028,
+        64030,
+        64032,
+        64037,
+        64047,
+        64072,
+        64140,
+        64141,
+        64236,
+        64242,
+        64301,
+        64336,
+        64383,
+        64414,
+        64420,
+        64421,
+        64428,
+        64432,
+        64437,
+        64600,
+        64609,
+        64612,
+        64615,
+        64724,
+        64725,
+        64729,
+        64732,
+        64735,
+        64737,
+        64745,
+        64748,
+        64757,
+        64767,
+        64775,
+        65021,
+        65031,
+        65037,
+        65329,
+        65337,
+        65339,
+        65341,
+        65345,
+        65346,
+        65351,
+        65352,
+        65358,
+        65361,
+        65369,
+        65372,
+        65405,
+        65418,
+        65421,
+        65428,
+        65463,
+        65475,
+        65479,
+        65485,
+        65502,
+        65509,
+        65513,
+        65515,
+        65625,
+        65629,
+        65636,
+        65645,
+        65646,
+        65737,
+        65742,
+        65747,
+        65861,
+        65863,
+        65865,
+        65868,
+        65878,
+        65914,
+        65918,
+        65928,
+        65936,
+        66064,
+        66073,
+        66076,
+        66077,
+        66078,
+        66082,
+        66083,
+        66186,
+        66191,
+        66201,
+        66204,
+        66210,
+        66216,
+        66218,
+        66220,
+        66221,
+        66224,
+        66228,
+        66233,
+        66240,
+        66244,
+        66247,
+        66254,
+        66256,
+        66262,
+        66272,
+        66278,
+        66280,
+        66286,
+        66291,
+        66355,
+        66358,
+        66363,
+        66364,
+        66368,
+        66381,
+        66384,
+        66395,
+        66398,
+        66591,
+        66597,
+        66605,
+        66607,
+        66610,
+        66613,
+        66791,
+        66800,
+        66801,
+        66808,
+        66813,
+        66816,
+        66968,
+        66977,
+        66981,
+        66983,
+        67004,
+        67015,
+        67016,
+        67020,
+        67034,
+        67035,
+        67045,
+        67058,
+        67110,
+        67112,
+        67120,
+        67129,
+        67618,
+        67622,
+        67625,
+        67633,
+        67639,
+        67858,
+        67861,
+        67865,
+        67869,
+        67872,
+        67873,
+        67874,
+        67876,
+        67887,
+        67888,
+        67889,
+        67898,
+        67996,
+        68010,
+        68013,
+        68015,
+        68016,
+        68017,
+        68018,
+        68071,
+        68074,
+        68076,
+        68088,
+        68101,
+        68102,
+        68103,
+        68104,
+        68107,
+        68124,
+        68176,
+        68181,
+        68182,
+        68184,
+        68193,
+        68233,
+        68241,
+        68249,
+        68258,
+        68260,
+        68269,
+        68283,
+        68285,
+        68287,
+        68297,
+        68298,
+        68299,
+        68301,
+        68388,
+        68390,
+        68393,
+        68400,
+        68402,
+        68966,
+        68967,
+        68968,
+        68969,
+        68970,
+        69154,
+        69155,
+        69156,
+        69157,
+        69158,
+        69192,
+        69193,
+        69194,
+        69195,
+        69196,
+        69197,
+        69357,
+        69364,
+        69375,
+        69378,
+        69822,
+        69830,
+        69831,
+        69832,
+        69844,
+        69943,
+        69949,
+        69958,
+        69966,
+        100028,
+        100036,
+        100043,
+        100045,
+        100046,
+        100047,
+        100433,
+        100434,
+        100442,
+        100443,
+        100444,
+        100445,
+        100512,
+        100526,
+        100758,
+        100766,
+        100773,
+        100774,
+        100775
+      ]
+    },
+    "bank_receipt_sha256": "sha256:afd547018ce5764fde7218fdf2b7bdb18ceff70427d9bc07a8742f09e52bd2dd",
+    "checkpoint_binding": "sha256:dbfb334727095965a66e9e3c142c360995415a70a26a26700514077a214959dc",
+    "snapshot_collected_utc_ns": 1791540215442047126,
+    "snapshot_sha256": "sha256:585f4f0f9ea70f5c578d8b0ee79b67eb4659abdec83d753abaeb8cca74874786"
+  },
+  "evidence_sha256": "sha256:b59e8021d4a16744bee8af3faae93c1a4a2af432f8e9c9a8b194fd4f654261f6",
+  "input_manifest_sha256": "sha256:6371de0086b775d1af249a4ccfd0ab5c203872ea4641c73f95851a55e3a35868",
+  "methods": [
+    {
+      "name": "V16",
+      "points": [
+        {
+          "east_km": -40.0,
+          "north_km": -240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": -200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": -160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": -120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": -80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -240.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 240.0,
+          "north_km": -40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -240.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 240.0,
+          "north_km": 0.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -240.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 240.0,
+          "north_km": 40.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": 80.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -200.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 200.0,
+          "north_km": 120.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -160.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 160.0,
+          "north_km": 160.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -120.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -80.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 80.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 120.0,
+          "north_km": 200.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -40.0,
+          "north_km": 240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 0.0,
+          "north_km": 240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": 40.0,
+          "north_km": 240.0,
+          "spacing_km": 40.0
+        },
+        {
+          "east_km": -90.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -90.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -70.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -70.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -75.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -75.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -65.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -65.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -95.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -95.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -85.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -85.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -95.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -95.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -85.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -85.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -170.0,
+          "north_km": -50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -170.0,
+          "north_km": -30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -150.0,
+          "north_km": -50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -150.0,
+          "north_km": -30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -155.0,
+          "north_km": -55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -155.0,
+          "north_km": -45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -145.0,
+          "north_km": -55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -145.0,
+          "north_km": -45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -157.5,
+          "north_km": -57.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -157.5,
+          "north_km": -52.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -152.5,
+          "north_km": -57.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -152.5,
+          "north_km": -52.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -157.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -157.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -152.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -152.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -175.0,
+          "north_km": -35.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -175.0,
+          "north_km": -25.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -165.0,
+          "north_km": -35.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -165.0,
+          "north_km": -25.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -87.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -82.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -147.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -147.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -142.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -142.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -97.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -92.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -177.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -177.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -172.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -172.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -177.5,
+          "north_km": -37.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -177.5,
+          "north_km": -32.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -172.5,
+          "north_km": -37.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -172.5,
+          "north_km": -32.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 110.0,
+          "north_km": 30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 110.0,
+          "north_km": 50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 130.0,
+          "north_km": 30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 130.0,
+          "north_km": 50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 105.0,
+          "north_km": 45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 105.0,
+          "north_km": 55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 115.0,
+          "north_km": 45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 115.0,
+          "north_km": 55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 112.5,
+          "north_km": 52.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 112.5,
+          "north_km": 57.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 117.5,
+          "north_km": 52.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 117.5,
+          "north_km": 57.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -50.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -50.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -30.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -30.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -55.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -55.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -45.0,
+          "north_km": -95.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -45.0,
+          "north_km": -85.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -57.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -57.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -52.5,
+          "north_km": -87.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -52.5,
+          "north_km": -82.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -55.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -55.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -45.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -45.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -47.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -42.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -230.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -230.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -210.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -210.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -190.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -190.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -57.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -57.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -52.5,
+          "north_km": -97.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -52.5,
+          "north_km": -92.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -130.0,
+          "north_km": -10.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -130.0,
+          "north_km": 10.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -110.0,
+          "north_km": -10.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -110.0,
+          "north_km": 10.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -10.0,
+          "north_km": 110.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -10.0,
+          "north_km": 130.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 10.0,
+          "north_km": 110.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 10.0,
+          "north_km": 130.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -130.0,
+          "north_km": -50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -130.0,
+          "north_km": -30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -110.0,
+          "north_km": -50.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -110.0,
+          "north_km": -30.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -35.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -25.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -35.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -25.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -37.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -32.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -37.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -32.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -55.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -45.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -75.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -75.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -65.0,
+          "north_km": -75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -65.0,
+          "north_km": -65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -77.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -72.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -67.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -62.5,
+          "north_km": -72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 190.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 190.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 210.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 210.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 185.0,
+          "north_km": 65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 185.0,
+          "north_km": 75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 195.0,
+          "north_km": 65.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 195.0,
+          "north_km": 75.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 192.5,
+          "north_km": 62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 192.5,
+          "north_km": 67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 197.5,
+          "north_km": 62.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 197.5,
+          "north_km": 67.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 192.5,
+          "north_km": 72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 192.5,
+          "north_km": 77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 197.5,
+          "north_km": 72.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 197.5,
+          "north_km": 77.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 230.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 230.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 102.5,
+          "north_km": 42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 102.5,
+          "north_km": 47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 107.5,
+          "north_km": 42.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 107.5,
+          "north_km": 47.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -15.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -135.0,
+          "north_km": -5.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -15.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -125.0,
+          "north_km": -5.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -7.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -2.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -7.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -2.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -17.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -12.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -17.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -12.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -7.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -2.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -7.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -2.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -10.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -10.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 10.0,
+          "north_km": -90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 10.0,
+          "north_km": -70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 150.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 150.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 170.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 170.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -137.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -132.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -127.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -27.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -122.5,
+          "north_km": -22.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 30.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 30.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 50.0,
+          "north_km": 70.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 50.0,
+          "north_km": 90.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 30.0,
+          "north_km": 230.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 50.0,
+          "north_km": 230.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 25.0,
+          "north_km": 245.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 35.0,
+          "north_km": 245.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 45.0,
+          "north_km": 245.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": 52.5,
+          "north_km": 242.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 57.5,
+          "north_km": 242.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": 70.0,
+          "north_km": 230.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": 90.0,
+          "north_km": 230.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -50.0,
+          "north_km": 150.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -50.0,
+          "north_km": 170.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -30.0,
+          "north_km": 150.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -30.0,
+          "north_km": 170.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -35.0,
+          "north_km": 145.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -35.0,
+          "north_km": 155.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -25.0,
+          "north_km": 145.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -25.0,
+          "north_km": 155.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -27.5,
+          "north_km": 152.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -27.5,
+          "north_km": 157.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -22.5,
+          "north_km": 152.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -22.5,
+          "north_km": 157.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -37.5,
+          "north_km": 152.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -37.5,
+          "north_km": 157.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -32.5,
+          "north_km": 152.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -32.5,
+          "north_km": 157.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -225.0,
+          "north_km": 105.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -222.5,
+          "north_km": 112.5,
+          "spacing_km": 5.0
+        },
+        {
+          "east_km": -210.0,
+          "north_km": 110.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -210.0,
+          "north_km": 130.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -190.0,
+          "north_km": 110.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -190.0,
+          "north_km": 130.0,
+          "spacing_km": 20.0
+        },
+        {
+          "east_km": -195.0,
+          "north_km": 105.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -195.0,
+          "north_km": 115.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -185.0,
+          "north_km": 105.0,
+          "spacing_km": 10.0
+        },
+        {
+          "east_km": -185.0,
+          "north_km": 115.0,
+          "spacing_km": 10.0
+        }
+      ]
+    }
+  ],
+  "session_id": "scan-fw-61b3bcc3f1fed165"
+}
