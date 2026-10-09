@@ -2,13 +2,15 @@
 
 Latest continuation: both full107 batch processes remain live (Python PIDs375761
 and377954; original sessions13368/26088). The immutable coverage snapshot now
-has50 paired-terminal members, with51 complete baselines and50 complete
-candidates. Parent verified active children for DS16-015 and newer021, and
-both original session handles responded live. Frozen iteration110 is queued
+has102 paired-terminal members, with102 complete baselines and102 complete
+candidates (204 phase hashes verified). Both original session handles remain
+live according to the parent. Frozen iteration110 is queued
 next when a slot frees, followed by frozen111; neither has started here.
-Eleven snapshot members triggered recovery, with no selected endpoint change
-in either arm. Full193 aggregates remain withheld. The initial four-member
-canary and prior12 snapshot are preserved; historical updates follow below.
+Twenty-six snapshot members triggered thirty recoveries. DS16-017 is the only
+selected endpoint change in either arm, improving fitted-c/c=0 error by
+0.145594/0.257170 km; no fallback occurred. Full193 aggregates remain withheld
+with91 members pending. The initial four-member canary and prior12/50 snapshots
+are preserved; historical updates follow below.
 
 Iteration110 is now frozen and published in9907cba16, protocol SHA256
 64797ea7bdb2b04f0561fc876e7bb82b3911b27456b0702cc4ceb9b4be18758c.
