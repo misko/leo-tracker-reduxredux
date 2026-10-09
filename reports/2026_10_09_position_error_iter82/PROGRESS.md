@@ -1,4 +1,22 @@
-# Original sensitivity run terminal; input retries running
+# Iterations78/82 COMPLETE; no live research numerical workers
+
+Both retry exec22341/PID4090370 and exec72415/PID4090371 terminated exit0.
+All51 retries complete, all148 members covered. Original51 input failures preserved.
+Both reports regenerated from terminal receipts; both PNGs visually reviewed.
+All296 raw0.25 objectives exactly reproduce historical scores and convergence.
+Sigma0.5 means fitted1.317354103650km /zero1.666471044641km; both148 rawqualified.
+Fitted96improve52regress;zero92improve56regress versus0.25. No per-scan sigma choice.
+Full distributions/subgroups/fallbacks/provenance inRESULTS.md andsummary.json.
+Slope audit296 rawpairs,147fitted and146zero bothqualified; exactprior reweighting
+identifies endpoint preference reversals without newfits. Eleven tests passed.
+
+Iteration83 onlyPREPARATION, committedac5d31726: uniform timing-trigger10 plan,
+reference-free32regionalinventory/commonbank/clockproposals/crossarm/restart.
+Fourpurepolicytests pass; exactlymatches63prior71sourceindices and3prior81retryseeds.
+NOgeneric numericaladapter yet, NOfrozen83protocol, NOfits. Mustimplement/qualify/freeze.
+GoalstillACTIVEunachieved; no below1kmfullcohort claim. Productionunchanged.
+
+## Historical launch record
 
 Iteration78 workers exec15271/PID4080141 and exec19546/PID4080142 both terminated
 with exit0. All148 terminal member receipts: 97 complete (DS16 63, DS18 34),

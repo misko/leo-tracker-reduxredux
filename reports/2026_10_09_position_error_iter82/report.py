@@ -1,6 +1,7 @@
 """Full148 sensitivity report, preserving original DS17 failure provenance."""
 
 import functools
+import json
 import runpy
 import sys
 from pathlib import Path
@@ -33,6 +34,30 @@ def main():
         "Pending or failed retries are not silently excluded from membership. "
         "No production changes or independent-validation claims.\n"
     )
+    summary = json.loads((HERE / "summary.json").read_text())
+    lines = ["", "## Paired comparisons on available membership", "",
+             "| Dataset | Arm | Baseline mean km | .25 mean km | .125 mean km | .5 mean km | "
+             ".5 improved/regressed/tied versus .25 |",
+             "|---|---|---:|---:|---:|---:|---|"]
+    def number(value):
+        return "pending" if value is None else f"{value:.6f}"
+    for name in ("DS16", "DS17", "DS18", "Pooled"):
+        for arm in ("fitted-c", "zero-c"):
+            row = summary["groups"][name]["arms"][arm]
+            variants = row["variants"]
+            comparison = variants["0.5"]["versus_new_control"]
+            means = [row["baseline_matched"]["mean"]] + [
+                variants[s]["position"]["mean"] for s in ("0.25", "0.125", "0.5")
+            ]
+            lines.append(
+                f"| {name} | {arm} | " + " | ".join(number(v) for v in means)
+                + f" | {comparison['improved']}/{comparison['regressed']}/{comparison['tied']} |"
+            )
+    lines += ["", "Sigma here is the satellite-specific slope prior in Hz/s, not timing sigma "
+              "or the receiver hard60 bound. c=0 also locks the RF-time terms; other observations, "
+              "banks, seeds and budgets are matched. These are conditional ablations sharing "
+              "fitted-derived banks and seeds, not independent c-specific search pipelines."]
+    text += "\n".join(lines) + "\n"
     path.write_text(text)
 
 
