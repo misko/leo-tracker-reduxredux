@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LogNorm
 
 HERE = Path(__file__).resolve().parent
 ARMS = ("fitted-c", "zero-c")
@@ -245,11 +246,47 @@ def main():
     fig.suptitle("All-member error distributions; failures retain operational fallbacks")
     fig.savefig(HERE / "distributions.png", dpi=160)
     plt.close(fig)
+    fig, axes = plt.subplots(2, 3, figsize=(15, 16), layout="constrained")
+    cmap = plt.get_cmap("viridis").copy()
+    cmap.set_bad("#dddddd")
+    for i, arm in enumerate(ARMS):
+        for j, dataset in enumerate(("DS16", "DS17", "DS18")):
+            ax, members = axes[i, j], groups[dataset]
+            values = np.full((len(members), len(MAIN)), np.nan)
+            for k, row in enumerate(members):
+                if row["status"] == "complete":
+                    values[k] = [max(row["stages"][s][arm]["error_km"], 0.001) for s in MAIN]
+            im = ax.imshow(
+                values,
+                aspect="auto",
+                interpolation="nearest",
+                cmap=cmap,
+                norm=LogNorm(vmin=0.001, vmax=500),
+            )
+            ax.set_xticks(range(len(MAIN)), MAIN, rotation=45)
+            ax.set_yticks(
+                range(len(members)),
+                [r["member"]["inventory_label"].split("-")[-1] for r in members],
+                fontsize=6,
+            )
+            ax.set_title(f"{dataset} / {arm}")
+            ax.set_ylabel("Frozen member index")
+    fig.colorbar(
+        im,
+        ax=axes,
+        label="Position error (km), logarithmic; gray = pending/input failure",
+        shrink=0.75,
+    )
+    fig.suptitle(f"Per-scan ablation: {total}/148 complete; all members retained")
+    fig.savefig(HERE / "per-scan.png", dpi=160)
+    plt.close(fig)
     lines += [
         "",
         "![Mean position errors](means.png)",
         "",
         "![Position error distributions](distributions.png)",
+        "",
+        "![Per-scan position errors; gray cells are unavailable](per-scan.png)",
         "",
         "summary.json includes every paired regression, thresholds1/5/10/100km, "
         "original48/added15 and prior24/other10 groups, fit times, load times, fallbacks "
