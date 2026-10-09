@@ -1,0 +1,22 @@
+# Active continuation after iteration63
+
+Goal active/unachieved. Completed cross-model endpoint/path audit,exec79539exit0,
+freeze7583f0029. All126objectives identical NumPy/native; maxparametergradient
+disagreement3.55e-15; allpathpointsfeasible. Threefailedtrajectorypairs have
+straightsegmentsampledbarriers.286,1.497,13.173abovehigherendpoint. This supports
+optimizerpathsensitivity, notobjective mismatchatsampledpoints; doesnotprove
+global/localminima, causativeiterationorbasintopology. No referenceerror used.
+62dropinqualification remainsfailed; no tolerance relaxation orresultsreplacement.
+
+51latest129/148=DS16 50,DS17 45,DS18 34. OnlyknownDS16-046improvesvsoldresearch;
+full148stillneeded. Datasetcohortjobs liveexec40092/PID4001824DS16 and
+exec53710/PID4001840DS17. DS18terminalcompleteunchanged. Noqualityexclusions.
+55exec3105/PID4011107ordinary192endpoints live;60exec53489/PID4021011smooth32
+live. Needletthese finish ratherthanchanging frozenpolicy. Refresh55/60reporters
+inworker runtime,51inworktreevenv; publishplots/results. No dupqueuedlabels.
+
+Nextpriorityfull51cohort,55ordinaryscorewinner and60pairedhard/smooth comparison.
+55all192and60first32mustcompareonlymatchedendpointindices. Receiverreference
+coordinates/errors evaluationonly; noneofnewdiagnosticscontainsrecoveredjointseeds.
+Stillconsumeddevelopment,notindependentvalidation. Uniformfrozen3datasetpolicy
+andnewindependentvalidationrequired. No RF/production/contracts/fixturechanges.
