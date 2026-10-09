@@ -75,3 +75,21 @@ scan-specific priors, choose winners by reference error or discard weak scans.
 Complete membership and failures remain visible. A cheap proxy can be useful on
 embedded hardware if labeled honestly and benchmarked; it cannot certify accuracy
 or replace independent convergence and out-of-sample localization checks.
+
+## Prepared streamed projection review
+
+The streamed helper globally normalizes whitened nuisance columns before
+compressing joint spatial/nuisance blocks by thin QR. The final factor preserves
+their joint Gram matrix, so nuisance projection has the same quadratic meaning
+as the dense weighted design, up to floating-point differences. Crucially the
+rank tolerance uses original observation-satellite row count and original
+nuisance column count, not the smaller QR factor dimensions. Synthetic dense
+equivalence checks cover confounding, rank deficiency, column rescaling and zero
+weights; 17 observability/freezer tests pass independently.
+
+The fixed 4,096-row chunk and conservative 512 MiB allocation guard are now
+explicit proposed protocol metadata. This reduces additional SVD workspace but
+does not make the adapter constant-memory: full Jacobian and nuisance arrays
+still exist. Report actual shape, predicted allocation, resource failures and
+runtime without claiming measured peak memory from this estimate. No recording
+was evaluated or protocol frozen during this review.
