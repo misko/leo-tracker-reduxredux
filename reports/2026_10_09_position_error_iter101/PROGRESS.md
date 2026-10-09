@@ -53,10 +53,14 @@ including frozen research adapters for historical cases. All 148 historical B7
 endpoint bindings remain available. Source availability does not by itself prove
 full model reconstruction or successful recovery.
 
-Iteration105 is preparing a generic five-member newer-development pilot, selected
+Iteration105 is running a generic five-member newer-development pilot, selected
 by calibration failure without reference errors. Three older hard60 publications
 require a full unchanged B7 baseline, including all regional separation passes;
 the two existing B7 publications require parity checks. New failures discovered
 by those baseline runs must follow the same retained-region trigger, rather than
-an ac11-specific point list. No iteration105 fits have started. At completion of
-the direct103 replay, no numerical worker remains running.
+an ac11-specific point list. Protocol and source snapshots were frozen and pushed
+in `8a52f5c73` before execution, after 23 synthetic tests passed and independent
+review found no blocker. The first two controllers cover members006 and050, with
+at most two single-thread workers and six500-second slices per phase. Member050's
+baseline has completed; candidate results and pilot accuracy are still pending.
+These failure-selected development cases do not establish population accuracy.
