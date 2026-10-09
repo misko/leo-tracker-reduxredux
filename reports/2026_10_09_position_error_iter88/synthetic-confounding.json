@@ -1,0 +1,72 @@
+{
+  "scope": "Synthetic data only; no recordings or position-accuracy claim",
+  "seed": 8801,
+  "pair_noise_scale_hz": 5.0,
+  "prior_sigma_hz": 30.0,
+  "observation_noise": "None added: isolates deterministic geometry of the linear estimator",
+  "scenarios": [
+    {
+      "name": "Common clock only",
+      "injected_hz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unadjusted_hz": [
+        -12.956692871412967,
+        -1.5955057590756543,
+        14.55219863048862
+      ],
+      "projected_hz": [
+        -2.1259719962878893e-15,
+        7.014688805223635e-16,
+        1.4245031157655256e-15
+      ],
+      "data_rank": 2,
+      "background_rank": 3,
+      "no_op": false
+    },
+    {
+      "name": "Identifiable satellite contrast",
+      "injected_hz": [
+        -15.0,
+        0.0,
+        15.0
+      ],
+      "unadjusted_hz": [
+        -27.946283433522602,
+        -1.5955057590756543,
+        29.54178919259825
+      ],
+      "projected_hz": [
+        -14.976519361675944,
+        0.0016096063846714405,
+        14.974909755291273
+      ],
+      "data_rank": 2,
+      "background_rank": 3,
+      "no_op": false
+    },
+    {
+      "name": "Satellite equals channel: unidentifiable",
+      "injected_hz": [
+        -15.0,
+        0.0,
+        15.0
+      ],
+      "unadjusted_hz": [
+        -31.94350758341851,
+        -1.5955057590756498,
+        33.53901334249416
+      ],
+      "projected_hz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "data_rank": 0,
+      "background_rank": 4,
+      "no_op": true
+    }
+  ]
+}
