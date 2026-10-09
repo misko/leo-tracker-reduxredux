@@ -1,0 +1,11 @@
+# Initial runtime structural audit
+
+This read-only audit inspected saved stage and terminal receipts for the first DS16-001 and DS17-001 invocations. It ran no model evaluations, opened no reference coordinates or position errors, and changed no source or numerical receipts. The snapshot is partial progress, not a full-cohort result.
+
+DS16-001 completed its baseline in 116.194 seconds and candidate in 22.484 seconds, including input loading and stage execution. The baseline retained three regional passes; candidate inventory contained no recovery candidates and no explicit failures. Both terminal receipts reported no reasons or source rejections. Baseline source accounting recorded 2,511 get calls, 2,409 coarse hits, 30 public exact hits, zero legacy coarse hits and zero coarse rejections. These are call counts, not counts of independent observations or grid points; the coarse audit list contained 400 unique entries. Candidate made 12 source get calls and retained the ordinary regions.
+
+At the last inspected snapshot, DS16-001 had 84 local stages (48 ordinary regional, 12 existing coarse recovery, 24 B7 joint). DS17-001 was still running with 131 local stages (72 ordinary regional, 48 existing coarse recovery, 11 B7 joint). Every inspected stage's canonical JSON value SHA256 matched its receipt. Earlier verification also found matching frozen protocol identities and no incomplete JSON writes. Local stage counts omit externally reused source payloads and cannot establish source coverage by themselves.
+
+Four inspected DS17 coarse-recovery receipts were independently unqualified, with stationarity residuals 0.0033465, 0.0170000, 0.0050279 and 0.0109809. These saved qualification failures are expected inputs to the existing recovery/fallback logic; they do not establish a controller failure or localization failure. No receipt exception was observed. DS17 terminal source accounting and overall outcome remained pending at this snapshot.
+
+No structural blocker was identified. Qualification, source admission and full membership coverage must still be reported from terminal receipts. The initial four-member runtime check cannot support a 193-member aggregate or an accuracy claim.

@@ -249,6 +249,10 @@ def describe_member(member, records, *, document_loader=evaluation_document, arc
                     "candidate"
                 ]["selection"].get("accepted_stage")
                 value["frequency_fit_stage_matched"] = same_stage
+                value["frequency_fit_caveat"] = (
+                    "Operational regions/associations/banks may differ even at the same stage; "
+                    "score improvement is not evidence of better position accuracy"
+                )
                 value["objective_delta_same_stage_only"] = (
                     value["candidate"]["objective"] - value["baseline"]["objective"]
                     if same_stage
@@ -322,6 +326,9 @@ def aggregate(rows, *, census_terminal=None):
                 if r["arms"][arm]["error_delta_km"] > 1e-9
             ]
         output["arms"][arm] = item
+    output["full_census_position_metrics_withheld"] = not all_terminal or any(
+        value["full_census_metrics_withheld"] for value in output["arms"].values()
+    )
     return output
 
 
