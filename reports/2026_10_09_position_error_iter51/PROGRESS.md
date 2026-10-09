@@ -1,5 +1,10 @@
 # Active continuation: full cohort jobs are live
 
+Superseded checkpoint: see ../2026_10_09_position_error_iter53/PROGRESS.md.
+Iteration45 now completed all148 members. Iteration51 is58/148 at the latest
+published snapshot; its three dataset jobs remain live. Iteration53's ordinary
+regional endpoint census is complete (187 feasible,5 infeasible).
+
 The unlimited below-1km goal is active and unachieved. This turn made progress:
 qualified the three-region assembly, froze all148 comparison, launched it, and
 resolved the DS18 common-bank ranking diagnostic at timing sigma1. No production

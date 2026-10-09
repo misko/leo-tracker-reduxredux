@@ -12,10 +12,10 @@ later oracle-region rescue results replaces an operational result.
 
 | Dataset evaluated/full | Arm | Method | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 60/63 | fitted-c | baseline | 6.172 | 1.317 | 4.397 | 265.277 |
-| DS16 60/63 | fitted-c | candidate | 5.457 | 0.968 | 2.392 | 265.789 |
-| DS16 60/63 | zero-c | baseline | 6.570 | 1.655 | 7.202 | 264.604 |
-| DS16 60/63 | zero-c | candidate | 5.721 | 1.184 | 2.927 | 261.743 |
+| DS16 63/63 | fitted-c | baseline | 5.964 | 1.322 | 4.286 | 265.277 |
+| DS16 63/63 | fitted-c | candidate | 5.224 | 0.909 | 2.377 | 265.789 |
+| DS16 63/63 | zero-c | baseline | 6.355 | 1.660 | 6.890 | 264.604 |
+| DS16 63/63 | zero-c | candidate | 5.484 | 1.161 | 2.875 | 261.743 |
 | DS17 51/51 | fitted-c | baseline | 4.477 | 1.132 | 4.789 | 152.840 |
 | DS17 51/51 | fitted-c | candidate | 0.864 | 0.708 | 2.009 | 2.635 |
 | DS17 51/51 | zero-c | baseline | 4.585 | 1.434 | 4.048 | 151.707 |
@@ -36,8 +36,8 @@ Reference coordinates enter error reporting after inference only.
 
 | Dataset | Arm | Better/worse/tied | Base failed | Raw failed/fallback | RMS before → after Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 48/12/0 | 0 | 1/1 | 90.04 → 70.31 |
-| DS16 | zero-c | 48/12/0 | 0 | 1/1 | 120.71 → 104.70 |
+| DS16 | fitted-c | 51/12/0 | 0 | 1/1 | 90.17 → 70.18 |
+| DS16 | zero-c | 50/13/0 | 0 | 1/1 | 120.25 → 104.15 |
 | DS17 | fitted-c | 39/12/0 | 0 | 0/0 | 79.96 → 64.88 |
 | DS17 | zero-c | 28/23/0 | 0 | 1/1 | 130.49 → 122.87 |
 | DS18 | fitted-c | 27/7/0 | 0 | 0/0 | 101.06 → 75.65 |
@@ -70,8 +70,8 @@ proof of unseen validation. No outcome-based membership filter was applied.
 |---|---|---:|---:|
 | DS16-historical 48/48 | fitted-c | 1.886 | 1.057 |
 | DS16-historical 48/48 | zero-c | 2.245 | 1.347 |
-| DS16-completion 12/15 | fitted-c | 23.315 | 23.058 |
-| DS16-completion 12/15 | zero-c | 23.870 | 23.217 |
+| DS16-completion 15/15 | fitted-c | 19.016 | 18.558 |
+| DS16-completion 15/15 | zero-c | 19.506 | 18.724 |
 | DS18-historical 24/24 | fitted-c | 5.486 | 3.293 |
 | DS18-historical 24/24 | zero-c | 5.728 | 3.546 |
 | DS18-completion 10/10 | fitted-c | 1.870 | 1.411 |
@@ -140,12 +140,12 @@ recorded with the results; full membership and coverage follows.
 | DS16-039 | scan-fw-6f9e553db123bebd | complete_prior_consumed  | 0.996 | 1.117 |
 | DS16-040 | scan-fw-fedf239661900a5a | complete_prior_consumed  | 0.478 | 0.504 |
 | DS16-041 | scan-fw-85f7398f9b9461ec | complete  | 1.679 | 1.667 |
-| DS16-042 | scan-fw-a52fc8f717bd9f76 | setup_failed_retry_pending ValueError('pinned storage root contains an inaccessible or symlink component: local') | — | — |
+| DS16-042 | scan-fw-a52fc8f717bd9f76 | complete  | 0.472 | 0.809 |
 | DS16-043 | scan-fw-c937db2e26dad0aa | complete_prior_consumed  | 2.751 | 3.880 |
 | DS16-044 | scan-fw-64163dfbcc531a50 | complete_prior_consumed  | 0.795 | 0.604 |
 | DS16-045 | scan-fw-58975d3328a47507 | complete  | 0.588 | 0.695 |
 | DS16-046 | scan-fw-c6c51bfeb6a7c3d9 | complete  | 265.789 | 261.743 |
-| DS16-047 | scan-fw-98990902df445215 | pending  | — | — |
+| DS16-047 | scan-fw-98990902df445215 | complete  | 0.669 | 0.843 |
 | DS16-048 | scan-fw-7e51f48fa65d6f81 | complete_prior_consumed  | 0.657 | 0.902 |
 | DS16-049 | scan-fw-3bf66f35e3a07685 | complete_prior_consumed  | 1.567 | 1.665 |
 | DS16-050 | scan-fw-7e6fe9f57ae2562c | complete  | 2.445 | 2.500 |
@@ -153,7 +153,7 @@ recorded with the results; full membership and coverage follows.
 | DS16-052 | scan-fw-7b796c5b898df6bf | complete_prior_consumed  | 0.940 | 0.932 |
 | DS16-053 | scan-fw-a88b75d9a4cad4ff | complete_prior_consumed  | 0.816 | 1.214 |
 | DS16-054 | scan-fw-4dbadefb5dadb59d | complete_prior_consumed  | 1.901 | 1.756 |
-| DS16-055 | scan-fw-5e190e43f0c8c9e2 | pending  | — | — |
+| DS16-055 | scan-fw-5e190e43f0c8c9e2 | complete  | 0.527 | 0.594 |
 | DS16-056 | scan-fw-8d94198baa058d67 | complete_prior_consumed  | 2.266 | 2.864 |
 | DS16-057 | scan-fw-6aa645776351507d | complete_prior_consumed  | 1.633 | 2.240 |
 | DS16-058 | scan-fw-4099ab8ea46fad71 | complete_prior_consumed  | 1.083 | 0.672 |
