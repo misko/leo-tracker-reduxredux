@@ -1,6 +1,6 @@
 # Iteration84 prototype: protect position information from flexible satellite slopes
 
-This is an untested localization hypothesis, with a tested linear-algebra prototype.
+This is an untested localization hypothesis, with a tested model-layer prototype.
 No recording has been evaluated with it, no fitting has started, and no accuracy
 improvement is claimed. Iteration83's frozen recovery workers remain unchanged.
 
@@ -60,7 +60,15 @@ causal separation is justified from the prototype.
 
 Synthetic tests cover the Gaussian limits, rank, coordinate/basis invariance,
 cross-information against an explicit latent design, and finite-difference gradient.
-Before fitting real recordings: integrate with the frozen model, check existing
+The model layer also reproduces the existing full objective/gradients when both
+sigmas are0.5, changes only the satellite-slope precision block, leaves likelihood
+and physical gradients identical at fixed states, and keeps the projector fixed
+under later parameter perturbations. All11 synthetic tests pass using
+`PYTHONPATH=src:. .venv/bin/pytest -q reports/2026_10_09_position_error_iter84`.
+These tests evaluate synthetic objectives only; they do not run an optimizer or
+consume recordings or reserve outcomes.
+
+Before fitting real recordings: check existing
 uniform-prior objective reproduction, freeze shared seed/projector and full148
 protocol, and compare against the already matched0.25/0.5 controls. Keep budgets,
 candidate banks, observations, other priors and failure handling matched. Report
@@ -68,5 +76,5 @@ frequency fit separately, all regressions and dataset/exposure groups. This rema
 consumed-data tuning requiring independent randomized whole-recording validation.
 
 No additional numerical workers, RF collection, production change or reserve
-outcome access is authorized by this prototype. The implementation and real-data
-qualification are future work after the current experiment permits worker capacity.
+outcome access is authorized by this prototype. Real-data qualification and matched
+fitting are future work after the current experiment permits worker capacity.
