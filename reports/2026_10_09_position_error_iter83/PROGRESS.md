@@ -1,5 +1,29 @@
 # Iteration83 RUNNING; iteration82 complete
 
+## Current continuation runners
+
+Initial exec14971 and36097 both TERMINAL exit0 after600s checkpoint, PIDsgone.
+Runner23957c223 now serially resumes at most3 further invocations per shard:
+- shard0 exec29748, runnerPID4105802 (sudo4105780), currentchild4105804.
+- shard1 exec40811, runnerPID4105803 (sudo4105781), currentchild4105805.
+Bothchildren confirmed ~99%CPU, emitted new fits beyond previous checkpoint.
+Do not launch any extra evaluator for a live runner. Parent stays alive between
+children; a child exit alone does not mean the runner is terminal. Poll exec handles
+or parent/child tree. Runner propagates nonzero exits and stops after3invocations.
+
+first-checkpoint.json pins136 region/census/fit receipts before resume; all checked
+unchanged after new fit receipts appeared. DS16-043 completed35regions:30success5failure,
+commonbank118/all180endpointsfeasible. DS16-050:30success5failure,commonbank147,
+185feasible1infeasible. Both are now fitting clockproposal/crossarm states. Note
+earlierprogressreported31successbeforelastfailure; terminalregionalcount is30/35.
+
+Reporter39512ad30 added and smokechecked: all148coverage,142unflagged determinedby
+frozenrule,6pending; fullcandidate means correctlywithheld. Tenpolicy/orchestration/
+reporttests passed plus3runnertests. Reporterfiles are outsidefrozennumericalclosure.
+No new accuracy result, no completed triggeredmember yet. No numericalsource edits.
+
+## Historical first-invocation launch record
+
 Frozen protocol/source commit3bf2877ef pushed and remote verified. All1231 source/input
 hashes checked before launch. Seven tests passed. Generic transport qualification
 reproduced ordinary DS18 inventory,145candidate union,192endpoint transports and
