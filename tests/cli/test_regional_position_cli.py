@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from leo.cli import regional_position as cli
-from leo.storage.regional_position_v2 import Hard60Store
+from leo.storage.regional_position_v3 import B7Store
 
 DIGEST = "sha256:" + "a" * 64
 
@@ -31,7 +31,7 @@ def test_insufficient_input_publishes_hard60_map_and_repeated_run_reuses_them(
     monkeypatch.setattr(cli, "prepare_position_windows", prepare)
     first = cli.run_regional_position_analysis(tmp_path, tmp_path, "scan-1")
     assert first["state"] == "complete"
-    store = Hard60Store(tmp_path)
+    store = B7Store(tmp_path)
     document = store.status("scan-1").manifest.document
     assert all(method.state == "insufficient" for method in document.methods)
     for name in ("V16",):

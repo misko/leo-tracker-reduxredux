@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 type Estimate = {
   latitude_deg: number; longitude_deg: number; horizontal_error_m: number;
   posterior_rms_hz: number | null; coefficient_hz_per_ghz: number;
-  converged: boolean; boundary: boolean;
+  converged: boolean; boundary: boolean; accepted_stage?: string;
 };
 type Method = {
   name: "T1AT" | "V16"; state: "diagnostic" | "insufficient";
@@ -14,7 +14,7 @@ type Status = {
   session_id: string; state: "pending" | "complete";
   manifest: null | {
     document: {
-      schema_version: 1 | 2; analysis_id: "scanner-regional-position-v1" | "scanner-regional-position-v2";
+      schema_version: 1 | 2 | 3; analysis_id: "scanner-regional-position-v1" | "scanner-regional-position-v2" | "scanner-regional-position-v3";
       configuration?: { protocol?: string; run?: { slope_half_width_hz_s?: number } };
       session_id: string; input_manifest_sha256: string;
       prior_latitude_deg: number; prior_longitude_deg: number; prior_radius_km: number;
@@ -40,8 +40,8 @@ function verify(value: Status, sessionId: string, inputDigest?: string, version 
     doc.known_position_used_for_inference !== false || doc.position_fix_claimed !== false ||
     doc.refinement !== "off" || doc.rf_ablation_scope !== "final-score-shared-fitted-c-calibration-and-association")
     throw new Error("Regional position evidence does not match the Sacramento comparison");
-  const methods = version === 2 ? "V16" : "T1AT,V16";
-  if (version === 2 && (doc.configuration?.protocol !== "sacramento-hard60-v1" ||
+  const methods = version >= 2 ? "V16" : "T1AT,V16";
+  if (version >= 2 && (doc.configuration?.protocol !== (version === 3 ? "sacramento-hard60-b7-v1" : "sacramento-hard60-v1") ||
     doc.configuration?.run?.slope_half_width_hz_s !== 60 ||
     doc.methods.some(method => method.arms.some(arm => arm.selected && !arm.selected.converged))))
     throw new Error("Hard60 policy or convergence evidence is invalid");
@@ -56,7 +56,7 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
   const prefix = `/api/v1/scanner/tracking/${encodeURIComponent(sessionId)}/regional-position-v`;
-  const version = status?.manifest?.document.schema_version ?? 2;
+  const version = status?.manifest?.document.schema_version ?? 3;
   const base = `${prefix}${version}`;
   useEffect(() => {
     const controller = new AbortController();
@@ -67,17 +67,14 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
       if (busy) return;
       busy = true;
       try {
-        const response = await fetch(`${prefix}2`, { signal: controller.signal });
-        if (!response.ok) throw new Error(`Regional position analysis unavailable (${response.status})`);
-        let value = await response.json() as Status;
-        verify(value, sessionId, inputDigest, 2);
-        if (!value.manifest) {
-          const historical = await fetch(`${prefix}1`, { signal: controller.signal });
-          if (historical.ok) {
-            const old = await historical.json() as Status;
-            verify(old, sessionId, inputDigest, 1);
-            if (old.manifest) value = old;
-          }
+        let value: Status = {session_id: sessionId, state: "pending", manifest: null};
+        for (const candidateVersion of [3, 2, 1]) {
+          const response = await fetch(`${prefix}${candidateVersion}`, { signal: controller.signal });
+          if (response.status === 404) continue;
+          if (!response.ok) throw new Error(`Regional position analysis unavailable (${response.status})`);
+          const candidate = await response.json() as Status;
+          verify(candidate, sessionId, inputDigest, candidateVersion);
+          if (candidate.manifest) { value = candidate; break; }
         }
         if (active) { setStatus(value); setError(null); }
       } catch (e) {
@@ -93,6 +90,7 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
     <h4>Hard60 Sacramento positioning</h4>
     <p>Hard60 searches the Sacramento 250 km prior with V16, a 2 s relative timing prior, ±60 Hz/s bounds on added receiver slopes, and a 40 → 20 → 10 → 5 km grid. The receiver reference measures error after selection.</p>
     <p>Fitted RF calibration and c = 0 share upstream calibration and association. Frequency RMS and position error measure different things. Results are bounded diagnostics, not confirmed position fixes.</p>
+    {version === 3 && <p>B7 retains distinct search regions, jointly fits receiver clocks and position, and applies timing-based satellite pruning and a 0.5 Hz/s satellite slope prior.</p>}
     {manifest && version === 1 && <p>Historical T1AT/V16 comparison. This capture has no published Hard60 result yet.</p>}
     {error && <p role="alert">{error}</p>}
     {!error && !manifest && <p>Hard60 analysis is pending.</p>}
@@ -102,7 +100,7 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
         const artifact = manifest.artifacts.find(item => item.name === method.name)!;
         const url = `${base}/${method.name}.png?sha256=${encodeURIComponent(artifact.sha256)}`;
         return <section key={method.name} aria-label={`${method.name} position result`}>
-          <h5>{method.name === "T1AT" ? "T1AT / C0" : version === 2 ? "Hard60 / V16" : "V16"}</h5>
+          <h5>{method.name === "T1AT" ? "T1AT / C0" : version === 3 ? "B7 / Hard60" : version === 2 ? "Hard60 / V16" : "V16"}</h5>
           <p>{method.points.length} evaluated positions · {method.search_stop_reason} · {method.deferred_cells} deferred cells.</p>
           <div className="queue-table-scroll"><table className="queue-table">
             <thead><tr><th>RF arm</th><th>Selected location</th><th>Reference error</th><th>Frequency RMS</th><th>Fit status</th></tr></thead>
@@ -111,7 +109,7 @@ export function RegionalPosition({ sessionId, inputDigest }: { sessionId: string
               <td>{arm.selected ? `${arm.selected.latitude_deg.toFixed(6)}°, ${arm.selected.longitude_deg.toFixed(6)}°` : `Unavailable: ${arm.reasons.join(", ")}`}</td>
               <td>{arm.selected ? `${(arm.selected.horizontal_error_m / 1000).toFixed(2)} km` : "—"}</td>
               <td>{arm.selected?.posterior_rms_hz == null ? "—" : `${arm.selected.posterior_rms_hz.toFixed(1)} Hz`}</td>
-              <td>{arm.selected ? `${arm.selected.converged ? "Stationary" : "Not converged"}${arm.selected.boundary ? "; boundary reached" : ""}` : "Insufficient evidence"}</td>
+              <td>{arm.selected ? `${arm.selected.converged ? "Stationary" : "Not converged"}${arm.selected.boundary ? "; boundary reached" : ""}${arm.selected.accepted_stage && arm.selected.accepted_stage !== "B7" ? `; fallback ${arm.selected.accepted_stage}` : ""}` : "Insufficient evidence"}</td>
             </tr>)}</tbody>
           </table></div>
           <div className="scanner-artifact-gallery"><figure>

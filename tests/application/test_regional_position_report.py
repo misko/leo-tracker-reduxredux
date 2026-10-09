@@ -108,7 +108,7 @@ def test_hard60_rejects_better_score_without_stationarity_and_never_uses_referen
         )
 
     first, second = report((38, -122)), report((39, -121))
-    assert first.schema_version == 2 and len(first.methods) == 1
+    assert first.schema_version == 3 and len(first.methods) == 1
     for arm, other in zip(first.methods[0].arms, second.methods[0].arms, strict=True):
         assert arm.selected.converged and arm.selected.objective == 100
         assert arm.selected.east_km == other.selected.east_km

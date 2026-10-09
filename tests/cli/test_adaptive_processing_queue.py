@@ -12,6 +12,13 @@ from leo.catalog.types import AdaptiveAnalysisJobLease
 from leo.cli import adaptive_processing_queue as subject
 
 
+@pytest.fixture(autouse=True)
+def current_tracking_policy(monkeypatch):
+    # Queue lifecycle tests use a synthetic current-policy lease. Migration has
+    # separate tests against the real policy-checking function.
+    monkeypatch.setattr(subject, "_supersede_tracking_policy", lambda **_: False)
+
+
 @pytest.mark.parametrize("native_low_rate", [False, True])
 def test_enqueue_pending_schedules_variable_dwell_analysis(
     monkeypatch, tmp_path, capsys, native_low_rate
@@ -174,7 +181,7 @@ def test_tracking_queue_identity_invalidates_legacy_control_gates(monkeypatch):
     assert payloads[0]["position"] == "scanner-conditional-position-v1"
     assert payloads[0]["additional_position_methods"] == "scanner-position-methods-v1"
     assert payloads[0]["adaptive_tle_position"] == "scanner-adaptive-tle-position-v3"
-    assert payloads[0]["regional_position"] == "scanner-regional-position-v2:hard60-v1"
+    assert payloads[0]["regional_position"] == "scanner-regional-position-v3:hard60-b7-v1"
 
 
 def test_completed_old_analysis_enqueues_tracking_without_live_window_cutoff(
@@ -428,7 +435,7 @@ def test_run_once_completes_tracking_publication(monkeypatch, tmp_path) -> None:
                 stdout=(
                     '{"state":"complete","position_methods_state":"complete",'
                     '"adaptive_tle_position_v3_state":"complete",'
-                    '"regional_position_v2_state":"complete"}'
+                    '"regional_position_v3_state":"complete"}'
                 ),
                 stderr="",
             )
@@ -660,7 +667,7 @@ def test_pending_regional_slice_yields_tracking_lease_without_failing_baseline(
             returncode=0,
             stderr="",
             stdout='{"state":"complete","position_methods_state":"complete",'
-            '"adaptive_tle_position_v3_state":"complete","regional_position_v2_state":"pending"}',
+            '"adaptive_tle_position_v3_state":"complete","regional_position_v3_state":"pending"}',
         ),
     )
     yielded = []

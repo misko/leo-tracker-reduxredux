@@ -36,12 +36,19 @@ function hard60Status() {
     configuration: { protocol: "sacramento-hard60-v1", run: { slope_half_width_hz_s: 60 } },
   } } };
 }
+function b7Status() {
+  const value = hard60Status();
+  value.manifest.document.schema_version = 3;
+  value.manifest.document.analysis_id = "scanner-regional-position-v3";
+  value.manifest.document.configuration.protocol = "sacramento-hard60-b7-v1";
+  return value;
+}
 const pending = { session_id: "scan-test", state: "pending", manifest: null };
 const response = (value: unknown) => ({ ok: true, json: async () => value });
 
 it("preserves historical maps with an explicit legacy label", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) =>
-    Promise.resolve(response(url.endsWith("v2") ? pending : status()))));
+    Promise.resolve(response(url.endsWith("v1") ? status() : pending))));
   render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
   expect(await screen.findAllByRole("img")).toHaveLength(2);
   for (const name of ["T1AT", "V16"]) {
@@ -61,7 +68,8 @@ it("preserves historical maps with an explicit legacy label", async () => {
 });
 
 it("prefers Hard60, renders one map and retains both RF arms", async () => {
-  const fetcher = vi.fn().mockResolvedValue(response(hard60Status()));
+  const fetcher = vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(response(url.endsWith("v3") ? pending : hard60Status())));
   vi.stubGlobal("fetch", fetcher);
   render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
   const images = await screen.findAllByRole("img");
@@ -73,13 +81,25 @@ it("prefers Hard60, renders one map and retains both RF arms", async () => {
     `/api/v1/scanner/tracking/scan-test/regional-position-v2/V16.png?sha256=${encodeURIComponent(digest)}`);
   expect(screen.getByText("Hard60 / V16")).toBeInTheDocument();
   expect(screen.getAllByText("5.79 km")).toHaveLength(2);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it("prefers B7 over historical results and uses the V3 PNG", async () => {
+  const fetcher = vi.fn().mockResolvedValue(response(b7Status()));
+  vi.stubGlobal("fetch", fetcher);
+  render(<RegionalPosition sessionId="scan-test" inputDigest={digest} />);
+  const image = (await screen.findAllByRole("img"))[0];
+  expect(image).toHaveAttribute("src",
+    `/api/v1/scanner/tracking/scan-test/regional-position-v3/V16.png?sha256=${encodeURIComponent(digest)}`);
+  expect(screen.getByText("B7 / Hard60")).toBeInTheDocument();
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
 it("polls pending results and cancels polling on unmount", async () => {
   vi.useFakeTimers();
   const fetcher = vi.fn().mockResolvedValueOnce(response(pending))
-    .mockResolvedValueOnce(response(pending)).mockResolvedValue(response(hard60Status()));
+    .mockResolvedValueOnce(response(pending)).mockResolvedValueOnce(response(pending))
+    .mockResolvedValue(response(b7Status()));
   vi.stubGlobal("fetch", fetcher);
   const view = render(<RegionalPosition sessionId="scan-test" />);
   await act(async () => {});
@@ -88,11 +108,11 @@ it("polls pending results and cancels polling on unmount", async () => {
   expect(screen.getAllByRole("img")).toHaveLength(1);
   view.unmount();
   await vi.advanceTimersByTimeAsync(30000);
-  expect(fetcher).toHaveBeenCalledTimes(3);
+  expect(fetcher).toHaveBeenCalledTimes(4);
 });
 
 it.each(["capture", "prior", "inventory", "truth", "arms"])("rejects incompatible %s evidence", async kind => {
-  const value = hard60Status();
+  const value = b7Status();
   if (kind === "capture") value.manifest.document.input_manifest_sha256 = "other";
   if (kind === "prior") value.manifest.document.prior_radius_km = 500;
   if (kind === "inventory") value.manifest.artifacts.pop();
@@ -105,7 +125,7 @@ it.each(["capture", "prior", "inventory", "truth", "arms"])("rejects incompatibl
 });
 
 it("keeps diagnostic maps visible when evidence is insufficient", async () => {
-  const value = hard60Status();
+  const value = b7Status();
   for (const method of value.manifest.document.methods) {
     method.state = "insufficient";
     for (const arm of method.arms) { arm.selected = null; arm.reasons = ["no-qualified-windows"]; }
