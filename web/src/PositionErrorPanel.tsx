@@ -9,9 +9,21 @@ const colors = { fitted: "#137ab2", zero: "#b65415" };
 const arms = ["fitted", "zero"] as const;
 const names = { fitted: "Fitted c", zero: "c = 0" };
 
-export function histogram(values: number[], maximum: number, bins = 12) {
+export function logDomain(values: number[]): [number, number] {
+  const positive = values.filter(value => Number.isFinite(value) && value > 0);
+  if (!positive.length) return [-3, 0];
+  const low = Math.floor(Math.log10(Math.min(...positive)));
+  return [low, Math.max(low + 1, Math.ceil(Math.log10(Math.max(...positive))))];
+}
+
+export function histogram(values: number[], domain: [number, number], bins = 12) {
   const counts = Array<number>(bins).fill(0);
-  for (const value of values) counts[Math.min(bins - 1, Math.floor(value / maximum * bins))]++;
+  const [low, high] = domain;
+  for (const value of values) {
+    if (!Number.isFinite(value) || value <= 0) continue;
+    const index = Math.floor((Math.log10(value) - low) / (high - low) * bins);
+    counts[Math.max(0, Math.min(bins - 1, index))]++;
+  }
   return counts;
 }
 
@@ -97,7 +109,12 @@ export function PositionErrorPanel() {
   }, [request]);
   const points = result?.points ?? [];
   const maximum = Math.max(1, ...points.flatMap(p => [p.fitted ?? 0, p.zero ?? 0]));
-  const distributions = arms.map(arm => histogram(points.flatMap(p => p[arm] === null ? [] : [p[arm]!]), maximum));
+  const domain = logDomain(points.flatMap(p => [p.fitted ?? 0, p.zero ?? 0]));
+  const [logMin, logMax] = domain;
+  const tickStep = Math.max(1, Math.ceil((logMax - logMin) / 6));
+  const ticks = Array.from({ length: Math.floor((logMax - logMin) / tickStep) + 1 }, (_, i) => logMin + i * tickStep);
+  if (ticks.at(-1) !== logMax) ticks.push(logMax);
+  const distributions = arms.map(arm => histogram(points.flatMap(p => p[arm] === null ? [] : [p[arm]!]), domain));
   const maxCount = Math.max(1, ...distributions.flat());
   const y = (v: number) => 270 - v / maximum * 230;
   const x = (t: number) => 70 + (t - request.start) / (request.end - request.start) * 690;
@@ -138,12 +155,13 @@ export function PositionErrorPanel() {
           {points.flatMap(p => arms.map(arm => p[arm] !== null && <circle key={`${p.sessionId}-${arm}`} cx={x(p.time)} cy={y(p[arm]!)} r={arm === "fitted" ? 4 : 2.5} fill={colors[arm]} opacity="0.8"><title>{p.sessionId} · {new Date(p.time).toLocaleString()} · {names[arm]}: {p[arm]!.toFixed(3)} km</title></circle>))}
         </svg>
         <h3>Position error histogram</h3>
-        <svg viewBox="0 0 800 330" role="img" aria-label="Histogram of horizontal position errors in kilometres">
+        <p>Logarithmic error axis (km). Zero-error estimates are excluded from the histogram: fitted c {points.filter(p => p.fitted === 0).length}, c = 0 {points.filter(p => p.zero === 0).length}. They remain in the time plot and table.</p>
+        <svg viewBox="0 0 800 330" role="img" aria-label="Histogram of horizontal position errors in kilometres on a base-10 logarithmic axis">
           <text x="15" y="20">Scans</text>
           {[0, .5, 1].map(f => <g key={f}><line x1="70" x2="760" y1={270 - 230 * f} y2={270 - 230 * f} stroke="#b6c4ce"/><text x="60" y={274 - 230 * f} textAnchor="end">{(maxCount * f).toFixed(0)}</text></g>)}
-          {arms.flatMap((arm, a) => distributions[a].map((count, i) => <rect key={`${arm}-${i}`} x={70 + i * 57.5 + a * 26} y={270 - count / maxCount * 230} width="24" height={count / maxCount * 230} fill={colors[arm]}><title>{names[arm]} · {(i * maximum / 12).toFixed(2)}–{((i + 1) * maximum / 12).toFixed(2)} km: {count} scans</title></rect>))}
-          {[0, .25, .5, .75, 1].map(f => <text key={f} x={70 + 690 * f} y="295" textAnchor="middle">{(maximum * f).toFixed(1)}</text>)}
-          <text x="415" y="322" textAnchor="middle">Horizontal position error (km)</text>
+          {arms.flatMap((arm, a) => distributions[a].map((count, i) => <rect key={`${arm}-${i}`} x={70 + i * 57.5 + a * 26} y={270 - count / maxCount * 230} width="24" height={count / maxCount * 230} fill={colors[arm]}><title>{names[arm]} · {(10 ** (logMin + i * (logMax - logMin) / 12)).toPrecision(3)}–{(10 ** (logMin + (i + 1) * (logMax - logMin) / 12)).toPrecision(3)} km: {count} scans</title></rect>))}
+          {ticks.map(exponent => <text key={exponent} x={70 + 690 * (exponent - logMin) / (logMax - logMin)} y="295" textAnchor="middle">10<tspan baselineShift="super" fontSize="9">{exponent}</tspan></text>)}
+          <text x="415" y="322" textAnchor="middle">Horizontal position error (km, log scale)</text>
         </svg>
         <details><summary>View plotted values</summary><table><thead><tr><th>Capture time</th><th>Scan</th><th>Fitted c (km)</th><th>c = 0 (km)</th></tr></thead><tbody>{points.map(p => <tr key={p.sessionId}><td>{new Date(p.time).toLocaleString()}</td><td><a href={`?scan_id=${encodeURIComponent(p.sessionId)}`}>{p.sessionId}</a></td><td>{p.fitted?.toFixed(3) ?? "Unavailable"}</td><td>{p.zero?.toFixed(3) ?? "Unavailable"}</td></tr>)}</tbody></table></details>
       </>}
