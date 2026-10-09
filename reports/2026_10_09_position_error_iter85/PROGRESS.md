@@ -1,5 +1,23 @@
 # User-authorized ablation running
 
+## Completed DS16 checkpoint
+
+All63 DS16 finished with no input failures. Fitted-c means:
+B0 5.964450, B1 1.782396, B2 5.635765, B3 1.422679,
+B4 1.100451, B4W 1.078602, B5 1.065141, B6 1.017307, B7 0.979007km.
+Refit controls C3/C4/C5/C6 reproduce the preceding fitted-c means to six decimals.
+All126 DS16 raw B7 objective/error pairs exactly reproduce the archived0.5 study.
+B6 has one raw fitted-c qualification failure and its prescribed fallback; B7 none.
+DS16-046 distinguishes the search effect:265.276544km baseline,1.807182km region
+retention alone,266.428219km joint alone,1.003851km both. No per-case choice occurs.
+DS17/DS18 still pending; no full148 conclusion. The two85workers remain live.
+
+Reporter now includes mean/CDF/per-scan plots, same-start effect contrasts,
+2x2 interaction, paired changes above100m, and RF-lock/control audits. First39
+zero-c C5/B5 raw controls have exactly identical objectives/convergence; every
+examined staticc/RFtime lock passes. Four reporting tests pass. Do not publish
+the generated partial figures as a completed full-cohort comparison.
+
 The user resumed work specifically to run the agreed hard60 ablation and plots
 on all DS16/DS17/DS18 members. No production change or new RF is authorized here.
 The supported goal tool still reports paused and exposes no resume operation;
