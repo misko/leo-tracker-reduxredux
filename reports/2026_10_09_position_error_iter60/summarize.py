@@ -34,6 +34,7 @@ for model, folder in [("hard", REPORTS / "2026_10_09_position_error_iter55"), ("
                     row, model=model, receipt=str(path.relative_to(REPORTS.parent))
                 )
 paired = paired_indices(plan["endpoint_indices"], receipts)
+complete = len(paired) == 32
 winners, metrics = {}, {}
 for model in MODELS:
     winners[model], metrics[model] = {}, {}
@@ -61,13 +62,14 @@ paired_changes = {
     for arm in ARMS
 }
 summary = dict(
+    complete=complete,
     paired_changes=paired_changes,
     paired_indices=paired,
     planned_indices=plan["endpoint_indices"],
     winners=winners,
     metrics=metrics,
     receipts=list(receipts.values()),
-    scope="Consumed partial diagnostic, no cohort replacement; unequal model walltime allowances",
+    scope="Consumed diagnostic, no cohort replacement; unequal model walltime allowances",
 )
 (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 fig, axes = plt.subplots(1, 2, figsize=(11, 4), layout="constrained")
@@ -92,14 +94,15 @@ fig.suptitle(f"Hard/smooth comparison: {len(paired)}/32 fully paired regions")
 fig.savefig(HERE / "comparison.png", dpi=160)
 text = f"""# Iteration60: ordinary-start smooth-horizon pilot
 
-**Partial: {len(paired)}/32 fully paired regions.** Each region requires hard and
+**{'Complete' if complete else 'Partial'}: {len(paired)}/32 fully paired regions.**
+Each region requires hard and
 smooth results in both c arms before entering this comparison. All32 planned
 regions remain in coverage. This is consumed DS18 development, not independent
 validation; no result replaces a cohort error or establishes an operational fix.
 
 ![Paired position outcomes](comparison.png)
 
-## Provisional score-selected winners and computation
+## Score-selected winners and computation
 
 | Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -143,6 +146,10 @@ fits on the matched completed subset, not just successful winners.
 Smooth uses90seconds/600iterations versus hard20seconds/600iterations, following
 the measured4.45x evaluation cost. **This is not equal wall-time allowance.**
 Both c arms share budgets within each model. No convergence gate is relaxed.
+Late fits overlapped iteration69's eight-worker run. Its unchanged controls
+demonstrated execution-budget sensitivity, so first-attempt differences cannot
+isolate smoothness alone. Preserve these receipts; a fair execution-policy repeat
+requires a separate frozen protocol. See iteration69/EXECUTION.md and iteration70.
 Shared inputs: common145 bank, ordinary calibration, sigma1/common3, joint100,
 residual slopes60, local25km, identical ordinary seeds. Global1degree smoothstep
 is the model change. No recovered joint seed or reference-guided selection is used.

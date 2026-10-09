@@ -21,6 +21,7 @@ receipts = [read(p) for p in sorted((HERE / "results").glob("*.json"))]
 paired = {r["index"] for r in receipts if r["arm"] == "fitted-c"} & {
     r["index"] for r in receipts if r["arm"] == "zero-c"
 }
+complete = len(paired) == 192 and len(receipts) == 384
 rows = [r for r in receipts if r["index"] in paired]
 winners = {}
 for arm in ("fitted-c", "zero-c"):
@@ -42,7 +43,8 @@ summary = dict(
     statuses=dict(Counter(r["status"] for r in receipts)),
     winners=winners,
     rows=receipts,
-    scope="Provisional consumed-data diagnostic; no cohort replacement or independent validation",
+    scope="Consumed-data diagnostic; no cohort replacement or independent validation",
+    complete=complete,
 )
 (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 fig, axes = plt.subplots(1, 2, figsize=(11, 4), layout="constrained")
@@ -67,19 +69,20 @@ for ax in axes:
     ax.set_xlabel("Frozen ordinary endpoint index")
 axes[0].legend(fontsize=7)
 fig.suptitle(
-    f"Ordinary-start diagnostic: {len(paired)}/192 paired endpoints, partial until complete"
+    f"Ordinary-start diagnostic: {len(paired)}/192 paired endpoints"
 )
 fig.savefig(HERE / "comparison.png", dpi=160)
 text = f"""# Iteration55: ordinary-start common-bank refits
 
-**Partial: {len(paired)}/192 endpoint pairs; {len(receipts)}/384 receipts.** This is
+**{'Complete' if complete else 'Partial'}: {len(paired)}/192 endpoint pairs;
+{len(receipts)}/384 receipts.** This is
 consumed DS18 development evidence, not independent validation, and does not
 replace any dataset benchmark result. Only endpoints completed in both arms
 participate in the provisional comparison. All192 remain in the denominator.
 
 ![Paired objective and position diagnostics](comparison.png)
 
-| Arm | Provisional score-selected endpoint | Objective | Error km | Frequency RMS Hz |
+| Arm | Score-selected endpoint | Objective | Error km | Frequency RMS Hz |
 |---|---:|---:|---:|---:|
 """
 for arm, winner in winners.items():
@@ -90,6 +93,12 @@ for arm, winner in winners.items():
         )
 text += """
 ## Frozen policy and limitations
+
+The late fits overlapped the iteration69 eight-worker execution, which caused
+measured wall-budget truncation in repeated controls. These first-attempt results
+are preserved; do not interpret late failures as purely scientific model effects.
+Iteration70 restored the original controls with two workers and a larger wall
+allowance. Any repeat must have separate receipts and a frozen execution policy.
 
 All187 feasible ordinary endpoints from iteration53 receive both fits with20s,
 600-iteration limits. The other5 endpoints remain explicit infeasible receipts

@@ -1,20 +1,21 @@
 # Iteration60: ordinary-start smooth-horizon pilot
 
-**Partial: 23/32 fully paired regions.** Each region requires hard and
+**Complete: 32/32 fully paired regions.**
+Each region requires hard and
 smooth results in both c arms before entering this comparison. All32 planned
 regions remain in coverage. This is consumed DS18 development, not independent
 validation; no result replaces a cohort error or establishes an operational fix.
 
 ![Paired position outcomes](comparison.png)
 
-## Provisional score-selected winners and computation
+## Score-selected winners and computation
 
 | Model | Arm | Winner index | Error km | RMS Hz | Converged/failed | Median evals | Median s |
 |---|---|---:|---:|---:|---:|---:|---:|
-| hard | fitted-c | 126 | 14.795589 | 107.348 | 19/4 | 621.0 | 10.51 |
-| hard | zero-c | 6 | 221.415046 | 114.216 | 13/10 | 663.0 | 10.78 |
-| smooth | fitted-c | 126 | 15.350396 | 106.803 | 23/0 | 605.0 | 41.90 |
-| smooth | zero-c | 126 | 16.189070 | 108.284 | 23/0 | 606.0 | 41.79 |
+| hard | fitted-c | 180 | 58.398433 | 97.599 | 23/9 | 631.0 | 10.65 |
+| hard | zero-c | 180 | 58.639244 | 102.908 | 20/12 | 641.0 | 10.86 |
+| smooth | fitted-c | 180 | 58.372248 | 98.005 | 31/1 | 610.0 | 43.09 |
+| smooth | zero-c | 180 | 58.416093 | 102.870 | 32/0 | 606.0 | 42.08 |
 
 ## Paired regional changes
 
@@ -23,8 +24,8 @@ Gained/lost convergence is reported separately and is not an accuracy improvemen
 
 | Arm | Improved/regressed/tied | Gained/lost convergence | Both failed |
 |---|---:|---:|---:|
-| fitted-c | 11/8/0 | 4/0 | 0 |
-| zero-c | 3/10/0 | 10/0 | 0 |
+| fitted-c | 13/10/0 | 8/0 | 1 |
+| zero-c | 6/14/0 | 12/0 | 0 |
 
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated
@@ -34,6 +35,10 @@ fits on the matched completed subset, not just successful winners.
 Smooth uses90seconds/600iterations versus hard20seconds/600iterations, following
 the measured4.45x evaluation cost. **This is not equal wall-time allowance.**
 Both c arms share budgets within each model. No convergence gate is relaxed.
+Late fits overlapped iteration69's eight-worker run. Its unchanged controls
+demonstrated execution-budget sensitivity, so first-attempt differences cannot
+isolate smoothness alone. Preserve these receipts; a fair execution-policy repeat
+requires a separate frozen protocol. See iteration69/EXECUTION.md and iteration70.
 Shared inputs: common145 bank, ordinary calibration, sigma1/common3, joint100,
 residual slopes60, local25km, identical ordinary seeds. Global1degree smoothstep
 is the model change. No recovered joint seed or reference-guided selection is used.
@@ -73,12 +78,12 @@ independent validation remain required. Production/RF/contracts unchanged.
 | 120 | converged | converged | converged | converged |
 | 126 | converged | failed | converged | converged |
 | 132 | failed | failed | converged | converged |
-| 138 | pending | pending | converged | converged |
-| 144 | pending | pending | pending | pending |
-| 150 | pending | pending | pending | pending |
-| 156 | pending | pending | pending | pending |
-| 162 | pending | pending | pending | pending |
-| 168 | pending | pending | pending | pending |
-| 174 | pending | pending | pending | pending |
-| 180 | pending | pending | pending | pending |
-| 186 | pending | pending | pending | pending |
+| 138 | converged | converged | converged | converged |
+| 144 | converged | converged | converged | converged |
+| 150 | converged | converged | converged | converged |
+| 156 | failed | converged | converged | converged |
+| 162 | failed | failed | converged | converged |
+| 168 | failed | converged | converged | converged |
+| 174 | failed | failed | failed | converged |
+| 180 | converged | converged | converged | converged |
+| 186 | failed | converged | converged | converged |
