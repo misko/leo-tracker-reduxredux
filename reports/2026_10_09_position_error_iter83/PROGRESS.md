@@ -13,9 +13,8 @@ or parent/child tree. Runner propagates nonzero exits and stops after3invocation
 
 first-checkpoint.json pins136 region/census/fit receipts before resume; all checked
 unchanged after new fit receipts appeared. DS16-043 completed35regions:30success5failure,
-commonbank118/all180endpointsfeasible. DS16-050:30success5failure,commonbank147,
-185feasible1infeasible. Both are now fitting clockproposal/crossarm states. Note
-earlierprogressreported31successbeforelastfailure; terminalregionalcount is30/35.
+commonbank118/all180endpointsfeasible. DS16-050:31success4failure,commonbank147,
+185feasible1infeasible. Both are now fitting clockproposal/crossarm states.
 
 Reporter39512ad30 added and smokechecked: all148coverage,142unflagged determinedby
 frozenrule,6pending; fullcandidate means correctlywithheld. Tenpolicy/orchestration/
