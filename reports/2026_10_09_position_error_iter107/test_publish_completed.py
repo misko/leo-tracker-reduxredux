@@ -34,6 +34,7 @@ def test_complete_snapshot_retains_raw_failed_recovery(tmp_path):
         rows.append(
             {
                 "label": f"DS16-{i + 1:03d}",
+                "dataset": "DS16",
                 "exact_parity": {a: {"vector": True} for a in ("fitted-c", "zero-c")},
                 "trigger_count": int(i == 0),
                 "candidate_fallback": False,

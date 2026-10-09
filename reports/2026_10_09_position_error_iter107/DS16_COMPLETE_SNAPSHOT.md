@@ -2,6 +2,8 @@
 
 All 63 members are terminal. These are consumed development recordings, not independent validation. Known coordinates were used only after sealed selections for this report. No new fits, objective evaluations or RF collection were performed.
 
+Fitted-c mean changes from 0.979007 to 0.973596km; median changes from 0.834879 to 0.834879km. The 0.4km mean target is not achieved.
+
 | Dataset | Arm | Phase | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
 | DS16 | fitted-c | baseline | 0.979007 | 0.834879 | 2.088464 | 3.204798 |
@@ -22,6 +24,14 @@ p95 uses linear interpolation. DS16 includes all 63 authority members: the histo
 Additional DS16 membership (authority legacy-label mapping, not index range): DS16-001, DS16-008, DS16-009, DS16-011, DS16-013, DS16-015, DS16-023, DS16-034, DS16-041, DS16-042, DS16-045, DS16-046, DS16-047, DS16-050, DS16-055.
 Selected vector/clock/objective changes: DS16-017, DS16-050, DS16-055.
 
+| Changed member | Fitted before km | Fitted after km | Zero before km | Zero after km |
+|---|---:|---:|---:|---:|
+| DS16-017 | 1.169118544 | 1.023524119 | 2.072298000 | 1.815128377 |
+| DS16-050 | 2.245628821 | 2.050285324 | 2.257895714 | 2.055716141 |
+| DS16-055 | 0.703944530 | 0.703945341 | 0.792035874 | 0.792035935 |
+
+Remaining fitted-c worst case: DS16-051 at 3.204798km. The unchanged median means this recovery experiment does not demonstrate a broad improvement in typical position error.
+
 fitted-c: 1 paired regressions (>1e−9km): DS16-055 (+0.000000811km).
 zero-c: 1 paired regressions (>1e−9km): DS16-055 (+0.000000061km).
 
@@ -41,7 +51,17 @@ candidate: 1826.355s across 63 completed slices; this is persisted slice elapsed
 candidate fitted-c: 63/63 selected endpoints qualified; mean/median RMS 66.939054/65.765520Hz; mean signal-window support 2702.359754.
 candidate zero-c: 63/63 selected endpoints qualified; mean/median RMS 101.703292/104.843008Hz; mean signal-window support 2664.150063.
 
+| Dataset | Arm | Phase | Mean RMS Hz | Mean signal-window support |
+|---|---|---|---:|---:|
+| DS16 | fitted-c | baseline | 67.065771 | 2696.801407 |
+| DS16 | fitted-c | candidate | 66.939054 | 2702.359754 |
+| DS16 | zero-c | baseline | 101.847068 | 2658.645054 |
+| DS16 | zero-c | candidate | 101.703292 | 2664.150063 |
+
+The candidate is a shadow recovery pass over an already completed fresh baseline. Its elapsed time is additional replay/recovery cost, not standalone pipeline runtime or evidence that the candidate is faster than baseline. Operational total cost would include the baseline analysis plus any recovery work.
+
 Frequency fit is separate from positioning. Banks and associations may change between regions; final B7 objective changes do not establish better localization. The regional winner is selected before B3–B7 using the existing regional score and calibration penalty. Ordinary regions are preserved; no reference-guided selection or cross-model score selection is introduced.
+The c arms use the same recording inputs, ordinary search policy, priors and budgets; c=0 locks static c and its RF time terms. Adaptive associations and final satellite support can differ by arm, so the reported fitted/zero differences describe the matched pipeline ablation, not a fixed-final-bank causal estimate.
 
 ![Matched position errors](ds16-complete.png)
 

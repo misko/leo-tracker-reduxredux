@@ -21,6 +21,19 @@ def main(stem):
     rows = data["rows"]
     assert len(rows) == (63 if stem == "DS16" else 193)
     assert not data["metrics"]["full_census_position_metrics_withheld"]
+    if stem == "FULL193":
+        assert len(data["subset_snapshot_sha256"]) == 4
+        data["subset_integrity_sha256"] = {}
+        for name, digest in data["subset_snapshot_sha256"].items():
+            assert sha(HERE / name) == digest
+            prefix = name.split("_COMPLETE_SNAPSHOT")[0].lower()
+            manifest = HERE / (prefix + "-complete-integrity.json")
+            bound = json.loads(manifest.read_text())
+            artifacts = bound.get(
+                "artifacts", bound.get("artifact_sha256", bound.get("artifacts_sha256"))
+            )
+            assert [v for k, v in artifacts.items() if Path(k).name == name] == [digest]
+            data["subset_integrity_sha256"][manifest.name] = sha(manifest)
     protocol = HERE / "protocol.json"
     if protocol.exists():
         assert sha(protocol) == data["protocol_sha256"]
@@ -52,6 +65,22 @@ def main(stem):
         "| Dataset | Arm | Phase | Mean km | Median km | p95 km | Worst km |",
         "|---|---|---|---:|---:|---:|---:|",
     ]
+    fit = data["metrics"]["arms"]["fitted-c"]
+    lines[4:4] = [
+        f"Fitted-c mean changes from {fit['baseline']['mean_km']:.6f} to "
+        f"{fit['candidate']['mean_km']:.6f}km; median changes from "
+        f"{fit['baseline']['median_km']:.6f} to {fit['candidate']['median_km']:.6f}km. "
+        "The 0.4km mean target is not achieved.",
+        "",
+    ]
+    if stem == "FULL193":
+        lines[4:4] = [
+            "This full census merges the four sealed completed dataset reports. Their integrity "
+            "manifests and all 386 current baseline/candidate phase receipt hashes were verified "
+            "before publication; no additional recording reconstruction or reference query was "
+            "needed for the merge.",
+            "",
+        ]
     for dataset, metrics in data["datasets"].items():
         for arm, value in metrics["arms"].items():
             for phase in ("baseline", "candidate"):
@@ -107,6 +136,29 @@ def main(stem):
         "Selected vector/clock/objective changes: " + (", ".join(changed) or "none") + ".",
         "",
     ]
+    lines += [
+        "| Changed member | Fitted before km | Fitted after km | Zero before km | Zero after km |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        if row["label"] in changed:
+            values = [
+                row["arms"][a][p]["error_km"]
+                for a in ("fitted-c", "zero-c")
+                for p in ("baseline", "candidate")
+            ]
+            lines.append(
+                "| " + row["label"] + " | " + " | ".join(f"{value:.9f}" for value in values) + " |"
+            )
+    lines.append("")
+    worst = max(rows, key=lambda r: r["arms"]["fitted-c"]["candidate"]["error_km"])
+    lines.append(
+        f"Remaining fitted-c worst case: {worst['label']} at "
+        f"{worst['arms']['fitted-c']['candidate']['error_km']:.6f}km. "
+        "The unchanged median means this recovery experiment does not demonstrate "
+        "a broad improvement in typical position error."
+    )
+    lines.append("")
     for arm, value in data["metrics"]["arms"].items():
         regressions = value["paired_regressions"]
         lines.append(
@@ -173,11 +225,35 @@ def main(stem):
             )
     lines += [
         "",
+        "| Dataset | Arm | Phase | Mean RMS Hz | Mean signal-window support |",
+        "|---|---|---|---:|---:|",
+    ]
+    for dataset in data["datasets"]:
+        selected = [r for r in rows if r["dataset"] == dataset]
+        for arm in ("fitted-c", "zero-c"):
+            for phase in ("baseline", "candidate"):
+                endpoints = [r["arms"][arm][phase] for r in selected]
+                lines.append(
+                    f"| {dataset} | {arm} | {phase} | "
+                    f"{np.mean([v['posterior_rms_hz'] for v in endpoints]):.6f} | "
+                    f"{np.mean([v['signal_windows'] for v in endpoints]):.6f} |"
+                )
+    lines += [
+        "",
+        "The candidate is a shadow recovery pass over an already completed fresh baseline. "
+        "Its elapsed time is additional replay/recovery cost, not standalone pipeline runtime "
+        "or evidence that the candidate is faster than baseline. Operational total cost would "
+        "include the baseline analysis plus any recovery work.",
+        "",
         "Frequency fit is separate from positioning. Banks and associations may change "
         "between regions; final B7 objective changes do not establish better localization. "
         "The regional winner is selected before B3–B7 using the existing regional score and "
         "calibration penalty. Ordinary regions are preserved; no reference-guided selection "
         "or cross-model score selection is introduced.",
+        "The c arms use the same recording inputs, ordinary search policy, priors and budgets; "
+        "c=0 locks static c and its RF time terms. Adaptive associations and final satellite "
+        "support can differ by arm, so the reported fitted/zero differences describe the "
+        "matched pipeline ablation, not a fixed-final-bank causal estimate.",
         "",
         f"![Matched position errors]({png.name})",
         "",
@@ -193,6 +269,7 @@ def main(stem):
     markdown.write_text("\n".join(lines) + "\n")
     integrity = {
         "protocol_sha256": data["protocol_sha256"],
+        "subset_snapshot_sha256": data.get("subset_snapshot_sha256", {}),
         "receipt_sha256": data["receipt_sha256"],
         "artifacts": {
             p.name: sha(p)
@@ -201,11 +278,15 @@ def main(stem):
                 markdown,
                 png,
                 HERE / "report_completed.py",
+                HERE / "report.py",
                 HERE / "plot_completed.py",
                 HERE / "publish_completed.py",
             )
+            if p.exists()
         },
     }
+    if stem == "FULL193":
+        integrity["artifacts"]["merge_completed.py"] = sha(HERE / "merge_completed.py")
     (HERE / (stem.lower() + "-complete-integrity.json")).write_text(
         json.dumps(integrity, indent=2) + "\n"
     )
