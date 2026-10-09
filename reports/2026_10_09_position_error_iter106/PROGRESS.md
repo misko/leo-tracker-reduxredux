@@ -1,4 +1,14 @@
-# Full148 frequency-width experiment in progress
+# Full148 frequency-width experiment complete
+
+Completion update: all148 terminal receipts and592 raw fits are complete and
+independently qualified, with no fallback. Sessions60178/22011 have exited0;
+the earlier38325/21253 are also terminal. No duplicate launch is needed.
+Both arms fail the predeclared gates. See [the decision](DECISION.md),
+[full results and plots](RESULTS.md) and [raw archive](RESULT_ARCHIVE.md).
+Production is unchanged; the0.4 km objective remains active and unachieved.
+
+The historical progress record below is preserved; its running counts and
+session status are superseded by this completion update.
 
 The preceding goal turn made verified progress: iteration105's generic five-case
 recovery pilot completed and was published with plots and all receipts in

@@ -101,3 +101,23 @@ Final pre-freeze review: the engine now asserts finite objective, physical gradi
 and clock gradient before KKT aggregation. The owner added the regression and
 the parent reports all16 tests passing. **No remaining blocker found for freezing
 the declared research comparison.** No numerical recording fit was run by this reviewer.
+
+## Reporting review before reference access
+
+Reviewed report.py, test_report.py and frozen criteria only; no actual outcomes
+or reference coordinates were read. Per-binding pinned file/public document
+authority and session/input checks are correct; archived-error parity verifies
+the evaluation frame before refit metrics. Archive,125 control and100 operational
+metrics remain distinct. Full membership retains failures/pending rows and withholds
+full-census position metrics/gates when incomplete. Available raw-fit diagnostics
+preserve failed/unqualified/fallback counts and their actual denominators.
+
+The frozen regression criterion correctly compares >1km regression counts relative
+to the same archived endpoint. Stricter candidate-versus-control zero-new-regression
+sensitivity is separately labeled, not substituted into the frozen gate. A synthetic
+frozen-pass/sensitivity-fail case would strengthen this distinction. The plots use
+operational outcomes, without filtering by accuracy or choosing by cross-width scores.
+
+No reporting scientific blocker found. The reporter supports partial diagnostics;
+parent must retain the declared after-all148-terminal reference-access boundary.
+This review did not invoke the report entry point or numerical functions.

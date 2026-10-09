@@ -75,6 +75,30 @@ def test_complete_metrics_gates_and_exposure():
     )
 
 
+def test_reference_evaluation_waits_for_all_terminals(tmp_path):
+    plan, rows = fixture()
+    directory = tmp_path / "results"
+    directory.mkdir()
+    for row in rows[:-1]:
+        (directory / f"{row['member']['inventory_label']}.json").write_text(json.dumps(row))
+    with pytest.raises(RuntimeError, match="reference evaluation withheld"):
+        report.load_terminal_rows(plan, "digest", tmp_path)
+    failure = dict(rows[-1], status="failed", error="synthetic input failure")
+    (directory / f"{failure['member']['inventory_label']}.json").write_text(json.dumps(failure))
+    loaded = report.load_terminal_rows(plan, "digest", tmp_path)
+    assert len(loaded) == 3 and loaded["2"]["status"] == "failed"
+
+
+def test_frozen_regression_gate_does_not_hide_stricter_sensitivity():
+    plan, rows = fixture()
+    rows[0]["errors"]["archive"]["fitted-c"] = 10
+    rows[0]["errors"]["100"]["fitted-c"] = 3
+    result = report.summarize(plan, rows, "digest")["gates"]["fitted-c"]
+    assert result["checks"]["regression_count"]
+    assert result["candidate_vs_control_regressed_over_1km"] == 1
+    assert not result["stricter_zero_new_regressions_sensitivity"]
+
+
 def test_missing_and_failed_withhold_full_metrics_and_gates(tmp_path):
     plan, rows = fixture()
     rows[0] = dict(
@@ -162,3 +186,23 @@ def test_public_metadata_requires_original_digest(tmp_path):
             root=tmp_path,
             status_reader=lambda _: dict(document, changed=True),
         )
+
+
+def test_completion_metadata_uses_frozen_ancestor_digest(tmp_path):
+    from leo.contracts.digests import canonical_digest
+
+    member = dict(session_id="synthetic")
+    document = dict(session_id="synthetic", input_manifest_sha256="input")
+    ancestor = dict(member=member, baseline_document_digest=canonical_digest(document))
+    path = tmp_path / "ancestor.json"
+    path.write_text(json.dumps(ancestor))
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(document))
+    plan = dict(source_sha256={"ancestor.json": hashlib.sha256(path.read_bytes()).hexdigest()})
+    binding = dict(member=member, result_source="ancestor.json", loader_binding=dict(
+        kind="completion", baseline_path="baseline.json", effective_input_digest="input"))
+    actual, authority = report.evaluation_document(binding, plan, root=tmp_path)
+    assert actual == document and authority["kind"] == "frozen-ancestor-canonical-digest"
+    baseline.write_text(json.dumps(dict(document, changed=True)))
+    with pytest.raises(AssertionError):
+        report.evaluation_document(binding, plan, root=tmp_path)
