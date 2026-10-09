@@ -95,7 +95,7 @@ def main():
     axes[1].axhline(0, color="#777777", linewidth=0.7)
     axes[1].set_xlabel("Scaled timing-basis step (×10⁻⁸)")
     axes[1].set_ylabel("Raw gradient in coordinate20")
-    axes[1].set_title("Coordinate gradient improves below scalar-score resolution")
+    axes[1].set_title("Gradient improves near the score precision limit")
     for axis in axes:
         axis.grid(alpha=0.18)
         axis.spines[["top", "right"]].set_visible(False)
