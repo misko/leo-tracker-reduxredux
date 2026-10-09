@@ -1,0 +1,29 @@
+# Continue toward the unresolved localization goal
+
+68audit complete, nofits. Frozenbb61524fe. All8historical pair-index/residual
+reconstructions frompreparedobservations exactlymatch34 (maxdifference0Hz).
+67helper thenappliedtoall192ordinary53endpoints:187feasible,5infeasible;
+516pairs,2proposals×2anchors eachfeasible endpoint=748extra starts;0rejected.
+All187 unchangedcontrolsretained. No referenceerrors or winners computed.
+results.json complete/immutable. Qualificationhistoricalstates isolatedfrom
+ordinarycensus. Current candidatecohort metrics remain65;goalactive.
+
+Live55PID4011107/exec3105 and60PID4021011/exec53489 stillrunning thisturn.
+Latest countobserved55=304receipts/index151,60=56receipts/index162;published
+snapshotsstill55=137pairs,60=23regions. Needfinishbothandpublishfullresults.
+CheckexactPIDs/handlesbeforeresume;do not restartontimeout.
+
+Nextnumericaltest likely boundedclockproposal/cross-armcontinuation acrossall
+ordinaryregions,after55/60complete. 67helper and68preparedresidualsaudited.
+Do notblindlyfitall748extra starts withoutbudget decision; freezeone ordinary
+sourceinventory perregion, matchedcarms andwholefitbudgets,uniformtreatment.
+Canreuse60firstfeasibleendpoint/region policyornewfixedinventory,disclosedas
+consumeddevelopment; no error-guidedregion22 exceptions. Includeunchangedcontrol
+and bothanchors; transport/refit commonbank beforecrossregionselection.
+Cross-armcontinuation carriescompleteclockcoefficients,notpositiononly.
+No oraclejointseed inoperationalstarts. Knowncoordinates evaluationonly.
+
+Full14865results:63DS16,51DS17,34DS18;fittedmean1.360148km,zero1.738896km.
+PreserveDS16original48+15 andDS18consumed24+other10;other10notunseenbydefault.
+Goalnotachieved; independentvalidationstillrequired; no RFcollectionauthorized.
+Preservealreadyverifiedproductionhard60recovery,fitted-cdefault,longest16PNGs.
