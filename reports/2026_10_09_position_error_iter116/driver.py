@@ -217,9 +217,27 @@ def run_slice(
             raise SliceExpired("loader")
         if case_identity(case) != plan["identity"]:
             raise ValueError("reconstructed physical input mismatch")
-        evaluator = evaluator_factory(
-            case["observations"], case["bank"], case["prior"], case["tracks"]
-        )
+        if "imports_path" in plan["binding"]:
+            from coarse_import import ImportedEvaluator, read_import
+
+            imported = read_import(
+                Path(repository) / plan["binding"]["imports_path"],
+                plan["binding"]["imports_sha256"],
+            )
+            if (
+                canonical_digest(imported) != plan["imported_receipts_sha256"]
+                or imported["session_id"] != plan["binding"]["session_id"]
+            ):
+                raise ValueError("coarse import identity mismatch")
+            if evaluator_factory is not PointEvaluator:
+                raise ValueError("cannot override frozen imported evaluator")
+            evaluator = ImportedEvaluator(
+                case["observations"], case["bank"], case["prior"], case["tracks"], imported=imported
+            )
+        else:
+            evaluator = evaluator_factory(
+                case["observations"], case["bank"], case["prior"], case["tracks"]
+            )
         ordinary_bootstrap = evaluator.bootstrap
 
         def bootstrap(*args, **kwargs):
@@ -258,7 +276,9 @@ def run_slice(
 
             def evaluate(e, n, arm=arm, mode=mode):
                 # Do not claim a point until its separately cached seed is durable.
-                if (e, n) not in evaluator.seeds:
+                if (e, n) not in evaluator.seeds and not getattr(
+                    evaluator, "original_failure", lambda point: False
+                )((e, n)):
                     evaluator.seeds[(e, n)] = bootstrap(
                         case["observations"],
                         case["bank"],
