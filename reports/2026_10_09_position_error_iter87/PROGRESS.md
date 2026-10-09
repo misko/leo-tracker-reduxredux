@@ -1,4 +1,12 @@
-# Iteration87 running: B7 residual audit
+# Iteration87 complete: B7 residual audit
+
+Both workers58342/76020 completed with exit0; PIDs238655/238669 are gone.
+All148 members completed, all296 stored B7 objectives reproduce exactly,
+zero failures/exclusions. See DECISION.md for complete findings. Paired receiver
+structure persists, but common time/channel clock effects remain a confounder.
+The next separately frozen90 diagnostic will distinguish those components;
+no new position correction or deployment is justified yet. Original runtime
+notes below are historical. Goal remains active at0.4km, not achieved.
 
 The updated active goal remains mean position error0.4km on DS16/17/18 and newer
 data, without location-specific reference guidance. Simple, fast embedded
