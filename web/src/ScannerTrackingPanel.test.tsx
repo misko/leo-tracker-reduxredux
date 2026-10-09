@@ -55,7 +55,7 @@ it("shows the channel GLRT track overlay as an additional downloadable PNG", asy
 
 it("rejects a product belonging to another capture", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => ({
-    ok: true, json: async () => /regional-position-v[12]$/.test(url)
+    ok: true, json: async () => /regional-position-v[123]$/.test(url)
       ? { session_id: "scan-test", state: "pending", manifest: null }
       : { session_id: "scan-test", product },
   })));
