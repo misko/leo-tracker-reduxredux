@@ -107,8 +107,9 @@ This experiment does not tune per-scan settings using the known position.
 Nevertheless, its region budget and sigma were developed on consumed data.
 An ordinary-start success would require uniform policy evaluation across
 DS16/DS17/DS18 and new independent validation before a generalization claim.
-The current three-dataset iteration51 run uses a different regional policy and
-continues unchanged. No production, RF, public-contract or fixture changes.
+The completed three-dataset iteration51 run uses a different regional policy;
+its full148 assessment is preserved in iteration65. No production, RF,
+public-contract or fixture changes.
 
 ## Complete endpoint coverage
 

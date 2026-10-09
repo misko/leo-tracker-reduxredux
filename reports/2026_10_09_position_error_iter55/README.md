@@ -1,6 +1,6 @@
 # Iteration55: ordinary-start common-bank refits
 
-**Partial: 117/192 endpoint pairs; 235/384 receipts.** This is
+**Partial: 137/192 endpoint pairs; 275/384 receipts.** This is
 consumed DS18 development evidence, not independent validation, and does not
 replace any dataset benchmark result. Only endpoints completed in both arms
 participate in the provisional comparison. All192 remain in the denominator.
@@ -9,8 +9,8 @@ participate in the provisional comparison. All192 remain in the denominator.
 
 | Arm | Provisional score-selected endpoint | Objective | Error km | Frequency RMS Hz |
 |---|---:|---:|---:|---:|
-| fitted-c | 9 | 30677.984875 | 223.964164 | 116.924 |
-| zero-c | 8 | 30661.428143 | 221.197615 | 114.121 |
+| fitted-c | 129 | 30361.368247 | 19.009000 | 113.106 |
+| zero-c | 129 | 30377.758878 | 18.996095 | 114.417 |
 
 ## Frozen policy and limitations
 
@@ -30,8 +30,9 @@ This experiment does not tune per-scan settings using the known position.
 Nevertheless, its region budget and sigma were developed on consumed data.
 An ordinary-start success would require uniform policy evaluation across
 DS16/DS17/DS18 and new independent validation before a generalization claim.
-The current three-dataset iteration51 run uses a different regional policy and
-continues unchanged. No production, RF, public-contract or fixture changes.
+The completed three-dataset iteration51 run uses a different regional policy;
+its full148 assessment is preserved in iteration65. No production, RF,
+public-contract or fixture changes.
 
 ## Complete endpoint coverage
 
@@ -154,27 +155,27 @@ continues unchanged. No production, RF, public-contract or fixture changes.
 | 114 | 22 | zero-c/association | complete converged | complete converged |
 | 115 | 22 | zero-c/zero-timing | complete converged | complete converged |
 | 116 | 22 | zero-c/own-continuation | complete converged | complete converged |
-| 117 | 22 | fitted-c/association | complete nonconverged | pending |
-| 118 | 22 | fitted-c/zero-timing | pending | pending |
-| 119 | 22 | fitted-c/own-continuation | pending | pending |
-| 120 | 23 | zero-c/association | pending | pending |
-| 121 | 23 | zero-c/zero-timing | pending | pending |
-| 122 | 23 | zero-c/own-continuation | pending | pending |
-| 123 | 23 | fitted-c/association | pending | pending |
-| 124 | 23 | fitted-c/zero-timing | pending | pending |
-| 125 | 23 | fitted-c/own-continuation | pending | pending |
-| 126 | 24 | zero-c/association | pending | pending |
-| 127 | 24 | zero-c/zero-timing | pending | pending |
-| 128 | 24 | zero-c/own-continuation | pending | pending |
-| 129 | 24 | fitted-c/association | pending | pending |
-| 130 | 24 | fitted-c/zero-timing | pending | pending |
-| 131 | 24 | fitted-c/own-continuation | pending | pending |
-| 132 | 25 | zero-c/association | pending | pending |
-| 133 | 25 | zero-c/zero-timing | pending | pending |
-| 134 | 25 | zero-c/own-continuation | pending | pending |
-| 135 | 25 | fitted-c/association | pending | pending |
-| 136 | 25 | fitted-c/zero-timing | pending | pending |
-| 137 | 25 | fitted-c/own-continuation | pending | pending |
+| 117 | 22 | fitted-c/association | complete nonconverged | complete converged |
+| 118 | 22 | fitted-c/zero-timing | complete converged | complete converged |
+| 119 | 22 | fitted-c/own-continuation | complete converged | complete nonconverged |
+| 120 | 23 | zero-c/association | complete converged | complete converged |
+| 121 | 23 | zero-c/zero-timing | complete converged | complete converged |
+| 122 | 23 | zero-c/own-continuation | complete converged | complete converged |
+| 123 | 23 | fitted-c/association | complete nonconverged | complete converged |
+| 124 | 23 | fitted-c/zero-timing | complete converged | complete converged |
+| 125 | 23 | fitted-c/own-continuation | complete nonconverged | complete nonconverged |
+| 126 | 24 | zero-c/association | complete converged | complete nonconverged |
+| 127 | 24 | zero-c/zero-timing | complete converged | complete converged |
+| 128 | 24 | zero-c/own-continuation | complete converged | complete nonconverged |
+| 129 | 24 | fitted-c/association | complete converged | complete converged |
+| 130 | 24 | fitted-c/zero-timing | complete converged | complete converged |
+| 131 | 24 | fitted-c/own-continuation | complete converged | complete nonconverged |
+| 132 | 25 | zero-c/association | complete nonconverged | complete nonconverged |
+| 133 | 25 | zero-c/zero-timing | complete nonconverged | complete nonconverged |
+| 134 | 25 | zero-c/own-continuation | complete converged | complete nonconverged |
+| 135 | 25 | fitted-c/association | complete converged | complete converged |
+| 136 | 25 | fitted-c/zero-timing | infeasible | infeasible |
+| 137 | 25 | fitted-c/own-continuation | complete converged | pending |
 | 138 | 26 | zero-c/association | pending | pending |
 | 139 | 26 | zero-c/zero-timing | pending | pending |
 | 140 | 26 | zero-c/own-continuation | pending | pending |
