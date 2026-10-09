@@ -60,8 +60,14 @@ The fitted-c native search must match every frozen baseline coordinate, spacing
 and score within absolute 1e-6 before candidate search. A fresh 5-second native
 fit can stop differently from an archived one: the gate is deliberately strict
 and must not be waived. An execution preparation may need verified original
-coarse receipts to reproduce the archive; **import of those receipts is not yet
-implemented**. No current plan is ready to launch.
+coarse receipts to reproduce the archive. [coarse_import.py](coarse_import.py)
+now supplies strict receipt import, preserving exact ordinary seeds and fitted-c
+vectors. It rejects changed bank-ID ordering, extra clock/model blocks, invalid
+RF policy and physically infeasible fitted states. Original failures remain
+failures without replacement. Imported fitted-c endpoints reuse historical
+compute; zero-c receives fresh matched-budget native fits from the same ordinary
+seeds. This is not a claim of four freshly computed, equal-wall-time arms.
+No current plan is ready to launch.
 
 The driver budgets at most 12 total claimed slices across all four searches,
 with 500 seconds per slice and cumulative elapsed accounting toward 6,000
