@@ -20,9 +20,20 @@ def read(path):
     return json.loads(path.read_text())
 
 
-def main():
-    plan = read(HERE / "protocol.json")
-    digest = hashlib.sha256((HERE / "protocol.json").read_bytes()).hexdigest()
+def load_result(binding, digest):
+    member = binding["member"]
+    path = HERE / "results" / f"{member['inventory_label']}.json"
+    row = read(path) if path.exists() else dict(status="pending")
+    if path.exists():
+        assert row["protocol_sha256"] == digest
+        assert row["member"] == member
+    return row
+
+
+def main(plan_path=None):
+    plan_path = plan_path or HERE / "protocol.json"
+    plan = read(plan_path)
+    digest = hashlib.sha256(plan_path.read_bytes()).hexdigest()
     old = {
         r["member"]["inventory_label"]: r
         for r in read(ROOT / "reports/2026_10_09_position_error_iter65/snapshot.json")["cases"]
@@ -31,12 +42,11 @@ def main():
     for binding in plan["members"]:
         member = binding["member"]
         label = member["inventory_label"]
-        path = HERE / "results" / f"{label}.json"
-        row = read(path) if path.exists() else dict(status="pending")
-        if path.exists():
-            assert row["protocol_sha256"] == digest
-            assert row["member"] == member
-        coverage.append(dict(member=member, status=row["status"], error=row.get("error")))
+        row = load_result(binding, digest)
+        coverage.append(dict(
+            member=member, status=row["status"], error=row.get("error"),
+            provenance=row.get("provenance"),
+        ))
         if row["status"] in ("complete", "upstream_stopped"):
             available[label] = row
     groups = {
@@ -134,6 +144,10 @@ def main():
         "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
+    fig.suptitle(
+        f"{'Complete' if summary['complete'] else 'Partial'}: {len(available)}/148 recordings; "
+        "matched c arms, consumed development"
+    )
     for ax, arm in zip(axes, ARMS, strict=True):
         for name in ("DS16", "DS17", "DS18"):
             g = summary["groups"][name]
@@ -155,7 +169,10 @@ def main():
                     points.append((sigma, m["mean"]))
             if points:
                 points.sort()
-                ax.plot([p[0] for p in points], [p[1] for p in points], "o-", label=name)
+                ax.plot(
+                    [p[0] for p in points], [p[1] for p in points], "o-",
+                    label=f"{name} ({g['available']}/{g['membership']})",
+                )
         ax.set(
             title=arm, xlabel="Satellite slope prior sigma, Hz/s", ylabel="Mean position error, km"
         )
