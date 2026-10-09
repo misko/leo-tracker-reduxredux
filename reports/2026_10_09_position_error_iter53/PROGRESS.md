@@ -1,5 +1,14 @@
 # Continuation after iteration53
 
+User clarification audited in ../2026_10_09_position_error_iter54/README.md.
+Iteration54 is now the bank/leakage audit, not the proposed refit. Use a new
+iteration number for refits. Reference coordinates/errors are evaluation-only;
+no per-scan tuning or reference-guided seed/retention/bank/winner selection.
+Any common-bank cohort policy must be frozen uniformly for DS16/17/18; common145
+is currently a single consumed-scan diagnostic, distinct from live iteration51.
+Ordinary-start recovery alone is insufficient for a generalization claim:
+new independent validation under the frozen rule is still required.
+
 Goal remains active and unachieved. No production or RF changes.
 
 Original iteration45 lanes have exited; regenerate and publish full148 coverage.
