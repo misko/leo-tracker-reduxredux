@@ -41,6 +41,7 @@ by their convergence diagnostics.
 | Curvature polish with a fixed numerical score allowance | Stationarity 0.001535 → 0.000845 in six evaluations | First prefit qualification recovered without relaxing the gate |
 | Continue the corrected calibration | Optimizer reports success; independent stationarity 0.016401 | A second calibration state still blocks downstream testing |
 | Apply the same scalar polish to that state | All Newton corrections violate a coupled timing constraint | Scalar coordinate correction is inadequate at this boundary |
+| Move in the feasible tangent direction | Stationarity 0.016401 → 0.002408; still fails 0.001 | Coupled motion helps, but scalar curvature is insufficient in this test |
 
 The successful prefit correction changed a relative timing **basis coefficient**
 by approximately 16 ns. Its objective changed by six floating-point increments
@@ -53,8 +54,11 @@ of a physical receiver-clock correction or position improvement.
 The corrected postfit is a different objective because receiver calibration
 has been applied. Its score must not be compared directly with the prefit score
 as a same-model improvement. The latest failed scalar polish changed neither
-its parameters nor its score. A constraint-preserving joint correction is the
-next isolated test; no threshold relaxation is justified by the present result.
+its parameters nor its score. A subsequent constraint-preserving tangent
+correction accepted four steps and slightly lowered the objective, but did not
+qualify. Its remaining trial steps lower the objective while increasing the
+largest stationarity residual. A joint curvature correction is the next isolated
+test; no threshold relaxation is justified by the present result.
 
 ## Interpretation and limits
 
@@ -85,6 +89,9 @@ used. Reserved recordings remain closed.
 - [Downstream calibration failure](../2026_10_09_position_error_iter95/RESULTS.md)
 - [Unchanged scalar polish results](../2026_10_09_position_error_iter97/RESULTS.md)
   and [raw receipt](../2026_10_09_position_error_iter97/result.json)
+- [Exact timing constraint and valid KKT projection](../2026_10_09_position_error_iter97/CONSTRAINT_AUDIT.md)
+- [Tangent correction protocol](../2026_10_09_position_error_iter99/README.md)
+  and [raw receipt](../2026_10_09_position_error_iter99/result.json)
 
 Research protocols and receipts are append-only. Each negative attempt remains
 visible. Iteration 96 was frozen in a local commit before execution; a concurrent
