@@ -108,7 +108,10 @@ for model in MODELS:
                 f"{metric['median_evaluations']:.1f} | {metric['median_seconds']:.2f} |\n"
             )
         else:
-            text += f"| {model} | {arm} | none | — | — | {metric['converged']}/{metric['failed']} | — | — |\n"
+            text += (
+                f"| {model} | {arm} | none | — | — | "
+                f"{metric['converged']}/{metric['failed']} | — | — |\n"
+            )
 text += """
 Winners minimize objective among converged fits, ties by ascending frozen index.
 Reference errors are calculated afterward. Cross-model objectives are not treated
