@@ -1,0 +1,33 @@
+# Active continuation after execution-budget correction
+
+GoalACTIVEunachieved, all148means65unchanged1.360148fitted/1.738896zero.
+Latestfullcohort65,truthaudit54,seedancestry66,helper67/68 remainbinding.
+
+69STOPPEDintentionally(all8terminal143) due4of16historicalcontrols losingconv
+at20s withfewerevals under8workers.157fitreceipts/8completesources preserved.
+Do NOTresume69. Numericalmethodnotjudgedfrompartialpositionresults.
+69reportercreated;RESULTS.mdpartialmarkedStopped,EXECUTION.mdexplainsbudgetissue.
+
+70QUALIFICATION COMPLETE. exec97117/14949 bothterminal0. Two workers90s600
+onall16first8sourcecontrols exactlyreproduce55objective,vectors,clockcoefficients
+(maxdifferences0).14/16convvs69ten;0wallcap. README/plot/summarycomplete.
+
+71FULL RERUN LIVE withqualifiedsettings. Frozenbf678aa1e. Evaluatorcopied69
+only20s→90s;protocolshards8→2. Allcontrolsnew,none69reused.63sourcesfrom64slots:
+all32regionsassociation+zerotiming,firstfeasiblearm;region8zerotimingunavailable
+botharms. Up to882fits. Samecommon145sigma1/common3 joint100 hardhorizon,
+residualhard60 local25, eachcompletewinnerintoBOTHarms,score/convergenceonly.
+71shard0 exec33403;shard1 exec98176. InspectlivePIDsbeforeanyresume.
+Resumableimmutableattemptreceiptsafterterminalonly;no midrun numericalchanges.
+
+55exec3105/PID4011107stilllive around71min.60exec53489/PID4021011TERMINAL0,
+all64smoothfitreceiptscomplete. Needfinish55andpublishfullmatched60comparison.
+55/60tails overlapped69eight-worker interval; execution-budget sensitivity must
+be disclosed. Preservefirstreceipts;anyrepeatseparateprotocol. No silentoverwrite.
+
+Nextadapt69reporterfor71 (90s language, no stoppedstatus), compareonlycompleted
+sourcepipelines,scoreselectionbeforetruth. Fullcoverage64slots,RMSseparate,
+convergence/fallbacks/pairedregressions; no chosenpartialwinnercohortsubstitution.
+Waitforcompletepipeline tojudge. EventuallyuniformDS16/17/18policyassessment
+andindependentvalidationstillrequired. No newRFauthorization.
+Preserveproductionhard60boundedrecovery,fitted-cdefault,longest16PNGs.

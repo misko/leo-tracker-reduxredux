@@ -1,6 +1,8 @@
 # Iteration69: ordinary-region clock proposals and cross-arm continuation
 
-**Running; no accuracy result yet.** This experiment tests the missing recovery
+**Stopped after control qualification exposed wall-budget truncation.** See
+[execution audit](EXECUTION.md) and [preserved partial results](RESULTS.md).
+No accuracy improvement or model rejection is established. This experiment tests the missing recovery
 steps with ordinary seeds under one fixed rule across every successful region.
 The recovered diagnostic joint seed is excluded. Source and protocol were frozen
 at `cf442c2e4`, with the exact unavailable-source count and budget corrected
