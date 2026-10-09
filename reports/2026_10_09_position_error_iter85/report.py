@@ -53,6 +53,8 @@ def paired(after, before):
         regressed=int(sum(delta > 1e-6)),
         tied=int(sum(abs(delta) <= 1e-6)),
         worst_regression_km=float(delta.max()),
+        regressed_over_100m=int(sum(delta > 0.1)),
+        improved_over_100m=int(sum(delta < -0.1)),
     )
 
 
@@ -171,6 +173,28 @@ def main():
                         actual_after_stage=a["stage"],
                     )
                 )
+    summary["rf_locked_control_audit"] = []
+    for row in rows:
+        if row["status"] != "complete":
+            continue
+        for stage, arms in row["raw"].items():
+            for arm, fit in arms.items():
+                if "vector" not in fit:
+                    continue
+                if arm == "zero-c":
+                    assert fit["vector"][6] == 0
+                if arm == "zero-c" or stage == "C5":
+                    assert all(x == 0 for x in fit.get("rf_drift_coefficients", []))
+        a = row["raw"].get("C5", {}).get("zero-c", {})
+        b = row["raw"].get("B5", {}).get("zero-c", {})
+        if "objective" in a and "objective" in b:
+            summary["rf_locked_control_audit"].append(
+                dict(
+                    label=row["member"]["inventory_label"],
+                    objective_delta=b["objective"] - a["objective"],
+                    convergence_agrees=a["converged"] == b["converged"],
+                )
+            )
     (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     total = summary["groups"]["Pooled"]["complete"]
     lines = [
