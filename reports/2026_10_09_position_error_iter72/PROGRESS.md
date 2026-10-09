@@ -1,0 +1,38 @@
+# Completed direct-start experiments; continue clock proposal test
+
+Goalactive/unachieved. Latestcompletediteration72.55exec3105/PID4011107 now
+TERMINAL0, all384receipts192paired (187feasiblefits/arm+5infeasible/arm).
+60exec53489TERMINAL0 all64fits32matchedregions. Neverresumeeithercompletedjob.
+55/60reportersnowcomplete labels+executionoverlapdisclosure.72summaryimmutable
+report.pyrefusesoverwrite;source55/60summarieshashed. No cohortreplacement.
+
+Results:55allhard fittedwinner180=58.398432768km/objective30030.854;
+zero185=59.017550545km/30084.958. Matched32hardzero180=58.639244169km.
+60smoothwinner180both:58.372248467fitted/58.416092643zero. Matchedhardconvergence
+23/32fitted20/32zero; smooth31/32fitted32/32zero.55all145conv42fail5infeasible
+fitted;128conv59fail5infeasiblezero. Counts do notisolatehorizon effect because
+hard20s/smooth90s and69parallel-overlaplatetail. Preservefirstreceipts.
+Evaluationonlyclosestqualifiedhard118=3.433656fitted/3.491981zero losesobjective
+30829/30832 vswinning30030/30085. Do notuseclosesttruthdiagnostic asfutureseed.
+Neitherordinarydirectexperiment reached/selectedpreviousdiagnostic1.15km.
+
+OnlyLIVEfitsnow71two workers:
+shard0 exec33403/PID4042412
+shard1 exec98176/PID4042411
+At~4min firstsources0/1complete, now6/7processing.90s600max882fits63sources,
+all32regionsassociation+zerotiming;region8zerotimingexplicitunavailable.
+Noall63completionyet. Evaluateproposals+cross-armbeforedecision. Runtimewillbe
+longerwith2workers; do notrampconcurrency orchangefrozenbudgets midrun.
+69STOPPEDall8exit143;doNOTresume.70terminalcompleteall16controlsexact55numerics
+with2workers90s,14/16conv restoredvs69ten. Sourcepath67/68qualified.
+
+71report.pyadaptedfrom69,90s language; readytoexecuteforpartial/complete snapshots
+whenuseful. ItrequiresworkerPYTHONPATH,chooseswinnersbeforetruth,comparesonly
+fullycompletesources,all64slots,rawfailures,RMS andold55controlauditseparate.
+No71snapshotpublishedyet. Itscontrolbudgetdiffersfrom55,notareproductionpromise
+whenhistoricalfitsweredeadline-limited. Reuseall71newcontrolswithincomparison.
+
+Full14865metricmean1.360148fitted/1.738896zero remains. DS16=63(48+15),DS17=51,
+DS18=34(consumed24+other10notpresumptivelyunseen). Knowncoords evaluationonly.
+Uniform3datasetpolicyandindependentvalidationstillrequired. No RFauthorized.
+Preserveproductionhard60recovery,fitted-cdefault,longest16PNGs.
