@@ -48,8 +48,10 @@ changes refinement while preserving initial points and total point budgets.
 Numerical parity assertions use `rel=0` explicitly. No position optimizer runs
 in these tests.
 
-[driver.py](driver.py) now provides a durable `run_slice` API, still without a
-recording CLI or frozen plan. It verifies declared source/input file hashes and
+[driver.py](driver.py) now provides a durable `run_slice` API.
+[entrypoint.py](entrypoint.py) adds explicit preflight/one-slice commands; see
+[EXECUTION.md](EXECUTION.md). No plan has been frozen or executed.
+The driver verifies declared source/input file hashes and
 reconstructed observation/prior/full-bank digests before inference. Atomic
 append-only claims and result files bind every bootstrap and point-arm attempt
 to the plan digest. Successful and failed receipts are reused; a claimed process
