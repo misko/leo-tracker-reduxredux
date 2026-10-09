@@ -117,3 +117,35 @@ this one-step initialization provides a small, understandable first test before 
 more involved variable-projection optimizer. It has **no measured position benefit
 yet**, and cannot establish the0.4km goal or justify automatic deployment. Freeze a
 globally selected policy before randomized independent whole-recording validation.
+
+## Reconciliation with the fixed-contrast proposal
+
+After reading [NEXT_POSITION_TEST.md](NEXT_POSITION_TEST.md), prefer its one fixed
+**existing-smooth-background projected receiver-by-satellite contrast** as the next
+controlled position experiment, conditional on the completed90 evidence. Withdraw
+the clock-initialization suggestion above as the primary next experiment. Keep it
+as a later cheap optimizer approximation or computational control.
+
+The clock suggestion is not an exact repeat of83:83 enumerates circular affine
+pair-line proposals and receiver anchors, then launches high-dimensional joint
+fits. A bounded quadratic would update all existing smooth-clock coefficients
+jointly with their actual prior and solve one structured block. Nevertheless,
+both ultimately explore the same B7 nuisance family through a new start. Accepted
+B7 endpoints already meet the independent stationarity gate, so this diagnostic
+does not establish why another same-family start would move position usefully.
+
+The fixed-contrast test asks a new, narrower causal question: do remaining
+receiver-differential patterns outside the available clock span affect positioning
+through uneven/unpaired support or association coupling? It adds no nonlinear
+variables and preserves the global frozen correction rule. It must retain the
+balanced-pair spatial-gradient invariance test and both helpful/misspecified
+unbalanced synthetic examples. Those examples explain its possible mechanism and
+failure mode without asserting a satellite hardware fault.
+
+Use exactly the prescribed same-start zero-correction control, independently
+qualified attempts and matched c arms. Candidate/control prediction models differ;
+do not score-rank them together. Decide from complete consumed-corpus position
+metrics and regressions, then freeze independent validation. If the completed90
+audit leaves only tiny or poorly supported contrasts, that is reason to expect a
+small effect and retain B7 simplicity unless the controlled test demonstrates
+otherwise. It is not permission to increase the prior per recording.
