@@ -1,13 +1,13 @@
 # Iteration71 results: ordinary clock proposals and continuation
 
-**Partial: 38/63 feasible sources complete;
+**Partial: 40/63 feasible sources complete;
 one further source unavailable.**
 Only completed source pipelines enter the three-way comparison. All64 planned
-slots remain in coverage. There are537 fit receipts so far,
-including95 independent-convergence failures.
+slots remain in coverage. There are574 fit receipts so far,
+including101 independent-convergence failures.
 The longest recorded fit is46.450seconds;
 0 reach the90-second allowance.
-94 failed fits reported optimizer success
+100 failed fits reported optimizer success
 but did not pass the independent convergence gate; they remain ineligible.
 
 ![Matched source results](comparison.png)
@@ -20,15 +20,15 @@ but did not pass the independent convergence gate; they remain ineligible.
 | fitted-c | proposals | 12 | 30442.065661 | 253.582751 | 117.795 |
 | fitted-c | continuation | 12 | 30435.285919 | 249.066896 | 117.532 |
 | zero-c | direct | 6 | 30662.260999 | 221.415046 | 114.216 |
-| zero-c | proposals | 12 | 30449.956852 | 249.004609 | 118.539 |
-| zero-c | continuation | 12 | 30449.956852 | 249.004609 | 118.539 |
+| zero-c | proposals | 115 | 29442.158624 | 0.889093 | 93.170 |
+| zero-c | continuation | 115 | 29442.158624 | 0.889093 | 93.170 |
 
 Reference error is evaluated after winner selection. These are alternative
 hypotheses for one consumed recording, not independent dataset samples.
 Lower objective or RMS does not establish better position accuracy. The direct
 controls are new90-second unchanged-start runs; historical20-second iteration55 differences
 are separately retained in summary.json, not silently ignored or substituted.
-Currently76 controls are compared, with
+Currently80 controls are compared, with
 1 convergence-flag changes and maximum
 absolute objective difference1.3602.
 This is a numerical reproducibility audit, not an accuracy selection rule.
@@ -37,10 +37,10 @@ This is a numerical reproducibility audit, not an accuracy selection rule.
 
 | Arm | Stage | Improved / regressed / tied | Gained / lost convergence | Both unqualified |
 |---|---|---:|---:|---:|
-| fitted-c | proposals | 9 / 9 / 15 | 5 / 0 | 0 |
-| fitted-c | continuation | 12 / 10 / 11 | 5 / 0 | 0 |
-| zero-c | proposals | 5 / 10 / 11 | 12 / 0 | 0 |
-| zero-c | continuation | 7 / 12 / 7 | 12 / 0 | 0 |
+| fitted-c | proposals | 9 / 9 / 17 | 5 / 0 | 0 |
+| fitted-c | continuation | 12 / 10 / 13 | 5 / 0 | 0 |
+| zero-c | proposals | 6 / 10 / 12 | 12 / 0 | 0 |
+| zero-c | continuation | 8 / 13 / 7 | 12 / 0 | 0 |
 
 Position comparisons require both alternatives qualified, with1m tie tolerance.
 Convergence gains are not counted as accuracy gains. Earlier eligible candidates
@@ -90,8 +90,8 @@ disks. Both arms share starts and stage budgets. No convergence gate is relaxed.
 | 108 | 21 | complete |
 | 109 | 21 | complete |
 | 114 | 22 | complete |
-| 115 | 22 | pending |
-| 120 | 23 | pending |
+| 115 | 22 | complete |
+| 120 | 23 | complete |
 | 121 | 23 | pending |
 | 126 | 24 | pending |
 | 127 | 24 | pending |
