@@ -1,6 +1,6 @@
-# Iteration 51: uniform additive region policy, 129/148 completed
+# Iteration 51: uniform additive region policy, 137/148 completed
 
-This is a descriptive completion checkpoint at 2026-10-09T01:08:35.167110+00:00.
+This is a descriptive completion checkpoint at 2026-10-09T01:13:05.165148+00:00.
 All 63 DS16, 51 DS17 and 34 DS18 members remain in the denominator. Pending,
 unstarted and failed members are listed explicitly; subset means are not
 full-dataset results. No new independent validation claim is made.
@@ -11,24 +11,70 @@ full-dataset results. No new independent validation claim is made.
 
 | Dataset evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 50/63 | fitted-c | baseline | 7.142 | 1.448 | 5.103 | 265.277 |
-| DS16 50/63 | fitted-c | previous | 6.320 | 0.953 | 2.420 | 265.789 |
-| DS16 50/63 | fitted-c | candidate | 1.020 | 0.897 | 2.334 | 2.751 |
-| DS16 50/63 | zero-c | baseline | 7.537 | 1.722 | 7.205 | 264.604 |
-| DS16 50/63 | zero-c | previous | 6.604 | 1.163 | 3.428 | 261.743 |
-| DS16 50/63 | zero-c | candidate | 1.412 | 1.163 | 2.871 | 3.903 |
-| DS17 45/51 | fitted-c | baseline | 4.732 | 1.041 | 3.991 | 152.840 |
-| DS17 45/51 | fitted-c | previous | 0.818 | 0.677 | 1.779 | 2.635 |
-| DS17 45/51 | fitted-c | candidate | 0.818 | 0.677 | 1.779 | 2.635 |
-| DS17 45/51 | zero-c | baseline | 4.852 | 1.376 | 3.392 | 151.707 |
-| DS17 45/51 | zero-c | previous | 1.292 | 1.148 | 2.671 | 3.081 |
-| DS17 45/51 | zero-c | candidate | 1.292 | 1.148 | 2.671 | 3.081 |
+| DS16 55/63 | fitted-c | baseline | 6.652 | 1.466 | 4.750 | 265.277 |
+| DS16 55/63 | fitted-c | previous | 5.851 | 0.940 | 2.406 | 265.789 |
+| DS16 55/63 | fitted-c | candidate | 1.033 | 0.909 | 2.303 | 2.751 |
+| DS16 55/63 | zero-c | baseline | 7.047 | 1.731 | 7.203 | 264.604 |
+| DS16 55/63 | zero-c | previous | 6.126 | 1.165 | 3.178 | 261.743 |
+| DS16 55/63 | zero-c | candidate | 1.406 | 1.165 | 2.868 | 3.903 |
+| DS17 48/51 | fitted-c | baseline | 4.556 | 1.101 | 3.869 | 152.840 |
+| DS17 48/51 | fitted-c | previous | 0.824 | 0.692 | 1.753 | 2.635 |
+| DS17 48/51 | fitted-c | candidate | 0.824 | 0.692 | 1.753 | 2.635 |
+| DS17 48/51 | zero-c | baseline | 4.677 | 1.430 | 3.299 | 151.707 |
+| DS17 48/51 | zero-c | previous | 1.330 | 1.334 | 2.614 | 3.081 |
+| DS17 48/51 | zero-c | candidate | 1.330 | 1.334 | 2.614 | 3.081 |
 | DS18 34/34 | fitted-c | baseline | 4.422 | 1.852 | 13.381 | 58.694 |
 | DS18 34/34 | fitted-c | previous | 2.739 | 1.140 | 3.168 | 53.140 |
 | DS18 34/34 | fitted-c | candidate | 2.739 | 1.140 | 3.168 | 53.140 |
 | DS18 34/34 | zero-c | baseline | 4.618 | 1.856 | 13.926 | 58.727 |
 | DS18 34/34 | zero-c | previous | 2.918 | 1.209 | 3.818 | 54.922 |
 | DS18 34/34 | zero-c | candidate | 2.918 | 1.209 | 3.818 | 54.922 |
+
+## Historical subset and exposure accounting
+
+These groups are frozen by prior inventory bindings, never selected by outcomes.
+The original 48 and added 15 exhaust DS16. DS18's prior-registry group contains
+the 24 previously consumed recordings; the other 10 had no registry match, which
+does not prove they were unseen. All evaluated members are now consumed research.
+Incomplete groups below remain partial; no subgroup substitutes for a full dataset.
+
+| Group evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
+|---|---|---|---:|---:|---:|---:|
+| DS16 original 48 40/48 | fitted-c | baseline | 2.015 | 1.663 | 4.397 | 7.314 |
+| DS16 original 48 40/48 | fitted-c | previous | 1.086 | 1.032 | 2.272 | 2.751 |
+| DS16 original 48 40/48 | fitted-c | candidate | 1.086 | 1.032 | 2.272 | 2.751 |
+| DS16 original 48 40/48 | zero-c | baseline | 2.375 | 1.686 | 7.202 | 9.870 |
+| DS16 original 48 40/48 | zero-c | previous | 1.402 | 1.189 | 2.915 | 3.903 |
+| DS16 original 48 40/48 | zero-c | candidate | 1.402 | 1.189 | 2.915 | 3.903 |
+| DS16 added 15 15/15 | fitted-c | baseline | 19.016 | 1.041 | 82.334 | 265.277 |
+| DS16 added 15 15/15 | fitted-c | previous | 18.558 | 0.733 | 81.448 | 265.789 |
+| DS16 added 15 15/15 | fitted-c | candidate | 0.892 | 0.733 | 1.908 | 2.445 |
+| DS16 added 15 15/15 | zero-c | baseline | 19.506 | 1.929 | 82.056 | 264.604 |
+| DS16 added 15 15/15 | zero-c | previous | 18.724 | 1.115 | 80.537 | 261.743 |
+| DS16 added 15 15/15 | zero-c | candidate | 1.416 | 1.115 | 2.744 | 2.877 |
+| DS18 prior registry 24 24/24 | fitted-c | baseline | 5.486 | 1.809 | 24.052 | 58.694 |
+| DS18 prior registry 24 24/24 | fitted-c | previous | 3.293 | 1.122 | 3.545 | 53.140 |
+| DS18 prior registry 24 24/24 | fitted-c | candidate | 3.293 | 1.122 | 3.545 | 53.140 |
+| DS18 prior registry 24 24/24 | zero-c | baseline | 5.728 | 1.767 | 24.465 | 58.727 |
+| DS18 prior registry 24 24/24 | zero-c | previous | 3.546 | 1.209 | 4.247 | 54.922 |
+| DS18 prior registry 24 24/24 | zero-c | candidate | 3.546 | 1.209 | 4.247 | 54.922 |
+| DS18 no prior registry match 10 10/10 | fitted-c | baseline | 1.870 | 1.945 | 3.359 | 3.538 |
+| DS18 no prior registry match 10 10/10 | fitted-c | previous | 1.411 | 1.247 | 2.561 | 2.794 |
+| DS18 no prior registry match 10 10/10 | fitted-c | candidate | 1.411 | 1.247 | 2.561 | 2.794 |
+| DS18 no prior registry match 10 10/10 | zero-c | baseline | 1.955 | 2.025 | 3.488 | 3.603 |
+| DS18 no prior registry match 10 10/10 | zero-c | previous | 1.409 | 1.230 | 3.080 | 3.291 |
+| DS18 no prior registry match 10 10/10 | zero-c | candidate | 1.409 | 1.230 | 3.080 | 3.291 |
+
+| Group | Arm | Better/worse/tied | Failed/not reached | Fallbacks |
+|---|---|---:|---:|---:|
+| DS16 original 48 | fitted-c | 0/0/40 | 0/0 | 0 |
+| DS16 original 48 | zero-c | 0/0/40 | 0/0 | 0 |
+| DS16 added 15 | fitted-c | 1/0/14 | 0/0 | 0 |
+| DS16 added 15 | zero-c | 1/0/14 | 0/0 | 0 |
+| DS18 prior registry 24 | fitted-c | 0/0/24 | 0/0 | 0 |
+| DS18 prior registry 24 | zero-c | 0/0/24 | 0/0 | 0 |
+| DS18 no prior registry match 10 | fitted-c | 0/0/10 | 0/0 | 0 |
+| DS18 no prior registry match 10 | zero-c | 0/0/10 | 0/0 | 0 |
 
 Baseline is deployed bounded-recovery hard60 (including qualified historical
 replays). Previous is the frozen joint-clock/RF-time/satellite-slope research
@@ -40,10 +86,10 @@ choices are never discarded because of their reference error.
 
 | Dataset | Arm | Better/worse/tied | Failed/not reached | Fallbacks | RMS base/previous/new Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 1/0/49 | 0/0 | 0 | 92.48/71.72/70.54 |
-| DS16 | zero-c | 1/0/49 | 0/0 | 0 | 122.17/105.87/105.29 |
-| DS17 | fitted-c | 0/0/45 | 0/0 | 0 | 79.68/64.36/64.36 |
-| DS17 | zero-c | 0/0/45 | 1/0 | 1 | 130.63/123.11/123.11 |
+| DS16 | fitted-c | 1/0/54 | 0/0 | 0 | 91.71/70.64/69.57 |
+| DS16 | zero-c | 1/0/54 | 0/0 | 0 | 120.11/103.19/102.66 |
+| DS17 | fitted-c | 0/0/48 | 0/0 | 0 | 79.42/64.23/64.23 |
+| DS17 | zero-c | 0/0/48 | 1/0 | 1 | 131.04/123.64/123.64 |
 | DS18 | fitted-c | 0/0/34 | 0/0 | 0 | 101.06/75.65/75.65 |
 | DS18 | zero-c | 0/0/34 | 0/0 | 0 | 116.13/93.90/93.90 |
 
@@ -64,6 +110,13 @@ The protocol includes every frozen member, authority/exposure metadata, source
 hashes and bindings. DS18 authority and seal remain unchanged. No readiness or
 quality filter changes membership. Production, public contracts, golden fixtures,
 QNAP data and RF collection are unchanged. Results do not promote a new default.
+
+DS16-020/S14 and DS16-035/S27 initially failed output serialization with missing
+bank metadata in their corrected historical baseline documents. The immutable
+failures remain in results/. Separately frozen iteration64 retries source only
+bank/snapshot metadata from the matching original input document, with digest
+and bank-ID checks. Completed retries enter the comparison without changing the
+numerical policy; summary.json retains original attempts and completion sources.
 
 ## Full membership and outcomes
 
@@ -120,12 +173,12 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS16-049 | scan-fw-3bf66f35e3a07685 | complete  | 1.567 | 1.665 | previously_evaluated_consumed |
 | DS16-050 | scan-fw-7e6fe9f57ae2562c | complete  | 2.445 | 2.500 | not_matched_in_reviewed_registry_not_unseen_claim |
 | DS16-051 | scan-fw-899e83e995c96cdf | complete  | 2.389 | 2.437 | previously_evaluated_consumed |
-| DS16-052 | scan-fw-7b796c5b898df6bf | not_run  | — | — | previously_evaluated_consumed |
-| DS16-053 | scan-fw-a88b75d9a4cad4ff | not_run  | — | — | previously_evaluated_consumed |
-| DS16-054 | scan-fw-4dbadefb5dadb59d | not_run  | — | — | previously_evaluated_consumed |
-| DS16-055 | scan-fw-5e190e43f0c8c9e2 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-052 | scan-fw-7b796c5b898df6bf | complete  | 0.940 | 0.932 | previously_evaluated_consumed |
+| DS16-053 | scan-fw-a88b75d9a4cad4ff | complete  | 0.816 | 1.214 | previously_evaluated_consumed |
+| DS16-054 | scan-fw-4dbadefb5dadb59d | complete  | 1.901 | 1.756 | previously_evaluated_consumed |
+| DS16-055 | scan-fw-5e190e43f0c8c9e2 | complete  | 0.527 | 0.594 | not_matched_in_reviewed_registry_not_unseen_claim |
 | DS16-056 | scan-fw-8d94198baa058d67 | complete  | 2.266 | 2.864 | previously_evaluated_consumed |
-| DS16-057 | scan-fw-6aa645776351507d | not_run  | — | — | previously_evaluated_consumed |
+| DS16-057 | scan-fw-6aa645776351507d | complete  | 1.633 | 2.240 | previously_evaluated_consumed |
 | DS16-058 | scan-fw-4099ab8ea46fad71 | not_run  | — | — | previously_evaluated_consumed |
 | DS16-059 | scan-fw-aeea3ef6d81d637f | not_run  | — | — | previously_evaluated_consumed |
 | DS16-060 | scan-fw-19a8822932068f7a | not_run  | — | — | previously_evaluated_consumed |
@@ -177,9 +230,9 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS17-043 | scan-fw-21442a5061e1b639 | complete  | 0.201 | 1.605 | previously_evaluated_consumed |
 | DS17-044 | scan-fw-8e758884efd73e9f | complete  | 1.038 | 2.081 | previously_evaluated_consumed |
 | DS17-045 | scan-fw-6a03003ca0a65459 | complete  | 0.399 | 1.650 | previously_evaluated_consumed |
-| DS17-046 | scan-fw-9a65cd199e826d59 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-047 | scan-fw-82ee62657e29d639 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-048 | scan-fw-85e3bfb9e4cfcd46 | not_run  | — | — | previously_evaluated_consumed |
+| DS17-046 | scan-fw-9a65cd199e826d59 | complete  | 0.936 | 1.388 | previously_evaluated_consumed |
+| DS17-047 | scan-fw-82ee62657e29d639 | complete  | 0.562 | 1.997 | previously_evaluated_consumed |
+| DS17-048 | scan-fw-85e3bfb9e4cfcd46 | complete  | 1.239 | 2.315 | previously_evaluated_consumed |
 | DS17-049 | scan-fw-0faabd2537f4fafd | not_run  | — | — | previously_evaluated_consumed |
 | DS17-050 | scan-fw-4a9c9e031c781aad | not_run  | — | — | previously_evaluated_consumed |
 | DS17-051 | scan-fw-da79d96a4515ec30 | not_run  | — | — | previously_evaluated_consumed |

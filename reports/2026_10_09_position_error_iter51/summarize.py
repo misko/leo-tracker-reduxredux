@@ -1,5 +1,6 @@
 """Full-denominator progress and paired metrics for the uniform region policy."""
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -48,6 +49,21 @@ def main():
         pending = HERE / "pending" / f"{label}.json"
         if path.exists():
             result = read(path)
+            row["result_source"] = str(path.relative_to(HERE.parent.parent))
+            retry_folder = HERE.parent / "2026_10_09_position_error_iter64"
+            retry_path = retry_folder / "results" / f"{label}.json"
+            if result["status"] == "failed" and retry_path.exists():
+                retry = read(retry_path)
+                row["original_attempt"] = result
+                row["retry_status"] = retry["status"]
+                if retry["status"] == "complete":
+                    assert retry["member"] == member
+                    assert (
+                        retry["protocol_sha256"]
+                        == hashlib.sha256((retry_folder / "protocol.json").read_bytes()).hexdigest()
+                    )
+                    result = retry
+                    row["result_source"] = str(retry_path.relative_to(HERE.parent.parent))
             row["status"] = result["status"]
             if result["status"] == "complete":
                 row.update(
@@ -126,7 +142,56 @@ def main():
             axes[i, col].xaxis.set_minor_formatter(NullFormatter())
         metrics[dataset] = summary
     fig.savefig(HERE / "comparison.png", dpi=160)
-    summary = dict(generated_utc=datetime.now(UTC).isoformat(), metrics=metrics, cases=cases)
+    grouped_labels = {
+        "DS16 original 48": [
+            b["member"]["inventory_label"]
+            for b in protocol["members"]
+            if b["kind"] == "legacy_ds16"
+        ],
+        "DS16 added 15": [
+            b["member"]["inventory_label"]
+            for b in protocol["members"]
+            if b["member"]["dataset"] == "DS16" and b["kind"] != "legacy_ds16"
+        ],
+        "DS18 prior registry 24": [
+            b["member"]["inventory_label"]
+            for b in protocol["members"]
+            if b["member"]["dataset"] == "DS18" and b["kind"] == "published"
+        ],
+        "DS18 no prior registry match 10": [
+            b["member"]["inventory_label"]
+            for b in protocol["members"]
+            if b["member"]["dataset"] == "DS18" and b["kind"] != "published"
+        ],
+    }
+    assert [len(v) for v in grouped_labels.values()] == [48, 15, 24, 10]
+    groups = {}
+    for name, labels in grouped_labels.items():
+        members = [r for r in cases if r["member"]["inventory_label"] in labels]
+        complete = [r for r in members if r["status"] == "complete"]
+        group = dict(membership=len(members), complete=len(complete), labels=labels, arms={})
+        for arm in ARMS:
+            if not complete:
+                continue
+            delta = np.array([r["arms"][arm]["paired_delta_km"] for r in complete])
+            group["arms"][arm] = dict(
+                position={
+                    model: stats([r["arms"][arm][model]["error_km"] for r in complete])
+                    for model in ("baseline", "previous", "candidate")
+                },
+                improved=int(sum(delta < -0.001)),
+                regressed=int(sum(delta > 0.001)),
+                tied=int(sum(abs(delta) <= 0.001)),
+                final_failed=sum(r["arms"][arm]["raw_final_converged"] is False for r in complete),
+                final_not_reached=sum(
+                    r["arms"][arm]["raw_final_converged"] is None for r in complete
+                ),
+                fallbacks=sum(bool(r["arms"][arm]["fallback"]) for r in complete),
+            )
+        groups[name] = group
+    summary = dict(
+        generated_utc=datetime.now(UTC).isoformat(), metrics=metrics, groups=groups, cases=cases
+    )
     (HERE / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     count = sum(r["status"] == "complete" for r in cases)
     text = f"""# Iteration 51: uniform additive region policy, {count}/148 completed
@@ -153,6 +218,36 @@ full-dataset results. No new independent validation claim is made.
                     " | ".join(f"{stat[k]:.3f}" for k in ("mean", "median", "p95", "worst"))
                     + " |\n"
                 )
+    text += """
+## Historical subset and exposure accounting
+
+These groups are frozen by prior inventory bindings, never selected by outcomes.
+The original 48 and added 15 exhaust DS16. DS18's prior-registry group contains
+the 24 previously consumed recordings; the other 10 had no registry match, which
+does not prove they were unseen. All evaluated members are now consumed research.
+Incomplete groups below remain partial; no subgroup substitutes for a full dataset.
+
+| Group evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
+|---|---|---|---:|---:|---:|---:|
+"""
+    for name, group in groups.items():
+        for arm, value in group["arms"].items():
+            for model, stat in value["position"].items():
+                text += f"| {name} {group['complete']}/{group['membership']} | {arm} | {model} | "
+                text += (
+                    " | ".join(f"{stat[k]:.3f}" for k in ("mean", "median", "p95", "worst"))
+                    + " |\n"
+                )
+    text += """
+| Group | Arm | Better/worse/tied | Failed/not reached | Fallbacks |
+|---|---|---:|---:|---:|
+"""
+    for name, group in groups.items():
+        for arm, value in group["arms"].items():
+            text += (
+                f"| {name} | {arm} | {value['improved']}/{value['regressed']}/{value['tied']} | "
+                f"{value['final_failed']}/{value['final_not_reached']} | {value['fallbacks']} |\n"
+            )
     text += """
 Baseline is deployed bounded-recovery hard60 (including qualified historical
 replays). Previous is the frozen joint-clock/RF-time/satellite-slope research
@@ -191,6 +286,13 @@ The protocol includes every frozen member, authority/exposure metadata, source
 hashes and bindings. DS18 authority and seal remain unchanged. No readiness or
 quality filter changes membership. Production, public contracts, golden fixtures,
 QNAP data and RF collection are unchanged. Results do not promote a new default.
+
+DS16-020/S14 and DS16-035/S27 initially failed output serialization with missing
+bank metadata in their corrected historical baseline documents. The immutable
+failures remain in results/. Separately frozen iteration64 retries source only
+bank/snapshot metadata from the matching original input document, with digest
+and bank-ID checks. Completed retries enter the comparison without changing the
+numerical policy; summary.json retains original attempts and completion sources.
 
 ## Full membership and outcomes
 
