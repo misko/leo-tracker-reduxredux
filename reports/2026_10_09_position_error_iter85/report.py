@@ -250,7 +250,7 @@ def main():
         for j, dataset in enumerate(("DS16", "DS17", "DS18")):
             ax, members = axes[i, j], groups[dataset]
             if all(r["status"] == "complete" for r in members):
-                for stage in ("B0", "B1", "B2", "B3", "B5", "B7"):
+                for stage in ("B0", "B1", "B2", "B3", "B4", "B5", "B7"):
                     errors = np.sort([r["stages"][stage][arm]["error_km"] for r in members])
                     ax.step(
                         np.maximum(errors, 1e-4),
@@ -304,6 +304,28 @@ def main():
     fig.suptitle(f"Per-scan ablation: {total}/148 complete; all members retained")
     fig.savefig(HERE / "per-scan.png", dpi=160)
     plt.close(fig)
+    lines += [
+        "",
+        "## Historical membership and exposure groups",
+        "",
+        "All groups are consumed development. DS18's other10 lack a prior registry match; "
+        "that does not establish unseen validation. The DS16 groups exhaust all63 members.",
+        "",
+        "| Group | Completed/all | Arm | B0 mean km | B3 mean km | B7 mean km |",
+        "|---|---|---|---:|---:|---:|",
+    ]
+    for name in ("DS16-original48", "DS16-added15", "DS18-prior24", "DS18-other10-consumed"):
+        group = summary["groups"][name]
+        for arm in ARMS:
+            cells = []
+            for stage in ("B0", "B3", "B7"):
+                value = group["arms"][arm][stage]
+                cells.append("pending" if value is None else f"{value['position']['mean']:.6f}")
+            lines.append(
+                f"| {name} | {group['complete']}/{group['membership']} | {arm} | "
+                + " | ".join(cells)
+                + " |"
+            )
     lines += [
         "",
         "![Mean position errors](means.png)",
