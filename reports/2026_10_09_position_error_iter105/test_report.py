@@ -45,5 +45,16 @@ class ReportTest(unittest.TestCase):
             root=Path(temp);(root/'baseline.json').write_text(json.dumps({'status':'complete','protocol_sha256':'frozen'}))
             with self.assertRaises(RuntimeError):report.load_phases(root,'frozen')
 
+    def test_solver_success_does_not_hide_unqualified_regional_attempt(self):
+        member=dict(label='synthetic',session_id='synthetic',source_version='hard60')
+        candidate=dict(status='complete',regions={'direct105:test':dict(
+            recovery={'result':{'status':'qualified'}},finals=[dict(
+                arm='fitted-c',start='association',reason=None,
+                fit=dict(converged=False,stationarity=.02,stop_reason='nonstationary-solver-status-0'))])})
+        row=report.comparison(member,{'status':'complete'},candidate,{})
+        attempt=row['recovered_regions'][0]['finals'][0]
+        self.assertFalse(attempt['qualified'])
+        self.assertEqual(attempt['stop_reason'],'nonstationary-solver-status-0')
+
 
 if __name__=='__main__':unittest.main()

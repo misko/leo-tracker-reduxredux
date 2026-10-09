@@ -68,6 +68,16 @@ def comparison(member,baseline,candidate,document):
             if not value['archived_parity']['passed']:
                 value['archived_parity']['limitation']='Archived B7 endpoint parity is unavailable or differs; do not claim exact replay parity'
         row['arms'][arm]=value
+    recovered=[]
+    for name,region in candidate.get('regions',{}).items():
+        if not name.startswith('direct105:'):continue
+        finals=[]
+        for value in region.get('finals',[]):
+            fit=value.get('fit') or {}
+            finals.append(dict(arm=value.get('arm'),start=value.get('start'),qualified=bool(fit.get('converged')),stationarity=fit.get('stationarity'),stop_reason=fit.get('stop_reason'),reason=value.get('reason')))
+        receipt=region.get('recovery',{});calibration=receipt.get('result') or {}
+        recovered.append(dict(region=name,calibration_status=calibration.get('status'),reason=receipt.get('reason'),finals=finals))
+    row['recovered_regions']=recovered
     return row
 
 
@@ -119,17 +129,40 @@ def main():
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    fig,axs=plt.subplots(1,2,figsize=(11,4.5))
-    for ax,arm in zip(axs,ARMS):
+    fig,axs=plt.subplots(2,2,figsize=(11,8))
+    for column,arm in enumerate(ARMS):
         x=np.arange(len(rows));base=[r['arms'][arm]['baseline']['error_km'] if r['arms'][arm]['baseline'] else np.nan for r in rows];new=[r['arms'][arm]['candidate']['error_km'] if r['arms'][arm]['candidate'] else np.nan for r in rows]
-        ax.bar(x-.18,base,.36,label='Matched standard B7');ax.bar(x+.18,new,.36,label='Generic recovery');ax.set_xticks(x,[r['label'].split('-')[-1] for r in rows]);ax.set_title(arm);ax.set_ylabel('Position error (km)');ax.legend(fontsize=8)
+        for level in (0,1):
+            ax=axs[level,column]
+            ax.bar(x-.18,base,.36,label='Matched standard B7');ax.bar(x+.18,new,.36,label='Generic recovery');ax.set_xticks(x,[r['label'].split('-')[-1] for r in rows]);ax.set_title(arm+(' — full range' if level==0 else ' — detail, 0–2.5 km'));ax.set_ylabel('Position error (km)');ax.legend(fontsize=8)
+            ax.spines[['top','right']].set_visible(False)
+            if level==1:
+                ax.set_ylim(0,2.5)
+                for i,value in enumerate(base):
+                    if value>2.5:ax.annotate(f'{value:.1f} km ↑',(i-.18,2.35),ha='center',fontsize=8)
     fig.suptitle('Failure-selected development pilot; no population accuracy claim');fig.tight_layout();fig.savefig(HERE/'position_errors.png',dpi=160);plt.close(fig)
     lines=['# Generic calibration-recovery pilot','','All five failure-selected development members are accounted for. This pilot does not estimate population mean accuracy. Frequency fit and position error remain separate.','','![Matched position errors](position_errors.png)','','| Member | Arm | Baseline km | Candidate km | Delta km | Status |','|---|---|---:|---:|---:|---|']
     for row in rows:
         for arm in ARMS:
             value=row['arms'][arm];fmt=lambda v:'Unavailable' if v is None else f'{v:.6f}'
             lines.append(f"|{row['label']}|{arm}|{fmt(value['baseline']['error_km'] if value['baseline'] else None)}|{fmt(value['candidate']['error_km'] if value['candidate'] else None)}|{fmt(value.get('error_delta_km'))}|{row['baseline_status']} / {row['candidate_status']}|")
-    lines.extend(['','`comparison.json` contains per-arm RMS, signal support, convergence, fallbacks, regional selection, archived B7 parity, slice claims and recorded evaluation/polish diagnostics. Full-pilot aggregate metrics are withheld if any matched member fails.','','```json',json.dumps(result['aggregate'],indent=2),'```'])
+    lines.extend(['','## Pilot metrics','','These five members were selected for calibration failures, not position error. They are consumed development data. The known ac11 rescue is member051; its repetition under generic code is not independent validation.','','| Arm / phase | Mean km | Median km | p95 km | Worst km |','|---|---:|---:|---:|---:|'])
+    for arm,stats in result['aggregate'].items():
+        if stats['full_pilot_metrics_withheld']:
+            lines.append(f'|{arm}: incomplete matched coverage|—|—|—|—|')
+        else:
+            for phase in ('baseline','candidate'):
+                v=stats[phase];lines.append(f"|{arm} / {phase}|{v['mean_km']:.6f}|{v['median_km']:.6f}|{v['p95_km']:.6f}|{v['worst_km']:.6f}|")
+    lines.extend(['','## Recovery convergence and failures','','Optimizer success alone is not qualification. Unqualified regional starts remain excluded by the unchanged independent gate. These are attempt failures even when a member completes with a valid ordinary winner.','','| Member | Recovery calibration | Qualified regional starts | Unqualified regional starts |','|---|---|---:|---:|'])
+    for row in rows:
+        regions=row['recovered_regions'];finals=[v for r in regions for v in r['finals']]
+        lines.append(f"|{row['label'].split('-')[-1]}|{', '.join(str(r['calibration_status']) for r in regions)}|{sum(v['qualified'] for v in finals)} / {len(finals)}|{sum(not v['qualified'] for v in finals)}|")
+    lines.extend(['','## Frequency fit, reported separately','','| Member | Arm | Baseline RMS Hz | Candidate RMS Hz |','|---|---|---:|---:|'])
+    for row in rows:
+        for arm,value in row['arms'].items():
+            b=value['baseline'];c=value['candidate']
+            if b and c:lines.append(f"|{row['label'].split('-')[-1]}|{arm}|{b['posterior_rms_hz']:.3f}|{c['posterior_rms_hz']:.3f}|")
+    lines.extend(['','[comparison.json](comparison.json) contains per-arm signal support, convergence, fallbacks, regional selection, archived B7 parity, slice claims and recorded evaluation/polish diagnostics. Full-pilot aggregate metrics are withheld if any matched member fails.','','See [interpretation and next steps](INTERPRETATION.md), [independent runtime audit](RUNTIME_AUDIT.md), and [raw receipt restoration](RESULT_ARCHIVE.md).'])
     (HERE/'REPORT.md').write_text('\n'.join(lines)+'\n')
 
 
