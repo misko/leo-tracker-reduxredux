@@ -1,6 +1,6 @@
-# Iteration 51: uniform additive region policy, 143/148 completed
+# Iteration 51: uniform additive region policy, 148/148 completed
 
-This is a descriptive completion checkpoint at 2026-10-09T01:16:01.427381+00:00.
+This is a descriptive completion checkpoint at 2026-10-09T01:19:59.229153+00:00.
 All 63 DS16, 51 DS17 and 34 DS18 members remain in the denominator. Pending,
 unstarted and failed members are listed explicitly; subset means are not
 full-dataset results. No new independent validation claim is made.
@@ -11,18 +11,18 @@ full-dataset results. No new independent validation claim is made.
 
 | Dataset evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 60/63 | fitted-c | baseline | 6.231 | 1.448 | 4.397 | 265.277 |
-| DS16 60/63 | fitted-c | previous | 5.452 | 0.968 | 2.392 | 265.789 |
-| DS16 60/63 | fitted-c | candidate | 1.035 | 0.925 | 2.272 | 2.751 |
-| DS16 60/63 | zero-c | baseline | 6.619 | 1.722 | 7.202 | 264.604 |
-| DS16 60/63 | zero-c | previous | 5.711 | 1.163 | 2.927 | 261.743 |
-| DS16 60/63 | zero-c | candidate | 1.384 | 1.163 | 2.864 | 3.903 |
-| DS17 49/51 | fitted-c | baseline | 4.509 | 1.132 | 3.829 | 152.840 |
-| DS17 49/51 | fitted-c | previous | 0.846 | 0.708 | 1.876 | 2.635 |
-| DS17 49/51 | fitted-c | candidate | 0.846 | 0.708 | 1.876 | 2.635 |
-| DS17 49/51 | zero-c | baseline | 4.633 | 1.434 | 3.268 | 151.707 |
-| DS17 49/51 | zero-c | previous | 1.355 | 1.345 | 2.675 | 3.081 |
-| DS17 49/51 | zero-c | candidate | 1.355 | 1.345 | 2.675 | 3.081 |
+| DS16 63/63 | fitted-c | baseline | 5.964 | 1.322 | 4.286 | 265.277 |
+| DS16 63/63 | fitted-c | previous | 5.224 | 0.909 | 2.377 | 265.789 |
+| DS16 63/63 | fitted-c | candidate | 1.017 | 0.885 | 2.238 | 2.751 |
+| DS16 63/63 | zero-c | baseline | 6.355 | 1.660 | 6.890 | 264.604 |
+| DS16 63/63 | zero-c | previous | 5.484 | 1.161 | 2.875 | 261.743 |
+| DS16 63/63 | zero-c | candidate | 1.363 | 1.161 | 2.846 | 3.903 |
+| DS17 51/51 | fitted-c | baseline | 4.477 | 1.132 | 4.789 | 152.840 |
+| DS17 51/51 | fitted-c | previous | 0.864 | 0.708 | 2.009 | 2.635 |
+| DS17 51/51 | fitted-c | candidate | 0.864 | 0.708 | 2.009 | 2.635 |
+| DS17 51/51 | zero-c | baseline | 4.585 | 1.434 | 4.048 | 151.707 |
+| DS17 51/51 | zero-c | previous | 1.417 | 1.388 | 2.794 | 3.519 |
+| DS17 51/51 | zero-c | candidate | 1.417 | 1.388 | 2.794 | 3.519 |
 | DS18 34/34 | fitted-c | baseline | 4.422 | 1.852 | 13.381 | 58.694 |
 | DS18 34/34 | fitted-c | previous | 2.739 | 1.140 | 3.168 | 53.140 |
 | DS18 34/34 | fitted-c | candidate | 2.739 | 1.140 | 3.168 | 53.140 |
@@ -40,12 +40,12 @@ Incomplete groups below remain partial; no subgroup substitutes for a full datas
 
 | Group evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 original 48 45/48 | fitted-c | baseline | 1.970 | 1.661 | 4.246 | 7.314 |
-| DS16 original 48 45/48 | fitted-c | previous | 1.083 | 1.034 | 2.210 | 2.751 |
-| DS16 original 48 45/48 | fitted-c | candidate | 1.083 | 1.034 | 2.210 | 2.751 |
-| DS16 original 48 45/48 | zero-c | baseline | 2.323 | 1.660 | 6.577 | 9.870 |
-| DS16 original 48 45/48 | zero-c | previous | 1.373 | 1.165 | 2.809 | 3.903 |
-| DS16 original 48 45/48 | zero-c | candidate | 1.373 | 1.165 | 2.809 | 3.903 |
+| DS16 original 48 48/48 | fitted-c | baseline | 1.886 | 1.518 | 4.186 | 7.314 |
+| DS16 original 48 48/48 | fitted-c | previous | 1.057 | 1.013 | 2.168 | 2.751 |
+| DS16 original 48 48/48 | fitted-c | candidate | 1.057 | 1.013 | 2.168 | 2.751 |
+| DS16 original 48 48/48 | zero-c | baseline | 2.245 | 1.631 | 6.109 | 9.870 |
+| DS16 original 48 48/48 | zero-c | previous | 1.347 | 1.163 | 2.769 | 3.903 |
+| DS16 original 48 48/48 | zero-c | candidate | 1.347 | 1.163 | 2.769 | 3.903 |
 | DS16 added 15 15/15 | fitted-c | baseline | 19.016 | 1.041 | 82.334 | 265.277 |
 | DS16 added 15 15/15 | fitted-c | previous | 18.558 | 0.733 | 81.448 | 265.789 |
 | DS16 added 15 15/15 | fitted-c | candidate | 0.892 | 0.733 | 1.908 | 2.445 |
@@ -67,8 +67,8 @@ Incomplete groups below remain partial; no subgroup substitutes for a full datas
 
 | Group | Arm | Better/worse/tied | Failed/not reached | Fallbacks |
 |---|---|---:|---:|---:|
-| DS16 original 48 | fitted-c | 0/0/45 | 0/0 | 0 |
-| DS16 original 48 | zero-c | 0/0/45 | 1/0 | 1 |
+| DS16 original 48 | fitted-c | 0/0/48 | 1/0 | 1 |
+| DS16 original 48 | zero-c | 0/0/48 | 1/0 | 1 |
 | DS16 added 15 | fitted-c | 1/0/14 | 0/0 | 0 |
 | DS16 added 15 | zero-c | 1/0/14 | 0/0 | 0 |
 | DS18 prior registry 24 | fitted-c | 0/0/24 | 0/0 | 0 |
@@ -86,10 +86,10 @@ choices are never discarded because of their reference error.
 
 | Dataset | Arm | Better/worse/tied | Failed/not reached | Fallbacks | RMS base/previous/new Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 1/0/59 | 0/0 | 0 | 91.15/70.58/69.60 |
-| DS16 | zero-c | 1/0/59 | 1/0 | 1 | 120.41/103.93/103.44 |
-| DS17 | fitted-c | 0/0/49 | 0/0 | 0 | 79.79/64.59/64.59 |
-| DS17 | zero-c | 0/0/49 | 1/0 | 1 | 131.04/123.42/123.42 |
+| DS16 | fitted-c | 1/0/62 | 1/0 | 1 | 90.17/70.18/69.25 |
+| DS16 | zero-c | 1/0/62 | 1/0 | 1 | 120.25/104.15/103.69 |
+| DS17 | fitted-c | 0/0/51 | 0/0 | 0 | 79.96/64.88/64.88 |
+| DS17 | zero-c | 0/0/51 | 1/0 | 1 | 130.49/122.87/122.87 |
 | DS18 | fitted-c | 0/0/34 | 0/0 | 0 | 101.06/75.65/75.65 |
 | DS18 | zero-c | 0/0/34 | 0/0 | 0 | 116.13/93.90/93.90 |
 
@@ -182,9 +182,9 @@ numerical policy; summary.json retains original attempts and completion sources.
 | DS16-058 | scan-fw-4099ab8ea46fad71 | complete  | 1.083 | 0.672 | previously_evaluated_consumed |
 | DS16-059 | scan-fw-aeea3ef6d81d637f | complete  | 1.941 | 0.930 | previously_evaluated_consumed |
 | DS16-060 | scan-fw-19a8822932068f7a | complete  | 0.329 | 1.540 | previously_evaluated_consumed |
-| DS16-061 | scan-fw-f8a93156e16bf663 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-062 | scan-fw-ecb0b93df67421a9 | not_run  | — | — | previously_evaluated_consumed |
-| DS16-063 | scan-fw-82df8e587b0af01b | not_run  | — | — | previously_evaluated_consumed |
+| DS16-061 | scan-fw-f8a93156e16bf663 | complete  | 0.509 | 0.560 | previously_evaluated_consumed |
+| DS16-062 | scan-fw-ecb0b93df67421a9 | complete  | 0.682 | 1.090 | previously_evaluated_consumed |
+| DS16-063 | scan-fw-82df8e587b0af01b | complete  | 0.783 | 1.204 | previously_evaluated_consumed |
 | DS17-001 | scan-fw-94a135be557220a2 | complete  | 0.522 | 0.668 | previously_evaluated_consumed |
 | DS17-002 | scan-fw-d52ab5a4255e6b69 | complete  | 1.048 | 0.638 | previously_evaluated_consumed |
 | DS17-003 | scan-fw-0b7f58e4a4c5f248 | complete  | 0.605 | 0.626 | previously_evaluated_consumed |
@@ -234,8 +234,8 @@ numerical policy; summary.json retains original attempts and completion sources.
 | DS17-047 | scan-fw-82ee62657e29d639 | complete  | 0.562 | 1.997 | previously_evaluated_consumed |
 | DS17-048 | scan-fw-85e3bfb9e4cfcd46 | complete  | 1.239 | 2.315 | previously_evaluated_consumed |
 | DS17-049 | scan-fw-0faabd2537f4fafd | complete  | 1.917 | 2.566 | previously_evaluated_consumed |
-| DS17-050 | scan-fw-4a9c9e031c781aad | not_run  | — | — | previously_evaluated_consumed |
-| DS17-051 | scan-fw-da79d96a4515ec30 | not_run  | — | — | previously_evaluated_consumed |
+| DS17-050 | scan-fw-4a9c9e031c781aad | complete  | 0.521 | 2.352 | previously_evaluated_consumed |
+| DS17-051 | scan-fw-da79d96a4515ec30 | complete  | 2.101 | 3.519 | previously_evaluated_consumed |
 | DS18-001 | scan-fw-b299927c33fccc7a | complete  | 1.272 | 0.315 | previously_evaluated_consumed |
 | DS18-002 | scan-fw-4e13bed3c09cadff | complete  | 0.305 | 0.406 | previously_evaluated_consumed |
 | DS18-003 | scan-fw-c351a2d8f24c4455 | complete  | 0.365 | 1.314 | previously_evaluated_consumed |
