@@ -58,3 +58,39 @@ their verified identities; mismatch in one baseline source does not contaminate
 every other source. Record exactly which pass was recomputed, costs, failures and
 baseline parity limits. Missing bindings and budget-exhausted members remain in
 coverage. Known/reference positions may evaluate terminal results only.
+
+## Full-cohort driver review checkpoint
+
+Reviewed new cohort.py/run.py without executing a loader or fit. The193-member
+source plan has no regional model-identity mismatch and no recorded gap. Current
+ordinary baseline explicitly runs all three passes and current recovery, followed
+by B7. Candidate preserves baseline regions through a deep copy, discovers ordinary
+runtime failures and uses the unchanged105 recovery with matched c arms. Local
+baseline/candidate joint namespaces and persistent six-slice caps remain separate.
+
+The reviewed optional legacy source port requires the literal metadata policy,
+reconstructed coarse objective, sampled/bootstrap position, finite feasible state
+and independent KKT for any claimed qualification. Its only generated legacy alias
+is the original baseline point into b7-shared. Current exact stages and physically
+bound iteration51 research caches are separate sources; old completed numerical
+stages cannot pass through the legacy alias branch.
+
+Suggested local defense before freeze: explicitly verify sanitized research-source
+file hash and model identity when constructing its cache port, supplementing the
+source-plan preflight and frozen closure. Source-port synthetic tests should cover
+incompatible alias rejection and the independent feasibility/KKT check, not just
+cohort orchestration. No numerical blocker otherwise identified at this checkpoint.
+
+Historical51 input loading contains archived-error equality checks as provenance
+validation; they do not choose seeds, banks, hyperparameters or winners. This
+reference-bearing validation should remain disclosed and separated from numerical
+inference. This reviewer did not read actual error outcomes or call those loaders.
+
+Final loader integration review: cohort now imports immutable85 dependencies in
+import-only mode, installing the84→82 verified-protocol hook before using its
+historical load function, matching87/106's reconstruction path. This removes the
+ambiguous direct51 lazy protocol import. The agent reports nine synthetic tests
+including protocol namespace/path and legacy alias rejection. Research-source
+SHA/model-identity and causal evidence checks are explicit. Freeze must retain
+85/84/82 and inherited source closure. No remaining review blocker identified;
+this reviewer executed no recording loader or fit.
