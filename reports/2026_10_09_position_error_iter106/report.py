@@ -14,6 +14,23 @@ ARMS = ("fitted-c", "zero-c")
 VARIANTS = ("archive", "125", "100")
 
 
+def load_terminal_rows(plan, digest, here=HERE):
+    """Verify full terminal coverage before any evaluation reference is opened."""
+    rows = {}
+    for binding in plan["members"]:
+        member = binding["member"]
+        label = member["inventory_label"]
+        path = here / "results" / f"{label}.json"
+        if not path.exists():
+            raise RuntimeError(f"{label} not terminal; reference evaluation withheld")
+        row = json.loads(path.read_text())
+        if row.get("status") not in ("complete", "failed", "input-failed"):
+            raise RuntimeError(f"{label} not terminal; reference evaluation withheld")
+        assert row["protocol_sha256"] == digest and row["member"] == member
+        rows[label] = row
+    return rows
+
+
 def evaluation_document(binding, plan, root=ROOT, status_reader=None):
     """Metadata-only access to the original loader authority, never load_case."""
     from leo.contracts.digests import canonical_digest
@@ -27,8 +44,22 @@ def evaluation_document(binding, plan, root=ROOT, status_reader=None):
         return json.loads(path.read_text())
 
     if loader.get("baseline_path"):
-        document = bound_read(loader["baseline_path"])
-        authority = dict(path=loader["baseline_path"], kind="frozen-file-sha256")
+        if loader["baseline_path"] in plan["source_sha256"]:
+            document = bound_read(loader["baseline_path"])
+            authority = dict(path=loader["baseline_path"], kind="frozen-file-sha256")
+        else:
+            assert loader["kind"] == "completion"
+            ancestor = bound_read(binding["result_source"])
+            assert ancestor["member"] == binding["member"]
+            document = json.loads((root / loader["baseline_path"]).read_text())
+            expected = ancestor["baseline_document_digest"]
+            assert canonical_digest(document) == expected
+            authority = dict(
+                path=loader["baseline_path"], kind="frozen-ancestor-canonical-digest",
+                ancestor_path=binding["result_source"],
+                ancestor_sha256=plan["source_sha256"][binding["result_source"]],
+                document_digest=expected,
+            )
     else:
         expected = loader.get("baseline_document_digest")
         if loader["kind"] == "legacy_ds16":
@@ -341,13 +372,10 @@ def main():
     path = HERE / "protocol.json"
     plan = json.loads(path.read_text())
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    terminal_rows = load_terminal_rows(plan, digest)
     rows = []
     for binding in plan["members"]:
-        receipt = HERE / "results" / f"{binding['member']['inventory_label']}.json"
-        if not receipt.exists():
-            continue
-        row = json.loads(receipt.read_text())
-        assert row["protocol_sha256"] == digest and row["member"] == binding["member"]
+        row = terminal_rows[binding["member"]["inventory_label"]]
         if row["status"] == "complete":
             archive_path = ROOT / binding["b7_source"]
             assert (
@@ -385,6 +413,7 @@ def main():
         "",
         f"Complete membership: {summary['complete']}.",
         "Consumed development only. Missing/failed inputs withhold full position metrics.",
+        "Reference values do not guide model construction, starts or winners. A legacy loader compares an archived error field only for artifact consistency; see [the dependency audit](REFERENCE_DEPENDENCY_AUDIT.md).",
         "",
         "| Dataset | Arm | Model | n | Mean km | Median km | p95 km | Worst km |",
         "|---|---|---|---:|---:|---:|---:|---:|",
