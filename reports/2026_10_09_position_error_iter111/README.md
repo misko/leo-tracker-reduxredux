@@ -2,7 +2,8 @@
 
 This iteration supplies tested mathematical diagnostics and an input audit, not
 new positioning results. Production B7 is unchanged. No recording was fitted or
-evaluated, and no new experiment protocol is frozen here. The full193 recovery
+evaluated. The preparation documents precede freezing; a separate freeze receipt
+records publication readiness once the protocol is sealed. The full193 recovery
 comparison still occupies both recording workers; the frozen iteration110
 persistence pilot remains next in the queue.
 
@@ -52,7 +53,7 @@ The next step is to specify a bounded recording audit after reviewing these
 diagnostics, not to deploy an uncalibrated weighting model. No accuracy benefit is
 yet quantified and the 0.4 km objective remains unmet.
 
-Validation: all24 synthetic tests pass under the production numerical interpreter.
+Initial validation: all24 synthetic tests passed under the production numerical interpreter.
 They cover prediction derivatives, c=0/fixed-RF locks, exact confounding, nuisance
 rescaling, affine-mixture Hessian finite differences, ambiguity, clutter and input
 validation. Rendering the illustration exposed a probability-sum roundoff edge
@@ -61,3 +62,28 @@ values or clipping curvature. The regression test includes a normalized pair
 whose floating-point sum exceeds one and rejects substantive excess. The PNG was
 generated and visually inspected. These checks qualify the diagnostic code, not
 its usefulness or accuracy on recordings.
+
+## Bounded audit preparation
+
+The prepared audit uses the exact twelve members already selected by iteration110,
+retains the full148 authority, and evaluates both ordinary archived B7 endpoints
+without any optimization. It does not replace the full193 position comparison.
+
+A [shape-only preflight](SHAPE_PREFLIGHT.json) found that the original dense
+workspace estimate exceeded512 MiB on three selected members. The revised
+diagnostic compresses weighted position and nuisance columns together by thin QR
+in blocks of4096 rows, then performs nuisance projection on the small factor.
+It preserves the quadratic information and uses the original row count for rank
+tolerances. Global column normalization preserves invariance to nuisance units.
+No member or observation is removed to satisfy the resource limit.
+
+All12 shapes now pass the same512 MiB estimated-workspace guard; the largest
+estimate is300.45 MiB. These are algorithmic workspace estimates, not measured
+recording-process peak memory or embedded benchmarks. Dense prediction Jacobians
+still exist; this is a bounded reduction of intermediate memory, not a completely
+streaming RF pipeline.
+
+All35 preparation tests pass, including dense/streamed equivalence, confounding,
+rank deficiency, scaling, zero weights, matched arms and input/resource failures.
+The [draft protocol](DRAFT_PROTOCOL.md) documents the scope and remaining limits.
+No recording audit has run.

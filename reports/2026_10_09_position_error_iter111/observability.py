@@ -96,3 +96,54 @@ def diagnose(spatial, nuisance, weights, *, rtol=None, prior_information=None):
         result["prior_information"] = prior.copy()
         result["projected_plus_prior_information"] = result["projected"]["information"] + prior
     return result
+
+
+def streamed_diagnose(spatial, nuisance, weights, *, chunk_rows=4096, rtol=None):
+    """Gram-preserving thin QR; O(chunk_rows*P + P**2) additional workspace.
+
+    Globally normalize whitened nuisance columns before compression. Rank
+    tolerance uses original row count, never compressed factor row count.
+    """
+    spatial, nuisance, weights = (np.asarray(x, float) for x in (spatial, nuisance, weights))
+    if spatial.ndim != 2 or spatial.shape[1] != 2 or nuisance.ndim != 2:
+        raise ValueError("spatial/nuisance matrices required")
+    n, p = len(spatial), nuisance.shape[1]
+    if len(nuisance) != n or weights.shape != (n,) or chunk_rows <= 0:
+        raise ValueError("matching rows and positive chunk_rows required")
+    if not all(np.isfinite(x).all() for x in (spatial, nuisance, weights)) or np.any(weights < 0):
+        raise ValueError("finite inputs and nonnegative weights required")
+    maximum = np.zeros(p)
+    for start in range(0, n, chunk_rows):
+        end = min(n, start + chunk_rows)
+        block = nuisance[start:end] * np.sqrt(weights[start:end, None])
+        maximum = np.maximum(maximum, np.max(np.abs(block), axis=0))
+    nonzero = maximum > 0
+    squared = np.zeros(p)
+    for start in range(0, n, chunk_rows):
+        end = min(n, start + chunk_rows)
+        block = nuisance[start:end, nonzero] * np.sqrt(weights[start:end, None]) / maximum[nonzero]
+        squared[nonzero] += np.sum(block**2, axis=0)
+    factor = np.empty((0, 2 + np.count_nonzero(nonzero)))
+    for start in range(0, n, chunk_rows):
+        end = min(n, start + chunk_rows)
+        root = np.sqrt(weights[start:end, None])
+        block = np.column_stack(
+            [
+                spatial[start:end] * root,
+                (nuisance[start:end, nonzero] / maximum[nonzero])
+                * root
+                / np.sqrt(squared[nonzero]),
+            ]
+        )
+        factor = np.linalg.qr(np.vstack([factor, block]), mode="r")
+    tolerance = np.finfo(float).eps * max(n, p, 2) if rtol is None else rtol
+    result = diagnose(factor[:, :2], factor[:, 2:], np.ones(len(factor)), rtol=tolerance)
+    result["positive_weight_rows"] = int(np.count_nonzero(weights))
+    result["compression"] = dict(
+        method="Streamed thin QR",
+        original_rows=n,
+        factor_rows=len(factor),
+        chunk_rows=chunk_rows,
+        original_nuisance_columns=p,
+    )
+    return result

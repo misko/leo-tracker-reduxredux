@@ -5,6 +5,35 @@ import numpy as np
 import pytest
 
 diagnose = runpy.run_path(str(Path(__file__).with_name("observability.py")))["diagnose"]
+streamed = runpy.run_path(str(Path(__file__).with_name("observability.py")))["streamed_diagnose"]
+
+
+@pytest.mark.parametrize("case", ["ordinary", "confounded", "rankdeficient", "rescaled", "zero"])
+def test_streamed_dense_equivalence(case):
+    rng = np.random.default_rng(42)
+    x = rng.normal(size=(37, 2))
+    z = rng.normal(size=(37, 4))
+    w = rng.uniform(size=37)
+    if case == "confounded":
+        z[:, :2] = x
+    elif case == "rankdeficient":
+        z[:, 3] = z[:, 0]
+    elif case == "rescaled":
+        z *= np.array([1e-100, -1e100, 3, 1])
+    elif case == "zero":
+        w[:] = 0
+    dense = diagnose(x, z, w)
+    compressed = streamed(x, z, w, chunk_rows=7)
+    assert compressed["rtol"] == dense["rtol"]
+    assert compressed["nuisance_rank"] == dense["nuisance_rank"]
+    for key in ("raw", "projected"):
+        assert compressed[key]["rank"] == dense[key]["rank"]
+        np.testing.assert_allclose(
+            compressed[key]["information"], dense[key]["information"], atol=1e-12
+        )
+        np.testing.assert_allclose(
+            compressed[key]["singular_values"], dense[key]["singular_values"], atol=1e-12
+        )
 
 
 def test_exact_confounding_and_separate_prior():
