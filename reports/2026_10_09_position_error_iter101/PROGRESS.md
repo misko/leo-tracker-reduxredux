@@ -53,14 +53,23 @@ including frozen research adapters for historical cases. All 148 historical B7
 endpoint bindings remain available. Source availability does not by itself prove
 full model reconstruction or successful recovery.
 
-Iteration105 is running a generic five-member newer-development pilot, selected
+Iteration105 completed a generic five-member newer-development pilot, selected
 by calibration failure without reference errors. Three older hard60 publications
 require a full unchanged B7 baseline, including all regional separation passes;
 the two existing B7 publications require parity checks. New failures discovered
 by those baseline runs must follow the same retained-region trigger, rather than
 an ac11-specific point list. Protocol and source snapshots were frozen and pushed
 in `8a52f5c73` before execution, after 23 synthetic tests passed and independent
-review found no blocker. The first two controllers cover members006 and050, with
-at most two single-thread workers and six500-second slices per phase. Member050's
-baseline has completed; candidate results and pilot accuracy are still pending.
-These failure-selected development cases do not establish population accuracy.
+review found no blocker. All five baselines and candidates completed in one slice
+each, using at most two single-thread workers. Fitted-c pilot mean changed
+11.692996→0.762109 km; c=0 changed11.784764→1.381092 km. One member improved
+(the already consumed ac11 failure), four were exactly unchanged, and neither
+arm regressed. These failure-selected development cases do not establish
+population accuracy. Both existing B7 publications replay exactly in both arms.
+
+All five recovered calibrations qualify, but six of30 regional final attempts
+remain nonstationary and are explicitly rejected (four006, two046). All selected
+endpoints qualify without fallback. Independent audit verified3078 frozen hashes.
+No numerical worker remains running. Full193-member recovery evaluation remains
+pending; the148-member baseline metric has not been updated. Iteration106 contains
+preparation only for a separate globally fixed frequency-width sensitivity test.
