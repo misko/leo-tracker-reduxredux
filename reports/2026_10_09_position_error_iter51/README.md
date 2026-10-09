@@ -1,6 +1,6 @@
-# Iteration 51: uniform additive region policy, 107/148 completed
+# Iteration 51: uniform additive region policy, 112/148 completed
 
-This is a descriptive completion checkpoint at 2026-10-09T00:56:32.256073+00:00.
+This is a descriptive completion checkpoint at 2026-10-09T00:59:57.109703+00:00.
 All 63 DS16, 51 DS17 and 34 DS18 members remain in the denominator. Pending,
 unstarted and failed members are listed explicitly; subset means are not
 full-dataset results. No new independent validation claim is made.
@@ -11,18 +11,18 @@ full-dataset results. No new independent validation claim is made.
 
 | Dataset evaluated/full | Arm | Model | Mean km | Median km | p95 km | Worst km |
 |---|---|---|---:|---:|---:|---:|
-| DS16 38/63 | fitted-c | baseline | 1.746 | 1.141 | 4.538 | 7.314 |
-| DS16 38/63 | fitted-c | previous | 0.940 | 0.953 | 1.850 | 2.266 |
-| DS16 38/63 | fitted-c | candidate | 0.940 | 0.953 | 1.850 | 2.266 |
-| DS16 38/63 | zero-c | baseline | 2.251 | 1.577 | 7.203 | 9.870 |
-| DS16 38/63 | zero-c | previous | 1.368 | 1.163 | 2.866 | 3.903 |
-| DS16 38/63 | zero-c | candidate | 1.368 | 1.163 | 2.866 | 3.903 |
-| DS17 35/51 | fitted-c | baseline | 5.669 | 0.987 | 3.966 | 152.840 |
-| DS17 35/51 | fitted-c | previous | 0.759 | 0.605 | 1.686 | 2.616 |
-| DS17 35/51 | fitted-c | candidate | 0.759 | 0.605 | 1.686 | 2.616 |
-| DS17 35/51 | zero-c | baseline | 5.684 | 1.376 | 3.082 | 151.707 |
-| DS17 35/51 | zero-c | previous | 1.242 | 0.893 | 2.508 | 3.081 |
-| DS17 35/51 | zero-c | candidate | 1.242 | 0.893 | 2.508 | 3.081 |
+| DS16 41/63 | fitted-c | baseline | 1.735 | 1.206 | 4.326 | 7.314 |
+| DS16 41/63 | fitted-c | previous | 0.935 | 0.909 | 1.826 | 2.266 |
+| DS16 41/63 | fitted-c | candidate | 0.935 | 0.909 | 1.826 | 2.266 |
+| DS16 41/63 | zero-c | baseline | 2.207 | 1.612 | 7.202 | 9.870 |
+| DS16 41/63 | zero-c | previous | 1.340 | 1.161 | 2.864 | 3.903 |
+| DS16 41/63 | zero-c | candidate | 1.340 | 1.161 | 2.864 | 3.903 |
+| DS17 37/51 | fitted-c | baseline | 5.440 | 1.041 | 3.757 | 152.840 |
+| DS17 37/51 | fitted-c | previous | 0.796 | 0.677 | 1.674 | 2.616 |
+| DS17 37/51 | fitted-c | candidate | 0.796 | 0.677 | 1.674 | 2.616 |
+| DS17 37/51 | zero-c | baseline | 5.439 | 1.347 | 3.019 | 151.707 |
+| DS17 37/51 | zero-c | previous | 1.257 | 0.954 | 2.461 | 3.081 |
+| DS17 37/51 | zero-c | candidate | 1.257 | 0.954 | 2.461 | 3.081 |
 | DS18 34/34 | fitted-c | baseline | 4.422 | 1.852 | 13.381 | 58.694 |
 | DS18 34/34 | fitted-c | previous | 2.739 | 1.140 | 3.168 | 53.140 |
 | DS18 34/34 | fitted-c | candidate | 2.739 | 1.140 | 3.168 | 53.140 |
@@ -40,10 +40,10 @@ choices are never discarded because of their reference error.
 
 | Dataset | Arm | Better/worse/tied | Failed/not reached | Fallbacks | RMS base/previous/new Hz |
 |---|---|---:|---:|---:|---:|
-| DS16 | fitted-c | 0/0/38 | 0/0 | 0 | 91.76/69.62/69.62 |
-| DS16 | zero-c | 0/0/38 | 0/0 | 0 | 127.30/110.04/110.04 |
-| DS17 | fitted-c | 0/0/35 | 0/0 | 0 | 80.40/64.86/64.86 |
-| DS17 | zero-c | 0/0/35 | 1/0 | 1 | 128.18/120.93/120.93 |
+| DS16 | fitted-c | 0/0/41 | 0/0 | 0 | 91.64/69.62/69.62 |
+| DS16 | zero-c | 0/0/41 | 0/0 | 0 | 124.62/107.22/107.22 |
+| DS17 | fitted-c | 0/0/37 | 0/0 | 0 | 80.10/64.42/64.42 |
+| DS17 | zero-c | 0/0/37 | 1/0 | 1 | 127.88/120.54/120.54 |
 | DS18 | fitted-c | 0/0/34 | 0/0 | 0 | 101.06/75.65/75.65 |
 | DS18 | zero-c | 0/0/34 | 0/0 | 0 | 116.13/93.90/93.90 |
 
@@ -108,9 +108,9 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS16-037 | scan-fw-9061ae11d2702df3 | complete  | 1.150 | 1.165 | previously_evaluated_consumed |
 | DS16-038 | scan-fw-d6e344d47603fb34 | complete  | 1.421 | 1.394 | previously_evaluated_consumed |
 | DS16-039 | scan-fw-6f9e553db123bebd | complete  | 0.996 | 1.117 | previously_evaluated_consumed |
-| DS16-040 | scan-fw-fedf239661900a5a | not_run  | — | — | previously_evaluated_consumed |
-| DS16-041 | scan-fw-85f7398f9b9461ec | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
-| DS16-042 | scan-fw-a52fc8f717bd9f76 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-040 | scan-fw-fedf239661900a5a | complete  | 0.478 | 0.504 | previously_evaluated_consumed |
+| DS16-041 | scan-fw-85f7398f9b9461ec | complete  | 1.679 | 1.667 | not_matched_in_reviewed_registry_not_unseen_claim |
+| DS16-042 | scan-fw-a52fc8f717bd9f76 | complete  | 0.472 | 0.809 | not_matched_in_reviewed_registry_not_unseen_claim |
 | DS16-043 | scan-fw-c937db2e26dad0aa | not_run  | — | — | previously_evaluated_consumed |
 | DS16-044 | scan-fw-64163dfbcc531a50 | not_run  | — | — | previously_evaluated_consumed |
 | DS16-045 | scan-fw-58975d3328a47507 | not_run  | — | — | not_matched_in_reviewed_registry_not_unseen_claim |
@@ -167,8 +167,8 @@ QNAP data and RF collection are unchanged. Results do not promote a new default.
 | DS17-033 | scan-fw-faf66389f66f36c5 | complete  | 0.581 | 1.891 | previously_evaluated_consumed |
 | DS17-034 | scan-fw-21c4ca5e190aee20 | complete  | 0.677 | 1.148 | previously_evaluated_consumed |
 | DS17-035 | scan-fw-89a46fa06eca3443 | complete  | 0.275 | 0.609 | previously_evaluated_consumed |
-| DS17-036 | scan-fw-c60687ebcb2a8600 | not_run  | — | — | previously_evaluated_consumed |
-| DS17-037 | scan-fw-f19be4ee7443fdb4 | not_run  | — | — | previously_evaluated_consumed |
+| DS17-036 | scan-fw-c60687ebcb2a8600 | complete  | 1.254 | 1.471 | previously_evaluated_consumed |
+| DS17-037 | scan-fw-f19be4ee7443fdb4 | complete  | 1.639 | 1.578 | previously_evaluated_consumed |
 | DS17-038 | scan-fw-de2ffd1076bbed84 | not_run  | — | — | previously_evaluated_consumed |
 | DS17-039 | scan-fw-007104def3cc4fb2 | not_run  | — | — | previously_evaluated_consumed |
 | DS17-040 | scan-fw-bb9c0b011134327c | not_run  | — | — | previously_evaluated_consumed |
