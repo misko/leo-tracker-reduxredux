@@ -1,0 +1,37 @@
+# Continue the clock-search experiment; continuity audit is descriptive
+
+74audit COMPLETE exec72259terminal0, frozen522383983. Three synthetictests and
+12fixedscore reconstructions pass.24orbitblindpreparedbootstraptracks cover
+1050/2299unique windows,1051memberships(oneoverlap). No fitsor operationalrules
+changed. Distantfittedwinner softsameadj.712,permuted.598,signalmass.866;
+recoveredfitted.701/.613/.853;closestordinary.599/.457/.584. Wrongandrecovered
+arebothtemporallystructured; simplecontinuityheuristics donotcleanlyseparate.
+Do not infer alltrackmodelsfail,oraddweight/cutofffromreferenceerror. RawMAP
+switchstatistic slightlyfavorssomerecovered,otherstatsfavorwrong: mixedsignal.
+Historicaloracleancestry andclosest-evaluation-onlystatus remainbinding.
+
+OnlyLIVE numericaljobs71:
+shard0 exec33403/PID4042412
+shard1 exec98176/PID4042411
+Latestpublishedsnapshot10/63completesources,160fitreceipts.64slotsincl1explicit
+unavailablezero-timingsource.27nonconverged,ALL27reportedsolver_success butfailed
+independentgate;0at90s,longest23.661s.20completed-sourcecontrols exactly55
+objectiveandconvergence,0flagchanges. No executionbudgetconfoundobserved sofar.
+Do NOTacceptsolver_successalone. Bothjobs live;don'trestartontimeout/changesource.
+71report.py nowincludesruntimecap/optimizer-success-but-unqualifiedcounts.
+Partialwinnersstillfar(regionsprocessedascending),notfinalmethodoutcome.
+Waitforall63pipelinesbeforejudgingrescue,reportall64slotsandfailurecoverage.
+
+71reporterusescompletesourcesonlyfor3-waydirect/proposals/continuation;
+allrawsnapshotreceipts included. Scorewinnersbeforetrutherror,RMSseparate.
+Two90s600workersqualified70;modelcommon145sigma1/common3joint100hardhorizon,
+residualhard60local25.23smaxsofar capnonbinding oncompletedreceipts. No newRF.
+
+55/60TERMINALcompletepublished72,selected58.4kmfailurepersists;73explainsnearby
+3.43kmstatealreadyfavoredbytimingpriorbutNLL~1958worse,net+798worsescore.
+Recoveredoracle1.15km hasbetterfullscorebutordinarysearchhasnotreachedit.
+69STOPPEDall143;NEVERresume;70terminal16controls qualificationcomplete.
+All14865meansunchanged1.360148fitted/1.738896zero.63DS16(48+15),51DS17,
+34DS18(consumed24+other10notunseen). GoalACTIVEunachieved. Uniform3datasetsand
+independentvalidationstillrequired. Preserveproductionhard60recovery/fitted-c/
+longest16PNGs; knowncoords evaluationonly; no newRFauthorized.
