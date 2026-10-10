@@ -76,5 +76,17 @@ new overlay at 2026-10-10 17:26:20 UTC. A check as the `leo` service user loaded
 the new module and exact configuration digest. An already running fast-scan
 child keeps the source it started with; the wrapper update did not interrupt
 it, and later child launches use the new overlay.
-The first post-activation analysis publication and its browser-rendered PNG
-remain to be verified.
+The first [post-activation V3 publication](live/verification.json),
+`scan-fw-3603e102b2698a0a`, carries the new digest and both converged RF
+arms. Its retained-calibration inventory found zero failed ordinary candidates,
+so it tests the normal path through the new release, not a live recovery
+trigger. In the actual WebUI, the 1080×960 PNG decoded with its advertised
+SHA256, all 16 longest-track reviews rendered, and there were no page errors
+or alerts. The fitted-`c` and `c=0` reference errors were 0.253 and 0.692 km,
+respectively; these reference values were displayed for evaluation only.
+
+![First live B7 publication after the recovery rollout](live/panel.png)
+
+The first *capture begun after* activation,
+`scan-fw-e3c830c542f47467`, sealed at 17:29:46 UTC and is still passing
+through the normal transfer and analysis pipeline at this checkpoint.
