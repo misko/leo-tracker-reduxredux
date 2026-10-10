@@ -240,7 +240,12 @@ def evaluation_callback(plan, rows):
             sanitized = json.loads(
                 (ROOT / requested[label]["binding"]["document_path"]).read_text()
             )
-            for key in ("session_id", "input_manifest_sha256", "evidence_sha256"):
+            for key in (
+                "session_id",
+                "input_manifest_sha256",
+                "analysis_manifest_sha256",
+                "evidence_sha256",
+            ):
                 if document[key] != sanitized[key]:
                     raise ValueError("evaluation input differs: " + key)
             if document["configuration"]["prior"] != sanitized["configuration"]["prior"]:
@@ -407,6 +412,10 @@ def main():
     parser.add_argument("--output", type=Path, default=HERE / "results")
     args = parser.parse_args()
     plan = json.loads(args.protocol.read_text())
+    for group in ("source_sha256", "input_sha256"):
+        for relative, expected in plan[group].items():
+            if hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() != expected:
+                raise ValueError("Frozen reporting authority changed: " + relative)
     rows, hashes = load_rows(plan, args.output, canonical_digest(plan))
     if not sealed(rows):
         raise ValueError("all twelve selections must seal before reference evaluation")
