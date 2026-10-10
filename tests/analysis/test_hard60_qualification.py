@@ -1,5 +1,7 @@
 """Bounded calibration polishing must obey the original constrained KKT gate."""
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 from scipy.optimize import nnls
@@ -116,3 +118,26 @@ def test_only_failed_retained_calibration_uses_budget():
         independently_qualified=False,
     )
     assert result["status"] == "not-triggered" and result["objective_evaluations"] == 0
+
+
+def test_fixed_fit_validation_checks_point_score_and_stationarity(monkeypatch):
+    monkeypatch.setattr(hard60_qualification, "_Problem", Problem)
+    objective = Quadratic()
+    objective.evaluate = lambda vector: (
+        1.0,
+        np.zeros(2),
+        SimpleNamespace(responsibilities=np.ones(2), residual_hz=np.array([2.0, -2.0])),
+    )
+    saved = dict(vector=[0.0, 0.0], objective=1.0, converged=True, evaluations=1)
+    qualified = hard60_qualification.validate_fixed_calibration_fit(objective, saved, np.zeros(2))
+    assert qualified.converged and qualified.posterior_rms_hz == 2
+    with pytest.raises(ValueError, match="retained point"):
+        hard60_qualification.validate_fixed_calibration_fit(objective, saved, np.ones(2))
+    with pytest.raises(ValueError, match="objective differs"):
+        hard60_qualification.validate_fixed_calibration_fit(
+            objective, {**saved, "objective": 0.0}, np.zeros(2)
+        )
+    with pytest.raises(ValueError, match="independent qualification"):
+        hard60_qualification.validate_fixed_calibration_fit(
+            objective, {**saved, "converged": False}, np.zeros(2)
+        )

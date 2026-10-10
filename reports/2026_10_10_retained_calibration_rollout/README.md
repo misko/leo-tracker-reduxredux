@@ -47,13 +47,15 @@ and source digests identify the new behavior; V3 and historical persisted
 contracts are unchanged. The queue recognizes the exact previous B7
 configuration digest for already published V3 products, so it does not try to
 overwrite an immutable historical publication. Unpublished scans use the new
-policy.
+policy. A read-only census of the 81 existing V3 manifests found only the
+allowlisted predecessor digest
+`sha256:dc67650e940b002fce58d74ba654d87df008611d839438e2d71248a5a2694893`.
 
 ## Validation and deployment
 
-Component, B7, CLI, contract, storage and API tests: **30 passed** on the
+Component, B7, CLI, contract, storage and API tests: **31 passed** on the
 development Python 3.13 environment using the identical-source native orbit
-extension, and **30 passed** on the active worker's pinned Python 3.14 release.
+extension, and **31 passed** on the active worker's pinned Python 3.14 release.
 Ruff lint, formatting and `git diff --check` pass. Real-scan parity,
 immutable staging, service activation, new-scan publication and WebUI PNG
 verification are pending at this checkpoint.

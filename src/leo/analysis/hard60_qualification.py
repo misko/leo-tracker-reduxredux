@@ -5,6 +5,41 @@ import time
 import numpy as np
 
 from leo.analysis import hard60_reduced_newton as newton
+from leo.analysis.hard60_bounded_fit import _Problem
+from leo.analysis.regional_position_fit import PositionFit
+
+
+def validate_fixed_calibration_fit(objective, saved, point):
+    """Recheck the physical score and KKT gate before promoting a calibration fit."""
+    vector = np.asarray(saved["vector"], float)
+    if not np.array_equal(vector[:2], point):
+        raise ValueError("calibration fit moved the retained point")
+    value, gradient, terms = objective.evaluate(vector)
+    if not np.isfinite(value) or not np.isfinite(gradient).all():
+        raise ValueError("nonfinite calibration fit")
+    if not np.isclose(value, saved["objective"], rtol=0, atol=1e-6):
+        raise ValueError("calibration objective differs from saved fit")
+    problem = _Problem(
+        objective, vector, fixed_position=True, rf_arm="fitted-c", slope_half_width_hz_s=60
+    )
+    stationarity = problem.stationarity(vector, gradient)
+    if not saved["converged"] or not problem.feasible(vector) or stationarity > 0.001:
+        raise ValueError("calibration fit failed independent qualification")
+    mass = float(terms.responsibilities.sum())
+    return PositionFit(
+        vector.copy(),
+        float(value),
+        float(np.sqrt(np.sum(terms.responsibilities * terms.residual_hz**2) / mass))
+        if mass
+        else None,
+        mass,
+        stationarity,
+        True,
+        False,
+        "retained-calibration-independent-qualified",
+        int(saved["evaluations"]),
+        float(saved.get("elapsed_s", 0.0)),
+    )
 
 
 def qualify(
