@@ -1,0 +1,11 @@
+# No-fit parity admission draft
+
+Scope is all 193 frozen development members and both independently saved selected B7 endpoints. No optimizer, reference port, position-error evaluation, or phase-model call is permitted. Each member permits at most two ordinary endpoint evaluations, one per arm. A failure retains that member and is never rerun silently.
+
+Use the immutable clean131 InferenceLoader and its direct public preparation path. Bind all five expected physical signatures and inference-only document projections of session/input/analysis/evidence/configuration. The full original source hash is preparation provenance only. Bind selected inference projection hashes from bindings.json. Before execution, freeze their hashes, clean131/116/105 backend closure, actual production score/model/native dependencies, and this runner's sources. No numerical closure is frozen by this draft.
+
+Reconstruct each arm separately from its own selected satellite order, final baseline, clock nodes, satellite centres, vector, and clock coefficients. Explicitly use production SlopePrior with sigma 0.5 Hz/s and its production RF-drift prior. This avoids assuming that matching satellite lists imply identical model parameters. Verify endpoint/state layout equality and zero-c static/RF-time locks. Require saved ordinary objective parity within 1e-6 before admitting any later fit experiment.
+
+Use a single-thread environment (OPENBLAS/OMP/MKL each 1), at most two workers, immutable per-member exclusive claims and terminal complete/failed receipts, elapsed cost, and complete membership coverage. The executable parity.py and freeze_parity.py are now prepared but neither numerical execution nor protocol freezing has occurred. Each arm failure is retained independently, with any successful opposite arm and actual evaluation count preserved. This draft does not authorize numerical execution.
+
+Metadata-only prepare_parity.py produced 193 clean inference documents and parity-bindings.json. Admission hashes cover only these whitelisted documents and selected projections. Six synthetic tests passed. Separate production-Python subprocess smoke checks imported the actual clean131/132/116 modules without loading recording inputs; the CLI help also passed. No generic research module was registered under a shared name.
