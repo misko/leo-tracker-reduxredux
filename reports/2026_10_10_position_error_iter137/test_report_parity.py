@@ -50,3 +50,25 @@ def test_complete_requires_real_two_arm_parity():
     row["endpoint_evaluations"] = 1
     with pytest.raises(ValueError, match="two evaluations"):
         summarize(members, {"POST18-001": row})
+
+
+def test_parity_plot_preserves_partial_failure_coverage(tmp_path):
+    from report_parity import plot
+
+    members = [dict(label="DS16-001", membership={}), dict(label="POST18-001", membership={})]
+    result = summarize(
+        members,
+        {
+            "DS16-001": dict(
+                label="DS16-001",
+                status="failed",
+                optimizer_calls=0,
+                endpoint_evaluations=1,
+                elapsed_s=3,
+                arms={"fitted-c": dict(status="complete", delta=0)},
+            )
+        },
+    )
+    path = tmp_path / "parity.png"
+    plot(result, path)
+    assert path.read_bytes().startswith(b"\x89PNG")

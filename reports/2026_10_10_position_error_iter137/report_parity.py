@@ -6,6 +6,8 @@ import math
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ARMS = ("fitted-c", "zero-c")
@@ -109,12 +111,19 @@ def main():
             ).hexdigest()
         receipts[path.stem] = value
     result = summarize(plan["members"], receipts)
+    if len(plan["members"]) != 193 or any(r["status"] == "pending" for r in result["rows"]):
+        raise ValueError(
+            "Final report requires all 193 terminal receipts; failures remain included"
+        )
     result.update(protocol_sha256=digest, receipt_sha256=receipt_hashes)
+    plot(result, HERE / "parity-diagnostics.png")
     (HERE / "parity-summary.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
     lines = [
         "# Selected endpoint parity coverage",
         "",
         result["scope"],
+        "",
+        "![Parity coverage and cost](parity-diagnostics.png)",
         "",
         "| Dataset | Members | Complete | Failed | Pending | Fitted max delta "
         "| Zero-c max delta | Summed seconds |",
@@ -137,6 +146,54 @@ def main():
     ]
     lines += [f"| {r['label']} | {r['status']} |" for r in result["rows"]]
     (HERE / "PARITY_RESULTS.md").write_text("\n".join(lines) + "\n")
+
+
+def plot(result, path):
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), constrained_layout=True)
+    groups = [(k, v) for k, v in result["groups"].items() if k != "all"]
+    bottom = np.zeros(len(groups))
+    for status, color in (("complete", "#359b73"), ("failed", "#d26b54"), ("pending", "#b9b9b9")):
+        counts = [v["statuses"].get(status, 0) for _, v in groups]
+        axes[0].bar(range(len(groups)), counts, bottom=bottom, label=status, color=color)
+        bottom += counts
+    axes[0].set_xticks(range(len(groups)), [k for k, _ in groups], rotation=25, ha="right")
+    axes[0].set(title="Membership coverage", ylabel="Recordings")
+    axes[0].legend()
+    for arm in ARMS:
+        values = [
+            (i, abs(r["receipt"]["arms"][arm]["delta"]))
+            for i, r in enumerate(result["rows"])
+            if r["receipt"]
+            and r["receipt"].get("arms", {}).get(arm, {}).get("status") == "complete"
+        ]
+        axes[1].scatter([i for i, _ in values], [v for _, v in values], s=12, label=arm)
+    axes[1].axhline(1e-6, linestyle="--", color="grey", label="Admission tolerance")
+    axes[1].set(
+        title="Saved objective parity",
+        xlabel="Frozen member index",
+        ylabel="Absolute objective delta",
+    )
+    axes[1].legend()
+    costs = [
+        (i, r["receipt"]["elapsed_s"])
+        for i, r in enumerate(result["rows"])
+        if r["receipt"] and "elapsed_s" in r["receipt"]
+    ]
+    axes[2].scatter([i for i, _ in costs], [v for _, v in costs], s=12)
+    axes[2].set(
+        title="Per-member reconstruction cost",
+        xlabel="Frozen member index",
+        ylabel="Processing seconds",
+    )
+    for axis in axes:
+        axis.grid(alpha=0.2)
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
 
 
 if __name__ == "__main__":
