@@ -65,3 +65,27 @@ def test_failed_cell_retains_full_coverage(tmp_path):
     collected=API.collect(plan,'digest',tmp_path)
     assert len(collected['cells'])==96
     assert sum(cell['status']=='failed' for cell in collected['cells'])==1
+
+
+def test_tampered_preference_blocks_reference_callback(tmp_path, monkeypatch):
+    directory=tmp_path/'results';directory.mkdir();plan=fixtures(directory)
+    here=tmp_path/'report';here.mkdir();preferences=here/'PREFERENCES.json'
+    preferences.write_text('{}')
+    authority=tmp_path/'authority.json';authority.write_text('{}')
+    monkeypatch.setattr(API,'ROOT',tmp_path)
+    monkeypatch.setattr(API,'HERE',here)
+    monkeypatch.setattr(API,'AUTHORITY',authority)
+    monkeypatch.setattr(API,'AUTHORITY_SHA',API.sha(authority))
+    collection=API.collect(plan,'digest',directory)
+    evaluation_plan=dict(inference_protocol_sha256='digest',
+                         authority_sha256=API.AUTHORITY_SHA,
+                         raw_sha256=collection['raw_sha256'],
+                         labels=[m['label'] for m in plan['members']],
+                         evaluation_source_sha256={},
+                         input_sha256={'report/PREFERENCES.json':API.sha(preferences)})
+    preferences.write_text('{"changed":true}')
+    calls=[]
+    with pytest.raises(ValueError,match='preference input differs'):
+        API.evaluate(plan,'digest',directory,evaluation_plan,
+                     evaluation_factory=lambda cell:calls.append(cell))
+    assert calls==[]
