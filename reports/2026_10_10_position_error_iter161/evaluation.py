@@ -18,7 +18,7 @@ TERMINAL = {'qualified', 'unqualified', 'failed'}
 def collect(plan, digest, directory):
     """Return {cells, members, raw_sha256} only after all 72 cells authenticate.
 
-    cells is keyed by (label, mode, arm); paths in raw_sha256 are relative to
+    cells is an ordered list; paths in raw_sha256 are relative to
     directory. This function never opens a reference/evaluation authority.
     """
     directory = Path(directory)
@@ -83,9 +83,15 @@ def prepare_evaluation(plan, digest, collection):
     """Metadata-only evaluation manifest; caller publishes before evaluate()."""
     if len(collection['cells']) != 72 or len(collection['members']) != 12:
         raise ValueError('full sealed collection required')
-    previous = json.loads((ROOT / 'reports/2026_10_10_position_error_iter154/protocol.json').read_text())
+    previous_path = ROOT / 'reports/2026_10_10_position_error_iter154/protocol.json'
+    if sha(previous_path) != 'f148eb97a3e789b297c842bb5329bd0162f2e46490c18e056d21adb30d0a6f31':
+        raise ValueError('evaluation-source authority changed')
+    previous = json.loads(previous_path.read_text())
     sources = dict(previous['evaluation_source_sha256'])
     sources[str(Path(__file__).resolve().relative_to(ROOT))] = sha(__file__)
+    for name in ('EVALUATION_PLAN.md', 'report.py', 'test_evaluation.py', 'test_report.py'):
+        path = HERE/name
+        sources[str(path.relative_to(ROOT))] = sha(path)
     for name, expected in sources.items():
         if sha(ROOT / name) != expected:
             raise ValueError('evaluation source differs: ' + name)
