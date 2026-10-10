@@ -80,6 +80,25 @@ def test_fixed_gaussian_design_finite_box_is_not_an_exact_noop():
     assert corrections[1] > corrections[0]
 
 
+def test_receiver_disjoint_mixture_has_separable_value_and_hessian():
+    b = np.array([.2, -.3])
+    measured = np.array([.4, -.7])
+    means = np.array([[0., 1.], [-1., .5]])
+    design = np.array([[[1., 0.], [1., 0.]], [[0., .8], [0., .8]]])
+    masses = np.full((2, 2), .45)
+    precision = np.diag([2., 3.])
+    full = observed_block(b, measured, means, design, masses, .02, .8, precision)
+    separate = [observed_block(
+        b[r:r+1], measured[r:r+1], means[r:r+1],
+        design[r:r+1, :, r:r+1], masses[r:r+1], .02, .8,
+        precision[r:r+1, r:r+1]) for r in (0, 1)]
+    assert full['value'] == pytest.approx(sum(x['value'] for x in separate), abs=1e-12, rel=0)
+    assert full['hessian'][0, 1] == pytest.approx(0., abs=1e-12, rel=0)
+    for r in (0, 1):
+        assert full['gradient'][r] == pytest.approx(separate[r]['gradient'][0], abs=1e-12, rel=0)
+        assert full['hessian'][r, r] == pytest.approx(separate[r]['hessian'][0, 0], abs=1e-12, rel=0)
+
+
 def test_actual_coefficient_box_intersection_not_new_amplitude_box():
     direction = np.array([.6, -.8])
     remaining = np.array([100., -200.])

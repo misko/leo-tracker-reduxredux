@@ -21,3 +21,11 @@ component weights, all fixed penalties, and exact bounds. The finite-mixture
 helper alone does not establish production likelihood parity. Quadrature and
 mode-search coverage still require a frozen, bounded protocol. No inference or
 accuracy benefit is established by this review.
+
+The current receiver-indicator design supplies a further simplification: with
+other parameters fixed, these two amplitudes belong to disjoint observation
+sets and have independent priors and interval bounds. The conditional integral
+factorizes exactly into two bounded one-dimensional integrals. PLAN records this
+so a future oracle does not pay for unnecessary two-dimensional quadrature.
+This is conditional separation, not independence of jointly inferred receiver
+clocks and position. It has not yet been checked numerically.
