@@ -373,6 +373,9 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
+      if (path === "/api/v1/fast-scans/automatic") {
+        return new Response(JSON.stringify({ items: [] }));
+      }
       if (path.startsWith("/api/v3/scanner/adaptive-sessions")
           || path.startsWith("/api/v2/scanner/adaptive-sessions")) {
         return { ok: false, status: 404, json: async () => null } as Response;
@@ -460,7 +463,7 @@ describe("Observation Console", () => {
     }));
     render(<App />);
     await screen.findByRole("heading", { name: "Actual channel visits" });
-    await screen.findByRole("table", { name: "Adaptive capture history" });
+    await screen.findByRole("table", { name: "Unified scan history" });
     expect(screen.getByRole("link", { name: "Link to this scan" })).toHaveAttribute("href", expect.stringContaining("scan_id=older-scan"));
     expect(window.location.search).toBe("?keep=yes&scan_id=older-scan");
     fireEvent.click(screen.getByRole("button", { name: /adaptive-test/ }));
@@ -484,7 +487,7 @@ describe("Observation Console", () => {
     }));
     render(<App />);
     await screen.findByRole("alert");
-    await screen.findByRole("table", { name: "Adaptive capture history" });
+    await screen.findByRole("table", { name: "Unified scan history" });
     expect(window.location.search).toBe("?scan_id=missing-scan");
     expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();
   });
@@ -492,7 +495,7 @@ describe("Observation Console", () => {
   it("opens adaptive scans by default and keeps fixed scans on the legacy page", async () => {
     render(<App />);
     expect(screen.getByRole("button", { name: "Adaptive scans" })).toHaveAttribute("aria-current", "page");
-    expect(await screen.findByRole("table", { name: "Adaptive capture history" })).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Unified scan history" })).toBeInTheDocument();
     await screen.findByRole("heading", { name: "Actual channel visits" });
     expect(screen.getByText("53 / 54")).toBeInTheDocument();
     expect(new URLSearchParams(window.location.search).get("scan_id")).toBe("adaptive-test");
@@ -500,7 +503,7 @@ describe("Observation Console", () => {
     expect(screen.queryByRole("table", { name: "Scanner history" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Legacy scans" }));
     expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Adaptive capture history" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Unified scan history" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: new RegExp(persistentHopCapture.session_id) }));
     await screen.findByRole("heading", { name: "300-second channel scan" });
     expect(screen.queryByRole("heading", { name: "Actual channel visits" })).not.toBeInTheDocument();

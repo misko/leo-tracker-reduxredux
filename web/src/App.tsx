@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState, Suspense, lazy } from "react
 import { ScannerGlrtPanel } from "./ScannerGlrtPanel";
 import { ScannerRefinementPanel } from "./ScannerRefinementPanel";
 import { ScannerTrackingPanel } from "./ScannerTrackingPanel";
-import { AdaptiveHopBrowser, AdaptiveHopDetail } from "./AdaptiveHopPanel";
+import { AdaptiveHopDetail } from "./AdaptiveHopPanel";
+import { ScanHistoryBrowser, type ScanSelection } from "./ScanHistoryBrowser";
+import { getAdaptiveSessions } from "./adaptive-api";
 import {
   getActiveQueue,
   getAcquisitionQueue,
@@ -48,6 +50,7 @@ const TleInterface = lazy(() =>
 import { StandardAnalysis } from "./StandardAnalysis";
 import { NativeRecordings } from "./NativeRecordings";
 import { PositionErrorPanel } from "./PositionErrorPanel";
+import { FastScanView } from "./FastScanView";
 import type {
   AnalysisState,
   ActiveQueueV1,
@@ -478,40 +481,52 @@ function AdaptiveScannerView() {
   const [selectedAdaptiveId, setSelectedAdaptiveId] = useState<string | null>(
     () => new URLSearchParams(window.location.search).get("scan_id") || null,
   );
+  const [selectedMode, setSelectedMode] = useState<"adaptive" | "fast">(
+    () => new URLSearchParams(window.location.search).get("scan_kind") === "fast" ? "fast" : "adaptive",
+  );
   useEffect(() => {
-    const restoreScan = () => setSelectedAdaptiveId(
-      new URLSearchParams(window.location.search).get("scan_id") || null,
-    );
+    const restoreScan = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSelectedAdaptiveId(params.get("scan_id") || null);
+      setSelectedMode(params.get("scan_kind") === "fast" ? "fast" : "adaptive");
+    };
     window.addEventListener("popstate", restoreScan);
     return () => window.removeEventListener("popstate", restoreScan);
   }, []);
-  const selectScan = useCallback((sessionId: string) => {
+  const selectScan = useCallback(({ id: sessionId, mode }: ScanSelection) => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("scan_id") !== sessionId) {
       const previous = url.searchParams.get("scan_id");
       url.searchParams.set("scan_id", sessionId);
+      if (mode === "fast") url.searchParams.set("scan_kind", "fast");
+      else url.searchParams.delete("scan_kind");
       // Initial automatic selection should not add a duplicate browser-history entry.
       if (previous) window.history.pushState(null, "", url);
       else window.history.replaceState(null, "", url);
     }
     setSelectedAdaptiveId(sessionId);
+    setSelectedMode(mode);
   }, []);
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Adaptive scan browser">
       <div className="browser-header">
-        <div><p className="section-label">ADAPTIVE SCANNER</p><strong>Current adaptive captures</strong></div>
+        <div><p className="section-label">SCANNER</p><strong>Current automatic captures</strong></div>
       </div>
-      <AdaptiveHopBrowser
+      <ScanHistoryBrowser
         selectedId={selectedAdaptiveId}
         onSelect={selectScan}
-        autoSelectFirst
+        loadAdaptive={getAdaptiveSessions}
       />
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Adaptive scan detail">
       {selectedAdaptiveId !== null && <a href={window.location.href}>Link to this scan</a>}
       {selectedAdaptiveId === null
         ? <div className="empty-detail"><strong>Loading adaptive scans…</strong><span>The newest adaptive capture will open automatically.</span></div>
-        : <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} />}
+        : selectedMode === "fast"
+          ? <FastScanView key={selectedAdaptiveId} recordingId={selectedAdaptiveId}
+              renderTracking={sessionId => <><ScannerTrackingPanel key={`tracking:${sessionId}`} sessionId={sessionId} />
+                <ScannerRefinementPanel key={`refinement:${sessionId}`} sessionId={sessionId} /></>} />
+          : <AdaptiveHopDetail key={selectedAdaptiveId} sessionId={selectedAdaptiveId} />}
     </section>
   </main>;
 }
