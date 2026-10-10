@@ -30,8 +30,11 @@ window. Apply the circular refined-minus-original residual within the establishe
 every seam crossing. Tests must prove this is equivalent under the existing
 wrapped likelihood. No reacquisition, timing/epoch refinement or gate change.
 
-For each measurement set run matched fitted-c and c=0 arms. Each starts from its
-same ordinary archived B7 vector and receiver/satellite clock coefficients. Keep
+For each measurement set run matched fitted-c and c=0 arms. All six fits start
+from the same ordinary archived fitted-c B7 vector and receiver/satellite clock
+coefficients, applying only the existing c=0 locks for that arm. This deliberately
+differs from 130's arm-own archived starts and makes initialization matched across
+both measurement variants and c arms. Keep
 the original observations, candidate bank, assignments' available support, timing
 priors, hard60 constraints, fitted-led calibration and correction basis, nuisance
 priors, local search region and independent convergence gate unchanged. Candidate
