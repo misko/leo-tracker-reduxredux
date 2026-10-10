@@ -13,6 +13,7 @@ from leo.analysis.hard60_joint_initial import JointClockObjective as InitialCloc
 from leo.analysis.hard60_joint_initial import fit as initial_fit
 from leo.analysis.hard60_score import Hard60Objective
 from leo.analysis.hard60_slope_prior import SlopePrior
+from leo.application.hard60_retained_calibration import recovered_region, regional_triggers
 from leo.application.hard60_runner import HARD60_SCORE, Hard60Configuration, run_hard60
 from leo.application.regional_position_runner import RegionalSliceExpired, json_value
 from leo.contracts.digests import canonical_digest
@@ -31,6 +32,7 @@ B7_POLICY = dict(
     stationarity_threshold=0.001,
     local_radius_km=25.0,
     stages=["B3", "B4", "B4W", "B5", "C6", "B7"],
+    retained_calibration_recovery="failed-ordinary-retained-v1",
 )
 
 
@@ -267,6 +269,26 @@ def run_b7(observations, bank, prior, tracks, checkpoints, *, maximum_seconds=50
             configuration=config,
             maximum_seconds=max(0.001, deadline - time.monotonic()),
         )
+    inventory = regional_triggers(regions)
+    recovery_records = {}
+    for trigger in inventory["candidates"]:
+        identity = canonical_digest(trigger["identity"])[7:]
+        name = "recovered:" + identity
+        regions[name] = recovered_region(observations, bank, prior, trigger, stage)
+        recovered = regions[name]
+        receipt = recovered["recovery"]
+        recovery_records[name] = dict(
+            basin=trigger["basin"],
+            source_passes=trigger["source_passes"],
+            calibration_status=(receipt["result"] or {}).get("status", receipt["reason"]),
+            association_status=(
+                "qualified" if recovered.get("association", {}).get("result") else "unavailable"
+            ),
+            qualified_finals=sum(
+                bool(row["fit"] and row["fit"]["converged"]) for row in recovered["finals"]
+            ),
+            attempted_finals=len(recovered["finals"]),
+        )
     operational, attempts, reasons = run_joint_stages(observations, bank, prior, regions, stage)
     result = dict(regions["baseline"])
     result["finals"] = list(operational.values())
@@ -276,6 +298,11 @@ def run_b7(observations, bank, prior, tracks, checkpoints, *, maximum_seconds=50
         attempts=attempts,
         regional_sources={a: r["region_source"] for a, r in operational.items()},
         accepted_stages={a: r["accepted_stage"] for a, r in operational.items()},
-        regional_failures={k: r["failures"] for k, r in regions.items()},
+        regional_failures={k: r.get("failures", []) for k, r in regions.items()},
+        retained_calibration_recovery=dict(
+            candidates=len(inventory["candidates"]),
+            unavailable=inventory["unavailable"],
+            attempts=recovery_records,
+        ),
     )
     return result
