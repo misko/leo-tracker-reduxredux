@@ -66,7 +66,11 @@ def test_configuration_freezes_models_prior_and_full_search_budget():
     assert config["run"]["edge_priority"] == "nearest"
     assert config["run"]["recovery_policy"] == "failed-coarse-box-v1"
     assert "analysis/hard60_bounded_fit.py" in config["source_digests"]
+    assert "analysis/hard60_reduced_newton.py" in config["source_digests"]
+    assert "analysis/hard60_qualification.py" in config["source_digests"]
     assert "application/hard60_recovery.py" in config["source_digests"]
+    assert "application/hard60_retained_calibration.py" in config["source_digests"]
+    assert config["joint_policy"]["retained_calibration_recovery"] == "failed-ordinary-retained-v1"
 
 
 def test_legacy_publication_cannot_satisfy_new_completion(tmp_path):
