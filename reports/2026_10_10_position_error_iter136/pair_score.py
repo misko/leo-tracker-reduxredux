@@ -20,6 +20,10 @@ def pair_rows(rows, maximum_gap_ns=2_000_000_000):
     reasons, receivers = {}, defaultdict(list)
     acquisitions = defaultdict(list)
     for index, row in enumerate(rows):
+        fields = ("support_start_ns", "support_center_ns", "support_end_ns", "acquisition_id")
+        if any(row.get(name) is None for name in fields):
+            reasons[index] = "missing-support"
+            continue
         if (
             not isinstance(row.get("edge"), str)
             or not row["edge"]
@@ -27,10 +31,6 @@ def pair_rows(rows, maximum_gap_ns=2_000_000_000):
             or row["actual_rf_hz"] <= 0
         ):
             raise ValueError("Exact RF and edge identity required")
-        fields = ("support_start_ns", "support_center_ns", "support_end_ns", "acquisition_id")
-        if any(row.get(name) is None for name in fields):
-            reasons[index] = "missing-support"
-            continue
         start, center, end = [row[name] for name in fields[:3]]
         if not all(isinstance(v, int) for v in (start, center, end)) or not start <= center < end:
             raise ValueError("Invalid acquisition support")
