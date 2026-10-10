@@ -32,6 +32,31 @@ Constants are common only within a fixed bank/model/block. Under invertible ampl
 
 For active/near boundaries, multiple modes or indefinite curvature, the displayed Laplace expression is not admitted. A two-dimensional normalized-prior quadrature over the exact box slice is the appropriate oracle, retaining all mixture terms. It does not require a fitted covariance interpretation or new prior width. An exact integral may exist when single-mode Laplace fails; that does not authorize repairing Laplace numerically.
 
+### Receiver separation reduces the oracle to two one-dimensional integrals
+
+For this specific conditional block, the apparent two-dimensional problem
+factorizes. `clock_design` multiplies each receiver's smooth basis by its receiver
+indicator. Each observation therefore depends on only a0 or a1; the likelihood
+sums independent observation NLLs and the selected prior has diagonal precision.
+With all other variables fixed and the exact box slice a rectangle,
+
+`F(a0,a1) = C + F0(a0) + F1(a1)`.
+
+Consequently the normalized conditional integral is the product of two bounded
+one-dimensional integrals, and the observed conditional Hessian has zero mixed
+entry. This remains true with satellite mixtures, wrapped components, clutter
+and multimodal receiver likelihoods, provided these retain the current
+per-observation factorization. Two adaptive 1D quadratures are therefore the
+preferred oracle; a dense 2D grid would add cost without information. The
+arbitrary-design 2D helper remains a derivative test oracle, not a requirement
+to implement expensive 2D integration.
+
+This separation does not hold after jointly integrating or reoptimizing shared
+position, timing or satellite parameters, nor under a future correlated
+receiver likelihood. Verify the zero mixed derivative and a product-integral
+identity before a recording adapter is admitted. Count fixed penalties once
+through C, and retain the selected normalized prior factor once per receiver.
+
 ## When it can matter, and fixed stop conditions
 
 With known Gaussian labels, a fixed linear design and fixed prior, `H=Λ+A.T W A` is independent of position. Its unbounded determinant correction is constant: unbounded integration and profiling then have identical position-score differences. This no-op is not exact for a finite coefficient box. Even when the mode is interior and the box is fixed, the posterior Gaussian mass inside that box can vary with the residual and hence position. For the selected smooth-clock mode the design depends on observation times/receiver, not position. Variation under the actual bounded mixture can therefore come from responsibilities/residuals and their missing-information covariance, or from boundary mass (including slice changes as other coefficients change), not newly acquired geometric information. Neither 117's degeneracy nor 144's nuisance-span fraction proves it improves position accuracy.
