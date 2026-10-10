@@ -1,4 +1,4 @@
-"""Publisher-only fixtures; outside frozen closure. Not yet executed."""
+"""Publisher-only fixtures outside the frozen scientific closure."""
 
 import copy
 
