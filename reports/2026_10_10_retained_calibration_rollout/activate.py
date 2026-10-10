@@ -10,9 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-STAGE = Path("/opt/leo-b7/d0797c7e6-retained-r1")
+STAGE = Path("/opt/leo-b7/a620e14f3-retained-r1")
 BASE = Path("/opt/leo-b7/88e231eb1-r1/worker/src")
-REVISION = "d0797c7e6d91f9a7bc5e92564e2d72160dccae6a"
+REVISION = "a620e14f314c5500de1d3e19a0b4aa2a68a13825"
 SUFFIX = "z" * 24 + "-retained-calibration.conf"
 WORKER_UNIT = "leo-adaptive-analysis-worker@.service"
 QUEUE_UNIT = "leo-adaptive-analysis-queue.service"
