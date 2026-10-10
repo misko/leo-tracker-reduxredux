@@ -99,3 +99,31 @@ terminal/best diagnostics and prefers independently stationary recorded
 candidates. That makes the proposed retained-state repair materially different
 from merely extending the original coarse iteration cap. It still needs a
 matched experiment; no replay or source change to either fitter was performed.
+
+## Full sealed pilot: five own-arm rejections
+
+After all twelve members completed, the terminal receipts showed five retained
+states rejected at the own-arm gate. All five were independently physically
+feasible. The fixed stationarity threshold is 0.001; it is not relaxed for the
+proposed successor.
+
+| Member | Discovery | Retained index | Own-arm stationarity | Recorded evaluations |
+|---|---|---:|---:|---:|
+| DS16-020 | fitted-c | 1 | 0.005058657936181987 | 217 |
+| DS16-024 | fitted-c | 0 | 0.001462414863690073 | 134 |
+| DS17-006 | zero-c | 0 | 0.0013216694684525798 | 143 |
+| DS17-015 | zero-c | 0 | 0.0010243060775137203 | 235 |
+| DS17-027 | zero-c | 1 | 0.001773898802822943 | 234 |
+
+Every returned state records `optimizer-success-returned-state-nonstationary`.
+The terminal-state limitation above applies to all five. Their fitted-c audits
+are not interchangeable with the own-arm gate: the three zero-c states have
+free-c stationarity residuals of approximately 504.891, 494.380 and 359.176,
+respectively. The first question is whether bounded optimization in the original
+arm qualifies the same fixed-position state; promotion into fitted-c is the
+separate, unchanged next step.
+
+These observations come from preserved terminal handoff receipts, without new
+model evaluations. They motivate a uniform same-arm repair rule over the whole
+sealed panel, not per-scan changes based on position errors or looser stopping
+tolerances. Any accuracy effect still requires the matched successor experiment.
