@@ -68,5 +68,11 @@ The [activation receipt](activation.json) records a successful rollout at
 the staged overlay, and the queue timer is active. The acquisition and WebUI
 services were not changed. The new configuration digest is
 `sha256:d7726729fd10b9a04e818dee0e1273a5cc3e8ee800fb247c44fee52470ed01fe`.
+The separately running fast-scan adapter also invokes the standard regional
+analysis through a fixed interpreter wrapper. Its wrapper still selected the
+previous B7 overlay at the first activation, so an atomic wrapper selector
+update is required for future fast-scan analyses. Already running fast-scan
+children keep the source they started with; the wrapper update does not
+interrupt them.
 The first post-activation analysis publication and its browser-rendered PNG
 remain to be verified.
