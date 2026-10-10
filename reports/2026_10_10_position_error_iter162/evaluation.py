@@ -102,6 +102,8 @@ def prepare_evaluation(plan, digest, collection):
         raise ValueError('evaluation authority differs')
     return dict(inference_protocol_sha256=digest, authority_sha256=AUTHORITY_SHA,
                 evaluation_source_sha256=sources, raw_sha256=collection['raw_sha256'],
+                input_sha256={str((HERE/'PREFERENCES.json').relative_to(ROOT)):
+                              sha(HERE/'PREFERENCES.json')},
                 labels=[m['label'] for m in plan['members']], references='evaluation only')
 
 
@@ -120,6 +122,12 @@ def evaluate(plan, digest, directory, evaluation_plan, *, evaluation_factory=Non
     for name, expected in evaluation_plan['evaluation_source_sha256'].items():
         if sha(ROOT / name) != expected:
             raise ValueError('evaluation source differs: ' + name)
+    expected_preference_path = str((HERE/'PREFERENCES.json').relative_to(ROOT))
+    if set(evaluation_plan['input_sha256']) != {expected_preference_path}:
+        raise ValueError('exact frozen preference authority required')
+    for name, expected in evaluation_plan['input_sha256'].items():
+        if sha(ROOT / name) != expected:
+            raise ValueError('evaluation preference input differs: ' + name)
     if sha(AUTHORITY) != AUTHORITY_SHA:
         raise ValueError('evaluation authority differs')
     if evaluation_factory is None:
@@ -160,4 +168,3 @@ def evaluate(plan, digest, directory, evaluation_plan, *, evaluation_factory=Non
                 row['evaluation_error'] = repr(error)
         rows.append(row)
     return dict(rows=rows, raw_sha256=collection['raw_sha256'])
-
