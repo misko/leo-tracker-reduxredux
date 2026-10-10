@@ -32,12 +32,13 @@ Batch one subsequently finished with both terminal shard receipts and all
 48 member phases complete. Its timing and coverage are documented in
 [PROGRESS.md](PROGRESS.md) and [CHECKPOINT_1.json](CHECKPOINT_1.json).
 
-**Current work: batch two is running.** Root owns both monitoring sessions:
-shard zero **81726** and shard one **53775**. The first DS16-006 and DS17-006
-search processes were verified live, each with one numerical thread. The first
-twenty cohort members are complete, sixteen are assigned to batch two, and 157
-await later batches. Do not restart claimed workers; require both terminal
-batch-two controllers before admitting batch three.
+Batch two also finished with both terminal shard receipts and all 48 member
+phases complete. Root's shard-zero session **81726** and shard-one session
+**53775** both exited zero. The checkpoint plot, receipt hashes and exact
+membership are in [PROGRESS.md](PROGRESS.md) and
+[CHECKPOINT_2.json](CHECKPOINT_2.json). **36/193 members** are complete;
+157 remain in the frozen later batches. Both batch-two receipts were verified
+before admitting batch three. Do not restart or duplicate claimed workers.
 
 No geographic evaluation has run; no position-error claim is available for this comparison. Production
 B7 and the historical full193 fitted mean of 1.254810 km remain unchanged.

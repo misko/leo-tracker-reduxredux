@@ -64,3 +64,30 @@ protocol and one thread per worker. No search budget, member selection, or
 position-informed decision changed between batches. Production B7 remains
 unchanged. [Batch-one metadata and receipt hashes](CHECKPOINT_1.json) provide
 the exact coverage and cost record.
+
+## Third resource checkpoint complete
+
+The next fixed sixteen-member batch has finished on both shards. Its **48/48
+phases** have terminal `complete` receipts, with no controller or member-phase
+failure. Across batches zero through two, **36/193 members and 108/108 phases**
+are complete. The planned batch included DS16/DS17/DS18 numbers 006–009 and
+the frozen newer labels 006–008 and 017. The numbering reflects the original
+inventory order; no replacement or accuracy-based member selection occurred.
+
+![Recorded worker time for batch two](checkpoint-2-cost.png)
+
+Batch two used 13,211.41 recorded worker seconds, averaging 825.71 seconds per
+member. The cumulative mean is 808.23 seconds per member. Linear projection
+from these thirty-six members is 43.33 worker-hours for all 193, or 21.66 hours
+at ideal two-worker utilization. This is a resource forecast with uncertain
+later-scan costs, not an embedded performance measurement. The chart separates
+the two search queues from the native and zero-led continuations by their
+recorded execution time; it contains no position or fit-score outcomes.
+
+The batch receipts, exact membership and phase states were verified before
+admitting the next batch. The checkpoint generator was unit-tested and
+reproduced the earlier batch-one receipt hashes and cost totals. Its
+[machine-readable checkpoint](CHECKPOINT_2.json) records the batch-two receipt
+hashes and per-phase times. Geographic evaluation remains sealed until all
+193 members terminate. **Decision: continue fixed batch three** under the
+unchanged protocol and two-worker limit. Production B7 remains unchanged.
