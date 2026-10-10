@@ -16,17 +16,27 @@ bank and observation identities remain strictly bound. No member was omitted.
 The pinned-runtime test suite passed **25 tests**. The source closure contains
 1598 files, input closure 196 files and runtime closure 2340 files.
 
-Batch zero is launched on two single-thread workers, using the immutable
+Batch zero was launched on two single-thread workers, using the immutable
 47e executable. Root owns shard zero (session 17877), processing DS16-001 then
 DS18-001. The debug_search_gap agent owns shard one (session 95011), processing
 DS17-001 then POST18-NEWER-20261009-001. Both initial search claims were verified.
 These session identifiers are monitoring information, not restart instructions.
 Do not duplicate a claimed worker or retry an orphan.
 
-Only this first four-member resource checkpoint is currently launched. All
-later members remain pending. Review both terminal batch receipts and measured
-resource use before admitting the next frozen batch. No geographic evaluation
-has run; no position-error claim is available for this comparison. Production
+Both batch-zero controllers subsequently exited successfully. All twelve
+member phases completed. The checkpoint and verified move to local bulk are
+published in [PROGRESS.md](PROGRESS.md). The original `results` path is now a
+symlink; retain that path spelling for every future invocation.
+
+**Current work: batch one is running.** Root owns shard zero, session **84385**;
+debug_search_gap owns shard one, session **10020**, controller PID1722725.
+Both initial DS16-002/DS17-002 search claims were verified through the symlink.
+This batch contains the fixed sixteen members numbered002–005 in each dataset
+group. Four cohort members are complete, sixteen are assigned to this running
+batch, and173 await later batches. Do not restart claimed workers; require both
+terminal batch-one controllers before admitting batch two.
+
+No geographic evaluation has run; no position-error claim is available for this comparison. Production
 B7 and the historical full193 fitted mean of 1.254810 km remain unchanged.
 
 Scientific source, policy and inputs are frozen. Later evaluation/report code
