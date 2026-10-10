@@ -112,3 +112,23 @@ For two similar spatial Jacobians, positive correlation discounts their common m
 The first falsifiable question is whether the soft zero-correlation score survives exact support disjointness and appears consistently in predefined blocks and both arms. A signal confined to c=0, uncertain acquisition reuse, or one recording does not justify a correlated likelihood. Out-of-block nuisance prediction would be needed to calibrate covariance after this screen; no extra optimizer is proposed now. A later matched position experiment would require a new fixed policy/protocol and separately reported frequency fit and geographic error. No rho sweep, per-scan tuning, reserve access or deployment change is authorized by this preparation.
 
 Eight pure synthetic tests pass using the production Python environment. They cover acquisition-only chronological ordering/full accounting, repeats and cross-channel overlap, missing support, gap boundaries, exact RF/edge separation, soft score/clutter, a finite-difference covariance derivative, known zero/positive products, pair exchange symmetry and invalid responsibilities/reused indices. These tests do not qualify a recorded support join, wrapped bivariate implementation, or correlated optimizer. No recording data was loaded.
+
+The prepared `audit_core.py` checks both saved ordinary endpoint objectives and
+computes the soft score without fitting. It fixes pairing before evaluating
+either arm, preserves all unpaired rows, and reports predetermined alternating
+pair blocks within each RX/channel/RF/edge group. It accepts only the unchanged
+125 Hz frequency scale. Three additional synthetic tests cover endpoint/order
+admission, both arms and fixed block accounting, and agreement with three-image
+wrapped weighted moments at alias seams. The latter qualifies the zero-correlation
+score at this narrow scale, not a finite-correlation bivariate likelihood.
+
+For 125 Hz and the 227,272.727 Hz period, every omitted nearest-image alternative
+has standardized distance at least 909.09. Its Gaussian exponential is below
+`exp(-413000)`, far below float64 range even after multiplying by the residual
+or dividing by the fixed positive clutter floor. At a seam, individual component
+winding means can differ while their contribution to the mixture score underflows.
+The test compares weighted moments directly to avoid an artificial `0/0` for
+such components. No physical covariance or position benefit follows from this
+numerical equivalence.
+
+Preparation amendment: the public support adapter now joins prepared candidate/window IDs to projected candidate values and their public probe metadata. Projected source sample offsets are local payload offsets, not device counters. It derives device bounds as `valid_start_counter + source_sample_bound - payload_start_sample`, subtracting integer counters before UTC conversion, and verifies the published support endpoints. Capture, raw authority, radio, stream generation, receiver, sample rate and device bounds define acquisition identity; disjoint windows in one visit remain distinct. Original observation order/fields and prepared window evidence are verified without reference fields. Missing selected candidates or probe authority retain every row with explicit unavailable support. Pairing checks unavailable support before requiring RF/edge, so an unknown edge is never fabricated and cannot remove the member. Available support still requires exact RF/edge identity. Synthetic integrated adapter/pairing coverage qualifies this preparation amendment; no recording projection or model call has run.
