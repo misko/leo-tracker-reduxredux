@@ -70,9 +70,11 @@ services were not changed. The new configuration digest is
 `sha256:d7726729fd10b9a04e818dee0e1273a5cc3e8ee800fb247c44fee52470ed01fe`.
 The separately running fast-scan adapter also invokes the standard regional
 analysis through a fixed interpreter wrapper. Its wrapper still selected the
-previous B7 overlay at the first activation, so an atomic wrapper selector
-update is required for future fast-scan analyses. Already running fast-scan
-children keep the source they started with; the wrapper update does not
-interrupt them.
+previous B7 overlay at the first activation. The guarded
+[fast-adapter activation](fast-adapter-activation.json) atomically selected the
+new overlay at 2026-10-10 17:26:20 UTC. A check as the `leo` service user loaded
+the new module and exact configuration digest. An already running fast-scan
+child keeps the source it started with; the wrapper update did not interrupt
+it, and later child launches use the new overlay.
 The first post-activation analysis publication and its browser-rendered PNG
 remain to be verified.
