@@ -15,6 +15,8 @@ def test_missing_errors_never_zero_filled_or_pair_changed():
     assert row['attempted']==2 and row['qualified']==1
     assert row['paired_delta']['mean']==1 and row['paired_full']['mean']==1
     assert row['errors']['mean']==2 and row['regressions']==1
+    assert row['regression_labels']==['A'] and row['maximum_regression_km']==1
+    assert row['equal']==0
 
 
 def test_predictive_comparison_uses_opposite_fold_and_separates_position():
