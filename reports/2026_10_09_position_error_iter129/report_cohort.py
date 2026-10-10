@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import runpy
 from pathlib import Path
 
@@ -96,6 +97,32 @@ def load_rows(plan, output, digest):
                 }
                 for arm, operation in receipt.get("operational", {}).items()
             }
+            timing = []
+            pattern = "*.finished.json" if phase == "search" else "*.done.json"
+            for timed_path in sorted((path.parent / "slices").glob(pattern)):
+                timed_bytes = timed_path.read_bytes()
+                timed = json.loads(timed_bytes)
+                duration = timed.get("elapsed_s")
+                if timed.get("protocol_sha256") != digest or not isinstance(duration, (int, float)):
+                    raise ValueError("foreign or invalid invocation timing")
+                if not math.isfinite(duration) or duration < 0:
+                    raise ValueError("invalid invocation duration")
+                timing.append(
+                    dict(
+                        path=str(timed_path),
+                        sha256=hashlib.sha256(timed_bytes).hexdigest(),
+                        status=timed.get("status"),
+                        elapsed_s=duration,
+                    )
+                )
+            value["invocation_timing"] = timing
+            value["recorded_invocation_elapsed_s"] = (
+                sum(v["elapsed_s"] for v in timing)
+                if timing
+                else 0.0
+                if receipt["status"] == "not-run-search-failed"
+                else None
+            )
             row["phases"][phase] = value
             hashes[str(path)] = hashlib.sha256(data).hexdigest()
         rows.append(row)
@@ -122,7 +149,11 @@ def summarize(rows, *, evaluate=None):
             failure_reasons={
                 p: r.get("reason") or r.get("reasons") for p, r in row["phases"].items()
             },
-            phase_elapsed_s={p: r.get("elapsed_s") for p, r in row["phases"].items()},
+            phase_elapsed_s={
+                p: r.get("recorded_invocation_elapsed_s", r.get("elapsed_s"))
+                for p, r in row["phases"].items()
+            },
+            invocation_timing={p: r.get("invocation_timing", []) for p, r in row["phases"].items()},
             discovery=row["phases"]["search"].get("searches", {}),
             point_failures=row["phases"]["search"].get("point_failures", []),
             regions={b: row["phases"][b].get("regions", []) for b in BRANCHES},
@@ -313,7 +344,7 @@ def plot(summary, path):
         rotation=45,
         ha="right",
     )
-    fig.suptitle("Preselected consumed12 · fresh matched discovery · all failures shown")
+    fig.suptitle("Preselected consumed 12 · fresh matched discovery · all failures shown")
     fig.tight_layout()
     fig.savefig(path, dpi=160)
     plt.close(fig)
@@ -369,6 +400,90 @@ def publish(summary, hashes, directory):
         "Metrics with missing pairs describe the available paired subset only; "
         "full-member metrics are withheld.",
         "",
+    ]
+    regions = [r for row in summary["rows"] for branch in BRANCHES for r in row["regions"][branch]]
+    finals = [v for r in regions for v in r["finals"].values()]
+    stages = [
+        ok
+        for row in summary["rows"]
+        for branch in BRANCHES
+        for arms in row["joint_stages"][branch].values()
+        for ok in arms.values()
+    ]
+    selected = [
+        row["arms"][arm][branch]
+        for row in summary["rows"]
+        for arm in ARMS
+        for branch in BRANCHES
+        if row["arms"][arm][branch].get("status") == "selected"
+    ]
+    elapsed = {
+        phase: sum(row["phase_elapsed_s"][phase] or 0 for row in summary["rows"])
+        for phase in ("search", *BRANCHES)
+    }
+    unknown_times = sum(
+        v is None for row in summary["rows"] for v in row["phase_elapsed_s"].values()
+    )
+    lines += [
+        f"Selected endpoints: {sum(v['qualified'] for v in selected)}/{len(selected)} qualified. "
+        f"Retained calibrations: {sum(r['calibration_status'] == 'qualified' for r in regions)}/"
+        f"{len(regions)} qualified. Regional finals: {sum(v['qualified'] for v in finals)}/"
+        f"{sum(v['attempts'] for v in finals)} qualified. Joint-stage attempts: "
+        f"{sum(stages)}/{len(stages)} qualified. Unqualified intermediate/regional attempts "
+        "remain explicit; a completed branch does not mean every attempt qualified.",
+        "",
+        f"Sum of recorded phase elapsed times: shared search {elapsed['search']:.3f}s, "
+        f"native continuation {elapsed['native']:.3f}s, "
+        f"fixed continuation {elapsed['fixed']:.3f}s; "
+        f"total {sum(elapsed.values()):.3f}s. Native/fixed searches share durable point fits, "
+        "so this is not two independent search runtimes or an embedded-speed benchmark. "
+        "Pending/resume invocation times and their byte hashes are included. "
+        f"Phases without measured invocation time: {unknown_times}. "
+        "Whole-controller wall time is unmeasured; process imports/hash checks/startup outside "
+        "the recorded timers are excluded. "
+        "The separately budgeted iteration 131 successor is excluded.",
+        "",
+    ]
+    for arm in ARMS:
+        deltas = [
+            row["arms"][arm]["delta_km"]
+            for row in summary["rows"]
+            if "delta_km" in row["arms"][arm]
+        ]
+        maximum = max([0.0, *deltas])
+        lines += [
+            f"Maximum positive paired regression ({arm}): {maximum:.12g} km "
+            f"({maximum * 1e6:.6f} mm). All positive differences, including roundoff-scale "
+            "differences, remain counted in the summary.",
+            "",
+        ]
+    for row in summary["rows"]:
+        for arm in ARMS:
+            native, fixed = (row["arms"][arm][b] for b in BRANCHES)
+            if native.get("status") != "selected" or fixed.get("status") != "selected":
+                continue
+            ns, fs = (v["selection"]["accepted_stage"] for v in (native, fixed))
+            if ns != fs:
+                lines += [
+                    f"{row['label']} {arm}: selected native stage {ns}, fixed stage {fs}. "
+                    f"Position error {native['error_km']:.6f} → {fixed['error_km']:.6f} km; "
+                    f"frequency RMS {native['frequency']['posterior_rms_hz']:.3f} → "
+                    f"{fixed['frequency']['posterior_rms_hz']:.3f} Hz. These endpoints differ in "
+                    "stage and potentially association/bank; this is not a matched completed-B7 "
+                    "stage improvement or evidence that better frequency fit explains "
+                    "position gain.",
+                    "",
+                ]
+        for branch, stage in row["joint_stages"].items():
+            for name, arms in stage.items():
+                for arm, qualified in arms.items():
+                    if not qualified:
+                        lines += [
+                            f"Unqualified joint stage: {row['label']} {branch} {name} {arm}. "
+                            "Its earlier qualified candidate was preserved by the frozen policy.",
+                            "",
+                        ]
+    lines += [
         "| Member | Search | Native | Fixed | Fitted-c delta km | Zero-c delta km |",
         "|---|---|---|---|---:|---:|",
     ]
@@ -386,6 +501,17 @@ def publish(summary, hashes, directory):
         "qualification counts, failure reasons and phase elapsed times are retained in "
         "[the compact summary](PILOT_SUMMARY.json). Raw receipts remain local; their byte "
         "hashes are published, not a remote raw-data reproduction bundle.",
+        "",
+        "The original DS16-020 failed search cost 7.292978472s and is included in the recorded "
+        "search total. [Iteration 131](../2026_10_09_position_error_iter131/RESULTS.md) separately "
+        "reports its added 975.329897197s successor cost; none of its endpoints replace the "
+        "missing pair here.",
+        "",
+        "The modest mean change comes from one available pair; typical errors and the worst "
+        "case remain essentially unchanged. This consumed conditional pilot does not establish "
+        "broad typical improvement, a new full-193 mean, "
+        "or a case for deploying fixed-bank discovery. "
+        "A fresh full-cohort search is not implied by these results.",
         "",
     ]
     (directory / "RESULTS.md").write_text("\n".join(lines))

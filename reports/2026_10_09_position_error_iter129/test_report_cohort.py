@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from report_cohort import (
@@ -119,3 +120,27 @@ def test_receipt_hash_covers_raw_associations_but_compact_report_keeps_only_fit_
     assert operation["fit"]["vector"] == [1, 2] and operation["basin"] == "region"
     assert "association" not in operation
     assert hashes[str(path)] == hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_invocation_timing_sums_pending_and_terminal_instead_of_only_terminal_elapsed(tmp_path):
+    phase = tmp_path / "sample/native"
+    slices = phase / "slices"
+    slices.mkdir(parents=True)
+    base = dict(protocol_sha256="digest", label="sample", branch="native", fallback_available=False)
+    (phase / "result.json").write_text(json.dumps(dict(base, status="complete", elapsed_s=5)))
+    for slot, status, elapsed in [(1, "pending", 3), (2, "complete", 5)]:
+        (slices / f"baseline-{slot:02}.done.json").write_text(
+            json.dumps(dict(base, status=status, elapsed_s=elapsed))
+        )
+    result, _ = load_rows(dict(members=[dict(label="sample", dataset="DS16")]), tmp_path, "digest")
+    value = result[0]["phases"]["native"]
+    assert value["elapsed_s"] == 5 and value["recorded_invocation_elapsed_s"] == 8
+    assert [v["status"] for v in value["invocation_timing"]] == ["pending", "complete"]
+    for timing in value["invocation_timing"]:
+        assert hashlib.sha256(Path(timing["path"]).read_bytes()).hexdigest() == timing["sha256"]
+    path = slices / "baseline-02.done.json"
+    foreign = json.loads(path.read_text())
+    foreign["protocol_sha256"] = "other"
+    path.write_text(json.dumps(foreign))
+    with pytest.raises(ValueError, match="foreign"):
+        load_rows(dict(members=[dict(label="sample", dataset="DS16")]), tmp_path, "digest")
