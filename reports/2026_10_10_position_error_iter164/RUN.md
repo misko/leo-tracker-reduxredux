@@ -40,6 +40,12 @@ membership are in [PROGRESS.md](PROGRESS.md) and
 157 remain in the frozen later batches. Both batch-two receipts were verified
 before admitting batch three. Do not restart or duplicate claimed workers.
 
+**Current work: batch three is running.** Root owns shard-zero monitoring
+session **58400** and shard-one session **83565**. Their first DS16-010 and
+DS17-010 search processes were verified live with one numerical thread each,
+and both controller claims carry the frozen protocol digest. These handles are
+for observation; do not restart claimed workers after a quiet poll.
+
 No geographic evaluation has run; no position-error claim is available for this comparison. Production
 B7 and the historical full193 fitted mean of 1.254810 km remain unchanged.
 
