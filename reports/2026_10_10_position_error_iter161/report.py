@@ -6,6 +6,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 MODES = ('full', 'train0', 'train1')
 ARMS = ('zero-c', 'fitted-c')
+EQUALITY_KM = 1e-9
 
 
 def stats(values):
@@ -34,9 +35,14 @@ def aggregate(cells):
                          and full[c['label']].get('error_km') is not None]
                 deltas = [b['error_km'] - a['error_km'] for a, b in pairs]
                 output.append(dict(dataset=dataset, arm=arm, mode=mode, attempted=len(rows),
+                    full_evaluation_coverage=bool(rows) and len(valid)==len(rows),
                     qualified=sum(c['status'] == 'qualified' for c in rows),
                     errors=stats(c['error_km'] for c in valid), paired_delta=stats(deltas),
-                    regressions=sum(d > 0 for d in deltas), improvements=sum(d < 0 for d in deltas),
+                    regressions=sum(d > EQUALITY_KM for d in deltas),
+                    improvements=sum(d < -EQUALITY_KM for d in deltas),
+                    equal=sum(abs(d) <= EQUALITY_KM for d in deltas), equality_tolerance_km=EQUALITY_KM,
+                    regression_labels=[b['label'] for a, b in pairs if b['error_km']-a['error_km'] > EQUALITY_KM],
+                    maximum_regression_km=max((d for d in deltas if d > EQUALITY_KM), default=0.),
                     paired_full=stats(a['error_km'] for a, b in pairs),
                     paired_candidate=stats(b['error_km'] for a, b in pairs)))
     return output
@@ -105,21 +111,43 @@ def markdown(summary):
         'This is a consumed-data pilot with four members per dataset, not the full DS16/DS17/DS18 cohorts. '
         'Both c arms use the same zero-c starting state. Training-fold solutions predict the opposite fold '
         'without updating parameters. Full-data controls are fresh fits; they are not historical B7 results.', '',
-        '| Dataset | Arm | Fit rows | Qualified / attempted | Position mean | Median | p95 | Worst (km) | Paired mean change vs full (km) | Regressions / pairs |',
-        '|---|---|---|---:|---:|---:|---:|---:|---:|---:|']
+        '| Dataset | Arm | Fit rows | Qualified / attempted | Evaluated | Position mean | Median | p95 | Worst (km) | Paired mean change vs full (km) | Regressions / pairs |',
+        '|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|']
     def show(value): return 'missing' if value is None else f'{value:.4f}'
     for r in summary['aggregates']:
         e, d = r['errors'], r['paired_delta']
-        lines.append(f"| {r['dataset']} | {r['arm']} | {r['mode']} | {r['qualified']} / {r['attempted']} | "
+        lines.append(f"| {r['dataset']} | {r['arm']} | {r['mode']} | {r['qualified']} / {r['attempted']} | {e['n']} | "
             + ' | '.join(show(e[k]) for k in ('mean', 'median', 'p95', 'worst'))
             + f" | {show(d['mean'])} | {r['regressions']} / {d['n']} |")
     lines += ['', 'Means with missing endpoints describe only the explicitly reported qualified subset. '
-        'Paired changes use the same members on both sides; no failed solution is replaced by a historical endpoint.', '',
+        'Paired changes use the same members on both sides; no failed solution is replaced by a historical endpoint. '
+        'An absolute 1e-9 km tolerance defines equality for all comparisons. SUMMARY.json includes improved/equal/regressed '
+        'counts, every regression label and maximum regression.', '',
         '## Coverage and failures', '', '| Member | Arm | Fit rows | Status | Position km | Failure |',
         '|---|---|---|---|---:|---|']
     for c in summary['cells']:
         error = str(c.get('error') or c.get('evaluation_error') or '').replace('|', '/').replace('\n', ' ')
         lines.append(f"| {c['label']} | {c['arm']} | {c['mode']} | {c['status']} | {show(c.get('error_km'))} | {error} |")
+    lines += ['', '## Predictive frequency comparison', '',
+        'Changes below are fitted-c minus c=0 on the same opposite-fold observations. '
+        'Negative NLL change means better predictive frequency likelihood; negative position change '
+        'means lower geographic error. These are separate measurements.', '',
+        '| Member | Training fold | Held NLL change / observation | Position change (km) |',
+        '|---|---|---:|---:|']
+    for r in summary['predictive_pairs']:
+        lines.append(f"| {r['label']} | {r['mode']} | {show(r['delta_nll_per_row'])} | {show(r['delta_error_km'])} |")
+    worker = sum(m['elapsed_s'] for m in summary['members'].values())
+    failures = sum(c['status'] != 'qualified' for c in summary['cells'])
+    score_failures = sum(c['status'] == 'qualified' and any(
+        (c.get('scores') or {}).get(str(i), {}).get('status') != 'complete' for i in (0, 1))
+        for c in summary['cells'])
+    lines += ['', f'Member worker time including input reconstruction, fitting, audits and scoring: '
+        f'{worker:.3f} seconds. Unqualified/failed fits: {failures}/72. Qualified fits with missing fold scores: '
+        f'{score_failures}. The 90-second fit budget is soft; raw receipts preserve measured times. '
+        'This is host timing, not an embedded benchmark.', '',
+        'Training likelihood, unchanged prior penalty, held likelihood and posterior frequency RMS '
+        'are retained separately in SUMMARY.json. Optimizer success flags do not replace the independent '
+        'feasibility and stationarity audit. No fallback endpoints were counted.']
     lines += ['', '## Interpretation', '',
         'The satellite bank, retained region, starting state and satellite time centers are conditioned on full-data inference. '
         'The split keeps whole visits and overlapping sample support together but does not remove shared clock/orbit errors. '
@@ -131,3 +159,44 @@ def markdown(summary):
         '[evaluation protocol](evaluation_protocol.json), [all results](SUMMARY.json) and '
         '[raw receipts](raw-receipts.tar.gz).', '']
     return '\n'.join(lines)
+
+
+def main():
+    import hashlib
+    import tarfile
+    import run
+    import evaluation
+    freezer = run.module('freeze161_report', HERE/'freeze.py')
+    plan = json.loads((HERE/'protocol.json').read_text())
+    run.BASE.verify(plan, freezer.POLICY)
+    from leo.contracts.digests import canonical_digest
+    digest = canonical_digest(plan)
+    evaluated = evaluation.evaluate(plan, digest, HERE/'results',
+        json.loads((HERE/'evaluation_protocol.json').read_text()))
+    collection = evaluation.collect(plan, digest, HERE/'results')
+    cells = evaluated['rows']
+    summary = dict(protocol_sha256=digest, cells=cells, aggregates=aggregate(cells),
+        predictive_pairs=predictive_pairs(cells), members=collection['members'],
+        raw_sha256=collection['raw_sha256'], scope='Consumed conditional 12-member pilot')
+    (HERE/'SUMMARY.json').write_text(json.dumps(summary, indent=2, allow_nan=False)+'\n')
+    plot(cells, HERE/'comparison.png')
+    (HERE/'README.md').write_text(markdown(summary))
+    with tarfile.open(HERE/'raw-receipts.tar.gz', 'w:gz') as archive:
+        for name in sorted(collection['raw_sha256']):
+            archive.add(HERE/'results'/name, arcname=name)
+    with tarfile.open(HERE/'raw-receipts.tar.gz', 'r:gz') as archive:
+        actual = {m.name:hashlib.sha256(archive.extractfile(m).read()).hexdigest()
+                  for m in archive.getmembers()}
+    if actual != collection['raw_sha256']:
+        raise ValueError('archived bytes differ')
+    names = ('README.md','SUMMARY.json','comparison.png','raw-receipts.tar.gz',
+             'protocol.json','evaluation_protocol.json','report.py','evaluation.py')
+    (HERE/'REPORT_INTEGRITY.json').write_text(json.dumps(
+        {name:evaluation.sha(HERE/name) for name in names}, indent=2)+'\n')
+    print(json.dumps(dict(qualified=sum(c['status']=='qualified' for c in cells),
+        evaluated=sum(c['error_km'] is not None for c in cells),
+        cells=len(cells), aggregates=summary['aggregates'])))
+
+
+if __name__ == '__main__':
+    main()
