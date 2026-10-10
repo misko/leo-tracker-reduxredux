@@ -196,6 +196,16 @@ def publish(summary, directory, plot):
         "in [SUMMARY.json](SUMMARY.json). Unknown terminal regions are unavailable, "
         "not completed zero-attempt regions. The progression screen is a consumed "
         "pilot decision receipt, not deployment authorization.",
+        "",
+        "Raw receipts remain local. Published byte hashes identify retained evidence; "
+        "this is not a remote standalone replay bundle. See "
+        "[publication scope](PUBLICATION_POLICY.md).",
+        "",
+        "The [runtime audit](ENVIRONMENT_AUDIT.md) records one shard's interpreter-path "
+        "deviation, and the [host observations](HOST_IO_OBSERVATION.md) document I/O "
+        "contention included in timed budgets. The [handoff analysis](HANDOFF_OBSERVATIONS.md) "
+        "explains why this comparison includes conditional repair opportunities as "
+        "well as discovery differences; it does not isolate the grid alone.",
     ]
     with (directory / "RESULTS.md").open("x") as stream:
         stream.write("\n".join(lines) + "\n")
