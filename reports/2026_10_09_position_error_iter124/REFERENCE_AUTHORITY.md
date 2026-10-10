@@ -1,0 +1,7 @@
+# Evaluation reference provenance limitation
+
+Evaluation uses the existing107 public document authority, whose frozen source/document digest is checked by `evaluation_document`. Its stored latitude/longitude values are immutable for this analysis; no external position lookup, inferred replacement, centroid correction or truth change occurred. Coordinates are read only by the evaluation exporter, never by the saved-endpoint inference/fusion.
+
+The reviewed public product contracts (`regional_position_v2.py`, `regional_position_v3.py`, `regional_position_products.py`) validate finite reference latitude/longitude and geographic ranges. They do not require a surveyed precision/uncertainty, measurement method/source, observation epoch or hardware-location immobility attestation for those fields. Hash integrity establishes which stored reference was used, not its physical accuracy. No supplementary survey attestation was established in this bounded source review; absence from the required contract is not proof that none exists elsewhere.
+
+Accordingly a common signed residual may reflect measurement/model bias, reference uncertainty, or both. This report cannot distinguish those without independent reference provenance. It does not claim the reference is stale or wrong, and does not estimate its accuracy from these residuals. Future evaluation-quality work should retrieve an existing survey/installation record if available, preserving the frozen reference rather than editing it to improve results.
