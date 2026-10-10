@@ -6,6 +6,8 @@ members and all 579 search/native/zero phase receipts pass the existing
 postseal provenance gate. Reference coordinates and errors remain inaccessible
 until that gate passes. Preserve every DS16/DS17/DS18/newer member, including
 failed phases; do not re-run, replace, or exclude a member because of its error.
+The separate `C_ABLATION_FREEZE.json` pins this plan, the extractor and its
+tests, the postseal gate, and both frozen protocols before that analysis runs.
 
 ## What the existing run identifies
 
@@ -21,14 +23,18 @@ vector element 6 to zero ([regional_position_fit.py:81-85](../../src/leo/analysi
 this ([run.py:228-245](../2026_10_09_position_error_iter105/run.py)).
 The `own-continuation` start is intentionally arm-specific, so identical start
 *names and budgets* do not imply identical seed vectors. Report effective seed
-identity separately for each named start.
+identity separately for each named start. The primary controlled comparison
+uses only `association` and `zero-timing`, where effective seeds must match.
+Treat `own-continuation` as a separate same-model, arm-specific-start
+diagnostic, never pool it into the primary identical-seed estimate.
 
 The exact diagnostic pair is `(member label, discovery branch, retained basin,
 start name)`: one `zero-c` and one `fitted-c` B1 final from the **same raw
-region receipt**. There are at most `193 × 2 × 3 × 3 = 3474` such pairs; this
-is an expected-opportunity count, not an assumed completed-pair count. A
-complete search followed by a failed continuation contributes zero completed
-pairs and an explicit failure. For every opportunity, record both fit statuses,
+region receipt**. There are at most `193 × 2 × 3 × 3 = 3474` such pairs:
+2316 primary identical-seed opportunities and 1158 arm-specific-continuation
+opportunities. These are expected-opportunity counts, not assumed completed
+pairs. A complete search followed by a failed continuation contributes zero
+completed pairs and an explicit failure. For every opportunity, record both fit statuses,
 qualification/convergence, failure reasons, stationarity, satellite numbers,
 calibration identity/penalty, objective, posterior RMS, signal-window mass,
 and effective seed identity. Assert equal satellite-number sequences and a
