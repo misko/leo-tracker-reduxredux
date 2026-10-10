@@ -30,6 +30,9 @@ from leo.storage.regional_position_v3 import B7Store
 from leo.storage.scanner_tracking_source import ScannerTrackingInputStore
 
 REFERENCE = (37.84903264307456, -122.4856541910174)
+PREVIOUS_B7_CONFIGURATION = (
+    "sha256:dc67650e940b002fce58d74ba654d87df008611d839438e2d71248a5a2694893"
+)
 
 
 def configuration():
@@ -68,7 +71,7 @@ def regional_position_complete(root, session_id, *, expected_input=None, expecte
         return False
     doc = status.manifest.document
     return (
-        doc.configuration_sha256 == canonical_digest(configuration())
+        doc.configuration_sha256 in {canonical_digest(configuration()), PREVIOUS_B7_CONFIGURATION}
         and (expected_input is None or doc.input_manifest_sha256 == expected_input)
         and (expected_analysis is None or doc.analysis_manifest_sha256 == expected_analysis)
         and store.artifact(session_id, "V16") is not None
