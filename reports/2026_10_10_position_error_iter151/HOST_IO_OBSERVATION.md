@@ -48,3 +48,10 @@ commit/merge/push commands in this session should use per-command
 `git -c gc.auto=0 -c maintenance.auto=false` to avoid initiating another large
 maintenance job during the numerical comparison. This does not change scientific
 sources, worker budgets, or repository-wide configuration.
+
+At approximately 39 minutes after the pilot launch, GC/repack PIDs 1616345 and
+1616346 were no longer present and filesystem free space had recovered to about
+45 GB. Both research children were observed running. This resolves the temporary
+space-pressure observation; the earlier wall-time effects remain part of the
+experiment record. No manual cleanup, process interruption or global setting
+change was needed.
