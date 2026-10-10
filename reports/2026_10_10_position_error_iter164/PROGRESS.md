@@ -41,3 +41,26 @@ Evidence: [checkpoint totals](CHECKPOINT_0.json),
 [relocation receipt](STORAGE_RELOCATION.json),
 [complete copy manifest](STORAGE_MANIFEST.json),
 [frozen evaluation plan](EVALUATION_PLAN.md).
+
+## Second resource checkpoint complete
+
+The fixed batch of sixteen recordings numbered 002–005 in each dataset group
+finished all **48/48 search and continuation phases**. Both shard controllers
+exited with terminal receipts and no failed member phase. Together with the
+first checkpoint, **20/193 recordings** have completed all three phases.
+These are execution findings only; position evaluation remains closed.
+
+![Recorded worker time for the next sixteen scans](checkpoint-1-cost.png)
+
+The second batch used 12,731.67 recorded worker seconds, or 795.73 seconds per
+member on average. The twenty completed members average 794.24 seconds. A
+linear extrapolation gives 42.58 worker hours for all 193, or 21.29 hours at
+ideal two-worker utilization. This remains an uncertain resource estimate,
+not an embedded runtime benchmark or an accuracy result. The chart shows the
+actual search, native, and zero-branch costs for every batch-one member.
+
+Both next-batch searches, DS16-006 and DS17-006, started with the same frozen
+protocol and one thread per worker. No search budget, member selection, or
+position-informed decision changed between batches. Production B7 remains
+unchanged. [Batch-one metadata and receipt hashes](CHECKPOINT_1.json) provide
+the exact coverage and cost record.

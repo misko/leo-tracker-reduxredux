@@ -28,18 +28,21 @@ member phases completed. The checkpoint and verified move to local bulk are
 published in [PROGRESS.md](PROGRESS.md). The original `results` path is now a
 symlink; retain that path spelling for every future invocation.
 
-**Current work: batch one is running.** Root owns shard zero, session **84385**;
-debug_search_gap owns shard one, session **10020**, controller PID1722725.
-Both initial DS16-002/DS17-002 search claims were verified through the symlink.
-This batch contains the fixed sixteen members numbered002–005 in each dataset
-group. Four cohort members are complete, sixteen are assigned to this running
-batch, and173 await later batches. Do not restart claimed workers; require both
-terminal batch-one controllers before admitting batch two.
+Batch one subsequently finished with both terminal shard receipts and all
+48 member phases complete. Its timing and coverage are documented in
+[PROGRESS.md](PROGRESS.md) and [CHECKPOINT_1.json](CHECKPOINT_1.json).
+
+**Current work: batch two is running.** Root owns both monitoring sessions:
+shard zero **81726** and shard one **53775**. The first DS16-006 and DS17-006
+search processes were verified live, each with one numerical thread. The first
+twenty cohort members are complete, sixteen are assigned to batch two, and 157
+await later batches. Do not restart claimed workers; require both terminal
+batch-two controllers before admitting batch three.
 
 No geographic evaluation has run; no position-error claim is available for this comparison. Production
 B7 and the historical full193 fitted mean of 1.254810 km remain unchanged.
 
-Scientific source, policy and inputs are frozen. Later evaluation/report code
-must be sealed separately; publish position plots only after the full cohort's
-selections and failures have terminated. This narrative status file is outside
-the numerical input closure.
+Scientific source, policy, inputs, and the separate evaluation/report protocol
+are frozen. Publish position plots only after the full cohort's selections and
+failures have terminated. This narrative status file is outside the numerical
+input closure.
