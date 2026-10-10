@@ -31,6 +31,26 @@ def test_exact_zero_and_unpaired():
     np.testing.assert_array_equal(c.responsibilities[2], a.responsibilities[2])
 
 
+def test_chunk_boundary_preserves_every_pair_and_unpaired_tail():
+    y, p, v = example()
+    one = paired_likelihood(y[:2], p[:2], v[:2], SCORE, [(0, 1)])
+    tail = likelihood(y[2:], p[2:], v[2:], SCORE)
+    repeated = 257
+    yy = np.r_[np.tile(y[:2], repeated), y[2:]]
+    pp = np.vstack((np.tile(p[:2], (repeated, 1)), p[2:]))
+    vv = np.vstack((np.tile(v[:2], (repeated, 1)), v[2:]))
+    pairs = np.arange(2 * repeated).reshape(-1, 2)
+    result = paired_likelihood(yy, pp, vv, SCORE, pairs)
+    assert result.nll == pytest.approx(repeated * one.nll + tail.nll, abs=1e-10)
+    np.testing.assert_allclose(
+        result.responsibilities[:-1], np.tile(one.responsibilities, (repeated, 1))
+    )
+    np.testing.assert_allclose(
+        result.prediction_gradient[:-1], np.tile(one.prediction_gradient, (repeated, 1))
+    )
+    np.testing.assert_array_equal(result.prediction_gradient[-1:], tail.prediction_gradient)
+
+
 def test_finite_difference_and_pair_exchange():
     y, p, v = example()
     a = paired_likelihood(y, p, v, SCORE, [(0, 1)])
