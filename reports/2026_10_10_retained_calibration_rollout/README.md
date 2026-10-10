@@ -75,7 +75,8 @@ previous B7 overlay at the first activation. The guarded
 new overlay at 2026-10-10 17:26:20 UTC. A check as the `leo` service user loaded
 the new module and exact configuration digest. An already running fast-scan
 child keeps the source it started with; the wrapper update did not interrupt
-it, and later child launches use the new overlay.
+it. The [next standard-analysis child](fast-adapter-child.json), launched by
+the existing fast daemon, had the new overlay in its live process environment.
 The first [post-activation V3 publication](live/verification.json),
 `scan-fw-3603e102b2698a0a`, carries the new digest and both converged RF
 arms. Its retained-calibration inventory found zero failed ordinary candidates,
@@ -88,5 +89,9 @@ respectively; these reference values were displayed for evaluation only.
 ![First live B7 publication after the recovery rollout](live/panel.png)
 
 The first *capture begun after* activation,
-`scan-fw-e3c830c542f47467`, sealed at 17:29:46 UTC and is still passing
-through the normal transfer and analysis pipeline at this checkpoint.
+`scan-fw-e3c830c542f47467`, sealed at 17:29:46 UTC, was imported despite an
+unrelated older archive failing its pinned-source check. The automatic queue
+enqueued `e3c` at 17:34:52 UTC. Its analysis worker selected the new overlay
+and resumed after a bounded 560-second slice. Its V3 publication is still
+pending at this checkpoint; the browser-rendered V3 above is a separate
+post-activation publication.
