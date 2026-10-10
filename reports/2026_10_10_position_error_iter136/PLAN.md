@@ -131,4 +131,16 @@ The test compares weighted moments directly to avoid an artificial `0/0` for
 such components. No physical covariance or position benefit follows from this
 numerical equivalence.
 
+The prepared recording driver uses the same twelve clean132 members. It verifies
+the frozen source/input hashes and prior parity receipt, reconstructs the ordinary
+model through clean131/132, and reloads only public tracking metadata for the exact
+support join. Its fixed budget is at most two saved-endpoint objective evaluations
+per member (24 total), zero optimizer calls and no IQ reads. Orbit-bank construction
+retains the existing clean loader's bounded implementation. It uses one single-thread
+worker within the global two-worker limit; execution follows protocol publication
+and explicit allocation of a free slot. There is no reference-coordinate port,
+position-error report, fitted rho or automatic retry. Every terminal failure and
+any support rows obtained before failure remain in the member receipt. The complete
+preparation now passes 29 synthetic tests, including driver and freeze controls.
+
 Preparation amendment: the public support adapter now joins prepared candidate/window IDs to projected candidate values and their public probe metadata. Projected source sample offsets are local payload offsets, not device counters. It derives device bounds as `valid_start_counter + source_sample_bound - payload_start_sample`, subtracting integer counters before UTC conversion, and verifies the published support endpoints. Capture, raw authority, radio, stream generation, receiver, sample rate and device bounds define acquisition identity; disjoint windows in one visit remain distinct. Original observation order/fields and prepared window evidence are verified without reference fields. Missing selected candidates or probe authority retain every row with explicit unavailable support. Pairing checks unavailable support before requiring RF/edge, so an unknown edge is never fabricated and cannot remove the member. Available support still requires exact RF/edge identity. Synthetic integrated adapter/pairing coverage qualifies this preparation amendment; no recording projection or model call has run.
