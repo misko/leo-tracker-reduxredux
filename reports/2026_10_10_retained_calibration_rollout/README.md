@@ -56,6 +56,17 @@ allowlisted predecessor digest
 Component, B7, CLI, contract, storage and API tests: **31 passed** on the
 development Python 3.13 environment using the identical-source native orbit
 extension, and **31 passed** on the active worker's pinned Python 3.14 release.
-Ruff lint, formatting and `git diff --check` pass. Real-scan parity,
-immutable staging, service activation, new-scan publication and WebUI PNG
-verification are pending at this checkpoint.
+Ruff lint, formatting and `git diff --check` pass. The immutable
+`/opt/leo-b7/a620e14f3-retained-r1` stage contains 678 verified source files.
+The [real-scan parity replay](parity.json) recomputed the frozen `ac11`
+recovery through the staged production modules without loading its reference
+position: all six matched `c=0` and fitted-`c` final fits had **zero** objective
+and parameter-vector difference from the sealed research result.
+
+The [activation receipt](activation.json) records a successful rollout at
+2026-10-10 17:22:29 UTC. All 19 adaptive analysis workers and the queue select
+the staged overlay, and the queue timer is active. The acquisition and WebUI
+services were not changed. The new configuration digest is
+`sha256:d7726729fd10b9a04e818dee0e1273a5cc3e8ee800fb247c44fee52470ed01fe`.
+The first post-activation analysis publication and its browser-rendered PNG
+remain to be verified.
