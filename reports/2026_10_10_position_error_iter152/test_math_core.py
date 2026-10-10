@@ -1,4 +1,4 @@
-"""Synthetic analytic oracles; prepared only, not yet authorized for execution."""
+"""Synthetic analytic oracles; no recording or reference-evaluation adapter."""
 
 import numpy as np
 import pytest
