@@ -1,5 +1,15 @@
+import hashlib
+import json
+
 import pytest
-from report_cohort import aggregate, compact_receipt, evaluation_callback, publish, summarize
+from report_cohort import (
+    aggregate,
+    compact_receipt,
+    evaluation_callback,
+    load_rows,
+    publish,
+    summarize,
+)
 
 
 def rows():
@@ -81,3 +91,31 @@ def test_publisher_rejects_incomplete_before_writing(tmp_path):
     with pytest.raises(ValueError, match="seal"):
         publish(dict(all_terminal=False), {}, tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+def test_receipt_hash_covers_raw_associations_but_compact_report_keeps_only_fit_and_selection(
+    tmp_path,
+):
+    phase = tmp_path / "sample/native"
+    phase.mkdir(parents=True)
+    raw = dict(
+        status="complete",
+        protocol_sha256="digest",
+        label="sample",
+        branch="native",
+        fallback_available=False,
+        operational={
+            "fitted-c": dict(
+                fit=dict(converged=True, vector=[1, 2]), basin="region", association=[1, 2, 3]
+            )
+        },
+    )
+    path = phase / "result.json"
+    path.write_text(json.dumps(raw))
+    result, hashes = load_rows(
+        dict(members=[dict(label="sample", dataset="DS16")]), tmp_path, "digest"
+    )
+    operation = result[0]["phases"]["native"]["operational"]["fitted-c"]
+    assert operation["fit"]["vector"] == [1, 2] and operation["basin"] == "region"
+    assert "association" not in operation
+    assert hashes[str(path)] == hashlib.sha256(path.read_bytes()).hexdigest()

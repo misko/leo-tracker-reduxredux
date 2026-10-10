@@ -80,7 +80,23 @@ def load_rows(plan, output, digest):
                 raise ValueError("nonterminal result file")
             if phase != "search" and receipt.get("fallback_available") is not False:
                 raise ValueError("undeclared fallback")
-            row["phases"][phase] = compact_receipt(receipt)
+            value = compact_receipt(receipt)
+            # Reporting needs sealed fit/selection, not another copy of association arrays.
+            value["operational"] = {
+                arm: {
+                    key: operation.get(key)
+                    for key in (
+                        "fit",
+                        "region_source",
+                        "basin",
+                        "accepted_stage",
+                        "start",
+                        "calibration_penalty",
+                    )
+                }
+                for arm, operation in receipt.get("operational", {}).items()
+            }
+            row["phases"][phase] = value
             hashes[str(path)] = hashlib.sha256(data).hexdigest()
         rows.append(row)
     return rows, hashes
