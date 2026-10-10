@@ -108,7 +108,12 @@ def main():
     }
     if any(path.exists() for path in dropins):
         raise FileExistsError("recovery selector already exists")
-    timer_active = command("systemctl", "is-active", QUEUE_TIMER) == "active"
+    timer_active = (
+        subprocess.run(
+            ["systemctl", "is-active", QUEUE_TIMER], capture_output=True, text=True
+        ).stdout.strip()
+        == "active"
+    )
     receipt = dict(
         revision=REVISION,
         stage=str(STAGE),
@@ -151,7 +156,12 @@ def main():
     receipt.update(
         completed_utc=datetime.now(UTC).isoformat(),
         effective_selectors={unit: effective_path(unit) for unit in all_units},
-        queue_timer_active=command("systemctl", "is-active", QUEUE_TIMER) == "active",
+        queue_timer_active=(
+            subprocess.run(
+                ["systemctl", "is-active", QUEUE_TIMER], capture_output=True, text=True
+            ).stdout.strip()
+            == "active"
+        ),
     )
     (HERE / "activation.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps(dict(status="active", workers=len(units), stage=str(STAGE))))
