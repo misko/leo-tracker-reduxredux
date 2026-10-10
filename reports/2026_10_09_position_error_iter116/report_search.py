@@ -44,6 +44,7 @@ def summarize(events):
         "failed_point_count": sum(e["status"] == "failed" for e in statuses),
         "deferred_cell_count": None if cells is None else len(cells),
         "deferred_by_depth": None if cells is None else dict(Counter(c["depth"] for c in cells)),
+        "deferred_cells": cells,
         "sampled_points": [
             {k: e[k] for k in ("east", "north", "depth", "score")} for e in evaluated
         ],
@@ -117,6 +118,15 @@ def build(directory, digest):
         "protocol_sha256": digest,
         "terminal_status": None if result is None else result["status"],
         "study_terminal": result is not None,
+        "terminal_elapsed_s": None if result is None else result["elapsed_s"],
+        "terminal_slices": None if result is None else result["slices"],
+        "point_failure_count": None if result is None else result["point_failure_count"],
+        "retained_regions": None
+        if result is None
+        else {
+            name.replace(":", "-"): row["regions"]
+            for name, row in result.get("searches", {}).items()
+        },
         "native_parity": parity,
         "claimed_slices": len(starts),
         "finished_slices": len(finishes),
