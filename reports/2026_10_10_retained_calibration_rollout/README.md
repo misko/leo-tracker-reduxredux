@@ -44,13 +44,16 @@ receiver correction, bounded postfit, association and six final fits. All work
 uses digest-bound checkpoints and the existing 500-second resumable worker
 slices. A failed retry leaves every ordinary candidate available. The B7 policy
 and source digests identify the new behavior; V3 and historical persisted
-contracts are unchanged.
+contracts are unchanged. The queue recognizes the exact previous B7
+configuration digest for already published V3 products, so it does not try to
+overwrite an immutable historical publication. Unpublished scans use the new
+policy.
 
 ## Validation and deployment
 
 Component, B7, CLI, contract, storage and API tests: **30 passed** on the
 development Python 3.13 environment using the identical-source native orbit
-extension, and **26 passed** on the active worker's pinned Python 3.14 release.
+extension, and **30 passed** on the active worker's pinned Python 3.14 release.
 Ruff lint, formatting and `git diff --check` pass. Real-scan parity,
 immutable staging, service activation, new-scan publication and WebUI PNG
 verification are pending at this checkpoint.

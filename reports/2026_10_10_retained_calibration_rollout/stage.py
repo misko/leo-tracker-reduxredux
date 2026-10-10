@@ -13,11 +13,15 @@ from pathlib import Path
 
 BASE = Path("/opt/leo-b7/88e231eb1-r1")
 BASE_COMMIT = "173a3956313234e04a7e28f72c89453570bf46cc"
-REPLACEMENTS = (
+ADDED = (
     "src/leo/analysis/hard60_reduced_newton.py",
     "src/leo/analysis/hard60_qualification.py",
     "src/leo/application/hard60_retained_calibration.py",
+)
+REPLACEMENTS = (
+    *ADDED,
     "src/leo/application/hard60_b7.py",
+    "src/leo/cli/regional_position.py",
 )
 
 
@@ -59,10 +63,13 @@ def main(repository):
         path = source / name
         if path.is_symlink() or not path.is_file() or digest(path.read_bytes()) != expected:
             raise ValueError(f"inherited source changed: {name}")
-    previous = git(repository, "show", f"{BASE_COMMIT}:src/leo/application/hard60_b7.py")
-    if (source / "leo/application/hard60_b7.py").read_bytes() != previous:
-        raise ValueError("effective B7 source differs from reviewed base")
-    for name in REPLACEMENTS[:-1]:
+    for name in REPLACEMENTS:
+        if name in ADDED:
+            continue
+        previous = git(repository, "show", f"{BASE_COMMIT}:{name}")
+        if (source / name.removeprefix("src/")).read_bytes() != previous:
+            raise ValueError(f"effective source differs from reviewed base: {name}")
+    for name in ADDED:
         if (source / name.removeprefix("src/")).exists():
             raise ValueError(f"new module already present in inherited tree: {name}")
     try:

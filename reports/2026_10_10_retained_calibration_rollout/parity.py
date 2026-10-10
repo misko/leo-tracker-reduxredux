@@ -21,7 +21,6 @@ RESEARCH = Path("/home/mouse9911/gits/leo-hard60-default")
 ITER107 = RESEARCH / "reports/2026_10_09_position_error_iter107"
 LABEL = "POST18-NEWER-20261009-051"
 SESSION = "scan-fw-ac11ac00c0676d1b"
-STAGE = Path("/opt/leo-b7/0db25c319-retained-r1")
 
 
 def extract(path, query):
@@ -30,7 +29,8 @@ def extract(path, query):
 
 def main():
     source = Path(sys.argv[1]).resolve(strict=True)
-    assert source == STAGE / "worker/src"
+    staged = source.parents[1]
+    assert staged.parent == Path("/opt/leo-b7") and source == staged / "worker/src"
     assert Path(
         __import__("leo.application.hard60_retained_calibration", fromlist=["x"]).__file__
     ).is_relative_to(source)
@@ -90,8 +90,8 @@ def main():
     result = dict(
         status="passed",
         session_id=SESSION,
-        stage=str(STAGE),
-        stage_revision=json.loads((STAGE / "stage.json").read_text())["revision"],
+        stage=str(staged),
+        stage_revision=json.loads((staged / "stage.json").read_text())["revision"],
         frozen_candidate_sha256=candidate_digest,
         trigger_basin=trigger["key"],
         calibration_status=recovered["recovery"]["result"]["status"],

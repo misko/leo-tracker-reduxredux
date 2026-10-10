@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from leo.cli import regional_position as cli
+from leo.contracts.digests import canonical_digest
 from leo.storage.regional_position_v3 import B7Store
 
 DIGEST = "sha256:" + "a" * 64
@@ -44,6 +45,15 @@ def test_insufficient_input_publishes_hard60_map_and_repeated_run_reuses_them(
     )
     assert cli.run_regional_position_analysis(tmp_path, tmp_path, "scan-1") == first
     assert calls == ["close", "prepare", "close"]
+
+    # A completed V3 publication remains immutable after a policy upgrade.
+    prior_configuration = cli.configuration()
+    monkeypatch.setattr(cli, "PREVIOUS_B7_CONFIGURATION", canonical_digest(prior_configuration))
+    monkeypatch.setattr(cli, "configuration", lambda: {**prior_configuration, "next_policy": True})
+    assert cli.regional_position_complete(tmp_path, "scan-1", expected_input=DIGEST)
+    assert cli.run_regional_position_analysis(tmp_path, tmp_path, "scan-1") == first
+    monkeypatch.setattr(cli, "PREVIOUS_B7_CONFIGURATION", "sha256:" + "b" * 64)
+    assert not cli.regional_position_complete(tmp_path, "scan-1", expected_input=DIGEST)
 
 
 @pytest.mark.parametrize("seconds", [0, -1, float("nan"), 1801])
