@@ -13,6 +13,7 @@ import typer
 
 from leo.cli.backend import CliBackendError
 from leo.cli.composition import BackendFactory, default_backend_factory
+from leo.cli.fast_scan import register_fast_scan_commands
 from leo.cli.models import (
     AcquisitionStatusDataV1,
     CancelRunDataV1,
@@ -42,6 +43,7 @@ from leo.cli.models import (
 )
 from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
+from leo.cli.short_window import register_short_window_commands
 from leo.cli.sky import register_sky_commands
 from leo.cli.standard_pipeline import (
     StandardBackendFactory,
@@ -108,6 +110,8 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         help="Predict which catalogued objects fall in an antenna beam.",
     )
     register_sky_commands(sky)
+    register_short_window_commands(scanner)
+    register_fast_scan_commands(scanner)
     register_standard_pipeline_commands(process, cast(StandardBackendFactory, backend_factory))
 
     @scanner.command("starlink")

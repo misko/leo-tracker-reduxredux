@@ -1,0 +1,45 @@
+{
+  "serial": "1040005e0b100007100010000bf33a5d4d",
+  "uri": "ip:192.168.1.20",
+  "bulk_root": "/srv/bulk/leo",
+  "fast": {
+    "command": [
+      "/home/mouse9911/gits/pluto-plus-utils-feature-103/.venv/bin/python",
+      "/opt/leo-shared-scans/20261010-r1/bin/record_fast_scan_campaign.py",
+      "--root",
+      "/srv/postgres-nvme/fast-scan-recordings",
+      "--campaign",
+      "{campaign}",
+      "--qualified-runner",
+      "/opt/leo-shared-scans/20261010-r1/qualified",
+      "--edges",
+      "{edge}",
+      "--seconds",
+      "300",
+      "--bulk-root",
+      "/srv/bulk/leo"
+    ],
+    "environment": {
+      "PYTHONPATH": "/opt/leo-fast-auto/20261010-r2/worker/src:/opt/leo-shared-scans/20261010-r1/pluto/src"
+    }
+  },
+  "adaptive": {
+    "command": [
+      "/home/mouse9911/gits/pluto-plus-utils-feature-103/.venv/bin/python",
+      "/opt/leo-adaptive-cadence/2e0f4bbbcea6b98fab573e7b408bc956faa96c86c4027876a44daee285f94d37/run_adaptive_capture_cycle.py",
+      "--serial",
+      "1040005e0b100007100010000bf33a5d4d",
+      "--uri",
+      "ip:192.168.1.20",
+      "--duration-ms",
+      "300000",
+      "--evidence-root",
+      "/srv/bulk/leo/v052-adaptive-live",
+      "--iq-spool-root",
+      "/srv/postgres-nvme/leo-scanner-spool/v052-adaptive"
+    ],
+    "environment": {
+      "PYTHONPATH": "/opt/leo-v061-adaptive/22ad744e276c60e87b857a449e6c0eb012359bcb/src"
+    }
+  }
+}
