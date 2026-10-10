@@ -164,6 +164,7 @@ def plot(result, path):
     axes[0].set_xticks(range(len(groups)), [k for k, _ in groups], rotation=25, ha="right")
     axes[0].set(title="Membership coverage", ylabel="Recordings")
     axes[0].legend()
+    parity_limit = 1e-6
     for arm in ARMS:
         values = [
             (i, abs(r["receipt"]["arms"][arm]["delta"]))
@@ -171,8 +172,10 @@ def plot(result, path):
             if r["receipt"]
             and r["receipt"].get("arms", {}).get(arm, {}).get("status") == "complete"
         ]
+        parity_limit = max(parity_limit, max((v for _, v in values), default=0))
         axes[1].scatter([i for i, _ in values], [v for _, v in values], s=12, label=arm)
     axes[1].axhline(1e-6, linestyle="--", color="grey", label="Admission tolerance")
+    axes[1].set_ylim(-0.05 * parity_limit, 1.15 * parity_limit)
     axes[1].set(
         title="Saved objective parity",
         xlabel="Frozen member index",
