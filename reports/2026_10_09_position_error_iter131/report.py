@@ -136,7 +136,8 @@ def main():
         "",
         "All three successor phases are complete. Iteration 129's original admission failure "
         "and both skipped branches remain unchanged. This consumed one-member experiment is "
-        "reported separately; it does not fill iteration 129's missing pair or establish generalization.",
+        "reported separately; it does not fill iteration 129's missing pair or establish "
+        "generalization.",
         "",
         "![Matched c-arm position errors](position_errors.png)",
         "",
