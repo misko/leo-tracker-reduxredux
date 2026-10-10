@@ -1,5 +1,56 @@
 # Own-arm qualification before the existing calibration transition
 
+## Completed result: no fitted-c accuracy improvement
+
+All 48 fresh continuation cells completed, all 96 selected final endpoints
+qualified, and both batches exited successfully. Source/input/evaluation bindings
+passed before reference evaluation. All 24 fresh controls matched their historical
+selected states under the frozen parity rule. **Both progression checks failed.**
+
+| Discovery policy | Final arm | Control mean km | Repair mean km | Change m |
+|---|---|---:|---:|---:|
+| Fitted-c | fitted-c | 1.141562 | 1.146914 | +5.352 |
+| Zero-c | fitted-c | 1.115799 | 1.121093 | +5.294 |
+| Fitted-c | zero-c | 1.318358 | 1.278776 | −39.582 |
+| Zero-c | zero-c | 1.259097 | 1.250438 | −8.660 |
+
+These are the twelve previously consumed pilot members, four per dataset—not
+the full DS16 (63), DS17 (51), or DS18 (34) cohorts. Dataset-specific distributions,
+every paired regression, frequency-fit effects, failures and timings are in
+[RESULTS.md](RESULTS.md) and [SUMMARY.json](SUMMARY.json).
+
+![Matched position errors](position_errors.png)
+
+Four of five originally rejected regional starts became qualified after
+21–120 ms of bounded repair; DS17-027 remained unqualified. Recovering these
+regions did not improve fitted-c localization. The two material fitted-c changes
+were regressions: DS16-024 under fitted-c discovery (+64.227 m) and DS17-015 under
+zero-c discovery (+63.524 m). Their frequency RMS nevertheless improved,
+70.262→59.335 Hz and 53.510→50.928 Hz respectively. A better frequency fit alone
+therefore remains insufficient evidence of better position accuracy. Worst-case
+position error did not improve under either discovery policy.
+
+New continuation costs were 811.315/837.768 worker-seconds (control/repair,
+fitted-c discovery) and 767.414/815.910 seconds (zero-c discovery), 3232.407 total.
+Inherited iteration151 discovery cost was 10080.223 seconds and was reused, not
+rerun or counted once per continuation. These host timings are not embedded
+performance benchmarks; the tiny bounded-repair calls exclude downstream
+calibration and final fitting. Full timing receipts remain in the summary.
+
+[FAILURE_NOTES.md](FAILURE_NOTES.md) documents the remaining convergence mismatch
+and an untested possible successor. This result does not support expanding or
+deploying this repair as an accuracy improvement. The official 193-recording
+mean remains 1.254810 km and production B7 is unchanged. The 0.4 km goal is unmet.
+
+The rendered PNG was visually inspected. Raw receipts are preserved locally;
+[PUBLICATION_INTEGRITY.json](PUBLICATION_INTEGRITY.json) binds batch/results and
+published outputs but does not provide standalone remote replay.
+
+## Earlier preparation record
+
+The following records preparation status before execution; the completed result
+above supersedes its future-tense and not-yet-run statements.
+
 Preparation and independent review are complete. Iteration 151 is fully evaluated
 and published; this successor will test the uniform repair against fresh controls
 using its sealed discovery. The implementation's 29 source/synthetic tests passed
