@@ -12,6 +12,9 @@ AUTHORITIES = {
     "reports/2026_10_10_position_error_iter132/protocol.json": (
         "08624494f298852b5b29bacf89e1cb3c12c54c05698c3b42e8a0804e8bb34567"
     ),
+    "reports/2026_10_10_position_error_iter134/protocol.json": (
+        "a0f2990b471d3c62ec8037ff23849aefa35673384e4641817e9559cfccf963e0"
+    ),
 }
 
 
@@ -45,13 +48,23 @@ def admit_receipts(label, parity, iq, rows):
     return dict(parity=parity["status"], frequency=iq["status"], observations=len(ids))
 
 
+def verify_original_membership(rows, metadata):
+    ids = [row["window_id"] for row in rows]
+    expected = metadata["window_ids"]
+    if len(ids) != len(expected) or len(set(ids)) != len(ids) or set(ids) != set(expected):
+        raise ValueError("frequency rows differ from original observation membership")
+
+
 def prepare():
     for path, expected in AUTHORITIES.items():
         if sha(ROOT / path) != expected:
             raise ValueError("published authority changed: " + path)
-    iq_path, clean_path = [ROOT / name for name in AUTHORITIES]
+    iq_path, clean_path, replay_path = [ROOT / name for name in AUTHORITIES]
     iq_plan, clean_plan = [json.loads(path.read_text()) for path in (iq_path, clean_path)]
+    replay_plan = json.loads(replay_path.read_text())
     iq_members = {m["label"]: m for m in iq_plan["members"]}
+    if replay_plan["member"] != iq_members["DS18-029"]:
+        raise ValueError("successor changes original member inputs")
     if set(iq_members) != {m["label"] for m in clean_plan["members"]} or len(iq_members) != 12:
         raise ValueError("fixed twelve-member coverage differs")
     sources = dict(clean_plan["sources"])
@@ -88,17 +101,55 @@ def prepare():
             raise ValueError("recording identity differs")
         parity_path = clean_path.parent / "results" / (label + ".json")
         iq_receipt = iq_path.parent / "results" / label / "result.json"
+        original_receipt = iq_receipt
+        selected_protocol = iq_path
+        lineage = []
+        if label == "DS18-029":
+            original_iq = json.loads(original_receipt.read_text())
+            original_rows = original_receipt.with_name("rows.jsonl")
+            if (
+                original_iq["protocol_sha256"] != sha(iq_path)
+                or original_iq["metadata_sha256"] != iq_members[label]["metadata_sha256"]
+                or original_iq["rows_sha256"] != sha(original_rows)
+            ):
+                raise ValueError("original failure provenance changed")
+            for path in (original_receipt, original_rows):
+                inputs[str(path.relative_to(ROOT))] = sha(path)
+            lineage.append(
+                dict(
+                    receipt=str(original_receipt.relative_to(ROOT)),
+                    status=original_iq["status"],
+                    counts=original_iq["counts"],
+                    elapsed_s=original_iq["elapsed_s"],
+                )
+            )
+            iq_receipt = replay_path.parent / "results/result.json"
+            selected_protocol = replay_path
         rows_path = iq_receipt.with_name("rows.jsonl")
         parity, iq = [json.loads(path.read_text()) for path in (parity_path, iq_receipt)]
         if (
             parity["protocol_sha256"] != sha(clean_path)
-            or iq["protocol_sha256"] != sha(iq_path)
+            or iq["protocol_sha256"] != sha(selected_protocol)
             or iq["metadata_sha256"] != iq_members[label]["metadata_sha256"]
             or iq["rows_sha256"] != sha(rows_path)
         ):
             raise ValueError("foreign or changed terminal receipt")
         rows = [json.loads(line) for line in rows_path.read_text().splitlines()]
         coverage = admit_receipts(label, parity, iq, rows)
+        metadata_path = ROOT / iq_members[label]["metadata_path"]
+        if sha(metadata_path) != iq_members[label]["metadata_sha256"]:
+            raise ValueError("original observation metadata changed")
+        metadata = json.loads(metadata_path.read_text())
+        verify_original_membership(rows, metadata)
+        inputs[iq_members[label]["metadata_path"]] = iq_members[label]["metadata_sha256"]
+        lineage.append(
+            dict(
+                receipt=str(iq_receipt.relative_to(ROOT)),
+                status=iq["status"],
+                counts=iq["counts"],
+                elapsed_s=iq["elapsed_s"],
+            )
+        )
         for path in (parity_path, iq_receipt, rows_path):
             inputs[str(path.relative_to(ROOT))] = sha(path)
         members.append(
@@ -111,6 +162,8 @@ def prepare():
                 iq_receipt=str(iq_receipt.relative_to(ROOT)),
                 rows_path=str(rows_path.relative_to(ROOT)),
                 coverage=coverage,
+                frequency_lineage=lineage,
+                frequency_replay_elapsed_s=sum(item["elapsed_s"] for item in lineage),
             )
         )
     return dict(

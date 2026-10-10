@@ -17,6 +17,17 @@ missing, failed, resource-limited and parity-failed rows. For this first control
 sensitivity, a member with any missing required refined observation is an explicit
 unavailable comparison; do not silently drop rows or impute original frequencies.
 
+Pre-execution amendment: 128 completed with 1,782 guarded visit-read failures in
+DS18-029. Its sparse event IDs were incorrectly passed as retained-list ordinals;
+the metadata mapping predicts every failed observation exactly. Bind the explicit
+134 successor for this member and the original 128 outputs for the other eleven.
+134 must replay the entire same member with the same original IDs, metadata,
+estimators, parity checks and fixed budget, changing only public read addressing.
+Keep the original failed 128 receipts and both attempts' costs in the final report.
+This data-adapter repair is declared before any 133 positioning fit or outcome;
+it is not selection between measurement estimators or position results. If the
+successor remains incomplete, keep this member explicitly unavailable as above.
+
 Reconstruct the ordinary archived B7 model through the audited, reference-free
 131/132 input path. Inherited legacy reference-error equality admission is not
 permitted. Prove the original model's objective and physical input signatures

@@ -1,5 +1,17 @@
 import pytest
-from freeze import admit_receipts
+from freeze import admit_receipts, verify_original_membership
+
+
+@pytest.mark.parametrize("ids", [["a", "c"], ["a", "a"], ["a"], ["a", "b", "c"]])
+def test_replay_cannot_substitute_or_drop_original_observations(ids):
+    with pytest.raises(ValueError):
+        verify_original_membership([dict(window_id=x) for x in ids], dict(window_ids=["a", "b"]))
+
+
+def test_full_replay_retains_original_membership():
+    verify_original_membership(
+        [dict(window_id="b"), dict(window_id="a")], dict(window_ids=["a", "b"])
+    )
 
 
 def test_terminal_failed_member_is_not_excluded():
