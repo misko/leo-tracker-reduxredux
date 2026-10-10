@@ -1850,8 +1850,12 @@ class CatalogRepository:
         lease_for: timedelta,
         authority: WorkerReleaseAuthority | None = None,
         resource_classes: tuple[str, ...] | None = None,
+        run_ids: tuple[str, ...] | None = None,
+        stage_keys: tuple[str, ...] | None = None,
     ) -> JobLease | None:
         _require_positive_duration(lease_for)
+        if run_ids is not None and (not run_ids or len(set(run_ids)) != len(run_ids)):
+            raise ValueError("worker run IDs must be non-empty and unique")
         if resource_classes is not None and (
             not resource_classes or len(set(resource_classes)) != len(resource_classes)
         ):
@@ -1949,6 +1953,10 @@ class CatalogRepository:
                 # never execute unless the worker proves an exact release authority.
                 statement = statement.where(ProcessingJob.node_id.is_(None))
             statement = statement.where(ProcessingJob.resource_class.in_(eligible_resources))
+            if run_ids is not None:
+                statement = statement.where(ProcessingJob.run_id.in_(run_ids))
+            if stage_keys is not None:
+                statement = statement.where(ProcessingJob.stage_key.in_(stage_keys))
             job = session.execute(statement).scalar_one_or_none()
             if job is None:
                 return None

@@ -1,0 +1,9 @@
+"""Read-only port for sealed fast-scan publications."""
+
+from typing import Protocol
+
+
+class FastScanReports(Protocol):
+    def page(self, limit: int = 20) -> dict: ...
+    def detail(self, run_id: str, include_points: bool = True) -> dict: ...
+    def automatic_page(self, limit: int = 100) -> dict: ...
