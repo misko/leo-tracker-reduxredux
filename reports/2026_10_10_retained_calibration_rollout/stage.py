@@ -26,7 +26,9 @@ def digest(data):
 
 
 def git(repository, *args):
-    return subprocess.check_output(["git", "-C", str(repository), *args])
+    return subprocess.check_output(
+        ["git", "-c", f"safe.directory={repository}", "-C", str(repository), *args]
+    )
 
 
 def main(repository):
