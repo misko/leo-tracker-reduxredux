@@ -13,8 +13,9 @@ from leo.analysis.regional_position_score import ALIAS_HZ, WindowLikelihood
 
 def exclusive(values):
     """Positive exclusive sums; never total-minus-diagonal cancellation."""
-    left = np.concatenate(([0.0], np.cumsum(values[:-1])))
-    right = np.concatenate((np.cumsum(values[:0:-1])[::-1], [0.0]))
+    zeros = np.zeros(values.shape[:-1] + (1,))
+    left = np.concatenate((zeros, np.cumsum(values[..., :-1], axis=-1)), axis=-1)
+    right = np.concatenate((np.cumsum(values[..., :0:-1], axis=-1)[..., ::-1], zeros), axis=-1)
     return left + right
 
 
@@ -75,32 +76,38 @@ def paired_likelihood(measured, prediction, visible, score, pairs, rho=0.25):
     gradient = base.prediction_gradient.copy()
     nll = base.nll
     variance = sigma**2 * (1 - rho**2)
-    for i, j in pair_array:
+    for start in range(0, len(pair_array), 256):
+        i, j = pair_array[start : start + 256].T
         ri, rj = residual[i], residual[j]
         # A sum of positive squares avoids cancellation in the Gaussian exponent.
         exponent = ((ri - rho * rj) ** 2 + (1 - rho**2) * rj**2) / (2 * variance)
         # Scale by singleton totals before multiplying, so tiny clutter squared
         # never underflows. This density is the pair/independent density ratio.
-        si, sj = signals[i] / total[i], signals[j] / total[j]
+        si, sj = signals[i] / total[i, None], signals[j] / total[j, None]
         ui, uj = u / total[i], u / total[j]
         both_visible = np.asarray(visible[i]) & np.asarray(visible[j])
-        diagonal = np.zeros(k)
-        diagonal[both_visible] = np.exp(
+        diagonal = np.zeros_like(ri)
+        log_diagonal = (
             2 * np.log(a)
-            - exponent[both_visible]
+            - exponent
             - np.log(2 * np.pi * sigma**2 * np.sqrt(1 - rho**2))
-            - np.log(total[i])
-            - np.log(total[j])
+            - np.log(total[i, None])
+            - np.log(total[j, None])
         )
-        off_i = si * (uj + exclusive(sj))
-        off_j = sj * (ui + exclusive(si))
-        density = ui + off_i.sum() + diagonal.sum()
-        if not np.isfinite(density) or density <= 0:
+        diagonal[both_visible] = np.exp(log_diagonal[both_visible])
+        off_i = si * (uj[:, None] + exclusive(sj))
+        off_j = sj * (ui[:, None] + exclusive(si))
+        density = ui + off_i.sum(axis=1) + diagonal.sum(axis=1)
+        if not np.isfinite(density).all() or np.any(density <= 0):
             raise ValueError("Nonfinite or nonpositive correlated density")
-        nll -= np.log(density)
-        responsibilities[i] = (off_i + diagonal) / density
-        responsibilities[j] = (off_j + diagonal) / density
+        nll -= np.log(density).sum()
+        responsibilities[i] = (off_i + diagonal) / density[:, None]
+        responsibilities[j] = (off_j + diagonal) / density[:, None]
         clutter[i], clutter[j] = ui / density, uj / density
-        gradient[i] = -(off_i * ri / sigma**2 + diagonal * (ri - rho * rj) / variance) / density
-        gradient[j] = -(off_j * rj / sigma**2 + diagonal * (rj - rho * ri) / variance) / density
+        gradient[i] = (
+            -(off_i * ri / sigma**2 + diagonal * (ri - rho * rj) / variance) / density[:, None]
+        )
+        gradient[j] = (
+            -(off_j * rj / sigma**2 + diagonal * (rj - rho * ri) / variance) / density[:, None]
+        )
     return WindowLikelihood(float(nll), responsibilities, clutter, gradient, residual)

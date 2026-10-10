@@ -20,13 +20,24 @@ control. The research objective adapter supports either timestamp or phase
 geometry through an explicit prediction function, preserving existing clock,
 timing and satellite priors without changing module globals.
 
-All 22 synthetic tests pass, and Ruff is clean. Verification covers exact zero-correlation parity, independently
+All 23 kernel/adapter synthetic tests pass, and Ruff is clean. Verification covers exact zero-correlation parity, independently
 enumerated label combinations, density mass, finite-difference emission and
 full parameter gradients, both geometry conventions and c arms, alias seams,
 pair exchange, disjoint row accounting, and invisible/clutter extremes. Review
 found that evaluating a large exponential before multiplying by zero visibility
 could yield NaN for extremely small clutter. The kernel now evaluates only
 visible diagonal components; strict floating-point regression tests cover it.
+
+The first implementation looped over each pair in Python. Batching at most 256
+pairs preserves O(K) work per pair and bounds additional workspace while reducing
+that overhead. A fixed synthetic benchmark (3,500 rows, 30 satellites, 1,750
+pairs, five timed calls) measured median kernel times of 35.57 ms for the
+published scalar prototype and 4.02 ms for batching, versus 1.35 ms for ordinary
+independent emissions. The objective difference was 7.28e-12 and responsibilities
+and gradients passed the numerical equivalence check. A chunk-boundary test
+verifies full pair and unpaired-row accounting. These host timings exclude orbit
+prediction and optimization; they are not embedded or end-to-end speed claims.
+The [benchmark receipt](synthetic_timing.json) records source hashes and all calls.
 
 The narrow wrapped approximation is qualified only for the stated 125 Hz scale
 and correlation range. It is not a general-purpose bivariate wrapped density.
