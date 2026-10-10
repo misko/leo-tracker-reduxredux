@@ -50,3 +50,11 @@ No recording fit or numerical protocol has been launched or frozen. Iteration
 140's full-cohort assessment precedes choosing the single physics convention
 for the proposed matched twelve-member test. Its position results will be
 evaluated only after all attempts finish, separately from frequency fit.
+
+The execution and reporting preparation is now implemented: all 33 tests pass.
+It checks the actual dependency import order, original-objective admission,
+matched starts, RF locks, acquisition support, partial-failure retention,
+non-overwrite claims, and full completion before reference evaluation. The
+report compares historical archive to fresh control separately from control to
+correlated emissions. Preparing these scripts does not freeze the physics
+choice or authorize a result-dependent choice within the experiment.
