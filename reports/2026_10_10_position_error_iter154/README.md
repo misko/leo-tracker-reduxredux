@@ -58,3 +58,49 @@ ports, not an optimizer, numerical model, quadrature or recording. No additional
 numerical research worker was started. Production-adapter parity and localization
 benefit remain untested. No generic controller, storage mechanism or recording
 adapter is added.
+
+## Possible successor execution after full 151 review
+
+Reuse sealed 151 discovery rather than another grid search. Preserve all twelve
+members and both discovery policies, including failed or incomplete rows. For
+each completed queue, use exactly its three retained regions, original bootstrap,
+satellite subset and original coarse fit. Do not rerank discovery using repaired
+scores, substitute another region or use a later promoted fit as the original.
+
+A separate protocol must bind the published 151 protocol; terminal searches,
+original point/bootstrap bytes and retained-region trace authority; clean public
+input identities and observation content/order; causal TLE snapshot and exact
+bank ordering/orbit states; numerical sources/native library/runtime; and all
+prior, constraint and fitting policies. Subset indices must identify the same
+physical satellites. Reconstruct and independently reprice each original before
+repair, checking its discovery-arm lock, fixed coordinates and physical bounds.
+Keep reference-error evaluation authorities outside inference admission. Freeze
+the additional repair budget and separate control/candidate stage identities.
+
+The clearest primary comparison is **fresh downstream control versus fresh
+downstream candidate from the same sealed discovery**. Control uses unchanged
+150; candidate adds this own-arm repair before unchanged 150. Both retain three
+regions and identical downstream settings, including both final c arms. Earlier
+151 endpoints are historical parity comparators, not automatically fresh controls.
+Expose control replay differences; time-limited fitting is not necessarily
+bitwise deterministic, and tolerances must not change after outcomes are seen.
+
+Reusing an unchanged regional continuation is defensible only if its effective
+admitted prefit, correction, association, bank, vector/clock starts, constraints,
+sources and complete input/policy bindings are identical and the relevant stage
+receipts are complete and independently qualified. A changed prefit invalidates
+all dependent stages. Unchanged coordinates alone do not establish equivalence.
+Nor can an unchanged region justify reusing the branch-level B7 selection when
+another region changes: that selection depends on the complete region inventory.
+Any such reuse is explicitly cached computation with historical-cost accounting,
+not fresh matched downstream timing. Fresh continuations are simpler to audit
+for the initial small handoff comparison.
+
+Report inherited discovery cost separately from new own-arm repair evaluations
+and elapsed time, and separate those from existing free-c promotion, calibration
+and final-fit costs. Apply the same repair rule to every retained own-arm failure
+in both branches; labels, reference errors and earlier favorable outcomes never
+decide which failures receive it. Preserve missing inputs, unqualified repairs
+and budget exhaustion in full-member coverage. Evaluate position only after all
+declared continuations seal, keeping both final c arms and frequency effects
+separate. This design authorizes no replay, implementation, freeze or launch.
