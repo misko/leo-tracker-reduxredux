@@ -2,7 +2,7 @@
 
 The source audit found two ways a naive split-data comparison could be
 misleading: paired/overlapping observations could cross folds, and reconstructing
-a fold-specific model could change its centering or physical constraints. This
+a fold-specific model could change its centering or timing-support metadata. This
 iteration implements and tests guards against both. **No recording fits or
 position-error experiment have run.** B7 and the official research metric remain
 unchanged.
@@ -37,6 +37,12 @@ Synthetic tests verify the following:
 row adapter's likelihood and constraint separation and flagged the training-row
 reporting caveat above. The synthetic figure was rendered and visually checked;
 its complete group membership is in [SYNTHETIC_GROUPS.json](SYNTHETIC_GROUPS.json).
+
+A subsequent source review corrected the initial timing-bound rationale: the
+current `_Problem` accepts only models with enough margin for exactly +/-20
+second timing limits. Slicing changes coverage margins, but does not enlarge
+that accepted feasible range. The adapter preserves the full metadata without
+claiming to fix a demonstrated timing-bound defect.
 
 The [plan](PLAN.md) remains **unfrozen**. A fresh matched full-data control and a
 common reference-free start must be specified before fits. The original bank,

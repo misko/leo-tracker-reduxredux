@@ -118,8 +118,12 @@ it does not merge empty gaps merely because two intervals belong to one visit.
 observation metadata to physical constraints and slices the likelihood's
 observation and design rows without reconstructing the model. Unknown inherited
 callable methods are refused. This is necessary because `_Problem` computes
-timing support from observation min/max times; using a fold's times could enlarge
-the feasible set. A subset's terms have fewer rows: any diagnostics must use
+timing support from observation min/max times; using a fold's times changes its
+reported coverage margins. A subsequent source review clarified that the current
+strict margin checks force every accepted `_Problem` to retain exactly +/-20
+second timing limits: a larger accepted feasible range was not demonstrated.
+Keeping full metadata still preserves the original constraint authority. A
+subset's terms have fewer rows: any diagnostics must use
 `selected_observations`, not the full metadata inventory exposed to constraints.
 
 The proposed 48 fits above are not yet sufficient for a controlled before/after
