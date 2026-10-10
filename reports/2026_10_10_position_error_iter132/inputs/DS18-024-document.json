@@ -1,0 +1,52 @@
+{
+  "session_id": "scan-fw-d406a510f5473348",
+  "input_manifest_sha256": "sha256:a47b82bc3e7ca49e5f9965af4ab384ed267057678dc49700bd3ff10ea097fa2f",
+  "analysis_manifest_sha256": "sha256:c9468f6c56fa5310257b30a8e1e9e9e8855c6b9591b54e1c0623a9afbfb008b9",
+  "evidence_sha256": "sha256:c828b102b39ba600070ddf983aa905911eb750ecfa2523719ee4bc78a5e95c38",
+  "configuration": {
+    "prior": {
+      "altitude_m": 0.0,
+      "latitude_deg": 38.5816,
+      "longitude_deg": -121.4944,
+      "radius_km": 250.0
+    },
+    "scores": {
+      "V16": {
+        "clutter_rate": 0.5,
+        "common_sigma_s": 3.0,
+        "detection_budget": 1.6,
+        "name": "V16",
+        "relative_sigma_s": 2.0,
+        "sigma_hz": 125.0
+      }
+    },
+    "run": {
+      "association_seconds": 60.0,
+      "backend": "audited-native-orbits-narrow-gaussian-v1",
+      "basin_separation_km": 12.5,
+      "basins": 3,
+      "bootstrap_seconds": 5.0,
+      "coarse_fit_seconds": 5.0,
+      "coarse_iterations": 200,
+      "edge_priority": "nearest",
+      "final_iterations": 600,
+      "final_starts": [
+        "association",
+        "zero-timing",
+        "own-continuation"
+      ],
+      "levels_km": [
+        40.0,
+        20.0,
+        10.0,
+        5.0
+      ],
+      "minimum_local_radius_km": 25.0,
+      "point_budget": 400,
+      "policy": "hard60-v1",
+      "recovery_policy": "failed-coarse-box-v1",
+      "slope_half_width_hz_s": 60.0,
+      "stage_fit_seconds": 20.0
+    }
+  }
+}
