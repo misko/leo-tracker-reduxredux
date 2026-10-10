@@ -60,7 +60,7 @@ def repair_then_transition(model, original, point, arm, *, audit, bounded, trans
         check = audit(model, copy.deepcopy(original), arm)
         receipt["own_audit"] = evidence(check)
         own_ok = qualified(check, original, arm)
-    except (ValueError, TypeError, KeyError, IndexError, OverflowError) as error:
+    except (ValueError, TypeError, KeyError, IndexError, OverflowError, RuntimeError) as error:
         return dict(receipt, error=repr(error))
     candidate = copy.deepcopy(original)
     if not own_ok:
@@ -81,14 +81,14 @@ def repair_then_transition(model, original, point, arm, *, audit, bounded, trans
                 return dict(receipt, status="own-arm-unqualified")
             if check["objective"] > receipt["own_audit"]["objective"] + 1e-6:
                 return dict(receipt, status="own-arm-objective-increased")
-        except (ValueError, TypeError, KeyError, IndexError, OverflowError, TimeoutError) as error:
+        except (ValueError, TypeError, KeyError, IndexError, OverflowError, TimeoutError, RuntimeError) as error:
             return dict(receipt, status="own-arm-repair-failed", error=repr(error))
     candidate = copy.deepcopy(candidate)
     candidate["converged"] = True
     receipt["admitted"] = candidate
     try:
         receipt["handoff"] = transition(model, copy.deepcopy(candidate), point.copy(), arm)
-    except (ValueError, TypeError, KeyError, IndexError, OverflowError, TimeoutError) as error:
+    except (ValueError, TypeError, KeyError, IndexError, OverflowError, TimeoutError, RuntimeError) as error:
         return dict(receipt, status="downstream-transition-failed", error=repr(error))
     # This status certifies admission only, not downstream success/localization.
     return dict(receipt, status="own-arm-admitted")

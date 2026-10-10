@@ -1,11 +1,19 @@
 # Own-arm qualification before the existing calibration transition
 
-Source-only, conditional preparation. The directory was confirmed absent before
-creation. No model calls, fits, recording reads, freeze or deployment have
-been performed. Decide whether to run a successor only after complete iteration
-151 review. The live protocol and every frozen source remain unchanged.
+Preparation and independent review are complete. Iteration 151 is fully evaluated
+and published; this successor will test the uniform repair against fresh controls
+using its sealed discovery. The implementation's 29 source/synthetic tests passed
+in 1.43 seconds with the pinned 47e interpreter. Metadata-only preparation checked
+the twelve members, source/input bindings and numerical runtime. No recording
+fit, new grid, or deployment change has occurred in this iteration.
 
-The retained-state diagnostic established that two original **returned best
+[PLAN.md](PLAN.md) defines the matched experiment and progression rule;
+[REVIEW.md](REVIEW.md) records the independent source review. A separate metadata
+freeze and publication precede the two-worker recording replay. The design notes
+below preserve the original preparation rationale; the recording adapter and
+all-48-terminal reporter are now implemented, rather than future proposals.
+
+The initial retained-state diagnostic established that two original **returned best
 feasible states** failed their independent KKT check. The coarse fitter did not
 persist the optional terminal diagnostics in this path. The optimizer's actual
 terminal state is therefore unknown; this is not proof that it stopped at a
