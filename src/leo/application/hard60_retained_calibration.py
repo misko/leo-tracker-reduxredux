@@ -5,12 +5,11 @@ import time
 
 import numpy as np
 
-from leo.analysis.hard60_bounded_fit import _Problem, fit_bounded_position
-from leo.analysis.hard60_qualification import qualify
+from leo.analysis.hard60_bounded_fit import fit_bounded_position
+from leo.analysis.hard60_qualification import qualify, validate_fixed_calibration_fit
 from leo.analysis.hard60_score import Hard60Objective, predict_orbits
 from leo.analysis.regional_position_association import associate_calibration
 from leo.analysis.regional_position_calibration import RegionalCalibration, receiver_correction
-from leo.analysis.regional_position_fit import PositionFit
 from leo.application.hard60_runner import HARD60_SCORE, Hard60Configuration
 from leo.application.regional_position_runner import _calibration, json_value
 from leo.contracts.digests import canonical_digest
@@ -61,38 +60,6 @@ def regional_triggers(regions, *, minimum_local_radius_km=25.0):
     return dict(candidates=[candidates[k] for k in sorted(candidates)], unavailable=unavailable)
 
 
-def _validated_fixed_fit(objective, saved, point):
-    vector = np.asarray(saved["vector"], float)
-    if not np.array_equal(vector[:2], point):
-        raise ValueError("calibration fit moved the retained point")
-    value, gradient, terms = objective.evaluate(vector)
-    if not np.isfinite(value) or not np.isfinite(gradient).all():
-        raise ValueError("nonfinite calibration fit")
-    if not np.isclose(value, saved["objective"], rtol=0, atol=1e-6):
-        raise ValueError("calibration objective differs from saved fit")
-    problem = _Problem(
-        objective, vector, fixed_position=True, rf_arm="fitted-c", slope_half_width_hz_s=60
-    )
-    stationarity = problem.stationarity(vector, gradient)
-    if not saved["converged"] or not problem.feasible(vector) or stationarity > 0.001:
-        raise ValueError("calibration fit failed independent qualification")
-    mass = float(terms.responsibilities.sum())
-    return PositionFit(
-        vector.copy(),
-        float(value),
-        float(np.sqrt(np.sum(terms.responsibilities * terms.residual_hz**2) / mass))
-        if mass
-        else None,
-        mass,
-        stationarity,
-        True,
-        False,
-        "retained-calibration-independent-qualified",
-        int(saved["evaluations"]),
-        float(saved.get("elapsed_s", 0.0)),
-    )
-
-
 def _recover_calibration(observations, bank, prior, trigger):
     original = trigger["original"]
     indices = original["bootstrap"]["satellite_indices"]
@@ -121,7 +88,7 @@ def _recover_calibration(observations, bank, prior, trigger):
                 calibration=None,
             )
         fit = prefit_qualification["fit"]
-    prefit = _validated_fixed_fit(objective, fit, point)
+    prefit = validate_fixed_calibration_fit(objective, fit, point)
     begun = time.monotonic()
     receipt = dict(
         correction=None,
@@ -168,7 +135,7 @@ def _recover_calibration(observations, bank, prior, trigger):
                 receipt.update(status="calibration-unqualified", elapsed_s=time.monotonic() - begun)
                 return receipt
             selected = attempt["fit"]
-        validated = _validated_fixed_fit(corrected, selected, prefit.vector[:2])
+        validated = validate_fixed_calibration_fit(corrected, selected, prefit.vector[:2])
         baseline = correction.values_hz + corrected.design[:, :4] @ validated.vector[2:6]
         calibration = RegionalCalibration(tuple(indices), prefit, validated, correction, baseline)
         receipt.update(status="qualified", calibration=json_value(calibration))
