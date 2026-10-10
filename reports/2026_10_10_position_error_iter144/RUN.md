@@ -15,4 +15,9 @@ receipts are retained while the remaining members continue. No automatic retry
 or numerical-source correction is authorized within this frozen experiment.
 
 This launch record is outside the frozen numerical source closure. Results and
-plots will be published after all twelve member outcomes are accounted for.
+plots are generated only after all twelve member outcomes are accounted for.
+
+The controller subsequently exited with code 0: all twelve members completed,
+eleven with catalogue-sensitivity results and one with no earlier changed source.
+There were no retries or scientific failures. Slot 1 was released; iteration 140
+continues in the other slot.
