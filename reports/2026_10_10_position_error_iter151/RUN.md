@@ -1,0 +1,7 @@
+Shard 1 launched after publication and verification of protocol file SHA256 `5058d5785a8c897a187473dd09351d15fde3af91b485a5711bd474c5f3c7f4c8`, all 1,589 source hashes and 14 input hashes, with zero mismatches.
+
+Observed live at 2026-10-10T04:53:54Z: authoritative session 4656, batch PID 1542209, sudo parent PID 1542196. The pinned production interpreter uses `PYTHONPATH=src:.` and OPENBLAS/OMP/MKL thread counts of 1. The other agent owns shard 0. Each shard processes six members serially; globally at most two numerical workers are allocated.
+
+The frozen six search slices and two continuation slices per branch remain unchanged. Only explicit matching pending receipts permit continuation. Scientific failures, controller failures and orphaned claims are retained; no crash restart or silent retry is authorized. References and accuracy reporting remain closed until all twelve members' 36 phases are terminal.
+
+Shard 0's owner records an interpreter-path deviation: its `current-api` alias resolved to release 174848 rather than the requested 47e release. [ENVIRONMENT_AUDIT.json](ENVIRONMENT_AUDIT.json) preserves the exact command and read-only comparison. Whole installations differ at nine files; all 92 observed loaded package shared libraries match the requested release by content, including numerical/BLAS libraries, and numerical package versions match. This is evidence about observed runtime dependencies, not a claim that the whole installations are identical. Shard 1 uses the explicit 47e path above. Neither worker was restarted.
