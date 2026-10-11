@@ -9,7 +9,7 @@ from leo.application.scanner_trajectory import project_scanner_candidates
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
     ScannerTleReviewCandidateV1,
-    ScannerTleTrackReviewV2,
+    ScannerTleTrackReviewV3,
     TrackingCandidate,
     TrackingInput,
     TrackingProbe,
@@ -21,6 +21,28 @@ from tests.analysis.test_persistent_hop_trajectory import _candidate
 from tests.application.test_persistent_hop_tracking import _site, _snapshot_payload
 
 PNG = b"\x89PNG\r\n\x1a\nfixture"
+
+
+def test_mixed_eight_channel_tracks_publish_and_roundtrip(tmp_path, monkeypatch):
+    runner, store = service(tmp_path, monkeypatch, archive_error=True)
+    rows = tuple(
+        replace(_candidate(lane=0, point=p, normalized_rate_hz_per_s=-2000,
+                           normalized_intercept_hz=50000, alias_index=0),
+                channel=channel, receiver_id=channel - 1,
+                source_group_id=canonical_digest(["source", channel, p]),
+                candidate_id=canonical_digest([channel, p]))
+        for channel in range(1, 9) for p in range(31)
+    )
+    monkeypatch.setattr(tracking, "project_scanner_candidates", lambda _: rows)
+    result = runner.run("scan-test")
+    assert result.state == "complete"
+    assert result.product.schema_version == 16
+    assert {t.channel for t in result.product.tracklets} == set(range(1, 9)), result.product.reasons
+    assert all(t.schema_version == (1 if t.channel <= 4 else 2)
+               for t in result.product.tracklets)
+    assert store.status("scan-test") == result
+    assert store.artifact("scan-test", "trajectory") == PNG
+    assert store.artifact("scan-test", "cfo-track-overlay") == PNG
 
 
 def source(rate=2_500_000, mode="adaptive", origin=2**54):
@@ -272,7 +294,7 @@ def test_budget_resume_and_failed_group_receipts(tmp_path, monkeypatch):
 
 
 def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, monkeypatch):
-    review = ScannerTleTrackReviewV2(
+    review = ScannerTleTrackReviewV3(
         tracklet_id=canonical_digest({"tracklet": 1}),
         channel=2,
         edge="upper",
@@ -302,7 +324,7 @@ def test_publishes_per_track_review_png_and_machine_readable_result(tmp_path, mo
     result = runner.run("scan-test")
 
     assert result.product.track_reviews == (review,)
-    assert result.product.analysis_id == "scanner-shared-tracking-v15"
+    assert result.product.analysis_id == "scanner-shared-tracking-v16"
     assert result.product.position_diagnostic is not None
     assert result.product.review_limit == 16
     assert result.product.review_selection_policy == "longest-support-observations-identity-v1"

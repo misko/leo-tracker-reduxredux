@@ -69,8 +69,9 @@ def test_position_method_publication_rejects_unverified_or_stale_output(
         )
 
 
+@pytest.mark.parametrize("channel", range(1, 9))
 def test_review_renderer_bounds_report_before_expensive_track_work(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, channel
 ) -> None:
     observed = {}
 
@@ -82,7 +83,7 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
             "tracks": [
                 {
                     "tracklet_id": "sha256:" + "1" * 64,
-                    "channel": 1,
+                    "channel": channel,
                     "edge": "lower",
                     "start_s": 1.0,
                     "end_s": 9.0,
@@ -123,4 +124,5 @@ def test_review_renderer_bounds_report_before_expensive_track_work(
     assert eligible_count == 1
     assert len(reviews) == 1
     assert reviews[0][0].artifact_name == "tle-review-01"
+    assert reviews[0][0].channel == channel
     assert reviews[0][1] == b"png"

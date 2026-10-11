@@ -16,6 +16,7 @@ from leo.scanner.persistent_hop import PersistentHopUtcTimingAuthorityV1
 from leo.scanner.persistent_hop_tracking import (
     PersistentHopTleCandidateV1,
     PersistentHopTrajectoryTrackletV1,
+    PersistentHopTrajectoryTrackletV2,
     PersistentHopUnscoredGroupV1,
 )
 
@@ -441,6 +442,23 @@ class ScannerTrackingProductV15(ScannerTrackingProductV14):
         return self
 
 
+class ScannerTleTrackReviewV3(ScannerTleTrackReviewV2):
+    """Eight-channel review, selected by the enclosing V16 product."""
+
+    channel: Annotated[int, Field(ge=1, le=8)]
+
+
+class ScannerTrackingProductV16(ScannerTrackingProductV15):
+    """Eight-channel trajectories and reviews without changing prior publications."""
+
+    schema_version: Literal[16] = 16  # type: ignore[assignment]
+    analysis_id: Literal["scanner-shared-tracking-v16"] = "scanner-shared-tracking-v16"  # type: ignore[assignment]
+    tracklets: tuple[
+        PersistentHopTrajectoryTrackletV1 | PersistentHopTrajectoryTrackletV2, ...
+    ] = ()  # type: ignore[assignment]
+    track_reviews: tuple[ScannerTleTrackReviewV3, ...] = ()  # type: ignore[assignment]
+
+
 class ScannerTrackingStatusV1(ContractModel):
     session_id: SessionId
     state: Literal["pending", "running", "complete", "failed"] = "pending"
@@ -565,6 +583,10 @@ class ScannerTrackingStatusV15(ScannerTrackingStatusV14):
     product: ScannerTrackingProductV15 | None = None  # type: ignore[assignment]
 
 
+class ScannerTrackingStatusV16(ScannerTrackingStatusV15):
+    product: ScannerTrackingProductV16 | None = None  # type: ignore[assignment]
+
+
 class ScannerTrackingReader(Protocol):
     def status(
         self, session_id: str
@@ -584,6 +606,7 @@ class ScannerTrackingReader(Protocol):
         | ScannerTrackingStatusV13
         | ScannerTrackingStatusV14
         | ScannerTrackingStatusV15
+        | ScannerTrackingStatusV16
     ): ...
     def artifact(self, session_id: str, name: ArtifactNameV15) -> bytes | None: ...
 

@@ -46,3 +46,26 @@ def test_device_relative_v2_cannot_publish_catalogue_claims():
     )
     with pytest.raises(ValueError, match="catalogue authority"):
         ScannerTrackingProductV2.model_validate({**relative.model_dump(), "tle_state": "complete"})
+
+
+@pytest.mark.parametrize("channel", range(1, 9))
+def test_eight_channel_contracts_preserve_legacy_limits(channel):
+    from typing import Annotated
+
+    from pydantic import TypeAdapter
+
+    from leo.contracts.scanner_tracking import ScannerTleTrackReviewV2, ScannerTleTrackReviewV3
+    from leo.scanner.persistent_hop_tracking import (
+        PersistentHopTrajectoryTrackletV1,
+        PersistentHopTrajectoryTrackletV2,
+    )
+    for old, new in ((PersistentHopTrajectoryTrackletV1, PersistentHopTrajectoryTrackletV2),
+                     (ScannerTleTrackReviewV2, ScannerTleTrackReviewV3)):
+        old_field, new_field = (model.model_fields["channel"] for model in (old, new))
+        assert TypeAdapter(Annotated[int, *new_field.metadata]).validate_python(channel) == channel
+        if channel > 4:
+            with pytest.raises(ValueError):
+                TypeAdapter(Annotated[int, *old_field.metadata]).validate_python(channel)
+        for invalid in (0, 9):
+            with pytest.raises(ValueError):
+                TypeAdapter(Annotated[int, *new_field.metadata]).validate_python(invalid)

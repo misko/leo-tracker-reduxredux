@@ -76,6 +76,13 @@ class PersistentHopTrajectoryTrackletV1(ScannerModel):
         return self
 
 
+class PersistentHopTrajectoryTrackletV2(PersistentHopTrajectoryTrackletV1):
+    """Eight-channel summary; the four-channel V1 contract remains unchanged."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    channel: Annotated[int, Field(ge=1, le=8)]
+
+
 class PersistentHopTleCandidateV1(ScannerModel):
     """Heldout and negative-control diagnostics for one physical group."""
 

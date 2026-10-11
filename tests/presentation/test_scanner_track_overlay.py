@@ -83,3 +83,14 @@ def test_real_png_and_empty_track_overlay(tracks):
     trajectory, rows = tracks
     payload = overlay.render_scanner_track_overlay_png(replace(trajectory, tracklets=()), rows)
     assert payload.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_upper_channels_have_visible_panels(tracks, monkeypatch):
+    trajectory, rows = tracks
+    rows = tuple(replace(rows[0], channel=channel) for channel in range(1, 9))
+    figures = []
+    monkeypatch.setattr(overlay, "_save", lambda fig: figures.append(fig) or b"png")
+    overlay.render_scanner_track_overlay_png(replace(trajectory, tracklets=()), rows)
+    assert len(figures[0].axes) == 8
+    assert all(axis.collections for axis in figures[0].axes)
+    figures[0].clear()

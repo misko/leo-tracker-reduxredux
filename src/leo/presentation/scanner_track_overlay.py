@@ -49,8 +49,9 @@ def render_scanner_track_overlay_png(
     spacing = CFO_ALIAS_SPACING_HZ
     shifts = (-spacing, 0, spacing)
     with _RENDER_LOCK:
-        figure = Figure(figsize=(15.5, 11.5), dpi=160, constrained_layout=True)
-        axes = figure.subplots(4, 1, sharex=True)
+        channel_count = max(4, max((row.channel for row in candidates), default=4))
+        figure = Figure(figsize=(15.5, 2.875 * channel_count), dpi=160, constrained_layout=True)
+        axes = figure.subplots(channel_count, 1, sharex=True)
         for channel, axis in enumerate(axes, start=1):
             for low, high in ((-spacing, -spacing / 2), (spacing / 2, spacing)):
                 axis.axhspan(low, high, color="#e9eef5", zorder=0)

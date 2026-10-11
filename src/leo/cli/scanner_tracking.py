@@ -20,8 +20,8 @@ from leo.cli.scan_position_methods import position_methods_complete, run_positio
 from leo.contracts.scanner_tracking import (
     ArtifactNameV12,
     ScannerTleReviewCandidateV1,
-    ScannerTleTrackReviewV2,
-    ScannerTrackingStatusV15,
+    ScannerTleTrackReviewV3,
+    ScannerTrackingStatusV16,
 )
 from leo.contracts.sky import ObserverSiteV1
 from leo.operations.scanner_position import build_scan_position_diagnostic
@@ -97,7 +97,7 @@ def _review_renderer(
 ):
     def render(
         session_id: str,
-    ) -> tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]:
+    ) -> tuple[tuple[tuple[ScannerTleTrackReviewV3, bytes], ...], int]:
         with TemporaryDirectory(prefix="leo-tle-review-") as temporary:
             output = Path(temporary)
             report = build_report(
@@ -117,7 +117,7 @@ def _review_renderer(
                 if index > review_limit:
                     raise ValueError("track review artifact count exceeds contract bound")
                 artifact_name = cast(ArtifactNameV12, f"tle-review-{index:02d}")
-                review = ScannerTleTrackReviewV2(
+                review = ScannerTleTrackReviewV3(
                     tracklet_id=track["tracklet_id"],
                     channel=track["channel"],
                     edge=track["edge"],
@@ -328,7 +328,7 @@ def main():
                     prior = products.analysis_status(sid)
                     if prior.state != "complete":
                         products.save(
-                            ScannerTrackingStatusV15(
+                            ScannerTrackingStatusV16(
                                 session_id=sid,
                                 state="failed",
                                 phase=prior.phase,

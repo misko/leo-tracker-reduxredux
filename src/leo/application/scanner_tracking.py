@@ -27,20 +27,42 @@ from leo.application.scanner_trajectory import (
 )
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scanner_tracking import (
-    ScannerTleTrackReviewV2,
+    ScannerTleTrackReviewV3,
     ScannerTrackingInputs,
-    ScannerTrackingProductV15,
-    ScannerTrackingStatusV15,
+    ScannerTrackingProductV16,
+    ScannerTrackingStatusV16,
 )
 from leo.contracts.sky import ObserverSiteV1, TleSnapshotRefV1
+from leo.scanner.persistent_hop_tracking import (
+    PersistentHopTrajectoryTrackletV1,
+    PersistentHopTrajectoryTrackletV2,
+)
 from leo.sky.propagation import count_element_sets
 
 
+def summarize_tracklet(tracklet):
+    """Retain V1 summaries where valid; encode upper channels explicitly as V2."""
+    channel, edge, receiver_id, actual_rf_hz = tracklet.lane_key
+    model = PersistentHopTrajectoryTrackletV1 if channel <= 4 else PersistentHopTrajectoryTrackletV2
+    return model(
+        tracklet_id=tracklet.tracklet_id,
+        channel=channel,
+        edge=edge.value,
+        receiver_id=receiver_id,
+        actual_rf_hz=actual_rf_hz,
+        start_utc_ns=tracklet.start_utc_ns,
+        end_utc_ns=tracklet.end_utc_ns,
+        observation_count=len(tracklet.points),
+        normalized_rate_hz_per_s=tracklet.normalized_rate_hz_per_s,
+        residual_rms_hz=tracklet.residual_rms_hz,
+    )
+
+
 class TrackingProducts(Protocol):
-    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV15: ...
-    def save(self, status: ScannerTrackingStatusV15) -> None: ...
+    def analysis_status(self, session_id: str) -> ScannerTrackingStatusV16: ...
+    def save(self, status: ScannerTrackingStatusV16) -> None: ...
     def put_artifact(self, session_id, name, payload): ...
-    def publish(self, product: ScannerTrackingProductV15) -> None: ...
+    def publish(self, product: ScannerTrackingProductV16) -> None: ...
 
 
 class ScannerTrackingService:
@@ -55,7 +77,7 @@ class ScannerTrackingService:
         overlay_renderer,
         position_renderer=None,
         review_renderer: Callable[
-            [str], tuple[tuple[tuple[ScannerTleTrackReviewV2, bytes], ...], int]
+            [str], tuple[tuple[tuple[ScannerTleTrackReviewV3, bytes], ...], int]
         ] = lambda _session_id: ((), 0),
         review_limit: int = 16,
         matcher=match_persistent_hop_track_to_tles,
@@ -93,14 +115,14 @@ class ScannerTrackingService:
         policy_digest = canonical_digest(
             {
                 **matching_policy,
-                "algorithm": "scanner-shared-tracking-v15",
+                "algorithm": "scanner-shared-tracking-v16",
                 "position": "scanner-conditional-position-v1",
                 "review_limit": self.review_limit,
                 "review_selection_policy": "longest-support-observations-identity-v1",
                 "matching_policy_digest": matching_policy_digest,
             }
         )
-        product = status.product or ScannerTrackingProductV15(
+        product = status.product or ScannerTrackingProductV16(
             session_id=session_id,
             capture_mode=source.capture_mode,
             sample_rate_hz=source.sample_rate_hz,
@@ -128,7 +150,7 @@ class ScannerTrackingService:
 
         def save(phase):
             self.products.save(
-                ScannerTrackingStatusV15(
+                ScannerTrackingStatusV16(
                     session_id=session_id, state="running", phase=phase, product=product
                 )
             )
@@ -136,7 +158,7 @@ class ScannerTrackingService:
         def publish(trajectory=None, catalogue_payload=None):
             nonlocal product
             if self.position_renderer is None:
-                raise ValueError("tracking V15 requires a configured position diagnostic renderer")
+                raise ValueError("tracking V16 requires a configured position diagnostic renderer")
             diagnostic, png = self.position_renderer(
                 source=source,
                 trajectory=trajectory,
@@ -208,7 +230,7 @@ class ScannerTrackingService:
                     "eligible_group_count": len(work),
                     "deferred_group_count": len(work),
                     "tracklets": tuple(
-                        PersistentHopTrackingService._tracklet_summary(t)
+                        summarize_tracklet(t)
                         for t in trajectory.tracklets
                     ),
                     "artifacts": (ref, overlay_ref),
