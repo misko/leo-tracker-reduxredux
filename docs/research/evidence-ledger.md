@@ -139,6 +139,19 @@ The group freezer now distinguishes true joins from original segments newly
 admitted by a changed bootstrap quota. Validation, offset-stability analysis and
 the full DS20/DS16/DS15 scope remain incomplete; no production promotion is made.
 
+The [anchored incumbent and complete four-recording validation comparison](../../reports/2026_10_12_band_calibrated_merge/refinement/README.md)
+adds 64 matched refinements and passes 68 component checks. All four transported
+parent starts improve the identical joined objective, but two worsen reference
+accuracy. Raw protected merging improves one DS20 validation case from 12.352
+to 3.025 km; both DS16 pairs are neutral. Calibrated joining regresses the sparse
+DS20 case from 0.842/0.051 to 1.735/1.820 km. Its raw-original c=0 output uses
+C6 fallback, so the controlled c comparison uses the existing common C6 attempts.
+At a shared discovery point, the regression retains the initial satellite bank
+and timing while adding 40 bootstrap rows, changing RX1 clock initialization and
+leading to different stationary coarse fits. This is a measured path through
+initialization and association, not proof of a physical retuning fault. All four
+initial validation members remain included; full-corpus qualification is open.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

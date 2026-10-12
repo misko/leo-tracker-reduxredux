@@ -53,8 +53,11 @@ The [band-calibrated cohort and full-search transfer](../reports/2026_10_12_band
 records 144 stationary local fits. Calibration learned from a development scan
 recovers another scan from 156.475/154.073 km to 1.410/2.052 km in matched c arms.
 Protected merging reaches 1.303/3.779 km, retaining the c=0 regression. Group
-authority bookkeeping is fixed; randomized validation and corpus qualification
-remain pending.
+authority bookkeeping is fixed. The [anchored refinement and completed initial
+validation](../reports/2026_10_12_band_calibrated_merge/refinement/README.md)
+retain four score-improving parent starts, two geographic regressions, a large
+raw-merging validation gain, a calibrated-merging validation regression, and
+neutral DS16 validation pairs. Corpus qualification remains pending.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
