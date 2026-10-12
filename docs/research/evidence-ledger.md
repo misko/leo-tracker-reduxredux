@@ -104,6 +104,15 @@ diagnostics**, not verified satellite identities or position improvement. Full
 matched B7 replays preserve observations, initial bank, priors, search budgets,
 and conditional c arms; the default bootstrap remains unchanged.
 
+Its first full matched comparisons avoid the earlier catastrophic DS20 regression
+but do not improve fitted-c accuracy: DS20 changes from 3.209 to 3.465 km and
+DS16 is effectively unchanged. A separate conditional mark-correlation study
+adds continuity to the likelihood with the same observations, candidate bank,
+priors, seed and budgets. Soft joining does not improve either exposed example;
+shared-only joining improves DS20 fitted-c error to 2.755 km but worsens DS16.
+Common singleton-frequency metrics and conditional c arms are reported separately.
+These are **unqualified development outcomes**, not automatic-analysis defaults.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
