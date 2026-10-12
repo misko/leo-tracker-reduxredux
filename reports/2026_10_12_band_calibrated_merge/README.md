@@ -87,6 +87,8 @@ Local 25 km refinements cannot assess recovery from that basin. A separate froze
 
 Four conditions cross fixed calibration on/off with protected joining on/off. They share the original full catalogue, 400-point search, priors and stage budgets. Each includes both conditional c arms. The donor fit uses no reference. A matching radio ID is required where high-band data exists, but stable LNB wiring and offsets remain explicit assumptions to test. Final candidate sets may change as an intervention consequence. The four searches for the recovery recording are running in bounded resumable slices; **no transfer accuracy result is claimed yet**.
 
+The B7 cascade can retain different fallback stages for its two c arms. Final-stage and satellite-bank equality must therefore be checked before interpreting a controlled c comparison. If they differ, operational accuracy and failure outcomes will be reported separately, and a further matched-bank refinement is required for the c ablation. The completed local panel above already uses common banks and stationary models in both arms.
+
 ## Edge-sign check
 
 ![DS20 frequency-slope signs by edge](edge-slope-signs.png)
