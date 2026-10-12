@@ -161,22 +161,26 @@ def main():
     }
     write(PUBLIC / "protocol.json", protocol)
     write(PUBLIC / "numerical-seal.json", seal)
-    write(
-        PUBLIC / "results.json",
-        {
-            "rows": results,
-            "comparisons": comparisons,
-            "summary": summary,
-            "script_sha256": sha(Path(__file__)),
-            "reference_usage": "none",
-            "scope": protocol["scope"],
-            "retrospective_selection_scope": (
-                "Compare two already computed states using the same original-support coherence "
-                "cost only. Selection is shared by both c arms before inspecting coarse scores. "
-                "This is an offline incumbent audit with common preprocessing work, not an "
-                "executed production initializer or independent validation."
-            ),
-        },
+    (PUBLIC / "results.json").write_text(
+        json.dumps(
+            {
+                "rows": results,
+                "comparisons": comparisons,
+                "summary": summary,
+                "script_sha256": sha(Path(__file__)),
+                "reference_usage": "none",
+                "scope": protocol["scope"],
+                "retrospective_selection_scope": (
+                    "Compare two already computed states using the same original-support coherence "
+                    "cost only. Both c arms share selection before inspecting coarse scores. "
+                    "This is an offline incumbent audit with common preprocessing work, not an "
+                    "executed production initializer or independent validation."
+                ),
+            },
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
     )
     fig, axes = plt.subplots(2, 2, figsize=(15, 9), constrained_layout=True)
     for column, proposal in enumerate(("original", "joined")):
