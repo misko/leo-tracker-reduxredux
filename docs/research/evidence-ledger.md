@@ -79,6 +79,23 @@ shadow product while its physical interpretation remains candidate-only.
 
 ## Evidence synthesis by topic
 
+### Receiver channel group calibration failure on 12 October 2026
+
+The [eight-channel root cause report](../../reports/2026_10_12_fast_channel_root_cause/README.md)
+demonstrates a missing receiver-specific frequency offset between CH1–4 and
+CH5–8 on `fast-4b6fff793fba610ed2674dcc6d2908ba`. The same-window full replay
+with two frozen group offsets changes reference position error from 231.00 km
+to 1.81 km and posterior signal mass from 1,104.5 to 3,065.0 of 3,433 windows.
+Matched static-c arms and conditional randomized block controls distinguish
+this effect from the continuous RF coefficient. This is **supported for the
+numerical failure on this scan**, with exploratory satellite candidates and
+RF hypotheses. The capture does not command or attest a physical LNB band
+switch; the physical origin of the frequency steps remains unresolved. The
+conditional holdout freezes all-data satellite proposals and does not establish
+independent identity or localization accuracy. Production calibration needs
+upstream receiver/tuning-group terms and independent qualification; the report
+does not deploy a numerical change.
+
 ### DS7–DS8 recurring-code study (28 September 2026)
 
 The [illustrated repeat-pass report](../../reports/2026-09-28-ds7-ds8-signal-structure.md)

@@ -37,6 +37,13 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+Eight-channel position regression: [receiver channel-group offset root cause
+analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
+recorded scan, two frozen receiver-specific group offsets change full-channel
+reference error from 231.00 km to 1.81 km. The report includes matched c arms,
+conditional randomized block controls, RF-mapping alternatives and the limits
+of attributing the effect to physical LNB retuning.
+
 Adaptive positioning default: [Hard60 experiment review and rollout](../reports/2026_10_07_hard60_default/README.md),
 including N01–N64 comparisons, failure diagnoses, figures and deployment receipts.
 
