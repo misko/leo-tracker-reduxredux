@@ -49,6 +49,11 @@ localization improvement and automatic deployment are not yet established.
 The [protected orbital-consistency iteration](../reports/2026_10_12_consistent_track_merge/README.md)
 separates quota eviction from changed orbital matches and preserves original
 discovery candidates while testing joined initialization proposals.
+The [band-calibrated merge ablation](../reports/2026_10_12_band_calibrated_merge/README.md)
+records 36 stationary local fits. Receiver-specific high-band offsets improve
+one exposed DS20 case in both c arms; soft joining adds no measurable gain over
+parent groups after calibration. Full-search transfer and corpus validation
+remain pending, with DS16 regressions and the recovered 156 km failure retained.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

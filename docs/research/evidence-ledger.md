@@ -117,6 +117,17 @@ shared-only joining improves DS20 fitted-c error to 2.755 km but worsens DS16.
 Common singleton-frequency metrics and conditional c arms are reported separately.
 These are **unqualified development outcomes**, not automatic-analysis defaults.
 
+The [joint band-calibration ablation](../../reports/2026_10_12_band_calibrated_merge/README.md)
+records all 36 stationary local fits and 59 passing component checks. On the first
+exposed DS20 example, independent calibrated marks reduce fitted-c error from
+3.209 to 2.728 km and c=0 error from 3.619 to 2.621 km. Soft parent and joined
+groups then yield essentially identical positions. Zero-offset initialization
+instead finds a poorer stationary branch. DS16 has no high-band rows in this
+control and calibration is an exact no-op; joining still regresses it. The same
+recording's verified offline reference resolves the recovery case's evaluation
+gap and exposes a 156.475/154.073 km baseline/protected-join failure. Full-search
+calibration transfer is running; no corpus-level improvement is claimed.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
