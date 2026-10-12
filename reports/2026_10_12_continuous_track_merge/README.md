@@ -12,6 +12,14 @@ Colored points are original passing GLRT CFO candidates assigned to the investig
 
 T9 and T16 on CH6 RX1 require a fourth-order curve to remove the systematic residual structure left by a cubic. T19 and T26 on CH3 RX0 are adequately described by one cubic. These examples support continuous trajectory proposals; they do not establish satellite identity.
 
+The updated figure below adds the original exact GLRT and control scores to the sealed prototype's curve fits. It reconstructs the recorded integer alias choices and boundary-probe deduplication, reproducing the saved fitted RMS to within 0.000001 Hz without refitting. The earlier figure above uses a different, previously saved block-test repetition count; the prototype's current receipts give 30.4 Hz and 95.6 Hz held-out RMS.
+
+![Original GLRT strength, joined curves, close-ups, and residuals](glrt-scores-and-merge-curves.png)
+
+T9/T16 is the cleaner pair: fitted RMS is 28.3 Hz, the two residual means are −1.2 Hz and +1.5 Hz, and one outlier reaches approximately −141 Hz. T19/T26 has fitted RMS 79.5 Hz and outliers up to 320 Hz, but its segment RMS values are similar, 82.2 Hz and 78.6 Hz, with both mean residuals within 0.1 Hz of zero. Scatter changes within the segments, so perfectly uniform independent noise has not been established. Neither pair exhibits an obvious frequency step or slope break at the join; the boundary audit estimates steps of +16.4 Hz and −8.6 Hz, respectively.
+
+Exact GLRT scores span 0.334–0.625 for T9/T16 and 0.333–0.795 for T19/T26, while control scores remain approximately 0.03–0.06. Both segments therefore retain strong measured detections. T19/T26 strengthens gradually across time, which does not by itself imply a change of satellite. These panels contain only passing candidates assigned to the two investigated pairs, not all attempted windows. Grey gaps represent missing retained measurements; the continuous curve inside each gap is a prediction. [Plot receipts](glrt-scores-and-merge-curves.json) record input, script, and image hashes. The rendering tool is [plot_continuous_merge_anchors.py](../../tools/plot_continuous_merge_anchors.py).
+
 ## Joining algorithm
 
 The implementation considers consecutive segments on the same channel, edge, receiver, and actual RF tuning, with a gap of at most eight seconds. Overlap of up to 50 ms permits a shared boundary probe; the union retains one existing candidate per probe. Different RF lanes retain the existing grouping behavior.
