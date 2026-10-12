@@ -1,5 +1,7 @@
 # Nested curve prediction and receiver drift
 
+The [bounded clock-conditioned initializer experiment](../clock-conditioned/README.md) now tests that coupled profiling on the fixed eight-recording development panel. All 48 initializer runs complete and 87/96 coarse attempts are stationary. Synthetic recovery does not qualify the recording prototype: it loses better original seeds in nine conditions, produces mixed frequency effects and exceeds the existing time budget in the measured workload. The next version needs explicit incumbents and less duplicated profiling.
+
 Continuous joins often improve withheld frequency prediction across the pinned DS20 and DS16 populations, but that improvement does not identify the known sparse-case position regression. The stricter curve test supplies trajectory evidence, not a reliable rule for selecting the better position solution. A separate fixed-point probe shows that common receiver drift changes several orbital candidate preferences, motivating joint clock and candidate profiling as the next algorithm experiment.
 
 This comparison covers **all 18 DS20 and all 63 DS16 recordings** in the original membership authority. It does not expand the earlier position experiment to all 81 recordings. DS15 still needs its original membership authority. The [previous downstream investigation](../refinement/README.md) retains the position comparisons and their controlled c=0/fitted-c arms.
