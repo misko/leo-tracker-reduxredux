@@ -62,6 +62,12 @@ Its complete-parent and clock-weight audits show that the sparse regression's
 added fragment agrees with its selected parent; adding its rows drives the clock
 seed change even when original row weights are preserved. Plots also trace the
 changed correction-training support, without claiming a position repair.
+The [nested curve census](../reports/2026_10_12_band_calibrated_merge/predictive-curves/README.md)
+now covers all 18 DS20 and 63 DS16 recordings: joining predicts better on 244 of
+316 testable components, with 146 unsupported components retained. It also
+predicts better in the known sparse position-regression case. A same-point probe
+shows receiver drift changes 5–7 original orbital candidate preferences; joint
+clock/candidate initialization remains to be tested.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

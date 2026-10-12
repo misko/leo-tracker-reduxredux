@@ -163,6 +163,18 @@ rows and 28 confident candidate preferences. These reference-free audits isolate
 initialization and calibration paths; they are not position re-fits or a qualified
 weight-only repair. Existing numerical models and production defaults are unchanged.
 
+The [nested prediction and receiver-drift census](../../reports/2026_10_12_band_calibrated_merge/predictive-curves/README.md)
+covers all 81 DS20/DS16 recordings and 462 final guarded components. Of 316
+testable components, 244 predict better when joined; 146 remain explicitly
+unsupported. Outer withheld values cannot influence training predictions or
+degree choices, verified by a mutation test among 50 passing analysis tests.
+The known sparse CH2 position-regression join predicts better too (38.32 versus
+65.60 Hz), disproving improved curve prediction as a sufficient repair. Existing
+common receiver drift states change 5–7 of 24 original shape-profile candidate
+preferences at a fixed point and catalogue, while that CH2 pair stays stable.
+This motivates joint clock/candidate profiling without asserting physical truth,
+position improvement, or full-corpus geographic qualification. DS15 remains open.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
