@@ -85,6 +85,11 @@ The [full B7 incumbent comparison](../reports/2026_10_12_band_calibrated_merge/f
 has now frozen the same development panel and started bounded execution using
 the complete 400-point search rather than the earlier selected points. Both
 final c arms remain matched; no new position improvement is established yet.
+Its first raw full control now completes both stationary B7 arms at 3.209 km
+(fitted c) and 3.619 km (c=0), reproducing every one of the 400 earlier ordered
+bootstrap seeds exactly. The joined mode remains in progress. Report receipts
+retain all 48 planned conditions and separate operational fallbacks from
+same-stage c comparisons; the new geographic merge effect is not yet available.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

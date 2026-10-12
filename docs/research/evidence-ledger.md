@@ -214,6 +214,17 @@ verify observation/RF identity, audit retention, recording roles, exclusion of
 earlier selected points and frozen-protocol protection. Numerical execution has
 started; a yielded slice is incomplete and no new geographic gain is claimed.
 
+The first full raw original-control mode now completes both stationary B7 arms
+with a common 17-candidate bank: reference error 3.209/3.619 km and frequency NLL
+38,814.197/38,840.001 for fitted-c/zero-c. All 400 shared bootstrap catalogue
+orders and vectors exactly reproduce the previous full control. The joined mode
+is executing; this control reproduction is not a geographic merge improvement.
+The incremental report seals numerical terminals before reading reference
+metadata, retains all 48 planned conditions, and independently reports the latest
+stationary common c stage if operational fallbacks differ. Four additional checks
+cover that selection, locked RF terms, immutable terminal verification and
+catalogue identity. Reference coordinates remain configured evaluation metadata.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

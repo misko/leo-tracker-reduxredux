@@ -1,8 +1,44 @@
 # Full position comparison of retained clock seeds
 
 This experiment moves the [seed-retention repair](../incumbent-clock/README.md)
-from fixed-point frequency checks into the full B7 position pipeline. Numerical
-execution has started; no new geographic improvement is established yet.
+from fixed-point frequency checks into the full B7 position pipeline. The first
+full control is complete and reproduces all 400 previous bootstrap seeds exactly.
+Its corresponding joined condition is still executing; no new geographic
+improvement is established yet.
+
+## First completed control
+
+For DS20 `fast-014c72ff95ab599c51ba3b3ec9b92cb8`, the raw original-control
+condition completes the full search and both final arms accept stationary B7
+solutions with the same 17-candidate bank:
+
+| Arm | Error to configured reference | Frequency NLL | Total objective |
+|---|---:|---:|---:|
+| Fitted c | 3.209 km | 38,814.197 | 38,882.695 |
+| c=0 | 3.619 km | 38,840.001 | 38,904.946 |
+
+These are control results, not a merge gain. All 400 shared search points have
+the same ordered catalogue identities and exact seed vectors as the earlier
+unmerged full control: zero bank differences, zero vector differences and zero
+failed prior points. The [progress receipt](progress.json) pins that oracle's
+terminal, bank, protocol and per-point input hashes. It also retains every one
+of the 48 planned conditions, including all unfinished modes. Current progress
+is one completed/evaluated condition and no terminal failures.
+
+![Completed full control: position and frequency effects](position-and-frequency.png)
+
+The frequency panel shows NLL relative to the fitted-c original control for the
+same recording and calibration. It separates frequency-fit changes from error
+to the configured receiver reference, which is evaluation metadata rather than
+surveyed ground truth. No incomplete condition is plotted as a completed result.
+
+The [numerical seal](numerical-seal.json) is written before opening reference
+stores. The report independently retains operational accepted stages and the
+latest stage at which both c arms are stationary, selected by the frozen stage
+order rather than accuracy. If an operational fallback differs, a same-stage
+comparison remains explicit instead of conflating the two models.
+
+## Matched inference and scope
 
 The [frozen protocol](protocol.json) retains the same eight development
 recordings, original whole-recording roles, observation inventories, initial
@@ -54,3 +90,10 @@ The protocol already exists in the executed scientific tree; resume with
 development evidence, not a fresh validation set or whole-corpus qualification.
 Full DS20/DS16 geographic comparisons and the authoritative DS15 membership
 remain outstanding. No new RF collection or QNAP write is required.
+
+The [posthoc report tool](../../../tools/report_full_incumbent_merge.py) has
+four additional checks for common-stage fallback selection, matching parameter
+inventories and locked RF terms, append-only numerical sealing, and catalogue
+identity in control comparisons. These pass in both checkouts. Reports can be
+regenerated as terminals accumulate; changing a previously sealed terminal
+fails verification. Numerical sources and inference protocols remain frozen.
