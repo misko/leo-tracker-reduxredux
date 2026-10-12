@@ -82,7 +82,19 @@ def comparison(member):
             )
     target = OUT / "full-development" / member["dataset"] / member["session_id"]
     target.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(evaluation_path, target / "evaluation.json")
+    write(
+        target / "evaluation.json",
+        {
+            "dataset": member["dataset"],
+            "session_id": member["session_id"],
+            "rows": rows,
+            "c_arm_checks": checks,
+            "reference": evaluation["reference"],
+            "source_evaluation": str(evaluation_path),
+            "source_evaluation_sha256": sha(evaluation_path),
+            "numerical_seal_sha256": evaluation["seal_sha256"],
+        },
+    )
     return {
         "dataset": member["dataset"],
         "session_id": member["session_id"],
@@ -212,9 +224,41 @@ def main():
         if ep.exists():
             target = OUT / "validation" / ds / sid
             target.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(ep, target / "evaluation.json")
             status["evaluation_sha256"] = sha(ep)
-            status["evaluation"] = json.loads(ep.read_bytes())
+            original_evaluation = json.loads(ep.read_bytes())
+            if ds == "DS16":
+                compact = {
+                    k: original_evaluation[k]
+                    for k in (
+                        "dataset",
+                        "session_id",
+                        "reference",
+                        "reference_evidence",
+                        "seal_sha256",
+                    )
+                }
+                compact["results"] = {}
+                for mode, arms in original_evaluation["results"].items():
+                    compact["results"][mode] = {}
+                    for arm, entry in arms.items():
+                        compact["results"][mode][arm] = {
+                            "reference_error_m": entry["selected"]["horizontal_error_m"],
+                            "objective": entry["selected"]["objective"],
+                            "posterior_rms_hz": entry["selected"]["posterior_rms_hz"],
+                            "likelihood_nll": entry["likelihood_nll"],
+                            "accepted_stage": entry["accepted_stage"],
+                        }
+                status["evaluation"] = compact
+            else:
+                status["evaluation"] = original_evaluation
+            write(
+                target / "evaluation.json",
+                {
+                    **status["evaluation"],
+                    "source_evaluation": str(ep),
+                    "source_evaluation_sha256": sha(ep),
+                },
+            )
             status["c_arm_checks"] = []
             for mode in member["planned_modes"]:
                 terminal = json.loads((base / mode / "terminal.json").read_bytes())
@@ -317,11 +361,12 @@ def main():
             ),
         },
     )
-    if any(s["evaluation_available"] for s in statuses):
-        fig, ax = plt.subplots(figsize=(10, 4.5), constrained_layout=True)
-        for status in statuses:
-            if status["dataset"] != "DS20" or not status["evaluation_available"]:
-                continue
+    ds20 = [s for s in statuses if s["dataset"] == "DS20" and s["evaluation_available"]]
+    if ds20:
+        fig, axes = plt.subplots(
+            1, len(ds20), figsize=(7 * len(ds20), 4.5), constrained_layout=True, squeeze=False
+        )
+        for ax, status in zip(axes[0], ds20, strict=True):
             rows = status["evaluation"]["rows"]
             modes = ["raw-original", "raw-joined", "cal-original", "cal-joined"]
             lookup = {(r["mode"], r["arm"]): r for r in rows}
@@ -337,12 +382,15 @@ def main():
                     color=color,
                     label=arm,
                 )
-            ax.set_xticks(x, modes)
-            ax.set_title(status["session_id"])
+            ax.set_xticks(x, modes, fontsize=8)
+            ax.set_title("DS20 " + status["session_id"][5:13])
             ax.set_ylabel("Configured-reference error (km)")
             ax.grid(axis="y", alpha=0.2)
             ax.legend()
-            break
+        fig.suptitle(
+            "Fixed DS20 validation batch · per-panel scales differ\n"
+            "Sparse raw-original c=0 uses C6 fallback; other selected outputs use B7"
+        )
         fig.savefig(OUT / "first-validation.png", dpi=160)
         plt.close(fig)
     print(

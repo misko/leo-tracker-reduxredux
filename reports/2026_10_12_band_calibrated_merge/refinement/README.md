@@ -63,7 +63,7 @@ For DS20 `fast-25fd9dd564a789d071beddbf64e9760d`, all four full searches complet
 | Fixed band calibration, original | 4.000 | 3.860 | 34,806.163 / 34,874.106 |
 | Fixed band calibration, joined | 4.000 | 3.860 | 34,806.163 / 34,874.106 |
 
-![First DS20 validation result](first-validation.png)
+![Both DS20 validation results, including the sparse-case regression](first-validation.png)
 
 Raw merging improves this recording by approximately 9.33/9.01 km. Fixed calibration also improves the raw original result, but merging adds no measurable benefit after calibration. The calibrated solution has a much lower frequency NLL yet worse position accuracy than raw merging. Final bank identities differ across conditions; these are operational model outcomes, not a same-bank objective comparison. Within each condition the c arms share stationary B7 stages and final banks.
 
@@ -90,6 +90,14 @@ The approximately 893 m / 1,769 m regressions from calibrated original to calibr
 The raw original c=0 run falls back to C6 because its B7 attempt has stationarity 0.001451, above the 0.001 requirement. The fitted-c output is B7. Those operational outputs therefore **do not constitute a same-model c ablation**. The existing common C6 attempts provide the controlled comparison: fitted-c error 1.156 km versus c=0 error 0.530 km, with frequency NLL 48,364.060 versus 49,525.927. Both are stationary, share the same bank, non-RF start, priors and stage budgets, and are independently recorded in [the common-stage receipt](validation/DS20/fast-43ce59233fe914e1d273ee584efcd405/common-stage-raw-original.json). No failed B7 fit is promoted or silently excluded.
 
 All other validation conditions' c arms share stationary B7 stages and final banks. [Validation status and receipts](validation-status.json) record every selected member, numerical state, fallback and common-stage check. These results support a large improvement on one raw DS20 validation recording, neutral DS16 results, and a calibrated-merging regression on the second DS20 recording. They do not qualify unconditional calibrated merging. Distances throughout use the configured operator/pipeline reference, not a surveyed capture GPS fix.
+
+## The sparse regression changes the clock seed without changing the initial bank
+
+A [read-only bootstrap audit](seed-sampling-and-weight-audit.json) compares the calibrated branches at their common data-selected winning basin, `point:-92.5:-82.5`. The initial candidate indices and per-match timing estimates are identical. Both contain 24 accepted shape matches and use 288 sampled shape rows. One selected support grows from 73 to 113 rows, incorporating 40 observations outside the original selected support; the downstream observation inventory itself is unchanged.
+
+The receiver-line bootstrap uses per-row squared weights `sqrt(min(track_length,100))/track_length` before its robust residual loss. Thus changing the grouping also changes the nominal weights of existing observations. The full receiver-line support increases from 1,751 to 1,791 distinct rows, while its total nominal squared weight changes from 200.338 to 201.794. The resulting RX1 seed intercept shifts by +76.481 Hz and its slope by −2.156 Hz/s. RX0 and all initial timing parameters remain unchanged.
+
+At the same fixed point and same initial bank, the two coarse fits are both stationary but have objectives 54,662.491 and 53,469.707. Receiver-clock calibration then follows those different coarse solutions, and downstream association produces different final candidate sets and positions. This supplies a concrete initialization path for the regression even though the original discovery bank was protected. It does not by itself prove that the additional rows or the join are physically incorrect. The next audit should distinguish complete-parent orbital agreement, support weighting, and subsequent candidate reassociation rather than simply increasing the curve RMS limit.
 
 ## Verification and next work
 
