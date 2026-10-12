@@ -1,5 +1,7 @@
 # Common clock conditioning and protected joins
 
+The [profile-reuse and incumbent follow-up](../incumbent-clock/README.md) now retains original and intermediate states. All 96 fixed conditions return valid seeds without worsening their original coherence score; previous controls reproduce exactly. Profiling work is reduced, while 22 five-second explorations remain interrupted and coarse-frequency effects are mixed. Those improvements do not yet qualify localization.
+
 Joint consideration of receiver drift and orbital shape resolves a constructed ambiguous-candidate example, but the first recording prototype remains unqualified. On eight fixed development recordings, all 48 initializer conditions execute; 87 of 96 subsequent coarse fits meet stationarity. Conditioning loses a better original clock seed in nine paired conditions, gives mixed coarse-frequency effects and exceeds the existing initializer budget in this experiment. These findings identify concrete requirements for the next version, rather than establish position improvement.
 
 The [full-population curve census](../predictive-curves/README.md) showed that improved withheld curve prediction would still accept the known sparse position-regression join. Its receiver-drift probe changed 5–7 candidate preferences elsewhere in that scan. This experiment tests a coupled initializer in response. The full requested DS20/DS16 position comparisons and DS15 membership remain outstanding.
