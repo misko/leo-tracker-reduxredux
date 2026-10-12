@@ -225,6 +225,19 @@ stationary common c stage if operational fallbacks differ. Four additional check
 cover that selection, locked RF terms, immutable terminal verification and
 catalogue identity. Reference coordinates remain configured evaluation metadata.
 
+The first raw joined-control is now complete and exactly matches the original
+control's final errors, objectives and banks in both c arms. Of 400 joined search
+points, 276 retain original seeds and 124 select a joined pass; both final arms
+use `point:-77.5:-82.5`, where the original incumbent wins. A posthoc audit of
+the largest coherence gain at `(-122.5,-82.5)` reproduces both saved costs with
+all supports assigned and visible: no unmatched penalty drives this example.
+The same 14-candidate bank improves seed frequency NLL by 513.654 and saved
+stationary coarse objective by 487.552; RX1 clock seed moves from −50 to +8.369
+Hz/s and candidate 66484 timing from −14 to −12 s. This coupled point-level gain
+does not change the winning position route. The first pair is geographically
+neutral; clock-conditioned modes remain in progress, with no physical clock,
+satellite identity, or general localization improvement inferred from the audit.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

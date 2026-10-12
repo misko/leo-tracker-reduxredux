@@ -87,9 +87,15 @@ the complete 400-point search rather than the earlier selected points. Both
 final c arms remain matched; no new position improvement is established yet.
 Its first raw full control now completes both stationary B7 arms at 3.209 km
 (fitted c) and 3.619 km (c=0), reproducing every one of the 400 earlier ordered
-bootstrap seeds exactly. The joined mode remains in progress. Report receipts
+bootstrap seeds exactly. Report receipts
 retain all 48 planned conditions and separate operational fallbacks from
-same-stage c comparisons; the new geographic merge effect is not yet available.
+same-stage c comparisons.
+The first joined mode is now complete and gives exactly the same final positions
+and scores in both c arms. It retains the original seed at the winning basin,
+despite improving some other search points. A saved-point diagnostic traces one
+gain to coupled timing/clock initialization rather than unmatched penalties.
+The clock-conditioned modes are executing; this first pair is geographically
+neutral and does not establish a general merge improvement.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

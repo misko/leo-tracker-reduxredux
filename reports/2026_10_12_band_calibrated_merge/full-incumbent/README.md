@@ -2,20 +2,23 @@
 
 This experiment moves the [seed-retention repair](../incumbent-clock/README.md)
 from fixed-point frequency checks into the full B7 position pipeline. The first
-full control is complete and reproduces all 400 previous bootstrap seeds exactly.
-Its corresponding joined condition is still executing; no new geographic
-improvement is established yet.
+full unmerged/joined pair is complete and produces identical final positions and
+scores in both c arms. The unmerged control also reproduces all 400 previous
+bootstrap seeds exactly. The clock-conditioned comparison is now executing;
+no new geographic improvement is established yet.
 
-## First completed control
+## First completed pair
 
 For DS20 `fast-014c72ff95ab599c51ba3b3ec9b92cb8`, the raw original-control
-condition completes the full search and both final arms accept stationary B7
-solutions with the same 17-candidate bank:
+and raw joined-control conditions complete the full search. All four final arms
+accept stationary B7 solutions with the same 17-candidate bank:
 
-| Arm | Error to configured reference | Frequency NLL | Total objective |
-|---|---:|---:|---:|
-| Fitted c | 3.209 km | 38,814.197 | 38,882.695 |
-| c=0 | 3.619 km | 38,840.001 | 38,904.946 |
+| Mode | Arm | Error to configured reference | Frequency NLL | Total objective |
+|---|---|---:|---:|---:|
+| Original | Fitted c | 3.209 km | 38,814.197 | 38,882.695 |
+| Joined | Fitted c | 3.209 km | 38,814.197 | 38,882.695 |
+| Original | c=0 | 3.619 km | 38,840.001 | 38,904.946 |
+| Joined | c=0 | 3.619 km | 38,840.001 | 38,904.946 |
 
 These are control results, not a merge gain. All 400 shared search points have
 the same ordered catalogue identities and exact seed vectors as the earlier
@@ -23,7 +26,15 @@ unmerged full control: zero bank differences, zero vector differences and zero
 failed prior points. The [progress receipt](progress.json) pins that oracle's
 terminal, bank, protocol and per-point input hashes. It also retains every one
 of the 48 planned conditions, including all unfinished modes. Current progress
-is one completed/evaluated condition and no terminal failures.
+is two completed/evaluated conditions and no terminal failures.
+
+Across the joined search's 400 bootstrap points, 276 retain the original seed
+and 124 choose a joined pass, without interruption. Both final arms come from
+the same baseline basin, `point:-77.5:-82.5`, whose initializer retains the
+original seed. The joined pass at that point has slightly worse coherence
+(380,564,909.520 versus 380,523,687.713), so incumbent selection preserves the
+control route. Other point-level improvements therefore do not change the
+winning final solution in this recording.
 
 ![Completed full control: position and frequency effects](position-and-frequency.png)
 
@@ -37,6 +48,40 @@ stores. The report independently retains operational accepted stages and the
 latest stage at which both c arms are stationary, selected by the frozen stage
 order rather than accuracy. If an operational fallback differs, a same-stage
 comparison remains explicit instead of conflating the two models.
+
+## A point-level gain is not a position gain
+
+The [saved-seed diagnostic](seed-score-audit.json) selects the largest coherence
+gain among the first joined search's 400 points, at `(-122.5, -82.5)` km. It is
+a posthoc development diagnostic and uses no geographic reference or refitting.
+Both seeds retain the same 14-candidate bank; every original support is assigned
+and visible, so neither has an unmatched/invisible penalty contribution.
+
+| Quantity | Original seed/path | Joined seed/path |
+|---|---:|---:|
+| Fixed-support coherence cost | 592,016,185.077 | 494,242,970.657 |
+| Actual mixture seed frequency NLL | 43,983.182 | 43,469.528 |
+| Saved stationary coarse objective | 42,248.932 | 41,761.381 |
+| RX1 clock-seed slope | −50.000 Hz/s | +8.369 Hz/s |
+| Candidate 66484 timing seed | −14 s | −12 s |
+
+Joining changes coupled timing and clock initialization at this point. RX1 moves
+off its drift bound, while some original proposal residuals improve and others
+worsen. Those are numerical seed estimates, not measurements of the physical
+clock or proof of correct satellite identities. The joint seed's frequency NLL
+improves by 513.654 and its saved coarse objective by 487.552, but this point does
+not become the winning position route.
+
+![Common-clock residuals at the diagnostic point](seed-score-residuals.png)
+
+These are residuals before coarse fitting, with c=0 in both seed vectors, and
+no separately fitted constant for each proposal. They are not the residuals of
+the smooth joined CFO curves or the final B7 solution. The saved production
+coarse fits allow fitted c; their comparison is a same-bank operational path
+diagnostic, not an additional paired coarse c ablation. Both final c arms remain
+matched in the full experiment above. All numeric contributions reproduce the
+frozen coherence function and saved point scores with explicit closure checks;
+the diagnostic source, snapshot inputs and figure hashes are retained.
 
 ## Matched inference and scope
 
