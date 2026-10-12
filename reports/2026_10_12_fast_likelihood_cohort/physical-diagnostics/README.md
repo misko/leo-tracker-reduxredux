@@ -79,7 +79,12 @@ with 12 uniform-area random points within 5 km, eight boundary points, eight
 1 km neighbors, the seven original probe points, and three refinement rounds
 per arm. The same two starts initialize both arms at every evaluated position.
 These expanded searches are conditional on the original frozen candidate pools;
-their new preferred points still require a full-catalogue audit.
+the [subsequent full-catalogue audits](../residual-audit/README.md) now cover
+the reference and both preferred points for all three completed expanded searches.
+They reproduce fitted-c scores, but find a better zero-c fit on the upper
+development scan at its fitted-c preferred point. Its best audited zero-c
+distance becomes 1.35 km. The table below retains the original conditional
+surfaces, rather than relabeling them as the audited profile.
 
 | Scan | Paired positions | c=0 best distance / reference gap | Fitted-c best distance / reference gap |
 |---|---:|---:|---:|
@@ -130,7 +135,7 @@ criterion. Its matched c=0 search prefers (0 m east, 250 m north), gap 0.88,
 and passes the conditional sampled-surface criterion. Three other original
 validation scans fail even the small probe. Thus there is at most one
 retrospective c=0 pass among four and no fitted-c pass, with new preferred points
-still awaiting full-catalogue audits. No fresh validation or cohort success is
+subsequently audited for the three expanded searches. No fresh validation or cohort success is
 claimed. All four original validation assignments remain in the denominator.
 
 ## Other measured diagnostics
