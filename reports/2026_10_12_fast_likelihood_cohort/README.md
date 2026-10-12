@@ -31,6 +31,11 @@ compare band drift and a fixed-reception-frame phase perturbation with matched
 c=0 and fitted-c probes. Frequency gains remain separate from position results;
 the accuracy objective is still open.
 
+The [full-catalogue audits and joint source-frequency experiment](residual-audit/README.md)
+reproduce fitted-c endpoints, expose a zero-c initialization effect, and inspect
+candidate-weighted residuals. Per-satellite additive bias improves frequency
+scores but has mixed geographic effects and has not been validated across the cohort.
+
 ## Method
 
 Use verified existing recording exports and past-only archived elements. Freeze

@@ -29,6 +29,8 @@ def replay_endpoint(data, rf, prediction, opportunity, fit, config):
         or not np.isclose(weights.sum(), 1, atol=1e-9, rtol=0)
     ):
         raise ValueError("endpoint activity weights are not normalized")
+    if config.satellite_bias_sigma_hz is not None:
+        prediction = prediction + np.asarray(fit["satellite_bias_hz"])[fit["active"]][None, :]
     ratios = wrapped_ratios(data, prediction, opportunity, design, fit["beta"], config)
     raw = float(np.log(weights[0] + ratios @ weights[1:]).sum())
     groups = int(data.group.max()) + 1
@@ -47,6 +49,10 @@ def replay_endpoint(data, rf, prediction, opportunity, fit, config):
         prior += 0.5 * np.sum(
             (np.asarray(fit["satellite_phase_s"]) / config.relative_phase_sigma_s) ** 2
         )
+    if config.satellite_bias_sigma_hz is not None:
+        prior += 0.5 * np.sum(
+            (np.asarray(fit["satellite_bias_hz"]) / config.satellite_bias_sigma_hz) ** 2
+        )
     score = raw - prior - config.satellite_penalty * len(fit["active"])
     if not np.isclose(raw, fit["log_ratio"], atol=1e-6, rtol=0) or not np.isclose(
         score, fit["score"], atol=1e-6, rtol=0
@@ -55,7 +61,14 @@ def replay_endpoint(data, rf, prediction, opportunity, fit, config):
     return dict(log_ratio=raw, score=float(score), nuisance_prior_cost=float(prior))
 
 
-def paired_summary(base, alternative, base_rows, alternative_rows):
+def paired_summary(
+    base,
+    alternative,
+    base_rows,
+    alternative_rows,
+    *,
+    changed_config_keys=("band_drift_sigma_hz_s",),
+):
     for key in (
         "input_digest",
         "orbit_digest",
@@ -72,8 +85,9 @@ def paired_summary(base, alternative, base_rows, alternative_rows):
     base_config = dict(base["config"])
     alternative_config = dict(alternative["config"])
     # This report compares either this added nuisance or the orbital frame.
-    base_config.pop("band_drift_sigma_hz_s", None)
-    alternative_config.pop("band_drift_sigma_hz_s", None)
+    for key in changed_config_keys:
+        base_config.pop(key, None)
+        alternative_config.pop(key, None)
     if base_config != alternative_config:
         raise ValueError("paired diagnostic priors or iteration budgets differ")
 

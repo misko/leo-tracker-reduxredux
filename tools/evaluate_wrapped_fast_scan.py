@@ -122,11 +122,13 @@ def restrict_candidates(bank, phase_bank, seeds, pool, metadata):
         if any(s not in remap for s in seed["active"]):
             raise ValueError("pool must retain every seeded satellite")
         delta = seed.get("satellite_phase_s")
+        bias = seed.get("satellite_bias_hz")
         converted.append(
             dict(
                 seed,
                 active=[remap[s] for s in seed["active"]],
                 satellite_phase_s=None if delta is None else np.asarray(delta)[indices].tolist(),
+                satellite_bias_hz=None if bias is None else np.asarray(bias)[indices].tolist(),
             )
         )
     local_bank = dict(bank)
@@ -336,6 +338,7 @@ def sweep(args):
             active=x["active"],
             phase_s=x.get("phase_s", 0.0),
             satellite_phase_s=x.get("satellite_phase_s"),
+            satellite_bias_hz=x.get("satellite_bias_hz"),
             weights=x.get("weights"),
             coefficient_hz_ghz=x.get("coefficient_hz_ghz", 0.0),
         )
@@ -361,6 +364,7 @@ def sweep(args):
         em_iterations=60,
         nuisance_iterations=args.nuisance_iterations,
         band_drift_sigma_hz_s=args.band_drift_sigma_hz_s,
+        satellite_bias_sigma_hz=args.satellite_bias_sigma_hz,
         relative_phase_sigma_s=args.relative_phase_sigma_s,
         nuisance_solver=args.nuisance_solver,
     )
@@ -472,6 +476,7 @@ def sweep(args):
                         active=seed["active"],
                         phase_s=seed["phase_s"],
                         satellite_phase_s=seed["satellite_phase_s"],
+                        satellite_bias_hz=seed["satellite_bias_hz"],
                         weights=seed["weights"],
                     )
                 )
@@ -595,6 +600,7 @@ def main():
     b.add_argument("--inertial-phase", action="store_true")
     b.add_argument("--relative-phase-sigma-s", type=float)
     b.add_argument("--band-drift-sigma-hz-s", type=float)
+    b.add_argument("--satellite-bias-sigma-hz", type=float)
     b.add_argument("--candidate-pool", type=Path)
     b.add_argument("--nuisance-solver", choices=("irls", "lbfgs"), default="irls")
     b.add_argument("--positions-json", type=Path)

@@ -35,6 +35,12 @@ def joint_value_gradient(
         )
     else:
         pred, opp = prediction[:, active], opportunity[:, active]
+    bias_start = cursor
+    biases = np.zeros(ns)
+    if config.satellite_bias_sigma_hz is not None:
+        biases = vector[cursor : cursor + ns] * scales[cursor : cursor + ns]
+        cursor += ns
+        pred = pred + biases[None, :]
     weights = softmax(np.r_[0.0, vector[cursor:]])
     ratio, derivative, _ = wrapped_ratios(evidence, pred, opp, design, beta, config, True)
     mixture = weights[0] + ratio @ weights[1:]
@@ -58,7 +64,12 @@ def joint_value_gradient(
         if config.relative_phase_sigma_s is not None:
             rp = 1 / config.relative_phase_sigma_s**2
             loss += 0.5 * rp * np.dot(delta, delta)
-            gradient.append((-local_gradient + rp * delta) * scales[nb + 1 : cursor])
+            gradient.append((-local_gradient + rp * delta) * scales[nb + 1 : bias_start])
+    if config.satellite_bias_sigma_hz is not None:
+        bp = 1 / config.satellite_bias_sigma_hz**2
+        loss += 0.5 * bp * np.dot(biases, biases)
+        local = np.sum(derivative * weights[None, 1:] / mixture[:, None], axis=0)
+        gradient.append((-local + bp * biases) * scales[bias_start:cursor])
     gradient.append(weights[1:] * (len(evidence.ids) - (ratio / mixture[:, None]).sum(axis=0)))
     return float(loss), np.concatenate(gradient)
 
@@ -76,8 +87,11 @@ def refine_wrapped(
     phase,
     shifts,
     weights,
+    *,
+    biases=None,
 ):
     nb, ns = len(beta), len(active)
+    biases = np.zeros(prediction.shape[1]) if biases is None else np.asarray(biases).copy()
     scales = np.full(nb, config.scale_hz)
     values = beta.tolist()
     bounds = [(None, None)] * nb
@@ -94,6 +108,13 @@ def refine_wrapped(
             scales = np.r_[scales, timing_scales]
             values.extend(shifts[active])
             bounds.extend([(-10.0, 10.0)] * ns)
+    bias_start = len(scales)
+    if config.satellite_bias_sigma_hz is not None:
+        scales = np.r_[scales, np.full(ns, config.scale_hz)]
+        values.extend(biases[active])
+        bounds.extend(
+            [(-10 * config.satellite_bias_sigma_hz, 10 * config.satellite_bias_sigma_hz)] * ns
+        )
     continuous = len(scales)
     scaled_bounds = [
         (None if lo is None else lo / s, None if hi is None else hi / s)
@@ -103,7 +124,17 @@ def refine_wrapped(
         np.asarray(values) / scales, np.log(np.maximum(weights[1:], 1e-12) / max(weights[0], 1e-12))
     ]
     scaled_bounds.extend([(-30.0, 30.0)] * ns)
-    args = (evidence, prediction, opportunity, design, precision, config, active, provider, scales)
+    args = (
+        evidence,
+        prediction,
+        opportunity,
+        design,
+        precision,
+        config,
+        active,
+        provider,
+        scales,
+    )
     baseline = joint_value_gradient(start, *args)[0]
     result = minimize(
         joint_value_gradient,
@@ -123,6 +154,8 @@ def refine_wrapped(
         phase = float(vector[nb] * scales[nb])
         if config.relative_phase_sigma_s is not None:
             shifts = shifts.copy()
-            shifts[active] = vector[nb + 1 : continuous] * scales[nb + 1 : continuous]
+            shifts[active] = vector[nb + 1 : bias_start] * scales[nb + 1 : bias_start]
+    if config.satellite_bias_sigma_hz is not None:
+        biases[active] = vector[bias_start:continuous] * scales[bias_start:continuous]
     weights = softmax(np.r_[0.0, vector[continuous:]])
-    return beta, phase, shifts, weights, -value - config.satellite_penalty * ns
+    return beta, phase, shifts, weights, -value - config.satellite_penalty * ns, biases
