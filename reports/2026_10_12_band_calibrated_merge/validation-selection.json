@@ -1,0 +1,57 @@
+{
+  "selection": "First two session IDs per corpus within existing randomized validation role; no readiness or accuracy filtering",
+  "membership_path": "/srv/bulk/leo-dev/leo-track-merge-study/reports/2026_10_12_continuous_track_merge/membership.json",
+  "membership_sha256": "7605e337678ea20d2f80dde25cbbd5c35e6dda69395533497536ea880571982c",
+  "split_seed": 20261012,
+  "split_rng": "NumPy PCG64",
+  "donor_session_id": "fast-014c72ff95ab599c51ba3b3ec9b92cb8",
+  "donor_role": "development",
+  "members": [
+    {
+      "dataset": "DS20",
+      "session_id": "fast-25fd9dd564a789d071beddbf64e9760d",
+      "role": "validation",
+      "planned_modes": [
+        "raw-original",
+        "raw-joined",
+        "cal-original",
+        "cal-joined"
+      ],
+      "calibration": "frozen development donor; same gamma for both c arms"
+    },
+    {
+      "dataset": "DS20",
+      "session_id": "fast-43ce59233fe914e1d273ee584efcd405",
+      "role": "validation",
+      "planned_modes": [
+        "raw-original",
+        "raw-joined",
+        "cal-original",
+        "cal-joined"
+      ],
+      "calibration": "frozen development donor; same gamma for both c arms"
+    },
+    {
+      "dataset": "DS16",
+      "session_id": "scan-fw-0b8d0887b97b192b",
+      "role": "validation",
+      "planned_modes": [
+        "baseline",
+        "consistent"
+      ],
+      "calibration": "No CH5-8 rows: fixed gamma transformation is exactly identity; compare protected joining with raw controls"
+    },
+    {
+      "dataset": "DS16",
+      "session_id": "scan-fw-0ffe1eede92820a9",
+      "role": "validation",
+      "planned_modes": [
+        "baseline",
+        "consistent"
+      ],
+      "calibration": "No CH5-8 rows: fixed gamma transformation is exactly identity; compare protected joining with raw controls"
+    }
+  ],
+  "reference_usage": "None for selection, preprocessing or inference; prior data exposure acknowledged",
+  "scope": "Initial fixed validation batch; does not replace full corpus requirements or missing DS15. Failure, nonstationarity and missing reference remain explicit."
+}

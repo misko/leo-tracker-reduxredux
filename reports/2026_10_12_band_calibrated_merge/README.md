@@ -100,6 +100,7 @@ Across every DS20 member, all 752 qualified lower-edge and 167 upper-edge segmen
 Use the existing scientific Python environment with `PYTHONPATH=src:tools` and one BLAS thread. The local tool refuses authority changes and output overwrites. Do not rerun `freeze` over existing protocols:
 
 ```bash
+python setup.py build_ext --inplace
 python tools/band_calibrated_merge_study.py freeze DS20 SESSION_ID
 python tools/band_calibrated_merge_study.py execute DS20 SESSION_ID --variant cal-independent --arm fitted-c
 python tools/band_calibrated_merge_study.py evaluate DS20 SESSION_ID
@@ -113,3 +114,5 @@ python tools/report_band_calibrated_merge.py
 The [recorded component check](test-results.txt) passes **59 tests**, covering band gradients, coefficient placement, c=0 locks, calibration-transform equivalence, continuous joins, shared marks, B7 model controls, bootstrap behavior and input preservation. Ruff passes for the new source and tools. No public persisted schema or production default changed.
 
 Next work must complete calibration-transfer searches, compare merging after calibration on the fixed broader development cohort, and test an explicitly frozen candidate on randomized whole-recording validation. All failures and fallback stages stay in the denominator. DS15 needs its original membership authority before it can be included. Neither the attractive anchor curves nor one improved local DS20 case fulfills the requested corpus-level improvement.
+
+The [initial validation batch](validation-selection.json) is now frozen: the first two session IDs per corpus within the existing randomized validation role, with no readiness or accuracy filtering. The DS20 members have 1,407 and seven high-band rows respectively; both remain included. Their four conditions use the same development-only donor calibration. Both DS16 members have zero high-band rows, so the fixed calibration transformation is exactly identity; their baseline and protected-join comparisons use the already frozen consistency runner. One DS20 validation member's four searches have started in bounded slices. No validation result is yet claimed. These exposed-data checks do not replace full corpus evaluation or the missing DS15 authority.
