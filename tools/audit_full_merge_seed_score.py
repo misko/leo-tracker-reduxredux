@@ -84,6 +84,17 @@ def decompose(observations, bank, tracks, seed):
     )
     return {
         "coherence": cost,
+        "receiver_clock_seed": {
+            str(rx): {
+                "offset_hz": float(seed.vector[2 + 2 * rx]),
+                "slope_hz_per_s": float(seed.vector[3 + 2 * rx]),
+            }
+            for rx in (0, 1)
+        },
+        "common_timing_s": float(seed.vector[7]),
+        "absolute_candidate_timing_s": dict(
+            zip(map(str, subset.numbers), shifts.tolist(), strict=True)
+        ),
         "tracks": rows,
         "unsupported_cost": sum(r["unsupported_cost"] for r in rows),
         "supported_cost": sum(r["supported_cost"] for r in rows),
