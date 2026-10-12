@@ -1,0 +1,240 @@
+{
+  "config": {
+    "scale_hz": 1000.0,
+    "period_hz": 227272.72727272726,
+    "satellite_penalty": 30.0,
+    "maximum_satellites": 40,
+    "iterations": 3,
+    "em_iterations": 35,
+    "nuisance_iterations": 30,
+    "drift_sigma_hz_s": 10.0,
+    "coefficient_sigma_hz_ghz": 2000.0
+  },
+  "seeds": [
+    [
+      -6230.063795853275,
+      -21182.21690590112,
+      -96441.38755980862,
+      -75508.37320574163
+    ],
+    [
+      -28159.88835725678,
+      14702.950558213714,
+      -87968.50079744816,
+      -98933.41307814993
+    ],
+    [
+      -6230.063795853275,
+      -6230.063795853275,
+      -96441.38755980862,
+      -96441.38755980862
+    ]
+  ],
+  "result": {
+    "score": 273.6045408818555,
+    "log_ratio": 427.218290249154,
+    "beta": [
+      -3856.834864093631,
+      -20290.63137041591,
+      -95028.22492686806,
+      -75402.79164560359,
+      -3624.7410880107755,
+      -1759.35294399362
+    ],
+    "labels": [
+      "offset-g0-hz",
+      "offset-g1-hz",
+      "offset-g2-hz",
+      "offset-g3-hz",
+      "drift-rx0-hz-per-half-scan",
+      "drift-rx1-hz-per-half-scan"
+    ],
+    "offsets_hz": [
+      -3856.834864093631,
+      -20290.63137041591,
+      -95028.22492686806,
+      -75402.79164560359
+    ],
+    "drift_hz_s": [
+      -24.185623390169326,
+      -11.739058509463634
+    ],
+    "coefficient_hz_ghz": 0.0,
+    "active": [
+      689,
+      253,
+      255,
+      703,
+      682
+    ],
+    "weights": [
+      0.7045388032843981,
+      0.07630269598946662,
+      0.07931008663929644,
+      0.05895230307525044,
+      0.032824355258136206,
+      0.048071755753452225
+    ],
+    "signal_support": [
+      275.4706665924751,
+      285.90778209007,
+      212.76160664929665,
+      118.32284747859771,
+      173.4788424320423
+    ],
+    "effective_background": 0.849698005464963,
+    "converged": false,
+    "iterations": 3,
+    "history": [
+      160.18337262906664,
+      211.68313528509836,
+      259.5537040243862
+    ],
+    "cardinality_curve": [
+      {
+        "satellites": 6,
+        "log_ratio": 457.07689571297556,
+        "penalized": 277.0768957129756
+      }
+    ],
+    "at_satellite_cap": false,
+    "starts": [
+      {
+        "score": 273.6045408818555,
+        "beta": [
+          -3856.834864093631,
+          -20290.63137041591,
+          -95028.22492686806,
+          -75402.79164560359,
+          -3624.7410880107755,
+          -1759.35294399362
+        ],
+        "active": [
+          689,
+          253,
+          255,
+          703,
+          682
+        ],
+        "converged": false
+      },
+      {
+        "score": 69.98860011695938,
+        "beta": [
+          -29231.664419394816,
+          13143.022846943873,
+          -86533.13273414475,
+          -99079.71610249516,
+          157.72979755259513,
+          -1418.4113832904582
+        ],
+        "active": [
+          709,
+          455
+        ],
+        "converged": false
+      },
+      {
+        "score": 124.77594411524177,
+        "beta": [
+          -5146.072248959521,
+          -9982.275081200263,
+          -96737.18834393597,
+          -96062.48165091516,
+          -1973.8244426480053,
+          -4177.7219088291195
+        ],
+        "active": [
+          253,
+          255,
+          689,
+          441
+        ],
+        "converged": false
+      }
+    ],
+    "search_exact": false,
+    "coefficient_enabled": false
+  },
+  "selected_seeds": [
+    {
+      "score": 273.6045408818555,
+      "beta": [
+        -3856.834864093631,
+        -20290.63137041591,
+        -95028.22492686806,
+        -75402.79164560359,
+        -3624.7410880107755,
+        -1759.35294399362
+      ],
+      "active": [
+        689,
+        253,
+        255,
+        703,
+        682
+      ],
+      "converged": false
+    },
+    {
+      "score": 124.77594411524177,
+      "beta": [
+        -5146.072248959521,
+        -9982.275081200263,
+        -96737.18834393597,
+        -96062.48165091516,
+        -1973.8244426480053,
+        -4177.7219088291195
+      ],
+      "active": [
+        253,
+        255,
+        689,
+        441
+      ],
+      "converged": false
+    }
+  ],
+  "evidence_receipt": {
+    "anchor_utc_ns": 1791811614608622520,
+    "causal_cutoff_utc_ns": 1791811614483514458,
+    "utc_half_width_s": 0.125108062,
+    "group_labels": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "receiver_factors": 7092,
+    "empty_factors": 5,
+    "duplicate_candidates_removed": 3007,
+    "distinct_candidates": 34468,
+    "duration_s": 299.9405324,
+    "mark_policy": "softmax-margin-temperature-0.1; q=0.05+0.9*clip(margin/0.1)",
+    "calibrated": false,
+    "alias_period_hz": 227272.72727272726,
+    "rf_mapping_authorities": [
+      "hypothesis"
+    ],
+    "run_id": "fast-76c6f9db8dafe6fe15fabef86be9dc75",
+    "scope": "conditional on the recorded LNB reference hypotheses",
+    "skipped_fast_score": 3214,
+    "window_count": 6760
+  },
+  "input_digest": "3942641d7009df3e7a69f67b7ab1185f16d038a183168de117d6ef6b6c2d13b3",
+  "orbit_digest": "44838cc49050b2badf49da5d41e83469ed26926ffe0682c2df434b5ed47671dc",
+  "elapsed_seconds": 23.80752982199192,
+  "scope": "response-dependent numerical starts at the common search origin; no reference error enters fitting"
+}

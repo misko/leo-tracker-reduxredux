@@ -79,6 +79,20 @@ shadow product while its physical interpretation remains candidate-only.
 
 ## Evidence synthesis by topic
 
+### Recent eight-channel likelihood development on 12 October 2026
+
+One additional dated Markdown report is indexed here:
+[six-scan alias-aware likelihood checkpoint](../../reports/2026_10_12_fast_likelihood_cohort/README.md).
+The historical campaign-finalization inventory above retains its original scope.
+The new cohort freezes six completed lower/upper-edge scans and a random whole-scan
+development/validation split. On one development scan, measured-track starts
+increase the modeled strong-evidence fraction from about 11% to 29%. A shared
+ephemeris-time nuisance raises one arm to 37%, while the fitted-c arm retains only
+29% despite a higher score. The zero-c shared-phase endpoint is not converged.
+These are **hypothesis-generating frequency diagnostics**. No new cohort position
+minimum, position improvement, validated satellite identities or production
+promotion is established; four validation scans remain untouched.
+
 ### Continuous track merging study on 12 October 2026
 
 The [protected orbital-consistency follow-up](../../reports/2026_10_12_consistent_track_merge/README.md)

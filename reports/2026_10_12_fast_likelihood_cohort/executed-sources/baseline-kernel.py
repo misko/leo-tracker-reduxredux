@@ -1,0 +1,244 @@
+"""Alias-aware sparse GLRT frequency likelihood with shared hardware nuisance.
+
+Frequency aliases live on the pilot's circle. Activity weights are shared across
+all receiver/windows; receiver/band offsets, receiver drift, and an optional RF
+coefficient are fitted jointly. This is a conditional composite likelihood,
+pending calibration of detector marks and observation dependence.
+"""
+
+from dataclasses import dataclass
+
+import numpy as np
+
+from leo.analysis.sparse_glrt_likelihood import fit_weights, select_sparse
+
+PILOT_ALIAS_HZ = 1 / 4.4e-6
+
+
+@dataclass(frozen=True)
+class WrappedConfig:
+    scale_hz: float = 250.0
+    period_hz: float = PILOT_ALIAS_HZ
+    satellite_penalty: float = 30.0
+    maximum_satellites: int = 40
+    iterations: int = 8
+    em_iterations: int = 50
+    nuisance_iterations: int = 40
+    drift_sigma_hz_s: float = 10.0
+    coefficient_sigma_hz_ghz: float = 2000.0
+
+    def __post_init__(self):
+        if any(
+            not np.isfinite(v) or v <= 0
+            for v in (
+                self.scale_hz,
+                self.period_hz,
+                self.drift_sigma_hz_s,
+                self.coefficient_sigma_hz_ghz,
+            )
+        ):
+            raise ValueError("positive finite frequency scales required")
+        if (
+            self.satellite_penalty < 0
+            or min(
+                self.maximum_satellites,
+                self.iterations,
+                self.em_iterations,
+                self.nuisance_iterations,
+            )
+            < 1
+        ):
+            raise ValueError("invalid sparse search parameters")
+
+
+def circular(value, period=PILOT_ALIAS_HZ):
+    return (np.asarray(value) + period / 2) % period - period / 2
+
+
+def smooth_visibility(elevation_deg, transition_deg=5.0):
+    """C1 opportunity taper above the geometric horizon, zero below it.
+
+    The transition width is a declared model assumption, not learned from site
+    position error. It removes the previous abrupt signal/clutter jump at zero.
+    """
+    elevation = np.asarray(elevation_deg, dtype=float)
+    if not np.isfinite(elevation).all() or transition_deg <= 0:
+        raise ValueError("finite elevation and positive transition required")
+    x = np.clip(elevation / transition_deg, 0, 1)
+    return x * x * (3 - 2 * x)
+
+
+def nuisance_design(evidence, rf_hz, *, coefficient=False):
+    rf = np.asarray(rf_hz, dtype=float)
+    groups = int(evidence.group.max()) + 1
+    if groups % 2 or rf.shape != evidence.time_s.shape or not np.isfinite(rf).all():
+        raise ValueError("paired receiver/band groups and finite RF required")
+    labels = [f"offset-g{g}-hz" for g in range(groups)]
+    columns = [evidence.group == g for g in range(groups)]
+    center = (evidence.time_s.min() + evidence.time_s.max()) / 2
+    span = max(1.0, (evidence.time_s.max() - evidence.time_s.min()) / 2)
+    for rx in range(groups // 2):
+        columns.append((evidence.group // 2 == rx) * (evidence.time_s - center) / span)
+        labels.append(f"drift-rx{rx}-hz-per-half-scan")
+    if coefficient:
+        frequency = np.zeros_like(rf)
+        for g in range(groups):
+            mask = evidence.group == g
+            if not mask.any():
+                raise ValueError("all receiver/band groups require observations")
+            frequency[mask] = (rf[mask] - np.mean(np.unique(rf[mask]))) / 1e9
+        columns.append(frequency)
+        labels.append("coefficient-hz-per-ghz")
+    design = np.column_stack(columns).astype(float)
+    if np.linalg.matrix_rank(design) != design.shape[1]:
+        raise ValueError("hardware nuisance design is unidentifiable")
+    return design, labels, span
+
+
+def wrapped_ratios(evidence, prediction_hz, opportunity, design, beta, config, derivative=False):
+    prediction = np.asarray(prediction_hz, dtype=float)
+    opportunity = np.asarray(opportunity, dtype=float)
+    design, beta = np.asarray(design, float), np.asarray(beta, float)
+    if (
+        prediction.ndim != 2
+        or prediction.shape[0] != len(evidence.ids)
+        or opportunity.shape != prediction.shape
+        or design.shape[0] != len(evidence.ids)
+        or beta.shape != (design.shape[1],)
+        or np.any(opportunity < 0)
+        or np.any(opportunity > 1)
+        or any(not np.isfinite(x).all() for x in (prediction, opportunity, design, beta))
+    ):
+        raise ValueError("invalid alias-model arrays")
+    value = np.zeros_like(prediction)
+    gradient, information = np.zeros_like(value), np.zeros_like(value)
+    a = 2 * np.pi * config.scale_hz / config.period_hz
+    rho = np.exp(-a)
+    numerator = -np.expm1(-2 * a)
+    base = np.expm1(-a) ** 2
+    mean = prediction + (design @ beta)[:, None]
+    for k in range(evidence.frequency_hz.shape[1]):
+        residual = circular(evidence.frequency_hz[:, k, None] - mean, config.period_hz)
+        z = np.pi * residual / config.period_hz
+        denominator = base + 4 * rho * np.sin(z) ** 2
+        term = evidence.candidate_weight[:, k, None] * numerator / denominator
+        value += term
+        if derivative:
+            gradient += term * (4 * rho * np.pi / config.period_hz) * np.sin(2 * z) / denominator
+            information += term * 2 / (config.scale_hz**2 + residual**2)
+    q = evidence.signal_probability[:, None] * opportunity
+    return (
+        (1 + q * (value - 1), q * gradient, q * information) if derivative else 1 + q * (value - 1)
+    )
+
+
+def fit_wrapped(evidence, prediction, opportunity, rf_hz, seeds, *, coefficient=False, config=None):
+    config = WrappedConfig() if config is None else config
+    design, labels, span = nuisance_design(evidence, rf_hz, coefficient=coefficient)
+    groups = int(evidence.group.max()) + 1
+    precision = np.zeros(design.shape[1])
+    precision[groups : groups + groups // 2] = 1 / (config.drift_sigma_hz_s * span) ** 2
+    if coefficient:
+        precision[-1] = 1 / config.coefficient_sigma_hz_ghz**2
+    results = []
+    for seed in seeds:
+        beta = np.zeros(design.shape[1])
+        values = seed.get("beta", seed.get("offsets_hz")) if isinstance(seed, dict) else seed
+        values = np.asarray(values, dtype=float)
+        if values.size == groups:
+            beta[:groups] = values
+        elif values.shape == beta.shape:
+            beta[:] = values
+        else:
+            raise ValueError("nuisance seed dimension mismatch")
+        active = list(seed.get("active", ())) if isinstance(seed, dict) else []
+        if len(active) > config.maximum_satellites or any(
+            s < 0 or s >= prediction.shape[1] for s in active
+        ):
+            raise ValueError("invalid satellite seed")
+        history, converged, previous = [], False, -np.inf
+        for iteration in range(config.iterations):
+            ratio = wrapped_ratios(evidence, prediction, opportunity, design, beta, config)
+            active, weights, raw, curve = select_sparse(ratio, config, active)
+            score = raw - 0.5 * np.dot(precision * beta, beta)
+            history.append(float(score))
+            if not active or (iteration and abs(score - previous) < 1e-4):
+                converged = True
+                break
+            previous = score
+            for _ in range(config.nuisance_iterations):
+                ratio, gradient, information = wrapped_ratios(
+                    evidence,
+                    prediction[:, active],
+                    opportunity[:, active],
+                    design,
+                    beta,
+                    config,
+                    True,
+                )
+                mixture = weights[0] + ratio @ weights[1:]
+                grad = design.T @ ((gradient @ weights[1:]) / mixture) - precision * beta
+                row_information = (information @ weights[1:]) / mixture
+                normal = design.T @ (row_information[:, None] * design) + np.diag(precision)
+                informed = np.diag(normal) > 1e-18
+                step = np.zeros_like(beta)
+                step[informed] = np.linalg.solve(normal[np.ix_(informed, informed)], grad[informed])
+                step *= min(1.0, 2000 / max(1.0, np.max(np.abs(design @ step))))
+                accepted = False
+                for damping in (1.0, 0.5, 0.25, 0.125, 0.0625):
+                    trial = beta + damping * step
+                    trial[:groups] = circular(trial[:groups], config.period_hz)
+                    ratio_new = wrapped_ratios(
+                        evidence,
+                        prediction[:, active],
+                        opportunity[:, active],
+                        design,
+                        trial,
+                        config,
+                    )
+                    w, ll = fit_weights(ratio_new, config.em_iterations, weights)
+                    proposed = (
+                        ll
+                        - config.satellite_penalty * len(active)
+                        - 0.5 * np.dot(precision * trial, trial)
+                    )
+                    if proposed > score + 1e-9:
+                        beta, weights, score, accepted = trial, w, proposed, True
+                        break
+                if not accepted or np.max(np.abs(design @ step)) < 0.02:
+                    break
+        ratio = wrapped_ratios(evidence, prediction, opportunity, design, beta, config)
+        active, weights, raw, curve = select_sparse(ratio, config, active)
+        score = raw - 0.5 * np.dot(precision * beta, beta)
+        mixture = weights[0] + ratio[:, active] @ weights[1:]
+        q = evidence.signal_probability[:, None] * opportunity[:, active]
+        mass = weights[None, 1:] * (ratio[:, active] - (1 - q)) / mixture[:, None]
+        results.append(
+            dict(
+                score=float(score),
+                log_ratio=float(np.log(mixture).sum()),
+                beta=beta.tolist(),
+                labels=labels,
+                offsets_hz=beta[:groups].tolist(),
+                drift_hz_s=(beta[groups : groups + groups // 2] / span).tolist(),
+                coefficient_hz_ghz=float(beta[-1]) if coefficient else 0.0,
+                active=active,
+                weights=weights.tolist(),
+                signal_support=mass.sum(axis=0).tolist(),
+                effective_background=float(np.mean(1 - mass.sum(axis=1))),
+                converged=converged,
+                iterations=iteration + 1,
+                history=history,
+                cardinality_curve=curve,
+                at_satellite_cap=len(active) == config.maximum_satellites,
+            )
+        )
+    if not results:
+        raise ValueError("at least one seed required")
+    best = max(results, key=lambda x: x["score"])
+    return {
+        **best,
+        "starts": [{k: r[k] for k in ("score", "beta", "active", "converged")} for r in results],
+        "search_exact": False,
+        "coefficient_enabled": coefficient,
+    }

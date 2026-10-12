@@ -37,6 +37,11 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+Recent eight-channel likelihood fitting: [six-scan development checkpoint](../reports/2026_10_12_fast_likelihood_cohort/README.md).
+Alias-aware and track-shape initialization controls improve the conditional
+frequency fit, but most strong evidence remains unexplained. The requested
+near-reference position minimum and four-scan validation are still open.
+
 Continuous track merging: [DS20 and DS16 study with GLRT curve overlays](../reports/2026_10_12_continuous_track_merge/README.md).
 The offline prototype joins consecutive curved segments and rejects injected
 steps and slope changes. Corpus positioning comparisons are in progress;
