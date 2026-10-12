@@ -175,6 +175,17 @@ preferences at a fixed point and catalogue, while that CH2 pair stays stable.
 This motivates joint clock/candidate profiling without asserting physical truth,
 position improvement, or full-corpus geographic qualification. DS15 remains open.
 
+The [bounded clock-conditioned initialization study](../../reports/2026_10_12_band_calibrated_merge/clock-conditioned/README.md)
+tests three common-slope starts with three damped passes on the fixed eight-member
+development panel. All 48 initializers execute and 87/96 paired coarse c attempts
+are stationary. Conditioning lowers 16/42 qualified coarse objectives; candidate
+banks frequently change, and only 2/8 same-bank comparisons improve. Nine pairs
+lose a better original coherence state because only final passes enter selection.
+This motivates explicit original/intermediate incumbents. Measured initialization
+takes 8.57–10.88 s under two concurrent offline workers, exceeding the existing
+five-second bound in that workload. The prototype passes 55 analysis checks but
+is not promoted or credited as a position improvement; all failures are retained.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

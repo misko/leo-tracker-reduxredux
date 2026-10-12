@@ -68,6 +68,11 @@ now covers all 18 DS20 and 63 DS16 recordings: joining predicts better on 244 of
 predicts better in the known sparse position-regression case. A same-point probe
 shows receiver drift changes 5–7 original orbital candidate preferences; joint
 clock/candidate initialization remains to be tested.
+The [clock-conditioned bootstrap experiment](../reports/2026_10_12_band_calibrated_merge/clock-conditioned/README.md)
+now completes 48 initializer conditions and 96 matched coarse c attempts on the
+fixed development panel. Synthetic recovery succeeds, but nine conditions lose
+better original seeds and coarse effects remain mixed. The prototype needs
+incumbent preservation and less repeated profiling before full-pipeline trials.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
