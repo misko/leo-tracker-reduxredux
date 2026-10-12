@@ -81,6 +81,23 @@ At the same previously evaluated grid point, east −80 km and north −80 km, b
 
 The next iteration must test preservation of discovery hypotheses and orbital consistency before replacing initialization segments. Smooth polynomial residuals alone are insufficient. The planned append and guard-disabled comparisons are running; their settings were fixed before reading these position errors. Receipts are in [first-position-results.json](first-position-results.json) and [first-coarse-bank-comparison.json](first-coarse-bank-comparison.json).
 
+## Full census and first four condition ablation
+
+Source preparation and the merge-proposal census have completed for all 81 pinned recordings without failures: 18 DS20 recordings produce 160 selected joins, with a median of 9.5 per recording; 63 DS16 recordings produce 326 joins, with a median of five. Every recording's selected bootstrap proposals change. This is a complete proposal census, not a complete positioning evaluation. Receipts are in [full-census-totals.json](full-census-totals.json) and [census-summary.json](census-summary.json).
+
+The four predetermined conditions have now completed on the first DS20 development recording. All eight accepted results are stationary B7 fits, with a common final bank for the two c arms within each condition.
+
+| Condition | Fitted c reference error | Zero c reference error | Fitted c frequency NLL |
+|---|---:|---:|---:|
+| Baseline | 3.209 km | 3.619 km | 38,814.20 |
+| Guarded replacement | 319.056 km | 318.941 km | 38,268.49 |
+| Guarded append before the unchanged quota | 4.264 km | 4.564 km | 37,967.52 |
+| Replacement with residual guards disabled | 1.994 km | 2.097 km | 41,035.63 |
+
+The append condition avoids the catastrophic replacement result but still worsens accuracy. It has a different proposal set despite retaining the same count of original selected proposals. The guard-disabled condition improves this recording's position while worsening its frequency likelihood, but it accepts the injected faults in the earlier controls. It is therefore not a qualified alternative. The condition with the best frequency NLL is also not the condition with the best position accuracy. Full receipts are in [full-first-ds20-ablation.json](full-first-ds20-ablation.json).
+
+The next iteration needs to preserve useful discovery alternatives and use orbital consistency before forcing shared identity. Another question is whether the downstream likelihood should use track continuity explicitly: the current prototype changes initialization, while the final fit still treats the original windows independently. Receiver channel-group calibration remains a separate model issue documented in the [eight-channel root cause report](../2026_10_12_fast_channel_root_cause/README.md).
+
 ## Reproduction and remaining evaluations
 
 Nine new component tests cover alias alignment, discontinuity rejection, gap and lane limits, deterministic unions, observation preservation, and the append ablation. Three existing position-input tests verify baseline behavior. No new RF collection is required.
@@ -98,4 +115,4 @@ python tools/continuous_merge_positions.py execute DS20 SESSION_ID --variant bas
 
 The checkpoint adapter requires the variant output root to exist. Repeating `execute` resumes verified stages after a yielded worker slice. `mint` freezes membership and source hashes and refuses to overwrite an existing study. Local authority paths identify input artifacts; reference repositories are not runtime dependencies.
 
-The census and first matched positioning replays are in progress. Remaining evaluations cover the full DS20 and DS16 populations, DS15 after its authority is located, accuracy and failure rates for each condition, regressions, and sensitivity to curve flexibility, residual limits, and gap length. The current evidence does not yet establish a localization improvement or justify enabling automatic merging.
+The complete census and first development positioning comparisons are available. Remaining evaluations cover improved merge iterations on the full DS20 and DS16 populations, DS15 after its authority is located, accuracy and failure rates, regressions, and sensitivity to curve flexibility, residual limits, and gap length. The first prototype is not qualified for automatic use: its guarded replacement can cause a catastrophic regression, and its guard-disabled improvement fails the fault controls.
