@@ -19,6 +19,8 @@ The upper panels profile each candidate's timing over the existing −20 to +20 
 
 The lower panel separates protection of original proposals from the orbital-agreement gate. Original-candidate preservation plus a shape-RMS limit retains 62501 but still substitutes 54102 for 69466. Enabling orbital agreement retains both original candidates and excludes both substitutions. [Plot receipt](candidate-substitution.json) and [point diagnostics](point-diagnosis.json) record these exposed comparisons.
 
+A matched local [receiver-drift sensitivity check](clock-ordering-sensitivity.json) does not resolve the CH4 disagreement by simply subtracting the original fixed-point fit's affine drift. RX1's fitted drift is +0.257 Hz/s, and the same parent/join candidate pair persists: 69466 and 54102, at 75.6 Hz and 195.7 Hz sampled shape RMS. Subtracting the original bootstrap seed's much larger −15.784 Hz/s RX1 drift instead changes both candidates to 67928 and 62498; they still disagree. Thus the initial candidate ordering is drift-sensitive, but these controls do not establish drift as the cause or a correction as the remedy. The vectors are exposed baseline estimates at the same fixed grid point and are not used in the protected-merge full replays.
+
 ## A conservative candidate-preserving merge rule
 
 The new analyzer profiles the same pool of original selected tracks and guarded joined proposals at each trial position. DS20's initial example has 24 original proposals and seven additional joined proposals; the DS16 example has 24 originals and four additions. All conditions use the same pool, 12 samples per proposal, existing timing grid, and five-second total bootstrap budget.
@@ -41,7 +43,7 @@ The numerical analyzer uses contracts and an injected bootstrap port. The B7 and
 
 ## Matched positioning and remaining work
 
-Full default B7 replays are running for the first DS20 development example in all three modes and for the first DS16 example in consistent mode. They preserve original observations, RF frequencies, timing, initial satellite bank, priors, 400-point search budget, and per-stage fitting budgets. Each mode includes the existing conditional `c = 0` versus fitted-`c` final comparison, sharing fitted-`c` discovery/calibration and the final bank within that mode. Geographic evaluation references enter only after complete numerical outputs are sealed. Frequency fit and position accuracy must be assessed separately.
+Full default B7 replays are running for the first DS20 development example in all three modes and for the first DS16 example in baseline and consistent modes. They preserve original observations, RF frequencies, timing, initial satellite bank, priors, 400-point search budget, and per-stage fitting budgets. Each mode includes the existing conditional `c = 0` versus fitted-`c` final comparison, sharing fitted-`c` discovery/calibration and the final bank within that mode. Geographic evaluation references enter only after complete numerical outputs are sealed. Frequency fit and position accuracy must be assessed separately.
 
 The prototype and affected components pass 32 tests, including native numerical parity, injected discontinuities, protected-parent replacement, differing orbital candidates, rejection of partial/orphan joins, original-baseline numerical reproduction, checkpoint resumption, and forwarding of the explicitly bound bootstrap through B7. Scientific fixtures remain unchanged.
 
