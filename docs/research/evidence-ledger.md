@@ -186,6 +186,24 @@ takes 8.57–10.88 s under two concurrent offline workers, exceeding the existin
 five-second bound in that workload. The prototype passes 55 analysis checks but
 is not promoted or credited as a position improvement; all failures are retained.
 
+The [profile reuse and clock-incumbent follow-up](../../reports/2026_10_12_band_calibrated_merge/incumbent-clock/README.md)
+repairs that measured seed-loss defect in separate pure analysis modules,
+retaining the original and all completed intermediate proposals. All 96 serial
+development conditions return valid seeds with no worse original-support
+coherence; 48 controls reproduce prior vectors exactly. Shape/seed separation
+halves duplicate prediction calls from 44 to 22. Under the five-second allowance,
+22 conditioned explorations are interrupted but keep completed seeds. Among
+changed stationary coarse comparisons, 22 objectives improve and 25 worsen;
+384 logical paired-c fits require 296 unique optimizations through exact-input
+reuse. These remain conditional frequency comparisons, not geographic validation.
+A separate posthoc audit of the exposed sparse regression finds median GLRT
+margin 0.0283 in seven high-band rows versus 0.485 in 4,267 low-band rows; the
+frequency likelihood does not directly consume margins. This motivates testing
+calibrated observation reliability without treating margins as probabilities,
+dropping weak rows automatically, or asserting a physical retuning fault.
+The affected suite passes 66 checks. Full DS20/DS16 geographic qualification and
+DS15 authority remain outstanding, and production defaults remain unchanged.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

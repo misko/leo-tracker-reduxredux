@@ -74,6 +74,14 @@ fixed development panel. Synthetic recovery succeeds, but nine conditions lose
 better original seeds and coarse effects remain mixed. The prototype needs
 incumbent preservation and less repeated profiling before full-pipeline trials.
 
+The [profile reuse and clock-incumbent follow-up](../reports/2026_10_12_band_calibrated_merge/incumbent-clock/README.md)
+now retains original and intermediate seeds. All 96 serial conditions return
+valid seeds without worsening original-support coherence; controls reproduce
+exactly and duplicate prediction calls fall from 44 to 22. At five seconds,
+22 interrupted paths preserve completed seeds, but changed stationary coarse
+comparisons improve 22 times and worsen 25 times. The affected suite passes
+66 tests. Full geographic comparisons remain necessary; defaults are unchanged.
+
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
 recorded scan, two frozen receiver-specific group offsets change full-channel
