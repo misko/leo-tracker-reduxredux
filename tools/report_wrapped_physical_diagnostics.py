@@ -8,7 +8,51 @@ from pathlib import Path
 
 import numpy as np
 
+from leo.analysis.wrapped_glrt_likelihood import WrappedConfig, nuisance_design, wrapped_ratios
 from tools.evaluate_sparse_glrt import local_output, write_json
+from tools.evaluate_wrapped_fast_scan import load_bundle, load_phase_bank, phase_provider
+from tools.report_glrt_relative_phase import surface_summary
+
+
+def replay_endpoint(data, rf, prediction, opportunity, fit, config):
+    """Rebuild the density and charged priors from saved parameters."""
+    design, _, span = nuisance_design(
+        data,
+        rf,
+        coefficient=fit["coefficient_enabled"],
+        band_drift=config.band_drift_sigma_hz_s is not None,
+    )
+    weights = np.asarray(fit["weights"])
+    if (
+        weights.shape != (len(fit["active"]) + 1,)
+        or (weights < 0).any()
+        or not np.isclose(weights.sum(), 1, atol=1e-9, rtol=0)
+    ):
+        raise ValueError("endpoint activity weights are not normalized")
+    ratios = wrapped_ratios(data, prediction, opportunity, design, fit["beta"], config)
+    raw = float(np.log(weights[0] + ratios @ weights[1:]).sum())
+    groups = int(data.group.max()) + 1
+    beta = np.asarray(fit["beta"])
+    prior = 0.5 * np.sum(
+        (beta[groups : groups + groups // 2] / span / config.drift_sigma_hz_s) ** 2
+    )
+    if config.band_drift_sigma_hz_s is not None:
+        prior += 0.5 * np.sum(
+            (beta[groups + groups // 2 : 2 * groups] / span / config.band_drift_sigma_hz_s) ** 2
+        )
+    if fit["coefficient_enabled"]:
+        prior += 0.5 * (beta[-1] / config.coefficient_sigma_hz_ghz) ** 2
+    prior += 0.5 * (fit["phase_s"] / config.common_phase_sigma_s) ** 2
+    if config.relative_phase_sigma_s is not None:
+        prior += 0.5 * np.sum(
+            (np.asarray(fit["satellite_phase_s"]) / config.relative_phase_sigma_s) ** 2
+        )
+    score = raw - prior - config.satellite_penalty * len(fit["active"])
+    if not np.isclose(raw, fit["log_ratio"], atol=1e-6, rtol=0) or not np.isclose(
+        score, fit["score"], atol=1e-6, rtol=0
+    ):
+        raise ValueError("saved endpoint density or prior accounting does not replay")
+    return dict(log_ratio=raw, score=float(score), nuisance_prior_cost=float(prior))
 
 
 def paired_summary(base, alternative, base_rows, alternative_rows):
@@ -65,6 +109,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--data-root", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--full-surface-directory", default="fixed-frame-full-v2")
     args = p.parse_args()
     local_output(args.output)
     args.output.mkdir(parents=True, exist_ok=True)
@@ -110,10 +155,13 @@ def main():
         "cohort-common-grid-sum.json",
         "cohort-envelope-common-grid.json",
         "band-drift-development-protocol.json",
+        "development-phase-age-consistency.json",
+        "cross-provider-latest-inventory.json",
     )
     for name in diagnostic_files:
         shutil.copyfile(args.data_root / name, args.output / name)
     panel = json.loads((args.data_root / "panel.json").read_text())
+    full_surfaces = []
     for row in panel["rows"]:
         source = args.data_root / row["session_id"] / "fixed-frame-validation-probe-v1"
         if row["split"] == "validation" and (source / "result.json").exists():
@@ -122,6 +170,74 @@ def main():
                 args.output / row["session_id"] / "retrospective-fixed-frame-probe",
                 dirs_exist_ok=True,
             )
+        source = args.data_root / row["session_id"] / args.full_surface_directory
+        if (source / "result.json").exists():
+            result = json.loads((source / "result.json").read_text())
+            evaluations = [
+                json.loads(line) for line in (source / "evaluations.jsonl").read_text().splitlines()
+            ]
+            if result["phase_model"] != "fixed-reception-frame-orbital-phase":
+                raise ValueError("fixed-reception-frame surface required")
+            data, bank, meta, _ = load_bundle(args.data_root / row["session_id"] / "bundle")
+            if (
+                result["input_digest"] != meta["input_sha256"]
+                or result["orbit_digest"] != meta["orbit_bank_sha256"]
+            ):
+                raise ValueError("full surface evidence does not match the recording")
+            phases, receipt = load_phase_bank(args.data_root / row["session_id"] / "bundle", bank)
+            if receipt != result["phase_receipt"]:
+                raise ValueError("full surface phase-bank provenance changed")
+            lookup = {int(n): i for i, n in enumerate(bank["norad"])}
+            pool = np.asarray([lookup[int(n)] for n in result["candidate_norad"]])
+            for evaluation in evaluations:
+                provider = phase_provider(
+                    phases,
+                    bank,
+                    data,
+                    meta["site"],
+                    (evaluation["east_m"], evaluation["north_m"]),
+                    inertial_phase=True,
+                )
+                for fit in evaluation["arms"].values():
+                    active = np.asarray(fit["active"], dtype=int)
+                    delta = np.asarray(fit["satellite_phase_s"])[active]
+                    if active.size:
+                        prediction, opportunity, _, _ = provider.predict(
+                            fit["phase_s"] + delta, pool[active]
+                        )
+                    else:
+                        prediction = opportunity = np.empty((len(data.ids), 0))
+                    replay_endpoint(
+                        data,
+                        bank["rf_hz"],
+                        prediction,
+                        opportunity,
+                        fit,
+                        WrappedConfig(**result["config"]),
+                    )
+            destination = args.output / row["session_id"] / args.full_surface_directory
+            destination.mkdir(parents=True, exist_ok=True)
+            for name in ("result.json", "protocol.json", "evaluations.jsonl"):
+                shutil.copyfile(source / name, destination / name)
+            full_surfaces.append(
+                dict(
+                    row,
+                    arms={
+                        arm: surface_summary(result, evaluations, arm)
+                        for arm in ("zero-c", "fitted-c")
+                    },
+                )
+            )
+        else:
+            full_surfaces.append(dict(row, status="not evaluated; original cohort retained"))
+    write_json(
+        args.output / "fixed-frame-full-summary.json",
+        dict(
+            rows=full_surfaces,
+            validation_denominator=4,
+            scope="Retrospective physical-model diagnostics; no fresh validation claim",
+        ),
+    )
     manifest = {}
     for source in [
         Path(__file__),
@@ -175,6 +291,55 @@ def main():
     )
     fig.savefig(args.output / "past-forecast-shape-disagreement.png", dpi=160)
     plt.close(fig)
+    measured = [row for row in full_surfaces if "arms" in row]
+    if measured:
+        fig, axes = plt.subplots(
+            len(measured),
+            2,
+            figsize=(11, 4 * len(measured)),
+            squeeze=False,
+            constrained_layout=True,
+        )
+        for i, row in enumerate(measured):
+            path = (
+                args.output / row["session_id"] / args.full_surface_directory / "evaluations.jsonl"
+            )
+            evaluations = [json.loads(line) for line in path.read_text().splitlines()]
+            for j, arm in enumerate(("zero-c", "fitted-c")):
+                ax, summary = axes[i, j], row["arms"][arm]
+                scatter = ax.scatter(
+                    [r["east_m"] / 1000 for r in evaluations],
+                    [r["north_m"] / 1000 for r in evaluations],
+                    c=[summary["best_score"] - r["arms"][arm]["score"] for r in evaluations],
+                    cmap="viridis_r",
+                    vmin=0,
+                    vmax=100,
+                )
+                ax.scatter(0, 0, marker="*", s=150, color="red", label="configured reference")
+                ax.scatter(
+                    summary["best_east_m"] / 1000,
+                    summary["best_north_m"] / 1000,
+                    marker="x",
+                    s=80,
+                    color="black",
+                    label="best sampled point",
+                )
+                ax.set(
+                    xlabel="East (km)",
+                    ylabel="North (km)",
+                    xlim=(-5.2, 5.2),
+                    ylim=(-5.2, 5.2),
+                    aspect="equal",
+                    title=f"{row['session_id'][5:13]} / {arm}; "
+                    f"{'completed' if summary['completed'] else 'incomplete'}\n"
+                    f"best {summary['best_distance_m'] / 1000:.2f} km; "
+                    f"gap {summary['reference_score_gap']:.2f}",
+                )
+                ax.legend(fontsize=7)
+                fig.colorbar(scatter, ax=ax, label="Loss above best (clipped at 100)")
+        fig.suptitle("Fixed reception frame: measured 5 km surfaces; no interpolated minimum")
+        fig.savefig(args.output / "fixed-frame-full-surfaces.png", dpi=160)
+        plt.close(fig)
     for path in args.output.rglob("*.json"):
         path.write_text(
             json.dumps(json.loads(path.read_text()), separators=(",", ":"), allow_nan=False) + "\n"

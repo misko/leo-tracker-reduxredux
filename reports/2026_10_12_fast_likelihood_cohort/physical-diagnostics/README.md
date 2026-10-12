@@ -72,6 +72,44 @@ On `862e4fbd`, the union still prefers (−1,000, −500 m), gap 12.30. Its fine
 grid alone prefers a 559 m point, but that score is lower than the known feasible
 1.12 km point. Restricting the grid would falsely suggest improved accuracy.
 
+## Expanded 5 km searches
+
+Both development scans subsequently completed broader fixed-frame searches,
+with 12 uniform-area random points within 5 km, eight boundary points, eight
+1 km neighbors, the seven original probe points, and three refinement rounds
+per arm. The same two starts initialize both arms at every evaluated position.
+These expanded searches are conditional on the original frozen candidate pools;
+their new preferred points still require a full-catalogue audit.
+
+| Scan | Paired positions | c=0 best distance / reference gap | Fitted-c best distance / reference gap |
+|---|---:|---:|---:|
+| `bf660cb5` | 50 | 1.27 km / 26.36 | 1.00 km / 16.65 |
+| `862e4fbd` | 54 | 0.56 km / 5.26 | 1.35 km / 13.41 |
+| `4b6c9cc2` (retrospective validation) | 49 | 0.25 km / 0.88 | 0.56 km / 1.50 |
+
+![Exact measured fixed-frame surfaces](fixed-frame-full-surfaces.png)
+
+The broader upper-scan search finds a higher score outside its original seven
+points. This worsens its fitted-c preferred distance, rather than confirming
+an improvement. The plotted cross marks the best evaluated point; no continuous
+or exhaustive-subset minimum is certified. Complete and incomplete runs are
+identified separately in [the surface summary](fixed-frame-full-summary.json).
+
+Every saved endpoint in this expanded report is replayed against its bound GLRT
+and phase-bank arrays. The report reconstructs the normalized activity mixture,
+frequency density and all nuisance/cardinality penalties, requiring agreement
+with both saved log density and score to within 1e−6 units. It also rejects
+unnormalized activity weights or changed input/phase-bank provenance. This checks
+stored-score consistency, not calibrated probabilities or a global optimizer.
+
+The first two broader-search invocations failed before fitting because their
+bundle arguments named a parent directory. Corrected invocations use `bundle/`.
+The lower development search required three bounded computation slices and the
+upper search two; each slice allows 300 seconds and retains all completed pairs.
+The retrospective validation scan likewise finishes in three slices.
+These bounds concern re-analysis, not RF collection. Initial slices that stop
+early remain in the final result's execution history and cannot pass a gate.
+
 ## Retrospective checks on the four original validation scans
 
 The four validation labels were already inspected in the prior report. These
@@ -86,9 +124,14 @@ and do not replace the completed 5 km searches or their 0/4 result.
 | `e557fbf8` | 1.28 km | 17.42 |
 
 One small probe reaches the numerical 1 km / one-unit criterion. It has not
-passed a full surface search, and three others fail even the small probe.
-There is no basis to promote this variant as an accurate localization method.
-All four original validation assignments remain in the denominator.
+passed a full fitted-c surface search: the subsequent 49-point search on
+`4b6c9cc2` prefers (500 m east, 250 m north), with gap 1.50, exceeding the one-unit
+criterion. Its matched c=0 search prefers (0 m east, 250 m north), gap 0.88,
+and passes the conditional sampled-surface criterion. Three other original
+validation scans fail even the small probe. Thus there is at most one
+retrospective c=0 pass among four and no fitted-c pass, with new preferred points
+still awaiting full-catalogue audits. No fresh validation or cohort success is
+claimed. All four original validation assignments remain in the denominator.
 
 ## Other measured diagnostics
 
@@ -112,6 +155,17 @@ orbit**. The alignment shifts ECEF query time and is a consistency diagnostic,
 not an exact orbital-element perturbation. The residual motivates testing a
 causal orbit-uncertainty model before claiming overly precise location scores.
 
+Extrapolating the same historical alignment rates by current TLE age gives only
+moderate correlation with fitted total phase (0.40 and 0.42 on selected
+development identities). After a common centering shift, phase disagreement RMS
+remains 3.77 s and 1.96 s. This selected-identity check does not establish an
+archive-derived correction or uncertainty prior. No coefficients were chosen
+using position error. The [cross-provider inventory](cross-provider-latest-inventory.json)
+also finds **no newer eligible epoch** for any of the lower development scan's
+1,066 prepared sky candidates when considering both archived providers under
+the same capture cutoff. A missing newer-provider element is not an explanation
+for that scan's bias.
+
 ![Past forecast curvature disagreement](past-forecast-shape-disagreement.png)
 
 A joint-score sanity check exposed a numerical hazard: adding one retained
@@ -134,7 +188,7 @@ standalone replay of the protected archive. Original GLRT exports and orbital
 arrays remain on local bulk storage. No golden fixture was modified.
 
 The focused likelihood, orbit, initialization, solver and report checks pass
-**38 tests**, and Ruff passes for changed files. Existing defaults remain the
+**40 tests**, and Ruff passes for changed files. Existing defaults remain the
 legacy ECEF time-shift model with no additional band drift. Example paired run:
 
 ```bash

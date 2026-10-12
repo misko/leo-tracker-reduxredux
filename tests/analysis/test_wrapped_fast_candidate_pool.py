@@ -91,6 +91,7 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
         phase_receipt={},
         candidate_norad=[20],
         candidate_pool_digest="pool",
+        search_plan={"random_points": 12, "prescribed_positions_sha256": "positions"},
         source_digests={
             "src/leo/analysis/wrapped_glrt_likelihood.py": "w",
             "src/leo/analysis/sparse_glrt_likelihood.py": "s",
@@ -102,6 +103,19 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
     validate_surface_resume(protocol, updated)
     with pytest.raises(ValueError, match="scientific protocol"):
         validate_surface_resume(protocol, dict(updated, candidate_norad=[20, 30]))
+    with pytest.raises(ValueError, match="scientific protocol"):
+        validate_surface_resume(protocol, dict(updated, search_plan={"random_points": 13}))
+    with pytest.raises(ValueError, match="scientific protocol"):
+        validate_surface_resume(
+            protocol,
+            dict(
+                updated,
+                search_plan={
+                    **protocol["search_plan"],
+                    "prescribed_positions_sha256": "changed",
+                },
+            ),
+        )
     with pytest.raises(ValueError, match="kernel changed"):
         validate_surface_resume(
             protocol,
@@ -113,6 +127,7 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
                 },
             ),
         )
+
     with pytest.raises(ValueError, match="kernel changed"):
         validate_surface_resume(
             protocol,
@@ -124,3 +139,26 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
                 },
             ),
         )
+
+
+def test_fixed_reception_frame_requires_a_prepared_phase_bank(monkeypatch, capsys):
+    from tools.evaluate_wrapped_fast_scan import main
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "evaluate",
+            "sweep",
+            "--bundle",
+            "/unused",
+            "--initial",
+            "/unused",
+            "--output",
+            "/unused",
+            "--inertial-phase",
+        ],
+    )
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert "requires --phase" in capsys.readouterr().err

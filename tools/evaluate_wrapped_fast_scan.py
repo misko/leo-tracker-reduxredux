@@ -176,6 +176,7 @@ def validate_surface_resume(previous, expected):
         "candidate_norad",
         "candidate_pool_digest",
         "phase_model",
+        "search_plan",
     ):
         if previous.get(key) != expected.get(key):
             raise ValueError("surface checkpoint scientific protocol changed")
@@ -401,6 +402,14 @@ def sweep(args):
                 Path("src/leo/analysis/glrt_orbit_phase.py"),
             )
         },
+        search_plan=dict(
+            random_points=args.points,
+            refinement_rounds=args.refine,
+            local_grid=args.probe_grid,
+            prescribed_positions_sha256=hashlib.sha256(args.positions_json.read_bytes()).hexdigest()
+            if args.positions_json is not None
+            else None,
+        ),
     )
     records = []
     cache = {}
@@ -422,9 +431,6 @@ def sweep(args):
                 stop_reason=previous.get("stop_reason"),
             )
         ]
-    protocol["search_plan"] = dict(
-        random_points=args.points, refinement_rounds=args.refine, local_grid=args.probe_grid
-    )
     write_json(args.output / "protocol.json", protocol)
     rows = []
 
@@ -595,6 +601,8 @@ def main():
     b.add_argument("--probe-grid", action="store_true")
     b.add_argument("--resume", action="store_true")
     args = p.parse_args()
+    if getattr(args, "inertial_phase", False) and not args.phase:
+        p.error("--inertial-phase requires --phase and its prepared orbital bank")
     (initialize if args.command == "initialize" else sweep)(args)
 
 
