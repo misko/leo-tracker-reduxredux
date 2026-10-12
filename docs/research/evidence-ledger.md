@@ -81,6 +81,15 @@ shadow product while its physical interpretation remains candidate-only.
 
 ### Continuous track merging study on 12 October 2026
 
+The [protected orbital-consistency follow-up](../../reports/2026_10_12_consistent_track_merge/README.md)
+traces separate quota eviction and changed preferred orbital-shape matches in
+the DS20 regression. At the exposed diagnostic point, original-proposal
+protection retains candidate 62501 and the orbital-agreement gate additionally
+retains 69466. Two other joins remain accepted. These are **local development
+diagnostics**, not verified satellite identities or position improvement. Full
+matched B7 replays preserve observations, initial bank, priors, search budgets,
+and conditional c arms; the default bootstrap remains unchanged.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

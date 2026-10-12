@@ -4,6 +4,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from leo.application import hard60_b7
 from leo.application import hard60_retained_calibration as recovery
@@ -52,11 +53,25 @@ def test_all_ordinary_failed_calibrations_trigger_once_across_passes():
     assert "reference" not in str(inventory).lower()
 
 
-def test_b7_runs_recovery_before_joint_selection_and_keeps_original_regions(monkeypatch):
+@pytest.mark.parametrize("custom_bootstrap", [False, True])
+def test_b7_runs_recovery_before_joint_selection_and_keeps_original_regions(
+    monkeypatch, custom_bootstrap
+):
     ordinary = _ordinary_region(source="baseline")
     search_calls, recovery_calls, selected = [], [], []
+    port = object()
+    options = (
+        {"bootstrapper": port, "bootstrap_configuration": {"policy": "test-custom"}}
+        if custom_bootstrap
+        else {}
+    )
 
     def search(*args, configuration, **kwargs):
+        if custom_bootstrap:
+            assert kwargs["bootstrapper"] is port
+            assert kwargs["bootstrap_configuration"] == {"policy": "test-custom"}
+        else:
+            assert "bootstrapper" not in kwargs
         search_calls.append(configuration.basin_separation_km)
         return deepcopy(ordinary)
 
@@ -78,7 +93,7 @@ def test_b7_runs_recovery_before_joint_selection_and_keeps_original_regions(monk
     monkeypatch.setattr(hard60_b7, "run_hard60", search)
     monkeypatch.setattr(hard60_b7, "recovered_region", recover)
     monkeypatch.setattr(hard60_b7, "run_joint_stages", joint)
-    result = hard60_b7.run_b7(None, None, None, (), None)
+    result = hard60_b7.run_b7(None, None, None, (), None, **options)
     assert search_calls == [12.5, 25.0, 50.0]
     assert recovery_calls == ["point:5:-10"]
     assert len(selected) == 4

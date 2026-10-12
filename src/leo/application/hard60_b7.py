@@ -239,7 +239,19 @@ class SharedPoints:
         self.checkpoints.put(self.key(key), value)
 
 
-def run_b7(observations, bank, prior, tracks, checkpoints, *, maximum_seconds=500):
+def run_b7(
+    observations,
+    bank,
+    prior,
+    tracks,
+    checkpoints,
+    *,
+    maximum_seconds=500,
+    bootstrapper=None,
+    bootstrap_configuration=None,
+):
+    if (bootstrapper is None) != (bootstrap_configuration is None):
+        raise ValueError("custom bootstrap requires its explicit configuration binding")
     deadline = time.monotonic() + maximum_seconds
     binding = canonical_digest(B7_POLICY)
 
@@ -268,6 +280,11 @@ def run_b7(observations, bank, prior, tracks, checkpoints, *, maximum_seconds=50
             SharedPoints(checkpoints),
             configuration=config,
             maximum_seconds=max(0.001, deadline - time.monotonic()),
+            **(
+                {"bootstrapper": bootstrapper, "bootstrap_configuration": bootstrap_configuration}
+                if bootstrapper is not None
+                else {}
+            ),
         )
     inventory = regional_triggers(regions)
     recovery_records = {}

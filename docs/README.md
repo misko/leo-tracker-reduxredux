@@ -41,6 +41,9 @@ Continuous track merging: [DS20 and DS16 study with GLRT curve overlays](../repo
 The offline prototype joins consecutive curved segments and rejects injected
 steps and slope changes. Corpus positioning comparisons are in progress;
 localization improvement and automatic deployment are not yet established.
+The [protected orbital-consistency iteration](../reports/2026_10_12_consistent_track_merge/README.md)
+separates quota eviction from changed orbital matches and preserves original
+discovery candidates while testing joined initialization proposals.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

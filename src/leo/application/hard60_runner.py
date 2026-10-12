@@ -74,13 +74,28 @@ class Hard60Configuration:
 
 
 def run_hard60(
-    observations, bank, prior, tracks, checkpoints, *, configuration=None, maximum_seconds=500.0
+    observations,
+    bank,
+    prior,
+    tracks,
+    checkpoints,
+    *,
+    configuration=None,
+    maximum_seconds=500.0,
+    bootstrapper=None,
+    bootstrap_configuration=None,
 ):
     if not np.isfinite(maximum_seconds) or maximum_seconds <= 0:
         raise ValueError("invalid worker slice budget")
     config = configuration or Hard60Configuration()
+    if (bootstrapper is None) != (bootstrap_configuration is None):
+        raise ValueError("custom bootstrap requires its explicit configuration binding")
     deadline = time.monotonic() + maximum_seconds
-    binding = canonical_digest(json_value(config))
+    binding = canonical_digest(
+        json_value(config)
+        if bootstrapper is None
+        else {"run": json_value(config), "bootstrap": bootstrap_configuration}
+    )
 
     def stage(key, budget, operation):
         key = binding + ":" + key
@@ -111,7 +126,7 @@ def run_hard60(
 
     def point(east, north):
         def compute():
-            seed = bootstrap_position(
+            seed = (bootstrapper or bootstrap_position)(
                 observations,
                 bank,
                 prior,

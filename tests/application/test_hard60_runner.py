@@ -12,7 +12,10 @@ from tests.analysis.test_regional_position_score import synthetic_inputs
 from tests.application.test_regional_position_runner import Checkpoints
 
 
-def test_single_method_resumes_and_applies_identical_policy_to_both_arms(monkeypatch):
+@pytest.mark.parametrize("custom_bootstrap", [False, True])
+def test_single_method_resumes_and_applies_identical_policy_to_both_arms(
+    monkeypatch, custom_bootstrap
+):
     obs, bank, prior = synthetic_inputs()
     calls, seeds = [], []
 
@@ -38,7 +41,17 @@ def test_single_method_resumes_and_applies_identical_policy_to_both_arms(monkeyp
             0.01,
         )
 
-    monkeypatch.setattr(runner, "bootstrap_position", bootstrap)
+    def forbidden_default(*args, **kwargs):
+        raise AssertionError("the explicit custom bootstrap must be used")
+
+    monkeypatch.setattr(
+        runner, "bootstrap_position", forbidden_default if custom_bootstrap else bootstrap
+    )
+    bootstrap_options = (
+        {"bootstrapper": bootstrap, "bootstrap_configuration": {"policy": "test-custom"}}
+        if custom_bootstrap
+        else {}
+    )
     monkeypatch.setattr(runner, "fit_position", fit)
     monkeypatch.setattr(
         runner,
@@ -57,9 +70,13 @@ def test_single_method_resumes_and_applies_identical_policy_to_both_arms(monkeyp
     config = runner.Hard60Configuration(point_budget=16, levels_km=(100, 50, 25, 12.5), basins=1)
     checkpoints = Checkpoints(interrupt_after=3)
     with pytest.raises(runner.RegionalSliceExpired):
-        runner.run_hard60(obs, bank, prior, (), checkpoints, configuration=config)
+        runner.run_hard60(
+            obs, bank, prior, (), checkpoints, configuration=config, **bootstrap_options
+        )
     checkpoints.interrupt_after = None
-    result = runner.run_hard60(obs, bank, prior, (), checkpoints, configuration=config)
+    result = runner.run_hard60(
+        obs, bank, prior, (), checkpoints, configuration=config, **bootstrap_options
+    )
     assert set(result["searches"]) == {"V16"}
     assert len(seeds) == len(set(seeds)) == 16
     assert len(result["finals"]) == 6
@@ -74,10 +91,21 @@ def test_single_method_resumes_and_applies_identical_policy_to_both_arms(monkeyp
             assert options["maximum_iterations"] == 600
             assert options["maximum_seconds"] == 20
     count = len(calls)
-    assert runner.run_hard60(obs, bank, prior, (), checkpoints, configuration=config) == result
+    assert (
+        runner.run_hard60(
+            obs, bank, prior, (), checkpoints, configuration=config, **bootstrap_options
+        )
+        == result
+    )
     assert len(calls) == count
     runner.run_hard60(
-        obs, bank, prior, (), checkpoints, configuration=replace(config, final_iterations=601)
+        obs,
+        bank,
+        prior,
+        (),
+        checkpoints,
+        configuration=replace(config, final_iterations=601),
+        **bootstrap_options,
     )
     assert len(calls) > count
 
@@ -88,3 +116,5 @@ def test_budget_yields_before_work_and_invalid_policy_is_rejected():
         runner.run_hard60(obs, bank, prior, (), Checkpoints(), maximum_seconds=0.001)
     with pytest.raises(ValueError):
         runner.Hard60Configuration(slope_half_width_hz_s=30)
+    with pytest.raises(ValueError, match="explicit configuration"):
+        runner.run_hard60(obs, bank, prior, (), Checkpoints(), bootstrapper=lambda: None)
