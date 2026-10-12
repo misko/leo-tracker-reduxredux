@@ -94,6 +94,13 @@ position improvement is still being evaluated. The code preserves original
 GLRT windows and changes only initialization proposals. Production defaults
 are unchanged.
 
+The first matched full-position examples are a counterexample to qualification
+by smooth residuals alone: guarded replacement changes the DS20 fitted-c error
+from 3.209 km to 319.056 km while lowering frequency NLL. The DS16 example is
+effectively unchanged. The DS20 change is already present in initialization
+and candidate selection. These results argue for preserving alternative
+discovery hypotheses; they do not support production merging.
+
 ### Receiver channel group calibration failure on 12 October 2026
 
 The [eight-channel root cause report](../../reports/2026_10_12_fast_channel_root_cause/README.md)

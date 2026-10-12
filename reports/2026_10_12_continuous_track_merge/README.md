@@ -60,6 +60,27 @@ Full default B7 replays compare no merging, replacement with guarded joins, rete
 
 Each condition includes `c = 0` and fitted-`c` arms. The two arms share fitted-`c` upstream conditioning and the final candidate set within that condition, matching the deployed pipeline's conditional ablation. This does not refit discovery with `c = 0`. Frequency likelihood and score changes will be reported separately from horizontal position error. Reference coordinates enter evaluation only after numerical results are recorded.
 
+## First full positioning comparison
+
+The first two fixed development examples do not demonstrate a localization improvement. Guarded replacement causes a major regression in DS20 and produces an effectively unchanged result in DS16. All eight accepted outputs are stationary B7 fits; each condition's `c = 0` and fitted-`c` arms share its final satellite bank. Full numerical results were sealed before applying the published evaluation reference.
+
+| Dataset and condition | Fitted c error | Zero c error |
+|---|---:|---:|
+| DS20 `fast-014c72ff95ab599c51ba3b3ec9b92cb8`, baseline | 3.209 km | 3.619 km |
+| Same DS20 recording, guarded replacement | 319.056 km | 318.941 km |
+| DS16 `scan-fw-0e40d0535caa0b16`, baseline | 0.981 km | 0.608 km |
+| Same DS16 recording, guarded replacement | 0.981 km | 0.608 km |
+
+![First matched positioning comparison](first-position-errors.png)
+
+The DS20 baseline reproduces its published fitted-`c` reference error. Replacement reduces frequency likelihood NLL from 38,814.20 to 38,268.49 and raises posterior signal mass from 1,336.4 to 1,532.9 windows, despite the much worse position. Its final bank has 19 candidates compared with 17 in the baseline. A lower frequency score is therefore not evidence of better localization.
+
+The DS20 divergence occurs before the final refinement stages: B3 already starts near east 107 km and north 173 km, compared with east −83 km and north −82 km in the baseline's local coordinate system. Replacement retains only 17 of the 24 previously selected bootstrap proposals. The append ablation also retains 17 under the same longest-12-per-receiver quota, although its complete selected proposal set differs from replacement. Thus adding original segments to the proposal pool does not guarantee that the selected initialization retains them.
+
+At the same previously evaluated grid point, east −80 km and north −80 km, both conditions have a stationary coarse fit with 13 candidates. The score changes from 38,701.43 to 42,060.76. The merged initializer substitutes candidates 54102 and 66089 for 62501 and 69466. This is a posthoc reference-neighborhood diagnosis of changed candidate selection, not a truth-seeded localization run or proof of those satellites' identities.
+
+The next iteration must test preservation of discovery hypotheses and orbital consistency before replacing initialization segments. Smooth polynomial residuals alone are insufficient. The planned append and guard-disabled comparisons are running; their settings were fixed before reading these position errors. Receipts are in [first-position-results.json](first-position-results.json) and [first-coarse-bank-comparison.json](first-coarse-bank-comparison.json).
+
 ## Reproduction and remaining evaluations
 
 Nine new component tests cover alias alignment, discontinuity rejection, gap and lane limits, deterministic unions, observation preservation, and the append ablation. Three existing position-input tests verify baseline behavior. No new RF collection is required.
