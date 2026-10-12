@@ -92,6 +92,22 @@ The raw shared-model score includes changes in label-correlation probability and
 
 In DS16 the soft and shared-only joined states are effectively identical: all four groups strongly favor sharing and the score difference is approximately four times `log(2)`, the mixture normalization. This is an example of a lower score without new position information. The [sealed conditional results and common-metric receipts](shared-refinement-results.json) include both c arms, source hashes, stationary flags, common banks, and the continuation diagnostic. Across the affected existing and new components, 47 tests pass. Further cohort evaluation and calibration-model diagnostics remain necessary; the active goal is not achieved.
 
+## High-band residual calibration remains unexplained
+
+A [fixed-position residual profile](band-residual-profile.json) uses the data-selected baseline solutions, with no reference coordinates entering the calculation. It keeps each arm's original windows, catalogue bank, position, epochs, and existing calibration fixed. Each receiver/band subset is allowed one additional constant shift to the predicted CFO on the same ±50 kHz grid, refined to 5 Hz, with a 25 kHz Gaussian penalty scale.
+
+In DS20 the two low-band subsets prefer zero additional correction. RX0 high-band observations prefer −20.320 kHz with fitted c and −20.295 kHz with zero c; the fitted-c penalized NLL gain is 1,281.75. RX1 high-band observations prefer +39.315 kHz and +39.260 kHz, respectively; its fitted-c gain is 61.12. These signs describe additions to the model prediction, not shifts applied to the recorded measurements. The original fitted-c model assigns only 133.1 signal-equivalent windows out of 908 RX0 high-band observations, compared with 910.1 out of 1,418 low-band observations. RX1 similarly explains 20.5 of 119 high-band observations versus 272.7 of 542 low-band observations.
+
+The large high-band correction preferences persist across c arms. They support testing missing receiver/band calibration before relying on orbital assignments or combined-channel merging. They do not prove a physical LNB fault, a universal correction transferable to other recordings, or improved location accuracy. The two independent receiver/band corrections must be fitted jointly with the existing clock, RF and orbital parameters, then compared with identical observations, banks, priors and budgets. Actual RF labels and pilot aliases also remain hypotheses to audit if calibration fails to explain the signal.
+
+This DS16 example has no CH5–8 observations. Its low-band subsets prefer zero correction, so it provides a useful compatibility control but no test of high-band calibration.
+
+## Broader cohort status
+
+The second DS16 development recording, `scan-fw-13998828c952f265`, also completes with identical baseline and consistent outputs: 1.054497 km fitted-c error and 0.788639 km zero-c error. The second DS20 recording, `fast-1836ee948f30c7b7a28a28c5b596dac2`, completes both numerical treatments, but the evaluator finds no published B7 or V2 reference authority for it. Its numerical results remain sealed and its accuracy evaluation remains explicitly unavailable. It is not replaced or silently omitted.
+
+[Cohort status and completed results](cohort-completed-results.json) retain all eight preselected members: three have completed reference evaluations, one has completed numerical fits with a missing reference authority, and four have prepared inputs/banks. Further initialization-only runs are deferred while the measured band-calibration issue is investigated. All distances reported here use the published operator/pipeline reference convention; they are not errors against a surveyed capture GPS fix. DS15's authoritative membership remains unresolved.
+
 The prototype and affected components pass 32 tests, including native numerical parity, injected discontinuities, protected-parent replacement, differing orbital candidates, rejection of partial/orphan joins, original-baseline numerical reproduction, checkpoint resumption, and forwarding of the explicitly bound bootstrap through B7. Scientific fixtures remain unchanged.
 
 Reproduction uses the new [study tool](../../tools/continuous_merge_consistency_study.py). Existing numerical evidence remains in the original study worktree; large derived inputs and checkpoint data are Git-ignored. Use the scientific NumPy/SciPy environment, one BLAS thread, and the existing compiled native orbit extension:
