@@ -79,6 +79,21 @@ shadow product while its physical interpretation remains candidate-only.
 
 ## Evidence synthesis by topic
 
+### Continuous track merging study on 12 October 2026
+
+The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
+develops an offline bootstrap intervention on the original DS20 and DS16
+memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
+support smooth joined curves. The prototype accepts those pairs and rejects
+injected 2 kHz steps and 100 Hz/s slope changes in both, whereas disabling the
+boundary residual checks accepts all four injected faults. The first 16-recording
+census selects 77 joins across eight DS20 recordings and 40 across eight DS16
+recordings. This is **hypothesis-generating development evidence**: proposals
+are not satellite identities, the examples were selected after inspection, and
+position improvement is still being evaluated. The code preserves original
+GLRT windows and changes only initialization proposals. Production defaults
+are unchanged.
+
 ### Receiver channel group calibration failure on 12 October 2026
 
 The [eight-channel root cause report](../../reports/2026_10_12_fast_channel_root_cause/README.md)

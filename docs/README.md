@@ -37,6 +37,11 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+Continuous track merging: [DS20 and DS16 study with GLRT curve overlays](../reports/2026_10_12_continuous_track_merge/README.md).
+The offline prototype joins consecutive curved segments and rejects injected
+steps and slope changes. Corpus positioning comparisons are in progress;
+localization improvement and automatic deployment are not yet established.
+
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
 recorded scan, two frozen receiver-specific group offsets change full-channel
