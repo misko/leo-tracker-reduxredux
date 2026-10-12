@@ -1,5 +1,7 @@
 # Anchored incumbent refinement and initial validation
 
+The [full-population nested curve census and clock sensitivity follow-up](../predictive-curves/README.md) now covers all 18 DS20 and 63 DS16 recordings. Joining improves withheld curve prediction in 244 of 316 testable components, but also improves it in the known sparse position-regression case. Curve prediction alone therefore does not repair downstream localization. Existing common receiver drifts change 5–7 original orbital candidate preferences at the same trial point and catalogue, motivating joint clock/candidate profiling.
+
 A feasible parent state can repair a worse stationary joined solution without changing the observation inventory, candidate bank, priors or geographic domain. All 64 matched refinement fits converge, and all four transported parent starts improve the same joined objective. However, position accuracy improves in only two of those four cases. The optimizer repair is verified; a generally improving merge estimator remains unqualified.
 
 The eight development recordings' complete raw full-pipeline comparisons are now consolidated here. All four fixed validation recordings have completed and are retained below, including the sparse high-band case and its fallback-stage exception. The full requested scope is still all 18 DS20, all 63 DS16, and DS15 after its original membership authority is available.
