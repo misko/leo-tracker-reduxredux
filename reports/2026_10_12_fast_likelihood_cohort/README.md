@@ -26,6 +26,11 @@ conclusion. The earlier development attempts below remain as measured history.
 
 ![Completed frequency and position comparison](relative-phase/fit-versus-position.png)
 
+The subsequent [clock and orbital-phase diagnostics](physical-diagnostics/README.md)
+compare band drift and a fixed-reception-frame phase perturbation with matched
+c=0 and fitted-c probes. Frequency gains remain separate from position results;
+the accuracy objective is still open.
+
 ## Method
 
 Use verified existing recording exports and past-only archived elements. Freeze

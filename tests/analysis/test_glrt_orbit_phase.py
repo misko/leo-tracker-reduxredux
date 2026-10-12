@@ -4,6 +4,7 @@ import pytest
 from leo.analysis.glrt_orbit_phase import OrbitPhasePort
 from leo.analysis.sparse_glrt_likelihood import FrequencyEvidence
 from leo.analysis.wrapped_glrt_likelihood import WrappedConfig, fit_wrapped, nuisance_design
+from leo.sky.frames import EARTH_ROTATION_RATE_RAD_S, teme_to_ecef
 
 
 def test_orbit_phase_frequency_and_horizon_derivatives_match_finite_differences():
@@ -114,6 +115,29 @@ def test_unobservable_null_does_not_pay_a_nuisance_seed_penalty():
     assert result["score"] == 0
     assert result["active"] == []
     assert result["drift_hz_s"] == [0.0, 0.0]
+
+
+def test_orbital_phase_holds_earth_rotation_fixed_and_matches_numeric_derivatives():
+    nodes = np.arange(-2.0, 5.25, 0.25)
+    fixed = np.broadcast_to([6900.0, 1000.0, 1000.0], (1, len(nodes), 3))
+    p, v = teme_to_ecef(fixed, np.zeros_like(fixed), nodes * EARTH_ROTATION_RATE_RAD_S)
+    times = np.array([0.03, 1.03, 2.03])
+    args = (p, v, nodes, times, np.full(3, 11e9), 0, 0, 0)
+    clock = OrbitPhasePort(*args)
+    orbital = OrbitPhasePort(*args, inertial_phase=True)
+    np.testing.assert_allclose(orbital.predict(0)[0], clock.predict(0)[0], atol=1e-10)
+    np.testing.assert_allclose(orbital.predict(0.8)[0], orbital.predict(0)[0], atol=1e-5)
+    assert np.max(abs(clock.predict(0.8)[0] - clock.predict(0)[0])) > 1e-4
+    moving = fixed.copy()
+    moving[0, :, 1] += 7 * nodes
+    inertial_velocity = np.zeros_like(moving)
+    inertial_velocity[0, :, 1] = 7
+    p, v = teme_to_ecef(moving, inertial_velocity, nodes * EARTH_ROTATION_RATE_RAD_S)
+    port = OrbitPhasePort(p, v, nodes, times, np.full(3, 11e9), 0, 0, 0, inertial_phase=True)
+    _, _, df, dq = port.predict(0.08)
+    left, right = port.predict(0.08 - 1e-4), port.predict(0.08 + 1e-4)
+    np.testing.assert_allclose(df, (right[0] - left[0]) / 2e-4, rtol=1e-7, atol=1e-6)
+    np.testing.assert_allclose(dq, (right[1] - left[1]) / 2e-4, rtol=1e-6, atol=1e-9)
 
 
 @pytest.mark.parametrize("solver", ["irls", "lbfgs"])

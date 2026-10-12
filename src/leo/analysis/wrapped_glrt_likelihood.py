@@ -28,9 +28,14 @@ class WrappedConfig:
     coefficient_sigma_hz_ghz: float = 2000.0
     common_phase_sigma_s: float = 3.0
     relative_phase_sigma_s: float | None = None
+    band_drift_sigma_hz_s: float | None = None
     nuisance_solver: str = "irls"
 
     def __post_init__(self):
+        if self.band_drift_sigma_hz_s is not None and (
+            not np.isfinite(self.band_drift_sigma_hz_s) or self.band_drift_sigma_hz_s <= 0
+        ):
+            raise ValueError("positive finite band drift scale required")
         if self.nuisance_solver not in ("irls", "lbfgs"):
             raise ValueError("unknown nuisance solver")
         if self.relative_phase_sigma_s is not None and (
@@ -78,7 +83,7 @@ def smooth_visibility(elevation_deg, transition_deg=5.0):
     return x * x * (3 - 2 * x)
 
 
-def nuisance_design(evidence, rf_hz, *, coefficient=False):
+def nuisance_design(evidence, rf_hz, *, coefficient=False, band_drift=False):
     rf = np.asarray(rf_hz, dtype=float)
     groups = int(evidence.group.max()) + 1
     if groups % 2 or rf.shape != evidence.time_s.shape or not np.isfinite(rf).all():
@@ -90,6 +95,10 @@ def nuisance_design(evidence, rf_hz, *, coefficient=False):
     for rx in range(groups // 2):
         columns.append((evidence.group // 2 == rx) * (evidence.time_s - center) / span)
         labels.append(f"drift-rx{rx}-hz-per-half-scan")
+    if band_drift:
+        for rx in range(groups // 2):
+            columns.append((evidence.group == 2 * rx + 1) * (evidence.time_s - center) / span)
+            labels.append(f"upper-minus-lower-drift-rx{rx}-hz-per-half-scan")
     if coefficient:
         frequency = np.zeros_like(rf)
         for g in range(groups):
@@ -156,7 +165,12 @@ def fit_wrapped(
     orbit_provider=None,
 ):
     config = WrappedConfig() if config is None else config
-    design, labels, span = nuisance_design(evidence, rf_hz, coefficient=coefficient)
+    design, labels, span = nuisance_design(
+        evidence,
+        rf_hz,
+        coefficient=coefficient,
+        band_drift=config.band_drift_sigma_hz_s is not None,
+    )
     groups = int(evidence.group.max()) + 1
     precision = np.zeros(design.shape[1])
     relative_precision = (
@@ -165,6 +179,10 @@ def fit_wrapped(
     if relative_precision and orbit_provider is None:
         raise ValueError("relative phase requires an orbital provider")
     precision[groups : groups + groups // 2] = 1 / (config.drift_sigma_hz_s * span) ** 2
+    if config.band_drift_sigma_hz_s is not None:
+        precision[groups + groups // 2 : 2 * groups] = (
+            1 / (config.band_drift_sigma_hz_s * span) ** 2
+        )
     if coefficient:
         precision[-1] = 1 / config.coefficient_sigma_hz_ghz**2
     results = []
@@ -397,6 +415,9 @@ def fit_wrapped(
                 labels=labels,
                 offsets_hz=beta[:groups].tolist(),
                 drift_hz_s=(beta[groups : groups + groups // 2] / span).tolist(),
+                band_drift_hz_s=(beta[groups + groups // 2 : 2 * groups] / span).tolist()
+                if config.band_drift_sigma_hz_s is not None
+                else None,
                 coefficient_hz_ghz=float(beta[-1]) if coefficient else 0.0,
                 active=active,
                 weights=weights.tolist(),
@@ -422,6 +443,9 @@ def fit_wrapped(
             "relative_phase_prior_cost": 0.0,
             "offsets_hz": [0.0] * groups,
             "drift_hz_s": [0.0] * (groups // 2),
+            "band_drift_hz_s": [0.0] * (groups // 2)
+            if config.band_drift_sigma_hz_s is not None
+            else None,
             "coefficient_hz_ghz": 0.0,
             "active": [],
             "weights": [1.0],

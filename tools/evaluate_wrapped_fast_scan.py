@@ -59,7 +59,7 @@ def load_phase_bank(bundle, bank):
     return phases, receipt
 
 
-def phase_provider(phase_bank, bank, data, site, point):
+def phase_provider(phase_bank, bank, data, site, point, *, inertial_phase=False):
     latitude, longitude = coordinates(site, *point)
     return OrbitPhasePort(
         phase_bank["position"],
@@ -70,6 +70,7 @@ def phase_provider(phase_bank, bank, data, site, point):
         latitude,
         longitude,
         site["altitude_m"],
+        inertial_phase=inertial_phase,
     )
 
 
@@ -174,14 +175,16 @@ def validate_surface_resume(previous, expected):
         "phase_receipt",
         "candidate_norad",
         "candidate_pool_digest",
+        "phase_model",
     ):
         if previous.get(key) != expected.get(key):
             raise ValueError("surface checkpoint scientific protocol changed")
     for key in (
         "src/leo/analysis/wrapped_glrt_likelihood.py",
         "src/leo/analysis/sparse_glrt_likelihood.py",
+        "src/leo/analysis/glrt_orbit_phase.py",
     ):
-        if previous["source_digests"][key] != expected["source_digests"][key]:
+        if previous["source_digests"].get(key) != expected["source_digests"].get(key):
             raise ValueError("surface checkpoint kernel changed")
 
 
@@ -356,6 +359,7 @@ def sweep(args):
         maximum_satellites=40,
         em_iterations=60,
         nuisance_iterations=args.nuisance_iterations,
+        band_drift_sigma_hz_s=args.band_drift_sigma_hz_s,
         relative_phase_sigma_s=args.relative_phase_sigma_s,
         nuisance_solver=args.nuisance_solver,
     )
@@ -369,6 +373,9 @@ def sweep(args):
         site=meta["site"],
         phase_receipt=phase_receipt,
         completed=False,
+        phase_model="fixed-reception-frame-orbital-phase"
+        if args.inertial_phase
+        else "ecef-time-shift",
         catalogue_count=catalogue_count,
         candidate_norad=bank["norad"].tolist(),
         candidate_pool_digest=pool_digest,
@@ -391,6 +398,7 @@ def sweep(args):
                 Path(__file__),
                 Path("src/leo/analysis/wrapped_glrt_likelihood.py"),
                 Path("src/leo/analysis/sparse_glrt_likelihood.py"),
+                Path("src/leo/analysis/glrt_orbit_phase.py"),
             )
         },
     )
@@ -433,7 +441,9 @@ def sweep(args):
             raise TimeoutError("bounded scan slice exhausted")
         pred, opp = predictions(bank, meta["site"], point)
         provider = (
-            phase_provider(phase_bank, bank, data, meta["site"], point)
+            phase_provider(
+                phase_bank, bank, data, meta["site"], point, inertial_phase=args.inertial_phase
+            )
             if phase_bank is not None
             else None
         )
@@ -442,6 +452,12 @@ def sweep(args):
             seeds = []
             for seed in common_seeds:
                 beta = list(seed["beta"])
+                if args.band_drift_sigma_hz_s is not None:
+                    groups = int(data.group.max()) + 1
+                    if len(beta) == groups + groups // 2:
+                        beta.extend([0.0] * (groups // 2))
+                    elif len(beta) != 2 * groups:
+                        raise ValueError("band drift seed dimension mismatch")
                 if enabled:
                     beta.append(seed["coefficient_hz_ghz"])
                 seeds.append(
@@ -570,7 +586,9 @@ def main():
     b.add_argument("--seconds", type=float, default=900.0)
     b.add_argument("--seed", type=int, default=20261012)
     b.add_argument("--phase", action="store_true")
+    b.add_argument("--inertial-phase", action="store_true")
     b.add_argument("--relative-phase-sigma-s", type=float)
+    b.add_argument("--band-drift-sigma-hz-s", type=float)
     b.add_argument("--candidate-pool", type=Path)
     b.add_argument("--nuisance-solver", choices=("irls", "lbfgs"), default="irls")
     b.add_argument("--positions-json", type=Path)

@@ -25,7 +25,12 @@ from tools.evaluate_wrapped_fast_scan import (
 
 
 def metrics(data, prediction, opportunity, rf, fit, config):
-    design, _, _ = nuisance_design(data, rf, coefficient=fit["coefficient_enabled"])
+    design, _, _ = nuisance_design(
+        data,
+        rf,
+        coefficient=fit["coefficient_enabled"],
+        band_drift=config.band_drift_sigma_hz_s is not None,
+    )
     ratio = wrapped_ratios(
         data,
         prediction[:, fit["active"]],

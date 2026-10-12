@@ -102,3 +102,61 @@ def test_rf_term_requires_within_band_identification():
     data = evidence(np.zeros(40), group)
     with pytest.raises(ValueError, match="unidentifiable"):
         nuisance_design(data, np.full(40, 11e9), coefficient=True)
+
+
+@pytest.mark.parametrize("solver", ["irls", "lbfgs"])
+def test_band_drift_and_rf_are_separately_recovered_and_charge_their_priors(solver):
+    n = 480
+    time = np.linspace(0.0, 300.0, n)
+    group = np.arange(n) % 4
+    rf = 10.45e9 + 0.25e9 * ((group % 2) * 4 + (np.arange(n) // 4) % 4 + 1)
+    blank = evidence(np.zeros(n), group, time)
+    design, labels, span = nuisance_design(blank, rf, coefficient=True, band_drift=True)
+    truth = np.array(
+        [
+            -80000.0,
+            -104000.0,
+            -54000.0,
+            -16000.0,
+            2 * span,
+            1.5 * span,
+            0.6 * span,
+            -0.4 * span,
+            -600.0,
+        ]
+    )
+    prediction = np.column_stack((20000 * np.sin(time / 70), -35000 * np.cos(time / 50)))
+    identity = (np.arange(n) // 20) % 2
+    data = evidence(prediction[np.arange(n), identity] + design @ truth, group, time)
+    config = WrappedConfig(
+        scale_hz=125,
+        satellite_penalty=8,
+        maximum_satellites=2,
+        iterations=12,
+        nuisance_iterations=60,
+        em_iterations=80,
+        nuisance_solver=solver,
+        band_drift_sigma_hz_s=1.0,
+    )
+    fit = fit_wrapped(
+        data,
+        prediction,
+        np.ones_like(prediction),
+        rf,
+        [dict(beta=np.r_[truth[:6], 0.0, 0.0, 0.0], active=[0, 1])],
+        coefficient=True,
+        config=config,
+    )
+    np.testing.assert_allclose(fit["band_drift_hz_s"], [0.6, -0.4], atol=0.02)
+    np.testing.assert_allclose(fit["drift_hz_s"], [2.0, 1.5], atol=0.02)
+    assert fit["coefficient_hz_ghz"] == pytest.approx(-600, abs=3)
+    cost = (
+        16
+        + 0.5 * sum((np.array(fit["drift_hz_s"]) / 10) ** 2)
+        + 0.5 * sum(np.array(fit["band_drift_hz_s"]) ** 2)
+        + 0.5 * (fit["coefficient_hz_ghz"] / 2000) ** 2
+    )
+    assert fit["score"] == pytest.approx(fit["log_ratio"] - cost, abs=1e-6)
+    assert labels[-1] == "coefficient-hz-per-ghz"
+    with pytest.raises(ValueError, match="band drift scale"):
+        WrappedConfig(band_drift_sigma_hz_s=0.0)

@@ -65,7 +65,14 @@ def main():
         ):
             raise ValueError("surface provenance does not match the recording")
         phases, _ = load_phase_bank(root / "bundle", bank)
-        provider = phase_provider(phases, bank, data, meta["site"], (0.0, 0.0))
+        provider = phase_provider(
+            phases,
+            bank,
+            data,
+            meta["site"],
+            (0.0, 0.0),
+            inertial_phase=result.get("phase_model") == "fixed-reception-frame-orbital-phase",
+        )
         lookup = {int(n): i for i, n in enumerate(bank["norad"])}
         pool = [lookup[int(n)] for n in result["candidate_norad"]]
         arms = {}

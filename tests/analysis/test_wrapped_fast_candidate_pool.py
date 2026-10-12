@@ -94,6 +94,7 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
         source_digests={
             "src/leo/analysis/wrapped_glrt_likelihood.py": "w",
             "src/leo/analysis/sparse_glrt_likelihood.py": "s",
+            "src/leo/analysis/glrt_orbit_phase.py": "p",
             "runner": "old",
         },
     )
@@ -101,6 +102,17 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
     validate_surface_resume(protocol, updated)
     with pytest.raises(ValueError, match="scientific protocol"):
         validate_surface_resume(protocol, dict(updated, candidate_norad=[20, 30]))
+    with pytest.raises(ValueError, match="kernel changed"):
+        validate_surface_resume(
+            protocol,
+            dict(
+                updated,
+                source_digests={
+                    **updated["source_digests"],
+                    "src/leo/analysis/glrt_orbit_phase.py": "changed",
+                },
+            ),
+        )
     with pytest.raises(ValueError, match="kernel changed"):
         validate_surface_resume(
             protocol,

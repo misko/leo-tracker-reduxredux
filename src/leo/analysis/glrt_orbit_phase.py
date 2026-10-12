@@ -3,7 +3,7 @@
 import numpy as np
 
 from leo.analysis.wrapped_glrt_likelihood import smooth_visibility
-from leo.sky.frames import ecef_to_enu_matrix, geodetic_to_ecef_km
+from leo.sky.frames import EARTH_ROTATION_RATE_RAD_S, ecef_to_enu_matrix, geodetic_to_ecef_km
 
 
 class OrbitPhasePort:
@@ -17,6 +17,8 @@ class OrbitPhasePort:
         latitude_deg,
         longitude_deg,
         altitude_m,
+        *,
+        inertial_phase=False,
     ):
         self.position = np.asarray(positions, float)
         self.velocity = np.asarray(velocities, float)
@@ -41,6 +43,7 @@ class OrbitPhasePort:
             raise ValueError("finite regular orbital bank required")
         self.receiver = geodetic_to_ecef_km(latitude_deg, longitude_deg, altitude_m)
         self.up = ecef_to_enu_matrix(latitude_deg, longitude_deg)[2]
+        self.inertial_phase = bool(inertial_phase)
 
     def predict(self, phase_s, indices=None):
         selected = np.arange(len(self.position)) if indices is None else np.asarray(indices, int)
@@ -62,12 +65,33 @@ class OrbitPhasePort:
         v1 = self.velocity[selected[:, None], lower + 1]
         p = p0 + weight * (p1 - p0)
         v = v0 + weight * (v1 - v0)
+        pos_rate = (p1 - p0) / step
+        acceleration = (v1 - v0) / step
+        if self.inertial_phase:
+            # Shift orbital phase while holding reception-time Earth rotation
+            # fixed. The queried ECEF states already include the extra rotation.
+            angle = EARTH_ROTATION_RATE_RAD_S * np.broadcast_to(phase, selected.shape)
+            cosine, sine = np.cos(angle)[:, None], np.sin(angle)[:, None]
+
+            def rotate(value):
+                return np.stack(
+                    (
+                        cosine * value[..., 0] - sine * value[..., 1],
+                        sine * value[..., 0] + cosine * value[..., 1],
+                        value[..., 2],
+                    ),
+                    axis=-1,
+                )
+
+            p, v = rotate(p), rotate(v)
+            pos_rate = rotate(pos_rate) + EARTH_ROTATION_RATE_RAD_S * np.cross([0.0, 0.0, 1.0], p)
+            acceleration = rotate(acceleration) + EARTH_ROTATION_RATE_RAD_S * np.cross(
+                [0.0, 0.0, 1.0], v
+            )
         delta = p - self.receiver
         distance = np.linalg.norm(delta, axis=-1)
         direction = delta / distance[:, :, None]
         rate = np.sum(direction * v, axis=-1)
-        pos_rate = (p1 - p0) / step
-        acceleration = (v1 - v0) / step
         direction_rate = (
             pos_rate - direction * np.sum(direction * pos_rate, axis=-1)[:, :, None]
         ) / distance[:, :, None]
