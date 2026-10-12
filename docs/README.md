@@ -81,6 +81,10 @@ exactly and duplicate prediction calls fall from 44 to 22. At five seconds,
 22 interrupted paths preserve completed seeds, but changed stationary coarse
 comparisons improve 22 times and worsen 25 times. The affected suite passes
 66 tests. Full geographic comparisons remain necessary; defaults are unchanged.
+The [full B7 incumbent comparison](../reports/2026_10_12_band_calibrated_merge/full-incumbent/README.md)
+has now frozen the same development panel and started bounded execution using
+the complete 400-point search rather than the earlier selected points. Both
+final c arms remain matched; no new position improvement is established yet.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

@@ -204,6 +204,16 @@ dropping weak rows automatically, or asserting a physical retuning fault.
 The affected suite passes 66 checks. Full DS20/DS16 geographic qualification and
 DS15 authority remain outstanding, and production defaults remain unchanged.
 
+The [full B7 incumbent comparison](../../reports/2026_10_12_band_calibrated_merge/full-incumbent/README.md)
+now freezes all eight development recordings and starts bounded resumable full
+position searches. Its protocol deliberately excludes the earlier selected
+points, retains the original 400-point search and recovery budgets, crosses
+original/joined proposals with conditioned/unconditioned initialization, and
+keeps matched conditional c=0/fitted-c final arms. Four new orchestration checks
+verify observation/RF identity, audit retention, recording roles, exclusion of
+earlier selected points and frozen-protocol protection. Numerical execution has
+started; a yielded slice is incomplete and no new geographic gain is claimed.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
