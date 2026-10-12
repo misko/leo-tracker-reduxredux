@@ -1,5 +1,7 @@
 # Band calibration and continuous track merging
 
+The [completed eight-recording panel and first full-search transfer](cohort/README.md) now extend this checkpoint. All 144 local fits are stationary. Development-learned calibration before discovery recovers the 156 km failure to 1.410 km fitted-c / 2.052 km c=0; protected merging reaches 1.303/3.779 km, retaining the c=0 regression. The follow-up also fixes group-authority preparation and audits inferior stationary joined solutions. Sections below preserve the earlier two-case checkpoint; their pending transfer status is superseded by that follow-up.
+
 Joint receiver/band calibration improves the first exposed DS20 local example in both RF-coefficient arms. Soft joining adds essentially no benefit over keeping the original parent groups once that calibration is fitted. A generally improving merge algorithm is **not yet qualified**: full-search transfer and randomized whole-recording comparisons remain necessary, and DS15 still lacks an authoritative membership manifest.
 
 This update records all 36 stationary fits in the matched local panel, including the poor zero-initialization results and the DS16 regressions. Automatic analysis defaults and recording products are unchanged. No RF collection was started.
