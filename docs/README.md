@@ -37,7 +37,7 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
-Recent eight-channel likelihood fitting: [six-scan development checkpoint](../reports/2026_10_12_fast_likelihood_cohort/README.md).
+Recent eight-channel likelihood fitting: [six-scan local evaluation and controls](../reports/2026_10_12_fast_likelihood_cohort/README.md).
 Alias-aware and track-shape initialization controls improve the conditional
 frequency fit, but most strong evidence remains unexplained. The requested
 near-reference position minimum and four-scan validation are still open.

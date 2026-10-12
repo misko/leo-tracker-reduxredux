@@ -1,4 +1,4 @@
-# Recent eight-channel GLRT likelihood: development checkpoint
+# Recent eight-channel GLRT likelihood: six-scan evaluation
 
 ## Motivation
 
@@ -15,12 +15,16 @@ ephemeris uncertainty, and the exact reference convention must be explicit.
 
 ## Solution
 
-**The accuracy objective remains open.** This report freezes and reviews six
-recent eight-channel fast scans, corrects the earlier alias/reference handling,
-and records matched `c = 0` versus fitted-`c` development fits. The revised
-model still explains too little strong GLRT evidence to support the requested
-position-minimum result. No geographic minimum or position improvement is
-claimed for this cohort yet.
+**The accuracy objective remains open.** The completed
+[six-scan evaluation](relative-phase/README.md) now explains 70–91% of strong
+GLRT evidence at the configured reference. Penalized satellite-specific timing
+corrections and better initialization resolve much of the earlier failed fit.
+The fitted-c best evaluated points are 0.71–1.41 km from that reference, but
+none of the four randomly assigned validation scans passes the preregistered
+combined distance/score-gap target. Full-catalogue audits retain that negative
+conclusion. The earlier development attempts below remain as measured history.
+
+![Completed frequency and position comparison](relative-phase/fit-versus-position.png)
 
 ## Method
 
@@ -90,7 +94,7 @@ The recorded receiver UTC anchor remains fixed. Both RF-coefficient arms receive
 the same timing prior, candidate universe, other nuisance priors, observations,
 starts and iteration budgets.
 
-## Measured development result
+## Earlier measured development result
 
 These comparisons use the lower-edge development scan
 `fast-bf660cb5200c4a27c3a2181a6dfc7132` at the configured reference position.
@@ -145,7 +149,7 @@ quality as material to any claimed position minimum. The three points do not
 establish a minimum or validate the 1 km accuracy target. Efficient, consistent
 nuisance refitting is required before completing broader geographic comparisons.
 
-## Provenance, checks, and remaining gates
+## Earlier checkpoint provenance, checks, and remaining gates
 
 All six orbital banks select each object's newest eligible element from a
 declared 48-hour archive window. **Both collection time and element epoch must
@@ -180,12 +184,12 @@ The next measured questions are satellite-specific ephemeris mismatch and
 receiver clock shape, with constrained priors and explicit numerical controls.
 Model choices must be frozen before evaluating the four validation scans.
 
-For the requested accuracy objective, the preregistered operational target is
+The preregistered operational target is
 a best point within 1 km of the configured reference, and reference loss within
 one composite score unit of the evaluated minimum, on at least three of the four
-validation scans. All scans and failures remain in the denominator. This target
-has **not been evaluated or met**. Frequency-fit changes and position errors will
-be reported separately, including the controlled zero-c versus fitted-c ablation.
+validation scans. All scans and failures remain in the denominator. At this
+earlier checkpoint it had not been evaluated. The completed evaluation now
+records **0/4 passes**; frequency-fit changes and position errors remain separate.
 
 ## Reproduction
 

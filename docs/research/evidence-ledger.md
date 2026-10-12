@@ -84,14 +84,18 @@ shadow product while its physical interpretation remains candidate-only.
 One additional dated Markdown report is indexed here:
 [six-scan alias-aware likelihood checkpoint](../../reports/2026_10_12_fast_likelihood_cohort/README.md).
 The historical campaign-finalization inventory above retains its original scope.
-The new cohort freezes six completed lower/upper-edge scans and a random whole-scan
-development/validation split. On one development scan, measured-track starts
-increase the modeled strong-evidence fraction from about 11% to 29%. A shared
-ephemeris-time nuisance raises one arm to 37%, while the fitted-c arm retains only
-29% despite a higher score. The zero-c shared-phase endpoint is not converged.
-These are **hypothesis-generating frequency diagnostics**. No new cohort position
-minimum, position improvement, validated satellite identities or production
-promotion is established; four validation scans remain untouched.
+The cohort freezes six completed lower/upper-edge scans and a random whole-scan
+development/validation split. Penalized individual timing corrections and
+orbit-blind shape starts now explain 70–91% of strong evidence at the configured
+reference. The completed local searches place fitted-c best evaluated points
+0.71–1.41 km away; **0/4 validation scans pass** the combined 1 km/one-score-unit
+target. Full-prepared-catalogue audits reproduce the fitted-c preferred-point
+scores, while improving one zero-c fit beyond its small-pool result. Frequency
+improvement is not consistent position improvement. All initialization timeouts,
+partial searches, resumed slices and matched c ablations are retained. These
+remain **conditional frequency and local-position diagnostics**; no calibrated
+position posterior, confirmed spacecraft identity or production promotion is
+established.
 
 ### Continuous track merging study on 12 October 2026
 

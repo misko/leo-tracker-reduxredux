@@ -60,7 +60,8 @@ def test_horizon_opportunity_is_continuous_and_has_zero_slope_at_endpoints():
     assert (1 - values[3]) / 1e-6 < 1e-6
 
 
-def test_joint_band_drift_and_rf_coefficient_recovery_with_matched_zero_c():
+@pytest.mark.parametrize("solver", ["irls", "lbfgs"])
+def test_joint_band_drift_and_rf_coefficient_recovery_with_matched_zero_c(solver):
     n = 400
     time = np.linspace(0.0, 300.0, n)
     group = np.arange(n) % 4
@@ -81,6 +82,7 @@ def test_joint_band_drift_and_rf_coefficient_recovery_with_matched_zero_c():
         iterations=15,
         nuisance_iterations=60,
         em_iterations=80,
+        nuisance_solver=solver,
     )
     seed = truth[:4] + 40
     fitted = fit_wrapped(

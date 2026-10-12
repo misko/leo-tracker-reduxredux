@@ -27,8 +27,16 @@ class WrappedConfig:
     drift_sigma_hz_s: float = 10.0
     coefficient_sigma_hz_ghz: float = 2000.0
     common_phase_sigma_s: float = 3.0
+    relative_phase_sigma_s: float | None = None
+    nuisance_solver: str = "irls"
 
     def __post_init__(self):
+        if self.nuisance_solver not in ("irls", "lbfgs"):
+            raise ValueError("unknown nuisance solver")
+        if self.relative_phase_sigma_s is not None and (
+            not np.isfinite(self.relative_phase_sigma_s) or self.relative_phase_sigma_s <= 0
+        ):
+            raise ValueError("positive finite relative phase scale required")
         if any(
             not np.isfinite(v) or v <= 0
             for v in (
@@ -113,21 +121,23 @@ def wrapped_ratios(evidence, prediction_hz, opportunity, design, beta, config, d
     ):
         raise ValueError("invalid alias-model arrays")
     value = np.zeros_like(prediction)
-    gradient, information = np.zeros_like(value), np.zeros_like(value)
+    if derivative:
+        gradient, information = np.zeros_like(value), np.zeros_like(value)
     a = 2 * np.pi * config.scale_hz / config.period_hz
     rho = np.exp(-a)
     numerator = -np.expm1(-2 * a)
     base = np.expm1(-a) ** 2
     mean = prediction + (design @ beta)[:, None]
     for k in range(evidence.frequency_hz.shape[1]):
-        residual = circular(evidence.frequency_hz[:, k, None] - mean, config.period_hz)
+        residual = evidence.frequency_hz[:, k, None] - mean
         z = np.pi * residual / config.period_hz
         denominator = base + 4 * rho * np.sin(z) ** 2
         term = evidence.candidate_weight[:, k, None] * numerator / denominator
         value += term
         if derivative:
             gradient += term * (4 * rho * np.pi / config.period_hz) * np.sin(2 * z) / denominator
-            information += term * 2 / (config.scale_hz**2 + residual**2)
+            wrapped_residual = circular(residual, config.period_hz)
+            information += term * 2 / (config.scale_hz**2 + wrapped_residual**2)
     q = evidence.signal_probability[:, None] * opportunity
     return (
         (1 + q * (value - 1), q * gradient, q * information) if derivative else 1 + q * (value - 1)
@@ -149,6 +159,11 @@ def fit_wrapped(
     design, labels, span = nuisance_design(evidence, rf_hz, coefficient=coefficient)
     groups = int(evidence.group.max()) + 1
     precision = np.zeros(design.shape[1])
+    relative_precision = (
+        0.0 if config.relative_phase_sigma_s is None else 1 / config.relative_phase_sigma_s**2
+    )
+    if relative_precision and orbit_provider is None:
+        raise ValueError("relative phase requires an orbital provider")
     precision[groups : groups + groups // 2] = 1 / (config.drift_sigma_hz_s * span) ** 2
     if coefficient:
         precision[-1] = 1 / config.coefficient_sigma_hz_ghz**2
@@ -164,7 +179,35 @@ def fit_wrapped(
         else:
             raise ValueError("nuisance seed dimension mismatch")
         active = list(seed.get("active", ())) if isinstance(seed, dict) else []
+        weights = seed.get("weights") if isinstance(seed, dict) else None
         phase = float(seed.get("phase_s", 0.0)) if isinstance(seed, dict) else 0.0
+        shifts = np.zeros(prediction.shape[1])
+        if (
+            isinstance(seed, dict)
+            and relative_precision
+            and seed.get("satellite_phase_s") is not None
+        ):
+            shifts[:] = seed["satellite_phase_s"]
+        if not np.isfinite(shifts).all() or np.max(np.abs(shifts)) > 10:
+            raise ValueError("finite bounded satellite phase seed required")
+
+        def predict(current_phase, current_shifts, indices=None):
+            if relative_precision:
+                idx = (
+                    np.arange(len(current_shifts)) if indices is None else np.asarray(indices, int)
+                )
+                return orbit_provider.predict(current_phase + current_shifts[idx], indices)
+            return orbit_provider.predict(current_phase, indices)
+
+        def selection(ratio, incumbent, current_shifts, current_weights):
+            return select_sparse(
+                ratio,
+                config,
+                incumbent,
+                penalties=config.satellite_penalty + 0.5 * relative_precision * current_shifts**2,
+                initial_weights=current_weights,
+            )
+
         if len(active) > config.maximum_satellites or any(
             s < 0 or s >= prediction.shape[1] for s in active
         ):
@@ -172,9 +215,10 @@ def fit_wrapped(
         history, converged, previous = [], False, -np.inf
         for iteration in range(config.iterations):
             if orbit_provider is not None:
-                prediction, opportunity, _, _ = orbit_provider.predict(phase)
+                prediction, opportunity, _, _ = predict(phase, shifts)
             ratio = wrapped_ratios(evidence, prediction, opportunity, design, beta, config)
-            active, weights, raw, curve = select_sparse(ratio, config, active)
+            active, weights, raw, curve = selection(ratio, active, shifts, weights)
+            shifts[np.setdiff1d(np.arange(len(shifts)), active)] = 0.0
             score = raw - 0.5 * np.dot(precision * beta, beta)
             if orbit_provider is not None:
                 score -= 0.5 * (phase / config.common_phase_sigma_s) ** 2
@@ -183,10 +227,28 @@ def fit_wrapped(
                 converged = True
                 break
             previous = score
+            if config.nuisance_solver == "lbfgs":
+                from leo.analysis.wrapped_glrt_refinement import refine_wrapped
+
+                beta, phase, shifts, weights, score = refine_wrapped(
+                    evidence,
+                    prediction,
+                    opportunity,
+                    design,
+                    precision,
+                    config,
+                    active,
+                    orbit_provider,
+                    beta,
+                    phase,
+                    shifts,
+                    weights,
+                )
+                continue
             for _ in range(config.nuisance_iterations):
                 if orbit_provider is not None:
-                    local_prediction, local_opportunity, timing, opportunity_rate = (
-                        orbit_provider.predict(phase, active)
+                    local_prediction, local_opportunity, timing, opportunity_rate = predict(
+                        phase, shifts, active
                     )
                 else:
                     local_prediction, local_opportunity = (
@@ -231,9 +293,36 @@ def fit_wrapped(
                         ]
                     )
                     grad = np.append(grad, phase_gradient)
+                    if relative_precision:
+                        local_gradient = (
+                            np.sum(
+                                (gradient * timing + opportunity_gradient)
+                                * weights[None, 1:]
+                                / mixture[:, None],
+                                axis=0,
+                            )
+                            - relative_precision * shifts[active]
+                        )
+                        local_information = np.sum(mass_information * timing**2, axis=0)
+                        local_coupling = design.T @ (mass_information * timing)
+                        shared_coupling = np.vstack((local_coupling, local_information))
+                        normal = np.block(
+                            [
+                                [normal, shared_coupling],
+                                [
+                                    shared_coupling.T,
+                                    np.diag(local_information + relative_precision),
+                                ],
+                            ]
+                        )
+                        grad = np.concatenate((grad, local_gradient))
                 informed = np.diag(normal) > 1e-18
                 step = np.zeros_like(grad)
                 step[informed] = np.linalg.solve(normal[np.ix_(informed, informed)], grad[informed])
+                shift_step = np.zeros_like(shifts)
+                if relative_precision:
+                    shift_step[active] = step[-len(active) :]
+                    step = step[: -len(active)]
                 phase_step = step[-1] if orbit_provider is not None else 0.0
                 if orbit_provider is not None:
                     step = step[:-1]
@@ -241,17 +330,20 @@ def fit_wrapped(
                     1.0,
                     2000 / max(1.0, np.max(np.abs(design @ step))),
                     0.5 / max(0.5, abs(phase_step)),
+                    0.5 / max(0.5, np.max(np.abs(shift_step))),
                 )
                 step *= damping_bound
                 phase_step *= damping_bound
+                shift_step *= damping_bound
                 accepted = False
                 for damping in (1.0, 0.5, 0.25, 0.125, 0.0625):
                     trial = beta + damping * step
                     trial_phase = float(np.clip(phase + damping * phase_step, -10.0, 10.0))
+                    trial_shifts = np.clip(shifts + damping * shift_step, -10.0, 10.0)
                     trial[:groups] = circular(trial[:groups], config.period_hz)
                     if orbit_provider is not None:
-                        trial_prediction, trial_opportunity, _, _ = orbit_provider.predict(
-                            trial_phase, active
+                        trial_prediction, trial_opportunity, _, _ = predict(
+                            trial_phase, trial_shifts, active
                         )
                     else:
                         trial_prediction, trial_opportunity = local_prediction, local_opportunity
@@ -268,21 +360,26 @@ def fit_wrapped(
                         ll
                         - config.satellite_penalty * len(active)
                         - 0.5 * np.dot(precision * trial, trial)
+                        - 0.5 * relative_precision * np.dot(trial_shifts, trial_shifts)
                     )
                     if orbit_provider is not None:
                         proposed -= 0.5 * (trial_phase / config.common_phase_sigma_s) ** 2
                     if proposed > score + 1e-9:
                         beta, weights, score, accepted = trial, w, proposed, True
                         phase = trial_phase
+                        shifts = trial_shifts
                         break
                 if not accepted or (
-                    np.max(np.abs(design @ step)) < 0.02 and abs(phase_step) < 1e-5
+                    np.max(np.abs(design @ step)) < 0.02
+                    and abs(phase_step) < 1e-5
+                    and np.max(np.abs(shift_step)) < 1e-5
                 ):
                     break
         if orbit_provider is not None:
-            prediction, opportunity, _, _ = orbit_provider.predict(phase)
+            prediction, opportunity, _, _ = predict(phase, shifts)
         ratio = wrapped_ratios(evidence, prediction, opportunity, design, beta, config)
-        active, weights, raw, curve = select_sparse(ratio, config, active)
+        active, weights, raw, curve = selection(ratio, active, shifts, weights)
+        shifts[np.setdiff1d(np.arange(len(shifts)), active)] = 0.0
         score = raw - 0.5 * np.dot(precision * beta, beta)
         if orbit_provider is not None:
             score -= 0.5 * (phase / config.common_phase_sigma_s) ** 2
@@ -295,6 +392,8 @@ def fit_wrapped(
                 log_ratio=float(np.log(mixture).sum()),
                 beta=beta.tolist(),
                 phase_s=phase,
+                satellite_phase_s=shifts.tolist() if relative_precision else None,
+                relative_phase_prior_cost=float(0.5 * relative_precision * np.dot(shifts, shifts)),
                 labels=labels,
                 offsets_hz=beta[:groups].tolist(),
                 drift_hz_s=(beta[groups : groups + groups // 2] / span).tolist(),
@@ -319,6 +418,8 @@ def fit_wrapped(
             "log_ratio": 0.0,
             "beta": [0.0] * design.shape[1],
             "phase_s": 0.0,
+            "satellite_phase_s": [0.0] * len(shifts) if relative_precision else None,
+            "relative_phase_prior_cost": 0.0,
             "offsets_hz": [0.0] * groups,
             "drift_hz_s": [0.0] * (groups // 2),
             "coefficient_hz_ghz": 0.0,
@@ -337,7 +438,11 @@ def fit_wrapped(
     return {
         **best,
         "starts": [
-            {k: r[k] for k in ("score", "beta", "phase_s", "active", "converged")} for r in results
+            {
+                k: r[k]
+                for k in ("score", "beta", "phase_s", "satellite_phase_s", "active", "converged")
+            }
+            for r in results
         ],
         "search_exact": False,
         "coefficient_enabled": coefficient,

@@ -151,3 +151,33 @@ def test_seeded_subset_is_preserved_as_a_feasible_solution():
         fit_sparse(
             data, pred, np.ones_like(pred, bool), [dict(offsets_hz=[500.0], active=[999])], config
         )
+
+
+def test_satellite_specific_prior_cost_can_replace_an_expensive_incumbent():
+    from leo.analysis.sparse_glrt_likelihood import select_sparse
+
+    ratio = np.full((20, 2), 10.0)
+    active, weights, score, _ = select_sparse(
+        ratio, SparseConfig(maximum_satellites=1), [0], penalties=[30.0, 2.0]
+    )
+    assert active == [1]
+    assert score == pytest.approx(20 * np.log(10) - 2, abs=1e-5)
+    with pytest.raises(ValueError, match="penalty"):
+        select_sparse(ratio, SparseConfig(), penalties=[-1.0, 2.0])
+
+
+def test_sparse_reselection_retains_a_feasible_learned_weight_solution():
+    from leo.analysis.sparse_glrt_likelihood import select_sparse
+
+    ratio = np.full((40, 1), 1.02)
+    active, weights, score, _ = select_sparse(
+        ratio,
+        SparseConfig(maximum_satellites=1, satellite_penalty=0),
+        [0],
+        initial_weights=[0.0, 1.0],
+    )
+    assert active == [0]
+    np.testing.assert_allclose(weights, [0.0, 1.0])
+    assert score == pytest.approx(40 * np.log(1.02))
+    with pytest.raises(ValueError, match="normalized incumbent"):
+        select_sparse(ratio, SparseConfig(), [0], initial_weights=[1.0, 1.0])

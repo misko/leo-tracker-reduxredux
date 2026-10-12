@@ -26,6 +26,13 @@ def test_orbit_phase_frequency_and_horizon_derivatives_match_finite_differences(
     assert np.all(opportunity[:, 0] == 1)
     assert np.all((opportunity[:, 1] > 0) & (opportunity[:, 1] < 1))
     np.testing.assert_allclose(port.predict(0.08, [1])[0], frequency[:, 1, None])
+    varying = port.predict(np.array([0.08, -0.13]))
+    for s, phase in enumerate([0.08, -0.13]):
+        independent = port.predict(phase, [s])
+        for actual, expected in zip(varying, independent, strict=True):
+            np.testing.assert_allclose(actual[:, s, None], expected)
+    with pytest.raises(ValueError, match="one finite phase"):
+        port.predict([0.0, 1.0, 2.0])
     with pytest.raises(ValueError, match="outside"):
         port.predict(30)
 
@@ -107,3 +114,67 @@ def test_unobservable_null_does_not_pay_a_nuisance_seed_penalty():
     assert result["score"] == 0
     assert result["active"] == []
     assert result["drift_hz_s"] == [0.0, 0.0]
+
+
+@pytest.mark.parametrize("solver", ["irls", "lbfgs"])
+def test_individual_ephemeris_errors_are_recovered_with_a_charged_prior(solver):
+    n = 320
+    times = np.linspace(0, 300, n)
+    groups = np.arange(n) % 4
+    rf = 10.45e9 + 0.25e9 * ((groups % 2) * 4 + (np.arange(n) // 4) % 4 + 1)
+    base = np.column_stack((20000 * np.sin(times / 70), -35000 * np.cos(times / 50)))
+    timing = np.column_stack((500 * np.sin(times / 20), -700 * np.cos(times / 27)))
+    blank = FrequencyEvidence(
+        tuple(map(str, range(n))),
+        np.zeros((n, 1)),
+        np.ones((n, 1)),
+        np.full(n, 0.95),
+        groups,
+        times,
+    )
+    design, _, span = nuisance_design(blank, rf, coefficient=True)
+    beta = np.array([-80000.0, -104000.0, -54000.0, -16000.0, 2 * span, 1.5 * span, -600.0])
+    identity = (np.arange(n) // 20) % 2
+    phases = np.array([1.25, -0.75])
+    y = (base + timing * phases)[np.arange(n), identity] + design @ beta
+    data = FrequencyEvidence(
+        blank.ids, y[:, None], blank.candidate_weight, blank.signal_probability, groups, times
+    )
+
+    class Provider:
+        def predict(self, phase, indices=None):
+            idx = np.arange(2) if indices is None else np.asarray(indices)
+            pred = base[:, idx] + timing[:, idx] * np.asarray(phase)
+            return pred, np.ones_like(pred), timing[:, idx], np.zeros_like(pred)
+
+    config = WrappedConfig(
+        scale_hz=125,
+        satellite_penalty=8,
+        maximum_satellites=2,
+        iterations=10,
+        nuisance_iterations=60,
+        em_iterations=80,
+        relative_phase_sigma_s=1.0,
+        nuisance_solver=solver,
+    )
+    result = fit_wrapped(
+        data,
+        base,
+        np.ones_like(base),
+        rf,
+        [dict(beta=beta, active=[0, 1])],
+        coefficient=True,
+        config=config,
+        orbit_provider=Provider(),
+    )
+    delta = np.array(result["satellite_phase_s"])
+    np.testing.assert_allclose(result["phase_s"] + delta, phases, atol=0.01)
+    assert result["relative_phase_prior_cost"] == pytest.approx(0.5 * delta @ delta)
+    cost = (
+        16
+        + result["relative_phase_prior_cost"]
+        + 0.5 * (result["phase_s"] / 3) ** 2
+        + 0.5 * sum((np.array(result["drift_hz_s"]) / 10) ** 2)
+        + 0.5 * (result["coefficient_hz_ghz"] / 2000) ** 2
+    )
+    assert result["score"] == pytest.approx(result["log_ratio"] - cost, abs=1e-6)

@@ -130,14 +130,30 @@ def fit_weights(ratios, iterations=35, initial=None):
     return weights, float(np.log(matrix @ weights).sum())
 
 
-def select_sparse(ratios, config, incumbent=()):
+def select_sparse(ratios, config, incumbent=(), penalties=None, initial_weights=None):
     """Forward additions and backward deletions; every candidate is considered.
 
     This is a bounded local subset search, not a certificate of minimality.
     """
+    costs = (
+        np.full(ratios.shape[1], config.satellite_penalty)
+        if penalties is None
+        else np.asarray(penalties, float)
+    )
+    if costs.shape != (ratios.shape[1],) or not np.isfinite(costs).all() or np.any(costs < 0):
+        raise ValueError("one finite nonnegative penalty per satellite required")
     active = list(incumbent)
-    weights, ll = fit_weights(ratios[:, active], config.em_iterations)
-    score = ll - config.satellite_penalty * len(active)
+    if initial_weights is not None:
+        initial_weights = np.asarray(initial_weights, float)
+        if (
+            initial_weights.shape != (len(active) + 1,)
+            or np.any(initial_weights < 0)
+            or not np.isfinite(initial_weights).all()
+            or not np.isclose(initial_weights.sum(), 1.0)
+        ):
+            raise ValueError("normalized incumbent weights required")
+    weights, ll = fit_weights(ratios[:, active], config.em_iterations, initial_weights)
+    score = ll - costs[active].sum()
     if score < 0:
         active, weights, score = [], np.ones(1), 0.0
     mixture = weights[0] + ratios[:, active] @ weights[1:]
@@ -156,7 +172,7 @@ def select_sparse(ratios, config, incumbent=()):
                 continue
             chosen = active + [int(candidate)]
             w, ll = fit_weights(ratios[:, chosen], config.em_iterations)
-            objective = ll - config.satellite_penalty * len(chosen)
+            objective = ll - costs[chosen].sum()
             if best is None or objective > best[0]:
                 best = objective, chosen, w, ll
         if best is None or best[0] <= score + 1e-7:
@@ -167,8 +183,8 @@ def select_sparse(ratios, config, incumbent=()):
     # Preserve the previous feasible subset: reselection must never discard an
     # improvement from the continuous solve merely because greedy order changed.
     if len(incumbent):
-        old_weights, ll = fit_weights(ratios[:, incumbent], config.em_iterations)
-        old_score = ll - config.satellite_penalty * len(incumbent)
+        old_weights, ll = fit_weights(ratios[:, incumbent], config.em_iterations, initial_weights)
+        old_score = ll - costs[list(incumbent)].sum()
         if old_score > score:
             active, weights, score = list(incumbent), old_weights, old_score
     # A bounded swap pass can escape a greedy choice even at the cardinality cap.
@@ -185,7 +201,7 @@ def select_sparse(ratios, config, incumbent=()):
             for remove in removals:
                 chosen = [s for k, s in enumerate(active) if k != remove] + [int(add)]
                 w, ll = fit_weights(ratios[:, chosen], config.em_iterations)
-                objective = ll - config.satellite_penalty * len(chosen)
+                objective = ll - costs[chosen].sum()
                 if objective > score + 1e-7 and (best is None or objective > best[0]):
                     best = objective, chosen, w
         if best is not None:
@@ -196,7 +212,7 @@ def select_sparse(ratios, config, incumbent=()):
         for k in range(len(active)):
             chosen = active[:k] + active[k + 1 :]
             w, ll = fit_weights(ratios[:, chosen], config.em_iterations)
-            objective = ll - config.satellite_penalty * len(chosen)
+            objective = ll - costs[chosen].sum()
             if objective > score + 1e-7 and (best is None or objective > best[0]):
                 best = objective, chosen, w
         if best is None:

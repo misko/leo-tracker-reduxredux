@@ -11,7 +11,16 @@ import numpy as np
 from leo.analysis.wrapped_glrt_likelihood import PILOT_ALIAS_HZ, circular
 
 
-def shape_seeds(evidence, prediction, opportunity, tracks, *, maximum_satellites=40):
+def shape_seeds(
+    evidence,
+    prediction,
+    opportunity,
+    tracks,
+    *,
+    maximum_satellites=40,
+    timing=None,
+    phase_sigma_s=1.0,
+):
     groups = int(evidence.group.max()) + 1
     center = (evidence.time_s.min() + evidence.time_s.max()) / 2
     span = max(1.0, (evidence.time_s.max() - evidence.time_s.min()) / 2)
@@ -19,6 +28,13 @@ def shape_seeds(evidence, prediction, opportunity, tracks, *, maximum_satellites
         np.arange(len(evidence.ids)), evidence.candidate_weight.argmax(axis=1)
     ]
     proposals = []
+    if timing is not None and (
+        np.shape(timing) != np.shape(prediction)
+        or not np.isfinite(timing).all()
+        or not np.isfinite(phase_sigma_s)
+        or phase_sigma_s <= 0
+    ):
+        raise ValueError("finite timing derivatives and positive phase scale required")
     for track in tracks:
         rows = np.asarray(track, int)
         if (
@@ -40,11 +56,26 @@ def shape_seeds(evidence, prediction, opportunity, tracks, *, maximum_satellites
         dt = times - times.mean()
         residual = frequency[take, None] - prediction[sampled]
         slope = np.clip(dt @ residual / max(1.0, np.dot(dt, dt)), -5.0, 5.0)
-        adjusted = residual - dt[:, None] * slope
+        phase = np.zeros(prediction.shape[1])
+        if timing is not None:
+            tau = timing[sampled] - timing[sampled].mean(axis=0)
+            centered_residual = residual - residual.mean(axis=0)
+            aa = np.dot(dt, dt) + (250 / 5) ** 2
+            ab = dt @ tau
+            bb = np.sum(tau**2, axis=0) + (250 / phase_sigma_s) ** 2
+            ay = dt @ centered_residual
+            by = np.sum(tau * centered_residual, axis=0)
+            denominator = aa * bb - ab**2
+            slope = np.clip((bb * ay - ab * by) / denominator, -5.0, 5.0)
+            phase = np.clip((aa * by - ab * ay) / denominator, -10.0, 10.0)
+        phase_frequency = np.zeros_like(residual) if timing is None else timing[sampled] * phase
+        adjusted = residual - dt[:, None] * slope - phase_frequency
         intercept = np.median(adjusted, axis=0)
-        centered = residual - intercept - dt[:, None] * slope
+        centered = adjusted - intercept
         rms = np.sqrt(np.mean(centered**2, axis=0))
         cost = np.mean(2 * 200.0**2 * (np.sqrt(1 + (centered / 200.0) ** 2) - 1), axis=0)
+        if timing is not None:
+            cost += 250**2 * (phase / phase_sigma_s) ** 2 / len(sampled)
         cost[np.mean(opportunity[sampled], axis=0) < 0.8] = np.inf
         for sat in np.argsort(cost)[:3]:
             if not np.isfinite(cost[sat]) or rms[sat] > 750:
@@ -56,6 +87,7 @@ def shape_seeds(evidence, prediction, opportunity, tracks, *, maximum_satellites
                     satellite=int(sat),
                     offset_hz=float(offset),
                     drift_hz_s=float(slope[sat]),
+                    phase_s=float(phase[sat]),
                     rms_hz=float(rms[sat]),
                     support=len(rows),
                     span_s=float(np.ptp(times)),
@@ -103,5 +135,14 @@ def shape_seeds(evidence, prediction, opportunity, tracks, *, maximum_satellites
         for match in relevant:
             mass[match["satellite"]] = mass.get(match["satellite"], 0) + match["weight"]
         active = sorted(mass, key=lambda s: (-mass[s], s))[:maximum_satellites]
-        seeds.append(dict(beta=offsets + (np.array(slopes) * span).tolist(), active=active))
+        seed = dict(beta=offsets + (np.array(slopes) * span).tolist(), active=active)
+        if timing is not None:
+            phases = np.zeros(prediction.shape[1])
+            for sat in active:
+                matches = [x for x in relevant if x["satellite"] == sat]
+                phases[sat] = np.average(
+                    [x["phase_s"] for x in matches], weights=[x["weight"] for x in matches]
+                )
+            seed["satellite_phase_s"] = phases.tolist()
+        seeds.append(seed)
     return seeds, proposals
