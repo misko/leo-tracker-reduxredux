@@ -128,6 +128,17 @@ recording's verified offline reference resolves the recovery case's evaluation
 gap and exposes a 156.475/154.073 km baseline/protected-join failure. Full-search
 calibration transfer is running; no corpus-level improvement is claimed.
 
+The [completed eight-recording panel and first full-search transfer](../../reports/2026_10_12_band_calibrated_merge/cohort/README.md)
+extends that checkpoint to 144 stationary local fits and 64 component checks.
+Calibration learned from another development recording and applied before
+discovery recovers the 156.475/154.073 km failure to 1.410/2.052 km. Protected
+joining gives 1.303/3.779 km, so its c=0 regression remains explicit. Each mode's
+c arms share its stationary B7 stage and final bank. Four same-objective audits
+also reveal better feasible parent states than the stationary joined fits.
+The group freezer now distinguishes true joins from original segments newly
+admitted by a changed bootstrap quota. Validation, offset-stability analysis and
+the full DS20/DS16/DS15 scope remain incomplete; no production promotion is made.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
