@@ -152,6 +152,17 @@ leading to different stationary coarse fits. This is a measured path through
 initialization and association, not proof of a physical retuning fault. All four
 initial validation members remain included; full-corpus qualification is open.
 
+The same follow-up now profiles every contributing parent in the sparse case.
+The previously unselected 40-row fragment and selected 73-row fragment agree on
+candidate 59296 and timing; complete-parent agreement would not reject this join.
+A controlled support × weight diagnostic reproduces both original clock seeds:
+adding rows while keeping inherited weights changes RX1 slope by −2.456 Hz/s,
+versus +0.557 Hz/s from weights alone and −2.156 Hz/s from both interventions.
+The saved coarse solutions then exchange 250 lost / 562 added correction-training
+rows and 28 confident candidate preferences. These reference-free audits isolate
+initialization and calibration paths; they are not position re-fits or a qualified
+weight-only repair. Existing numerical models and production defaults are unchanged.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs

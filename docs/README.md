@@ -58,6 +58,10 @@ validation](../reports/2026_10_12_band_calibrated_merge/refinement/README.md)
 retain four score-improving parent starts, two geographic regressions, a large
 raw-merging validation gain, a calibrated-merging validation regression, and
 neutral DS16 validation pairs. Corpus qualification remains pending.
+Its complete-parent and clock-weight audits show that the sparse regression's
+added fragment agrees with its selected parent; adding its rows drives the clock
+seed change even when original row weights are preserved. Plots also trace the
+changed correction-training support, without claiming a position repair.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same
