@@ -6,8 +6,9 @@ full unmerged/joined pair is complete and produces identical final positions and
 scores in both c arms. The unmerged control also reproduces all 400 previous
 bootstrap seeds exactly. The conditioned unmerged mode is also complete, with
 mixed position effects and worse operational frequency objectives. The joined
-conditioned mode remains in progress; no general geographic improvement is
-established yet.
+conditioned mode is now complete and reproduces the original control exactly
+in both arms. All four raw modes for this first recording are evaluated; no
+general geographic improvement is established yet.
 
 ## First completed pair
 
@@ -28,7 +29,7 @@ unmerged full control: zero bank differences, zero vector differences and zero
 failed prior points. The [progress receipt](progress.json) pins that oracle's
 terminal, bank, protocol and per-point input hashes. It also retains every one
 of the 48 planned conditions, including all unfinished modes. Current progress
-is three completed/evaluated conditions and no terminal failures.
+is four completed/evaluated conditions and no terminal failures.
 
 Across the joined search's 400 bootstrap points, 276 retain the original seed
 and 124 choose a joined pass, without interruption. Both final arms come from
@@ -69,9 +70,26 @@ Those are inferred assignments, not verified emitters. Cross-bank differences
 are operational effects, not isolated fitting gains under an identical model.
 Within each mode, both c arms retain the same observations, final bank, priors
 and budgets and accept the same B7 stage. Conditioning alone is therefore not
-a qualified repair. The corresponding joined-conditioned comparison is pending.
+a qualified repair.
 
-The conditioned mode needs four bounded slices, totaling 2,257.646 seconds of
+## Joining with conditioning
+
+The raw joined-conditioned mode also completes all 400 search points. Its
+fitted-c error is 3.209 km and its c=0 error is 3.619 km. Both arms reproduce
+the original control's final positions, 17-candidate bank, frequency NLL,
+total objective and stationary B7 solutions exactly. Thus this combination
+avoids the conditioning-only regression in the fitted-c arm, but offers no
+position improvement over the original control on this recording. It also
+does not retain the conditioning-only 129 m improvement in the c=0 arm.
+
+The completed comparison is one development recording, four raw modes and
+eight final arms. The remaining 44 planned conditions, calibrated modes,
+other recordings and whole-corpus qualification remain outstanding. Better
+point-level bootstrap scores alone do not establish a better position.
+
+## Recorded execution cost
+
+The original-conditioned mode needs four bounded slices, totaling 2,257.646 seconds of
 recorded worker execution, compared with 537.935 seconds for the unconditioned
 control. This is observed work for this case, not a controlled host-performance
 benchmark or a strict wall-time guarantee. Full nine-pass exploration usually
