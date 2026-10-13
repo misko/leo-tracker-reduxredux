@@ -8,7 +8,8 @@ but discovery and six-proposal artifacts exist for only five. Locked inference
 remains unopened.
 
 Subsequent numerical work completed the [DS21-007 fitted-only proposal chain](PROPOSALS_007_RESULTS.md).
-There are now six complete development proposal sets, with 28 still requiring
+The subsequent [DS21-009 initialization](PROPOSALS_009_RESULTS.md) also completed.
+There are now seven complete development proposal sets, with 27 still requiring
 initialization. The metadata-only inventory below is retained as the historical
 audit; its original counts and receipt have not been rewritten.
 

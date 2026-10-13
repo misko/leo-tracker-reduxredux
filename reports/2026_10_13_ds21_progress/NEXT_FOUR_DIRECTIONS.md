@@ -18,10 +18,10 @@ execution order.
 
 | Priority | Investigation | Discriminating next step | Ownership/status |
 | --- | --- | --- | --- |
-| 1 | Timing versus position identifiability | Audit the eight completed ±1 km compensated displacements against local curvature and assignment changes. Separate a weak position constraint from an actual timestamp/orbit-model defect. | SOL temporal/evidence worker; receipt audit active |
+| 1 | Timing versus position identifiability | Finite displacements and four fixed-geography nuisance fits are audited; asymmetry persists. Any further attribution must separate likelihood nonlinearity from an actual timestamp/orbit-model defect. | SOL temporal/evidence audit complete |
 | 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
 | 3 | Cross-band calibration and error dependence | Require reproducible structure across development cases before adding calibration flexibility or learned covariance. Retain receiver-slope, weighting and quarter-scale transfer failures as controls. Specify a training-only transfer test rather than learning shifts against known positions. | Coordinator; next SOL implementation gated on evidence |
-| 4 | Initialization, independent band comparison and full DS21 coverage | Complete the reusable fitted-only initializer, expand development coverage, and explicitly compare inherited all-band versus independently derived half-band starts before attributing failures to fusion. | SOL transfer/initialization worker active; coordinator runs bounded slices |
+| 4 | Initialization, independent band comparison and full DS21 coverage | Reusable initialization is complete and DS21-009 has exported its six starts. Complete generic A/B/C composition and expand development coverage; inherited shared initialization still needs distinction from independent half-band pipelines. | SOL model-composition worker active; coordinator runs bounded slices |
 
 The current agent thread limit prevents launching four additional workers at
 once. Two existing SOL workers continue in parallel; the coordinator handles
@@ -142,8 +142,11 @@ has completed: all 18 fits stationary, all/low/high errors 3.524 / 3.738 / 4.325
 Combining improves this case, but none meets 0.5 km. The half-band fits inherit
 all-training ambiguity initialization. The historical shape selector's zero-c choice is replaced
 explicitly; core shape math is unchanged, and its projection of RF-constant
-offsets is not claimed to learn RF calibration. Twenty-eight development
-recordings still require initialization.
+offsets is not claimed to learn RF calibration. The reusable initializer then
+completed [DS21-009](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.md),
+including 100 discovery points, nine stationary shape fits, nine stationary
+hybrid fits and 18 physical seed exports. Twenty-seven development recordings
+still require initialization. Its final three-model fits remain to be run.
 
 **Decision:** build the missing development initializations, then compare all
 three band views with matched budgets and documented seed provenance. Report

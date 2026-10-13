@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 19:10 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -22,8 +22,11 @@ The table covers five development recordings, not the full dataset.
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
 Combining bands improves this case, but all views miss 0.5 km. It is reported
-separately from the original matched three-model table. Twenty-eight fast
-development cases still require initialization; locked inference is unopened.
+separately from the original matched three-model table. The subsequent
+[DS21-009 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.md)
+completed all six stages: seven fast development cases now have complete proposal
+sets, with 27 still requiring initialization. DS21-009 model evaluation has not
+yet run; locked inference is unopened.
 
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source
