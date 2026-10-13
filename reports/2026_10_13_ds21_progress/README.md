@@ -29,9 +29,13 @@ The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMI
 also completed: eight objective/gradient evaluations, zero fits, and all source
 and result seals verified. A 1 km move along the refined negative compensation
 ray is materially more expensive than the local quadratic predicts; exact prior
-arithmetic passes. A separate four-call fixed-geography nuisance-profile control
-is prescribed to distinguish finite linearization error from persistent local
-profile asymmetry. No new accuracy improvement is claimed by this diagnostic.
+arithmetic passes. The subsequent
+[four-call fixed-geography control](../2026_10_13_ds21_039_association/FIXED_GEOGRAPHY_TIMING_PROFILE_RESULTS.md)
+completed in 52.241 seconds including preparation, with all four fits stationary.
+Refitting nuisances reduces the refined minus/plus costs to 6.504 / 3.004 above
+the original endpoint; the asymmetry persists. All prefit/postfit objective and
+NLL replays match exactly, and the independent receipt audit passes. No new
+accuracy improvement is claimed by these diagnostics.
 
 ## Current four-direction investigation
 

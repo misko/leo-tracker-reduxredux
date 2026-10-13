@@ -1,0 +1,99 @@
+{
+  "schema": "ds21-039-fixed-geography-timing-profile-receipt-audit-v1",
+  "arm": "fitted-c",
+  "audit_method": "Read-only source/ancestor/seal hashes and saved-parameter/scalar arithmetic; no new scientific objective, gradient or fit call",
+  "authority": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/fixed-geography-profile-v1/freeze.json",
+      "sha256": "sha256:36f25ed7424963726f91bef0c64ff62534855f67b7279ba636d3304e8124de24"
+    },
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/fixed-geography-profile-v1/fits/protocol.json",
+      "sha256": "sha256:11a764c985ebcec1af19beab6c492bcacf139be0caafa54a20c3960f68eff481"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/fixed-geography-profile-v1/fits/terminal.json",
+      "sha256": "sha256:5da6021a51724f4d325dc8ea5838e69ddcaf2103fc768fd5619a24b5c5afc410"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/fixed-geography-profile-v1/fits/final-seal.json",
+      "sha256": "sha256:052c5f4049fabcbd2f8a9697ba478c46a5ed9ec52d76575cbe6b30b2b4c6ca6e"
+    }
+  },
+  "audit": {
+    "passed": true,
+    "live_archive_source_pairs": 340,
+    "immediate_ancestor_bindings": 12,
+    "inherited_source_subsets_and_curvature_displacement_seals_checked": true,
+    "original_input_and_bank_bindings_checked": true,
+    "point_launch_result_termination_seals": 4,
+    "run_launch_and_completion_checked": true,
+    "final_seal_files": 21,
+    "exact_step0_ray_initializers_checked": true,
+    "fixed_xy_physical_bounds_and_group_frames_checked": true,
+    "optimizer_calls": 4,
+    "prefit_replay_calls": 4,
+    "postfit_replay_calls": 4,
+    "stationary_nuisance_fits": 4,
+    "prefit_objective_nll_max_abs_delta": 0,
+    "postfit_objective_nll_max_abs_delta": 0,
+    "maximum_prior_ledger_abs_discrepancy": 5.45697e-12,
+    "original_windows_each": 2798,
+    "reference_usage": "none",
+    "held_usage": "none"
+  },
+  "limits": {
+    "fit_seconds_each": 20,
+    "iterations_each": 600,
+    "internal_seconds": 150,
+    "external_term_seconds": 165,
+    "external_kill_seconds": 170,
+    "runner_elapsed_seconds": 27.0455,
+    "overall_elapsed_seconds_root_reported": 52.2408
+  },
+  "comparison": "Original endpoint, exact feasible ray and stationary fixed-geography nuisance relaxation are separate states; all delta costs use the respective original endpoint",
+  "original_endpoint_map": {"original-all": 33172.423429, "refinement-free": 32380.954535},
+  "results": [
+    {
+      "name": "original-all-step0-minus", "origin": "new-stationary-fit", "stationary_scope": "nuisance only; geography fixed",
+      "ray_map": 33177.122778, "taylor_map_delta": 4.53569, "fit_map": 33176.919879,
+      "fit_map_delta": 4.49645, "gain_from_ray": 0.202899, "fit_nll_delta": 5.32846, "fit_prior_delta": -0.832008,
+      "prior_costs": {"common_timing": 0.136617, "relative_timing": 201.555790, "group_calibration": 0.399244, "total": 202.091651},
+      "stationarity": 6.32142e-5, "boundary": false, "elapsed_seconds": 7.06387
+    },
+    {
+      "name": "original-all-step0-plus", "origin": "new-stationary-fit", "stationary_scope": "nuisance only; geography fixed",
+      "ray_map": 33176.753173, "taylor_map_delta": 4.53569, "fit_map": 33176.645662,
+      "fit_map_delta": 4.22223, "gain_from_ray": 0.107511, "fit_nll_delta": 3.42026, "fit_prior_delta": 0.801969,
+      "prior_costs": {"common_timing": 0.103424, "relative_timing": 203.222749, "group_calibration": 0.399456, "total": 203.725629},
+      "stationarity": 2.82570e-6, "boundary": false, "elapsed_seconds": 6.66859
+    },
+    {
+      "name": "refinement-free-step0-minus", "origin": "new-stationary-fit", "stationary_scope": "nuisance only; geography fixed",
+      "ray_map": 32388.256371, "taylor_map_delta": 3.35819, "fit_map": 32387.458944,
+      "fit_map_delta": 6.50441, "gain_from_ray": 0.797427, "fit_nll_delta": 6.94049, "fit_prior_delta": -0.436079,
+      "prior_costs": {"common_timing": 0.149386, "relative_timing": 154.788379, "group_calibration": 0.399668, "total": 155.337433},
+      "stationarity": 2.367998e-4, "boundary": false, "elapsed_seconds": 6.42699
+    },
+    {
+      "name": "refinement-free-step0-plus", "origin": "new-stationary-fit", "stationary_scope": "nuisance only; geography fixed",
+      "ray_map": 32384.383453, "taylor_map_delta": 3.35819, "fit_map": 32383.958220,
+      "fit_map_delta": 3.00369, "gain_from_ray": 0.425232, "fit_nll_delta": 2.52323, "fit_prior_delta": 0.480453,
+      "prior_costs": {"common_timing": 0.112345, "relative_timing": 155.741754, "group_calibration": 0.399867, "total": 156.253966},
+      "stationarity": 2.153985e-4, "boundary": false, "elapsed_seconds": 6.38760
+    }
+  ],
+  "interpretation": {
+    "all_four_feasible_ray_incumbents_improved": true,
+    "all_four_fitted_objectives_above_original_endpoints": true,
+    "original_minus_plus_gap_ray": 0.369605,
+    "original_minus_plus_gap_after_local_fit": 0.274216,
+    "refined_minus_plus_gap_ray": 3.872918,
+    "refined_minus_plus_gap_after_local_fit": 3.500723,
+    "conclusion": "Finite refined asymmetry largely persists after these stationary local nuisance relaxations; linear compensation explains only part under these starts",
+    "global_profile_minimum_established": false,
+    "accuracy_or_calibrated_uncertainty_established": false,
+    "clock_tle_fault_or_satellite_identity_established": false
+  },
+  "rounding": "Compact displayed costs and summaries are rounded; full precision remains in bound immutable receipts"
+}

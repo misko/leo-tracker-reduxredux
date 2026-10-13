@@ -73,8 +73,13 @@ estimates vary materially between the two numerical steps. The
 are complete and independently audited. All exact objective changes are positive;
 the refined negative ray costs 7.302–7.307 versus a local prediction of 3.270–3.358.
 Prior arithmetic closes, so the mismatch arises in the finite likelihood behavior.
-The next prescribed control refits nuisances at four fixed displaced positions
-to test whether the linear compensation ray is inadequate. Timing corrections
+The four fixed-geography nuisance fits have now completed and passed independent
+receipt audit. All are stationary for nuisance-only optimization and improve the
+saved ray states, but the refined endpoint's minus/plus costs remain 6.504 / 3.004
+above its original objective. The finite asymmetry persists after this local
+relaxation; neither global profiling nor improved accuracy is established.
+See the [fixed-geography results](../2026_10_13_ds21_039_association/FIXED_GEOGRAPHY_TIMING_PROFILE_RESULTS.md).
+Timing corrections
 need external justification; they cannot be tightened until a desired position
 appears.
 
