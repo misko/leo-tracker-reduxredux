@@ -44,6 +44,14 @@ the original endpoint; the asymmetry persists. All prefit/postfit objective and
 NLL replays match exactly, and the independent receipt audit passes. No new
 accuracy improvement is claimed by these diagnostics.
 
+The subsequent [shared receiver increment diagnostic](../2026_10_13_ds21_039_association/SHARED_RECEIVER_INCREMENT_RESULTS.md)
+completed in 28.928 seconds with two fixed-state native predictions and zero
+fits. It does not establish reproducible shared transmitter corrections: most
+supported correlations are weak, CH3 changes sign, CH1 is dominated by negligible
+support at the refined state, and CH8 has zero/one matched pairs. Both original
+likelihood and objective replays match exactly. No new transmitter term or
+accuracy improvement is justified by this result.
+
 ## Current four-direction investigation
 
 The [next four priorities](NEXT_FOUR_DIRECTIONS.md) incorporate the negative

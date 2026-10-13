@@ -20,7 +20,7 @@ execution order.
 | --- | --- | --- | --- |
 | 1 | Timing versus position identifiability | Finite displacements and four fixed-geography nuisance fits are audited; asymmetry persists. Any further attribution must separate likelihood nonlinearity from an actual timestamp/orbit-model defect. | SOL temporal/evidence audit complete |
 | 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
-| 3 | Cross-band calibration, transmitter dynamics and error dependence | Test for paired-receiver residual increments at two fixed states before adding transmitter terms. Retain receiver-slope, weighting and quarter-scale transfer failures as controls. Require reproducible training-only evidence across development cases. | SOL evidence worker implementing bounded diagnostic; dataset run pending |
+| 3 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
 | 4 | Initialization, independent band comparison and full DS21 coverage | Generic A/B/C composition is implemented, but DS21-009 failed calibration seed projection before location fitting. Isolate the failing proposal before revising the adapter. Continue reusable initialization; distinguish shared initialization from independent half-band pipelines. | SOL model worker implementing failure diagnostic; coordinator runs bounded slices |
 
 The current agent thread limit prevents launching four additional workers at
@@ -168,10 +168,12 @@ fits and 18 exports; this is not a position-accuracy result.
 
 The [transmitter dynamics audit](../2026_10_13_ds21_039_association/TRANSMITTER_DYNAMICS_AUDIT.md)
 identifies channel-dependent transmitted frequency corrections as a credible
-omitted-effect hypothesis, not an established DS21 cause. A two-fixed-state,
-zero-fit paired-receiver increment diagnostic is being implemented. It must
-report inadequate matching support honestly and cannot establish emitter
-identity from satellite-mixture assignments.
+omitted-effect hypothesis, not an established DS21 cause. The
+[two-fixed-state, zero-fit paired-receiver diagnostic](../2026_10_13_ds21_039_association/SHARED_RECEIVER_INCREMENT_RESULTS.md)
+has completed. It finds no clear reproducible shared positive excess and inadequate
+CH1/CH8 support. This does not exclude beam-specific effects, but it does not
+justify adding fitted transmitter corrections. Mixture assignments still do not
+establish emitter identity.
 
 **Decision:** build the missing development initializations, then compare all
 three band views with matched budgets and documented seed provenance. Report

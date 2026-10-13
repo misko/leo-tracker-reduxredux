@@ -1,0 +1,688 @@
+{
+  "schema": "ds21-039-shared-receiver-increment-independent-audit-v1",
+  "label": "DS21-039",
+  "arm": "fitted-c",
+  "scope": "Saved-receipt hashes, identities, support and scalar arithmetic only; zero new predictor/likelihood/gradient/optimizer/held/reference calls",
+  "bindings": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/shared-increments-v1/freeze.json",
+      "sha256": "sha256:7545e9dc39641c0d6b709b1c512b3259185ba955311ca9d50c70c2e733b0c8e8"
+    },
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/shared-increments-v1/diagnostic/protocol.json",
+      "sha256": "sha256:5ccf8ca7ee5476897da6f05cbab19dde9071fc3a7bc41cbc76a28452d4458598"
+    },
+    "metadata": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/shared-increments-v1/diagnostic/metadata.json",
+      "sha256": "sha256:c0dae88dede321ea49d117537abcf596fc74e8a36b90eb516b62297c22969b3e"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/shared-increments-v1/diagnostic/terminal.json",
+      "sha256": "sha256:34fe096f70a2e9b47be5dda29e3539136705b709aaf62c72f131f7106bb7081e"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/shared-increments-v1/diagnostic/final-seal.json",
+      "sha256": "sha256:608e0b0a02a2a9a7b48767f8f2d3aa62270699dded69a5e050c20fa0be33f6f4"
+    }
+  },
+  "ancestor_bindings": {
+    "inputs": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/inputs-v1.json",
+      "sha256": "sha256:27bd4bbb567c6d16a819467f92924b813d5547928dc6c51bcaba743924917356"
+    },
+    "cold_profiles": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/profiles-v1/fits/terminal.json",
+      "sha256": "sha256:df67a44b1c4dcb3da2797f31abd40e8c2aa47ceae005251580fc48fbadaef068"
+    },
+    "cold_profiles_freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/profiles-v1/freeze.json",
+      "sha256": "sha256:6132d33a4e34d05423b39d1468d95a8cdd866182295a9c6b56046da6837bdb7a"
+    },
+    "diagnostic_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/terminal.json",
+      "sha256": "sha256:1e082d95de47715ef600d000adb9b89dbd4f722bda7b33754b560aa0388f15aa"
+    },
+    "refinement_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/fits/terminal.json",
+      "sha256": "sha256:682bee3af1de693cd5a736e9a5eb36558db594c8b88784371909d3743298a493"
+    },
+    "refinement_freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/freeze.json",
+      "sha256": "sha256:6d96b165a88ad852722a7fdd0957821fa70bad2f31372e1cca261926a8b52e91"
+    }
+  },
+  "validation": {
+    "live_archive_source_pairs": 337,
+    "immediate_ancestor_bindings": 6,
+    "nested_original_input_bindings": 10,
+    "aggregate_bound_files": 13,
+    "endpoint_seals": 2,
+    "exact_prescribed_source_fits": true,
+    "launch_termination_identities": true,
+    "normalized_weight_and_covariance_checks": true,
+    "verified_observed_pairs": 1036,
+    "finite_observed_correlations": 14,
+    "within_descriptive_control_range": 14
+  },
+  "execution": {
+    "overall_seconds_reported_by_root": 28.92775,
+    "runner_seconds": 0.7566945,
+    "prediction_calls": 2,
+    "objective_calls": 0,
+    "gradient_calls": 0,
+    "optimizer_calls": 0,
+    "internal_seconds": 90,
+    "TERM_seconds": 105,
+    "KILL_seconds": 110
+  },
+  "metadata": {
+    "partition_seed": 20261012,
+    "block_seconds": 20,
+    "assignment_sha256": "9b9a8262acd8429216b6cc2eb65a268c6a53524fe2a834a470e3b7f9831fcab4",
+    "held_blocks": [
+      2,
+      6,
+      12
+    ],
+    "observation_center_block_disagreements": 0,
+    "source_input_sha256": "sha256:4b6fff793fba610ed2674dcc6d2908ba7f430d2b839c2dc7730dbb82e6036754",
+    "original_probe_count": 7136,
+    "training_probe_count": 5688,
+    "interpretation": "Counter partition is authority; timestamps anchor intervals, not emitter identity"
+  },
+  "states": {
+    "original-all": {
+      "state": "complete",
+      "objective": 33172.42,
+      "likelihood_nll": 32969.5,
+      "prior": {
+        "common_timing": 0.1192866,
+        "relative_timing": 202.405,
+        "group_calibration": 0.3993422,
+        "total": 202.9237
+      },
+      "source_replay": {
+        "likelihood_nll": 0,
+        "objective": 0
+      },
+      "original_windows": 2798,
+      "native_candidates": 3714,
+      "prediction_calls": 1,
+      "groups": [
+        {
+          "channel": 1,
+          "exact_rf_hz": 10709690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 217,
+            "1": 107
+          },
+          "increments": 301,
+          "pairs": 23,
+          "weight_sum": 1.166264,
+          "minimum_pair_weight": 2.059812e-315,
+          "maximum_normalized_pair_weight": 0.8455641,
+          "covariance_hz2": 421.7283,
+          "correlation": 0.2238615,
+          "control_correlation": [
+            -1,
+            -0.0423038,
+            1
+          ],
+          "control_weight_sum": [
+            3.555868e-18,
+            8.227659,
+            24.86858
+          ],
+          "control_positive_pairs": [
+            6,
+            24,
+            42
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 2,
+          "exact_rf_hz": 10959690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 305,
+            "1": 215
+          },
+          "increments": 498,
+          "pairs": 170,
+          "weight_sum": 139.7351,
+          "minimum_pair_weight": 4.548605e-297,
+          "maximum_normalized_pair_weight": 0.007149087,
+          "covariance_hz2": 257.8838,
+          "correlation": 0.05622766,
+          "control_correlation": [
+            -0.336735,
+            -0.02026086,
+            0.1481513
+          ],
+          "control_weight_sum": [
+            102.8463,
+            120.1858,
+            143.5822
+          ],
+          "control_positive_pairs": [
+            136,
+            152,
+            167
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 3,
+          "exact_rf_hz": 11209690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 282,
+            "1": 166
+          },
+          "increments": 425,
+          "pairs": 115,
+          "weight_sum": 84.40718,
+          "minimum_pair_weight": 3.664497e-267,
+          "maximum_normalized_pair_weight": 0.01182717,
+          "covariance_hz2": 183.4796,
+          "correlation": 0.05160159,
+          "control_correlation": [
+            -0.2794542,
+            -0.007745333,
+            0.3358903
+          ],
+          "control_weight_sum": [
+            49.09934,
+            71.06583,
+            87.62251
+          ],
+          "control_positive_pairs": [
+            78,
+            101.5,
+            128
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 4,
+          "exact_rf_hz": 11459690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 265,
+            "1": 135
+          },
+          "increments": 381,
+          "pairs": 51,
+          "weight_sum": 45.76248,
+          "minimum_pair_weight": 2.725967e-282,
+          "maximum_normalized_pair_weight": 0.02181377,
+          "covariance_hz2": 218.3669,
+          "correlation": 0.03287383,
+          "control_correlation": [
+            -0.476588,
+            0.0002354098,
+            0.2046673
+          ],
+          "control_weight_sum": [
+            22.96571,
+            46.88917,
+            75.70561
+          ],
+          "control_positive_pairs": [
+            33,
+            54,
+            85
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 5,
+          "exact_rf_hz": 11709690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 166,
+            "1": 90
+          },
+          "increments": 236,
+          "pairs": 64,
+          "weight_sum": 34.31297,
+          "minimum_pair_weight": 1.476913e-277,
+          "maximum_normalized_pair_weight": 0.02908338,
+          "covariance_hz2": 1159.738,
+          "correlation": 0.1696095,
+          "control_correlation": [
+            -0.9998424,
+            -0.09782759,
+            0.9941357
+          ],
+          "control_weight_sum": [
+            0.9947015,
+            11.98171,
+            35.79168
+          ],
+          "control_positive_pairs": [
+            15,
+            32.5,
+            55
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 6,
+          "exact_rf_hz": 11959690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 257,
+            "1": 160
+          },
+          "increments": 393,
+          "pairs": 47,
+          "weight_sum": 34.87574,
+          "minimum_pair_weight": 3.123045e-233,
+          "maximum_normalized_pair_weight": 0.02862409,
+          "covariance_hz2": -652.1617,
+          "correlation": -0.2207051,
+          "control_correlation": [
+            -0.5187192,
+            -0.03124975,
+            0.6241914
+          ],
+          "control_weight_sum": [
+            11.78216,
+            40.90308,
+            68.87145
+          ],
+          "control_positive_pairs": [
+            32,
+            56,
+            86
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 7,
+          "exact_rf_hz": 12209690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 194,
+            "1": 114
+          },
+          "increments": 289,
+          "pairs": 49,
+          "weight_sum": 28.05559,
+          "minimum_pair_weight": 7.885117e-317,
+          "maximum_normalized_pair_weight": 0.03558216,
+          "covariance_hz2": -598.7951,
+          "correlation": -0.03352463,
+          "control_correlation": [
+            -0.3990706,
+            0.02027283,
+            0.6017275
+          ],
+          "control_weight_sum": [
+            17.13795,
+            38.57324,
+            62.68841
+          ],
+          "control_positive_pairs": [
+            28,
+            50,
+            74
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 8,
+          "exact_rf_hz": 12459690000,
+          "state": "no-comparable-support",
+          "receiver_windows": {
+            "0": 105,
+            "1": 20
+          },
+          "increments": 115,
+          "pairs": 0,
+          "weight_sum": 0,
+          "minimum_pair_weight": null,
+          "maximum_normalized_pair_weight": null,
+          "covariance_hz2": null,
+          "correlation": null,
+          "control_correlation": [
+            0.06324436,
+            0.06324436,
+            0.06324436
+          ],
+          "control_weight_sum": [
+            0,
+            0,
+            8.959299
+          ],
+          "control_positive_pairs": [
+            0,
+            0,
+            9
+          ],
+          "distinct_block_mappings": 6,
+          "unchanged_block_controls": 19,
+          "finite_control_correlations": 27
+        }
+      ]
+    },
+    "refinement-free": {
+      "state": "complete",
+      "objective": 32380.95,
+      "likelihood_nll": 32225.18,
+      "prior": {
+        "common_timing": 0.1301905,
+        "relative_timing": 155.2436,
+        "group_calibration": 0.3997476,
+        "total": 155.7735
+      },
+      "source_replay": {
+        "likelihood_nll": 0,
+        "objective": 0
+      },
+      "original_windows": 2798,
+      "native_candidates": 3714,
+      "prediction_calls": 1,
+      "groups": [
+        {
+          "channel": 1,
+          "exact_rf_hz": 10709690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 217,
+            "1": 107
+          },
+          "increments": 301,
+          "pairs": 25,
+          "weight_sum": 4.5391e-8,
+          "minimum_pair_weight": 5.611005e-313,
+          "maximum_normalized_pair_weight": 1,
+          "covariance_hz2": -3.471708e-15,
+          "correlation": -1,
+          "control_correlation": [
+            -1,
+            0.009908313,
+            1
+          ],
+          "control_weight_sum": [
+            7.101453e-99,
+            14.6883,
+            39.5301
+          ],
+          "control_positive_pairs": [
+            10,
+            28,
+            45
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 2,
+          "exact_rf_hz": 10959690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 305,
+            "1": 215
+          },
+          "increments": 498,
+          "pairs": 146,
+          "weight_sum": 131.4368,
+          "minimum_pair_weight": 4.632834e-90,
+          "maximum_normalized_pair_weight": 0.007600765,
+          "covariance_hz2": 161.5872,
+          "correlation": 0.0496317,
+          "control_correlation": [
+            -0.2482908,
+            -0.02634416,
+            0.257814
+          ],
+          "control_weight_sum": [
+            95.56274,
+            116.3641,
+            142.2383
+          ],
+          "control_positive_pairs": [
+            117,
+            134,
+            158
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 3,
+          "exact_rf_hz": 11209690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 282,
+            "1": 166
+          },
+          "increments": 425,
+          "pairs": 108,
+          "weight_sum": 93.62489,
+          "minimum_pair_weight": 6.215019e-294,
+          "maximum_normalized_pair_weight": 0.0106629,
+          "covariance_hz2": -636.7078,
+          "correlation": -0.2847403,
+          "control_correlation": [
+            -0.3517566,
+            -0.02973282,
+            0.2485312
+          ],
+          "control_weight_sum": [
+            55.71291,
+            76.15964,
+            96.56574
+          ],
+          "control_positive_pairs": [
+            74,
+            96,
+            121
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 4,
+          "exact_rf_hz": 11459690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 265,
+            "1": 135
+          },
+          "increments": 381,
+          "pairs": 61,
+          "weight_sum": 46.88442,
+          "minimum_pair_weight": 1.93e-322,
+          "maximum_normalized_pair_weight": 0.02129209,
+          "covariance_hz2": 77.16708,
+          "correlation": 0.008291354,
+          "control_correlation": [
+            -0.5237863,
+            -0.05843009,
+            0.1631633
+          ],
+          "control_weight_sum": [
+            23.52385,
+            47.84569,
+            77.65981
+          ],
+          "control_positive_pairs": [
+            44,
+            61.5,
+            94
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 5,
+          "exact_rf_hz": 11709690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 166,
+            "1": 90
+          },
+          "increments": 236,
+          "pairs": 63,
+          "weight_sum": 34.52831,
+          "minimum_pair_weight": 1.776668e-246,
+          "maximum_normalized_pair_weight": 0.02890829,
+          "covariance_hz2": 828.2533,
+          "correlation": 0.1074637,
+          "control_correlation": [
+            -0.9840593,
+            0.01792298,
+            1
+          ],
+          "control_weight_sum": [
+            0.9793924,
+            12.87341,
+            36.81144
+          ],
+          "control_positive_pairs": [
+            15,
+            32,
+            54
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 6,
+          "exact_rf_hz": 11959690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 257,
+            "1": 160
+          },
+          "increments": 393,
+          "pairs": 71,
+          "weight_sum": 66.21716,
+          "minimum_pair_weight": 3.232524e-148,
+          "maximum_normalized_pair_weight": 0.01507575,
+          "covariance_hz2": -447.055,
+          "correlation": -0.1327974,
+          "control_correlation": [
+            -0.6108089,
+            -0.06232163,
+            0.2155708
+          ],
+          "control_weight_sum": [
+            32.85703,
+            59.05962,
+            86.67639
+          ],
+          "control_positive_pairs": [
+            35,
+            62.5,
+            88
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 7,
+          "exact_rf_hz": 12209690000,
+          "state": "complete",
+          "receiver_windows": {
+            "0": 194,
+            "1": 114
+          },
+          "increments": 289,
+          "pairs": 42,
+          "weight_sum": 29.89416,
+          "minimum_pair_weight": 2.464148e-245,
+          "maximum_normalized_pair_weight": 0.03339342,
+          "covariance_hz2": -77.89259,
+          "correlation": -0.004347774,
+          "control_correlation": [
+            -0.4538352,
+            0.02759257,
+            0.5311741
+          ],
+          "control_weight_sum": [
+            17.97697,
+            38.70034,
+            62.69006
+          ],
+          "control_positive_pairs": [
+            25,
+            45,
+            66
+          ],
+          "distinct_block_mappings": 100,
+          "unchanged_block_controls": 0,
+          "finite_control_correlations": 100
+        },
+        {
+          "channel": 8,
+          "exact_rf_hz": 12459690000,
+          "state": "constant-increment-support",
+          "receiver_windows": {
+            "0": 105,
+            "1": 20
+          },
+          "increments": 115,
+          "pairs": 1,
+          "weight_sum": 0.275188,
+          "minimum_pair_weight": 0.275188,
+          "maximum_normalized_pair_weight": 1,
+          "covariance_hz2": 0,
+          "correlation": null,
+          "control_correlation": [
+            -0.1088401,
+            -0.1088401,
+            -0.1088401
+          ],
+          "control_weight_sum": [
+            0,
+            0.275188,
+            8.958823
+          ],
+          "control_positive_pairs": [
+            0,
+            1,
+            9
+          ],
+          "distinct_block_mappings": 6,
+          "unchanged_block_controls": 19,
+          "finite_control_correlations": 27
+        }
+      ]
+    }
+  },
+  "interpretation": {
+    "outcome": "Inconclusive for transmitter correction; no stable supported positive excess across both fixed states",
+    "channel_1": "Original weight sum1.166 with84.6% from one pair; refined4.539e-8 with normalized maximum1.0. Refined r=-1 is a degenerate support readout, not common dynamics.",
+    "channel_8": "Zero/one original/refined observed pairs; only6 distinct mappings and19 unchanged among100controls. No interpretable observed correlation.",
+    "channels_2_to_7": "All finite readouts within timing-control ranges; channel3 changes sign, channels6/7 negative. No accuracy or hardware claim.",
+    "limits": "Posterior-selected in-sample moments, state-dependent support/matching, retunes, ambiguity, changing emitter mixtures and nonexchangeable block support remain confounded. Controls are not calibrated p-values.",
+    "next_action": "Do not add or tune transmitter correction parameters from this diagnostic; continue unchanged full-development models. Any later transmitter attribution needs independent emitter/beam continuity or another clock observable."
+  },
+  "range_definition": "[minimum, median, maximum]; no raw interval/pair/control inventory duplicated"
+}
