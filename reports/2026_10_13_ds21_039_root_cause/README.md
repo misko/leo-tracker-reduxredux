@@ -16,8 +16,12 @@ and [UTC provenance audit](UTC_TIMING_PROVENANCE.md) document the negative resul
 and remaining physical evidence gaps.
 
 The [receiver RF score audit](RECEIVER_RF_SCORE_AUDIT.md) identifies opposing
-receiver contributions hidden by the shared fitted `c`; a matched four-call
-receiver-contrast sensitivity test is being implemented. The
+receiver contributions hidden by the shared fitted `c`. The matched four-call
+receiver-contrast sensitivity test completed with all outcomes stationary,
+but slightly worsened position error from 4.073 to 4.085 km; it is not promoted.
+The [two-state block residual audit](../2026_10_13_ds21_039_association/CORRELATION_RESULTS.md)
+found persistent group structure, unstable cross-products and nearly unsupported
+channel tails, without identifying a stable covariance correction. The
 [antenna audit](../2026_10_13_ds21_039_association/ANTENNA_EVIDENCE.md) found no
 capture-bound directional evidence for a satellite beam prior.
 

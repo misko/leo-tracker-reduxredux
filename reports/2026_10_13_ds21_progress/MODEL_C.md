@@ -47,5 +47,13 @@ and 4.592 km; the winner-preserving native-candidate prior gave 4.410 km against
 the matched 4.073 km baseline. All sixteen new fits were stationary. None of
 these changes is promoted; better frequency fit again failed to improve accuracy.
 
+Four matched receiver RF fits then added one opposite-sign receiver slope while
+keeping common `c` fitted. All were stationary. The selected contrast was
+17.471 Hz/GHz, but position error worsened from 4.073 to 4.085 km despite a small
+objective improvement; this is also not promoted. A separate zero-optimizer
+block-residual audit found persistent receiver/band structure with unstable
+cross-products and nearly unsupported channel tails. It does not establish a
+stable shared-noise covariance or a hardware clock fault.
+
 See the [common progress report](README.md) for evaluation coverage, reference
 limitations and the plan for full DS21. No locked evaluation result is claimed.

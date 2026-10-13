@@ -1,0 +1,22 @@
+# Bounded receiver RF contrast sensitivity
+
+This training-only control is motivated by the opposite receiver RF scores in [RECEIVER_RF_SCORE_AUDIT.md](RECEIVER_RF_SCORE_AUDIT.md). It tests an empirical calibration degree of freedom, not an independently measured hardware error. Recorded RF hypotheses, native receive times, waveform/visibility weights, candidate bank, original group frame and physical priors remain fixed.
+
+For original RF center \(f_0\), append one nuisance coefficient \(d\) with column
+
+\[
+g_i=\begin{cases}+1,&RX0\\-1,&RX1\end{cases}
+\,(f_i-f_0)/10^9.
+\]
+
+The common fitted coefficient \(c\) stays in its original physical-vector slot. Effective coefficients are \(c_{RX0}=c+d\), \(c_{RX1}=c-d\). Initialize \(d=0\), use a fixed box of ±5,000 Hz/GHz and optimizer scale 200 Hz/GHz, and add no Gaussian prior for \(d\). The original common-`c` bound and all existing priors remain unchanged; consequently the effective receiver coefficients can reach ±10,000 Hz/GHz. This is explicit model freedom, not a hardware uncertainty interval.
+
+The matched matrix has two models (original common fitted `c`; common fitted `c` plus contrast) and two identical physical starts (original all-view training winner; sealed new7 selected training winner). Both use the original seed-5 geographic center, 25 km disk, original observations and 43-satellite bank. Four new calls total, each at most 20 seconds/600 iterations. As predeclared in root's `RECEIVER_RF_PROTOCOL.md`, the shared-`c` baseline selects the minimum stationary training objective among its two new fits **and both sealed stationary source incumbents**; the contrast condition selects among its two new stationary fits only. This retains a stronger baseline when a continuation fails or worsens. Source-incumbent versus new-fit selection is recorded explicitly; failures remain in the receipts. No held scoring, reference selection, new RF/TLEs, or zero-`c` arm is part of this control. Root owns the exact input/source freeze and bounded execution; no DS21 numerical replay is authorized by this implementation alone.
+
+The new array-only `ReceiverRFContrastObjective` subclasses the existing private group-calibration objective, retains the original sparse-native base, and appends the signed RF column and zero precision row/column. It requires a lean singleton model with exactly recorded RX0/RX1 and verifies each native receiver/RF against its original window. Original clock/drift/timing centering and nuisance transport are unchanged.
+
+The narrow tool port provides `build_contrast_model`, `initialize_nuisance`, `replay_d0`, `fit_receiver_rf_contrast`, and `diagnose_contrast_state`. Zero-contrast replay exercises the actual extended arithmetic, checks original value/NLL/both gradients/probabilities, compares the contrast derivative to separate receiver scores, and computes a central finite difference at fixed epsilon 0.01 Hz/GHz. The original all-view start additionally checks the sealed receipt-derived contrast log-score **+0.208454980675555**, or equivalently NLL derivative **−0.208454980675555**, within `1e-7`. The new7 start has no prior receiver/RF residual table; its oracle still checks source closure, receiver-score decomposition and finite difference.
+
+Fit output is a private `receiver-rf-contrast-v1` research receipt. The adapter corrects the generic fitter's tail label **before persistence**, sets `group_clock_coefficients=[]`, retains the complete three-element nuisance vector and original group offsets, and adds explicit `receiver_rf_contrast_hz_per_ghz`, `receiver_rf_coefficients_hz_per_ghz`, nuisance layout, and zero extra prior penalty. Neither the controller nor downstream consumers may call `freeze_group_calibration` for this layout: that old serializer cannot represent the contrast function. No public persisted contract or frozen source is changed.
+
+Synthetic tests cover exact zero-contrast cost/old-gradient/probability closure, finite differences across geography, affine clock, common `c`, timing, group and contrast parameters with nonneutral native evidence and missing visibility, unchanged priors at nonzero contrast, original frames/centers, receiver/RF consistency guards, actual TrackingInput preparation through the new port, and private fit-tail labelling. Conditional gradients remain local to the current mixture/visibility/alias region. A lower training objective is not position-accuracy evidence, and a fitted contrast is not an oscillator measurement.

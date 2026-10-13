@@ -1,0 +1,235 @@
+{
+  "schema": "ds21-039-receiver-rf-control-results-v1",
+  "audit_state": "passed",
+  "label": "DS21-039",
+  "arm": "fitted-c",
+  "decision": "Do not promote receiver RF contrast",
+  "source_bindings": {
+    "live_and_archived_count": 329,
+    "all_bytes_match": true,
+    "all_parent_bindings_match": true
+  },
+  "bindings": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/freeze.json",
+      "sha256": "sha256:1fdead636f8a85e9add8590c2befecad9fda5951f3ade9f587e462c5141d06c4"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/fits/terminal.json",
+      "sha256": "sha256:d3fb16670a666434849ef12e3b50d1e5c8d33193384053304e35c624ea93e5ac"
+    },
+    "oracle": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/fits/source-oracle.json",
+      "sha256": "sha256:1ae65c9a261dad373c1d7f2b4142a1f5c811279a5e5add8760f3821f4d0c2da6"
+    },
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/fits/protocol.json",
+      "sha256": "sha256:7831581ab2232df7a633c80de2dfd221dbd157444e7023e2292d613b9019751e"
+    },
+    "model": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/fits/model.json",
+      "sha256": "sha256:81f697146e8b606036eea725e83220943154dc5c1b4df7e6b79fbbd0533c3da3"
+    },
+    "postseal_evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/receiver-rf-v1/development-errors.json",
+      "sha256": "sha256:70ae14f9196faaf21fb96170e6868d01d9c9d88d03032a133878b75df9604c43"
+    }
+  },
+  "execution": {
+    "optimizer_calls": 4,
+    "fit_runner_elapsed_s": 14.2599061219953,
+    "root_outer_elapsed_s": 38.493,
+    "fit_seconds": 20,
+    "iterations": 600
+  },
+  "oracle": {
+    "passed": true,
+    "checks": {
+      "original-all": {
+        "passed": true,
+        "deltas": {
+          "objective": 0.0,
+          "likelihood_nll": 0.0,
+          "vector_gradient_max_abs": 0.0,
+          "original_nuisance_gradient_max_abs": 0.0,
+          "responsibilities_max_abs": 0.0,
+          "clutter_probability_max_abs": 0.0,
+          "contrast_gradient": 3.608224830031759e-16,
+          "receiver_score_difference": -2.7755575615628914e-16,
+          "saved_contrast_log_score": -2.220446049250313e-16,
+          "contrast_finite_difference": 1.0191741894871598e-09
+        },
+        "source_objective": 33172.423429104354,
+        "source_likelihood_nll": 32969.499769939284,
+        "contrast_log_score": 0.2084549806755548,
+        "contrast_nll_gradient": -0.2084549806755548,
+        "receiver_rf_log_scores": {
+          "RX0": 0.10422749479261639,
+          "RX1": -0.10422748588293868
+        },
+        "contrast_nll_gradient_finite_difference": -0.2084549796563806,
+        "finite_difference_epsilon": 0.01,
+        "extra_prior_cost": 0.0,
+        "saved_parent_delta": {
+          "objective": 0.0,
+          "likelihood_nll": 0.0
+        }
+      },
+      "refinement-free": {
+        "passed": true,
+        "deltas": {
+          "objective": 0.0,
+          "likelihood_nll": 0.0,
+          "vector_gradient_max_abs": 0.0,
+          "original_nuisance_gradient_max_abs": 0.0,
+          "responsibilities_max_abs": 0.0,
+          "clutter_probability_max_abs": 0.0,
+          "contrast_gradient": 1.249000902703301e-16,
+          "receiver_score_difference": -1.6653345369377348e-16,
+          "contrast_finite_difference": 2.0583544591001868e-09
+        },
+        "source_objective": 32380.954534755605,
+        "source_likelihood_nll": 32225.181022133584,
+        "contrast_log_score": 0.07521571884643405,
+        "contrast_nll_gradient": -0.07521571884643405,
+        "receiver_rf_log_scores": {
+          "RX0": 0.03760786553681615,
+          "RX1": -0.037607853309618064
+        },
+        "contrast_nll_gradient_finite_difference": -0.07521571678807959,
+        "finite_difference_epsilon": 0.01,
+        "extra_prior_cost": 0.0,
+        "saved_parent_delta": {
+          "objective": 0.0,
+          "likelihood_nll": 0.0
+        }
+      }
+    },
+    "expected_original_contrast_log_score": 0.208454980675555
+  },
+  "windows": 2798,
+  "native_candidates": 3714,
+  "original_frame": {
+    "group_receivers": [
+      0,
+      1
+    ],
+    "training_high_fractions": [
+      0.40312674483528754,
+      0.381330685203575
+    ],
+    "original_time_center_s": 150.07580605750002,
+    "original_rf_center_hz": 11584687500.0
+  },
+  "attempts": [
+    {
+      "name": "shared-c-original-all",
+      "condition": "shared-c",
+      "stationary": true,
+      "objective": 33172.42342910419,
+      "likelihood_nll": 32969.49976993959,
+      "stationarity": 0.0005356599810205642,
+      "common_c_hz_per_ghz": -626.5782993257161,
+      "contrast_d_hz_per_ghz": 0,
+      "group_prior_penalty": 0.3993422466007228,
+      "extra_rf_prior_penalty": 0,
+      "elapsed_s": 0.5643149521201849
+    },
+    {
+      "name": "shared-c-refinement-free",
+      "condition": "shared-c",
+      "stationary": true,
+      "objective": 32380.954534755605,
+      "likelihood_nll": 32225.181022133584,
+      "stationarity": 7.04178236427544e-05,
+      "common_c_hz_per_ghz": -618.997814118364,
+      "contrast_d_hz_per_ghz": 0,
+      "group_prior_penalty": 0.3997476393048041,
+      "extra_rf_prior_penalty": 0,
+      "elapsed_s": 0.7714720126241446
+    },
+    {
+      "name": "receiver-contrast-original-all",
+      "condition": "receiver-contrast",
+      "stationary": true,
+      "objective": 33166.81575405463,
+      "likelihood_nll": 32964.70418264389,
+      "stationarity": 0.000498210152530219,
+      "common_c_hz_per_ghz": -643.5790032441147,
+      "contrast_d_hz_per_ghz": 53.73354217605033,
+      "group_prior_penalty": 0.4005798179102783,
+      "extra_rf_prior_penalty": 0,
+      "elapsed_s": 6.246171714738011
+    },
+    {
+      "name": "receiver-contrast-refinement-free",
+      "condition": "receiver-contrast",
+      "stationary": true,
+      "objective": 32380.297620956477,
+      "likelihood_nll": 32224.51900618265,
+      "stationarity": 6.492596376567655e-05,
+      "common_c_hz_per_ghz": -622.8262448144978,
+      "contrast_d_hz_per_ghz": 17.471440300715038,
+      "group_prior_penalty": 0.40015135323681106,
+      "extra_rf_prior_penalty": 0,
+      "elapsed_s": 6.262205602135509
+    }
+  ],
+  "selected": {
+    "shared-c": {
+      "name": "refinement-free",
+      "origin": "source-incumbent",
+      "objective": 32380.954534755605,
+      "likelihood_nll": 32225.181022133584,
+      "common_c_hz_per_ghz": -618.997814118364,
+      "contrast_d_hz_per_ghz": 0,
+      "group_offsets_hz": [
+        -23937.814502766734,
+        37758.69745310544
+      ],
+      "prior_total": 155.77351262202137,
+      "position_error_km": 4.072514869877426,
+      "below_0_5km": false
+    },
+    "receiver-contrast": {
+      "name": "receiver-contrast-refinement-free",
+      "origin": "new-fit",
+      "objective": 32380.297620956477,
+      "likelihood_nll": 32224.51900618265,
+      "common_c_hz_per_ghz": -622.8262448144978,
+      "contrast_d_hz_per_ghz": 17.471440300715038,
+      "group_offsets_hz": [
+        -23950.75842240875,
+        37777.214523777046
+      ],
+      "receiver_rf_coefficients_hz_per_ghz": {
+        "RX0": -605.3548045137828,
+        "RX1": -640.2976851152129
+      },
+      "prior_costs": {
+        "common_timing": 0.1300463193411062,
+        "relative_timing": 155.24841710124767,
+        "original_group_calibration": 0.40015135323681106,
+        "extra_rf_contrast": 0.0,
+        "total": 155.77861477382558
+      },
+      "contrast_log_score": -1.913700042616845e-08,
+      "contrast_bound_active": false,
+      "position_error_km": 4.085343837710394,
+      "below_0_5km": false
+    }
+  },
+  "contrast_minus_baseline": {
+    "objective": -0.6569137991282332,
+    "likelihood_nll": -0.6620159509329824,
+    "position_error_km": 0.012828967832968274,
+    "position_regression_m": 12.828967832968274
+  },
+  "limitations": [
+    "Same two starts/seed5disk25km/nativeinputs43satellitebank and originalpriors; all4stationary.",
+    "Baseline selection includes both sealedstationarysourceincumbents; contrast selects only its two actualfits, aspredeclared.",
+    "Improved trainingfit is separate from postsealpositionaccuracy; both selectederrors exceed0.5km.",
+    "Empirical RFcontrast is not a measuredhardwareclock/RFpath correction or surveyedcalibration.",
+    "Receipt-only audit performed0model/predictor/optimizer calls; rootpostsealevaluation joinedreferences afterselection."
+  ]
+}

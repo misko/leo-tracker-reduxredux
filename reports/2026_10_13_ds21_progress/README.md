@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 17:00 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 17:28 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -94,12 +94,13 @@ post-seal, training-selected CH1–8 errors are:
 | Equal acquisition-block weights | 4.106 |
 | Equal band, then block weights | 4.592 |
 | Detector-winner-preserving native alternatives, fixed 25% alternative mass | 4.410 |
+| One additional receiver RF contrast, common c still fitted | 4.085 |
 
 None is promoted. The weighting controls preserve total likelihood weight and
 prior scale; they do not test effective sample size or a correlated-error model.
 The [native-prior report](../2026_10_13_ds21_039_association/DETECTOR_PRIOR_RESULTS.md)
 shows another frequency-fit improvement accompanied by worse position accuracy.
-Across these DS21-039 experiments, **41 new fitted-c calls produced 40 stationary
+Across these DS21-039 experiments, **45 new fitted-c calls produced 44 stationary
 outcomes**, retaining the one nonstationary cold profile. The 0.5 km target remains
 unmet. This is still development work, not a full-DS21 accuracy result.
 
@@ -109,13 +110,25 @@ wide with good internal clock continuity, but no independent absolute-sync or
 sample-clock accuracy attestation. This is not a horizontal position-error bound.
 
 The [receiver RF score audit](../2026_10_13_ds21_039_root_cause/RECEIVER_RF_SCORE_AUDIT.md)
-found opposing receiver contributions hidden by a stationary shared `c`. A
-prespecified four-call sensitivity test is being implemented: retain fitted
-common `c` and add one receiver RF contrast, using two matched initializers.
-This is a model sensitivity test, not evidence of a hardware clock fault.
+found opposing receiver contributions hidden by a stationary shared `c`. The
+prespecified four-call sensitivity test completed in 38.49 seconds, with all
+four outcomes stationary. Retaining fitted common `c` and adding one receiver
+RF contrast improved the selected objective by only 0.657, while position error
+worsened from 4.073 to 4.085 km. The selected contrast was 17.471 Hz/GHz, inside
+its bounds. This intervention is not promoted; see the
+[receiver RF results](../2026_10_13_ds21_039_root_cause/RX_RF_CONTRAST_RESULTS.md).
 The [antenna evidence audit](../2026_10_13_ds21_039_association/ANTENNA_EVIDENCE.md)
 found no capture-bound pointing or beam-response data to justify a directional
 satellite prior.
+
+The [two-state residual audit](../2026_10_13_ds21_039_association/CORRELATION_RESULTS.md)
+completed in 28.19 seconds with zero optimizer calls. Receiver/band block
+structure persists, but cross-products change sign between the two fitted
+solutions. Virtually unsupported channel tails also inflate some conditional
+summaries. No stable common-clock covariance or effective sample size is
+established. This leaves the coupled calibration/association model and the
+information supplied by the observations unresolved; adding flexibility or
+improving the in-sample frequency objective has not delivered accurate position.
 
 ## Full DS21 validation
 
@@ -144,7 +157,7 @@ evaluation.
 ## Provenance
 
 These summaries are derived from the sealed shared-proposal comparison in the
-research worktree, diagnostic/control evidence through commit `72854a725`, and its immutable
+research worktree, diagnostic/control evidence through commit `5a93b8908`, and its immutable
 membership inventory SHA-256
 `a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
 The original protocol and detailed local receipts are retained; this report
