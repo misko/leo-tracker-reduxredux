@@ -63,11 +63,14 @@ the overall balance between likelihood and priors. Residual block structure
 persists, but cross-receiver/band correlations change sign between solutions.
 There is not yet evidence for a stable learned covariance.
 
-The joint worker is implementing a prespecified global likelihood-scale
-sensitivity: original scale versus one-quarter scale, with every physical prior
-unchanged. This tests joint regularization strength; it does not estimate
-covariance or effective sample size. Native branch second moments are retained
-in the diagnostics so ambiguity cannot disappear through averaging residuals.
+The prespecified global likelihood-scale sensitivity completed: original scale
+versus one-quarter scale, with every physical prior unchanged. It improved
+DS21-039 error from 4.073 to 3.930 km, with four stationary fits. This modest
+change tests joint regularization strength; it does not estimate covariance or
+effective sample size. Native branch second moments are retained in the
+diagnostics so ambiguity cannot disappear through averaging residuals. The next
+check is transfer of these same fixed scales to the five existing development
+cases, using historical fitted states and matched budgets.
 
 **Decision:** an intervention must improve position across development cases,
 not merely reduce its differently scaled objective. Unsupported low-signal
@@ -90,6 +93,13 @@ with exact census evidence and a causal catalogue pinned before inference.
 Discovery states are not final
 position estimates. Completed points can be reused; failed or orphan attempts
 cannot be silently retried.
+
+The next DS21-007 stage must generate the original Doppler-shape parents before
+constructing the historical cold/shape six-proposal comparison. The new adapter
+uses the fitted-c arm only and training-only preparation. It does not substitute
+extra discovery states for the missing shape parents. The historical shape
+selector's zero-c choice is replaced explicitly; the core shape math is unchanged,
+and its projection of RF-constant offsets is not claimed to learn RF calibration.
 
 **Decision:** build the missing development initializations, then compare all
 three band views with matched budgets and documented seed provenance. Report

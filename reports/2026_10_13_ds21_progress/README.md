@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 18:05 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 18:23 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -102,14 +102,17 @@ post-seal, training-selected CH1–8 errors are:
 | Detector-winner-preserving native alternatives, fixed 25% alternative mass | 4.410 |
 | One additional receiver RF contrast, common c still fitted | 4.085 |
 | Satellite refresh across short within-block revisits | 4.410 |
+| Fixed one-quarter likelihood weight, original physical priors | 3.930 |
 
 None is promoted. The weighting controls preserve total likelihood weight and
 prior scale; they do not test effective sample size or a correlated-error model.
 The [native-prior report](../2026_10_13_ds21_039_association/DETECTOR_PRIOR_RESULTS.md)
 shows another frequency-fit improvement accompanied by worse position accuracy.
-Across these DS21-039 experiments, **49 new fitted-c calls produced 48 stationary
+Across these DS21-039 experiments, **53 completed fitted-c calls produced 52 stationary
 outcomes**, retaining the one nonstationary cold profile. The 0.5 km target remains
-unmet. This is still development work, not a full-DS21 accuracy result.
+unmet. One additional tempering invocation failed during fitter construction,
+before optimizer callbacks; that failure is preserved separately. This is still
+development work, not a full-DS21 accuracy result.
 
 The [UTC provenance audit](../2026_10_13_ds21_039_root_cause/UTC_TIMING_PROVENANCE.md)
 found no timestamp-conversion bug. The recorded host-clock bracket is 250.269 ms
@@ -157,8 +160,18 @@ below 6e-11; the linked model had 1,616 edges across 1,182 families. This is a
 negative result for this prescribed continuity assumption, not evidence against
 all temporal information.
 A separate [quarter-scale likelihood sensitivity](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_PROPOSAL.md)
-is being implemented; its scale is not an estimated noise covariance or effective
-sample size. Neither new intervention is promoted.
+completed four stationary calls in 39.051 seconds overall. It modestly improved
+error from 4.073 to **3.930 km** (142 metres), while untempered NLL worsened from
+32,225.181 to 32,227.699 and the prior penalty decreased from 155.774 to 154.666.
+The [likelihood-scale results](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_RESULTS.md)
+retain all four outcomes and the independent receipt audit.
+The scale is not an estimated noise covariance or effective sample size. It
+remains worse than both original half-band results and is not promoted for
+release; transfer to the five existing development cases is the next check.
+The [first invocation's interface failure](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_FAILURE_V1.md)
+was preserved with its original source archive. A corrected v2 wrapper restores
+the geographic-prior port, and 24 tests pass, including actual tiny-fitter tests
+for both scales. The v2 run uses a separate freeze and result namespace.
 
 ## Full DS21 validation
 

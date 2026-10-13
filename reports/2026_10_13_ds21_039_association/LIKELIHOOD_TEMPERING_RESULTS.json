@@ -1,0 +1,196 @@
+{
+  "schema": "ds21-039-likelihood-tempering-results-v2",
+  "label": "DS21-039",
+  "role": "development",
+  "arm": "fitted-c",
+  "bindings": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/likelihood-tempering-v2/freeze.json",
+      "sha256": "sha256:ee164c2cd95554a8f38f738d45c6219b5c2b792c2d3b2f8169110c41764abbdc"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/likelihood-tempering-v2/fits/terminal.json",
+      "sha256": "sha256:aaa1a376404d02b4c92d513b93974dff96b89e22627fb1db381c836e874c305e"
+    },
+    "source_oracle": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/likelihood-tempering-v2/fits/source-oracle.json",
+      "sha256": "sha256:1068a28ff810d268ef3a64280e1e917a4b15f7e2ddc6cfd7af24d3a1721ee4c6"
+    },
+    "development_errors": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/likelihood-tempering-v2/development-errors.json",
+      "sha256": "sha256:0fb12dabfe107bc61c3a10597894325dfc02de90ae8b9bef178e0a977cce6838"
+    }
+  },
+  "receipt_audit": {
+    "live_and_archived_sources": 329,
+    "ancestor_bindings": 6,
+    "launches": 4,
+    "terminations": 4,
+    "attempts": 4,
+    "stationary": 4,
+    "solver_success": 4,
+    "ceiling_hits": 0,
+    "prior_ledger_max_abs_delta": 1.6768808563938364e-12,
+    "alpha_one_all_oracle_deltas": 0.0,
+    "domain_checks": "Exact zero-sum timing basis, common/total timing boxes, regional/original25km disks, RF/drift/group boxes and original frames verified"
+  },
+  "timing": {
+    "root_reported_outer_elapsed_s": 39.05058968,
+    "runner_elapsed_s": 13.176064791157842,
+    "summed_new_fit_elapsed_s": 12.82653787964955,
+    "new_fit_evaluations": 488
+  },
+  "attempts": {
+    "alpha-one-original-all": {
+      "likelihood_alpha": 1.0,
+      "objective": 33172.42342910419,
+      "scaled_likelihood_nll": 32969.49976993959,
+      "untempered_likelihood_nll": 32969.49976993959,
+      "posterior_rms_hz": 104.38093440140528,
+      "stationarity": 0.0005356599810205642,
+      "converged": true,
+      "boundary": false,
+      "elapsed_s": 0.5728360582143068,
+      "evaluations": 21,
+      "solver_success": true,
+      "physical_constraints_minimum": 3.8830871304867003,
+      "group_prior_penalty": 0.39934224660072276,
+      "posterior_rms_definition": "Historical fitter conditional-mean residual RMS, not native second moment",
+      "common_c_hz_per_ghz": -626.5782993257161,
+      "common_timing_s": -1.4653183624090693,
+      "unscaled_prior_total": 202.92365916459676
+    },
+    "alpha-one-refinement-free": {
+      "likelihood_alpha": 1.0,
+      "objective": 32380.954534755605,
+      "scaled_likelihood_nll": 32225.181022133584,
+      "untempered_likelihood_nll": 32225.181022133584,
+      "posterior_rms_hz": 92.14956192210276,
+      "stationarity": 7.04178236427544e-05,
+      "converged": true,
+      "boundary": false,
+      "elapsed_s": 0.7689215061254799,
+      "evaluations": 29,
+      "solver_success": true,
+      "physical_constraints_minimum": 3.7944888021101946,
+      "group_prior_penalty": 0.3997476393048041,
+      "posterior_rms_definition": "Historical fitter conditional-mean residual RMS, not native second moment",
+      "common_c_hz_per_ghz": -618.997814118364,
+      "common_timing_s": -1.530826520170366,
+      "unscaled_prior_total": 155.77351262202137
+    },
+    "alpha-quarter-original-all": {
+      "likelihood_alpha": 0.25,
+      "objective": 8440.582016243417,
+      "scaled_likelihood_nll": 8242.152867854036,
+      "untempered_likelihood_nll": 32968.611471416145,
+      "posterior_rms_hz": 104.4997582762445,
+      "stationarity": 6.93119836822631e-05,
+      "converged": true,
+      "boundary": false,
+      "elapsed_s": 5.926464091986418,
+      "evaluations": 228,
+      "solver_success": true,
+      "physical_constraints_minimum": 3.8829277650888763,
+      "group_prior_penalty": 0.39931836091986816,
+      "posterior_rms_definition": "Historical fitter conditional-mean residual RMS, not native second moment",
+      "common_c_hz_per_ghz": -626.9012590038003,
+      "common_timing_s": -1.4264666707794154,
+      "unscaled_prior_total": 198.42914838938123
+    },
+    "alpha-quarter-refinement-free": {
+      "likelihood_alpha": 0.25,
+      "objective": 8211.590993359529,
+      "scaled_likelihood_nll": 8056.924690149508,
+      "untempered_likelihood_nll": 32227.698760598032,
+      "posterior_rms_hz": 92.16135550934565,
+      "stationarity": 1.7201612832241998e-05,
+      "converged": true,
+      "boundary": false,
+      "elapsed_s": 5.558316223323345,
+      "evaluations": 210,
+      "solver_success": true,
+      "physical_constraints_minimum": 3.7900742380236956,
+      "group_prior_penalty": 0.39973589850511043,
+      "posterior_rms_definition": "Historical fitter conditional-mean residual RMS, not native second moment",
+      "common_c_hz_per_ghz": -622.3321495090441,
+      "common_timing_s": -1.5926987165234237,
+      "unscaled_prior_total": 154.6663032100205
+    }
+  },
+  "selection": {
+    "alpha-one": {
+      "name": "alpha-one-refinement-free",
+      "origin": "new-fit",
+      "alpha": 1.0,
+      "objective": 32380.954534755605,
+      "scaled_likelihood_nll": 32225.181022133584,
+      "untempered_likelihood_nll": 32225.181022133584,
+      "prior_costs": {
+        "common_timing": 0.13019054638093955,
+        "relative_timing": 155.24357443633397,
+        "group_calibration": 0.3997476393048041,
+        "total": 155.77351262201972
+      },
+      "signal_mass": 2167.2475963433853,
+      "clutter_mass": 630.7524036566147,
+      "conditional_mean_residual_rms_hz": 92.14956192210276,
+      "posterior_native_rms_hz": 92.16235912396404,
+      "likelihood_is_normalized_predictive": false,
+      "limitation": "Prespecified regularization sensitivity; not noise/covariance/effectiveN",
+      "error_km": 4.072514869877426,
+      "below_0_5km": false
+    },
+    "alpha-quarter": {
+      "name": "alpha-quarter-refinement-free",
+      "origin": "new-fit",
+      "alpha": 0.25,
+      "objective": 8211.590993359529,
+      "scaled_likelihood_nll": 8056.924690149508,
+      "untempered_likelihood_nll": 32227.698760598032,
+      "prior_costs": {
+        "common_timing": 0.14092717786752007,
+        "relative_timing": 154.12564013364792,
+        "group_calibration": 0.39973589850511043,
+        "total": 154.66630321002054
+      },
+      "signal_mass": 2166.9210338902,
+      "clutter_mass": 631.0789661098004,
+      "conditional_mean_residual_rms_hz": 92.16135550934565,
+      "posterior_native_rms_hz": 92.1735127107206,
+      "likelihood_is_normalized_predictive": false,
+      "limitation": "Prespecified regularization sensitivity; not noise/covariance/effectiveN",
+      "error_km": 3.930480309318804,
+      "below_0_5km": false
+    }
+  },
+  "quarter_minus_one": {
+    "error_km": -0.14203456055862196,
+    "untempered_likelihood_nll": 2.5177384644484846,
+    "posterior_native_rms_hz": 0.011153586756563527,
+    "signal_mass": -0.32656245318548827,
+    "clutter_mass": 0.32656245318571564,
+    "prior_total": -1.1072094119991789
+  },
+  "preserved_failure": {
+    "namespace": "likelihood-tempering-v1",
+    "launches": 1,
+    "terminations": 1,
+    "attempts": 0,
+    "optimizer_callbacks": 0,
+    "terminal": false,
+    "error_type": "AttributeError",
+    "reason": "'function' object has no attribute 'radius_km'",
+    "report": "LIKELIHOOD_TEMPERING_FAILURE_V1.md"
+  },
+  "verification": {
+    "owned_tests_passed": 24,
+    "actual_tiny_fitter_tested_alphas": [
+      1,
+      0.25
+    ]
+  },
+  "interpretation": "Modest fixed development sensitivity; target unmet, no promotion, no calibrated noise/covariance/effectiveN interpretation",
+  "held_usage": "none",
+  "reference_usage": "Root post-seal evaluation receipt only; no reference invocation during audit"
+}
