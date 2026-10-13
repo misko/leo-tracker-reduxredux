@@ -2,6 +2,7 @@
 
 import json
 from collections import Counter, defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
@@ -10,6 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from band_calibrated_merge_study import REPORT
 from continuous_merge_study import sha, write
+from matplotlib import dates as mdates
 
 ORIGINAL = Path("/srv/bulk/leo-dev/leo-track-merge-study/reports/2026_10_12_continuous_track_merge")
 OUTPUT = REPORT / "window-identity"
@@ -74,6 +76,7 @@ def main():
                 status="complete",
                 radio_id=source["radio_id"],
                 qualified=source["qualified"],
+                capture_start_utc_ns=source["capture_start_utc_ns"],
             )
             bindings.update({str(p): sha(p) for p in (source_path, census_path)})
         except (OSError, ValueError, KeyError) as error:
@@ -125,6 +128,43 @@ def main():
     axis.legend(fontsize=8)
     axis.set_title("Frozen corpus detection support · passing GLRT is not satellite identity")
     fig.savefig(OUTPUT / "reported-detection-support.png", dpi=160)
+    plt.close(fig)
+    fig, axis = plt.subplots(figsize=(11, 5), constrained_layout=True)
+    ds20 = sorted(
+        (r for r in records if r["status"] == "complete" and r["dataset"] == "DS20"),
+        key=lambda r: r["capture_start_utc_ns"],
+    )
+
+    def utc(ns):
+        return datetime.fromtimestamp(ns // 1_000_000_000, UTC).replace(
+            microsecond=(ns % 1_000_000_000) // 1000
+        )
+
+    for role, marker in (("development", "o"), ("validation", "x")):
+        selected = [r for r in ds20 if r["role"] == role]
+        axis.scatter(
+            [utc(r["capture_start_utc_ns"]) for r in selected],
+            [r["high_passing_probes"] for r in selected],
+            marker=marker,
+            label=role,
+        )
+    donor = next(r for r in ds20 if r["session_id"] == "fast-014c72ff95ab599c51ba3b3ec9b92cb8")
+    axis.axvline(
+        utc(donor["capture_start_utc_ns"]),
+        color="black",
+        ls="--",
+        lw=1,
+        label="Fixed band-calibration donor 014c",
+    )
+    axis.set_yscale("log")
+    axis.set_ylim(1, max(r["high_passing_probes"] for r in ds20) * 1.4)
+    axis.set_ylabel("CH5–8 reported probes with a passing candidate")
+    axis.set_xlabel("Reported capture start (UTC)")
+    axis.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d\n%H:%M", tz=UTC))
+    axis.grid(alpha=0.2)
+    axis.legend(fontsize=8)
+    axis.set_title("DS20 admitted captures · support chronology does not attest LNB state")
+    fig.savefig(OUTPUT / "support-chronology.png", dpi=160)
     plt.close(fig)
     print(
         json.dumps(
