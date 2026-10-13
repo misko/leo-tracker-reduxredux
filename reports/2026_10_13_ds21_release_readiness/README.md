@@ -12,6 +12,11 @@ There are now six complete development proposal sets, with 28 still requiring
 initialization. The metadata-only inventory below is retained as the historical
 audit; its original counts and receipt have not been rewritten.
 
+The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
+18 fits, all stationary: CH1–8 / CH1–4 / CH5–8 errors are 3.524 / 3.738 / 4.325 km.
+Combining bands helped this case, but none reached 0.5 km. Locked inference
+remains unopened.
+
 The [source-bound metadata receipt](metadata-v1.json) records all 108 original
 members, file availability, development-only preparation/discovery/proposal
 metadata and the DS21-065 preparation overlay. It binds 64 parsed metadata

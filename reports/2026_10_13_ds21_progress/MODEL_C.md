@@ -57,3 +57,9 @@ stable shared-noise covariance or a hardware clock fault.
 
 See the [common progress report](README.md) for evaluation coverage, reference
 limitations and the plan for full DS21. No locked evaluation result is claimed.
+
+The additional [DS21-007 baseline](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
+completed 18 stationary fits. All/low/high errors are 3.524 / 3.738 / 4.325 km,
+with fitted c throughout. The all-band result improves on both halves but misses
+0.5 km. Half-band fits inherit all-training ambiguity initialization. This new
+case is separate from the original five-case matched A/B/C table.

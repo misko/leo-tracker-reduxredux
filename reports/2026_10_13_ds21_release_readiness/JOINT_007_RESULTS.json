@@ -1,0 +1,128 @@
+{
+  "label": "DS21-007",
+  "model": "C",
+  "arm": "fitted-c",
+  "likelihood_alpha": 1,
+  "rows": [
+    {
+      "view": "all",
+      "state": "estimated",
+      "below_0_5km": false,
+      "calls": 6,
+      "stationary_calls": 6,
+      "start": 5,
+      "proposal_id": "shape-all",
+      "coordinates_deg": [
+        37.81856158151449,
+        -122.49667104633942
+      ],
+      "error_km": 3.5236625560044783,
+      "common_c_hz_per_ghz": -572.8676010670965,
+      "diagnostics": {
+        "alpha": 1,
+        "objective": 32921.97901751805,
+        "scaled_likelihood_nll": 32723.520685992313,
+        "untempered_likelihood_nll": 32723.520685992313,
+        "prior_costs": {
+          "common_timing": 0.011326867649698105,
+          "relative_timing": 198.05100323380304,
+          "group_calibration": 0.39600142429480367,
+          "total": 198.45833152574755
+        },
+        "signal_mass": 2442.5849255745034,
+        "clutter_mass": 544.4150744254965,
+        "conditional_mean_residual_rms_hz": 86.12840229334299,
+        "posterior_native_rms_hz": 86.13321311231083,
+        "likelihood_is_normalized_predictive": false,
+        "limitation": "Prespecified regularization sensitivity; not noise/covariance/effectiveN"
+      },
+      "elapsed_s": 75.11717097321525
+    },
+    {
+      "view": "low",
+      "state": "estimated",
+      "below_0_5km": false,
+      "calls": 6,
+      "stationary_calls": 6,
+      "start": 2,
+      "proposal_id": "cold-2",
+      "coordinates_deg": [
+        37.81718050384456,
+        -122.49926833006317
+      ],
+      "error_km": 3.73816310686756,
+      "common_c_hz_per_ghz": -601.1785462345051,
+      "diagnostics": {
+        "alpha": 1,
+        "objective": 19981.44404272858,
+        "scaled_likelihood_nll": 19801.48504411328,
+        "untempered_likelihood_nll": 19801.48504411328,
+        "prior_costs": {
+          "common_timing": 0.0004143876588868403,
+          "relative_timing": 179.9585842276412,
+          "group_calibration": 0,
+          "total": 179.9589986153001
+        },
+        "signal_mass": 1486.4303307882424,
+        "clutter_mass": 320.56966921175746,
+        "conditional_mean_residual_rms_hz": 76.40683747812176,
+        "posterior_native_rms_hz": 76.42049338788968,
+        "likelihood_is_normalized_predictive": false,
+        "limitation": "Prespecified regularization sensitivity; not noise/covariance/effectiveN"
+      },
+      "elapsed_s": 52.91575679089874
+    },
+    {
+      "view": "high",
+      "state": "estimated",
+      "below_0_5km": false,
+      "calls": 6,
+      "stationary_calls": 6,
+      "start": 0,
+      "proposal_id": "cold-0",
+      "coordinates_deg": [
+        37.82084112195677,
+        -122.51958169744239
+      ],
+      "error_km": 4.324831352598406,
+      "common_c_hz_per_ghz": -516.9121825215539,
+      "diagnostics": {
+        "alpha": 1,
+        "objective": 13231.468333202072,
+        "scaled_likelihood_nll": 13053.693975018341,
+        "untempered_likelihood_nll": 13053.693975018341,
+        "prior_costs": {
+          "common_timing": 0.007561450506774127,
+          "relative_timing": 177.76679673322508,
+          "group_calibration": 0,
+          "total": 177.77435818373186
+        },
+        "signal_mass": 950.3300815446789,
+        "clutter_mass": 229.66991845532112,
+        "conditional_mean_residual_rms_hz": 92.09885603094477,
+        "posterior_native_rms_hz": 92.09885603094479,
+        "likelihood_is_normalized_predictive": false,
+        "limitation": "Prespecified regularization sensitivity; not noise/covariance/effectiveN"
+      },
+      "elapsed_s": 41.351542776916176
+    }
+  ],
+  "terminal": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/joint-007-v1/terminal.json",
+    "sha256": "sha256:c6e12e6ffd470dafeb20a41b045defcf979c747f10fa5112dfd423cf0125b64f"
+  },
+  "evaluator": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds21_fitted_joint.py",
+    "sha256": "sha256:a5ab19d1eb9f86dad8be282f0c4e1f6cc54c69862f6393b1c41e00eaeb17af5d"
+  },
+  "reference_usage": "After all three view selections and all18 calls sealed",
+  "limitation": "Low/high inherit all-training receiver-lift initialization; configured reference, not independently surveyed",
+  "bindings": {
+    "protocol.json": "82f7ceb819bd5173e03c7b6e6b0996ed83a282f6c82ddd01c84aa0c57c1a0f38",
+    "terminal.json": "c6e12e6ffd470dafeb20a41b045defcf979c747f10fa5112dfd423cf0125b64f",
+    "development-errors.json": "b5dc54015ea6eeb3bd5a86d0191a5feb36f248dd63d4085d0438dc601b11e907",
+    "initialization.json": "baba27faafda54550e9cb090253ef0fc37c502c566bacfdb86ae3f2097e9844c"
+  },
+  "target_met": false,
+  "comparison_scope": "Additional Model C development case; not an expanded matched A/B/C comparison"
+}

@@ -19,6 +19,12 @@ The current target is **less than 0.5 km for every eligible CH1–8 DS21 recordi
 including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
+Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
+completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
+Combining bands improves this case, but all views miss 0.5 km. It is reported
+separately from the original matched three-model table. Twenty-eight fast
+development cases still require initialization; locked inference is unopened.
+
 ## Current four-direction investigation
 
 The [next four priorities](NEXT_FOUR_DIRECTIONS.md) incorporate the negative
