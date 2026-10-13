@@ -20,8 +20,8 @@ execution order.
 | --- | --- | --- | --- |
 | 1 | Timing versus position identifiability | Finite displacements and four fixed-geography nuisance fits are audited; asymmetry persists. Any further attribution must separate likelihood nonlinearity from an actual timestamp/orbit-model defect. | SOL temporal/evidence audit complete |
 | 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
-| 3 | Cross-band calibration and error dependence | Require reproducible structure across development cases before adding calibration flexibility or learned covariance. Retain receiver-slope, weighting and quarter-scale transfer failures as controls. Specify a training-only transfer test rather than learning shifts against known positions. | Coordinator; next SOL implementation gated on evidence |
-| 4 | Initialization, independent band comparison and full DS21 coverage | Reusable initialization is complete and DS21-009 has exported its six starts. Complete generic A/B/C composition and expand development coverage; inherited shared initialization still needs distinction from independent half-band pipelines. | SOL model-composition worker active; coordinator runs bounded slices |
+| 3 | Cross-band calibration, transmitter dynamics and error dependence | Test for paired-receiver residual increments at two fixed states before adding transmitter terms. Retain receiver-slope, weighting and quarter-scale transfer failures as controls. Require reproducible training-only evidence across development cases. | SOL evidence worker implementing bounded diagnostic; dataset run pending |
+| 4 | Initialization, independent band comparison and full DS21 coverage | Generic A/B/C composition is implemented, but DS21-009 failed calibration seed projection before location fitting. Isolate the failing proposal before revising the adapter. Continue reusable initialization; distinguish shared initialization from independent half-band pipelines. | SOL model worker implementing failure diagnostic; coordinator runs bounded slices |
 
 The current agent thread limit prevents launching four additional workers at
 once. Two existing SOL workers continue in parallel; the coordinator handles
@@ -147,6 +147,25 @@ completed [DS21-009](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.
 including 100 discovery points, nine stationary shape fits, nine stationary
 hybrid fits and 18 physical seed exports. Twenty-seven development recordings
 still require initialization. Its final three-model fits remain to be run.
+
+The first generic A/B/C initialization on DS21-009 failed with a bounded
+carried-calibration projection convergence error, before any location fits or
+reference evaluation. Its `models-v1` namespace and source archive are retained.
+Read-only inspection shows Model A overwrites its initial all-view vector and
+uses only timing from its initial high-view vector, making their initial
+calibration projections unnecessary. The receipt does not identify which
+projection failed, so this is not yet the demonstrated cause. A bounded replay
+will record the exact failing model/view/proposal and unchanged solver status
+before a new adapter version is considered. DS21-011 discovery also completed:
+100 points, 300 fits, 293 stationary, in 446.480 seconds. Later initialization
+stages remain in progress; this is not a position-accuracy result.
+
+The [transmitter dynamics audit](../2026_10_13_ds21_039_association/TRANSMITTER_DYNAMICS_AUDIT.md)
+identifies channel-dependent transmitted frequency corrections as a credible
+omitted-effect hypothesis, not an established DS21 cause. A two-fixed-state,
+zero-fit paired-receiver increment diagnostic is being implemented. It must
+report inadequate matching support honestly and cannot establish emitter
+identity from satellite-mixture assignments.
 
 **Decision:** build the missing development initializations, then compare all
 three band views with matched budgets and documented seed provenance. Report
