@@ -3,6 +3,16 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+completed 18 C calls, 16 stationary. All/low/high errors are
+**1.846733 / 3.104978 / 1.065469 km**, versus the original
+**267.759878 / 271.452943 / 198.398059 km**. Combining improves on the low half
+and worsens the high half; none reaches 0.5 km. The failed all/cold-2 and
+low/shape-low starts remain excluded under the original stationarity threshold.
+All three selected boundary flags are false. This control recovers useful
+initialization on one case while leaving a smaller localization error unresolved;
+the historical table and full-DS21 target remain unchanged.
+
 The model fits position and calibration while marginalizing satellite identity,
 native measured frequency branches and clutter. Physical Doppler uses each
 observation's RF. These fast scans have zero validated temporal edges and neutral

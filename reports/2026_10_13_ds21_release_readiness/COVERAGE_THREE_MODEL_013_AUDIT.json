@@ -1,0 +1,3331 @@
+{
+  "schema": "ds21-coverage-three-model-receipt-audit-v1",
+  "label": "DS21-013",
+  "scope": "Metadata/source/receipt validation and scalar arithmetic only; no fitting, preparation, projection, objective, orbit, reference or geodesic calculations",
+  "audit_optimizer_calls": 0,
+  "scientific_optimizer_calls": 54,
+  "stationary_calls": 52,
+  "outcome_count": 12,
+  "row_count": 7,
+  "below_0_5km_rows": 0,
+  "provenance": {
+    "local/coverage-models-v1/DS21-013/protocol.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/protocol.json",
+      "sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8"
+    },
+    "local/coverage-models-v1/DS21-013/initialization.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/initialization.json",
+      "sha256": "sha256:3ab06f8921dcabf5366689fb2dfc15b48d85c12805a7d139c2017972984008d2"
+    },
+    "local/coverage-models-v1/DS21-013/terminal.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/terminal.json",
+      "sha256": "sha256:ac51aa9b16ef26c9388ce81564bfe018c8ea9f49e7f45b89f61e47ed6a04574d"
+    },
+    "local/coverage-models-v1/DS21-013/development-errors.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/development-errors.json",
+      "sha256": "sha256:8f938b22f0cc0fc3b71e19cb1a670c6df893665ce029a3346b82b1c8d483a176"
+    },
+    "local/models-v2/DS21-013/protocol.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/protocol.json",
+      "sha256": "sha256:43e53a0d1d4a0c7d003847ccf9bed208eb23945886bb323e65da858b416c83c7"
+    },
+    "local/model-receipts-v1/DS21-013/terminal.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-013/terminal.json",
+      "sha256": "sha256:40933c2e86be096a41ef3805d611db4276456768d77b81c958214cb08e3feae7"
+    },
+    "local/model-receipts-v1/DS21-013/development-errors.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-013/development-errors.json",
+      "sha256": "sha256:b421060295a0f988582062f091fbbfbdc76e49d2ee1e3e17aed931de8d8671a6"
+    },
+    "THREE_MODEL_013_AUDIT.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/THREE_MODEL_013_AUDIT.json",
+      "sha256": "sha256:4cce17c3b4ef9012074ab29d76bc6e41c2923844fe7e2d44fb08efbf9c6982e2"
+    },
+    "COVERAGE_PROPOSALS_013_AUDIT.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/COVERAGE_PROPOSALS_013_AUDIT.json",
+      "sha256": "sha256:5f2259ce60dbb15be5c0675c244d828e2027929c8734a6fa8ae60b35814f3c7f"
+    }
+  },
+  "sources": {
+    "control": {
+      "count": 415,
+      "canonical_map_sha256": "sha256:60ce265de86cd25139d53d1f25f803f02e799acc7d52fc2c961d41949f98aa03",
+      "live_and_archive_verified": true
+    },
+    "original": {
+      "count": 411,
+      "canonical_map_sha256": "sha256:de997e297936c4db25af848cc611b82d8fa02a9baa54e8257080e0f2d0af284a",
+      "live_and_archive_verified": true
+    },
+    "original_source_subset_unchanged": true
+  },
+  "checks": {
+    "twelve_sealed_outcomes": true,
+    "exact_call_launch_termination_inventory": true,
+    "qualified_unit_validation": true,
+    "original_fit_options_and_original_centers": true,
+    "seven_stationary_training_selections_replayed": true,
+    "exact_A_high_metadata_scope": true,
+    "scalar_diagnostic_tolerance": 1e-07,
+    "recorded_evaluation_rows_bound_not_recalculated": true,
+    "unchanged_case_partition_prior_frames": true,
+    "reference_after_all_outcomes_sealed": true
+  },
+  "candidate_counts": {
+    "original": 49,
+    "control": 40
+  },
+  "unit_summary": {
+    "A-0": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-0",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 0,
+      "calls_diagnostics": [
+        {
+          "unit": "A-0",
+          "call": "low",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -93.75,
+              -81.25
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:ec2fff2a6250b2f854be7665a83150f0a84293778e1f6796cc548e9d19d63404",
+          "raw_fit_sha256": "sha256:d54932011075b8a1e37008027d9c400c5ab849314263a9671ba5ae53fb567a08",
+          "fit_point_km": [
+            -88.35394521692382,
+            -86.01284438098904
+          ],
+          "original_center_distance_km": 7.197367144968928,
+          "geographic_disk_slack_km": 17.80263285503107,
+          "objective": 17596.07083177177,
+          "likelihood_nll": 17199.678931836923,
+          "posterior_rms_hz": 86.440858461207,
+          "stationarity": 0.0008183869787428801,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.1563343149609864,
+          "evaluations": 357,
+          "signal_windows": 1049.028947945042,
+          "physical_constraints_minimum": 0.5082906628843062,
+          "common_c_hz_per_ghz": -560.71232403683
+        },
+        {
+          "unit": "A-0",
+          "call": "high",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:c5db13bc1080df7c348de7b610d3a94353e11007fa9be4b49877dfa505ea91e8",
+          "raw_fit_sha256": "sha256:58c6fd9cae96746b1c9f5acf7b586b92bed4c5f4e9a020aff73fc8ceaa312b59",
+          "fit_point_km": [
+            -88.35394521692382,
+            -86.01284438098904
+          ],
+          "original_center_distance_km": 7.197367144968928,
+          "geographic_disk_slack_km": 17.80263285503107,
+          "objective": 16199.273068170682,
+          "likelihood_nll": 15780.096844421654,
+          "posterior_rms_hz": 130.99572414233722,
+          "stationarity": 0.0009109445257903526,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.090900493785739,
+          "evaluations": 437,
+          "signal_windows": 710.8882405106175,
+          "physical_constraints_minimum": 1.2580501577341714,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-0",
+          "call": "final",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -93.75,
+              -81.25
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:b604450c0e21a6a552b8f296f3b1665883e2cdc58cfca762ebc000ec39ed4792",
+          "raw_fit_sha256": "sha256:8e78ce88b3817e863c0ca139a93942a1dad7e4f6f32f7819f38916fffc039cdb",
+          "fit_point_km": [
+            -92.3773714073141,
+            -88.87132573331081
+          ],
+          "original_center_distance_km": 7.7439470030911535,
+          "geographic_disk_slack_km": 17.256052996908846,
+          "objective": 34750.90806931773,
+          "likelihood_nll": 34132.41542445616,
+          "posterior_rms_hz": 129.5239560042184,
+          "stationarity": 0.00023596703622622006,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.7638475112617016,
+          "evaluations": 323,
+          "signal_windows": 1563.2630694417076,
+          "physical_constraints_minimum": 0.8587198435284193,
+          "common_c_hz_per_ghz": -760.9002318416095
+        }
+      ]
+    },
+    "A-1": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-1",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 1,
+      "calls_diagnostics": [
+        {
+          "unit": "A-1",
+          "call": "low",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -87.5,
+              -62.5
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:766e7a329d63e5d41d16ea06e5f8ef30ec7c0d2207d62ba07401ac4dac1ea7bd",
+          "raw_fit_sha256": "sha256:a798c3b1b575619a15247c4ce3bd8fbf763da4ebc4a5ffccf7170caf8f169f9c",
+          "fit_point_km": [
+            -90.75665384190157,
+            -72.83886591216444
+          ],
+          "original_center_distance_km": 10.839646792939703,
+          "geographic_disk_slack_km": 14.160353207060297,
+          "objective": 17641.763688374354,
+          "likelihood_nll": 17327.87204125221,
+          "posterior_rms_hz": 98.56624341041055,
+          "stationarity": 0.000338391450944886,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.205562764313072,
+          "evaluations": 375,
+          "signal_windows": 1018.0843641736512,
+          "physical_constraints_minimum": 1.812059811915642,
+          "common_c_hz_per_ghz": -603.6425330830352
+        },
+        {
+          "unit": "A-1",
+          "call": "high",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:85ec3412972ee4686cfd3c24e354aa8e21589a2ea98a6e4dba4f1f7af9dca2a8",
+          "raw_fit_sha256": "sha256:e7edb3d329e2f474b120d550e9691e798d6dd30248a87178b26ec26c2737d652",
+          "fit_point_km": [
+            -90.75665384190157,
+            -72.83886591216444
+          ],
+          "original_center_distance_km": 10.839646792939703,
+          "geographic_disk_slack_km": 14.160353207060297,
+          "objective": 15911.430125087738,
+          "likelihood_nll": 15575.620747908775,
+          "posterior_rms_hz": 127.05334578578554,
+          "stationarity": 0.0005456695929693224,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 0.9377045691944659,
+          "evaluations": 375,
+          "signal_windows": 758.4238856133438,
+          "physical_constraints_minimum": 0.8662511958007677,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-1",
+          "call": "final",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -87.5,
+              -62.5
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:d53fad3210e0a6d98c366bb234e15739cc94d90efb80728fa797bc5e88e2c292",
+          "raw_fit_sha256": "sha256:3495eef8bdce755010bc427b5c0f7f181459e36295dc41e9ffa66e45f064f72e",
+          "fit_point_km": [
+            -86.28153827702933,
+            -83.38146341931046
+          ],
+          "original_center_distance_km": 20.916982657695772,
+          "geographic_disk_slack_km": 4.0830173423042275,
+          "objective": 33269.86073740015,
+          "likelihood_nll": 32936.260216760165,
+          "posterior_rms_hz": 133.13527702259861,
+          "stationarity": 0.00038431242112697264,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.8020935500971973,
+          "evaluations": 298,
+          "signal_windows": 1858.5432160439977,
+          "physical_constraints_minimum": 0.8369787473849435,
+          "common_c_hz_per_ghz": -1001.6088872157231
+        }
+      ]
+    },
+    "A-2": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-2",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 2,
+      "calls_diagnostics": [
+        {
+          "unit": "A-2",
+          "call": "low",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -81.25,
+              -93.75
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:2aaaf29621d24ba1be15c99a2e27775ffad572a70a3c69f537ed7667551a5ff6",
+          "raw_fit_sha256": "sha256:959de42e4d5b7edf88c53e24e97482448eed4989a8f03687194fa5eed867550f",
+          "fit_point_km": [
+            -85.99922828009227,
+            -91.16812483098097
+          ],
+          "original_center_distance_km": 5.405668195961088,
+          "geographic_disk_slack_km": 19.594331804038912,
+          "objective": 17924.033936107586,
+          "likelihood_nll": 17471.221454546052,
+          "posterior_rms_hz": 107.09826026679569,
+          "stationarity": 0.00045523440927877894,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.2142926682718098,
+          "evaluations": 367,
+          "signal_windows": 1000.1531704177224,
+          "physical_constraints_minimum": 0.3136080494801128,
+          "common_c_hz_per_ghz": -675.0413431550915
+        },
+        {
+          "unit": "A-2",
+          "call": "high",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:7f6b7a6fdaecb533003d967f568d11f8a3ed9c42f8a96ec00d8e198e40174307",
+          "raw_fit_sha256": "sha256:284e65a94aa5e7716c087157074bf1fe48c8c120c9971b219e8ef5fa247103f7",
+          "fit_point_km": [
+            -85.99922828009227,
+            -91.16812483098097
+          ],
+          "original_center_distance_km": 5.405668195961088,
+          "geographic_disk_slack_km": 19.594331804038912,
+          "objective": 14984.102183013018,
+          "likelihood_nll": 14637.68777648073,
+          "posterior_rms_hz": 124.19457321239774,
+          "stationarity": 0.00029706626302539,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.4103743289597332,
+          "evaluations": 570,
+          "signal_windows": 977.2855628804507,
+          "physical_constraints_minimum": 0.5188511190004306,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-2",
+          "call": "final",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -81.25,
+              -93.75
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:8f57cefbb3964e2d937c0188f5acc6516327b78a14cf4a32e91111ae6f80bdda",
+          "raw_fit_sha256": "sha256:87c5a932f7f8dedd7eb4b2496812d29ab8dad88d4bdd1a6ad7ac71537c67d5b6",
+          "fit_point_km": [
+            -88.14342216801339,
+            -91.07916185685961
+          ],
+          "original_center_distance_km": 7.392742763907857,
+          "geographic_disk_slack_km": 17.607257236092142,
+          "objective": 33751.77200127907,
+          "likelihood_nll": 33298.26715309906,
+          "posterior_rms_hz": 147.52915274939582,
+          "stationarity": 0.000259949586574406,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.8897185721434653,
+          "evaluations": 343,
+          "signal_windows": 1771.1235196851376,
+          "physical_constraints_minimum": 0.5959705217008491,
+          "common_c_hz_per_ghz": -1212.3379694064226
+        }
+      ]
+    },
+    "A-3": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-3",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 3,
+      "calls_diagnostics": [
+        {
+          "unit": "A-3",
+          "call": "low",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:24d461be6b25bd6cb92d0607ce053fdb744f5212bedb33601a573ea55e9ff7ce",
+          "raw_fit_sha256": "sha256:112238e3218908a51b744592f25641067e55fff81eb9d364529f5d45a6dac510",
+          "fit_point_km": [
+            -89.32066249771793,
+            -82.76944280809454
+          ],
+          "original_center_distance_km": 2.932573888771818,
+          "geographic_disk_slack_km": 22.067426111228183,
+          "objective": 16865.487543300907,
+          "likelihood_nll": 16504.83008538784,
+          "posterior_rms_hz": 82.07370392161184,
+          "stationarity": 0.00017181206982074156,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.2993841548450291,
+          "evaluations": 385,
+          "signal_windows": 1194.0331358320466,
+          "physical_constraints_minimum": 0.6760777831316602,
+          "common_c_hz_per_ghz": -546.5545936458847
+        },
+        {
+          "unit": "A-3",
+          "call": "high",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:e367d321f34435399a3dee3109406680dfe2ec9bc87b9e70a721dbb45cb38164",
+          "raw_fit_sha256": "sha256:b5c0f47a682d9c5f45e192ef1c4dafb99d4f90e3f4bb1cfc41dd7b6145185b00",
+          "fit_point_km": [
+            -89.32066249771793,
+            -82.76944280809454
+          ],
+          "original_center_distance_km": 2.932573888771818,
+          "geographic_disk_slack_km": 22.067426111228183,
+          "objective": 16612.354465180466,
+          "likelihood_nll": 16194.467271284235,
+          "posterior_rms_hz": 140.81860558932797,
+          "stationarity": 0.00039578988724547556,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.0385581133887172,
+          "evaluations": 412,
+          "signal_windows": 622.1864296471879,
+          "physical_constraints_minimum": 0.9993240747811605,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-3",
+          "call": "final",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:5b682d16fff6a3653c7dfb6d5d9e833bd742182682347604b320ec5624f9948d",
+          "raw_fit_sha256": "sha256:fa18b70af066496ac56c53db3fff93e5c31dc918725cc19c39fc207234e7bbc9",
+          "fit_point_km": [
+            -89.27999228783627,
+            -86.6177900115128
+          ],
+          "original_center_distance_km": 4.667801619477822,
+          "geographic_disk_slack_km": 20.33219838052218,
+          "objective": 36647.860943710075,
+          "likelihood_nll": 36196.18896316106,
+          "posterior_rms_hz": 135.89139883332663,
+          "stationarity": 0.0001473357263265529,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.4277844480238855,
+          "evaluations": 245,
+          "signal_windows": 1027.615428665772,
+          "physical_constraints_minimum": 1.4864539851089233,
+          "common_c_hz_per_ghz": -562.4881790493318
+        }
+      ]
+    },
+    "A-4": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-4",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 4,
+      "calls_diagnostics": [
+        {
+          "unit": "A-4",
+          "call": "low",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:208ca7fb8dc2e7737e1f208d06ca840b0a91a15be1b5fdf8877e7a75f4aa8bc4",
+          "raw_fit_sha256": "sha256:f286ef2875a8ae0304f5c5977b737da48be87a79712868c91edf40e2cd9e19cb",
+          "fit_point_km": [
+            -88.46087789056466,
+            -82.34449811323663
+          ],
+          "original_center_distance_km": 2.167281794920796,
+          "geographic_disk_slack_km": 22.832718205079203,
+          "objective": 17098.9044345159,
+          "likelihood_nll": 16759.72004057526,
+          "posterior_rms_hz": 78.72427319992073,
+          "stationarity": 0.0006926485058072196,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.3932835976593196,
+          "evaluations": 370,
+          "signal_windows": 1136.8093398201954,
+          "physical_constraints_minimum": 0.633734112154368,
+          "common_c_hz_per_ghz": -566.5700326486373
+        },
+        {
+          "unit": "A-4",
+          "call": "high",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:fa9c63b9a986359a34fb092ed3565a94160500e3790afd740ebe0e1ccd2ab617",
+          "raw_fit_sha256": "sha256:fa8271f7a0861625662dfabf42dc01a585bf9831b650fa0688b4e1e0543297ff",
+          "fit_point_km": [
+            -88.46087789056466,
+            -82.34449811323663
+          ],
+          "original_center_distance_km": 2.167281794920796,
+          "geographic_disk_slack_km": 22.832718205079203,
+          "objective": 15387.127048043398,
+          "likelihood_nll": 15007.956256110503,
+          "posterior_rms_hz": 104.62141508685666,
+          "stationarity": 7.66029928478013e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.3189170360565186,
+          "evaluations": 511,
+          "signal_windows": 879.7817522182172,
+          "physical_constraints_minimum": 0.6340080208744077,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-4",
+          "call": "final",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:45db2e2520c79c3b8c33a378c67caa4d59439f8971de132f0e8c221a20bdfd01",
+          "raw_fit_sha256": "sha256:3b59200c066620d5f0a88fc9f1bced9a46af53fc2f868dcada56e9de0222ba06",
+          "fit_point_km": [
+            -87.0875301407161,
+            -79.48215539157988
+          ],
+          "original_center_distance_km": 1.044005310749571,
+          "geographic_disk_slack_km": 23.955994689250428,
+          "objective": 32661.799256753755,
+          "likelihood_nll": 32253.20472027973,
+          "posterior_rms_hz": 97.83539866746386,
+          "stationarity": 5.9207404608384046e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.8132307520136237,
+          "evaluations": 298,
+          "signal_windows": 1938.6758540670014,
+          "physical_constraints_minimum": 0.7129824207268278,
+          "common_c_hz_per_ghz": -730.6166898279346
+        }
+      ]
+    },
+    "A-5": {
+      "state": "complete",
+      "calls": 3,
+      "stationary_calls": 3,
+      "skipped_calls": [],
+      "path_status": "complete",
+      "inventory_counts": {
+        "calls": 3,
+        "launches": 3,
+        "terminations": 3
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "A-5",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 5,
+      "calls_diagnostics": [
+        {
+          "unit": "A-5",
+          "call": "low",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:37cc102fde13b22a11d4af25050da591218f0cba43066ee71efd5b08a6baf71d",
+          "raw_fit_sha256": "sha256:5a16528f55f31a5a1cab882104175d64c3ee9ae4f784d412a28b5c821d21ba6a",
+          "fit_point_km": [
+            -90.0894246218537,
+            -84.42775993869562
+          ],
+          "original_center_distance_km": 2.771840077763971,
+          "geographic_disk_slack_km": 22.228159922236028,
+          "objective": 17175.886653630685,
+          "likelihood_nll": 16721.72749458172,
+          "posterior_rms_hz": 94.07170073384378,
+          "stationarity": 0.0003053636238445727,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.0951917502097785,
+          "evaluations": 326,
+          "signal_windows": 1189.9099737820502,
+          "physical_constraints_minimum": 0.5042703955482892,
+          "common_c_hz_per_ghz": -609.4768949390213
+        },
+        {
+          "unit": "A-5",
+          "call": "high",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "fixed_position": true,
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:44bb3e39ef92795111d8ed4650fab630999b4fed92379894a765011a184c3d93",
+          "raw_fit_sha256": "sha256:8bdf0abcfdf624a0092817f11eed48bbe67ad1316be94decf8b3e1e1172d945c",
+          "fit_point_km": [
+            -90.0894246218537,
+            -84.42775993869562
+          ],
+          "original_center_distance_km": 2.771840077763971,
+          "geographic_disk_slack_km": 22.228159922236028,
+          "objective": 14964.302295814907,
+          "likelihood_nll": 14638.863473599831,
+          "posterior_rms_hz": 118.11994686928341,
+          "stationarity": 0.00019372369902390162,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.2217747843824327,
+          "evaluations": 482,
+          "signal_windows": 980.7451494903617,
+          "physical_constraints_minimum": 1.3755549546854091,
+          "common_c_hz_per_ghz": 0.0
+        },
+        {
+          "unit": "A-5",
+          "call": "final",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ],
+            "local_radius_km": 25
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:cd947c341a814695b3ddeb37e26d97d622c0145d73cb7421f234c7a693c7c1c2",
+          "raw_fit_sha256": "sha256:5997208374a6d59e7294c3586e0ab814da0ca19a3ae2880502684f351de4e1fb",
+          "fit_point_km": [
+            -89.01270185917012,
+            -81.40502222948338
+          ],
+          "original_center_distance_km": 0.8265116699929252,
+          "geographic_disk_slack_km": 24.173488330007075,
+          "objective": 33647.30125605123,
+          "likelihood_nll": 33298.98698227452,
+          "posterior_rms_hz": 151.68670181278796,
+          "stationarity": 0.0008322227065424154,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.939140243921429,
+          "evaluations": 329,
+          "signal_windows": 1825.7094917965985,
+          "physical_constraints_minimum": 0.902807346581497,
+          "common_c_hz_per_ghz": -1293.0769196821127
+        }
+      ]
+    },
+    "B-all": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 6,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "B-all",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 0,
+      "calls_diagnostics": [
+        {
+          "unit": "B-all",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:b2cb4f63de022be8b58a72ce0c48e63f42f07f3263b2a9883e9f2cc91d017979",
+          "raw_fit_sha256": "sha256:a6c69cec58e3ffa276b67f95d6f0f20c39042e27220d7e3c1d9f619ffe94cecd",
+          "fit_point_km": [
+            -86.9835586449454,
+            -83.01146891344497
+          ],
+          "original_center_distance_km": 6.99195976421676,
+          "geographic_disk_slack_km": 18.00804023578324,
+          "objective": 33442.489690331364,
+          "likelihood_nll": 32996.94823915253,
+          "posterior_rms_hz": 95.55862652528292,
+          "stationarity": 0.000986169979511009,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 2.3897174280136824,
+          "evaluations": 423,
+          "signal_windows": 1731.8695070232902,
+          "physical_constraints_minimum": 0.5646195744575202,
+          "common_c_hz_per_ghz": -640.2226342404226
+        },
+        {
+          "unit": "B-all",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:953e61a4edf7e7a53eff8a990aa329a04819497ed198b7a97255244e764dbc9f",
+          "raw_fit_sha256": "sha256:6666e849e97d9134ecf68d0f6459ed30e5ad7974f3bdf04469080bad894ca6d8",
+          "fit_point_km": [
+            -98.88982349450976,
+            -47.70863027160665
+          ],
+          "original_center_distance_km": 18.66849478876424,
+          "geographic_disk_slack_km": 6.331505211235761,
+          "objective": 37763.231016262456,
+          "likelihood_nll": 37457.4646694824,
+          "posterior_rms_hz": 155.44993024336233,
+          "stationarity": 0.00011855797373563448,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 2.547380252275616,
+          "evaluations": 431,
+          "signal_windows": 730.2121326242893,
+          "physical_constraints_minimum": 5.213953246255006,
+          "common_c_hz_per_ghz": -421.19645721364503
+        },
+        {
+          "unit": "B-all",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:6dfeda412f8fc9695ed1f52f1298024fcf8a8cd6bb2e7446efd80bd0087a5f31",
+          "raw_fit_sha256": "sha256:7e1a83534dbb15b99b25c00709ec70424679d069899e539aacdd68cf40303d48",
+          "fit_point_km": [
+            -82.93328358061201,
+            -91.02546583837722
+          ],
+          "original_center_distance_km": 3.2025817726652304,
+          "geographic_disk_slack_km": 21.79741822733477,
+          "objective": 33689.55147918551,
+          "likelihood_nll": 33207.33519017803,
+          "posterior_rms_hz": 119.24890567903465,
+          "stationarity": 0.0008207198335045962,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 2.440305119846016,
+          "evaluations": 430,
+          "signal_windows": 1724.5937053142397,
+          "physical_constraints_minimum": 0.5917003893735817,
+          "common_c_hz_per_ghz": -619.3642168939365
+        },
+        {
+          "unit": "B-all",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:25c4582a6b42b6124b57b0dcb62217951fdb5fe0c8807f1c17236783eefa25bd",
+          "raw_fit_sha256": "sha256:7d935327926acd97a8773759776698df3c23437ad9c349596543ca2d5135da1e",
+          "fit_point_km": [
+            -91.92718588427202,
+            -84.56247720713903
+          ],
+          "original_center_distance_km": 1.58314346477197,
+          "geographic_disk_slack_km": 23.41685653522803,
+          "objective": 34970.724350639226,
+          "likelihood_nll": 34544.48970649253,
+          "posterior_rms_hz": 123.62404947478275,
+          "stationarity": 0.00023013572713370678,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 2.5906208637170494,
+          "evaluations": 470,
+          "signal_windows": 1432.5460399186322,
+          "physical_constraints_minimum": 0.20489009441595485,
+          "common_c_hz_per_ghz": -537.9753654330498
+        },
+        {
+          "unit": "B-all",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:2f21bb2d5295343f523d3eba6cf44c2a416f455db012f949ecce56382631bd9c",
+          "raw_fit_sha256": "sha256:49765e30ddf4eef32304f3ffd373bfe0f56ae0ddfc5d72cca1ce8b9d0795b634",
+          "fit_point_km": [
+            -90.82812583436353,
+            -76.68100691160832
+          ],
+          "original_center_distance_km": 5.181609462143136,
+          "geographic_disk_slack_km": 19.818390537856864,
+          "objective": 33732.300979178355,
+          "likelihood_nll": 33338.10437708175,
+          "posterior_rms_hz": 99.49490075484502,
+          "stationarity": 0.00020415740549753914,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 2.584158007055521,
+          "evaluations": 438,
+          "signal_windows": 1656.4396033019773,
+          "physical_constraints_minimum": 1.6502710312743076,
+          "common_c_hz_per_ghz": -596.8936362856313
+        },
+        {
+          "unit": "B-all",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 20,
+          "seed_sha256": "sha256:48ff60a296cd92131b50dade2065907a55535f5c58652b67dd2e912804518f03",
+          "raw_fit_sha256": "sha256:9c7d02ac3a1860d1b22983f7b4d0a6636de2203b686b797a7d9949bc8f0e121a",
+          "fit_point_km": [
+            -91.31237091820755,
+            -80.72885638000388
+          ],
+          "original_center_distance_km": 1.7863478337958285,
+          "geographic_disk_slack_km": 23.21365216620417,
+          "objective": 37012.062584320294,
+          "likelihood_nll": 36665.62404753351,
+          "posterior_rms_hz": 149.52351055224295,
+          "stationarity": 0.00018905270765660816,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 3.036187841091305,
+          "evaluations": 511,
+          "signal_windows": 915.6234013167955,
+          "physical_constraints_minimum": 2.1698143815086652,
+          "common_c_hz_per_ghz": -791.7530968465048
+        }
+      ]
+    },
+    "B-low": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 6,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "B-low",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 3,
+      "calls_diagnostics": [
+        {
+          "unit": "B-low",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:ec2fff2a6250b2f854be7665a83150f0a84293778e1f6796cc548e9d19d63404",
+          "raw_fit_sha256": "sha256:cf0fd4de3b11174b1d7d418d21696889fbb3e63eb271bda229284473d42225c5",
+          "fit_point_km": [
+            -88.35394521692382,
+            -86.01284438098904
+          ],
+          "original_center_distance_km": 7.197367144968928,
+          "geographic_disk_slack_km": 17.80263285503107,
+          "objective": 17596.07083177177,
+          "likelihood_nll": 17199.678931836923,
+          "posterior_rms_hz": 86.440858461207,
+          "stationarity": 0.0008183869787428801,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.1713656750507653,
+          "evaluations": 357,
+          "signal_windows": 1049.028947945042,
+          "physical_constraints_minimum": 0.5082906628843062,
+          "common_c_hz_per_ghz": -560.71232403683
+        },
+        {
+          "unit": "B-low",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:766e7a329d63e5d41d16ea06e5f8ef30ec7c0d2207d62ba07401ac4dac1ea7bd",
+          "raw_fit_sha256": "sha256:3f5343d3ff93902ceec58bf26a1d77313cf029fef7045df4082d35caf89e13bd",
+          "fit_point_km": [
+            -90.75665384190157,
+            -72.83886591216444
+          ],
+          "original_center_distance_km": 10.839646792939703,
+          "geographic_disk_slack_km": 14.160353207060297,
+          "objective": 17641.763688374354,
+          "likelihood_nll": 17327.87204125221,
+          "posterior_rms_hz": 98.56624341041055,
+          "stationarity": 0.000338391450944886,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.220340212341398,
+          "evaluations": 375,
+          "signal_windows": 1018.0843641736512,
+          "physical_constraints_minimum": 1.812059811915642,
+          "common_c_hz_per_ghz": -603.6425330830352
+        },
+        {
+          "unit": "B-low",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:2aaaf29621d24ba1be15c99a2e27775ffad572a70a3c69f537ed7667551a5ff6",
+          "raw_fit_sha256": "sha256:7ee2bbf632315258837cd6226441dbbdaf606c837201defcf6a6d16a87907186",
+          "fit_point_km": [
+            -85.99922828009227,
+            -91.16812483098097
+          ],
+          "original_center_distance_km": 5.405668195961088,
+          "geographic_disk_slack_km": 19.594331804038912,
+          "objective": 17924.033936107586,
+          "likelihood_nll": 17471.221454546052,
+          "posterior_rms_hz": 107.09826026679569,
+          "stationarity": 0.00045523440927877894,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.2141054910607636,
+          "evaluations": 367,
+          "signal_windows": 1000.1531704177224,
+          "physical_constraints_minimum": 0.3136080494801128,
+          "common_c_hz_per_ghz": -675.0413431550915
+        },
+        {
+          "unit": "B-low",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:24d461be6b25bd6cb92d0607ce053fdb744f5212bedb33601a573ea55e9ff7ce",
+          "raw_fit_sha256": "sha256:a785bcc790c4c2f2651de06cc482bd71e30803b0a1164f1af6c1f08345aaef9f",
+          "fit_point_km": [
+            -89.32066249771793,
+            -82.76944280809454
+          ],
+          "original_center_distance_km": 2.932573888771818,
+          "geographic_disk_slack_km": 22.067426111228183,
+          "objective": 16865.487543300907,
+          "likelihood_nll": 16504.83008538784,
+          "posterior_rms_hz": 82.07370392161184,
+          "stationarity": 0.00017181206982074156,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.2875356147997081,
+          "evaluations": 385,
+          "signal_windows": 1194.0331358320466,
+          "physical_constraints_minimum": 0.6760777831316602,
+          "common_c_hz_per_ghz": -546.5545936458847
+        },
+        {
+          "unit": "B-low",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:208ca7fb8dc2e7737e1f208d06ca840b0a91a15be1b5fdf8877e7a75f4aa8bc4",
+          "raw_fit_sha256": "sha256:df29dc660672c91064c4f4febb59112996afb9b3769627f8ef02321cce6cb05c",
+          "fit_point_km": [
+            -88.46087789056466,
+            -82.34449811323663
+          ],
+          "original_center_distance_km": 2.167281794920796,
+          "geographic_disk_slack_km": 22.832718205079203,
+          "objective": 17098.9044345159,
+          "likelihood_nll": 16759.72004057526,
+          "posterior_rms_hz": 78.72427319992073,
+          "stationarity": 0.0006926485058072196,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.3082116758450866,
+          "evaluations": 370,
+          "signal_windows": 1136.8093398201954,
+          "physical_constraints_minimum": 0.633734112154368,
+          "common_c_hz_per_ghz": -566.5700326486373
+        },
+        {
+          "unit": "B-low",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:37cc102fde13b22a11d4af25050da591218f0cba43066ee71efd5b08a6baf71d",
+          "raw_fit_sha256": "sha256:3770b969f502758c598d8127f85ae9146b4da85a86808c7221e6b1d5941629b3",
+          "fit_point_km": [
+            -90.0894246218537,
+            -84.42775993869562
+          ],
+          "original_center_distance_km": 2.771840077763971,
+          "geographic_disk_slack_km": 22.228159922236028,
+          "objective": 17175.886653630685,
+          "likelihood_nll": 16721.72749458172,
+          "posterior_rms_hz": 94.07170073384378,
+          "stationarity": 0.0003053636238445727,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.0691390880383551,
+          "evaluations": 326,
+          "signal_windows": 1189.9099737820502,
+          "physical_constraints_minimum": 0.5042703955482892,
+          "common_c_hz_per_ghz": -609.4768949390213
+        }
+      ]
+    },
+    "B-high": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 6,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "B-high",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 2,
+      "calls_diagnostics": [
+        {
+          "unit": "B-high",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:1571ab6a052c0b74be03f53d8dd958e3b58ef87a5ca1bf90b38cdb730bd0b629",
+          "raw_fit_sha256": "sha256:15498ac4282c88cec1b6d5b2abf497cd626fe800bbcfb7f4790f993746d2e23c",
+          "fit_point_km": [
+            -91.38570512835419,
+            -77.88800217334887
+          ],
+          "original_center_distance_km": 4.110099710043253,
+          "geographic_disk_slack_km": 20.88990028995675,
+          "objective": 15490.960541077986,
+          "likelihood_nll": 15041.632733459654,
+          "posterior_rms_hz": 112.36918449601957,
+          "stationarity": 0.0007126862966736433,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.278543216176331,
+          "evaluations": 427,
+          "signal_windows": 877.4376890473002,
+          "physical_constraints_minimum": 0.7944998668385388,
+          "common_c_hz_per_ghz": -723.1078644485357
+        },
+        {
+          "unit": "B-high",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:2078d33c8d827404cafc0d5109238de02599c14e5960f828b9c523239a3c7b89",
+          "raw_fit_sha256": "sha256:c0c98268951198e681f83627fe3af571009b687a385cee134aefed3f2904b769",
+          "fit_point_km": [
+            -82.74652948988728,
+            -78.90743094604278
+          ],
+          "original_center_distance_km": 17.08213312615475,
+          "geographic_disk_slack_km": 7.917866873845249,
+          "objective": 15493.741169061683,
+          "likelihood_nll": 15142.104008362823,
+          "posterior_rms_hz": 104.26740634317484,
+          "stationarity": 0.0002907035566173501,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.372942485846579,
+          "evaluations": 456,
+          "signal_windows": 801.1488123461531,
+          "physical_constraints_minimum": 0.8457489113027314,
+          "common_c_hz_per_ghz": -766.268063683531
+        },
+        {
+          "unit": "B-high",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:66fd6efdb63192e965a8f7450fc99778b4c8f5c9c98fc655a8d7b9ee2d87b499",
+          "raw_fit_sha256": "sha256:a268f67d9fe38dac55aaeb597ff41001c3a1d14002729f19cd96c2ebf2a31f3d",
+          "fit_point_km": [
+            -83.74312807148705,
+            -88.07216389565971
+          ],
+          "original_center_distance_km": 6.201089453361145,
+          "geographic_disk_slack_km": 18.798910546638854,
+          "objective": 14912.614402886917,
+          "likelihood_nll": 14477.981034231296,
+          "posterior_rms_hz": 108.48212140454687,
+          "stationarity": 0.00015108267204405222,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.168937717564404,
+          "evaluations": 392,
+          "signal_windows": 979.8246563941927,
+          "physical_constraints_minimum": 0.25313270830622514,
+          "common_c_hz_per_ghz": -638.8366075678368
+        },
+        {
+          "unit": "B-high",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:60433a3e988eec26ca7fe207d7b91b5c2dd78bda310817f286bdf18033b65f69",
+          "raw_fit_sha256": "sha256:b968e0d0f2c383601e504b24b2af37835edb3572319a7eab4d66066a38eadac7",
+          "fit_point_km": [
+            -108.87109494532301,
+            -81.40318154460213
+          ],
+          "original_center_distance_km": 16.705413456219123,
+          "geographic_disk_slack_km": 8.294586543780877,
+          "objective": 16920.821415820647,
+          "likelihood_nll": 16499.78875821517,
+          "posterior_rms_hz": 132.84603647357793,
+          "stationarity": 6.88871582843237e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.0705592827871442,
+          "evaluations": 346,
+          "signal_windows": 539.2485826506885,
+          "physical_constraints_minimum": 1.2811131464823902,
+          "common_c_hz_per_ghz": -739.8609024635693
+        },
+        {
+          "unit": "B-high",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:2723b69b74f4593b7668ed0156fa72e2cdce5ab9bdf019c050fe56bf1d9314bc",
+          "raw_fit_sha256": "sha256:a11846f8a1ffc541a9c0b9173f06547881d980beaac91655d56e780aa53607cf",
+          "fit_point_km": [
+            -87.31510670547102,
+            -79.21397649524415
+          ],
+          "original_center_distance_km": 1.2848993961048234,
+          "geographic_disk_slack_km": 23.715100603895177,
+          "objective": 15151.06186776335,
+          "likelihood_nll": 14804.104110858418,
+          "posterior_rms_hz": 90.44350989862053,
+          "stationarity": 0.0002847561208390581,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.3404058068990707,
+          "evaluations": 434,
+          "signal_windows": 918.0940915252949,
+          "physical_constraints_minimum": 3.7955506669457257,
+          "common_c_hz_per_ghz": -644.97083805335
+        },
+        {
+          "unit": "B-high",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 18,
+          "seed_sha256": "sha256:df8b991ee48a5f01db62c88d5e0111c3b614ab54857b2453ceb415b48da4ef9b",
+          "raw_fit_sha256": "sha256:55d38ecc7439cd4b0747ce5b4136098d2551e18d34e06045a2be6e8c25e1c54c",
+          "fit_point_km": [
+            -85.19325890473291,
+            -85.09775958092955
+          ],
+          "original_center_distance_km": 5.737161641808824,
+          "geographic_disk_slack_km": 19.262838358191175,
+          "objective": 15795.087605886614,
+          "likelihood_nll": 15459.394605660695,
+          "posterior_rms_hz": 110.59843561817499,
+          "stationarity": 0.0005977862206385798,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 1.9710391787812114,
+          "evaluations": 641,
+          "signal_windows": 764.1713380049869,
+          "physical_constraints_minimum": 1.8580686717376196,
+          "common_c_hz_per_ghz": -482.9617092568286
+        }
+      ]
+    },
+    "C-all": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 5,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "C-all",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 3,
+      "calls_diagnostics": [
+        {
+          "unit": "C-all",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:459dc0603f51563180335271c1902222f6824175bcab22dcdf622d826c17c8e5",
+          "raw_fit_sha256": "sha256:c9b2e71050530f7cad620420d6edc35612876ec17f190a4285a4ce737b91d490",
+          "fit_point_km": [
+            -87.06298988405565,
+            -83.14335999800092
+          ],
+          "original_center_distance_km": 6.94988606904977,
+          "geographic_disk_slack_km": 18.050113930950232,
+          "objective": 30829.231266790368,
+          "likelihood_nll": 30421.232798667785,
+          "posterior_rms_hz": 99.7722655982357,
+          "stationarity": 0.0005193140102554006,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 13.312799111008644,
+          "evaluations": 396,
+          "signal_windows": 2105.8132448831875,
+          "physical_constraints_minimum": 0.17692885839603179,
+          "common_c_hz_per_ghz": -599.0095523796853
+        },
+        {
+          "unit": "C-all",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:70851c5f6ccadf3fdafc6a7c7324b66f82895cadb60a94e1ed2c2b0969deefc1",
+          "raw_fit_sha256": "sha256:b5f179903f60f5ea1fd0322d73883a1a77c60ad631f470235aac849bae914247",
+          "fit_point_km": [
+            -86.51661319420354,
+            -82.90017446981835
+          ],
+          "original_center_distance_km": 20.423862710291683,
+          "geographic_disk_slack_km": 4.576137289708317,
+          "objective": 34187.8114561468,
+          "likelihood_nll": 33861.99893001601,
+          "posterior_rms_hz": 113.09284145631415,
+          "stationarity": 0.00044201604285611096,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 16.893518458120525,
+          "evaluations": 392,
+          "signal_windows": 1564.8408237843187,
+          "physical_constraints_minimum": 1.0899408035337501,
+          "common_c_hz_per_ghz": -640.2776941760384
+        },
+        {
+          "unit": "C-all",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": false,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:5022585e4d5d89c08bf96e7d5d05900ac403fa0fd1d163d4f4b023b5d204b62e",
+          "raw_fit_sha256": "sha256:969b502aa4b71aa64a3c904eef73693e1730dd9ae43fa9e7d8a61561946350df",
+          "fit_point_km": [
+            -85.75774432902907,
+            -92.79528565282068
+          ],
+          "original_center_distance_km": 4.607736800274484,
+          "geographic_disk_slack_km": 20.392263199725516,
+          "objective": 32320.875249111512,
+          "likelihood_nll": 32022.45371872854,
+          "posterior_rms_hz": 138.0410643398817,
+          "stationarity": 1035.810790730935,
+          "boundary": false,
+          "solver_success": false,
+          "elapsed_s": 20.040422157850116,
+          "evaluations": 513,
+          "signal_windows": 1915.3000890840603,
+          "physical_constraints_minimum": 1.2052026995798286,
+          "common_c_hz_per_ghz": -501.55789660984817
+        },
+        {
+          "unit": "C-all",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:df5c8e8bbe8b4ea0249990a6136df086f6134b424dc73848f92b38585162da46",
+          "raw_fit_sha256": "sha256:d0fbb1cb8fb7c24e529f55e82bdb8ed0d74385098a80c66fe9298fc5a4cbc99e",
+          "fit_point_km": [
+            -87.47299662376771,
+            -82.7851284450655
+          ],
+          "original_center_distance_km": 4.77561150056771,
+          "geographic_disk_slack_km": 20.22438849943229,
+          "objective": 30588.66108833205,
+          "likelihood_nll": 30197.408852930028,
+          "posterior_rms_hz": 95.95167195856999,
+          "stationarity": 0.000137883984383381,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 19.103432156145573,
+          "evaluations": 564,
+          "signal_windows": 2117.9105224104014,
+          "physical_constraints_minimum": 0.8498033697960388,
+          "common_c_hz_per_ghz": -593.9446571324387
+        },
+        {
+          "unit": "C-all",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:b138bb23dd3bf236e8586017ff5850bdb5aefba996fca7aab3282f0a622a2600",
+          "raw_fit_sha256": "sha256:fa3a12211b23fac0b0a1d996ce6a8dcbd5687ecbc360d27b6e609d949890f81b",
+          "fit_point_km": [
+            -88.12170525799624,
+            -81.9361195259952
+          ],
+          "original_center_distance_km": 1.6434168935744078,
+          "geographic_disk_slack_km": 23.356583106425592,
+          "objective": 32073.083041974664,
+          "likelihood_nll": 31776.383446595257,
+          "posterior_rms_hz": 108.24823155355296,
+          "stationarity": 0.000835527057443033,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 16.314149043057114,
+          "evaluations": 456,
+          "signal_windows": 1905.9118281838914,
+          "physical_constraints_minimum": 0.8023101661083096,
+          "common_c_hz_per_ghz": -523.0970938464534
+        },
+        {
+          "unit": "C-all",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 2,
+          "seed_sha256": "sha256:a921c832b1b579d4e353123dee0c350877d9c8907d90451cc127e32390841c34",
+          "raw_fit_sha256": "sha256:7bb225688e2e1ed305f7ccb9b9bafb8c5047b22b2fc73de4eca0ddb9c455afab",
+          "fit_point_km": [
+            -90.01775881032574,
+            -81.88713965635336
+          ],
+          "original_center_distance_km": 0.30993651489112495,
+          "geographic_disk_slack_km": 24.690063485108876,
+          "objective": 34834.29580724465,
+          "likelihood_nll": 34473.046368583186,
+          "posterior_rms_hz": 139.13051310192247,
+          "stationarity": 0.0006383147119209738,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 14.577554914634675,
+          "evaluations": 407,
+          "signal_windows": 1527.016331376209,
+          "physical_constraints_minimum": 0.13913243576709533,
+          "common_c_hz_per_ghz": -582.9708552742287
+        }
+      ]
+    },
+    "C-low": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 5,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "C-low",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 5,
+      "calls_diagnostics": [
+        {
+          "unit": "C-low",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:4e3a8223dd5a667780c13efe403b9e709702f40307579096ca04dba44f30a973",
+          "raw_fit_sha256": "sha256:235fce9e57d25aeeeeb185f32a06dec24ec7f90b530f4f75e8cee70ec1d90e04",
+          "fit_point_km": [
+            -86.83271799112552,
+            -86.23945827913876
+          ],
+          "original_center_distance_km": 8.528979089525595,
+          "geographic_disk_slack_km": 16.471020910474405,
+          "objective": 17245.946370738817,
+          "likelihood_nll": 16870.615630151602,
+          "posterior_rms_hz": 96.62232675832355,
+          "stationarity": 0.0009140310406480778,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.582001754082739,
+          "evaluations": 376,
+          "signal_windows": 1052.7307912061217,
+          "physical_constraints_minimum": 0.26273072958301924,
+          "common_c_hz_per_ghz": -586.0986576563095
+        },
+        {
+          "unit": "C-low",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:b66a5fdb9d3d53cc7885fab0864233abac142efca191a5ae5047b6062e86644c",
+          "raw_fit_sha256": "sha256:7e95b5d9cb07ba551714f036c5a344bb1a7dcce60e0dfcd601f3b9b8c069c669",
+          "fit_point_km": [
+            -78.65797410038581,
+            -83.30078309716235
+          ],
+          "original_center_distance_km": 22.602079538499176,
+          "geographic_disk_slack_km": 2.3979204615008243,
+          "objective": 17816.173418722654,
+          "likelihood_nll": 17525.275091130115,
+          "posterior_rms_hz": 108.71217606858433,
+          "stationarity": 0.00013903375561824527,
+          "boundary": true,
+          "solver_success": true,
+          "elapsed_s": 5.2505250088870525,
+          "evaluations": 363,
+          "signal_windows": 959.6472834260262,
+          "physical_constraints_minimum": 0.0,
+          "common_c_hz_per_ghz": -638.9333653540862
+        },
+        {
+          "unit": "C-low",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:9557e31bdb1908e6934e2a7006e8de8474a58d9d7327c1c9877a866324b7fb95",
+          "raw_fit_sha256": "sha256:1a6f66769abf80c034785228b5c2127a1607ed9053f0f8e30ed9b6e137a21628",
+          "fit_point_km": [
+            -66.38483742260189,
+            -108.28589888501303
+          ],
+          "original_center_distance_km": 20.79099359934008,
+          "geographic_disk_slack_km": 4.20900640065992,
+          "objective": 22400.50186902853,
+          "likelihood_nll": 22187.83709180248,
+          "posterior_rms_hz": 173.02747290845198,
+          "stationarity": 8.185196130375944e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 6.0439782799221575,
+          "evaluations": 177,
+          "signal_windows": 187.69404260852892,
+          "physical_constraints_minimum": 2.2329589663478657,
+          "common_c_hz_per_ghz": 2095.426734467983
+        },
+        {
+          "unit": "C-low",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": false,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:399675a6f606275bf8cf3ea75ddff6c5c49523246198fe15b9c35ad2d0316582",
+          "raw_fit_sha256": "sha256:b4400551ccbe7737357cba437d021e32d296a9ca225cee72b81df95812bea77c",
+          "fit_point_km": [
+            -87.90620023781096,
+            -83.07843214958723
+          ],
+          "original_center_distance_km": 4.33757465044723,
+          "geographic_disk_slack_km": 20.66242534955277,
+          "objective": 16460.987567728735,
+          "likelihood_nll": 16163.351164358102,
+          "posterior_rms_hz": 85.7426861770108,
+          "stationarity": 0.003174325921754928,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.750383452046663,
+          "evaluations": 386,
+          "signal_windows": 1140.534218216684,
+          "physical_constraints_minimum": 0.5267585425552532,
+          "common_c_hz_per_ghz": -613.7040549470752
+        },
+        {
+          "unit": "C-low",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:9d256f4108f716a7661bbf86344144528621c835a623dfe2062c6770cf471dd6",
+          "raw_fit_sha256": "sha256:77cd6af2782a7c5a9e4d07748896b036f273e25910da40ddfdd1ef5fb2cb2fa2",
+          "fit_point_km": [
+            -87.39634176925853,
+            -83.92016565375089
+          ],
+          "original_center_distance_km": 3.4220741199411044,
+          "geographic_disk_slack_km": 21.577925880058896,
+          "objective": 16844.740188790216,
+          "likelihood_nll": 16601.284972178753,
+          "posterior_rms_hz": 90.32676604529266,
+          "stationarity": 0.0009114857432412221,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.130598325747997,
+          "evaluations": 343,
+          "signal_windows": 1093.6081115506822,
+          "physical_constraints_minimum": 1.5649596321436512,
+          "common_c_hz_per_ghz": -615.348097049987
+        },
+        {
+          "unit": "C-low",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:d1547935ee38f4ef2ae8e4f370a334e6feda9ae3f0db924085d45a32add40fe8",
+          "raw_fit_sha256": "sha256:f0b9df8298ae01023ea12aeec8de2f1a86b8c9afb0f6ce1200ee592a9e032d6c",
+          "fit_point_km": [
+            -87.28957476549176,
+            -84.08553230815545
+          ],
+          "original_center_distance_km": 3.4791471085020755,
+          "geographic_disk_slack_km": 21.520852891497924,
+          "objective": 16626.328276947526,
+          "likelihood_nll": 16337.988895445684,
+          "posterior_rms_hz": 95.75000105360084,
+          "stationarity": 0.00033514480396657506,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.009830726776272,
+          "evaluations": 333,
+          "signal_windows": 1144.364963596212,
+          "physical_constraints_minimum": 1.1003775000203042,
+          "common_c_hz_per_ghz": -581.9016467410659
+        }
+      ]
+    },
+    "C-high": {
+      "state": "complete",
+      "calls": 6,
+      "stationary_calls": 6,
+      "skipped_calls": [],
+      "path_status": null,
+      "inventory_counts": {
+        "calls": 6,
+        "launches": 6,
+        "terminations": 6
+      },
+      "slices": [
+        {
+          "protocol_sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8",
+          "unit": "C-high",
+          "slice_id": 0,
+          "state": "complete"
+        }
+      ],
+      "selection_start": 5,
+      "calls_diagnostics": [
+        {
+          "unit": "C-high",
+          "call": "0",
+          "start": 0,
+          "proposal_id": "cold-0",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -93.75,
+              -81.25
+            ]
+          },
+          "original_center_km": [
+            -93.75,
+            -81.25
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:0b8d94537f976554359876f297cee56be85367bea2a306392015d5344b675a5f",
+          "raw_fit_sha256": "sha256:9509b7c8f35d6bb42f06cbdb3d4ea23e1cccf57066fbd211cd8ae74c81d699da",
+          "fit_point_km": [
+            -89.93272618072118,
+            -79.4972603181469
+          ],
+          "original_center_distance_km": 4.200437572883812,
+          "geographic_disk_slack_km": 20.799562427116186,
+          "objective": 14872.004250528713,
+          "likelihood_nll": 14534.10001426741,
+          "posterior_rms_hz": 102.67316816240627,
+          "stationarity": 0.0008871037207988097,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.241235780064017,
+          "evaluations": 449,
+          "signal_windows": 887.876380114144,
+          "physical_constraints_minimum": 0.0050407125198894676,
+          "common_c_hz_per_ghz": -690.2551033249911
+        },
+        {
+          "unit": "C-high",
+          "call": "1",
+          "start": 1,
+          "proposal_id": "cold-1",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.5,
+              -62.5
+            ]
+          },
+          "original_center_km": [
+            -87.5,
+            -62.5
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:ab933feaf48ae760162ffbb48b31c3a44695b957ed42262fc1cd34e99466bf17",
+          "raw_fit_sha256": "sha256:798746268adb3fbf703d5b8e3ee179835f4ac9643547997d00193cff494b93db",
+          "fit_point_km": [
+            -92.65980383248755,
+            -62.888007390409264
+          ],
+          "original_center_distance_km": 5.174371973946738,
+          "geographic_disk_slack_km": 19.825628026053263,
+          "objective": 16178.27306596363,
+          "likelihood_nll": 15871.777713295765,
+          "posterior_rms_hz": 125.96883006816694,
+          "stationarity": 7.762506910594384e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 4.320102981757373,
+          "evaluations": 369,
+          "signal_windows": 696.2233718063771,
+          "physical_constraints_minimum": 1.223061847087994,
+          "common_c_hz_per_ghz": -773.5186223459195
+        },
+        {
+          "unit": "C-high",
+          "call": "2",
+          "start": 2,
+          "proposal_id": "cold-2",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -81.25,
+              -93.75
+            ]
+          },
+          "original_center_km": [
+            -81.25,
+            -93.75
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:23048ceab4d37a3f24562e25c79e26cbe59461459a8bebd32826746eb8f370ea",
+          "raw_fit_sha256": "sha256:c3bec8f82bf0ebd795ac0bdb447768c63013ca42100b1dc2f7c00832fd1ed0b2",
+          "fit_point_km": [
+            -84.5043859691314,
+            -85.97878059097656
+          ],
+          "original_center_distance_km": 8.42513377574873,
+          "geographic_disk_slack_km": 16.57486622425127,
+          "objective": 15322.50489286656,
+          "likelihood_nll": 14949.949316259423,
+          "posterior_rms_hz": 120.49562217113295,
+          "stationarity": 3.2346102718849856e-05,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.195683892816305,
+          "evaluations": 426,
+          "signal_windows": 835.950709753126,
+          "physical_constraints_minimum": 0.0020056541396158423,
+          "common_c_hz_per_ghz": -672.7133530857169
+        },
+        {
+          "unit": "C-high",
+          "call": "3",
+          "start": 3,
+          "proposal_id": "shape-low",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -92.2432538933818,
+              -83.01120539225049
+            ]
+          },
+          "original_center_km": [
+            -92.2432538933818,
+            -83.01120539225049
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:c346e464523b1f15f34bd62e78bd8eb33e4f23bf523b329ac509e254aa6f2fee",
+          "raw_fit_sha256": "sha256:47e26a4575beb60c7acc5b45d93adbabcbb59115f3924233f77cf804a49ef69d",
+          "fit_point_km": [
+            -87.28900027025053,
+            -81.98268533148804
+          ],
+          "original_center_distance_km": 5.059889571690295,
+          "geographic_disk_slack_km": 19.940110428309705,
+          "objective": 14699.953955241244,
+          "likelihood_nll": 14394.274619868014,
+          "posterior_rms_hz": 98.0666071634947,
+          "stationarity": 0.0008293488074445354,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.514924502931535,
+          "evaluations": 479,
+          "signal_windows": 901.1432316097062,
+          "physical_constraints_minimum": 0.6182121496878281,
+          "common_c_hz_per_ghz": -554.7834607516183
+        },
+        {
+          "unit": "C-high",
+          "call": "4",
+          "start": 4,
+          "proposal_id": "shape-high",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -87.32480844257886,
+              -80.49883926395046
+            ]
+          },
+          "original_center_km": [
+            -87.32480844257886,
+            -80.49883926395046
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:e4ce536d4f9ca55cfefb342721fa77e179705615b0bfaf406952151f340ff29e",
+          "raw_fit_sha256": "sha256:1066ab1e5fca2e6550de0e36ea5fd7808517c7d403879d07cb69a71d2474e70a",
+          "fit_point_km": [
+            -87.58895618136657,
+            -80.51691572706464
+          ],
+          "original_center_distance_km": 0.2647655310371431,
+          "geographic_disk_slack_km": 24.735234468962858,
+          "objective": 14929.453252044641,
+          "likelihood_nll": 14626.847830143044,
+          "posterior_rms_hz": 97.23560929696659,
+          "stationarity": 0.0002502454035517576,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.294844822958112,
+          "evaluations": 428,
+          "signal_windows": 878.3215234407842,
+          "physical_constraints_minimum": 0.8189538638013794,
+          "common_c_hz_per_ghz": -634.2023801029478
+        },
+        {
+          "unit": "C-high",
+          "call": "5",
+          "start": 5,
+          "proposal_id": "shape-all",
+          "stationary": true,
+          "options": {
+            "arm": "fitted-c",
+            "seconds": 20,
+            "iterations": 600,
+            "local_radius_km": 25,
+            "local_center": [
+              -89.79504435039013,
+              -81.67159636001027
+            ]
+          },
+          "original_center_km": [
+            -89.79504435039013,
+            -81.67159636001027
+          ],
+          "parameter_count": 47,
+          "nuisance_count": 0,
+          "seed_sha256": "sha256:f57fcf92a793e32fdd95ab8ae08bac6aea32cff3ac8116b8cd5c486139670b51",
+          "raw_fit_sha256": "sha256:025fdc5277a5b76eb3937854d656a84291cd5ca447e0c4eb9548335d6d45ea3a",
+          "fit_point_km": [
+            -88.09837780502856,
+            -81.06956579652336
+          ],
+          "original_center_distance_km": 1.8003105747402344,
+          "geographic_disk_slack_km": 23.199689425259766,
+          "objective": 14522.748440586103,
+          "likelihood_nll": 14313.031816145522,
+          "posterior_rms_hz": 85.69121496135206,
+          "stationarity": 0.0004053704128131018,
+          "boundary": false,
+          "solver_success": true,
+          "elapsed_s": 5.7395195928402245,
+          "evaluations": 479,
+          "signal_windows": 918.8936569793946,
+          "physical_constraints_minimum": 3.969640853309457,
+          "common_c_hz_per_ghz": -628.6325800930954
+        }
+      ]
+    }
+  },
+  "scientific_inventory_sha256": {
+    "units/A-0/calls/final.json": "sha256:8a2d1bcda6b041549123a862eb7e6bbd57f0a2e67df1fb130fd135f808551769",
+    "units/A-0/calls/high.json": "sha256:819ad78cb17a1bab76df4fe63f4ca6f2b3d515cefce99433fcc25d984ff49bed",
+    "units/A-0/calls/low.json": "sha256:95a8f27dd02a074908e00020169988f5b98da8f1358402ceede9234763422c3a",
+    "units/A-0/launches/final.json": "sha256:93cfff05a1710c580aebde253902f56cf346821dd07700546923eeb1829f7a46",
+    "units/A-0/launches/high.json": "sha256:a477672a6bec8664cd6addf443f110d6fa3ccd7b916e735d68fe130c0b5ed8cf",
+    "units/A-0/launches/low.json": "sha256:beff4bfca5aa8dd6ccd08424c5cf66817d1a241c7304bfd3b9274089cb81045a",
+    "units/A-0/slices/000-launch.json": "sha256:9fdced68ec0886a79687e411b6d32ca4798fd655b9d99f3455ee2fadd00fd28b",
+    "units/A-0/slices/000-termination.json": "sha256:0b9a1304c064b4235aeab89eb2538ed64d042361fa8609ef6629ee8ba360c568",
+    "units/A-0/terminal.json": "sha256:dadaed09d85ee892f90ee822e09e2c47ff8366ec7dffd338e81ba033baf0c412",
+    "units/A-0/terminations/final.json": "sha256:9ded6461545c84541f3646603efd116459006ad8bfd48bdf1b66782567113fb2",
+    "units/A-0/terminations/high.json": "sha256:f072473439d4016d774009ef341777874d5c281123a277c7ef1d63b7e3c94d18",
+    "units/A-0/terminations/low.json": "sha256:2310ed85860f4500ba5251ddc2706f2adb8ac689ee5f35be4b5044ae4ec6fdb8",
+    "units/A-1/calls/final.json": "sha256:16400c17d3eea2a7e7f43b7301a8e3123f21bf9c49310e6265d9d76307465fea",
+    "units/A-1/calls/high.json": "sha256:8cfb96d380972a6bcd2721f2ca6c399dcf63507e72dfa0947837bfa18736e175",
+    "units/A-1/calls/low.json": "sha256:502dc5618e455474565d98ad17d6faef4c0a79b61f327c2533e4a53aa9c4af8a",
+    "units/A-1/launches/final.json": "sha256:af40893544b3ad9ebad2ec82a1b20f4def6704411fcd1ceda755c247d4c56aa7",
+    "units/A-1/launches/high.json": "sha256:28c22a07a3c449243a385faaf868e0e5385f46b3dbcf0f98f20456801f36b9c0",
+    "units/A-1/launches/low.json": "sha256:6d5c9b9b02388a64333a0b7e33c1a50d85346e82ad6b056feb675a391ad97e0c",
+    "units/A-1/slices/000-launch.json": "sha256:77e52fb156d223439e8da6249783c7956dc0776e7da8748316f2a59dd965b683",
+    "units/A-1/slices/000-termination.json": "sha256:d64f09e2f98dc360cbf4adbf7a2ed1414837ed003c058f44f50dde162265e49c",
+    "units/A-1/terminal.json": "sha256:7f9ab0e533b03ca33be9b8de8970509f147b1ce9799cf643139e8caf2b1bc5cc",
+    "units/A-1/terminations/final.json": "sha256:5a2846978e8adfd90b40b6d169bf1c0ad9e1101b1c8e62a5fe783a0f3e220a68",
+    "units/A-1/terminations/high.json": "sha256:357b530dc526cdb2be746927c70dd2679c37654745c27def45e502f90d6e6cd3",
+    "units/A-1/terminations/low.json": "sha256:5ec2ae946a77e7aa74e2995e20060ff18471f4d3396dec0c5f351ac360ba5043",
+    "units/A-2/calls/final.json": "sha256:8248e8b1805377e8f1c6164bd9e2b520f1d48a556c48d454d8a21e737e11fea3",
+    "units/A-2/calls/high.json": "sha256:bd5de4b34095c0f4b8d1db20b6d8b29533e6a0bf2eb58659d6d149c9a98255ac",
+    "units/A-2/calls/low.json": "sha256:80adf0f81f3e783096c9e4044b61b11c52805f566a91ab1b875b0137a02ddf2f",
+    "units/A-2/launches/final.json": "sha256:7f08c981bed4118d7c30554e93367e375e50615a5ac5ca43659368706021f4bb",
+    "units/A-2/launches/high.json": "sha256:6fa89ff902cc051b616c8b4efe206ee8a6c97c08db599c28e07c6dbd85dd3bb4",
+    "units/A-2/launches/low.json": "sha256:8a38b5b2bc53728e9fe49c5e422e25d60ae783d8b002ec409f395294db82b17f",
+    "units/A-2/slices/000-launch.json": "sha256:ce55af728fac6d65cffc55c1bf94833aa71f74114fa89a83c4b0bae2a9f804a0",
+    "units/A-2/slices/000-termination.json": "sha256:89ef8adb0490e4798e97f23194b6d1b97fd5a8289317395e626005482c6d086b",
+    "units/A-2/terminal.json": "sha256:aa78626e068ea74c5d9b5fa7bde7c96dc8622c71d569756de7ddac5ec01f8784",
+    "units/A-2/terminations/final.json": "sha256:154759bcdff7ecde4a1a1d12f8786c72d45d283509072a1dd7b74f9535c998cc",
+    "units/A-2/terminations/high.json": "sha256:be2ef9baa32112a9e1486de2db83f89f6aba393617d5531d98ad893cfac6b03f",
+    "units/A-2/terminations/low.json": "sha256:925fdc4c6bb94e1cb50ff1253db564af4b1363cd6b120155b3460b509d4778d8",
+    "units/A-3/calls/final.json": "sha256:c3a054e743f12782e747d010a6043b4004af41c2aa52a3cba2d80efc7994a452",
+    "units/A-3/calls/high.json": "sha256:2542831baac77c47ed217988d4dee11dd233f7bfe191a2ba299cf3a51c6867e5",
+    "units/A-3/calls/low.json": "sha256:0de5720e54ed4d4a9e9e88d4f4095f65ca4ad110cc0713d2852a5d2ceba68da2",
+    "units/A-3/launches/final.json": "sha256:03ea1fe03ee37e6d6dc9bd6d450028bd959fec01130eeed1b87574a53bed1213",
+    "units/A-3/launches/high.json": "sha256:4d75fe473f5155314fb450529c1d7a870e862516e6a497f60a8dd137f7ae0612",
+    "units/A-3/launches/low.json": "sha256:fea05286d9eb3e14ff69bc40365fdea9792843a24c999ae71cc30eafbae5ab25",
+    "units/A-3/slices/000-launch.json": "sha256:c2e1d7977acbba8917f760748c6b8801c61203128d1bee0a31e0c3ef54804b8c",
+    "units/A-3/slices/000-termination.json": "sha256:0fb0be9b0b69cc84cc60195a9637f2b5cae204be654675aa8e6e5af6dfed6b14",
+    "units/A-3/terminal.json": "sha256:45bebd4e72e7e772447eccd18fe633a6b0f6dd6e1f990bd2cd0aa85227d60919",
+    "units/A-3/terminations/final.json": "sha256:5fed03b866fe16a6c2670dd806421fd59f3b382cf7339c4670745d1bcaa03819",
+    "units/A-3/terminations/high.json": "sha256:1b36b8c2bc005ef51f2e048af284700d171ed94b3bf20dd6577756e9abf03ca6",
+    "units/A-3/terminations/low.json": "sha256:abcf273b9ed0571479709ac3c15d1fd8bfc6057fe6803948478e4611248c2359",
+    "units/A-4/calls/final.json": "sha256:8536536be9d8fe0d30a93628ec840b1b85d481c6067b4727cf318d8c21856cb4",
+    "units/A-4/calls/high.json": "sha256:ecad4416bcbfc4a4af939236f0d55176c23030ee501f5e03dc5d32465aefd4bd",
+    "units/A-4/calls/low.json": "sha256:b393c8af7e8b082609ac1d618f85e9f04b1f4968519d01331b49e3ba1ec5c03b",
+    "units/A-4/launches/final.json": "sha256:04c96aa8a5e5af4285ce93c3f33e0258b14efdd9142bff1ae0fb08fc62032cbb",
+    "units/A-4/launches/high.json": "sha256:ba7dade8ee90a0dff5cd4bb89a286c92c8e68d2d1ce7e17045ff46709de50ec9",
+    "units/A-4/launches/low.json": "sha256:c01cba5d5dd60ffe8a4e36f84af42cb1af4cdca57093fa3dfb9032febca20637",
+    "units/A-4/slices/000-launch.json": "sha256:31821fad6a0df375812200e8f7ad4b0b9d96f1a8e904d046816be2b3e4e1fbe9",
+    "units/A-4/slices/000-termination.json": "sha256:1ed4c2c3ddb22bc6830af80eb910014325f9d048454aecaccbc5b9337f711588",
+    "units/A-4/terminal.json": "sha256:10b326893ba80de60e6afb988515c94d79d972ae2a2634d9d7a226b4a550ce60",
+    "units/A-4/terminations/final.json": "sha256:6cb8e98ea753c2509c9b73067a9a8832c6eabc2daa29604faf07e2dd24ade219",
+    "units/A-4/terminations/high.json": "sha256:ae9decfc7b93fbfc89de5576548c0e549f903776393535bd5bff420b8d3a85f4",
+    "units/A-4/terminations/low.json": "sha256:d19c882a2284daabdd4208895b6011b34df9c0a473826f2c98cc7ab942bf36f6",
+    "units/A-5/calls/final.json": "sha256:7dd7113f428572ec43e6d31a8b3fbce2e13462537a53e349187f490859fefc50",
+    "units/A-5/calls/high.json": "sha256:1ed227d7ad53051300dc664c26c544440610d2bb1fd832866e531f54475ce02d",
+    "units/A-5/calls/low.json": "sha256:2245240bddaedb2fa2e97f104c1267b956c2b8c107bf13e20e35d247572126bc",
+    "units/A-5/launches/final.json": "sha256:50419b3cfc1354b636ba25e76c6caee3de652aac96035911eec0b94955de519c",
+    "units/A-5/launches/high.json": "sha256:cc6d44e958f6cfd15d8730efd933dbe093e6ac9c7427a35d395bb6d65fe623fb",
+    "units/A-5/launches/low.json": "sha256:1d578b079f0f508d84cb77d7ae21009383eae467234a6e3d5b0e051bba28efc8",
+    "units/A-5/slices/000-launch.json": "sha256:0e295d606370ac52a12210ed69512b5db415e78f1e2c989251c712373f8808e5",
+    "units/A-5/slices/000-termination.json": "sha256:525f9320bba25c77a261dbcca6d895dff4e7e0fb7a61d72b1b152a62f4f7043f",
+    "units/A-5/terminal.json": "sha256:89295b15fbb2c9444b70c5a1a78107dc17aaec7ce29226399559f87024137c69",
+    "units/A-5/terminations/final.json": "sha256:8df3354bfe0a78844045a9ad0540a7640364139ffbe1260f9fe60e47df86523b",
+    "units/A-5/terminations/high.json": "sha256:cbb853ef9c17616e50137ea20405733f3bed52ba94efa0eaf10de5b67c8f6b38",
+    "units/A-5/terminations/low.json": "sha256:5cbcd9c1abb554f1fec06f8be0f4492574b81071a3be248074621505374d15fe",
+    "units/B-all/calls/0.json": "sha256:f536e5e771c4f2aabf1d808b163de413d94229af805b60758eece43045d75768",
+    "units/B-all/calls/1.json": "sha256:6112471015f5a40a4351433f45dc9b04c97359e9694214d93328879b3315d75a",
+    "units/B-all/calls/2.json": "sha256:415c5556ad4e7834a7fc9ebef276cc8f0b00b6b9f7d6e135074cf7de049f7dd8",
+    "units/B-all/calls/3.json": "sha256:194f8f10648986a7441963a93dd116befb9515e1daa2e3747fda5551c19cf594",
+    "units/B-all/calls/4.json": "sha256:48ce0170250c9eb4e3f209232b05c29b9ff5677dd58728dce36140c832b367ca",
+    "units/B-all/calls/5.json": "sha256:1d90e1179e62250d2cb8924af6194d5d43006e48db87be37bd50c98e54458b4e",
+    "units/B-all/launches/0.json": "sha256:884b74e8902233542e40bc357678ab182fb7ed73906622686ff557336ff14fc9",
+    "units/B-all/launches/1.json": "sha256:bb415b303c35395ade29fbff5498c30317aba3ee697a15b9f49337281a30b3c8",
+    "units/B-all/launches/2.json": "sha256:1e7013d074e4df24972757232d89f06f4d0aa0f805edf7c2261f4a4691c4abd0",
+    "units/B-all/launches/3.json": "sha256:518bdc3ce1daf22798875fa74f4eb13e3edf04d9736a3dea902ae8e4d83a027f",
+    "units/B-all/launches/4.json": "sha256:1b9b3ad7a865e05194239232766809623889e640cf1f27c5e8c4ec202ca686bb",
+    "units/B-all/launches/5.json": "sha256:cb93ee5ddca191812875e3714a070007dfd99de020aad67209a76b4aca660101",
+    "units/B-all/slices/000-launch.json": "sha256:96906ff96df24e773062dc57f1c680f143a07d06cbcac6cd23fd4beded511045",
+    "units/B-all/slices/000-termination.json": "sha256:a0b082b6094b862dc562f0f013762def83a0f8968daa45c1952ccb8709f384ee",
+    "units/B-all/terminal.json": "sha256:8fb68b06433749ebdb2b960f91259f909a52a5fa339f328b5c90c1869eb5b62e",
+    "units/B-all/terminations/0.json": "sha256:7c50e32d9c519c3bd2bff2599e987056a0e1974c0d3117b70ff729e8f688129d",
+    "units/B-all/terminations/1.json": "sha256:38ee341fe8bf602b173f12a1ee5c008ad3cee0fc7d73870e25ae56b0b526019e",
+    "units/B-all/terminations/2.json": "sha256:6ec2ab688d9c07abc44c014cd7ce4809cb23f566a852e5ffabc9119ed59a645d",
+    "units/B-all/terminations/3.json": "sha256:70e81fc582033466e21558b279ab04a18dbe5d75e92cb5584e4a8e576a676dfe",
+    "units/B-all/terminations/4.json": "sha256:42f0fe5a2c2768861230189adb4318ce8a27b7ab823566f05dc9a71a481fa2df",
+    "units/B-all/terminations/5.json": "sha256:5c7e045979b32fca59e9f24301583fd34170c06c6de1a2d27e899a7fc2efe661",
+    "units/B-low/calls/0.json": "sha256:f8b78c061889e3f06d6574e7a5d4dec26c52eb750acbcd099514f36e85fcc8de",
+    "units/B-low/calls/1.json": "sha256:cc09258977117d9588e60e6a330a612c3390d1f0de0e6e380415dfcce7270dfe",
+    "units/B-low/calls/2.json": "sha256:6e0ce898e07854ca8c931cf02b6a1f3ddb6ccd557aef4a8096bb0af438a605cf",
+    "units/B-low/calls/3.json": "sha256:32197a0020476a73adac911a99b95440db42fbb722d5cce6d5522406cdc4468a",
+    "units/B-low/calls/4.json": "sha256:7647fd021fc0e241a8b8a320542f320f7baf200e3dbf31e5adddce3772da5f0d",
+    "units/B-low/calls/5.json": "sha256:ec54730f6f906339b7ee49bcd8d1b137eff0c153c6536a0ecbb902dbb659db40",
+    "units/B-low/launches/0.json": "sha256:df75f3023baa50f0fc1fabfa6873485c5728c2536f9a616f6afe54d0d99716c7",
+    "units/B-low/launches/1.json": "sha256:6a5f26b221d4ad15467565d00b234f77c583ac045220dc6e865216fa187b2862",
+    "units/B-low/launches/2.json": "sha256:bb7860269624ef66b20379b312408fc09ac7fc9d0e929207239ecb498f4dc111",
+    "units/B-low/launches/3.json": "sha256:9f7302256b2ac651d61c17647908f725ad4f18c85dec5b754200e55bc1bcd091",
+    "units/B-low/launches/4.json": "sha256:745557a80f2f5a3c31a4caf30cf1a4af4e051d88d4d592030e095b93fb46d47a",
+    "units/B-low/launches/5.json": "sha256:6a589692ad6ed3412e3d88df4c539490feaac3cebf117e2ef19594cbcada775b",
+    "units/B-low/slices/000-launch.json": "sha256:0f09d40e4c4ee3c5e8bbf6a648c2fb029ee4596cdf657b5bffdd609ef2d37556",
+    "units/B-low/slices/000-termination.json": "sha256:074464619d87ea2e3ac3ae7b61a9554dda32082ead3678cedd1e40139baebb7f",
+    "units/B-low/terminal.json": "sha256:14944db50c0768597940af0be323544fcd228a48389491c9785c15bd23674555",
+    "units/B-low/terminations/0.json": "sha256:d6583c06dc2825aaeed3041c9dabe7deb46c88783b654483b4a19de36d0e11da",
+    "units/B-low/terminations/1.json": "sha256:15824219f682858f5637bdd6e6802cbc1625bb6905a1d91115bdecf1d8250a84",
+    "units/B-low/terminations/2.json": "sha256:e39b0d57ce068327f5b6e6ef75d566290e0020a276bbab6f5f4fd78ca5585bc3",
+    "units/B-low/terminations/3.json": "sha256:a18ef802d696bfc6f468d4c63011026b53b706638b845735e0c134df366023f4",
+    "units/B-low/terminations/4.json": "sha256:793af1f9981e487b5d99909da52eac6e64930f9b569d1e0c534e6920ff870286",
+    "units/B-low/terminations/5.json": "sha256:3a8ad243fd5c780af4b4c2f9cc267872ad4d0bf27862107a1ee5b6a2ba0a785b",
+    "units/B-high/calls/0.json": "sha256:ffaaa735dcf8a7ac1a83a859966e26fa788f4cf4da6f83e73fa429e24ac572a3",
+    "units/B-high/calls/1.json": "sha256:3e44efd131c963202324264c1795a4d7246e6074599c0a1571f1fd064882cb4b",
+    "units/B-high/calls/2.json": "sha256:0ee3786751231d7328006d0a0305a92b3255c28b0e9b453d252ee1da0ba83473",
+    "units/B-high/calls/3.json": "sha256:bea68811d26759d09056fcfd69d6b1b33e5965af10617ad5403405ca78f68df5",
+    "units/B-high/calls/4.json": "sha256:5c618cfc6d828829b9296f447c14e17b69b4168168291831feef505a445ac43b",
+    "units/B-high/calls/5.json": "sha256:963b24e6af5c9bc2065e423fb24db86ceb9b6825cb33fc6205c785533c7bb4dd",
+    "units/B-high/launches/0.json": "sha256:53eca3f90b7e4bb6d23f3c522ab351cdf1e4c98310cf180b4c6b56fdcd214ff9",
+    "units/B-high/launches/1.json": "sha256:f92e35479a756ae35ab54ef24e5d736fa4df6599eef215c6e8cb737422d58593",
+    "units/B-high/launches/2.json": "sha256:0673f139c6c1a1410be6019b451deca0e4d57f3bda5f057cd75a40835ce6e11c",
+    "units/B-high/launches/3.json": "sha256:4201880fc86ad6e1badbfaffd809440d646ff20f909ae78ebeadeb4c4945c470",
+    "units/B-high/launches/4.json": "sha256:03bdf5f72e6573587ec446119983ed35805149b7187b32879dd5359593988298",
+    "units/B-high/launches/5.json": "sha256:c77eeff71ec857e9445799d3a59cd5b28f2fa063df1ca5460e669042ce47249e",
+    "units/B-high/slices/000-launch.json": "sha256:23d31cafa920fd8413fd600ae8f7b236e13f5376d982fbd6efd91cfbd542ce76",
+    "units/B-high/slices/000-termination.json": "sha256:54d14815c038e6739902d7b47d8c162940d944015c319640b357f406df602aab",
+    "units/B-high/terminal.json": "sha256:b6e273d71093434e7e2295cc8e96bd78dcd589c71313e313a079f9b36874c7fa",
+    "units/B-high/terminations/0.json": "sha256:d2c3b81adea99c4e552ec0c852415351ebfe614b3ad1c222ad2d70c7d8ec968c",
+    "units/B-high/terminations/1.json": "sha256:51746898020fa2f777b8ead0e783cbba7f2926ccdedf9b7f8f944c5b64beaca3",
+    "units/B-high/terminations/2.json": "sha256:b8f58ae43fca856d473765d6a55cb958faec5030c2779d761cc2196ad56de4d1",
+    "units/B-high/terminations/3.json": "sha256:6fd4bc425a5dc4b21236e532b6c962122a4884efef03bb3c7a53d4dd3640521d",
+    "units/B-high/terminations/4.json": "sha256:90e33ef52e124464ba09e7af5741b358aaf04ece8558f842703f01acd159c401",
+    "units/B-high/terminations/5.json": "sha256:c3f4efffc07bb5afb0ef38f9d121f78d7ea9b3d3a08b8c0314931ec8375a5ed8",
+    "units/C-all/calls/0.json": "sha256:da647dda3148e48a623f5ef2dcd6414e4185fe09042f91670c7e0c4679eff216",
+    "units/C-all/calls/1.json": "sha256:68048e60d60e35f30d1b181145f820d239cb892a9fae4b66fc8a57f652b20133",
+    "units/C-all/calls/2.json": "sha256:087aadd12b5f21a43e040201eb950a642ccd4801dca1a0e1934599ac8ace956e",
+    "units/C-all/calls/3.json": "sha256:d787c1221664c9dca059973aa722c66c41858191bc0a6262289e836eb51fbacf",
+    "units/C-all/calls/4.json": "sha256:3568539ce2093f927ca1f881552d34ce56c7c159a851b134b97e95f37bb38136",
+    "units/C-all/calls/5.json": "sha256:b5134bb5bfab46db9b536ba2c382d1c323be99b5f0eafbcb947362f1da7944df",
+    "units/C-all/launches/0.json": "sha256:e285a9c59d423aeb52fbd92c3edd9718b6544113501d0680016161781544c774",
+    "units/C-all/launches/1.json": "sha256:dd9b777d90ae5c56d8f9d247d812adfafdb57253753fe3818f4cd1cd4d9981b9",
+    "units/C-all/launches/2.json": "sha256:a024f65403203a4038717afba27402927780dbc338a869087ebeb5cb04a47aa7",
+    "units/C-all/launches/3.json": "sha256:e3e64edd8d3c7ed20b727dfff9d1c2b3f56fd86a2666d3446966e32a420bb47c",
+    "units/C-all/launches/4.json": "sha256:48084e7cdfa1e29243cc2e346f2ef321b330a64852ac11739adfb3b815380a91",
+    "units/C-all/launches/5.json": "sha256:13dda12541c128d6f48895b61bc6c8e5dff6967e5e113498d60bd4d47d5cb56d",
+    "units/C-all/slices/000-launch.json": "sha256:4eb7c0f33bccbbc38f90299b58c43bfae500c276bef5e17fe6870807cd65839f",
+    "units/C-all/slices/000-termination.json": "sha256:9fb1dc4beadc5a996fe2b1e1d0826b215c4f63854d975aeec473bfb8f550a75b",
+    "units/C-all/terminal.json": "sha256:4d19a04394c850e338650fdee56106bc3233b2545c4c75325f90342fa1fb5418",
+    "units/C-all/terminations/0.json": "sha256:6cb33b52a5ca14dda1e5c41ecfbfc1581f6e925b60290aa02eb5c84ec76108e4",
+    "units/C-all/terminations/1.json": "sha256:8377c486ec6ee62e26c58773135bf433847e8b2daed4f7bac7f83c2e07be3b7b",
+    "units/C-all/terminations/2.json": "sha256:0d3131b43a36502953c4d4d76533a32ac87fd11092bb0afa90afde311e7262b3",
+    "units/C-all/terminations/3.json": "sha256:0de153b2f24f21d0a939fde6f2896a40abf880d84618bc96b47e2cd437eaa550",
+    "units/C-all/terminations/4.json": "sha256:56f7c7451db69b3439af62b98fd0d77936d3b51bb50e233caa0c17d0a7217001",
+    "units/C-all/terminations/5.json": "sha256:21e0cc6e15092d4284a49f045c52c0d9d12880fc185bdeb6ffead76dc5a6173f",
+    "units/C-low/calls/0.json": "sha256:27eb8e29f89245b29bfafdf23418eb33dd344d43f8c6365bdba4e0280982efd6",
+    "units/C-low/calls/1.json": "sha256:803a6f5509173ccfd6c0e26e0436d13b56783abe7b5e8bfd8d3947b67f96359c",
+    "units/C-low/calls/2.json": "sha256:d5e339f13b3c2bd9650eac97434fb88e1ff721c793834c4510bc7a12ec7338f7",
+    "units/C-low/calls/3.json": "sha256:4aa005379821788fe5beda666834e74794ad4af66929b21d77e7dc5ff2ef6c88",
+    "units/C-low/calls/4.json": "sha256:289a4af934d9471f47b086f2ae3aa1f01134c07b9c1b9d6e2fc34bc739012c24",
+    "units/C-low/calls/5.json": "sha256:725f41d385c4e91ece7e8cf01d81c25dc42c5a7eeb14be33cb05381106b05912",
+    "units/C-low/launches/0.json": "sha256:c82f96d74e9d4d6734e368ca972305de4e1a8537ad1128e3b29fcb81fe0fc425",
+    "units/C-low/launches/1.json": "sha256:e29021ab63dd3be1baadc4def11f2c0468931ba0c0c771656d45e17d193bb0ed",
+    "units/C-low/launches/2.json": "sha256:22a4c13bc579f43876a71687c49dca1a7f3cca381691329b4b85f1617d53ed2b",
+    "units/C-low/launches/3.json": "sha256:95d460a98cc23d5326e4476516017075d8114aa46f9b2f5b953533178dcfad4f",
+    "units/C-low/launches/4.json": "sha256:e66cf59c6fa3723c3d69ea034d6a0e8ac5256beb10b8681ce770ef5de02c160f",
+    "units/C-low/launches/5.json": "sha256:75f0bbb5058662a99141f9f3fa19da6614ea24fcb76073ddfe976b3114a5eb43",
+    "units/C-low/slices/000-launch.json": "sha256:e6f6da954593b438658eebc33925405dd20dde85a821eccda1d66925205c4bdd",
+    "units/C-low/slices/000-termination.json": "sha256:3770a37977f10432f5cfa7a2b91478b7c92b9795c0c958d91ef04a7e367a56f6",
+    "units/C-low/terminal.json": "sha256:14ec9084d64a45a2b352f3ebd11082a3fd5171cec500aa99341d7aad81e77e00",
+    "units/C-low/terminations/0.json": "sha256:8694f5ff54d4cbcfe72b60a8dcd22f83b0ef396c6881ce239dda0120ba9aea87",
+    "units/C-low/terminations/1.json": "sha256:97adf7e73bc2acfc4fdc7638278502c270877f96358dab085e2047ef50fa2244",
+    "units/C-low/terminations/2.json": "sha256:3d7b1b1c236cd70511903fce480b7a34fa13c55d53d4171b1d4013a8f2ffd6a1",
+    "units/C-low/terminations/3.json": "sha256:4a5a1132eeb136cce49f0c7deab05242470e9ac08708825136bd50321c5c84f5",
+    "units/C-low/terminations/4.json": "sha256:47935ce25f35a23c3245137ee62930f6eb5ec2c1c87b027485de147a5f6cc6fc",
+    "units/C-low/terminations/5.json": "sha256:72d6aa4f0a69f0e88389b838551e9a5bf126fea8e4cc22e07653ca0d5d822c0d",
+    "units/C-high/calls/0.json": "sha256:9f1f11f2c734352ead46bd4bdca567124695b7d2d504f4e981fb3fa3625c137c",
+    "units/C-high/calls/1.json": "sha256:44998dfc60a79697707bb5a3d0e6a727f1d032e3da923ad4acceb9de4d77412a",
+    "units/C-high/calls/2.json": "sha256:31f31eca562e42c9c25c458176efb05f0c7a0e9479f6ec4f84b582ea59bb07f0",
+    "units/C-high/calls/3.json": "sha256:09e88d64d91351f905cd5612d722cbd1cd0e4dbf5faa0658e06bd9254db22931",
+    "units/C-high/calls/4.json": "sha256:aa93eb9003269e9ca1bbb8d328132dfd8efbbf6ae64600e0b1616fd055bc5c60",
+    "units/C-high/calls/5.json": "sha256:4bdca117e602c0e462ea7b9259f0994841287a0818ed886baa5754eb826d0676",
+    "units/C-high/launches/0.json": "sha256:899073f6b9a17795380619af8b1e5ba68e6b8af0f9d466d649c4f99d803c7b4e",
+    "units/C-high/launches/1.json": "sha256:da418f776d3ed333249befe389069ecf312c3ceb56b1ecdc4c2383df1a38fa4f",
+    "units/C-high/launches/2.json": "sha256:8aed9aaebdabdd22a40e5642f6550640438deee644ecbe65feca0455b777b961",
+    "units/C-high/launches/3.json": "sha256:d79a287395ae9cbc53e4fe7d69254607a9f9c1ab102f73d2d5e4e168380a31ac",
+    "units/C-high/launches/4.json": "sha256:23d20ab5cee219fc1902e713e2ef27cc509850e59d0be3d40c0855038254891f",
+    "units/C-high/launches/5.json": "sha256:bc35721bdea407f4a14873c2ea1697ef2973f8bc7494d3828dfada19242e6573",
+    "units/C-high/slices/000-launch.json": "sha256:88bb17d7daaea8de057953729b4b3b74310651c8b12c81b8d8a3c0792c0f4b5f",
+    "units/C-high/slices/000-termination.json": "sha256:3e4f2730992931a3d0d554eedf21c1013800457254646185c5532f4f4034221b",
+    "units/C-high/terminal.json": "sha256:0cf1b6f4a3f1ad63f2c78815f9bb91c7bf87c615f7255e3cc5d6bb3a105cb8ac",
+    "units/C-high/terminations/0.json": "sha256:30b75e943b1e8f3d4d0d31ed95d6717d3aeefc3f23528a3c1f671c0bc731704d",
+    "units/C-high/terminations/1.json": "sha256:bfd0c0f57a7f76796a0b522535a9b3eeeb5bbfb87bc52d3a8c81cb8f7fbb4b35",
+    "units/C-high/terminations/2.json": "sha256:68dd5c4dcc1821d377793d9c100120852ce1d9f0239045cfa5af276c2825409f",
+    "units/C-high/terminations/3.json": "sha256:b97103009e047270c7d5b1102c6c595630d6321f3085e342a26c6cd9531d25d1",
+    "units/C-high/terminations/4.json": "sha256:508fc811fe3e25b920a5a3f84fa0ccc8060cb206a08d386b3508172b85bb1d51",
+    "units/C-high/terminations/5.json": "sha256:fcbdbe01dcbcf98a12cf6a88c1ae24288deee8ff593dbafcbadcc150fa34f3e6"
+  },
+  "nonstationary_outcomes": [
+    {
+      "unit": "C-all",
+      "call": "2",
+      "start": 2,
+      "proposal_id": "cold-2",
+      "stationary": false,
+      "options": {
+        "arm": "fitted-c",
+        "seconds": 20,
+        "iterations": 600,
+        "local_radius_km": 25,
+        "local_center": [
+          -81.25,
+          -93.75
+        ]
+      },
+      "original_center_km": [
+        -81.25,
+        -93.75
+      ],
+      "parameter_count": 47,
+      "nuisance_count": 2,
+      "seed_sha256": "sha256:5022585e4d5d89c08bf96e7d5d05900ac403fa0fd1d163d4f4b023b5d204b62e",
+      "raw_fit_sha256": "sha256:969b502aa4b71aa64a3c904eef73693e1730dd9ae43fa9e7d8a61561946350df",
+      "fit_point_km": [
+        -85.75774432902907,
+        -92.79528565282068
+      ],
+      "original_center_distance_km": 4.607736800274484,
+      "geographic_disk_slack_km": 20.392263199725516,
+      "objective": 32320.875249111512,
+      "likelihood_nll": 32022.45371872854,
+      "posterior_rms_hz": 138.0410643398817,
+      "stationarity": 1035.810790730935,
+      "boundary": false,
+      "solver_success": false,
+      "elapsed_s": 20.040422157850116,
+      "evaluations": 513,
+      "signal_windows": 1915.3000890840603,
+      "physical_constraints_minimum": 1.2052026995798286,
+      "common_c_hz_per_ghz": -501.55789660984817
+    },
+    {
+      "unit": "C-low",
+      "call": "3",
+      "start": 3,
+      "proposal_id": "shape-low",
+      "stationary": false,
+      "options": {
+        "arm": "fitted-c",
+        "seconds": 20,
+        "iterations": 600,
+        "local_radius_km": 25,
+        "local_center": [
+          -92.2432538933818,
+          -83.01120539225049
+        ]
+      },
+      "original_center_km": [
+        -92.2432538933818,
+        -83.01120539225049
+      ],
+      "parameter_count": 47,
+      "nuisance_count": 0,
+      "seed_sha256": "sha256:399675a6f606275bf8cf3ea75ddff6c5c49523246198fe15b9c35ad2d0316582",
+      "raw_fit_sha256": "sha256:b4400551ccbe7737357cba437d021e32d296a9ca225cee72b81df95812bea77c",
+      "fit_point_km": [
+        -87.90620023781096,
+        -83.07843214958723
+      ],
+      "original_center_distance_km": 4.33757465044723,
+      "geographic_disk_slack_km": 20.66242534955277,
+      "objective": 16460.987567728735,
+      "likelihood_nll": 16163.351164358102,
+      "posterior_rms_hz": 85.7426861770108,
+      "stationarity": 0.003174325921754928,
+      "boundary": false,
+      "solver_success": true,
+      "elapsed_s": 5.750383452046663,
+      "evaluations": 386,
+      "signal_windows": 1140.534218216684,
+      "physical_constraints_minimum": 0.5267585425552532,
+      "common_c_hz_per_ghz": -613.7040549470752
+    }
+  ],
+  "metadata_overrides": [
+    {
+      "unit": "A-0",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    },
+    {
+      "unit": "A-1",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    },
+    {
+      "unit": "A-2",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    },
+    {
+      "unit": "A-3",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    },
+    {
+      "unit": "A-4",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    },
+    {
+      "unit": "A-5",
+      "raw_training_high_fractions": [
+        0.5,
+        0.5
+      ],
+      "path_training_high_fractions": null,
+      "offset_parameterization": "uncentred-high-minus-low",
+      "all_other_raw_fields_verified": true
+    }
+  ],
+  "rows": [
+    {
+      "key": "A-all",
+      "saved_error": {
+        "model": "A",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 4,
+        "proposal_id": "shape-high",
+        "coordinates_deg": [
+          37.86259454301986,
+          -122.4864269102445
+        ],
+        "error_km": 1.5095417515920968,
+        "common_c_hz_per_ghz": -730.6166898279346
+      },
+      "original_saved_error": {
+        "model": "A",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          38.719842192905936,
+          -119.63663684014283
+        ],
+        "error_km": 266.83967868070744,
+        "common_c_hz_per_ghz": 82.72734294108194
+      },
+      "error_delta_km": -265.3301369291153,
+      "selected_fit": {
+        "objective": 32661.799256753755,
+        "likelihood_nll": 32253.20472027973,
+        "posterior_rms_hz": 97.83539866746386,
+        "stationarity": 5.9207404608384046e-05,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.7129824207268278
+      },
+      "original_selected_fit": {
+        "objective": 35928.28875762681,
+        "likelihood_nll": 35400.3528790655,
+        "posterior_rms_hz": 158.2668819987231,
+        "stationarity": 0.0005341567179754786,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.3538155652510575
+      },
+      "objective_delta": -3266.4895008730564,
+      "likelihood_nll_delta": -3147.148158785767,
+      "posterior_rms_delta_hz": -60.431483331259244
+    },
+    {
+      "key": "B-all",
+      "saved_error": {
+        "model": "B",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          37.83086753651268,
+          -122.4848139185841
+        ],
+        "error_km": 2.0212177915360385,
+        "common_c_hz_per_ghz": -640.2226342404226
+      },
+      "original_saved_error": {
+        "model": "B",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          38.7372359739875,
+          -119.61987631174858
+        ],
+        "error_km": 268.8793621875466,
+        "common_c_hz_per_ghz": -611.3488131353256
+      },
+      "error_delta_km": -266.8581443960105,
+      "selected_fit": {
+        "objective": 33442.489690331364,
+        "likelihood_nll": 32996.94823915253,
+        "posterior_rms_hz": 95.55862652528292,
+        "stationarity": 0.000986169979511009,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.5646195744575202
+      },
+      "original_selected_fit": {
+        "objective": 34372.42849101662,
+        "likelihood_nll": 33680.32160208956,
+        "posterior_rms_hz": 124.39413391392404,
+        "stationarity": 0.0001713166536993423,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.851408486207724
+      },
+      "objective_delta": -929.9388006852532,
+      "likelihood_nll_delta": -683.3733629370327,
+      "posterior_rms_delta_hz": -28.83550738864112
+    },
+    {
+      "key": "B-low",
+      "saved_error": {
+        "model": "B",
+        "view": "low",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 3,
+        "proposal_id": "shape-low",
+        "coordinates_deg": [
+          37.83281556770282,
+          -122.5114527577812
+        ],
+        "error_km": 2.8955074688776694,
+        "common_c_hz_per_ghz": -546.5545936458847
+      },
+      "original_saved_error": {
+        "model": "B",
+        "view": "low",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          38.67588028830714,
+          -119.59209746391068
+        ],
+        "error_km": 268.82650203805485,
+        "common_c_hz_per_ghz": -677.4611836830488
+      },
+      "error_delta_km": -265.9309945691772,
+      "selected_fit": {
+        "objective": 16865.487543300907,
+        "likelihood_nll": 16504.83008538784,
+        "posterior_rms_hz": 82.07370392161184,
+        "stationarity": 0.00017181206982074156,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.6760777831316602
+      },
+      "original_selected_fit": {
+        "objective": 18795.61207334884,
+        "likelihood_nll": 18069.10987305222,
+        "posterior_rms_hz": 125.37463664756105,
+        "stationarity": 0.0002241863635154967,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 1.1285255721573542
+      },
+      "objective_delta": -1930.1245300479313,
+      "likelihood_nll_delta": -1564.2797876643817,
+      "posterior_rms_delta_hz": -43.30093272594921
+    },
+    {
+      "key": "B-high",
+      "saved_error": {
+        "model": "B",
+        "view": "high",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 2,
+        "proposal_id": "cold-2",
+        "coordinates_deg": [
+          37.78566598685832,
+          -122.44732941988912
+        ],
+        "error_km": 7.808976791415059,
+        "common_c_hz_per_ghz": -638.8366075678368
+      },
+      "original_saved_error": {
+        "model": "B",
+        "view": "high",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 1,
+        "proposal_id": "cold-1",
+        "coordinates_deg": [
+          36.52807183617838,
+          -121.10993751499565
+        ],
+        "error_km": 190.85144692066626,
+        "common_c_hz_per_ghz": -755.8993175963027
+      },
+      "error_delta_km": -183.0424701292512,
+      "selected_fit": {
+        "objective": 14912.614402886917,
+        "likelihood_nll": 14477.981034231296,
+        "posterior_rms_hz": 108.48212140454687,
+        "stationarity": 0.00015108267204405222,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.25313270830622514
+      },
+      "original_selected_fit": {
+        "objective": 16386.962396943443,
+        "likelihood_nll": 15802.83501510357,
+        "posterior_rms_hz": 114.54820996978448,
+        "stationarity": 0.00022615497004452312,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 1.64451563271707
+      },
+      "objective_delta": -1474.3479940565267,
+      "likelihood_nll_delta": -1324.8539808722744,
+      "posterior_rms_delta_hz": -6.066088565237607
+    },
+    {
+      "key": "C-all",
+      "saved_error": {
+        "model": "C",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 3,
+        "proposal_id": "shape-low",
+        "coordinates_deg": [
+          37.83285555986193,
+          -122.49041397110616
+        ],
+        "error_km": 1.8467329938033874,
+        "common_c_hz_per_ghz": -593.9446571324387
+      },
+      "original_saved_error": {
+        "model": "C",
+        "view": "all",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          38.734900658692645,
+          -119.63254174777231
+        ],
+        "error_km": 267.75987823661376,
+        "common_c_hz_per_ghz": -488.69406873204264
+      },
+      "error_delta_km": -265.91314524281034,
+      "selected_fit": {
+        "objective": 30588.66108833205,
+        "likelihood_nll": 30197.408852930028,
+        "posterior_rms_hz": 95.95167195856999,
+        "stationarity": 0.000137883984383381,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.8498033697960388
+      },
+      "original_selected_fit": {
+        "objective": 35304.11654547489,
+        "likelihood_nll": 34801.1004230753,
+        "posterior_rms_hz": 150.45139765575533,
+        "stationarity": 0.0002052844802427842,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 2.3023850029568678
+      },
+      "objective_delta": -4715.455457142842,
+      "likelihood_nll_delta": -4603.691570145274,
+      "posterior_rms_delta_hz": -54.49972569718534
+    },
+    {
+      "key": "C-low",
+      "saved_error": {
+        "model": "C",
+        "view": "low",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 5,
+        "proposal_id": "shape-all",
+        "coordinates_deg": [
+          37.82117956434267,
+          -122.48816720032947
+        ],
+        "error_km": 3.1049782560974584,
+        "common_c_hz_per_ghz": -581.9016467410659
+      },
+      "original_saved_error": {
+        "model": "C",
+        "view": "low",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 0,
+        "proposal_id": "cold-0",
+        "coordinates_deg": [
+          38.76781656808715,
+          -119.60310106356067
+        ],
+        "error_km": 271.45294328085754,
+        "common_c_hz_per_ghz": -800.4541538619501
+      },
+      "error_delta_km": -268.3479650247601,
+      "selected_fit": {
+        "objective": 16626.328276947526,
+        "likelihood_nll": 16337.988895445684,
+        "posterior_rms_hz": 95.75000105360084,
+        "stationarity": 0.00033514480396657506,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 1.1003775000203042
+      },
+      "original_selected_fit": {
+        "objective": 19062.665547012635,
+        "likelihood_nll": 18601.302928643447,
+        "posterior_rms_hz": 152.77792886837943,
+        "stationarity": 0.00019095522410653544,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.6570729485083326
+      },
+      "objective_delta": -2436.337270065109,
+      "likelihood_nll_delta": -2263.314033197763,
+      "posterior_rms_delta_hz": -57.02792781477859
+    },
+    {
+      "key": "C-high",
+      "saved_error": {
+        "model": "C",
+        "view": "high",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 5,
+        "proposal_id": "shape-all",
+        "coordinates_deg": [
+          37.84822171813145,
+          -122.4977453541459
+        ],
+        "error_km": 1.0654686134623816,
+        "common_c_hz_per_ghz": -628.6325800930954
+      },
+      "original_saved_error": {
+        "model": "C",
+        "view": "high",
+        "state": "estimated",
+        "below_0_5km": false,
+        "start": 2,
+        "proposal_id": "cold-2",
+        "coordinates_deg": [
+          36.42266373268201,
+          -121.14098190645353
+        ],
+        "error_km": 198.39805937534592,
+        "common_c_hz_per_ghz": -806.6235316616551
+      },
+      "error_delta_km": -197.33259076188355,
+      "selected_fit": {
+        "objective": 14522.748440586103,
+        "likelihood_nll": 14313.031816145522,
+        "posterior_rms_hz": 85.69121496135206,
+        "stationarity": 0.0004053704128131018,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 3.969640853309457
+      },
+      "original_selected_fit": {
+        "objective": 16739.5350455218,
+        "likelihood_nll": 16219.152358103747,
+        "posterior_rms_hz": 119.92813121807629,
+        "stationarity": 0.0002931518543234368,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.7040038154180017
+      },
+      "objective_delta": -2216.7866049356962,
+      "likelihood_nll_delta": -1906.1205419582257,
+      "posterior_rms_delta_hz": -34.23691625672423
+    }
+  ],
+  "limits": [
+    "Fitted-c only, alpha 1; original 20-second/600-iteration/25-km fit budgets",
+    "Stored KKT and frequency/physical certificates validated, not independently recalculated",
+    "A reports final-all selection plus dependent low/high stages, not independent half estimates",
+    "B/C designated observations share discovery, physical initialization; C lifts use all training once",
+    "Bootstrap donor-target loss, own-source export closure and native target loss remain distinct",
+    "Original source subset and objective math unchanged; geography and candidate initialization differ",
+    "Saved configured-reference errors, not independently surveyed ground truth; no reference-based model selection",
+    "Single-case recovery does not validate cross-case performance, global optimization or full-DS21 success"
+  ]
+}

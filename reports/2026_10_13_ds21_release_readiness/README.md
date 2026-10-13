@@ -56,8 +56,14 @@ stationary hybrid fits, both nine-call bootstrap stages and 18 physical exports.
 The candidate union grows from 37 to 40; maximum stored source-function closure
 error is 7.275958e-12 Hz; this is distinct from the much larger bootstrap
 target-projection losses retained in the report. The qualified final-model
-consumer has passed tests and review, and model initialization has completed.
-The new A/B/C comparison has begun; no new final accuracy has been evaluated.
+consumer passed tests and review, and the
+[new A/B/C comparison](COVERAGE_THREE_MODEL_013_RESULTS.md) completed 54 calls,
+52 stationary, with all 12 outcomes sealed before evaluation. A/all is
+**1.509542 km**; B all/low/high is **2.021218 / 2.895507 / 7.808977 km**;
+C is **1.846733 / 3.104978 / 1.065469 km**. The original severe search-region
+miss is recovered on this case, but no row meets 0.5 km and cross-case transfer
+is untested. All selected boundary flags are false; both C nonstationary starts
+are retained. B combines better than either half, while C remains worse than high.
 DS21-025 has passed metadata readiness only; no case freeze or initialization
 has started. There are still nine proposal sets and 25 missing initializations.
 The [independent 009 audit](THREE_MODEL_009_AUDIT.json)

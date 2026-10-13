@@ -3,6 +3,15 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+completed 18 stationary B fits. All/low/high errors are
+**2.021218 / 2.895507 / 7.808977 km**, versus the original
+**268.879362 / 268.826502 / 190.851447 km**. Combining improves on both halves
+for this control, but every view misses 0.5 km. All three selected boundary flags
+are false. The discovery change propagates into candidate and physical-seed
+initialization; it does not isolate a single downstream mechanism or establish
+cross-case transfer. Historical results remain unchanged.
+
 The proposal stage removes a constant offset from supported Doppler sequences
 and matches their time variation to satellite predictions. Low-band, high-band
 and all-band shape proposals join cold starts. Candidate discovery and

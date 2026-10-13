@@ -3,6 +3,14 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+completed all 18 sequential fits, all stationary. Its final training-selected
+`shape-high` result is **1.509542 km**, versus **266.839679 km** with the original
+initialization; fitted c is -730.616690 Hz/GHz. Broader discovery recovered a
+useful region, but A still misses 0.5 km. The final selected boundary flag is
+false. This is a separate same-case control, not a replacement of the historical
+five-case table or evidence of full-DS21 transfer.
+
 The algorithm fits CH1–4, freezes its physical receiver correction function,
 then fits CH5–8 at that position to estimate a high-minus-low shift per receiver.
 The final CH1–8 fit uses the learned shifts. It fits all observations jointly at

@@ -32,9 +32,23 @@ is now complete: nine stationary shape fits, nine stationary hybrid fits,
 both nine-call bootstrap stages and 18 physical seed exports, with a 40-satellite
 pool. Maximum stored transfer closure is 7.275958e-12 Hz, distinct from the
 larger bootstrap target-projection losses retained in the report. The final-model
-consumer passed tests and review, model initialization completed, and A/B/C
-fitting has begun; no new final accuracy is available.
-The original severe DS21-013 final-fit errors remain in the tables below.
+consumer passed tests and review, and the
+[final comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+has completed all 54 calls, 52 stationary. All 12 outcomes were sealed before
+the following reference errors were joined:
+
+| DS21-013 coverage-conditioned model | CH1–8 error km | CH1–4 error km | CH5–8 error km |
+| --- | ---: | ---: | ---: |
+| A, dependent sequential path | 1.509542 | — | — |
+| B, absolute-frequency fit | 2.021218 | 2.895507 | 7.808977 |
+| C, native association | 1.846733 | 3.104978 | 1.065469 |
+
+This is a substantial recovery from the original 267–269 km all-band errors,
+but no row meets 0.5 km. B improves on both halves; C improves on low and worsens
+high. All selected boundary flags are false. Two C nonstationary starts remain
+retained and excluded. Discovery changed candidate and seed initialization as
+well as explored geography; this does not isolate one downstream mechanism or
+establish full-DS21 transfer. The original severe DS21-013 errors remain below.
 
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
