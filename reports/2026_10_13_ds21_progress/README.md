@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 17:28 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 17:39 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -130,6 +130,14 @@ established. This leaves the coupled calibration/association model and the
 information supplied by the observations unresolved; adding flexibility or
 improving the in-sample frequency objective has not delivered accurate position.
 
+The [temporal metadata audit](../2026_10_13_ds21_039_association/TEMPORAL_EVIDENCE.md)
+explains the zero temporal edges: each RX/channel/visit/RF family has one
+observation. Removing visit from the key would still give zero edges under the
+original 25 ms limit; the shortest same-RF revisit is 352.244 ms. The recorded
+candidates have no persistent emitter/frame identity. Cross-visit continuity
+therefore requires an explicitly new modeling assumption, not a graph bug fix.
+No temporal model change or fit has been run.
+
 ## Full DS21 validation
 
 DS21 contains 108 recordings: 54 fast CH1–8 and 54 adaptive CH1–4. The frozen
@@ -140,6 +148,12 @@ observations together. The [metadata-only readiness audit](../2026_10_13_ds21_re
 finds preparation receipts for all 34 fast development members, but discovery and
 proposal caches for only five; 29 need initialization. The 54 adaptive members
 have no tracking-input binding in this membership and require separate preparation.
+
+A new training-only adapter around the existing fitted-c discovery core is
+being implemented for the next fixed missing development recording, DS21-007.
+It will retain the original census evidence, partition, causal catalogue and
+bounded search. Historical wrappers also prepare held observations and are not
+being used directly. No additional discovery or accuracy result is claimed yet.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20
@@ -157,7 +171,7 @@ evaluation.
 ## Provenance
 
 These summaries are derived from the sealed shared-proposal comparison in the
-research worktree, diagnostic/control evidence through commit `5a93b8908`, and its immutable
+research worktree, diagnostic/control evidence through commit `c0e2941d7`, and its immutable
 membership inventory SHA-256
 `a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
 The original protocol and detailed local receipts are retained; this report
