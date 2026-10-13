@@ -25,12 +25,21 @@ Combining bands improves this case, but all views miss 0.5 km. It is reported
 separately from the original matched three-model table. The subsequent
 [DS21-009 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.md)
 and [DS21-011 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
-completed all six stages: eight fast development cases now have complete proposal
-sets, with 26 still requiring initialization. Final model evaluation has not
-yet run on either case. The
+completed all six stages. [DS21-013](../2026_10_13_ds21_release_readiness/PROPOSALS_013_RESULTS.md)
+has also completed: nine fast development cases now have complete proposal
+sets, with 25 still requiring initialization. Final model evaluation has not
+yet run on these three cases. The
 [DS21-009 seed-projection diagnostic](../2026_10_13_ds21_release_readiness/PROJECTION_009_DIAGNOSTIC.md)
 isolates a Model B numerical initialization failure despite near-machine-precision
-physical residuals. A fix remains under development; locked inference is unopened.
+physical residuals. The [v2 adapter has now initialized DS21-009 successfully](../2026_10_13_ds21_release_readiness/INITIALIZATION_009_V2_RESULTS.md):
+two seeds use independently verified exact physical transfer after strict
+projection failure; all other required A/B projections succeed unchanged.
+The first A-0 path then saved three stationary fits, but its post-run validator
+rejected the sequential core's descriptive high-stage metadata override. The
+saved fits are retained while that validator is corrected; no accuracy result
+has been joined, and locked inference is unopened.
+Model B's DS21-009 all-channel unit subsequently completed six stationary fits
+and passed its unchanged validator; its half-band units are being run separately.
 
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source

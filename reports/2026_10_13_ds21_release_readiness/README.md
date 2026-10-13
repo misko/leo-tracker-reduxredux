@@ -10,10 +10,15 @@ remains unopened.
 Subsequent numerical work completed the [DS21-007 fitted-only proposal chain](PROPOSALS_007_RESULTS.md).
 The subsequent [DS21-009 initialization](PROPOSALS_009_RESULTS.md) also completed.
 The subsequent [DS21-011 initialization](PROPOSALS_011_RESULTS.md) completed too.
-There are now eight complete development proposal sets, with 26 still requiring
+The subsequent [DS21-013 initialization](PROPOSALS_013_RESULTS.md) completed as well.
+There are now nine complete development proposal sets, with 25 still requiring
 initialization. The [DS21-009 model-seed diagnostic](PROJECTION_009_DIAGNOSTIC.md)
-isolates a Model B calibration projection failure before any final location fits;
-generic A/B/C evaluation remains pending. The metadata-only inventory below is retained as the historical
+isolates a Model B calibration projection failure before any final location fits.
+The [v2 initialization](INITIALIZATION_009_V2_RESULTS.md) now succeeds with two
+independently verified physical source transfers. The first sequential path
+saved three stationary fits but exposed a descriptive metadata-validation
+mismatch after fitting; its receipts are retained and evaluation remains pending.
+The metadata-only inventory below is retained as the historical
 audit; its original counts and receipt have not been rewritten.
 
 The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
