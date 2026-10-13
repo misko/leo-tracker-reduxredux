@@ -7,6 +7,11 @@ readiness or accuracy. All 34 fast development members have preparation receipts
 but discovery and six-proposal artifacts exist for only five. Locked inference
 remains unopened.
 
+Subsequent numerical work completed the [DS21-007 fitted-only proposal chain](PROPOSALS_007_RESULTS.md).
+There are now six complete development proposal sets, with 28 still requiring
+initialization. The metadata-only inventory below is retained as the historical
+audit; its original counts and receipt have not been rewritten.
+
 The [source-bound metadata receipt](metadata-v1.json) records all 108 original
 members, file availability, development-only preparation/discovery/proposal
 metadata and the DS21-065 preparation overlay. It binds 64 parsed metadata
