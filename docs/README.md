@@ -104,6 +104,13 @@ checks all 81 DS20/DS16 sources and finds no exact repeated window metadata keys
 It also shows that nine DS20 members have only 7–37 high-band passing probes,
 despite passing the all-eight-channel membership criterion. This is source
 identity/support evidence, not verified LNB state or geographic qualification.
+Its chronology shows all nine sparse members preceding all nine strongly
+supported ones, with the fixed calibration donor later than every sparse member.
+Calibration transfer needs support/configuration qualification; same-radio
+identity alone does not establish comparability across those periods.
+The unmerged clock-conditioned full mode now gives mixed position changes
+(fitted-c +358 m, zero-c −129 m) and worse operational frequency objectives with
+a changed candidate bank. The joined-conditioned comparison remains pending.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

@@ -4,8 +4,10 @@ This experiment moves the [seed-retention repair](../incumbent-clock/README.md)
 from fixed-point frequency checks into the full B7 position pipeline. The first
 full unmerged/joined pair is complete and produces identical final positions and
 scores in both c arms. The unmerged control also reproduces all 400 previous
-bootstrap seeds exactly. The clock-conditioned comparison is now executing;
-no new geographic improvement is established yet.
+bootstrap seeds exactly. The conditioned unmerged mode is also complete, with
+mixed position effects and worse operational frequency objectives. The joined
+conditioned mode remains in progress; no general geographic improvement is
+established yet.
 
 ## First completed pair
 
@@ -26,7 +28,7 @@ unmerged full control: zero bank differences, zero vector differences and zero
 failed prior points. The [progress receipt](progress.json) pins that oracle's
 terminal, bank, protocol and per-point input hashes. It also retains every one
 of the 48 planned conditions, including all unfinished modes. Current progress
-is two completed/evaluated conditions and no terminal failures.
+is three completed/evaluated conditions and no terminal failures.
 
 Across the joined search's 400 bootstrap points, 276 retain the original seed
 and 124 choose a joined pass, without interruption. Both final arms come from
@@ -48,6 +50,33 @@ stores. The report independently retains operational accepted stages and the
 latest stage at which both c arms are stationary, selected by the frozen stage
 order rather than accuracy. If an operational fallback differs, a same-stage
 comparison remains explicit instead of conflating the two models.
+
+## Conditioning without joining
+
+The raw original-conditioned mode completes all 400 search points and accepts
+stationary B7 solutions in both arms, with the same 19-candidate bank within
+that mode. It produces mixed changes relative to the unconditioned control:
+
+| Arm | Original control error | Conditioned error | Error change | Conditioned frequency NLL |
+|---|---:|---:|---:|---:|
+| Fitted c | 3.209 km | 3.567 km | +358 m | 39,128.071 |
+| c=0 | 3.619 km | 3.489 km | −129 m | 39,170.204 |
+
+Operational frequency NLL rises by 313.874 / 330.204 and total objective by
+311.677 / 330.824 for fitted-c / zero-c. The final bank changes from 17 to 19
+candidates, losing 48356 and 67334 and adding 54102, 55302, 56547 and 61204.
+Those are inferred assignments, not verified emitters. Cross-bank differences
+are operational effects, not isolated fitting gains under an identical model.
+Within each mode, both c arms retain the same observations, final bank, priors
+and budgets and accept the same B7 stage. Conditioning alone is therefore not
+a qualified repair. The corresponding joined-conditioned comparison is pending.
+
+The conditioned mode needs four bounded slices, totaling 2,257.646 seconds of
+recorded worker execution, compared with 537.935 seconds for the unconditioned
+control. This is observed work for this case, not a controlled host-performance
+benchmark or a strict wall-time guarantee. Full nine-pass exploration usually
+does not fit the five-second per-point allowance; completed incumbents remain
+valid and interruption events stay explicit.
 
 ## A point-level gain is not a position gain
 

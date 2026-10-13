@@ -35,6 +35,23 @@ do not establish a causal hardware change or provide an unconditional detection
 rate. The original whole-recording roles are retained; the corpora are already
 exposed development/validation evidence.
 
+![DS20 support versus reported capture time](support-chronology.png)
+
+The two support groups are separated in reported capture time. All nine sparse
+high-band members start between **October 10, 04:50:55 UTC and October 11,
+16:39:59 UTC**. All nine strongly supported members start between **October 11,
+19:23:29 UTC and October 12, 00:09:40 UTC**. No admitted DS20 member lies between
+those groups; this does not establish an absence of other RF recordings.
+
+The fixed band-calibration donor `014c` starts at **October 11, 21:08:06 UTC**,
+after every sparse member, including the known `43ce` regression. Random
+whole-recording roles permit later development donors in a conditional study,
+but same-radio identity does not establish that band support, wiring, settings
+or calibration remain comparable across these periods. The observed chronology
+therefore calls for qualifying calibration against the recording's own support
+and configuration, with all original members retained. It does not prove a
+particular switch phase, identify false detections, or establish a hardware cause.
+
 Distinct metadata keys do not prove disjoint IQ support, independent frequency
 errors, correct carrier hypotheses or an attested switch phase. This is a
 read-only identity check, with no deduplication, new calibration, position

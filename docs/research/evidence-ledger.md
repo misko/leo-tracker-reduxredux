@@ -257,6 +257,18 @@ members have zero high-band passing probes. Reported exposure allocation varies,
 so counts are not unconditional detection rates or satellite identities. Three
 new focused counting/identity tests pass, with no model or default change.
 
+The same census now records capture starts: every sparse DS20 member precedes
+every strongly supported member, with a gap between admitted starts at October
+11 16:39:59 and 19:23:29 UTC. The fixed calibration donor begins at 21:08:06 UTC,
+after all sparse members. This weakens an unqualified same-radio transfer
+interpretation without establishing physical switch state or a hardware cause;
+all original memberships/roles remain intact.
+The first unmerged conditioned full mode is also complete: stationary B7 in
+both c arms, common 19-candidate bank within mode, error 3.567/3.489 km compared
+with control 3.209/3.619 km. Operational frequency NLL rises by 313.874/330.204;
+the bank changes from 17 to 19, so this is not an isolated same-model fit delta.
+Conditioning alone is not qualified, and the joined-conditioned mode is pending.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
