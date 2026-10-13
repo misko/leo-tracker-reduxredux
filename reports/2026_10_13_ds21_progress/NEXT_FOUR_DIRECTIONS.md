@@ -1,0 +1,109 @@
+# Four prioritized DS21-039 investigations
+
+Updated 2026-10-13. All new controls use fitted `c`. The release target is below
+0.5 km for every eligible CH1–8 DS21 recording; it has not been reached.
+
+DS21-039 currently has a training-selected refined joint error of 4.073 km.
+The original low/high/all comparison is 3.759 / 2.557 / 4.291 km. Its half-band
+fits inherit all-band ambiguity initialization, so this is not yet a comparison
+of three independently initialized pipelines.
+
+## 1. Satellite association across revisits
+
+**Question:** Can weak temporal information resolve competing satellite
+assignments without falsely identifying frequency-candidate slots as emitters?
+
+The original families contain one observation each: there are zero temporal
+edges. Full versus half fits change satellite/clutter assignments in 18–20% of
+windows. The recorded data contain no persistent emitter identity, so continuity
+is a sensitivity assumption, not a recovered physical label.
+
+The SOL temporal worker is implementing a satellite-plus-clutter hidden-state
+model. It independently marginalizes frequency alternatives in each window,
+permits direct satellite switches, and preserves the original stationary prior.
+The prespecified one-second persistence model links only short same-RX/channel/RF
+revisits within an original training block. Four matched fits use the original
+and refined starts, with an independent singleton oracle before fitting.
+
+**Decision:** compare sealed positions, assignments, clutter and stationarity.
+Better frequency likelihood alone is insufficient. The exact control is in the
+[temporal protocol](../2026_10_13_ds21_039_association/TEMPORAL_REFRESH_PROTOCOL.md).
+
+## 2. Calibration and satellite timing confounded with position
+
+**Question:** Are nuisance corrections absorbing the position information or
+compensating for an incorrect association?
+
+Per-observation RF Doppler scaling already checks out. The timestamp provenance
+audit found no conversion bug. A receiver-specific RF slope improved the
+objective by only 0.657 and worsened position from 4.073 to 4.085 km. Repeating
+that flexibility increase is therefore low priority.
+
+The joint-model SOL worker will review local calibration/timing confounding and
+propose one physically justified, matched control. It must preserve fitted `c`,
+explicitly state any changed prior, and choose settings before reference
+evaluation. Timing corrections need external justification; they cannot be
+tightened until a desired position appears.
+
+**Decision:** distinguish a supported clock/orbit correction from nuisance-driven
+movement along weakly constrained directions. Report position and frequency
+effects separately, including sensitivity to the prespecified assumption.
+
+## 3. Correlated errors and likelihood versus prior strength
+
+**Question:** Does treating repeated observations as independent make the joint
+likelihood overwhelm useful physical constraints?
+
+Equal-band and equal-block controls did not improve localization. Those controls
+preserved total likelihood weight; they did not test effective information or
+the overall balance between likelihood and priors. Residual block structure
+persists, but cross-receiver/band correlations change sign between solutions.
+There is not yet evidence for a stable learned covariance.
+
+The coordinator and joint worker will separate conditional-posterior artifacts
+from supported residual structure, then specify a bounded covariance or global
+likelihood-scale sensitivity only if the evidence supports it. No fitted
+effective sample size will be claimed from these in-sample residuals alone.
+
+**Decision:** an intervention must improve position across development cases,
+not merely reduce its differently scaled objective. Unsupported low-signal
+tails and failures remain visible in the report.
+
+## 4. Initialization, optimization and full-DS21 coverage
+
+**Question:** How much error is due to missed solutions, and do results survive
+independent initialization and expansion beyond five recordings?
+
+The original joint search missed a feasible lower-loss solution, but refinement
+only reduced position error from 4.291 to 4.073 km. Optimization is a confirmed
+contributor and is insufficient by itself. Keep stationary source incumbents,
+record failed starts, and select by training criteria with fixed budgets.
+
+The SOL joint worker implemented a training-only adapter around the existing
+fitted-c discovery core. Its 10 owned tests passed again in the integration
+worktree. A first bounded DS21-007 slice is underway, with exact census evidence
+and a causal catalogue pinned before inference. Discovery states are not final
+position estimates. Completed points can be reused; failed or orphan attempts
+cannot be silently retried.
+
+**Decision:** build the missing development initializations, then compare all
+three band views with matched budgets and documented seed provenance. Report
+coverage and failures alongside accuracy.
+
+## Execution and dataset acceptance
+
+SOL workers can implement and review in parallel; expensive scientific runs
+are serialized in bounded slices. Two workers are currently active. Four
+directions do not mean four simultaneous optimizer campaigns.
+
+Test supported changes first on the five fixed development cases, then all 34
+fast development recordings. Freeze the algorithm and training-only selection
+rule before running the 20 locked fast recordings. Report all 54 fast members,
+each low/high/all error where available, failures as misses, median, upper
+quantiles, maximum and count below 0.5 km. Adaptive CH1–4 recordings require
+separate preparation and are not CH1–8 acceptance cases.
+
+Reference coordinates enter only after sealing results. Accuracy is relative
+to the configured reference, which is not independently surveyed. No per-case
+choice of whichever model is geographically closest is allowed. Reaching
+0.5 km remains a measured acceptance condition, not a promised outcome.

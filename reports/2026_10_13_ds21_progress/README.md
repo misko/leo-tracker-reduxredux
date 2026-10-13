@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 17:39 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 17:58 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -20,6 +20,12 @@ including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
 ## Current four-direction investigation
+
+The [next four priorities](NEXT_FOUR_DIRECTIONS.md) incorporate the negative
+controls below: temporal association; calibration/timing confounding;
+likelihood-to-prior scale and correlation; initialization and dataset coverage.
+Two SOL workers are implementing the next controls in parallel, with bounded
+scientific runs serialized by the coordinator.
 
 The user prioritized DS21-039, session
 `fast-4b6fff793fba610ed2674dcc6d2908ba`. The original joint-model errors are
@@ -136,7 +142,14 @@ observation. Removing visit from the key would still give zero edges under the
 original 25 ms limit; the shortest same-RF revisit is 352.244 ms. The recorded
 candidates have no persistent emitter/frame identity. Cross-visit continuity
 therefore requires an explicitly new modeling assumption, not a graph bug fix.
-No temporal model change or fit has been run.
+A new satellite-only temporal refresh component has passed 13 synthetic tests,
+including original-model singleton closure and linked gradient checks. Its
+[matched four-call protocol](../2026_10_13_ds21_039_association/TEMPORAL_REFRESH_PROTOCOL.md)
+uses a fixed one-second persistence assumption, direct satellite switches and
+the original stationary satellite/clutter prior. No temporal DS21 fit has run.
+A separate [quarter-scale likelihood sensitivity](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_PROPOSAL.md)
+is being implemented; its scale is not an estimated noise covariance or effective
+sample size. Neither new intervention is promoted.
 
 ## Full DS21 validation
 
@@ -149,11 +162,12 @@ finds preparation receipts for all 34 fast development members, but discovery an
 proposal caches for only five; 29 need initialization. The 54 adaptive members
 have no tracking-input binding in this membership and require separate preparation.
 
-A new training-only adapter around the existing fitted-c discovery core is
-being implemented for the next fixed missing development recording, DS21-007.
-It will retain the original census evidence, partition, causal catalogue and
-bounded search. Historical wrappers also prepare held observations and are not
-being used directly. No additional discovery or accuracy result is claimed yet.
+A new training-only adapter around the existing fitted-c discovery core passed
+all 10 owned tests in the integration worktree. Its first bounded DS21-007 slice
+is running with exact original census evidence, partition and causal catalogue
+bound before inference. Historical wrappers also prepare held observations and
+are not being used directly. No additional completed discovery or accuracy
+result is claimed yet.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20
