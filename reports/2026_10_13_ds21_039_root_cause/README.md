@@ -1,5 +1,10 @@
 # DS21-039: four prioritized root-cause investigations
 
+The initial [four-direction diagnostic](DIAGNOSTIC_RESULTS.md) completed in
+38.73 seconds after a preserved numerical-summary failure and repair. It made
+zero optimizer calls. The separately frozen 18 fixed-position fits are now
+running; no new position improvement is claimed.
+
 The user requested four parallel investigations of DS21-039, followed by full
 DS21 evaluation, targeting **less than 0.5 km for every eligible CH1–8 recording**.
 This is an acceptance target, not an achieved result. New experiments use fitted

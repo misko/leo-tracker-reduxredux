@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 15:33 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 15:51 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -46,10 +46,21 @@ Three SOL 6.1 high workers own the first three directions; the coordinator owns
 the fourth and integration. Input inventory is complete, selecting historical
 start 5 by training objective in each view. Initial replay will use no optimizer
 calls. The subsequent bounded profile slice is 18 fitted-`c` fits. At this update,
-39 integrated diagnostic/input/runner tests pass; association and full-pipeline
-integration are finishing. No new DS21-039 numerical diagnostic results are
-claimed yet. The detailed [investigation plan](../2026_10_13_ds21_039_root_cause/README.md)
-records controls and acceptance criteria.
+the corrected four-direction diagnostic has completed in 38.73 seconds, with
+zero optimizer calls and all 13 outputs/source checks passing. There are 69
+passing focused diagnostic tests and eight passing profile-runner tests. The
+prescribed 18 fixed-position fits have now started under a separate freeze.
+The detailed [measured diagnostic results](../2026_10_13_ds21_039_root_cause/DIAGNOSTIC_RESULTS.md)
+and [investigation plan](../2026_10_13_ds21_039_root_cause/README.md) retain controls,
+the first run's numerical-summary failure and acceptance criteria.
+
+The saved objectives replay exactly and RF scaling is correct. However, full
+versus half fits change the preferred satellite/clutter assignment in 18–20% of
+windows. Copying a half-band correction alone into the full-model physical state
+worsens frequency likelihood in both bands. Equal block weights weaken one
+preference but do not reverse either within-band comparison. This prioritizes
+the calibration/association interaction and remaining optimizer test; it does
+not establish a position improvement or meet the 0.5 km target.
 
 ## Full DS21 validation
 
