@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 18:01 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 18:05 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -101,12 +101,13 @@ post-seal, training-selected CH1–8 errors are:
 | Equal band, then block weights | 4.592 |
 | Detector-winner-preserving native alternatives, fixed 25% alternative mass | 4.410 |
 | One additional receiver RF contrast, common c still fitted | 4.085 |
+| Satellite refresh across short within-block revisits | 4.410 |
 
 None is promoted. The weighting controls preserve total likelihood weight and
 prior scale; they do not test effective sample size or a correlated-error model.
 The [native-prior report](../2026_10_13_ds21_039_association/DETECTOR_PRIOR_RESULTS.md)
 shows another frequency-fit improvement accompanied by worse position accuracy.
-Across these DS21-039 experiments, **45 new fitted-c calls produced 44 stationary
+Across these DS21-039 experiments, **49 new fitted-c calls produced 48 stationary
 outcomes**, retaining the one nonstationary cold profile. The 0.5 km target remains
 unmet. This is still development work, not a full-DS21 accuracy result.
 
@@ -142,11 +143,19 @@ observation. Removing visit from the key would still give zero edges under the
 original 25 ms limit; the shortest same-RF revisit is 352.244 ms. The recorded
 candidates have no persistent emitter/frame identity. Cross-visit continuity
 therefore requires an explicitly new modeling assumption, not a graph bug fix.
-A new satellite-only temporal refresh component has passed 13 synthetic tests,
-including original-model singleton closure and linked gradient checks. Its
+A new satellite-only temporal refresh component and runner passed 19 synthetic
+tests, including original-model singleton closure and linked gradient checks. Its
 [matched four-call protocol](../2026_10_13_ds21_039_association/TEMPORAL_REFRESH_PROTOCOL.md)
 uses a fixed one-second persistence assumption, direct satellite switches and
-the original stationary satellite/clutter prior. No temporal DS21 fit has run.
+the original stationary satellite/clutter prior. All four calls completed and
+were stationary in 60.562 seconds overall. The linked model increased selected
+error from 4.073 to 4.410 km and is not promoted; the
+[temporal result and receipt audit](../2026_10_13_ds21_039_association/TEMPORAL_REFRESH_RESULTS.md)
+record all four outcomes. The actual singleton oracle
+replayed both source objectives and NLLs, with maximum comparison difference
+below 6e-11; the linked model had 1,616 edges across 1,182 families. This is a
+negative result for this prescribed continuity assumption, not evidence against
+all temporal information.
 A separate [quarter-scale likelihood sensitivity](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_PROPOSAL.md)
 is being implemented; its scale is not an estimated noise covariance or effective
 sample size. Neither new intervention is promoted.

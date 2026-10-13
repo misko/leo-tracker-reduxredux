@@ -18,12 +18,15 @@ edges. Full versus half fits change satellite/clutter assignments in 18–20% of
 windows. The recorded data contain no persistent emitter identity, so continuity
 is a sensitivity assumption, not a recovered physical label.
 
-The SOL temporal worker is implementing a satellite-plus-clutter hidden-state
+The SOL temporal worker implemented a satellite-plus-clutter hidden-state
 model. It independently marginalizes frequency alternatives in each window,
 permits direct satellite switches, and preserves the original stationary prior.
 The prespecified one-second persistence model links only short same-RX/channel/RF
-revisits within an original training block. Four matched fits use the original
-and refined starts, with an independent singleton oracle before fitting.
+revisits within an original training block. Four matched fits used the original
+and refined starts, with an independent singleton oracle before fitting. All
+four converged, but selected error worsened from 4.073 to 4.410 km. This specific
+intervention is not promoted; further association changes need a different,
+supported hypothesis rather than another persistence setting chosen by error.
 
 **Decision:** compare sealed positions, assignments, clutter and stationarity.
 Better frequency likelihood alone is insufficient. The exact control is in the
@@ -60,10 +63,11 @@ the overall balance between likelihood and priors. Residual block structure
 persists, but cross-receiver/band correlations change sign between solutions.
 There is not yet evidence for a stable learned covariance.
 
-The coordinator and joint worker will separate conditional-posterior artifacts
-from supported residual structure, then specify a bounded covariance or global
-likelihood-scale sensitivity only if the evidence supports it. No fitted
-effective sample size will be claimed from these in-sample residuals alone.
+The joint worker is implementing a prespecified global likelihood-scale
+sensitivity: original scale versus one-quarter scale, with every physical prior
+unchanged. This tests joint regularization strength; it does not estimate
+covariance or effective sample size. Native branch second moments are retained
+in the diagnostics so ambiguity cannot disappear through averaging residuals.
 
 **Decision:** an intervention must improve position across development cases,
 not merely reduce its differently scaled objective. Unsupported low-signal

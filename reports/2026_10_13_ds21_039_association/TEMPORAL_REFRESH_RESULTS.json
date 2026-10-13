@@ -1,0 +1,250 @@
+{
+  "schema": "ds21-039-temporal-refresh-results-v1",
+  "label": "DS21-039",
+  "arm": "fitted-c",
+  "scope": "independent receipt and byte-binding audit; no inference, optimizer, IQ or reference-source reads; sealed post-fit development-errors receipt read only after final seal",
+  "bindings": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/freeze.json",
+      "sha256": "sha256:5cb1a9d045e378839231d28846f98ef39b1e7d598461fa7310d1951b72b46366"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/fits/terminal.json",
+      "sha256": "sha256:5837810fb7d6f080dd06e2460ef8e575310ea221e1c008938ea1c6190f2057fb"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/fits/seal.json",
+      "sha256": "sha256:149c0d5f0c4a46ab1820bdadf2347dbbe9a11d47697892600729ffd686fa4019"
+    },
+    "source_oracle": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/fits/source-oracle.json",
+      "sha256": "sha256:9e58444fedae3dbaf1cf65d5af49e3962960df0c7d03db87b8c050d4469e0df5"
+    },
+    "models": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/fits/model.json",
+      "sha256": "sha256:76623d5581cc171ee6bd7f372d9c30f0c6738361400eeb7b80a5eed48055b366"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/temporal-refresh-v1/development-errors.json",
+      "sha256": "sha256:9ee537ec5cf86c9eb897e5c63fc0bf5bed10edbd66ea28f62754b4cc701a0ef3"
+    },
+    "inputs": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/inputs-v1.json",
+      "sha256": "sha256:27bd4bbb567c6d16a819467f92924b813d5547928dc6c51bcaba743924917356"
+    },
+    "refinement_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/fits/terminal.json",
+      "sha256": "sha256:682bee3af1de693cd5a736e9a5eb36558db594c8b88784371909d3743298a493"
+    },
+    "refinement_freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/freeze.json",
+      "sha256": "sha256:6d96b165a88ad852722a7fdd0957821fa70bad2f31372e1cca261926a8b52e91"
+    }
+  },
+  "audit": {
+    "all_live_and_archive_source_hashes_match": true,
+    "source_files": 329,
+    "six_ancestor_bindings_match": true,
+    "all_four_launch_termination_attempt_and_attempt_seal_inventories_match": true,
+    "final_seal_file_count": 21,
+    "both_parent_source_oracles_pass": true,
+    "receipt_stationarity_geometry_and_parameter_bounds_pass": true,
+    "minimum_training_objective_selections_verified": true,
+    "selected_objective_nll_and_prior_ledger_closure_pass": true,
+    "reference_before_fit_seal": "none declared by freeze/protocol/terminal and reference-free run recipe; reference receipt mtime follows final seal",
+    "postseal_evaluation_binding_and_order_pass": true
+  },
+  "limits": {
+    "label": "DS21-039",
+    "arm": "fitted-c",
+    "starts": [
+      "original-all",
+      "refinement-free"
+    ],
+    "conditions": [
+      "baseline",
+      "linked"
+    ],
+    "optimizer_calls": 4,
+    "maximum_optimizer_seconds": 80,
+    "fit_seconds": 20,
+    "iterations": 600,
+    "center_seed": 5,
+    "local_radius_km": 25,
+    "baseline": "Unchanged original model; new singleton arithmetic for source oracle only",
+    "linked": "Satellite-only refresh, tau=1s, maxgap=1s within original training blocks",
+    "priors": "Original native choices, calibration layout and physical priors unchanged",
+    "selection": "Baseline: stationary sources/new fits; linked: new stationary fits only",
+    "interpretation": "Prespecified temporal sensitivity, not measured emitter continuity",
+    "authority": "Unchanged old-seven parent validator; no RF contrast or score-audit dependency",
+    "oracle_tolerance": 1e-7,
+    "calculation_seconds": 145,
+    "internal_seconds": 165,
+    "external_term_seconds": 175,
+    "external_kill_seconds": 180,
+    "failed_retry": false,
+    "reference_usage": "none",
+    "held_usage": "none"
+  },
+  "source_oracles": {
+    "original-all": {
+      "comparisons": {
+        "objective": 5.820766091346741e-11,
+        "likelihood_nll": 5.820766091346741e-11,
+        "vector_gradient": 3.630429290524262e-13,
+        "nuisance_gradient": 2.8189256484623115e-17,
+        "satellite_posterior": 3.3306690738754696e-16,
+        "clutter_posterior": 3.3306690738754696e-16,
+        "prediction_gradient": 1.0408340855860843e-17,
+        "native_gradient": 1.0408340855860843e-17,
+        "native_posterior": 5.551115123125783e-16,
+        "normal_mass_conditional_residual": 9.094947017729282e-13
+      },
+      "historical_replay_delta": {
+        "objective": 0,
+        "likelihood_nll": 0
+      },
+      "conditional_residual_normal_mass_pairs": 4559,
+      "conditional_residual_zero_or_subnormal_pairs": 115755
+    },
+    "refinement-free": {
+      "comparisons": {
+        "objective": 4.729372449219227e-11,
+        "likelihood_nll": 4.729372449219227e-11,
+        "vector_gradient": 3.67320323463316e-13,
+        "nuisance_gradient": 1.0755285551056204e-16,
+        "satellite_posterior": 2.7755575615628914e-16,
+        "clutter_posterior": 2.7755575615628914e-16,
+        "prediction_gradient": 6.938893903907228e-18,
+        "native_gradient": 6.938893903907228e-18,
+        "native_posterior": 5.551115123125783e-16,
+        "normal_mass_conditional_residual": 9.094947017729282e-13
+      },
+      "historical_replay_delta": {
+        "objective": 0,
+        "likelihood_nll": 0
+      },
+      "conditional_residual_normal_mass_pairs": 4331,
+      "conditional_residual_zero_or_subnormal_pairs": 115983
+    }
+  },
+  "outcomes": [
+    {
+      "name": "baseline-original-all",
+      "stationary": true,
+      "stationarity": 0.0005356599810205642,
+      "objective": 33172.42342910419,
+      "likelihood_nll": 32969.49976993959,
+      "elapsed_s": 0.5513139590620995,
+      "evaluations": 21,
+      "seed5_disk_distance_km": 9.292922520602769,
+      "fitted_c_hz_per_ghz": -626.5782993257161
+    },
+    {
+      "name": "baseline-refinement-free",
+      "stationary": true,
+      "stationarity": 0.0000704178236427544,
+      "objective": 32380.954534755605,
+      "likelihood_nll": 32225.181022133584,
+      "elapsed_s": 0.7504284530878067,
+      "evaluations": 29,
+      "seed5_disk_distance_km": 9.369239874856152,
+      "fitted_c_hz_per_ghz": -618.997814118364
+    },
+    {
+      "name": "linked-original-all",
+      "stationary": true,
+      "stationarity": 0.00003346808742309918,
+      "objective": 28735.557289618744,
+      "likelihood_nll": 28539.988406915963,
+      "elapsed_s": 16.428726663812995,
+      "evaluations": 240,
+      "seed5_disk_distance_km": 8.922415127038839,
+      "fitted_c_hz_per_ghz": -626.018672386124
+    },
+    {
+      "name": "linked-refinement-free",
+      "stationary": true,
+      "stationarity": 0.00008061581199330856,
+      "objective": 27845.883933247136,
+      "likelihood_nll": 27691.819721516524,
+      "elapsed_s": 14.91283113276586,
+      "evaluations": 218,
+      "seed5_disk_distance_km": 9.6585576339757,
+      "fitted_c_hz_per_ghz": -631.6976590642898
+    }
+  ],
+  "family_inventory": {
+    "original_windows": 2798,
+    "native_candidates": 3714,
+    "families": 1182,
+    "temporal_edges": 1616,
+    "family_size_histogram": {
+      "1": 227,
+      "2": 294,
+      "3": 661
+    },
+    "family_inventory_sha256": "sha256:cc28b4dcc5b744b8315957e0e236629f56190a6f89d2aa8b5f16326d4d09dba5",
+    "minimum_edge_gap_s": 0.35224395500000005,
+    "maximum_edge_gap_s": 0.7120092509999836,
+    "window_blocks_sha256": "sha256:2a71d6af350cd502378a79a23ca86cbc2df173d5a7f7d1782905fca05184c326",
+    "training_blocks": [
+      0,
+      1,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      14
+    ],
+    "counter_vs_winner_time_floor_differences": 0
+  },
+  "results": {
+    "baseline": {
+      "error_km": 4.072514869877426,
+      "below_0_5km": false,
+      "name": "baseline-refinement-free",
+      "origin": "new-fit",
+      "objective": 32380.954534755605,
+      "native_rms_hz": 92.16235912396404,
+      "signal_mass": 2167.2475963433853,
+      "clutter_mass": 630.7524036566147,
+      "likelihood_nll": 32225.18102213363,
+      "prior_costs": {
+        "common_timing": 0.13019054638093955,
+        "relative_timing": 155.24357443633397,
+        "group_contrasts": 0.3997476393048041,
+        "total": 155.77351262201972
+      }
+    },
+    "linked": {
+      "error_km": 4.410060883251803,
+      "below_0_5km": false,
+      "name": "linked-refinement-free",
+      "origin": "new-fit",
+      "objective": 27845.883933247136,
+      "native_rms_hz": 94.88086333514173,
+      "signal_mass": 2179.610523632341,
+      "clutter_mass": 618.3894763676594,
+      "likelihood_nll": 27691.819721516524,
+      "prior_costs": {
+        "common_timing": 0.11308506799841692,
+        "relative_timing": 153.5512879460414,
+        "group_contrasts": 0.3998387165730563,
+        "total": 154.0642117306129
+      }
+    }
+  },
+  "linked_minus_baseline": {
+    "error_km": 0.33754601337437684,
+    "native_rms_hz": 2.718504211177688,
+    "signal_mass": 12.362927288955689
+  },
+  "runner_elapsed_s": 33.38671512436122,
+  "conclusion": "Negative temporal sensitivity outcome; no promotion. Cross-model objective/NLL are different joint likelihoods and are not directly a frequency-quality improvement. Native residual RMS and post-seal development localization both worsen. No emitter continuity claim; tau/gap prespecified, not tuned to reference error."
+}
