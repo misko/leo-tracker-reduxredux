@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 18:52 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 18:58 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -167,7 +167,12 @@ The [likelihood-scale results](../2026_10_13_ds21_039_association/LIKELIHOOD_TEM
 retain all four outcomes and the independent receipt audit.
 The scale is not an estimated noise covariance or effective sample size. It
 remains worse than both original half-band results and is not promoted for
-release; transfer to the five existing development cases is the next check.
+release. The subsequent [fixed five-case transfer](../2026_10_13_ds21_039_association/FIVE_CASE_TEMPERING_RESULTS.md)
+completed 60 fits, 58 stationary, and **failed to generalize**: median error rose
+from 1.957 to 4.061 km and maximum from 4.899 to 5.216 km. Three cases improved,
+two worsened, and neither condition had a result below 0.5 km. Quarter-scale
+weighting is not promoted. DS21-003's selected quarter-scale solution reached
+its prescribed 25 km local search boundary.
 The [first invocation's interface failure](../2026_10_13_ds21_039_association/LIKELIHOOD_TEMPERING_FAILURE_V1.md)
 was preserved with its original source archive. A corrected v2 wrapper restores
 the geographic-prior port, and 24 tests pass, including actual tiny-fitter tests
@@ -202,9 +207,10 @@ still pending. Six development recordings now have proposal artifacts; 28 still
 need initialization.
 In parallel, the [fixed five-case likelihood-scale protocol](../2026_10_13_ds21_039_association/FIVE_CASE_TEMPERING_PROTOCOL.md)
 prescribes paired alpha=1 and alpha=0.25 fits from each recording's six historical
-all-band endpoints. Its adapter passed 17 integration tests; all five cases are
-frozen and the first bounded slice is running. Position evaluation remains closed
-until every prescribed case has a finalized outcome.
+all-band endpoints. Its adapter passed 17 integration tests and evaluator 19;
+all five cases are complete and were sealed before reference evaluation. The
+negative transfer result is reported above. DS21-007's baseline joint comparison
+and a separate observed-curvature diagnostic are now being implemented.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20

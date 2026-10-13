@@ -3,7 +3,9 @@
 Updated 2026-10-13. All new controls use fitted `c`. The release target is below
 0.5 km for every eligible CH1–8 DS21 recording; it has not been reached.
 
-DS21-039 currently has a training-selected refined joint error of 4.073 km.
+DS21-039's refined joint error is 4.073 km; the quarter-scale two-start sensitivity
+reached 3.930 km, but its fixed five-case transfer worsened the median and is not
+promoted.
 The original low/high/all comparison is 3.759 / 2.557 / 4.291 km. Its half-band
 fits inherit all-band ambiguity initialization, so this is not yet a comparison
 of three independently initialized pipelines.
@@ -42,11 +44,13 @@ audit found no conversion bug. A receiver-specific RF slope improved the
 objective by only 0.657 and worsened position from 4.073 to 4.085 km. Repeating
 that flexibility increase is therefore low priority.
 
-The joint-model SOL worker will review local calibration/timing confounding and
-propose one physically justified, matched control. It must preserve fitted `c`,
-explicitly state any changed prior, and choose settings before reference
-evaluation. Timing corrections need external justification; they cannot be
-tightened until a desired position appears.
+The SOL worker is implementing a zero-optimizer observed-curvature diagnostic
+at the original and refined all-band states. It recomputes the existing
+marginalized gradient at two fixed finite-difference steps, then checks whether
+profiling timing as well as calibration weakens position curvature. It preserves
+all priors and fitted `c`. Singular, indefinite or unstable curvature is reported
+without converting it into a confidence claim. Timing corrections need external
+justification; they cannot be tightened until a desired position appears.
 
 **Decision:** distinguish a supported clock/orbit correction from nuisance-driven
 movement along weakly constrained directions. Report position and frequency
@@ -69,8 +73,12 @@ DS21-039 error from 4.073 to 3.930 km, with four stationary fits. This modest
 change tests joint regularization strength; it does not estimate covariance or
 effective sample size. Native branch second moments are retained in the
 diagnostics so ambiguity cannot disappear through averaging residuals. The next
-check is transfer of these same fixed scales to the five existing development
-cases, using historical fitted states and matched budgets.
+check used these same fixed scales on five existing development cases, with
+historical fitted states and matched budgets. All 60 calls completed, 58
+stationary. Median error worsened from 1.957 to 4.061 km and maximum from 4.899
+to 5.216 km, with zero cases below 0.5 km in either condition. Quarter-scale
+weighting is not promoted. The [transfer report](../2026_10_13_ds21_039_association/FIVE_CASE_TEMPERING_RESULTS.md)
+retains all cases and the DS21-003 boundary solution.
 
 **Decision:** an intervention must improve position across development cases,
 not merely reduce its differently scaled objective. Unsupported low-signal
@@ -94,12 +102,15 @@ Discovery states are not final
 position estimates. Completed points can be reused; failed or orphan attempts
 cannot be silently retried.
 
-The next DS21-007 stage must generate the original Doppler-shape parents before
-constructing the historical cold/shape six-proposal comparison. The new adapter
-uses the fitted-c arm only and training-only preparation. It does not substitute
-extra discovery states for the missing shape parents. The historical shape
-selector's zero-c choice is replaced explicitly; the core shape math is unchanged,
-and its projection of RF-constant offsets is not claimed to learn RF calibration.
+DS21-007 has now completed the fitted shape, fresh bootstrap, absolute hybrid,
+cold bootstrap and six-proposal export chain. All nine shape and nine hybrid fits
+were stationary. The [initialization report](../2026_10_13_ds21_release_readiness/PROPOSALS_007_RESULTS.md)
+records the 32-satellite pool and six physical proposals per view. The baseline
+joint low/high/all comparison is being implemented with training-only preparation
+and fitted `c`. The historical shape selector's zero-c choice is replaced
+explicitly; core shape math is unchanged, and its projection of RF-constant
+offsets is not claimed to learn RF calibration. Twenty-eight development
+recordings still require initialization.
 
 **Decision:** build the missing development initializations, then compare all
 three band views with matched budgets and documented seed provenance. Report
