@@ -72,6 +72,18 @@ does [DS21-013](THREE_MODEL_013_AUDIT.json).
 Locked inference remains unopened.
 The metadata-only inventory below is retained as the historical audit.
 
+The fixed coverage policy has also completed its
+[DS21-009 discovery transfer](DISCOVERY_COVERAGE_009_RESULTS.md) and
+[five-stage initialization](COVERAGE_PROPOSALS_009_RESULTS.md). Discovery keeps
+the original two nearby selections and all three view minima, replacing only
+the remote fallback. Initialization returns nine stationary shape fits, nine
+stationary hybrid fits and 18 exports over 33 candidates. Model-seed preparation
+passes with 21 strict and three verified exact transfers. The final-model
+comparison is underway; no transfer accuracy result is available yet.
+The [saved-function projection diagnosis](COVERAGE_PROJECTION_013_DIAGNOSIS.md)
+separates missing band/time terms, shared-clock capacity and coefficient bounds.
+Its fixed-function decomposition is a separate diagnostic, not a new location model.
+
 The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
 18 fits, all stationary: CH1–8 / CH1–4 / CH5–8 errors are 3.524 / 3.738 / 4.325 km.
 Combining bands helped this case, but none reached 0.5 km. Locked inference

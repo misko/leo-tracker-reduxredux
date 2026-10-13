@@ -50,6 +50,17 @@ retained and excluded. Discovery changed candidate and seed initialization as
 well as explored geography; this does not isolate one downstream mechanism or
 establish full-DS21 transfer. The original severe DS21-013 errors remain below.
 
+The unchanged coverage policy now has a
+[DS21-009 discovery transfer](../2026_10_13_ds21_release_readiness/DISCOVERY_COVERAGE_009_RESULTS.md)
+and [complete initialization](../2026_10_13_ds21_release_readiness/COVERAGE_PROPOSALS_009_RESULTS.md).
+The two nearby discovery selections and all view minima are unchanged; only the
+remote fallback is replaced. All nine shape and nine hybrid fits are stationary,
+and 18 physical seeds use a 33-candidate pool. The new final-model comparison is
+underway, with no reference-error result yet. Separately, the
+[projection diagnosis](../2026_10_13_ds21_release_readiness/COVERAGE_PROJECTION_013_DIAGNOSIS.md)
+motivates decomposition of fixed saved calibration functions before any new
+nuisance model or position-accuracy claim.
+
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
 Combining bands improves this case, but all views miss 0.5 km. It is reported
