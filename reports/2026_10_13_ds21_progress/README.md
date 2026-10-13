@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 16:15 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 17:00 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -77,11 +77,45 @@ training-selected all-band solution improves objective to **32,380.955**, but
 post-seal reference evaluation shows only a small position improvement:
 **4.291 km → 4.073 km**. It remains worse than the historical high-band anchor's
 2.557 km. The search deficit is real, but addressing it alone is insufficient;
-the next matched control examines observation weighting within the joint objective.
+the subsequent matched controls examined observation weighting and native-candidate
+prior mass. Neither yielded a supported fix.
 The [refinement report](../2026_10_13_ds21_039_root_cause/REFINEMENT_RESULTS.md)
 contains the full outcomes and post-seal position comparison.
 Detailed [calibration](../2026_10_13_ds21_039_root_cause/CALIBRATION_RESULTS.md) and
 [association](../2026_10_13_ds21_039_association/RESULTS.md) reports are available.
+
+All twelve weighting fits and four candidate-prior fits were stationary. Their
+post-seal, training-selected CH1–8 errors are:
+
+| DS21-039 control | Error km |
+| --- | ---: |
+| Unweighted refined baseline | 4.073 |
+| Equal band weights | 4.314 |
+| Equal acquisition-block weights | 4.106 |
+| Equal band, then block weights | 4.592 |
+| Detector-winner-preserving native alternatives, fixed 25% alternative mass | 4.410 |
+
+None is promoted. The weighting controls preserve total likelihood weight and
+prior scale; they do not test effective sample size or a correlated-error model.
+The [native-prior report](../2026_10_13_ds21_039_association/DETECTOR_PRIOR_RESULTS.md)
+shows another frequency-fit improvement accompanied by worse position accuracy.
+Across these DS21-039 experiments, **41 new fitted-c calls produced 40 stationary
+outcomes**, retaining the one nonstationary cold profile. The 0.5 km target remains
+unmet. This is still development work, not a full-DS21 accuracy result.
+
+The [UTC provenance audit](../2026_10_13_ds21_039_root_cause/UTC_TIMING_PROVENANCE.md)
+found no timestamp-conversion bug. The recorded host-clock bracket is 250.269 ms
+wide with good internal clock continuity, but no independent absolute-sync or
+sample-clock accuracy attestation. This is not a horizontal position-error bound.
+
+The [receiver RF score audit](../2026_10_13_ds21_039_root_cause/RECEIVER_RF_SCORE_AUDIT.md)
+found opposing receiver contributions hidden by a stationary shared `c`. A
+prespecified four-call sensitivity test is being implemented: retain fitted
+common `c` and add one receiver RF contrast, using two matched initializers.
+This is a model sensitivity test, not evidence of a hardware clock fault.
+The [antenna evidence audit](../2026_10_13_ds21_039_association/ANTENNA_EVIDENCE.md)
+found no capture-bound pointing or beam-response data to justify a directional
+satellite prior.
 
 ## Full DS21 validation
 
@@ -110,7 +144,7 @@ evaluation.
 ## Provenance
 
 These summaries are derived from the sealed shared-proposal comparison in the
-research worktree, diagnostic/profile evidence through commit `ae81c4a71`, and its immutable
+research worktree, diagnostic/control evidence through commit `72854a725`, and its immutable
 membership inventory SHA-256
 `a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
 The original protocol and detailed local receipts are retained; this report

@@ -1,0 +1,218 @@
+{
+  "schema": "ds21-039-receiver-rf-score-receipt-audit-v1",
+  "method": "Stdlib arithmetic on sealed grouped signal masses/residual means; no source likelihood replay",
+  "terminal": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/terminal.json",
+    "sha256": "sha256:1e082d95de47715ef600d000adb9b89dbd4f722bda7b33754b560aa0388f15aa"
+  },
+  "receipts": {
+    "all": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/calibration-all.json",
+      "sha256": "sha256:68e4b3f029cc6ae6584119436d5201d3369c87f1567f35af868c3c879f8c1a71"
+    },
+    "low": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/calibration-low.json",
+      "sha256": "sha256:5fd2d93bd4806797b0b6984d07e81f755437bd6a173c0aa9ce42967497207785"
+    },
+    "high": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/calibration-high.json",
+      "sha256": "sha256:2ca2d16790314d5b588ee1a31a97c3e2dd7bb0c3cc9fd5ab863110df99c18302"
+    }
+  },
+  "source_bindings": [
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/analysis/research/cross_band_consistency.py",
+      "sha256": "sha256:4d39e5399a044ca024cef73554e7fac0ae850631fe823d8caa427afaba9b11c0"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds21_039_calibration_diagnostic.py",
+      "sha256": "sha256:48277c6e9e553a03b90336e1e12cb0a7c766221131488db970f1d5e9acffb7c2"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/contracts/regional_position.py",
+      "sha256": "sha256:d7ce86b96bc9c0eec3f588ecb12cf568f198945789563e89bb7e85e7df0585fc"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/application/hard60_runner.py",
+      "sha256": "sha256:aeb7ba28159be8687aefb28b710ffbe60bd0318d8a36b2cbc305bba9e50a3536"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/acquisition/continuous_window_ppu.py",
+      "sha256": "sha256:5daae7298f055be49e8342dc184d8397a38b03b6991de0e45106849a62d04f80"
+    },
+    {
+      "path": "/opt/leo-shared-scans/20261010-r1/qualified/record_dual_reference.py",
+      "sha256": "sha256:07f29d49177c2ff163b5e86f8d2f96974b6f496082add66cd095e3be7ee4c3ab"
+    },
+    {
+      "path": "/opt/leo-shared-scans/20261010-r1/pluto/src/pluto_plus/hardware/iio.py",
+      "sha256": "sha256:7440e7f394d582f00bcb7a459c42edb368ad38833166984cbc5bcaa95e43c14a"
+    }
+  ],
+  "sigma_hz_from_frozen_V16_source": 125,
+  "formula": "S_rx=sum_channel(signal_mass*conditional_mean_hz*(rf_hz-rf_center_hz)/1e9)/sigma_hz**2; positive S is log-likelihood gain, opposite NLL gradient",
+  "band_intercept_profile": "Center RF separately in each receiver/band using saved posterior signal mass; slope=sum(m*mean_residual*x_centered)/sum(m*x_centered**2)",
+  "results": {
+    "all": {
+      "learned_shared_c_hz_per_ghz": -626.5782993254005,
+      "rf_center_hz": 11584687500.0,
+      "channel_rf_hz": {
+        "1": 10709687500.0,
+        "2": 10959687500.0,
+        "3": 11209687500.0,
+        "4": 11459687500.0,
+        "5": 11709687500.0,
+        "6": 11959687500.0,
+        "7": 12209687500.0,
+        "8": 12459687500.0
+      },
+      "receivers": [
+        {
+          "receiver": 0,
+          "shared_c_log_score_contribution": 0.10422749479261632,
+          "nll_gradient_if_receiver_c_were_free": -0.10422749479261632,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": 23.424284442074526,
+          "band_intercept_profiled_log_score": 0.10423656957518175,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.004449936126456559,
+          "bands": {
+            "low": {
+              "signal_mass": 715.4454908588087,
+              "rf_center_ghz": 11.14066528952375,
+              "conditional_residual_slope_hz_per_ghz": 53.480019262988854
+            },
+            "high": {
+              "signal_mass": 552.0825743694321,
+              "rf_center_ghz": 12.085796653640491,
+              "conditional_residual_slope_hz_per_ghz": -14.495752923419781
+            }
+          }
+        },
+        {
+          "receiver": 1,
+          "shared_c_log_score_contribution": -0.10422748588293869,
+          "nll_gradient_if_receiver_c_were_free": 0.10422748588293869,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": -35.83422191281333,
+          "band_intercept_profiled_log_score": -0.10424086483096426,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.002908975255123109,
+          "bands": {
+            "low": {
+              "signal_mass": 517.4318761307334,
+              "rf_center_ghz": 11.113863344375924,
+              "conditional_residual_slope_hz_per_ghz": -50.524697559921385
+            },
+            "high": {
+              "signal_mass": 283.0855114043997,
+              "rf_center_ghz": 11.998360638888991,
+              "conditional_residual_slope_hz_per_ghz": -3.7564459684335376
+            }
+          }
+        }
+      ],
+      "receiver_sum": 8.909677634560964e-09,
+      "saved_shared_c_log_score": 8.9096783909004e-09,
+      "sum_closure_delta": -7.563394355258879e-16
+    },
+    "low": {
+      "learned_shared_c_hz_per_ghz": -577.7882034448294,
+      "rf_center_hz": 11084687500.0,
+      "channel_rf_hz": {
+        "1": 10709687500.0,
+        "2": 10959687500.0,
+        "3": 11209687500.0,
+        "4": 11459687500.0
+      },
+      "receivers": [
+        {
+          "receiver": 0,
+          "shared_c_log_score_contribution": 0.039857929055137874,
+          "nll_gradient_if_receiver_c_were_free": -0.039857929055137874,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": 13.260638861011335,
+          "band_intercept_profiled_log_score": 0.03985792716740715,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.003005732045429322,
+          "bands": {
+            "low": {
+              "signal_mass": 759.1621671267729,
+              "rf_center_ghz": 11.118745883648273,
+              "conditional_residual_slope_hz_per_ghz": 13.260638861011335
+            }
+          }
+        },
+        {
+          "receiver": 1,
+          "shared_c_log_score_contribution": -0.03985786837554637,
+          "nll_gradient_if_receiver_c_were_free": 0.03985786837554637,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": -19.379309430826954,
+          "band_intercept_profiled_log_score": -0.03985786865640164,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.0020567228568526357,
+          "bands": {
+            "low": {
+              "signal_mass": 532.3562213372702,
+              "rf_center_ghz": 11.112852733566909,
+              "conditional_residual_slope_hz_per_ghz": -19.379309430826954
+            }
+          }
+        }
+      ],
+      "receiver_sum": 6.06795915042424e-08,
+      "saved_shared_c_log_score": 6.067959156951137e-08,
+      "sum_closure_delta": -6.526897078362737e-17
+    },
+    "high": {
+      "learned_shared_c_hz_per_ghz": -589.3137165372751,
+      "rf_center_hz": 12084687500.0,
+      "channel_rf_hz": {
+        "5": 11709687500.0,
+        "6": 11959687500.0,
+        "7": 12209687500.0,
+        "8": 12459687500.0
+      },
+      "receivers": [
+        {
+          "receiver": 0,
+          "shared_c_log_score_contribution": -0.03735786035776178,
+          "nll_gradient_if_receiver_c_were_free": 0.03735786035776178,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": -22.772283581058414,
+          "band_intercept_profiled_log_score": -0.03735786189705792,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.0016404969560510627,
+          "bands": {
+            "high": {
+              "signal_mass": 443.9839883768823,
+              "rf_center_ghz": 12.101571819848699,
+              "conditional_residual_slope_hz_per_ghz": -22.772283581058414
+            }
+          }
+        },
+        {
+          "receiver": 1,
+          "shared_c_log_score_contribution": 0.03735782920265636,
+          "nll_gradient_if_receiver_c_were_free": -0.03735782920265636,
+          "band_intercept_profiled_residual_slope_hz_per_ghz": 40.09938313420126,
+          "band_intercept_profiled_log_score": 0.03735781068623266,
+          "fixed_posterior_band_intercept_profiled_curvature": 0.0009316305580364332,
+          "bands": {
+            "high": {
+              "signal_mass": 305.07858802050794,
+              "rf_center_ghz": 11.995589583955276,
+              "conditional_residual_slope_hz_per_ghz": 40.09938313420126
+            }
+          }
+        }
+      ],
+      "receiver_sum": -3.115510541912281e-08,
+      "saved_shared_c_log_score": -3.1155105432133234e-08,
+      "sum_closure_delta": 1.3010426069826053e-17
+    }
+  },
+  "sampling_clock_evidence": {
+    "configured_common_domain": true,
+    "evidence": "One radio serial, nominal rate and window counter; dual interleaved RX rows; deployed driver configures one source-locked device.sample_rate/capture rate with rx_mask3.",
+    "physical_accuracy_attestation": "No independent per-RX ppm or oscillator measurement in exported input; no attestation that external RF-path clocks are shared."
+  },
+  "limits": [
+    "RF/channel groups do not retain RF-by-time or orbit-Jacobian crossproducts; cannot profile receiver RF contrast against drift/geography/timing or test stability across blocks from these summaries.",
+    "Original posterior assignments fixed; grouped means do not identify transmitter identity or calibrated hardware errors.",
+    "Band-specific residual slopes change magnitude/sign across full and half-view states, arguing against a demonstrated stable receiver clock coefficient.",
+    "The contrast has a nonzero fixed-state first-order score, supporting at most a bounded model-sensitivity control under later authorization; no implementation/fit or position improvement claim.",
+    "No reference/error joins, held scoring, locked inputs, orbit prediction, raw IQ or new RF were used."
+  ]
+}

@@ -8,7 +8,18 @@ feasible all-band objective at the high-band anchor establishes an optimization
 deficit. Seven separately frozen warm/free continuations then completed with
 all outcomes stationary. Their training-selected all-band solution improves
 configured-reference error only from 4.291 to 4.073 km; the 0.5 km target remains
-unmet. Matched observation-weighting fits are the next control.
+unmet. The twelve matched weighting fits then gave 4.314, 4.106 and 4.592 km;
+the four-call detector-winner prior control gave 4.410 km against its matched
+4.073 km baseline. All sixteen were stationary, and neither intervention is
+promoted. The [native-prior results](../2026_10_13_ds21_039_association/DETECTOR_PRIOR_RESULTS.md)
+and [UTC provenance audit](UTC_TIMING_PROVENANCE.md) document the negative result
+and remaining physical evidence gaps.
+
+The [receiver RF score audit](RECEIVER_RF_SCORE_AUDIT.md) identifies opposing
+receiver contributions hidden by the shared fitted `c`; a matched four-call
+receiver-contrast sensitivity test is being implemented. The
+[antenna audit](../2026_10_13_ds21_039_association/ANTENNA_EVIDENCE.md) found no
+capture-bound directional evidence for a satellite beam prior.
 
 The user requested four parallel investigations of DS21-039, followed by full
 DS21 evaluation, targeting **less than 0.5 km for every eligible CH1–8 recording**.

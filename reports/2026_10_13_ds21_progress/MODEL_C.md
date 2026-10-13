@@ -27,11 +27,25 @@ Its half-band comparisons have not been rerun, so it cannot be used to claim an
 isolated improvement from combining bands. Weak receiver-pair coupling also
 worsened the matched position comparisons despite improved convergence.
 
-The current assigned investigation crosses full/half-band geometry and satellite
+The completed DS21-039 diagnostic crosses full/half-band geometry and satellite
 timing with full/half-band physical calibration on identical native observation
 support. It reports satellite, ambiguity-cell and sampling-integer posteriors,
 visibility and clutter. A separate coordinator diagnostic uses the same window
-likelihoods to assess observation weighting and block concentration.
+likelihoods to assess observation weighting and block concentration. Full/half
+states change satellite-or-clutter assignments in 18–20% of windows. No RF-scaling
+error was found; calibration, timing and association interact.
+
+An additional 18 fixed-position profiles and seven warm/free continuations on
+DS21-039 exposed a missed optimizer basin. The unchanged all-band objective
+improved from 33,172.423 to 32,380.955, but post-seal position error improved only
+from **4.291 to 4.073 km**. This is a separate development control with extra
+search effort, not a replacement for the matched five-case table above. It
+remains worse than the historical high-only result and does not meet 0.5 km.
+The [refinement report](../2026_10_13_ds21_039_root_cause/REFINEMENT_RESULTS.md)
+retains all outcomes. The subsequent three weighting controls gave 4.314, 4.106
+and 4.592 km; the winner-preserving native-candidate prior gave 4.410 km against
+the matched 4.073 km baseline. All sixteen new fits were stationary. None of
+these changes is promoted; better frequency fit again failed to improve accuracy.
 
 See the [common progress report](README.md) for evaluation coverage, reference
 limitations and the plan for full DS21. No locked evaluation result is claimed.

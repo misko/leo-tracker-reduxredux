@@ -1,0 +1,134 @@
+{
+  "schema": "ds21-039-utc-provenance-audit-v1",
+  "label": "DS21-039",
+  "session_id": "fast-4b6fff793fba610ed2674dcc6d2908ba",
+  "method": "Recorded acquisition timing metadata and source inspection only; no scientific prediction or optimizer",
+  "input": {
+    "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_12_ds21_post_ds20/local/analysis/2631e731b3ef0b2ba13ee0ff2e6a689ec1a31c6fbb0f19047121eb214a03ac94.json",
+    "sha256": "sha256:2631e731b3ef0b2ba13ee0ff2e6a689ec1a31c6fbb0f19047121eb214a03ac94"
+  },
+  "root_cause_manifest": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/inputs-v1.json",
+    "sha256": "sha256:27bd4bbb567c6d16a819467f92924b813d5547928dc6c51bcaba743924917356"
+  },
+  "timing_metadata": {
+    "sample_rate_hz_declared": 2500000,
+    "anchor": {
+      "after": {
+        "monotonic_ns": 2481953073268565,
+        "realtime_ns": 1791800721952975293
+      },
+      "before": {
+        "monotonic_ns": 2481952823005880,
+        "realtime_ns": 1791800721702706528
+      },
+      "sample_counter": 1216419170547
+    },
+    "last_sample_counter": 1217168996512,
+    "delivery_clock_count": 6762,
+    "delivery_clock_first": {
+      "monotonic_ns": 2481953073268565,
+      "realtime_ns": 1791800721952975293
+    },
+    "delivery_clock_last": {
+      "monotonic_ns": 2482252951967835,
+      "realtime_ns": 1791801021831675081
+    },
+    "first_valid_earliest_utc_ns": 1791800721702706528,
+    "first_valid_estimate_utc_ns": 1791800721827841169,
+    "first_valid_latest_utc_ns": 1791800721952975811,
+    "first_valid_bracket_width_ns": 250269283,
+    "authority_triplet_offset_spread_ns": 6598,
+    "all_delivery_offset_spread_ns": 9341,
+    "qualification_limit_ns": 2000000000,
+    "exported_unique_processed_visits": 3568,
+    "nominal_mapped_valid_start_to_delivery_lag_ns_range": [
+      90158526,
+      132593854
+    ]
+  },
+  "source_and_test_bindings": [
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/acquisition/continuous_window_ppu.py",
+      "sha256": "sha256:5daae7298f055be49e8342dc184d8397a38b03b6991de0e45106849a62d04f80"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/processing/fast_scan.py",
+      "sha256": "sha256:bb8efedfe0e7dbdb08e1629e7f070a1ecc0218316afc8923ff14e884c563e3b3"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/scanner/persistent_hop.py",
+      "sha256": "sha256:b830b2afd601f6c91232c757e8ba3ef1a03d7e64f6ce295b9a9c8b20ad9dbb65"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/fast_scan_standard_pipeline.py",
+      "sha256": "sha256:97ae1c2501fa6921e19aa898812ce304201758bd815a3fd1ba433d74f336f44e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/application/scanner_trajectory.py",
+      "sha256": "sha256:844f23c068af8c6f6a0477f1a0ce2997e1066b2585d4cbca24781f62ab8c3e7b"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/application/persistent_hop_trajectory.py",
+      "sha256": "sha256:05d769be631055c2d91d8b8175c6c432c2921ebc0d3da00a8fe46c345ece8252"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/application/regional_position_inputs.py",
+      "sha256": "sha256:c0a69924e2146ccd430f13aaa7d92d671cff164ba1f33de9b7d26dd582475455"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/joint_association_candidates_native.py",
+      "sha256": "sha256:c17f964ea878b6b27a0ec4243c7395c76057b43700cf227ce03282eef1f0ce0b"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/analysis/adaptive_tle_prediction.py",
+      "sha256": "sha256:80cdc321361bf314c54be9b17241da836520b98194eeef4e8ba8ccc738d9934e"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/sky/frames.py",
+      "sha256": "sha256:b6c98c11d25957c8f535d09a4f4cc47f3f82745b63ca57c61f9e8d5949fbb8e0"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tests/acquisition/test_continuous_window_ppu.py",
+      "sha256": "sha256:249aea2c84356af6c0be8bd6aa28a747c20c951b04631b9f622a291e970136ba"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tests/application/test_scanner_tracking.py",
+      "sha256": "sha256:73d7ca224c42a4a6daafa587e0ab4621aa0059763c41111d5d27c74dac50b513"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tests/application/test_research_fast_scan_tracking.py",
+      "sha256": "sha256:b8f480d14380ef681079efa57c712f9414f08693a683d421b2354b327cbc6b9a"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tests/tools/test_joint_association_candidates_native.py",
+      "sha256": "sha256:6b3e84a7683a17197b0214d13ea582209ef39e329aeb460395fbb481b946d54e"
+    }
+  ],
+  "findings": {
+    "concrete_conversion_bug_identified": false,
+    "counter_guards_and_gaps_preserved": true,
+    "actual_fractional_support_center_used": true,
+    "integer_origin_subtracted_before_float_offsets": true,
+    "absolute_utc_sync_attestation_in_input": "not recorded",
+    "pps_or_gnss_attestation_in_input": "not recorded",
+    "sample_rate_accuracy_or_oscillator_uncertainty_in_input": "not recorded",
+    "physical_clock_accuracy_inferred": false,
+    "new_timing_correction_justified": false
+  },
+  "existing_regression_coverage": [
+    "test_utc_anchor_brackets_first_valid_sample_and_preserves_caller_hook",
+    "test_complete_window_rejects_insufficient_post_recall_guard",
+    "test_projection_preserves_physical_units_actual_gaps_and_large_counters (origin 2**54)",
+    "test_whole_window_exclusions_preserve_counter_payload_origin_and_terminal",
+    "test_sparse_export_uses_existing_projection_and_holdout_ports",
+    "test_all_actual_candidates_preserve_ids_cfo_receive_times_and_cell_mass (origin1.9e18; unequal native centers)"
+  ],
+  "limitations": [
+    "Current source bytes document the audited mechanism, not an independent attestation of exactly which acquisition source version ran on hardware.",
+    "Host clock offset continuity does not attest its offset from UTC; nominal hardware sample counters do not calibrate oscillator rate.",
+    "Bracket half-width is neither a Gaussian uncertainty nor a horizontal-error bound.",
+    "Learned common or per-satellite timing shifts include orbit/association/model freedom and are not measured hardware clock errors.",
+    "No IQ, candidate frequency inspection, references, held scoring, locked inputs, localization fits or timing-prior changes were used."
+  ]
+}
