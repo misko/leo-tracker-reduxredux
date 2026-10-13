@@ -72,6 +72,16 @@ are false. A's near-threshold 009 result does not transfer to 011. No algorithm
 is chosen by per-case reference error; the full-DS21 target remains unmet.
 DS21-013's final comparison is next. Locked inference remains unopened.
 
+The [cross-case timing audit](../2026_10_13_ds21_039_association/TIMING_SATURATION_009_011_039.md)
+has also passed independent reconstruction with zero new scientific calls.
+Among 75 prespecified saved B/C endpoints and original 039 controls, seven
+reach timing limits, all on 009. The selected B/all and B/high states bind
+different candidates; no 011 endpoint or original 039 control reaches a
+timing/geographic boundary. Active saturation is therefore not a feature shared
+by every combination failure. Continuous timing/calibration coupling and
+association changes remain unresolved. Saved limits alone do not establish
+candidate posterior support or emitter identity.
+
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source
 and result seals verified. A 1 km move along the refined negative compensation

@@ -18,7 +18,7 @@ execution order.
 
 | Priority | Investigation | Discriminating next step | Ownership/status |
 | --- | --- | --- | --- |
-| 1 | Timing versus position identifiability | Finite displacements and four fixed-geography nuisance fits are audited; asymmetry persists. Any further attribution must separate likelihood nonlinearity from an actual timestamp/orbit-model defect. | SOL temporal/evidence audit complete |
+| 1 | Timing versus position identifiability | Finite-displacement asymmetry persists. The 75-endpoint timing audit finds seven boundary states on 009, none on 011 or original 039 controls; saturation is not a universal cause. Further attribution must distinguish continuous nuisance compensation and association changes from an actual timestamp/orbit defect. | SOL timing reconstruction and independent audit complete |
 | 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
 | 3 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
 | 4 | Initialization, independent band comparison and full DS21 coverage | DS21-009 and 011 each completed 54 stationary A/B/C fits. C/all reaches 0.480 km on 011; other results miss 0.5 km. Continue 013 and the 25 missing proposal sets, retaining shared initialization caveats and both beneficial and harmful combination results. | SOL implementation/receipt audit; coordinator runs bounded slices |
@@ -184,12 +184,18 @@ also completed 54 stationary fits. A/all gives 2.491943 km; B all/low/high gives
 Only C/all passes 0.5 km on this recording. Both B/C combinations improve on
 their own halves and all selected physical boundary flags are false. These
 case-dependent outcomes do not justify per-case model selection by reference.
-The next receipt-only diagnostic will compare candidate-aligned timing slacks
-over all 36 B/C endpoints from each of 009 and 011, plus the three original 039
-C control endpoints. Candidate/sign persistence across all starts and matched
-proposals will distinguish a recurring constraint from a single basin, without
-refitting, reference-based endpoint selection or claiming unavailable posterior
-support. Its recipe was fixed before inspecting the 011 fit results.
+The [75-endpoint receipt-only timing audit](../2026_10_13_ds21_039_association/TIMING_SATURATION_009_011_039.md)
+has completed and passed independent reconstruction. It covers all 36 B/C
+endpoints from each of 009 and 011, plus the three original 039 C controls.
+Seven endpoints reach timing limits, all on 009. Its selected B/all and B/high
+states bind different catalogue candidates; candidate 66266's lower bound
+recurs in several other starts/views, but none binds across all six starts of
+any view. No 011 endpoint or original 039 control reaches a timing/geographic
+boundary. Saturation therefore cannot explain combination failures universally.
+The audit makes zero new scientific calls and does not establish candidate
+support or emitter identity from these limits. Its recipe was fixed before
+inspecting the 011 fit results. Continuous timing/calibration confounding and
+association changes remain separate unresolved mechanisms.
 DS21-011 discovery also completed:
 100 points, 300 fits, 293 stationary, in 446.480 seconds. Its later initialization
 stages are now complete, with nine stationary shape fits, nine stationary hybrid
