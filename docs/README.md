@@ -99,6 +99,11 @@ despite improving some other search points. A saved-point diagnostic traces one
 gain to coupled timing/clock initialization rather than unmatched penalties.
 The clock-conditioned modes are executing; this first pair is geographically
 neutral and does not establish a general merge improvement.
+The [reported-window census](../reports/2026_10_12_band_calibrated_merge/window-identity/README.md)
+checks all 81 DS20/DS16 sources and finds no exact repeated window metadata keys.
+It also shows that nine DS20 members have only 7–37 high-band passing probes,
+despite passing the all-eight-channel membership criterion. This is source
+identity/support evidence, not verified LNB state or geographic qualification.
 
 Eight-channel position regression: [receiver channel-group offset root cause
 analysis](../reports/2026_10_12_fast_channel_root_cause/README.md). On the same

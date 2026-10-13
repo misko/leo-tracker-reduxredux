@@ -246,6 +246,17 @@ does not change the winning position route. The first pair is geographically
 neutral; clock-conditioned modes remain in progress, with no physical clock,
 satellite identity, or general localization improvement inferred from the audit.
 
+The [reported-window identity census](../../reports/2026_10_12_band_calibrated_merge/window-identity/README.md)
+checks all 18 DS20 and 63 DS16 sources, with 411,594 reported probes and no failed
+members. No receiver/counter/payload/probe-time key repeats, including across
+channel bands. This finds no exact duplicate-report mechanism in these sources;
+distinct keys do not establish independent IQ support or correct RF/LNB state.
+All DS20 members have passing candidates on eight channels, but nine contain
+only 7–37 high-band passing probes versus 1,027–1,587 in the other nine. All DS16
+members have zero high-band passing probes. Reported exposure allocation varies,
+so counts are not unconditional detection rates or satellite identities. Three
+new focused counting/identity tests pass, with no model or default change.
+
 The [continuous merging study](../../reports/2026_10_12_continuous_track_merge/README.md)
 develops an offline bootstrap intervention on the original DS20 and DS16
 memberships, with DS15 awaiting an authoritative manifest. Two inspected pairs
