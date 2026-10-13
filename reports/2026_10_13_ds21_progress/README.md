@@ -1,0 +1,82 @@
+# DS21 localization progress
+
+Updated 2026-10-13 15:33 UTC. This is an interim measured-results report, not a
+claim that the accuracy target has been achieved. The user authorized periodic
+report publication to remote `main`; research implementation remains separate.
+
+Three approaches have been implemented and tested on five fixed development
+recordings. All numbers below use **fitted `c`** and a training-objective-selected
+solution. Reference position is joined after results are sealed; lower frequency
+loss is not treated as proof of lower position error.
+
+| Approach, with shared proposals | Median error km | Maximum error km | Below 0.5 km | Below 1 km |
+| --- | ---: | ---: | ---: | ---: |
+| [A: sequential band calibration](MODEL_A.md) | 2.601 | 6.229 | 0/5 | 1/5 |
+| [B: Doppler-shape proposals](MODEL_B.md) | 2.492 | 8.600 | 0/5 | 0/5 |
+| [C: joint native association](MODEL_C.md) | 1.957 | 4.899 | 0/5 | 0/5 |
+
+The current target is **less than 0.5 km for every eligible CH1–8 DS21 recording**,
+including failures as misses. None of the three approaches currently meets it.
+The table covers five development recordings, not the full dataset.
+
+## Current four-direction investigation
+
+The user prioritized DS21-039, session
+`fast-4b6fff793fba610ed2674dcc6d2908ba`. The original joint-model errors are
+3.759 km for CH1–4, 2.557 km for CH5–8 and 4.291 km for CH1–8. Its all-band result
+is worse than either half-band result.
+
+1. **Optimization versus objective:** test whether another training-selected
+   position admits a lower all-band objective after profiling calibration and
+   timing. Distinguish a missed solution from a model that prefers a worse
+   geographical position.
+2. **Calibration, timing and RF:** verify per-observation sky-frequency Doppler
+   scaling and actual receive-time clock corrections; compare physical correction
+   functions and quantify local confounding with position and satellite timing.
+3. **Association and frequency ambiguity:** hold the original satellite bank
+   fixed and cross geometry/timing with calibration between full and half-band
+   states. Measure posterior changes, clutter, visibility and discarded native
+   candidate alternatives, without claiming confirmed emitter identities.
+4. **Observation weighting and correlation:** measure concentration by band,
+   receiver and acquisition block; inspect predetermined equal-band/equal-block
+   likelihood sensitivities at frozen states. Raw window counts do not establish
+   independent information.
+
+Three SOL 6.1 high workers own the first three directions; the coordinator owns
+the fourth and integration. Input inventory is complete, selecting historical
+start 5 by training objective in each view. Initial replay will use no optimizer
+calls. The subsequent bounded profile slice is 18 fitted-`c` fits. At this update,
+39 integrated diagnostic/input/runner tests pass; association and full-pipeline
+integration are finishing. No new DS21-039 numerical diagnostic results are
+claimed yet. The detailed [investigation plan](../2026_10_13_ds21_039_root_cause/README.md)
+records controls and acceptance criteria.
+
+## Full DS21 validation
+
+DS21 contains 108 recordings: 54 fast CH1–8 and 54 adaptive CH1–4. The frozen
+acquisition-hour split reserves 34 fast recordings for development and 20 for
+locked evaluation; adaptive recordings have 35 development and 19 evaluation
+members. Within recordings, randomized whole 20-second groups keep correlated
+observations together.
+
+After a supported DS21-039 fix, test the five existing development cases, then
+all 34 fast development recordings. Freeze the release before evaluating the 20
+locked fast recordings. Report all 54 fast results, failures, median, upper
+quantiles, maximum and count below 0.5 km. Adaptive CH1–4 coverage is reported
+separately. Locked inference has not been opened; DS21-065 has a documented
+preparation-only exception for five clipped-window exclusions.
+
+Accuracy is relative to the configured reference, not an independently surveyed
+location. No per-case reference tuning or selection of whichever model happens
+to be closest is permitted. If the target is missed, subsequent reports will
+retain the failure and distinguish development iteration from untouched
+evaluation.
+
+## Provenance
+
+These summaries are derived from the sealed shared-proposal comparison in the
+research worktree, current integration commit `199da6adf`, and its immutable
+membership inventory SHA-256
+`a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
+The original protocol and detailed local receipts are retained; this report
+publication does not deploy an algorithm or publish the radio corpus.
