@@ -145,8 +145,10 @@ explicitly; core shape math is unchanged, and its projection of RF-constant
 offsets is not claimed to learn RF calibration. The reusable initializer then
 completed [DS21-009](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.md),
 including 100 discovery points, nine stationary shape fits, nine stationary
-hybrid fits and 18 physical seed exports. Twenty-seven development recordings
-still require initialization. Its final three-model fits remain to be run.
+hybrid fits and 18 physical seed exports. The subsequent
+[DS21-011 chain](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
+also completed. Eight development cases have complete proposal sets and 26 still
+require initialization. Final three-model fits remain to be run on 009 and 011.
 
 The first generic A/B/C initialization on DS21-009 failed with a bounded
 carried-calibration projection convergence error, before any location fits or
@@ -154,11 +156,15 @@ reference evaluation. Its `models-v1` namespace and source archive are retained.
 Read-only inspection shows Model A overwrites its initial all-view vector and
 uses only timing from its initial high-view vector, making their initial
 calibration projections unnecessary. The receipt does not identify which
-projection failed, so this is not yet the demonstrated cause. A bounded replay
-will record the exact failing model/view/proposal and unchanged solver status
-before a new adapter version is considered. DS21-011 discovery also completed:
-100 points, 300 fits, 293 stationary, in 446.480 seconds. Later initialization
-stages remain in progress; this is not a position-accuracy result.
+projection failed. The subsequent [bounded replay](../2026_10_13_ds21_release_readiness/PROJECTION_009_DIAGNOSTIC.md)
+finds all 18 A projections succeed; B/all/`cold-0` fails at 200 iterations despite
+a residual RMS of 5.19e-12 Hz. Removing unused A projections would not fix this
+failure. A new adapter must independently verify feasible physical transfer or
+provide a numerically justified projection without weakening position-fit checks.
+DS21-011 discovery also completed:
+100 points, 300 fits, 293 stationary, in 446.480 seconds. Its later initialization
+stages are now complete, with nine stationary shape fits, nine stationary hybrid
+fits and 18 exports; this is not a position-accuracy result.
 
 The [transmitter dynamics audit](../2026_10_13_ds21_039_association/TRANSMITTER_DYNAMICS_AUDIT.md)
 identifies channel-dependent transmitted frequency corrections as a credible

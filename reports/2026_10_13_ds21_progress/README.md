@@ -24,9 +24,13 @@ completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.32
 Combining bands improves this case, but all views miss 0.5 km. It is reported
 separately from the original matched three-model table. The subsequent
 [DS21-009 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_009_RESULTS.md)
-completed all six stages: seven fast development cases now have complete proposal
-sets, with 27 still requiring initialization. DS21-009 model evaluation has not
-yet run; locked inference is unopened.
+and [DS21-011 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
+completed all six stages: eight fast development cases now have complete proposal
+sets, with 26 still requiring initialization. Final model evaluation has not
+yet run on either case. The
+[DS21-009 seed-projection diagnostic](../2026_10_13_ds21_release_readiness/PROJECTION_009_DIAGNOSTIC.md)
+isolates a Model B numerical initialization failure despite near-machine-precision
+physical residuals. A fix remains under development; locked inference is unopened.
 
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source

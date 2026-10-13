@@ -1,0 +1,79 @@
+{
+  "label": "DS21-009",
+  "implementation_commit": "97b1f8428",
+  "state": "complete",
+  "source_count": 411,
+  "bindings": {
+    "protocol.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/projection-diagnostic-v1/DS21-009/protocol.json",
+      "sha256": "sha256:6a22265f207a9caca8a4722969d25441185dab4dcd3bf004c564fab25e456315"
+    },
+    "terminal.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/projection-diagnostic-v1/DS21-009/terminal.json",
+      "sha256": "sha256:efca5e6a983911ab6744c705b30a9d9d5cc02e08dc2875a80da6279d1e1e2e76"
+    },
+    "certificate.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/projection-diagnostic-v1/DS21-009/certificate.json",
+      "sha256": "sha256:b14c7cce42d7df406bd449a4e8b65848b40593f3a5058722050860eca70a4d17"
+    },
+    "termination.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/projection-diagnostic-v1/DS21-009/termination.json",
+      "sha256": "sha256:31d5a176407230b8850f335456db1a6d1a854221fcb652626bb6dad14b84db99"
+    }
+  },
+  "failed_initialization": {
+    "protocol.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v1/DS21-009/protocol.json",
+      "sha256": "sha256:cf286c67385c33642d22f77435d8848aad9acac36595ee68d5ac08ab00089fc6"
+    },
+    "initialization-launch.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v1/DS21-009/initialization-launch.json",
+      "sha256": "sha256:7fe325006c04380afacbae1444d428ceb1369f713bbf8a32c2ce45217afdd826"
+    },
+    "initialization-termination.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v1/DS21-009/initialization-termination.json",
+      "sha256": "sha256:d4b64f2014b05c23a440da9d3f4d4de577398b3ab6502ea43817936322f792f8"
+    }
+  },
+  "original_projections": 19,
+  "successful_original_projections": 18,
+  "calibration_projection_calls": 20,
+  "location_optimizer_calls": 0,
+  "reference_usage": "none",
+  "held_usage": "none",
+  "failure": {
+    "model": "B",
+    "view": "all",
+    "start": 0,
+    "proposal_id": "cold-0",
+    "reason": "bounded carried-calibration projection did not converge"
+  },
+  "certificate": {
+    "label": "DS21-009",
+    "location_optimizer_calls": 0,
+    "model": "B",
+    "view": "all",
+    "start": 0,
+    "proposal_id": "cold-0",
+    "success": false,
+    "status": 0,
+    "message": "The maximum number of iterations is exceeded.",
+    "nit": 200,
+    "cost": 3.652433428553899e-20,
+    "optimality": 0.00027053899214113446,
+    "rms_hz": 5.187475690345124e-12,
+    "maximum_abs_hz": 1.8189894035458565e-11,
+    "active_bounds": [
+      21,
+      22
+    ],
+    "windows": 2780,
+    "columns": 25,
+    "solver": {
+      "lsq_solver": "exact",
+      "tol": 1e-11,
+      "max_iter": 200
+    }
+  },
+  "interpretation": "Required B/all/cold-0 projection stalled despite near-machine-precision residual; no position fit or accuracy evaluation. A unused projections are not the demonstrated cause."
+}
