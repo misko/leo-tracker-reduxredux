@@ -97,6 +97,14 @@ remain **conditional frequency and local-position diagnostics**; no calibrated
 position posterior, confirmed spacecraft identity or production promotion is
 established.
 
+The [source-frequency starts and spatial transport audit](../../reports/2026_10_12_fast_likelihood_cohort/initialization-and-transport/README.md)
+retains better upper development starts, full-catalogue reference reproduction,
+and a matched higher-budget solver check. Transporting nuisance starts recovers
+distant-position fits that sparse selection previously discarded. These broader
+conditional profiles remain failures of the reference-accuracy target; frequency
+gain and optimizer reliability are not localization validation. The original
+four-scan validation split is unchanged.
+
 ### Continuous track merging study on 12 October 2026
 
 The [protected orbital-consistency follow-up](../../reports/2026_10_12_consistent_track_merge/README.md)

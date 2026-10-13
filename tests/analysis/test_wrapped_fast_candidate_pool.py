@@ -104,6 +104,10 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
     with pytest.raises(ValueError, match="scientific protocol"):
         validate_surface_resume(protocol, dict(updated, candidate_norad=[20, 30]))
     with pytest.raises(ValueError, match="scientific protocol"):
+        validate_surface_resume(
+            protocol, dict(updated, transport_seed_model="posterior-weighted-bias-and-phase")
+        )
+    with pytest.raises(ValueError, match="scientific protocol"):
         validate_surface_resume(protocol, dict(updated, search_plan={"random_points": 13}))
     with pytest.raises(ValueError, match="scientific protocol"):
         validate_surface_resume(
@@ -141,6 +145,16 @@ def test_surface_resume_allows_wrapper_changes_but_rejects_changed_kernel_or_can
         )
 
 
+def test_transport_resume_preserves_legacy_origin_and_rejects_source_position_changes():
+    legacy = dict(transport_seed_model="posterior-weighted-bias-and-phase", source_digests={})
+    current = dict(legacy, transport_seed_source_point=[0, 0])
+    validate_surface_resume(legacy, current)
+    with pytest.raises(ValueError, match="scientific protocol"):
+        validate_surface_resume(legacy, dict(current, transport_seed_source_point=[100, 0]))
+    with pytest.raises(ValueError, match="scientific protocol"):
+        validate_surface_resume(current, dict(current, transport_seed_source_point=[100, 0]))
+
+
 def test_fixed_reception_frame_requires_a_prepared_phase_bank(monkeypatch, capsys):
     from tools.evaluate_wrapped_fast_scan import main
 
@@ -162,3 +176,26 @@ def test_fixed_reception_frame_requires_a_prepared_phase_bank(monkeypatch, capsy
         main()
     assert error.value.code == 2
     assert "requires --phase" in capsys.readouterr().err
+
+
+def test_seed_transport_requires_the_joint_orbit_and_bias_model(monkeypatch, capsys):
+    from tools.evaluate_wrapped_fast_scan import main
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "evaluate",
+            "sweep",
+            "--bundle",
+            "/unused",
+            "--initial",
+            "/unused",
+            "--output",
+            "/unused",
+            "--transport-bias-starts",
+        ],
+    )
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2
+    assert "requires orbital phase" in capsys.readouterr().err

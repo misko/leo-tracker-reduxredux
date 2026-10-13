@@ -36,6 +36,12 @@ reproduce fitted-c endpoints, expose a zero-c initialization effect, and inspect
 candidate-weighted residuals. Per-satellite additive bias improves frequency
 scores but has mixed geographic effects and has not been validated across the cohort.
 
+The [source-frequency starts and spatial optimizer checks](initialization-and-transport/README.md)
+find substantially better upper development fits and show that transporting
+frequency/phase starts preserves plausible explanations several kilometres away.
+Earlier steep geographic rejection was partly an initialization failure. The
+broader profile still does not establish a near-reference position minimum.
+
 ## Method
 
 Use verified existing recording exports and past-only archived elements. Freeze

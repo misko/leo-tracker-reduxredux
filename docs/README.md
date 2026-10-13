@@ -41,6 +41,9 @@ Recent eight-channel likelihood fitting: [six-scan local evaluation and controls
 Alias-aware and track-shape initialization controls improve the conditional
 frequency fit, but most strong evidence remains unexplained. The requested
 near-reference position minimum and four-scan validation are still open.
+The [spatial optimizer checks](../reports/2026_10_12_fast_likelihood_cohort/initialization-and-transport/README.md)
+retain stronger frequency fits and expose lost distant-position explanations;
+their broader conditional profiles do not establish receiver accuracy.
 
 Continuous track merging: [DS20 and DS16 study with GLRT curve overlays](../reports/2026_10_12_continuous_track_merge/README.md).
 The offline prototype joins consecutive curved segments and rejects injected

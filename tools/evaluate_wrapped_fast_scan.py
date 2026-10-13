@@ -179,13 +179,22 @@ def validate_surface_resume(previous, expected):
         "candidate_pool_digest",
         "phase_model",
         "search_plan",
+        "transport_seed_model",
     ):
         if previous.get(key) != expected.get(key):
             raise ValueError("surface checkpoint scientific protocol changed")
+    # The first transport checkpoints always used the search origin. Keep that
+    # meaning explicit when resuming them; a different source position is invalid.
+    old_origin = previous.get("transport_seed_source_point")
+    if "transport_seed_source_point" not in previous and previous.get("transport_seed_model"):
+        old_origin = [0, 0]
+    if old_origin != expected.get("transport_seed_source_point"):
+        raise ValueError("surface checkpoint scientific protocol changed")
     for key in (
         "src/leo/analysis/wrapped_glrt_likelihood.py",
         "src/leo/analysis/sparse_glrt_likelihood.py",
         "src/leo/analysis/glrt_orbit_phase.py",
+        "src/leo/analysis/glrt_position_seed_transport.py",
     ):
         if previous["source_digests"].get(key) != expected["source_digests"].get(key):
             raise ValueError("surface checkpoint kernel changed")
@@ -378,6 +387,12 @@ def sweep(args):
         site=meta["site"],
         phase_receipt=phase_receipt,
         completed=False,
+        transport_seed_model="posterior-weighted-bias-and-phase"
+        if args.transport_bias_starts
+        else None,
+        transport_seed_source_point=list(initial.get("source_point", (0, 0)))
+        if args.transport_bias_starts
+        else None,
         phase_model="fixed-reception-frame-orbital-phase"
         if args.inertial_phase
         else "ecef-time-shift",
@@ -416,6 +431,54 @@ def sweep(args):
         ),
     )
     records = []
+    reference_cache = []
+    if args.transport_bias_starts:
+        from leo.analysis.glrt_residual_diagnostics import signal_candidate_residuals
+        from leo.analysis.wrapped_glrt_likelihood import nuisance_design
+
+        source_point = np.asarray(protocol["transport_seed_source_point"], float)
+        if (
+            source_point.shape != (2,)
+            or not np.isfinite(source_point).all()
+            or np.linalg.norm(source_point) > 5000
+        ):
+            raise ValueError("finite transport source point within the search region required")
+        reference_provider = phase_provider(
+            phase_bank, bank, data, meta["site"], source_point, inertial_phase=args.inertial_phase
+        )
+        for seed in common_seeds:
+            active = np.asarray(seed["active"], int)
+            if not len(active):
+                reference_cache.append(None)
+                continue
+            if seed["weights"] is None:
+                raise ValueError("transport requires fitted activity weights")
+            delta = np.asarray(seed["satellite_phase_s"])
+            pred_ref, opp_ref, _, _ = reference_provider.predict(
+                seed["phase_s"] + delta[active], active
+            )
+            beta = list(seed["beta"])
+            groups = int(data.group.max()) + 1
+            if args.band_drift_sigma_hz_s is not None and len(beta) == groups + groups // 2:
+                beta.extend([0.0] * (groups // 2))
+            design, _, _ = nuisance_design(
+                data,
+                bank["rf_hz"],
+                coefficient=True,
+                band_drift=args.band_drift_sigma_hz_s is not None,
+            )
+            _, mass, _ = signal_candidate_residuals(
+                data,
+                pred_ref + np.asarray(seed["satellite_bias_hz"])[active],
+                opp_ref,
+                design,
+                beta + [seed["coefficient_hz_ghz"]],
+                config,
+                seed["weights"],
+            )
+            reference_cache.append((pred_ref, mass.sum(axis=1)))
+        path = Path("src/leo/analysis/glrt_position_seed_transport.py")
+        protocol["source_digests"][str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
     cache = {}
     if args.resume:
         previous = json.loads((args.output / "result.json").read_text())
@@ -458,9 +521,39 @@ def sweep(args):
             else None
         )
         arms = {}
+        posed_seeds = common_seeds
+        transport_rms = []
+        if args.transport_bias_starts:
+            from leo.analysis.glrt_position_seed_transport import transport_bias_phase
+
+            posed_seeds = []
+            for seed, reference in zip(common_seeds, reference_cache, strict=True):
+                if reference is None:
+                    posed_seeds.append(seed)
+                    transport_rms.append([])
+                    continue
+                active = np.asarray(seed["active"], int)
+                delta = np.asarray(seed["satellite_phase_s"], float).copy()
+                bias = np.asarray(seed["satellite_bias_hz"], float).copy()
+                pred_new, _, timing, _ = provider.predict(seed["phase_s"] + delta[active], active)
+                delta[active], bias[active], rms = transport_bias_phase(
+                    reference[0],
+                    pred_new,
+                    timing,
+                    reference[1],
+                    delta[active],
+                    bias[active],
+                    scale_hz=config.scale_hz,
+                    phase_sigma_s=config.relative_phase_sigma_s,
+                    bias_sigma_hz=config.satellite_bias_sigma_hz,
+                )
+                posed_seeds.append(
+                    dict(seed, satellite_phase_s=delta.tolist(), satellite_bias_hz=bias.tolist())
+                )
+                transport_rms.append(rms.tolist())
         for enabled in (False, True):
             seeds = []
-            for seed in common_seeds:
+            for seed in posed_seeds:
                 beta = list(seed["beta"])
                 if args.band_drift_sigma_hz_s is not None:
                     groups = int(data.group.max()) + 1
@@ -503,6 +596,7 @@ def sweep(args):
             longitude_deg=coordinates(meta["site"], *point)[1],
             kind=kind,
             arms=arms,
+            start_transport_linear_rms_hz=transport_rms,
         )
         rows.append(row)
         records.append(row)
@@ -601,6 +695,7 @@ def main():
     b.add_argument("--relative-phase-sigma-s", type=float)
     b.add_argument("--band-drift-sigma-hz-s", type=float)
     b.add_argument("--satellite-bias-sigma-hz", type=float)
+    b.add_argument("--transport-bias-starts", action="store_true")
     b.add_argument("--candidate-pool", type=Path)
     b.add_argument("--nuisance-solver", choices=("irls", "lbfgs"), default="irls")
     b.add_argument("--positions-json", type=Path)
@@ -609,6 +704,12 @@ def main():
     args = p.parse_args()
     if getattr(args, "inertial_phase", False) and not args.phase:
         p.error("--inertial-phase requires --phase and its prepared orbital bank")
+    if getattr(args, "transport_bias_starts", False) and (
+        not args.phase
+        or args.relative_phase_sigma_s is None
+        or args.satellite_bias_sigma_hz is None
+    ):
+        p.error("--transport-bias-starts requires orbital phase, relative phase and source bias")
     (initialize if args.command == "initialize" else sweep)(args)
 
 
