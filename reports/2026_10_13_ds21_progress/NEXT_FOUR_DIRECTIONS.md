@@ -21,7 +21,7 @@ execution order.
 | 1 | Timing versus position identifiability | Finite displacements and four fixed-geography nuisance fits are audited; asymmetry persists. Any further attribution must separate likelihood nonlinearity from an actual timestamp/orbit-model defect. | SOL temporal/evidence audit complete |
 | 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
 | 3 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
-| 4 | Initialization, independent band comparison and full DS21 coverage | V2 resolves DS21-009 seed initialization with two independently verified physical transfers after strict solver failure. Run the original A/B/C comparison and continue reusable initialization; distinguish shared initialization from independent half-band pipelines. | SOL implementation/review complete; coordinator runs bounded slices |
+| 4 | Initialization, independent band comparison and full DS21 coverage | DS21-009 completed 54 stationary A/B/C fits and seven sealed errors, none below 0.5 km. Continue the matched comparison on 011/013 and the 25 missing proposal sets; retain shared initialization caveats and the negative combination result for B. | SOL implementation/receipt audit complete; coordinator runs bounded slices |
 
 The current agent thread limit prevents launching four additional workers at
 once. Two existing SOL workers continue in parallel; the coordinator handles
@@ -149,7 +149,9 @@ hybrid fits and 18 physical seed exports. The subsequent
 [DS21-011 chain](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
 also completed, followed by [DS21-013](../2026_10_13_ds21_release_readiness/PROPOSALS_013_RESULTS.md).
 Nine development cases have complete proposal sets and 25 still require
-initialization. Final three-model evaluation remains pending on 009, 011 and 013.
+initialization. DS21-009's final comparison is now complete; DS21-011's model
+comparison has started without an accuracy result, and DS21-013's final models
+have not started.
 
 The first generic A/B/C initialization on DS21-009 failed with a bounded
 carried-calibration projection convergence error, before any location fits or
@@ -165,8 +167,18 @@ provide a numerically justified projection without weakening position-fit checks
 The [v2 adapter](../2026_10_13_ds21_release_readiness/INITIALIZATION_009_V2_RESULTS.md)
 has now completed real DS21-009 initialization: two B/all seeds pass independent
 physical source transfer, all other required A/B projections succeed unchanged,
-and the native C initialization is unchanged. No position fits or accuracy
-evaluation are implied by this success.
+and the native C initialization is unchanged. This initialization result alone
+does not establish accuracy.
+The subsequent [three-model comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_009_RESULTS.md)
+completed all 54 fits, all stationary. A's final-all result is 0.658299 km;
+B all/low/high gives 5.327196 / 0.790354 / 0.772167 km; C gives
+1.595252 / 4.547625 / 1.758365 km. No result reaches 0.5 km. Combining bands
+improves C and worsens B relative to both halves. B's selected all/high fits
+reach timing constraints, not their 25 km geographic disk edges. A-0's three
+original fits were retained through an exact, separately versioned metadata
+review; no refit or scientific-source change occurred. All 12 reviewed outcomes
+were sealed before reference evaluation. A is closest on this case, which is
+not a basis for per-recording algorithm selection by reference error.
 DS21-011 discovery also completed:
 100 points, 300 fits, 293 stationary, in 446.480 seconds. Its later initialization
 stages are now complete, with nine stationary shape fits, nine stationary hybrid
@@ -181,9 +193,13 @@ CH1/CH8 support. This does not exclude beam-specific effects, but it does not
 justify adding fitted transmitter corrections. Mixture assignments still do not
 establish emitter identity.
 
-**Decision:** build the missing development initializations, then compare all
-three band views with matched budgets and documented seed provenance. Report
-coverage and failures alongside accuracy.
+**Decision:** continue the bounded development comparison and missing
+initializations with unchanged objectives, matched budgets and documented seed
+provenance. Report A's dependent final-all selection and B/C's own-view fits;
+do not label shared bank/seed initialization as independent half-band pipelines.
+Keep coverage, failures, boundary flags and frequency diagnostics separate from
+accuracy. The historical five-case table remains unchanged, and the 0.5 km target
+is unmet.
 
 ## Execution and dataset acceptance
 

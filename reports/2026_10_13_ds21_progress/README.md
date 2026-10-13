@@ -4,10 +4,12 @@ Updated 2026-10-13. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
-Three approaches have been implemented and tested on five fixed development
-recordings. All numbers below use **fitted `c`** and a training-objective-selected
-solution. Reference position is joined after results are sealed; lower frequency
-loss is not treated as proof of lower position error.
+The original three-model comparison covers five fixed development recordings.
+The separate fitted-only expansion has now evaluated all three models on
+DS21-009, in addition to the Model C-only DS21-007 baseline. All numbers below
+use **fitted `c`** and a training-objective-selected solution. Reference position
+is joined after results are sealed; lower frequency loss is not treated as proof
+of lower position error. The historical five-case table remains unchanged.
 
 | Approach, with shared proposals | Median error km | Maximum error km | Below 0.5 km | Below 1 km |
 | --- | ---: | ---: | ---: | ---: |
@@ -27,19 +29,33 @@ separately from the original matched three-model table. The subsequent
 and [DS21-011 initialization](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
 completed all six stages. [DS21-013](../2026_10_13_ds21_release_readiness/PROPOSALS_013_RESULTS.md)
 has also completed: nine fast development cases now have complete proposal
-sets, with 25 still requiring initialization. Final model evaluation has not
-yet run on these three cases. The
+sets, with 25 still requiring initialization. The
 [DS21-009 seed-projection diagnostic](../2026_10_13_ds21_release_readiness/PROJECTION_009_DIAGNOSTIC.md)
 isolates a Model B numerical initialization failure despite near-machine-precision
 physical residuals. The [v2 adapter has now initialized DS21-009 successfully](../2026_10_13_ds21_release_readiness/INITIALIZATION_009_V2_RESULTS.md):
 two seeds use independently verified exact physical transfer after strict
 projection failure; all other required A/B projections succeed unchanged.
-The first A-0 path then saved three stationary fits, but its post-run validator
-rejected the sequential core's descriptive high-stage metadata override. The
-saved fits are retained while that validator is corrected; no accuracy result
-has been joined, and locked inference is unopened.
-Model B's DS21-009 all-channel unit subsequently completed six stationary fits
-and passed its unchanged validator; its half-band units are being run separately.
+The first A-0 path saved three stationary fits before its post-run validator
+rejected the sequential core's descriptive high-stage metadata override. A
+separate metadata reader recovered those unchanged receipts without refitting.
+The [completed DS21-009 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_009_RESULTS.md)
+now contains **54 stationary fits**, with all 12 outcomes sealed before seven
+reference rows were joined; the subsequent independent audit passed:
+
+| DS21-009 fitted-only model | CH1–8 error km | CH1–4 error km | CH5–8 error km |
+| --- | ---: | ---: | ---: |
+| A, dependent sequential path | 0.658299 | — | — |
+| B, absolute-frequency fit | 5.327196 | 0.790354 | 0.772167 |
+| C, native association | 1.595252 | 4.547625 | 1.758365 |
+
+None meets 0.5 km. A is closest on this case, which does not permit choosing
+an algorithm by each recording's reference error. Combining bands helps C but
+worsens B relative to both halves. B/all and B/high selected states reach timing
+constraints, while remaining inside their 25 km geographic disks. B/C halves
+inherit shared discovery and physical initialization; C also shares all-training
+receiver lifts. A reports its final-all selection, not independent half-band
+estimates. DS21-011's comparison has started without an accuracy result;
+DS21-013's final models have not started. Locked inference remains unopened.
 
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source
@@ -226,9 +242,12 @@ DS21 contains 108 recordings: 54 fast CH1–8 and 54 adaptive CH1–4. The froze
 acquisition-hour split reserves 34 fast recordings for development and 20 for
 locked evaluation; adaptive recordings have 35 development and 19 evaluation
 members. Within recordings, randomized whole 20-second groups keep correlated
-observations together. The [metadata-only readiness audit](../2026_10_13_ds21_release_readiness/README.md)
-finds preparation receipts for all 34 fast development members, but discovery and
-proposal caches for only five; 29 need initialization. The 54 adaptive members
+observations together. The historical
+[metadata-only readiness audit](../2026_10_13_ds21_release_readiness/README.md)
+recorded preparation receipts for all 34 fast development members and five
+complete discovery/proposal pairs in its original namespaces. Subsequent fitted-only
+work has brought completed proposal coverage to nine, leaving 25 requiring
+initialization. The historical audit receipt is retained unchanged. The 54 adaptive members
 have no tracking-input binding in this membership and require separate preparation.
 
 A new training-only adapter around the existing fitted-c discovery core passed
@@ -238,21 +257,23 @@ with 295 of 300 per-view fits stationary and five failures retained. Exact censu
 evidence, partition and causal catalogue were bound before inference. A cached
 terminal validation passed without new fits. This adds one discovery result:
 28 development recordings still need discovery, and 29 need downstream proposal
-caches. No new position-accuracy result is claimed.
+caches at that stage. These are historical stage counts; the current nine-set
+coverage and completed 009 comparison are reported above.
 
 DS21-007's [fitted shape stage](../2026_10_13_ds21_release_readiness/SHAPE_007_RESULTS.md)
 subsequently completed nine stationary fits in 17.446 seconds, supplying the
 three required shape parents. The [remaining initialization chain](../2026_10_13_ds21_release_readiness/PROPOSALS_007_RESULTS.md)
-has now completed: nine fresh bootstraps, nine stationary absolute hybrid fits,
-nine cold bootstraps and six physical exports per view. The final comparison is
-still pending. Six development recordings now have proposal artifacts; 28 still
-need initialization.
+completed next: nine fresh bootstraps, nine stationary absolute hybrid fits,
+nine cold bootstraps and six physical exports per view. That stage brought
+proposal coverage to six; the subsequent C-only comparison and 009 three-model
+comparison are complete and reported above. DS21-007 A/B fits have not been run
+under this new fitted-only recipe.
 In parallel, the [fixed five-case likelihood-scale protocol](../2026_10_13_ds21_039_association/FIVE_CASE_TEMPERING_PROTOCOL.md)
 prescribes paired alpha=1 and alpha=0.25 fits from each recording's six historical
 all-band endpoints. Its adapter passed 17 integration tests and evaluator 19;
 all five cases are complete and were sealed before reference evaluation. The
-negative transfer result is reported above. DS21-007's baseline joint comparison
-is being tested before execution.
+negative transfer result is reported above. DS21-007's additional baseline joint
+comparison is complete, with its three errors reported above.
 
 The [observed-curvature diagnostic](../2026_10_13_ds21_039_association/TIMING_CURVATURE_RESULTS.md)
 completed 418 gradient evaluations, zero fits, in 35.549 seconds. Profiling
@@ -261,8 +282,9 @@ curvature by roughly 140× at the original state and 300× at the refined state.
 The original timing prior contributes less than 1% of the remaining weak-axis
 curvature; its large absolute cost does not prove prior domination. This confirms
 strong local coupling, not a timing bug or an accuracy improvement. Both numerical
-steps and unstable individual compensation estimates are retained. An eight-call,
-zero-fit finite-displacement check is next.
+steps and unstable individual compensation estimates are retained. Its subsequent
+eight-call finite-displacement and four-call fixed-geography checks are complete,
+as reported above.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20
@@ -280,7 +302,9 @@ evaluation.
 ## Provenance
 
 These summaries are derived from the sealed shared-proposal comparison in the
-research worktree, diagnostic/control evidence through commit `c0e2941d7`, and its immutable
+research worktree, the linked diagnostic/control receipts, the DS21-009 numerical
+adapter `7d83e159f`, metadata reader `13332f295` and independent audit `7de5ae5b2`,
+and the immutable
 membership inventory SHA-256
 `a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
 The original protocol and detailed local receipts are retained; this report

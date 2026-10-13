@@ -23,6 +23,18 @@ some earlier large-basin failures but do not resolve the shared model's position
 error. Audits do not justify a tighter hardware-transfer prior or another simple
 RF relabelling.
 
+The separate [DS21-009 fitted-only comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_009_RESULTS.md)
+completed 18 stationary absolute-frequency fits. All/low/high errors are
+**5.327196 / 0.790354 / 0.772167 km**. Combining bands worsens position on this
+case even though its all-band frequency loss is lower than Model A's. No view
+meets 0.5 km. The selected all/high states carry timing-boundary flags; both
+positions are inside their original 25 km search disks. Half-view likelihoods
+use their designated observations but share discovery, proposal geography and
+physical initialization, so they are not independent end-to-end pipelines.
+Two all-band initial seeds needed independently verified exact source transfer
+after strict projection nonconvergence; no failed solver result was accepted.
+The historical five-case table and its aggregate statistics remain unchanged.
+
 The current assigned investigation verifies native sky-RF scaling, clock
 correction at actual receive times, and physical cross-view calibration
 transport. It profiles local calibration directions against affine terms,

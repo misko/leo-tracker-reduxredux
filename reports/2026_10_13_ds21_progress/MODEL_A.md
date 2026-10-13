@@ -23,6 +23,16 @@ method still fails the target. A subsequent low-informed joint continuation
 did not improve the matched baseline on the two development cases tested, so
 that control was not promoted.
 
+The separate [DS21-009 fitted-only comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_009_RESULTS.md)
+completed six low/locked-high/final-all paths: all 18 calls were stationary.
+The final-training-objective winner, `shape-high`, gives **0.658299 km** for
+CH1–8 and fitted c of -631.971642 Hz/GHz. It misses 0.5 km. A is closest among
+the three models on this recording; that post-seal observation does not permit
+choosing the algorithm by each case's reference error. There are no independently
+selected A half-band estimates. A-0's three saved fits were recovered through
+a narrow metadata reader, with no refit or numerical-source change. The original
+five-case table and its aggregate statistics above are unchanged.
+
 The current assigned investigation separates optimizer failure from objective
 mis-specification on DS21-039. It replays the original objective and profiles the
 unchanged all-band model at each training-selected full/half-band position.

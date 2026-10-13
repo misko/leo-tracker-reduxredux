@@ -63,3 +63,14 @@ completed 18 stationary fits. All/low/high errors are 3.524 / 3.738 / 4.325 km,
 with fitted c throughout. The all-band result improves on both halves but misses
 0.5 km. Half-band fits inherit all-training ambiguity initialization. This new
 case is separate from the original five-case matched A/B/C table.
+
+The subsequent [DS21-009 fitted-only three-model comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_009_RESULTS.md)
+completed another 18 stationary C fits. All/low/high errors are
+**1.595252 / 4.547625 / 1.758365 km**; combining bands improves on both halves,
+but all three miss 0.5 km. C uses the original native objective at scale one and
+the unchanged six all-training receiver lifts, each derived once and shared
+across views. All B/C views also inherit the common discovery bank and physical
+proposal initialization. C's all-band posterior frequency RMS of 95.538 Hz is
+not a position confidence bound. All 54 A/B/C calls and 12 reviewed outcomes
+were sealed before reference evaluation; the historical five-case table remains
+unchanged, and no algorithm is selected by its per-case reference error.

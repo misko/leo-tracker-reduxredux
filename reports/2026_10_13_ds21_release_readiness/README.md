@@ -3,9 +3,10 @@
 The primary eight-channel corpus has potential input artifacts for all 54
 members: 53 original bound tracking snapshots are present, and DS21-065 has a
 separate completed preparation-only export. This does **not** establish model
-readiness or accuracy. All 34 fast development members have preparation receipts,
-but discovery and six-proposal artifacts exist for only five. Locked inference
-remains unopened.
+readiness or accuracy. The historical metadata audit below recorded preparation
+receipts for all 34 fast development members and five complete discovery/proposal
+pairs. Subsequent development work is summarized separately; the audit's original
+counts and receipt remain unchanged. Locked inference remains unopened.
 
 Subsequent numerical work completed the [DS21-007 fitted-only proposal chain](PROPOSALS_007_RESULTS.md).
 The subsequent [DS21-009 initialization](PROPOSALS_009_RESULTS.md) also completed.
@@ -15,11 +16,20 @@ There are now nine complete development proposal sets, with 25 still requiring
 initialization. The [DS21-009 model-seed diagnostic](PROJECTION_009_DIAGNOSTIC.md)
 isolates a Model B calibration projection failure before any final location fits.
 The [v2 initialization](INITIALIZATION_009_V2_RESULTS.md) now succeeds with two
-independently verified physical source transfers. The first sequential path
-saved three stationary fits but exposed a descriptive metadata-validation
-mismatch after fitting; its receipts are retained and evaluation remains pending.
-The metadata-only inventory below is retained as the historical
-audit; its original counts and receipt have not been rewritten.
+independently verified physical source transfers. Its first sequential path
+saved three stationary fits before a descriptive metadata-validation mismatch;
+a separate reader recovered those same fits without refitting or source edits.
+The [completed fitted-only three-model comparison](THREE_MODEL_009_RESULTS.md)
+now has 54 stationary fits and all 12 outcomes sealed before seven error rows:
+A/all **0.658299 km**, B/all/low/high **5.327196 / 0.790354 / 0.772167 km**, and
+C/all/low/high **1.595252 / 4.547625 / 1.758365 km**. None is below 0.5 km.
+B's all/high winners reach timing constraints while their positions stay inside
+the original geographic disks. Half views share discovery and initialization;
+reference error does not select a start or algorithm. DS21-011's final model
+comparison has started without an accuracy result; DS21-013's final models have
+not started. The [independent 009 audit](THREE_MODEL_009_AUDIT.json) passes, and
+locked inference remains unopened.
+The metadata-only inventory below is retained as the historical audit.
 
 The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
 18 fits, all stationary: CH1–8 / CH1–4 / CH5–8 errors are 3.524 / 3.738 / 4.325 km.
@@ -90,6 +100,14 @@ namespaces: 007, 009, 011, 013, 025, 027, 029, 031, 033, 035, 037, 041, 043, 045
 is inspected to make these counts.
 
 ## Lean development preparation commands
+
+This section retains the historical audit's proposed commands. The current
+fitted-only path uses `tools/ds21_fitted_initialization.py` with one explicit
+case/stage/slice, followed by the [v2 model protocol](THREE_MODEL_EXPANSION_V2_PROTOCOL.md)
+and `tools/ds21_fitted_model_receipts.py` for continuation and aggregate review.
+It does not invoke the old two-arm orchestration. Current proposal coverage is
+nine sets, leaving 25 initializations; the historical 29-label inventory below
+is not the current work count.
 
 After the coordinator pins the initialization source/input recipe, start with one
 missing development label, for example DS21-007, through the existing discovery

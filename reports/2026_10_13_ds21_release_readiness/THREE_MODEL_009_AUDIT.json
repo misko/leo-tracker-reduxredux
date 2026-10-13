@@ -1,0 +1,354 @@
+{
+  "schema": "ds21-three-model-009-receipt-audit-v1",
+  "label": "DS21-009",
+  "audit_scope": "Receipt bytes and metadata arithmetic only; no predictor, objective, gradient, optimizer, projection or reference evaluation calls",
+  "bindings": {
+    "reader_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-009/protocol.json",
+      "sha256": "sha256:2ab7c9bb64b34c5c3874ad26376f4aef5edca2a0ab3b8bcac4d66ed1848e7efe"
+    },
+    "reader_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-009/terminal.json",
+      "sha256": "sha256:06fd86ac0b2e85521c1dd098ef2911406ab22f719ce68202467ec0911e84764f"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-009/development-errors.json",
+      "sha256": "sha256:d3dc557835595fa33c524cd517bc217af157902824536a714bede98cc25b6d5e"
+    },
+    "scientific_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-009/protocol.json",
+      "sha256": "sha256:3ce94d22d8cccebea843f2b2d39a03426f03090f56758af2e57ee4426deb5269"
+    },
+    "initialization": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-009/initialization.json",
+      "sha256": "sha256:94fe216c7568874fe24c515003d921833dedbfdf00a252d8b8f4bdf0cfda7ece"
+    },
+    "reader_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds21_fitted_model_receipts.py",
+      "sha256": "sha256:767369586f259e3c854f53e8c3bfe1808cd46c1d4b42531ffb70dccdfc6932b5"
+    }
+  },
+  "checks": {
+    "reader_sources_live_and_archived": 412,
+    "numerical_sources_live_and_archived": 411,
+    "unchanged_v1_source_hashes": 410,
+    "verified_immediate_parent_and_evaluation_bindings": 13,
+    "scientific_inventory_bindings": 246,
+    "unit_reviews": 12,
+    "complete_outcomes": 12,
+    "optimizer_calls": 54,
+    "stationary_calls": 54,
+    "launches": 54,
+    "call_receipts": 54,
+    "terminations": 54,
+    "complete_slices": 12,
+    "orphan_or_failed_inventory": 0,
+    "prefit_seed_and_options_checks": 54,
+    "raw_numeric_call_fields_preserved": true,
+    "high_descriptive_overrides": 6,
+    "scalar_diagnostic_checks": 12,
+    "selection_checks": 7,
+    "review_optimizer_calls": 0,
+    "reference_or_held_used_in_fit_or_selection": false
+  },
+  "inventory": {
+    "training_windows": {
+      "all": 2780,
+      "low": 1506,
+      "high": 1274
+    },
+    "satellites": 41,
+    "held_blocks": [
+      0,
+      5,
+      12
+    ],
+    "proposal_order": [
+      "cold-0",
+      "cold-1",
+      "cold-2",
+      "shape-low",
+      "shape-high",
+      "shape-all"
+    ]
+  },
+  "limits": {
+    "fit_seconds": 20,
+    "iterations": 600,
+    "local_radius_km": 25,
+    "stationarity_ceiling": 0.001,
+    "physical_constraints_minimum_floor": -1e-07,
+    "maximum_calls": 54,
+    "fit_elapsed_s_range": [
+      1.102827369235456,
+      15.289013826753944
+    ],
+    "stationarity_range": [
+      2.6881540378139238e-05,
+      0.0009761206087397639
+    ],
+    "reported_physical_constraints_minimum_range": [
+      0.0,
+      3.268762632873763
+    ],
+    "geography_radius_from_original_center_km_range": [
+      0.8570987771749192,
+      20.35329816562153
+    ],
+    "boundary_calls": [
+      "A-3/low",
+      "B-all/4",
+      "B-low/3",
+      "B-high/1",
+      "C-all/2",
+      "C-low/2",
+      "C-high/4",
+      "C-high/5"
+    ]
+  },
+  "unit_summary": [
+    {
+      "unit": "A-0",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 0,
+      "objective": 38965.18225848377
+    },
+    {
+      "unit": "A-1",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 1,
+      "objective": 36534.06733222664
+    },
+    {
+      "unit": "A-2",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 2,
+      "objective": 37490.76941687435
+    },
+    {
+      "unit": "A-3",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 3,
+      "objective": 36718.35028399058
+    },
+    {
+      "unit": "A-4",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 4,
+      "objective": 35182.924108011655
+    },
+    {
+      "unit": "A-5",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 5,
+      "objective": 36305.33925242326
+    },
+    {
+      "unit": "B-all",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 4,
+      "objective": 34413.6809028919
+    },
+    {
+      "unit": "B-low",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 4,
+      "objective": 18061.045840660743
+    },
+    {
+      "unit": "B-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 1,
+      "objective": 15574.724805323234
+    },
+    {
+      "unit": "C-all",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 1,
+      "objective": 32978.01573446116
+    },
+    {
+      "unit": "C-low",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 5,
+      "objective": 17835.946315286976
+    },
+    {
+      "unit": "C-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 3,
+      "objective": 15022.218137907876
+    }
+  ],
+  "rows": [
+    {
+      "model": "A",
+      "view": "all",
+      "error_km": 0.6582989191907039,
+      "below_0_5km": false,
+      "proposal_id": "shape-high",
+      "common_c_hz_per_ghz": -631.9716422613426,
+      "objective": 35182.924108011655,
+      "likelihood_nll": 34948.1177231223,
+      "fit_posterior_rms_hz": 98.88811262570479,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1717.7332261654565,
+      "boundary": false,
+      "stationarity": 0.00023617248233298582,
+      "reported_physical_constraints_minimum": 2.2483106671060327,
+      "local_center_distance_km": 1.9231532848235893,
+      "prior_center_distance_km": 118.33588747650614
+    },
+    {
+      "model": "B",
+      "view": "all",
+      "error_km": 5.327196013214133,
+      "below_0_5km": false,
+      "proposal_id": "shape-high",
+      "common_c_hz_per_ghz": -529.7885941045525,
+      "objective": 34413.6809028919,
+      "likelihood_nll": 34005.52662546525,
+      "fit_posterior_rms_hz": 97.66840927693897,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1928.4949097357744,
+      "boundary": true,
+      "stationarity": 0.00017223579946532746,
+      "reported_physical_constraints_minimum": 1.0658141036401503e-14,
+      "local_center_distance_km": 3.864952335308374,
+      "prior_center_distance_km": 114.74380018968851,
+      "boundary_constraint_interpretation": "Total satellite timing constraint, by exclusion of both geographic disks; source hard60_bounded_fit.py:80 and channel_group_calibration.py:337"
+    },
+    {
+      "model": "B",
+      "view": "low",
+      "error_km": 0.7903541511371838,
+      "below_0_5km": false,
+      "proposal_id": "shape-high",
+      "common_c_hz_per_ghz": -525.9640609664783,
+      "objective": 18061.045840660743,
+      "likelihood_nll": 17699.879399693717,
+      "fit_posterior_rms_hz": 87.14057740622336,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1212.859332163213,
+      "boundary": false,
+      "stationarity": 0.0009474134958284419,
+      "reported_physical_constraints_minimum": 0.6225270160465008,
+      "local_center_distance_km": 2.5340583029202968,
+      "prior_center_distance_km": 118.13726815607033
+    },
+    {
+      "model": "B",
+      "view": "high",
+      "error_km": 0.7721673809816391,
+      "below_0_5km": false,
+      "proposal_id": "cold-1",
+      "common_c_hz_per_ghz": -533.1433085175314,
+      "objective": 15574.724805323234,
+      "likelihood_nll": 15248.267936834323,
+      "fit_posterior_rms_hz": 76.44773253685723,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 946.5575720626948,
+      "boundary": true,
+      "stationarity": 0.00011310522312335536,
+      "reported_physical_constraints_minimum": 3.552713678800501e-15,
+      "local_center_distance_km": 5.862350322712728,
+      "prior_center_distance_km": 119.63912216137055,
+      "boundary_constraint_interpretation": "Total satellite timing constraint, by exclusion of both geographic disks; source hard60_bounded_fit.py:80 and channel_group_calibration.py:337"
+    },
+    {
+      "model": "C",
+      "view": "all",
+      "error_km": 1.5952521015407717,
+      "below_0_5km": false,
+      "proposal_id": "cold-1",
+      "common_c_hz_per_ghz": -503.85247019998127,
+      "objective": 32978.01573446116,
+      "likelihood_nll": 32667.422546990558,
+      "fit_posterior_rms_hz": 95.53766519879777,
+      "native_posterior_rms_hz": 95.53766519879778,
+      "signal_mass": 2055.0899409835883,
+      "boundary": false,
+      "stationarity": 0.0001612383550808616,
+      "reported_physical_constraints_minimum": 2.095857951249524,
+      "local_center_distance_km": 6.3775674401258895,
+      "prior_center_distance_km": 118.08498837314238
+    },
+    {
+      "model": "C",
+      "view": "low",
+      "error_km": 4.547625385270874,
+      "below_0_5km": false,
+      "proposal_id": "shape-all",
+      "common_c_hz_per_ghz": -591.704700672485,
+      "objective": 17835.946315286976,
+      "likelihood_nll": 17493.852820009008,
+      "fit_posterior_rms_hz": 115.63251210650091,
+      "native_posterior_rms_hz": 115.6325121065009,
+      "signal_mass": 1158.8122527656121,
+      "boundary": false,
+      "stationarity": 0.0001665391279589562,
+      "reported_physical_constraints_minimum": 0.5520271653775524,
+      "local_center_distance_km": 4.930062153801468,
+      "prior_center_distance_km": 122.52020422429051
+    },
+    {
+      "model": "C",
+      "view": "high",
+      "error_km": 1.758365034474175,
+      "below_0_5km": false,
+      "proposal_id": "shape-low",
+      "common_c_hz_per_ghz": -556.7388729557455,
+      "objective": 15022.218137907876,
+      "likelihood_nll": 14735.29195246302,
+      "fit_posterior_rms_hz": 87.7362446827577,
+      "native_posterior_rms_hz": 87.73624468275771,
+      "signal_mass": 978.1916142505339,
+      "boundary": false,
+      "stationarity": 0.0002001973003973069,
+      "reported_physical_constraints_minimum": 2.8449160580424007,
+      "local_center_distance_km": 13.791747989462205,
+      "prior_center_distance_km": 118.29122720419846
+    }
+  ],
+  "metadata_compatibility": {
+    "reader_commit": "13332f295",
+    "recovered_A0_without_refit": true,
+    "review_calls": 0,
+    "retained_A0_calls": 3,
+    "raw_high_training_fractions": [
+      0.5,
+      0.5
+    ],
+    "path_high_training_fractions": null,
+    "offset_parameterization": "uncentred-high-minus-low",
+    "all_other_raw_high_fields_exact": true,
+    "low_and_final_path_raw_fields_exact": true
+  },
+  "reference_gate": {
+    "method": "Source order and sealed bindings; no independent reference recomputation",
+    "source": "tools/ds21_fitted_model_receipts.py:275-312",
+    "all_twelve_reviews_validated_before_terminal_write": true,
+    "terminal_written_and_read_before_reference_call": true
+  },
+  "limitations": [
+    "Seven configured-reference development errors are copied from the sealed evaluator; no independent surveyed truth or reference recalculation.",
+    "Full A is six low -> locked-high -> final-all paths, with final-all selection only; no separate A half-view accuracy rows.",
+    "Half-view B/C outcomes share discovery, geography and physical initialization; C lifts derive once from all-training proposals.",
+    "Raw fit scores differ across numerical models and observation views; they are not accuracy rankings.",
+    "No result is below 0.5 km; one-case A advantage does not establish a general model choice.",
+    "Domain checks use saved vectors, original centers and reported physical feasibility margins; no fresh physical model evaluation.",
+    "Initialization clock coefficients numerically at bounds remain documented in INITIALIZATION_009_V2_AUDIT.json."
+  ]
+}
