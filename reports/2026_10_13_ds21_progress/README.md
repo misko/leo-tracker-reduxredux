@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 18:58 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 19:10 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -210,7 +210,17 @@ prescribes paired alpha=1 and alpha=0.25 fits from each recording's six historic
 all-band endpoints. Its adapter passed 17 integration tests and evaluator 19;
 all five cases are complete and were sealed before reference evaluation. The
 negative transfer result is reported above. DS21-007's baseline joint comparison
-and a separate observed-curvature diagnostic are now being implemented.
+is being tested before execution.
+
+The [observed-curvature diagnostic](../2026_10_13_ds21_039_association/TIMING_CURVATURE_RESULTS.md)
+completed 418 gradient evaluations, zero fits, in 35.549 seconds. Profiling
+satellite timing as well as calibration reduces the weakest local position
+curvature by roughly 140× at the original state and 300× at the refined state.
+The original timing prior contributes less than 1% of the remaining weak-axis
+curvature; its large absolute cost does not prove prior domination. This confirms
+strong local coupling, not a timing bug or an accuracy improvement. Both numerical
+steps and unstable individual compensation estimates are retained. An eight-call,
+zero-fit finite-displacement check is next.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20

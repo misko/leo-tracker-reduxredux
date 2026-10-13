@@ -1,0 +1,1428 @@
+{
+  "schema": "ds21-039-timing-curvature-receipt-audit-v1",
+  "arm": "fitted-c",
+  "derivation": "Receipt-only NumPy matrix products and existing zero-sum basis; no objective, gradient, fit, held or reference calls",
+  "authority": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/freeze.json",
+      "sha256": "sha256:dc6ec6a7285d1405f8172fba882f944daa90d45973d6e67e7e77e858334ae04a"
+    },
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/protocol.json",
+      "sha256": "sha256:c98827ed4ea7459285735255847fff0e32963c1f077e47681d53e8a867ce374e"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/terminal.json",
+      "sha256": "sha256:398f16541bc416769954213b9c85f4afc0db49ae4d20945fc5c57c83d93ee7da"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/final-seal.json",
+      "sha256": "sha256:077668c601d77c7b0c3db407b056c76b6df57c3948408a2787628d3591027486"
+    },
+    "ancestors": {
+      "inputs": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/inputs-v1.json",
+        "sha256": "sha256:27bd4bbb567c6d16a819467f92924b813d5547928dc6c51bcaba743924917356"
+      },
+      "cold_profiles": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/profiles-v1/fits/terminal.json",
+        "sha256": "sha256:df67a44b1c4dcb3da2797f31abd40e8c2aa47ceae005251580fc48fbadaef068"
+      },
+      "cold_profiles_freeze": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/profiles-v1/freeze.json",
+        "sha256": "sha256:6132d33a4e34d05423b39d1468d95a8cdd866182295a9c6b56046da6837bdb7a"
+      },
+      "diagnostic_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/diagnostics-v2/terminal.json",
+        "sha256": "sha256:1e082d95de47715ef600d000adb9b89dbd4f722bda7b33754b560aa0388f15aa"
+      },
+      "refinement_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/fits/terminal.json",
+        "sha256": "sha256:682bee3af1de693cd5a736e9a5eb36558db594c8b88784371909d3743298a493"
+      },
+      "refinement_freeze": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/refinements-v1/freeze.json",
+        "sha256": "sha256:6d96b165a88ad852722a7fdd0957821fa70bad2f31372e1cca261926a8b52e91"
+      }
+    },
+    "basis_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/analysis/regional_position_score.py",
+      "sha256": "sha256:0ea7bf646896658488c7615a7a22f90597371a0a4f7634a4b75dc9303a8bcb79"
+    }
+  },
+  "audit": {
+    "passed": true,
+    "live_archive_source_pairs": 336,
+    "immediate_ancestor_bindings": 6,
+    "original_attempt_and_seed_bindings_checked": true,
+    "old_cold_and_refinement_source_subsets_checked": true,
+    "final_seal_files": 10,
+    "endpoint_seals": 2,
+    "gradient_calls": 418,
+    "optimizer_calls": 0,
+    "reference_usage": "none",
+    "held_usage": "none",
+    "projected_hessian_sum_closure_max_abs": 1.13118e-11
+  },
+  "units": {
+    "position_curvature": "MAP objective/km^2",
+    "satellite_timing_compensation": "seconds/km",
+    "common_c_compensation": "Hz/GHz/km"
+  },
+  "steps": [
+    0.0001,
+    5e-05
+  ],
+  "axis_sign": "Each endpoint weak eigenaxis has positive east; second step aligned to first; opposite displacement reverses all compensation signs",
+  "compensation_definition": "Scaled D has identity position rows and saved full-profile nuisance compensation; physical v=diag(scales) D u; satellite total timing is v[7]+B v[8:50]",
+  "matrix_decomposition": "Prior D.T H_prior D and likelihood D.T (H_MAP-H_prior) D sum to the full-profile 2x2 Schur matrix at each step",
+  "summaries": {
+    "original-all": {
+      "source_replay": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "prior_ledger": 3.38218e-12
+      },
+      "gradient_calls": 209,
+      "endpoint_result": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/results/original-all.json",
+        "sha256": "sha256:a3b1054ab0ce7c40a4dd37f460889594689c99e3c006d66d1f9e7f8013820d80"
+      },
+      "endpoint_seal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/seals/original-all.json",
+        "sha256": "sha256:9f05b30b1071f05e56e38af5ba838172851146bfdb28e9ef1cf9dedd5ed697ab"
+      },
+      "full_symmetry_ratios": [
+        7.53655e-08,
+        1.98302e-08
+      ],
+      "full_stability_ratio": 1.82836e-07,
+      "nuisance_definiteness": [
+        {
+          "state": "positive-definite",
+          "minimum_eigenvalue": 0.249827,
+          "negative_modes": 0,
+          "singular_or_weak_modes": 0,
+          "threshold": 0.000126073
+        },
+        {
+          "state": "positive-definite",
+          "minimum_eigenvalue": 0.249827,
+          "negative_modes": 0,
+          "singular_or_weak_modes": 0,
+          "threshold": 0.000126073
+        }
+      ],
+      "eigenvalues_by_step": {
+        "calibration-only": [
+          [
+            1272.04,
+            3574.21
+          ],
+          [
+            1272.04,
+            3574.21
+          ]
+        ],
+        "calibration-and-timing": [
+          [
+            9.07138,
+            70.3807
+          ],
+          [
+            9.07257,
+            70.3799
+          ]
+        ]
+      },
+      "eigenvalue_ranges": {
+        "calibration-only": [
+          [
+            1272.04,
+            1272.04
+          ],
+          [
+            3574.21,
+            3574.21
+          ]
+        ],
+        "calibration-and-timing": [
+          [
+            9.07138,
+            9.07257
+          ],
+          [
+            70.3799,
+            70.3807
+          ]
+        ]
+      },
+      "schur_stability_ratios": {
+        "calibration-only": 3.84556e-07,
+        "calibration-and-timing": 2.04375e-05
+      },
+      "weak_eigenvalue_relative_change": 0.000131251,
+      "weak_axis_east_north_by_step": [
+        [
+          0.769738,
+          0.63836
+        ],
+        [
+          0.769737,
+          0.638361
+        ]
+      ],
+      "full_compensation_prior_xy_hessians": [
+        [
+          [
+            0.0275322,
+            -0.0119516
+          ],
+          [
+            -0.0119516,
+            0.0716579
+          ]
+        ],
+        [
+          [
+            0.0275322,
+            -0.0119517
+          ],
+          [
+            -0.0119517,
+            0.0716578
+          ]
+        ]
+      ],
+      "full_compensation_likelihood_xy_hessians": [
+        [
+          [
+            34.0276,
+            -30.1136
+          ],
+          [
+            -30.1136,
+            45.3253
+          ]
+        ],
+        [
+          [
+            34.028,
+            -30.1126
+          ],
+          [
+            -30.1126,
+            45.3252
+          ]
+        ]
+      ],
+      "weak_axis_prior_curvature": [
+        0.0337682,
+        0.0337682
+      ],
+      "weak_axis_likelihood_curvature": [
+        9.03761,
+        9.0388
+      ],
+      "weak_axis_prior_fraction": [
+        0.00372249,
+        0.00372201
+      ],
+      "common_c_compensation_hz_per_ghz_per_km": {
+        "two_steps": [
+          0.732594,
+          0.732559
+        ],
+        "range": [
+          0.732559,
+          0.732594
+        ]
+      },
+      "common_timing_compensation_s_per_km": {
+        "two_steps": [
+          0.101418,
+          0.101419
+        ],
+        "range": [
+          0.101418,
+          0.101419
+        ]
+      },
+      "prior_costs": {
+        "common_timing": 0.119287,
+        "relative_timing": 202.405,
+        "group_calibration": 0.399342,
+        "total": 202.924
+      },
+      "applicability": {
+        "state": "interior",
+        "minimum_physical_constraint": 3.88309,
+        "interpolation_step_s": 0.25,
+        "minimum_native_query_to_knot_s": 7.26374e-07,
+        "queries_within_fd_step_of_knot": {
+          "0.0001": 137,
+          "5e-05": 70
+        },
+        "horizon": "Visibility is a discrete mask; crossing can invalidate smooth curvature",
+        "interpolation": "Piecewise bank derivatives; FD agreement is required, not assumed",
+        "latitude_longitude_chart": "Existing central 1 m site derivative; no physics replacement",
+        "calibration_time": "Recorded native time; timing shifts the ECEF satellite query only"
+      }
+    },
+    "refinement-free": {
+      "source_replay": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "prior_ledger": 1.62004e-12
+      },
+      "gradient_calls": 209,
+      "endpoint_result": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/results/refinement-free.json",
+        "sha256": "sha256:a29ca174e22191c81c63db4b1a184cf72a54aa7bfa062eb689dd79da7df4e00c"
+      },
+      "endpoint_seal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/seals/refinement-free.json",
+        "sha256": "sha256:24ef15365613a6e83b87f3d24afdb1cdc9a706efac9fdca8b39ccb073bd60664"
+      },
+      "full_symmetry_ratios": [
+        1.58564e-06,
+        3.16001e-06
+      ],
+      "full_stability_ratio": 1.10661e-05,
+      "nuisance_definiteness": [
+        {
+          "state": "positive-definite",
+          "minimum_eigenvalue": 0.202956,
+          "negative_modes": 0,
+          "singular_or_weak_modes": 0,
+          "threshold": 0.00013394
+        },
+        {
+          "state": "positive-definite",
+          "minimum_eigenvalue": 0.20294,
+          "negative_modes": 0,
+          "singular_or_weak_modes": 0,
+          "threshold": 0.000133939
+        }
+      ],
+      "eigenvalues_by_step": {
+        "calibration-only": [
+          [
+            1971.38,
+            6358.9
+          ],
+          [
+            1971.38,
+            6358.9
+          ]
+        ],
+        "calibration-and-timing": [
+          [
+            6.71638,
+            48.0827
+          ],
+          [
+            6.54099,
+            48.0616
+          ]
+        ]
+      },
+      "eigenvalue_ranges": {
+        "calibration-only": [
+          [
+            1971.38,
+            1971.38
+          ],
+          [
+            6358.9,
+            6358.9
+          ]
+        ],
+        "calibration-and-timing": [
+          [
+            6.54099,
+            6.71638
+          ],
+          [
+            48.0616,
+            48.0827
+          ]
+        ]
+      },
+      "schur_stability_ratios": {
+        "calibration-only": 3.30269e-07,
+        "calibration-and-timing": 0.00363963
+      },
+      "weak_eigenvalue_relative_change": 0.0261136,
+      "weak_axis_east_north_by_step": [
+        [
+          0.810346,
+          0.585952
+        ],
+        [
+          0.810387,
+          0.585896
+        ]
+      ],
+      "full_compensation_prior_xy_hessians": [
+        [
+          [
+            0.0399118,
+            -0.0291493
+          ],
+          [
+            -0.0291493,
+            0.126219
+          ]
+        ],
+        [
+          [
+            0.0504309,
+            -0.0321746
+          ],
+          [
+            -0.0321746,
+            0.121873
+          ]
+        ]
+      ],
+      "full_compensation_likelihood_xy_hessians": [
+        [
+          [
+            20.8792,
+            -19.6126
+          ],
+          [
+            -19.6126,
+            33.7538
+          ]
+        ],
+        [
+          [
+            20.7435,
+            -19.6819
+          ],
+          [
+            -19.6819,
+            33.6868
+          ]
+        ]
+      ],
+      "weak_axis_prior_curvature": [
+        0.0418631,
+        0.0444021
+      ],
+      "weak_axis_likelihood_curvature": [
+        6.67452,
+        6.49659
+      ],
+      "weak_axis_prior_fraction": [
+        0.00623298,
+        0.00678829
+      ],
+      "common_c_compensation_hz_per_ghz_per_km": {
+        "two_steps": [
+          1.08702,
+          1.09234
+        ],
+        "range": [
+          1.08702,
+          1.09234
+        ]
+      },
+      "common_timing_compensation_s_per_km": {
+        "two_steps": [
+          0.103679,
+          0.101594
+        ],
+        "range": [
+          0.101594,
+          0.103679
+        ]
+      },
+      "prior_costs": {
+        "common_timing": 0.130191,
+        "relative_timing": 155.244,
+        "group_calibration": 0.399748,
+        "total": 155.774
+      },
+      "applicability": {
+        "state": "interior",
+        "minimum_physical_constraint": 3.79449,
+        "interpolation_step_s": 0.25,
+        "minimum_native_query_to_knot_s": 7.21773e-07,
+        "queries_within_fd_step_of_knot": {
+          "0.0001": 145,
+          "5e-05": 79
+        },
+        "horizon": "Visibility is a discrete mask; crossing can invalidate smooth curvature",
+        "interpolation": "Piecewise bank derivatives; FD agreement is required, not assumed",
+        "latitude_longitude_chart": "Existing central 1 m site derivative; no physics replacement",
+        "calibration_time": "Recorded native time; timing shifts the ECEF satellite query only"
+      }
+    }
+  },
+  "per_satellite_total_timing_compensation_s_per_km": {
+    "48019": {
+      "original-all": {
+        "two_steps": [
+          0.136526,
+          0.136526
+        ],
+        "range": [
+          0.136526,
+          0.136526
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.115718,
+          0.0507425
+        ],
+        "range": [
+          0.0507425,
+          0.115718
+        ]
+      }
+    },
+    "51123": {
+      "original-all": {
+        "two_steps": [
+          0.145284,
+          0.145284
+        ],
+        "range": [
+          0.145284,
+          0.145284
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.145593,
+          0.145603
+        ],
+        "range": [
+          0.145593,
+          0.145603
+        ]
+      }
+    },
+    "52606": {
+      "original-all": {
+        "two_steps": [
+          0.145205,
+          0.145205
+        ],
+        "range": [
+          0.145205,
+          0.145205
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.145808,
+          0.14582
+        ],
+        "range": [
+          0.145808,
+          0.14582
+        ]
+      }
+    },
+    "52607": {
+      "original-all": {
+        "two_steps": [
+          0.148886,
+          0.148886
+        ],
+        "range": [
+          0.148886,
+          0.148886
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.150992,
+          0.150962
+        ],
+        "range": [
+          0.150962,
+          0.150992
+        ]
+      }
+    },
+    "53143": {
+      "original-all": {
+        "two_steps": [
+          0.00520855,
+          0.00520821
+        ],
+        "range": [
+          0.00520821,
+          0.00520855
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          -0.10108,
+          -0.101037
+        ],
+        "range": [
+          -0.10108,
+          -0.101037
+        ]
+      }
+    },
+    "53852": {
+      "original-all": {
+        "two_steps": [
+          0.100429,
+          0.100433
+        ],
+        "range": [
+          0.100429,
+          0.100433
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.147501,
+          0.146957
+        ],
+        "range": [
+          0.146957,
+          0.147501
+        ]
+      }
+    },
+    "56120": {
+      "original-all": {
+        "two_steps": [
+          0.116683,
+          0.116684
+        ],
+        "range": [
+          0.116683,
+          0.116684
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.144721,
+          0.144801
+        ],
+        "range": [
+          0.144721,
+          0.144801
+        ]
+      }
+    },
+    "56876": {
+      "original-all": {
+        "two_steps": [
+          0.132803,
+          0.132802
+        ],
+        "range": [
+          0.132802,
+          0.132803
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.138659,
+          0.138628
+        ],
+        "range": [
+          0.138628,
+          0.138659
+        ]
+      }
+    },
+    "56915": {
+      "original-all": {
+        "two_steps": [
+          0.064349,
+          0.0643488
+        ],
+        "range": [
+          0.0643488,
+          0.064349
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0767929,
+          0.0768608
+        ],
+        "range": [
+          0.0767929,
+          0.0768608
+        ]
+      }
+    },
+    "57606": {
+      "original-all": {
+        "two_steps": [
+          0.083537,
+          0.0835369
+        ],
+        "range": [
+          0.0835369,
+          0.083537
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.112706,
+          0.112679
+        ],
+        "range": [
+          0.112679,
+          0.112706
+        ]
+      }
+    },
+    "57621": {
+      "original-all": {
+        "two_steps": [
+          0.0639839,
+          0.0639835
+        ],
+        "range": [
+          0.0639835,
+          0.0639839
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0835657,
+          0.0836392
+        ],
+        "range": [
+          0.0835657,
+          0.0836392
+        ]
+      }
+    },
+    "57634": {
+      "original-all": {
+        "two_steps": [
+          0.0631329,
+          0.0631327
+        ],
+        "range": [
+          0.0631327,
+          0.0631329
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0015881,
+          0.000201848
+        ],
+        "range": [
+          0.000201848,
+          0.0015881
+        ]
+      }
+    },
+    "57650": {
+      "original-all": {
+        "two_steps": [
+          0.0683107,
+          0.0683104
+        ],
+        "range": [
+          0.0683104,
+          0.0683107
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0745686,
+          0.0745529
+        ],
+        "range": [
+          0.0745529,
+          0.0745686
+        ]
+      }
+    },
+    "57673": {
+      "original-all": {
+        "two_steps": [
+          0.0165907,
+          0.0165904
+        ],
+        "range": [
+          0.0165904,
+          0.0165907
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0282463,
+          0.0283169
+        ],
+        "range": [
+          0.0282463,
+          0.0283169
+        ]
+      }
+    },
+    "57677": {
+      "original-all": {
+        "two_steps": [
+          0.100358,
+          0.100367
+        ],
+        "range": [
+          0.100358,
+          0.100367
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0522976,
+          -0.000334449
+        ],
+        "range": [
+          -0.000334449,
+          0.0522976
+        ]
+      }
+    },
+    "57789": {
+      "original-all": {
+        "two_steps": [
+          0.0670519,
+          0.0670517
+        ],
+        "range": [
+          0.0670517,
+          0.0670519
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0785547,
+          0.0786081
+        ],
+        "range": [
+          0.0785547,
+          0.0786081
+        ]
+      }
+    },
+    "58094": {
+      "original-all": {
+        "two_steps": [
+          0.0855403,
+          0.0855401
+        ],
+        "range": [
+          0.0855401,
+          0.0855403
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0925634,
+          0.0925282
+        ],
+        "range": [
+          0.0925282,
+          0.0925634
+        ]
+      }
+    },
+    "58181": {
+      "original-all": {
+        "two_steps": [
+          0.143585,
+          0.143585
+        ],
+        "range": [
+          0.143585,
+          0.143585
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.146596,
+          0.146588
+        ],
+        "range": [
+          0.146588,
+          0.146596
+        ]
+      }
+    },
+    "58836": {
+      "original-all": {
+        "two_steps": [
+          0.000549427,
+          0.00054919
+        ],
+        "range": [
+          0.00054919,
+          0.000549427
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0129435,
+          0.012941
+        ],
+        "range": [
+          0.012941,
+          0.0129435
+        ]
+      }
+    },
+    "59243": {
+      "original-all": {
+        "two_steps": [
+          0.137698,
+          0.137698
+        ],
+        "range": [
+          0.137698,
+          0.137698
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.143293,
+          0.143359
+        ],
+        "range": [
+          0.143293,
+          0.143359
+        ]
+      }
+    },
+    "59647": {
+      "original-all": {
+        "two_steps": [
+          0.142137,
+          0.142137
+        ],
+        "range": [
+          0.142137,
+          0.142137
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.145594,
+          0.145593
+        ],
+        "range": [
+          0.145593,
+          0.145594
+        ]
+      }
+    },
+    "60140": {
+      "original-all": {
+        "two_steps": [
+          0.142255,
+          0.142255
+        ],
+        "range": [
+          0.142255,
+          0.142255
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.145288,
+          0.145268
+        ],
+        "range": [
+          0.145268,
+          0.145288
+        ]
+      }
+    },
+    "60368": {
+      "original-all": {
+        "two_steps": [
+          0.144025,
+          0.144025
+        ],
+        "range": [
+          0.144025,
+          0.144025
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.144711,
+          0.144727
+        ],
+        "range": [
+          0.144711,
+          0.144727
+        ]
+      }
+    },
+    "60376": {
+      "original-all": {
+        "two_steps": [
+          0.138876,
+          0.138876
+        ],
+        "range": [
+          0.138876,
+          0.138876
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.140484,
+          0.140577
+        ],
+        "range": [
+          0.140484,
+          0.140577
+        ]
+      }
+    },
+    "60584": {
+      "original-all": {
+        "two_steps": [
+          0.14984,
+          0.14984
+        ],
+        "range": [
+          0.14984,
+          0.14984
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.146481,
+          0.146461
+        ],
+        "range": [
+          0.146461,
+          0.146481
+        ]
+      }
+    },
+    "62128": {
+      "original-all": {
+        "two_steps": [
+          0.123861,
+          0.123861
+        ],
+        "range": [
+          0.123861,
+          0.123861
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.141263,
+          0.141337
+        ],
+        "range": [
+          0.141263,
+          0.141337
+        ]
+      }
+    },
+    "62134": {
+      "original-all": {
+        "two_steps": [
+          0.15158,
+          0.15158
+        ],
+        "range": [
+          0.15158,
+          0.15158
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.153443,
+          0.153429
+        ],
+        "range": [
+          0.153429,
+          0.153443
+        ]
+      }
+    },
+    "62420": {
+      "original-all": {
+        "two_steps": [
+          0.068755,
+          0.0687545
+        ],
+        "range": [
+          0.0687545,
+          0.068755
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.059837,
+          0.0599456
+        ],
+        "range": [
+          0.059837,
+          0.0599456
+        ]
+      }
+    },
+    "62824": {
+      "original-all": {
+        "two_steps": [
+          0.15124,
+          0.15124
+        ],
+        "range": [
+          0.15124,
+          0.15124
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.154099,
+          0.155184
+        ],
+        "range": [
+          0.154099,
+          0.155184
+        ]
+      }
+    },
+    "62999": {
+      "original-all": {
+        "two_steps": [
+          0.138256,
+          0.138256
+        ],
+        "range": [
+          0.138256,
+          0.138256
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.142819,
+          0.142841
+        ],
+        "range": [
+          0.142819,
+          0.142841
+        ]
+      }
+    },
+    "63850": {
+      "original-all": {
+        "two_steps": [
+          0.058328,
+          0.0583278
+        ],
+        "range": [
+          0.0583278,
+          0.058328
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0782788,
+          0.105888
+        ],
+        "range": [
+          0.0782788,
+          0.105888
+        ]
+      }
+    },
+    "63854": {
+      "original-all": {
+        "two_steps": [
+          0.0754837,
+          0.0754834
+        ],
+        "range": [
+          0.0754834,
+          0.0754837
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0833658,
+          0.083386
+        ],
+        "range": [
+          0.0833658,
+          0.083386
+        ]
+      }
+    },
+    "63865": {
+      "original-all": {
+        "two_steps": [
+          0.114044,
+          0.114044
+        ],
+        "range": [
+          0.114044,
+          0.114044
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.126509,
+          0.126594
+        ],
+        "range": [
+          0.126509,
+          0.126594
+        ]
+      }
+    },
+    "63886": {
+      "original-all": {
+        "two_steps": [
+          0.129936,
+          0.129936
+        ],
+        "range": [
+          0.129936,
+          0.129936
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.15037,
+          0.150476
+        ],
+        "range": [
+          0.15037,
+          0.150476
+        ]
+      }
+    },
+    "65622": {
+      "original-all": {
+        "two_steps": [
+          0.14009,
+          0.14009
+        ],
+        "range": [
+          0.14009,
+          0.14009
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.136602,
+          0.136715
+        ],
+        "range": [
+          0.136602,
+          0.136715
+        ]
+      }
+    },
+    "65635": {
+      "original-all": {
+        "two_steps": [
+          0.148526,
+          0.148526
+        ],
+        "range": [
+          0.148526,
+          0.148526
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.146223,
+          0.146197
+        ],
+        "range": [
+          0.146197,
+          0.146223
+        ]
+      }
+    },
+    "65640": {
+      "original-all": {
+        "two_steps": [
+          0.139604,
+          0.139604
+        ],
+        "range": [
+          0.139604,
+          0.139604
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.142022,
+          0.142052
+        ],
+        "range": [
+          0.142022,
+          0.142052
+        ]
+      }
+    },
+    "67644": {
+      "original-all": {
+        "two_steps": [
+          0.127645,
+          0.127645
+        ],
+        "range": [
+          0.127645,
+          0.127645
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.139005,
+          0.139116
+        ],
+        "range": [
+          0.139005,
+          0.139116
+        ]
+      }
+    },
+    "67645": {
+      "original-all": {
+        "two_steps": [
+          0.129523,
+          0.129523
+        ],
+        "range": [
+          0.129523,
+          0.129523
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.136657,
+          0.136725
+        ],
+        "range": [
+          0.136657,
+          0.136725
+        ]
+      }
+    },
+    "68021": {
+      "original-all": {
+        "two_steps": [
+          -0.123961,
+          -0.123961
+        ],
+        "range": [
+          -0.123961,
+          -0.123961
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          -0.103023,
+          -0.103004
+        ],
+        "range": [
+          -0.103023,
+          -0.103004
+        ]
+      }
+    },
+    "68389": {
+      "original-all": {
+        "two_steps": [
+          0.0953861,
+          0.0953863
+        ],
+        "range": [
+          0.0953861,
+          0.0953863
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0961902,
+          0.0962132
+        ],
+        "range": [
+          0.0961902,
+          0.0962132
+        ]
+      }
+    },
+    "68404": {
+      "original-all": {
+        "two_steps": [
+          0.0204297,
+          0.0204301
+        ],
+        "range": [
+          0.0204297,
+          0.0204301
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.0343071,
+          0.0343637
+        ],
+        "range": [
+          0.0343071,
+          0.0343637
+        ]
+      }
+    },
+    "100771": {
+      "original-all": {
+        "two_steps": [
+          0.129422,
+          0.129422
+        ],
+        "range": [
+          0.129422,
+          0.129422
+        ]
+      },
+      "refinement-free": {
+        "two_steps": [
+          0.126044,
+          0.126035
+        ],
+        "range": [
+          0.126035,
+          0.126044
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "Local re-marginalized MAP curvature at two fitted states; not calibrated accuracy, uncertainty or confidence.",
+    "Two steps cross some quarter-second interpolation knots; full/Frobenius agreement does not guarantee stable weak eigenvalues or per-satellite compensation.",
+    "Refined weak eigenvalue changes about 2.6%; per-satellite compensation for 48019, 57677, 63850 varies materially across steps.",
+    "Large absolute relative-timing prior cost does not establish that the prior dominates the local weak spatial curvature.",
+    "Model satellite allocations and timing shifts are not independent emitter IDs or measured ephemeris errors; no global basin conclusion follows."
+  ],
+  "next_action": {
+    "proposal": "Check the exact re-marginalized objective at plus/minus 1 km along each saved full-profile weak compensated direction, for both endpoints and both existing steps; compare with each saved Taylor prediction, retaining its recorded linear gradient term.",
+    "maximum_objective_gradient_calls": 8,
+    "optimizer_calls": 0,
+    "new_prior_setting": false,
+    "reference_usage": "none",
+    "purpose": "Test whether local position/timing compensation remains valid over a 1 km displacement before proposing any constrained fit."
+  }
+}

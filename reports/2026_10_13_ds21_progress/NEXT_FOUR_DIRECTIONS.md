@@ -44,13 +44,17 @@ audit found no conversion bug. A receiver-specific RF slope improved the
 objective by only 0.657 and worsened position from 4.073 to 4.085 km. Repeating
 that flexibility increase is therefore low priority.
 
-The SOL worker is implementing a zero-optimizer observed-curvature diagnostic
-at the original and refined all-band states. It recomputes the existing
-marginalized gradient at two fixed finite-difference steps, then checks whether
-profiling timing as well as calibration weakens position curvature. It preserves
-all priors and fitted `c`. Singular, indefinite or unstable curvature is reported
-without converting it into a confidence claim. Timing corrections need external
-justification; they cannot be tightened until a desired position appears.
+The [zero-optimizer observed-curvature diagnostic](../2026_10_13_ds21_039_association/TIMING_CURVATURE_RESULTS.md)
+completed at the original and refined all-band states. Profiling timing as well
+as calibration weakens the smallest position curvature eigenvalue by roughly
+140× and 300×, respectively. The exact prior contributes less than 1% of the
+remaining weak-axis curvature. This is strong local confounding, not proof of
+an incorrect physical prior or timing bug. Some per-satellite compensation
+estimates vary materially between the two numerical steps. The next check uses
+eight unchanged-objective evaluations at ±1 km along the saved compensated weak
+directions, without fitting, new priors or reference access. Timing corrections
+need external justification; they cannot be tightened until a desired position
+appears.
 
 **Decision:** distinguish a supported clock/orbit correction from nuisance-driven
 movement along weakly constrained directions. Report position and frequency
