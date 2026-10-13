@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 17:58 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 18:01 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -164,10 +164,12 @@ have no tracking-input binding in this membership and require separate preparati
 
 A new training-only adapter around the existing fitted-c discovery core passed
 all 10 owned tests in the integration worktree. Its first bounded DS21-007 slice
-is running with exact original census evidence, partition and causal catalogue
-bound before inference. Historical wrappers also prepare held observations and
-are not being used directly. No additional completed discovery or accuracy
-result is claimed yet.
+[completed 100 points in 335.007 seconds](../2026_10_13_ds21_release_readiness/DISCOVERY_007_RESULTS.md),
+with 295 of 300 per-view fits stationary and five failures retained. Exact census
+evidence, partition and causal catalogue were bound before inference. A cached
+terminal validation passed without new fits. This adds one discovery result:
+28 development recordings still need discovery, and 29 need downstream proposal
+caches. No new position-accuracy result is claimed.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20

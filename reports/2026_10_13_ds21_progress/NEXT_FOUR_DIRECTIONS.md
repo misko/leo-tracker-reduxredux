@@ -81,8 +81,9 @@ record failed starts, and select by training criteria with fixed budgets.
 
 The SOL joint worker implemented a training-only adapter around the existing
 fitted-c discovery core. Its 10 owned tests passed again in the integration
-worktree. A first bounded DS21-007 slice is underway, with exact census evidence
-and a causal catalogue pinned before inference. Discovery states are not final
+worktree. A first bounded DS21-007 slice completed 100 points in 335.007 seconds,
+with exact census evidence and a causal catalogue pinned before inference.
+Discovery states are not final
 position estimates. Completed points can be reused; failed or orphan attempts
 cannot be silently retried.
 
