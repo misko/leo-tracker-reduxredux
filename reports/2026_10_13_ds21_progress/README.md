@@ -58,8 +58,14 @@ remote fallback is replaced. All nine shape and nine hybrid fits are stationary,
 and 18 physical seeds use a 33-candidate pool. The new final-model comparison is
 underway, with no reference-error result yet. Separately, the
 [projection diagnosis](../2026_10_13_ds21_release_readiness/COVERAGE_PROJECTION_013_DIAGNOSIS.md)
-motivates decomposition of fixed saved calibration functions before any new
-nuisance model or position-accuracy claim.
+led to the [completed fixed-function decomposition](../2026_10_13_ds21_release_readiness/SEED_FUNCTION_DECOMPOSITION_013_RESULTS.md).
+Removing bounds leaves almost all bootstrap loss and all native transport loss;
+adding band/time or shared-clock columns closes the prescribed saved targets to
+below 3e-10 Hz maximum error. This establishes missing function dimensions, not
+truthful calibration or an accuracy improvement. The next DS21-039 diagnostics
+test its own band compatibility and finite timing/calibration interactions in
+new namespaces; the [updated priorities](../2026_10_13_ds21_039_root_cause/NEXT_FOUR_PRIORITIES.md)
+retain the full development/locked evaluation gates.
 
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.

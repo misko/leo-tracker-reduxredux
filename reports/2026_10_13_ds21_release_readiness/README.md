@@ -82,7 +82,12 @@ passes with 21 strict and three verified exact transfers. The final-model
 comparison is underway; no transfer accuracy result is available yet.
 The [saved-function projection diagnosis](COVERAGE_PROJECTION_013_DIAGNOSIS.md)
 separates missing band/time terms, shared-clock capacity and coefficient bounds.
-Its fixed-function decomposition is a separate diagnostic, not a new location model.
+The [completed fixed-function decomposition](SEED_FUNCTION_DECOMPOSITION_013_RESULTS.md)
+uses 12 bounded projections and 24 explicit linear solves in 68.387 seconds,
+with zero likelihood, orbit or location calls. Removing bounds leaves almost all
+bootstrap and all native loss; the specified band/time and shared-clock columns
+close all six targets to below 3e-10 Hz maximum error. This identifies missing
+function dimensions, not truthful calibration or improved location accuracy.
 
 The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
 18 fits, all stationary: CH1–8 / CH1–4 / CH5–8 errors are 3.524 / 3.738 / 4.325 km.
