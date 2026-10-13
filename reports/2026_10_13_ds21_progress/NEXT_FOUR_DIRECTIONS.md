@@ -18,7 +18,7 @@ execution order.
 
 | Priority | Investigation | Discriminating next step | Ownership/status |
 | --- | --- | --- | --- |
-| 1 | Shared initialization/source/coverage failure | DS21-013 baseline CH1–8 errors are 267–269 km; all six original local disks exclude the reference. The same-budget 50 km initial-grid control completed 100 points, with 299/300 stationary fits. All three new training-selected discovery disks contain the reference. Qualify the unchanged downstream stages and compare final A/B/C fits; discovery recovery alone is not accuracy. DS21-025 remains metadata-ready only. | SOL adapter implementation and independent receipt audit; coordinator integration |
+| 1 | Shared initialization/source/coverage failure | DS21-013 baseline CH1–8 errors are 267–269 km; all six original local disks exclude the reference. The same-budget 50 km initial-grid control places all three selected disks around the reference. Its downstream initialization completes with nine stationary shape and nine stationary hybrid fits, a 40-satellite pool and 18 physical exports. The qualified A/B/C comparison has begun; initialization success alone is not accuracy. DS21-025 remains metadata-ready only. | SOL independent initialization/seed audit; coordinator bounded model fits |
 | 2 | Timing versus position identifiability | Finite-displacement asymmetry persists. The 75-endpoint timing audit finds seven boundary states on DS21-009, none on DS21-011 or original DS21-039 controls; active saturation is not shared by every combination failure. Further attribution must distinguish continuous nuisance compensation and association changes from an actual timestamp/orbit defect. | SOL timing reconstruction and independent audit complete |
 | 3 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
 | 4 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
@@ -167,8 +167,14 @@ stationary fits. Its three training-selected discovery locations are
 6.719 / 18.496 / 14.009 km from the reference, joined only after sealing.
 All three 25 km disks now contain it. This supports broader initial coverage on
 this case, but does not establish final accuracy or full-DS21 transfer. A new
-qualified authority adapter will preserve the original downstream numerical
-stages and budgets for comparison. All original namespaces remain intact.
+qualified authority adapter preserves the original downstream numerical
+stages and budgets. Its [five-stage initialization](../2026_10_13_ds21_release_readiness/COVERAGE_PROPOSALS_013_RESULTS.md)
+has now completed, including nine stationary shape fits, nine stationary hybrid
+fits and 18 physical exports. The union grows 37 to 40, with stored source-function
+closure at most 7.275958e-12 Hz, distinct from the larger bootstrap projection
+losses retained in the report. The final-model consumer passed tests and review,
+model initialization completed, and the new A/B/C comparison has begun.
+All original namespaces remain intact.
 DS21-025 has passed metadata checks but has
 not been frozen or initialized. No reference-derived seed or added nuisance term
 is justified by these errors.

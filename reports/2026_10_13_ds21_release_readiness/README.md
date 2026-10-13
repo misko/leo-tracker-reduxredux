@@ -50,7 +50,14 @@ points now place the reference inside a 25 km local disk: their post-seal
 geodesic errors are 6.719 / 18.496 / 14.009 km. The nearest visited point is
 5.791596 km away in optimizer coordinates, versus 48.291651 km originally.
 This recovers useful discovery coverage; it is not a new A/B/C accuracy result.
-A qualified adapter for the unchanged downstream stages is being implemented.
+The [qualified downstream initialization](COVERAGE_PROPOSALS_013_RESULTS.md)
+has now completed all five original stages: nine stationary shape fits, nine
+stationary hybrid fits, both nine-call bootstrap stages and 18 physical exports.
+The candidate union grows from 37 to 40; maximum stored source-function closure
+error is 7.275958e-12 Hz; this is distinct from the much larger bootstrap
+target-projection losses retained in the report. The qualified final-model
+consumer has passed tests and review, and model initialization has completed.
+The new A/B/C comparison has begun; no new final accuracy has been evaluated.
 DS21-025 has passed metadata readiness only; no case freeze or initialization
 has started. There are still nine proposal sets and 25 missing initializations.
 The [independent 009 audit](THREE_MODEL_009_AUDIT.json)

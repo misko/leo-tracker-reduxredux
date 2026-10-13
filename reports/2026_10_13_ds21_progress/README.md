@@ -27,8 +27,14 @@ initial points replace the original 16. All three training-selected discovery
 locations now have 25 km disks containing the reference. Their errors are
 6.719 / 18.496 / 14.009 km after sealing; these are discovery points, not final
 model estimates. The run completed 300 fits, 299 stationary, in 361.223 seconds.
-Qualification of the unchanged downstream A/B/C comparison is underway. The
-original severe DS21-013 final-fit errors remain in the tables below.
+The [qualified initialization chain](../2026_10_13_ds21_release_readiness/COVERAGE_PROPOSALS_013_RESULTS.md)
+is now complete: nine stationary shape fits, nine stationary hybrid fits,
+both nine-call bootstrap stages and 18 physical seed exports, with a 40-satellite
+pool. Maximum stored transfer closure is 7.275958e-12 Hz, distinct from the
+larger bootstrap target-projection losses retained in the report. The final-model
+consumer passed tests and review, model initialization completed, and A/B/C
+fitting has begun; no new final accuracy is available.
+The original severe DS21-013 final-fit errors remain in the tables below.
 
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
