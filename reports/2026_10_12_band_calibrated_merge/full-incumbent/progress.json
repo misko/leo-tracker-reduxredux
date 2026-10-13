@@ -832,10 +832,135 @@
       "role": "development",
       "calibration": "raw",
       "mode": "joined-conditioned",
-      "terminal_status": "pending",
-      "last_recorded_slice": null,
-      "evaluation": null,
-      "evaluation_reason": null
+      "terminal_status": "complete",
+      "last_recorded_slice": {
+        "status": "complete",
+        "reason": null,
+        "binding": "sha256:12b740cac867e55a0177af5db724df3e50a680f2b1e366f2dd4321a764c2a2a4",
+        "elapsed_s": 506.91235919995233,
+        "reference_usage": "none"
+      },
+      "evaluation": {
+        "dataset": "DS20",
+        "session_id": "fast-014c72ff95ab599c51ba3b3ec9b92cb8",
+        "calibration": "raw",
+        "mode": "joined-conditioned",
+        "role": "development",
+        "rows": [
+          {
+            "arm": "fitted-c",
+            "selected": true,
+            "reasons": [],
+            "latitude_deg": 37.840126814297534,
+            "longitude_deg": -122.45089277399524,
+            "horizontal_error_m": 3208.9636014440166,
+            "objective": 38882.69517318909,
+            "selection_score": 38882.69517318909,
+            "posterior_rms_hz": 117.13977786274585,
+            "stationarity": 2.0744870369744216e-05,
+            "converged": true,
+            "coefficient_hz_per_ghz": 53.33577204221304,
+            "accepted_stage": "B7",
+            "satellites": [
+              46075,
+              48356,
+              59303,
+              59304,
+              61728,
+              61867,
+              62501,
+              62567,
+              66010,
+              66089,
+              66096,
+              66930,
+              67334,
+              67713,
+              67913,
+              68546,
+              69466
+            ],
+            "likelihood_nll": 38814.19691461528
+          },
+          {
+            "arm": "zero-c",
+            "selected": true,
+            "reasons": [],
+            "latitude_deg": 37.84130225334189,
+            "longitude_deg": -122.4456207965214,
+            "horizontal_error_m": 3618.8071348949006,
+            "objective": 38904.94585870771,
+            "selection_score": 38904.94585870771,
+            "posterior_rms_hz": 120.48018786435517,
+            "stationarity": 2.3095752967099148e-05,
+            "converged": true,
+            "coefficient_hz_per_ghz": 0.0,
+            "accepted_stage": "B7",
+            "satellites": [
+              46075,
+              48356,
+              59303,
+              59304,
+              61728,
+              61867,
+              62501,
+              62567,
+              66010,
+              66089,
+              66096,
+              66930,
+              67334,
+              67713,
+              67913,
+              68546,
+              69466
+            ],
+            "likelihood_nll": 38840.00075734619
+          }
+        ],
+        "operational_pair": {
+          "both_selected": true,
+          "common_bank": true,
+          "common_stage": true
+        },
+        "latest_common_stage": "B7",
+        "common_stage_rows": [
+          {
+            "arm": "fitted-c",
+            "stage": "B7",
+            "reference_error_m": 3208.9636014440166,
+            "objective": 38882.69517318909,
+            "likelihood_nll": 38814.19691461528,
+            "stationarity": 2.0744870369744216e-05,
+            "converged": true,
+            "coefficient_hz_per_ghz": 53.33577204221304,
+            "bank_count": 17
+          },
+          {
+            "arm": "zero-c",
+            "stage": "B7",
+            "reference_error_m": 3618.8071348949006,
+            "objective": 38904.94585870771,
+            "likelihood_nll": 38840.00075734619,
+            "stationarity": 2.3095752967099148e-05,
+            "converged": true,
+            "coefficient_hz_per_ghz": 0.0,
+            "bank_count": 17
+          }
+        ],
+        "same_stage_bank_basis": "Same frozen run_joint_stages model in both arms",
+        "reference": [
+          37.84903264307456,
+          -122.4856541910174
+        ],
+        "reference_evidence": "Configured baseline receiver reference; evaluation only",
+        "reference_products": "/srv/bulk/leo",
+        "reference_document_sha256": "sha256:6a63790f0c407346fd88047545580870b30edbf613e09e16851a635981ab814b",
+        "scope": "Operational selected arms and latest stationary common stage; no reference in selection"
+      },
+      "evaluation_reason": null,
+      "terminal_sha256": "6a52d23d5f905a9014a3660e7e4f4cd9acf675f05d44b364988c9007d6d56e9b",
+      "terminal_path": "/srv/bulk/leo-dev/leo-band-calibrated-merge/reports/2026_10_12_band_calibrated_merge/local/full-incumbent/DS20/fast-014c72ff95ab599c51ba3b3ec9b92cb8/raw-joined-conditioned/terminal.json"
     },
     {
       "dataset": "DS20",
@@ -1323,7 +1448,7 @@
     }
   ],
   "protocol_sha256": "f671a79efab242258958ee0b9b552b46ff0418f00015b5b5364344dbde9a61c9",
-  "seal_sha256": "41a2929cfb55a314ae34e2577037098e734f9f704a345a9e5e4f3830758cba2d",
+  "seal_sha256": "26c5a83af6aa29fcbb5230fc91048d9a1ce3f0b4456bec7854d442c3e83c4244",
   "script_sha256": "cf6e878cfe72ff7bb44cdc67e391f4312991e278998b1d2afe7bba8b3c1d3af6",
   "scope": "Entire frozen panel, including pending and failed modes; last slice is not worker liveness"
 }
