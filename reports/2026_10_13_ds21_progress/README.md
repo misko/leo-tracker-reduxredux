@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 16:07 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 16:15 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -69,9 +69,17 @@ solution in the original search, but does not establish a position improvement.
 The cold starts also fail to recover the known original objective at its own
 position, so these profiles cannot rank globally optimized positions.
 
-The next bounded control has three warm fixed-position fits and four free-position
-continuations, with their seeds and selection rule fixed before execution. It
-retains the original objective, candidates, fitted c and geographic search domain.
+The subsequent seven-call control completed in 72.51 seconds with every outcome
+stationary. It used three warm fixed-position fits and four free-position
+continuations, with seeds and selection fixed before execution, preserving the
+original objective, candidates, fitted c and geographic search domain. Its
+training-selected all-band solution improves objective to **32,380.955**, but
+post-seal reference evaluation shows only a small position improvement:
+**4.291 km → 4.073 km**. It remains worse than the historical high-band anchor's
+2.557 km. The search deficit is real, but addressing it alone is insufficient;
+the next matched control examines observation weighting within the joint objective.
+The [refinement report](../2026_10_13_ds21_039_root_cause/REFINEMENT_RESULTS.md)
+contains the full outcomes and post-seal position comparison.
 Detailed [calibration](../2026_10_13_ds21_039_root_cause/CALIBRATION_RESULTS.md) and
 [association](../2026_10_13_ds21_039_association/RESULTS.md) reports are available.
 
@@ -81,7 +89,10 @@ DS21 contains 108 recordings: 54 fast CH1–8 and 54 adaptive CH1–4. The froze
 acquisition-hour split reserves 34 fast recordings for development and 20 for
 locked evaluation; adaptive recordings have 35 development and 19 evaluation
 members. Within recordings, randomized whole 20-second groups keep correlated
-observations together.
+observations together. The [metadata-only readiness audit](../2026_10_13_ds21_release_readiness/README.md)
+finds preparation receipts for all 34 fast development members, but discovery and
+proposal caches for only five; 29 need initialization. The 54 adaptive members
+have no tracking-input binding in this membership and require separate preparation.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20

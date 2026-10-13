@@ -2,8 +2,13 @@
 
 The initial [four-direction diagnostic](DIAGNOSTIC_RESULTS.md) completed in
 38.73 seconds after a preserved numerical-summary failure and repair. It made
-zero optimizer calls. The separately frozen 18 fixed-position fits are now
-running; no new position improvement is claimed.
+zero optimizer calls. The separately frozen 18 fixed-position fits have
+[completed](OPTIMIZATION_RESULTS.md), with 17 stationary outcomes. A better
+feasible all-band objective at the high-band anchor establishes an optimization
+deficit. Seven separately frozen warm/free continuations then completed with
+all outcomes stationary. Their training-selected all-band solution improves
+configured-reference error only from 4.291 to 4.073 km; the 0.5 km target remains
+unmet. Matched observation-weighting fits are the next control.
 
 The user requested four parallel investigations of DS21-039, followed by full
 DS21 evaluation, targeting **less than 0.5 km for every eligible CH1–8 recording**.
