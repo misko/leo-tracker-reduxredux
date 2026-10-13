@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 15:51 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 16:07 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -49,7 +49,8 @@ calls. The subsequent bounded profile slice is 18 fitted-`c` fits. At this updat
 the corrected four-direction diagnostic has completed in 38.73 seconds, with
 zero optimizer calls and all 13 outputs/source checks passing. There are 69
 passing focused diagnostic tests and eight passing profile-runner tests. The
-prescribed 18 fixed-position fits have now started under a separate freeze.
+prescribed 18 fixed-position fits have completed under a separate freeze: 17
+stationary outcomes, one retained nonstationary outcome, and no retries.
 The detailed [measured diagnostic results](../2026_10_13_ds21_039_root_cause/DIAGNOSTIC_RESULTS.md)
 and [investigation plan](../2026_10_13_ds21_039_root_cause/README.md) retain controls,
 the first run's numerical-summary failure and acceptance criteria.
@@ -59,8 +60,20 @@ versus half fits change the preferred satellite/clutter assignment in 18–20% o
 windows. Copying a half-band correction alone into the full-model physical state
 worsens frequency likelihood in both bands. Equal block weights weaken one
 preference but do not reverse either within-band comparison. This prioritizes
-the calibration/association interaction and remaining optimizer test; it does
-not establish a position improvement or meet the 0.5 km target.
+the calibration/association interaction. The completed
+[fixed-position profiles](../2026_10_13_ds21_039_root_cause/OPTIMIZATION_RESULTS.md)
+found an all-band objective of **32,398.260** at the high-band anchor, improving
+the original **33,172.423** by 774.164 within the original search domain. Both
+bands' likelihood contributions improve. This establishes a missed feasible
+solution in the original search, but does not establish a position improvement.
+The cold starts also fail to recover the known original objective at its own
+position, so these profiles cannot rank globally optimized positions.
+
+The next bounded control has three warm fixed-position fits and four free-position
+continuations, with their seeds and selection rule fixed before execution. It
+retains the original objective, candidates, fitted c and geographic search domain.
+Detailed [calibration](../2026_10_13_ds21_039_root_cause/CALIBRATION_RESULTS.md) and
+[association](../2026_10_13_ds21_039_association/RESULTS.md) reports are available.
 
 ## Full DS21 validation
 
@@ -86,7 +99,7 @@ evaluation.
 ## Provenance
 
 These summaries are derived from the sealed shared-proposal comparison in the
-research worktree, current integration commit `199da6adf`, and its immutable
+research worktree, diagnostic/profile evidence through commit `ae81c4a71`, and its immutable
 membership inventory SHA-256
 `a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39`.
 The original protocol and detailed local receipts are retained; this report
