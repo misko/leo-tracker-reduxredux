@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13 18:23 UTC. This is an interim measured-results report, not a
+Updated 2026-10-13 18:39 UTC. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -192,6 +192,14 @@ evidence, partition and causal catalogue were bound before inference. A cached
 terminal validation passed without new fits. This adds one discovery result:
 28 development recordings still need discovery, and 29 need downstream proposal
 caches. No new position-accuracy result is claimed.
+
+DS21-007's [fitted shape stage](../2026_10_13_ds21_release_readiness/SHAPE_007_RESULTS.md)
+subsequently completed nine stationary fits in 17.446 seconds, supplying the
+three required shape parents. Fresh bootstrap, absolute hybrid fitting, cold
+bootstrap and six physical proposal exports remain before its final comparison.
+In parallel, the [fixed five-case likelihood-scale protocol](../2026_10_13_ds21_039_association/FIVE_CASE_TEMPERING_PROTOCOL.md)
+prescribes paired alpha=1 and alpha=0.25 fits from each recording's six historical
+all-band endpoints. This transfer test has not yet produced results.
 
 After a supported DS21-039 fix, test the five existing development cases, then
 all 34 fast development recordings. Freeze the release before evaluating the 20
