@@ -18,10 +18,10 @@ execution order.
 
 | Priority | Investigation | Discriminating next step | Ownership/status |
 | --- | --- | --- | --- |
-| 1 | Timing versus position identifiability | Finite-displacement asymmetry persists. The 75-endpoint timing audit finds seven boundary states on 009, none on 011 or original 039 controls; saturation is not a universal cause. Further attribution must distinguish continuous nuisance compensation and association changes from an actual timestamp/orbit defect. | SOL timing reconstruction and independent audit complete |
-| 2 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
-| 3 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
-| 4 | Initialization, independent band comparison and full DS21 coverage | DS21-009 and 011 each completed 54 stationary A/B/C fits. C/all reaches 0.480 km on 011; other results miss 0.5 km. Continue 013 and the 25 missing proposal sets, retaining shared initialization caveats and both beneficial and harmful combination results. | SOL implementation/receipt audit; coordinator runs bounded slices |
+| 1 | Shared initialization/source/coverage failure | DS21-013 gives CH1–8 errors 267–269 km across A/B/C despite 52 stationary fits out of 54. All six original 25 km proposal disks exclude the configured reference; source bindings pass. Plan a reference-blind discovery-coverage/multiview exploration control with the unchanged 100-point budget before remaining initialization. No alternative is validated. DS21-025 is metadata-ready only. | Coordinator diagnosis; SOL report and independent receipt audit |
+| 2 | Timing versus position identifiability | Finite-displacement asymmetry persists. The 75-endpoint timing audit finds seven boundary states on DS21-009, none on DS21-011 or original DS21-039 controls; active saturation is not shared by every combination failure. Further attribution must distinguish continuous nuisance compensation and association changes from an actual timestamp/orbit defect. | SOL timing reconstruction and independent audit complete |
+| 3 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
+| 4 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
 
 The current agent thread limit prevents launching four additional workers at
 once. Two existing SOL workers continue in parallel; the coordinator handles
@@ -149,8 +149,21 @@ hybrid fits and 18 physical seed exports. The subsequent
 [DS21-011 chain](../2026_10_13_ds21_release_readiness/PROPOSALS_011_RESULTS.md)
 also completed, followed by [DS21-013](../2026_10_13_ds21_release_readiness/PROPOSALS_013_RESULTS.md).
 Nine development cases have complete proposal sets and 25 still require
-initialization. DS21-009 and DS21-011's final comparisons are now complete;
-DS21-013's final comparison is next.
+initialization. DS21-009, DS21-011 and DS21-013's final comparisons are now complete.
+The [DS21-013 results](../2026_10_13_ds21_release_readiness/THREE_MODEL_013_RESULTS.md)
+show a shared severe miss: A/all 266.840 km, B/all 268.879 km and C/all 267.760 km.
+Of 54 calls, 52 are stationary; the two C failures remain excluded without retry.
+All seven selected boundary flags are false. The configured reference is inside
+the original 250 km prior but outside all six 25 km proposal disks; its nearest
+disk gap is 157.457260 km in optimizer coordinates. The saved search ends at 100 points with 76 deferred
+cells, allocating 16 / 16 / 24 / 44 points at 100 / 50 / 25 / 12.5 km spacings.
+Its all-view best-first score does not certify bounds for finer cells. Fixed
+local refinement cannot recover the reference, but why discovery missed and
+which replacement policy works remain unresolved. Plan a reference-blind
+discovery-coverage/multiview exploration control with the same 100-point budget
+and original namespaces preserved. DS21-025 has passed metadata checks but has
+not been frozen or initialized. No reference-derived seed or added nuisance term
+is justified by these errors.
 
 The first generic A/B/C initialization on DS21-009 failed with a bounded
 carried-calibration projection convergence error, before any location fits or

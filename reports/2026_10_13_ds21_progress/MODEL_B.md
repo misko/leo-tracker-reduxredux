@@ -42,6 +42,21 @@ Combining improves on both halves here, unlike 009, but still misses 0.5 km.
 All required initialization projections succeeded with the original strict
 solver; no fallback was needed. The shared initialization caveat remains.
 
+The subsequent [DS21-013 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_013_RESULTS.md)
+completed 18 stationary B fits, but all/low/high errors are
+**268.879362 / 268.826502 / 190.851447 km**. All selected physical boundary
+flags are false; training selects `cold-0` for all/low and `cold-1` for high.
+One unselected B/all `shape-low` initialization uses independently certified
+exact source transfer after strict projection nonconvergence, with maximum
+closure 7.276e-12 Hz. Six carried clock coefficients are only 4.55e-13 Hz inside
+the -2000 Hz bound; its empty exact-equality active list does not establish
+substantial interior margin. The shared position failure is not attributed
+to this seed fallback. The configured reference is inside the regional prior
+but outside all six fixed local disks; their nearest gap is 157.457260 km
+in optimizer coordinates.
+This coverage failure requires a reference-blind discovery control before
+further rollout. No new tolerances, retries or source changes were used.
+
 The current assigned investigation verifies native sky-RF scaling, clock
 correction at actual receive times, and physical cross-view calibration
 transport. It profiles local calibration directions against affine terms,

@@ -1,0 +1,688 @@
+{
+  "schema": "ds21-three-model-013-receipt-audit-v1",
+  "label": "DS21-013",
+  "audit_scope": "Receipt bytes and metadata/geometry arithmetic only; no predictor, objective, gradient, optimizer, projection or reference-error evaluation calls. One explicitly authorized post-seal reference geometry diagnostic.",
+  "bindings": {
+    "reader_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-013/protocol.json",
+      "sha256": "sha256:4d2e39376d2ab557295f653896ff0743723594e0e012e1a5e2beed818c876d27"
+    },
+    "reader_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-013/terminal.json",
+      "sha256": "sha256:40933c2e86be096a41ef3805d611db4276456768d77b81c958214cb08e3feae7"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-013/development-errors.json",
+      "sha256": "sha256:b421060295a0f988582062f091fbbfbdc76e49d2ee1e3e17aed931de8d8671a6"
+    },
+    "scientific_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/protocol.json",
+      "sha256": "sha256:43e53a0d1d4a0c7d003847ccf9bed208eb23945886bb323e65da858b416c83c7"
+    },
+    "initialization": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/initialization.json",
+      "sha256": "sha256:a4027d8f5c35b20ab695aa5f895e97308caaa3e91af77ea8e5fb8a36f1aeab80"
+    },
+    "reader_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds21_fitted_model_receipts.py",
+      "sha256": "sha256:767369586f259e3c854f53e8c3bfe1808cd46c1d4b42531ffb70dccdfc6932b5"
+    }
+  },
+  "checks": {
+    "reader_sources_live_and_archived": 412,
+    "numerical_sources_live_and_archived": 411,
+    "unchanged_v1_source_hashes": 410,
+    "verified_immediate_parent_and_evaluation_bindings": 13,
+    "scientific_inventory_bindings": 246,
+    "unit_reviews": 12,
+    "complete_outcomes": 12,
+    "optimizer_calls": 54,
+    "stationary_calls": 52,
+    "launches": 54,
+    "call_receipts": 54,
+    "terminations": 54,
+    "complete_slices": 12,
+    "orphan_or_failed_inventory": 0,
+    "prefit_seed_and_options_checks": 54,
+    "raw_numeric_call_fields_preserved": true,
+    "high_descriptive_overrides": 6,
+    "scalar_diagnostic_checks": 12,
+    "selection_checks": 7,
+    "review_optimizer_calls": 0,
+    "reference_or_held_used_in_fit_or_selection": false,
+    "nonstationary_calls_retained": 2
+  },
+  "inventory": {
+    "training_windows": {
+      "all": 2666,
+      "low": 1433,
+      "high": 1233
+    },
+    "satellites": 49,
+    "held_blocks": [
+      3,
+      4,
+      11
+    ],
+    "proposal_order": [
+      "cold-0",
+      "cold-1",
+      "cold-2",
+      "shape-low",
+      "shape-high",
+      "shape-all"
+    ]
+  },
+  "limits": {
+    "fit_seconds": 20,
+    "iterations": 600,
+    "local_radius_km": 25,
+    "stationarity_ceiling": 0.001,
+    "physical_constraints_minimum_floor": -1e-07,
+    "maximum_calls": 54,
+    "fit_elapsed_s_range": [
+      1.254903801716864,
+      20.063333520665765
+    ],
+    "stationarity_range": [
+      5.9748398718195705e-05,
+      235.23058713120705
+    ],
+    "reported_physical_constraints_minimum_range": [
+      -2.2737367544323206e-13,
+      3.4986370331518124
+    ],
+    "geography_radius_from_original_center_km_range": [
+      3.363603436423468,
+      25.000000000000007
+    ],
+    "boundary_calls": [
+      "A-1/high",
+      "A-1/final",
+      "B-all/1",
+      "C-all/5",
+      "C-low/2",
+      "C-high/5"
+    ]
+  },
+  "unit_summary": [
+    {
+      "unit": "A-0",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 0,
+      "objective": 35928.28875762681
+    },
+    {
+      "unit": "A-1",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 1,
+      "objective": 38391.66034734806
+    },
+    {
+      "unit": "A-2",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 2,
+      "objective": 37151.84665112213
+    },
+    {
+      "unit": "A-3",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 3,
+      "objective": 37760.57835835648
+    },
+    {
+      "unit": "A-4",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 4,
+      "objective": 37152.885869794874
+    },
+    {
+      "unit": "A-5",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 5,
+      "objective": 38160.086747251305
+    },
+    {
+      "unit": "B-all",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 0,
+      "objective": 34372.42849101662
+    },
+    {
+      "unit": "B-low",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 0,
+      "objective": 18795.61207334884
+    },
+    {
+      "unit": "B-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 1,
+      "objective": 16386.962396943443
+    },
+    {
+      "unit": "C-all",
+      "calls": 6,
+      "stationary_calls": 5,
+      "selected_start": 0,
+      "objective": 35304.11654547489
+    },
+    {
+      "unit": "C-low",
+      "calls": 6,
+      "stationary_calls": 5,
+      "selected_start": 0,
+      "objective": 19062.665547012635
+    },
+    {
+      "unit": "C-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 2,
+      "objective": 16739.5350455218
+    }
+  ],
+  "rows": [
+    {
+      "model": "A",
+      "view": "all",
+      "error_km": 266.83967868070744,
+      "below_0_5km": false,
+      "proposal_id": "cold-0",
+      "common_c_hz_per_ghz": 82.72734294108194,
+      "objective": 35928.28875762681,
+      "likelihood_nll": 35400.3528790655,
+      "fit_posterior_rms_hz": 158.2668819987231,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1354.9884022186873,
+      "boundary": false,
+      "stationarity": 0.0005341567179754786,
+      "reported_physical_constraints_minimum": 0.3538155652510575,
+      "local_center_distance_km": 11.82145042208198,
+      "prior_center_distance_km": 162.05558271504182,
+      "point_km": [
+        161.161127696072,
+        17.003023520601865
+      ],
+      "coordinates_deg": [
+        38.719842192905936,
+        -119.63663684014283
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "B",
+      "view": "all",
+      "error_km": 268.8793621875466,
+      "below_0_5km": false,
+      "proposal_id": "cold-0",
+      "common_c_hz_per_ghz": -611.3488131353256,
+      "objective": 34372.42849101662,
+      "likelihood_nll": 33680.32160208956,
+      "fit_posterior_rms_hz": 124.39413391392404,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1702.657498644215,
+      "boundary": false,
+      "stationarity": 0.0001713166536993423,
+      "reported_physical_constraints_minimum": 0.851408486207724,
+      "local_center_distance_km": 14.202797910557287,
+      "prior_center_distance_km": 163.67795953267208,
+      "point_km": [
+        162.57535594828417,
+        18.96649875616856
+      ],
+      "coordinates_deg": [
+        38.7372359739875,
+        -119.61987631174858
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "B",
+      "view": "low",
+      "error_km": 268.82650203805485,
+      "below_0_5km": false,
+      "proposal_id": "cold-0",
+      "common_c_hz_per_ghz": -677.4611836830488,
+      "objective": 18795.61207334884,
+      "likelihood_nll": 18069.10987305222,
+      "fit_posterior_rms_hz": 125.37463664756105,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 921.4341985063618,
+      "boundary": false,
+      "stationarity": 0.0002241863635154967,
+      "reported_physical_constraints_minimum": 1.1285255721573542,
+      "local_center_distance_km": 10.682429610135301,
+      "prior_center_distance_km": 165.57542190381596,
+      "point_km": [
+        165.1257660477283,
+        12.194331706885912
+      ],
+      "coordinates_deg": [
+        38.67588028830714,
+        -119.59209746391068
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "B",
+      "view": "high",
+      "error_km": 190.85144692066626,
+      "below_0_5km": false,
+      "proposal_id": "cold-1",
+      "common_c_hz_per_ghz": -755.8993175963027,
+      "objective": 16386.962396943443,
+      "likelihood_nll": 15802.83501510357,
+      "fit_posterior_rms_hz": 114.54820996978448,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 728.7853555270962,
+      "boundary": false,
+      "stationarity": 0.00022615497004452312,
+      "reported_physical_constraints_minimum": 1.64451563271707,
+      "local_center_distance_km": 9.851144174109926,
+      "prior_center_distance_km": 230.84289959736537,
+      "point_km": [
+        34.359948668364126,
+        -228.27141350161804
+      ],
+      "coordinates_deg": [
+        36.52807183617838,
+        -121.10993751499565
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "C",
+      "view": "all",
+      "error_km": 267.75987823661376,
+      "below_0_5km": false,
+      "proposal_id": "cold-0",
+      "common_c_hz_per_ghz": -488.69406873204264,
+      "objective": 35304.11654547489,
+      "likelihood_nll": 34801.1004230753,
+      "fit_posterior_rms_hz": 150.45139765575533,
+      "native_posterior_rms_hz": 150.4513976557553,
+      "signal_mass": 1532.3022453036924,
+      "boundary": false,
+      "stationarity": 0.0002052844802427842,
+      "reported_physical_constraints_minimum": 2.3023850029568678,
+      "local_center_distance_km": 13.490500888895808,
+      "prior_center_distance_km": 162.55968286309448,
+      "point_km": [
+        161.48232261533022,
+        18.684484882069
+      ],
+      "coordinates_deg": [
+        38.734900658692645,
+        -119.63254174777231
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "C",
+      "view": "low",
+      "error_km": 271.45294328085754,
+      "below_0_5km": false,
+      "proposal_id": "cold-0",
+      "common_c_hz_per_ghz": -800.4541538619501,
+      "objective": 19062.665547012635,
+      "likelihood_nll": 18601.302928643447,
+      "fit_posterior_rms_hz": 152.77792886837943,
+      "native_posterior_rms_hz": 152.77792886837946,
+      "signal_mass": 841.1644698251948,
+      "boundary": false,
+      "stationarity": 0.00019095522410653544,
+      "reported_physical_constraints_minimum": 0.6570729485083326,
+      "local_center_distance_km": 17.89270635659185,
+      "prior_center_distance_km": 165.48244406452233,
+      "point_km": [
+        163.95987241658932,
+        22.396417809630023
+      ],
+      "coordinates_deg": [
+        38.76781656808715,
+        -119.60310106356067
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    },
+    {
+      "model": "C",
+      "view": "high",
+      "error_km": 198.39805937534592,
+      "below_0_5km": false,
+      "proposal_id": "cold-2",
+      "common_c_hz_per_ghz": -806.6235316616551,
+      "objective": 16739.5350455218,
+      "likelihood_nll": 16219.152358103747,
+      "fit_posterior_rms_hz": 119.92813121807629,
+      "native_posterior_rms_hz": 119.92813121807627,
+      "signal_mass": 657.9493997351569,
+      "boundary": false,
+      "stationarity": 0.0002931518543234368,
+      "reported_physical_constraints_minimum": 0.7040038154180017,
+      "local_center_distance_km": 16.402515772978468,
+      "prior_center_distance_km": 242.0783928486509,
+      "point_km": [
+        31.62918354420758,
+        -240.00321462953906
+      ],
+      "coordinates_deg": [
+        36.42266373268201,
+        -121.14098190645353
+      ],
+      "coordinate_transport_delta_deg": 0.0
+    }
+  ],
+  "metadata_compatibility": {
+    "reader_commit": "13332f295",
+    "review_calls": 0,
+    "raw_high_training_fractions": [
+      0.5,
+      0.5
+    ],
+    "path_high_training_fractions": null,
+    "offset_parameterization": "uncentred-high-minus-low",
+    "all_other_raw_high_fields_exact": true,
+    "low_and_final_path_raw_fields_exact": true,
+    "all_raw_calls_retained": 54,
+    "no_fit_retries": true
+  },
+  "reference_gate": {
+    "method": "Source order and sealed bindings; no independent reference recomputation",
+    "source": "tools/ds21_fitted_model_receipts.py:275-312",
+    "all_twelve_reviews_validated_before_terminal_write": true,
+    "terminal_written_and_read_before_reference_call": true
+  },
+  "limitations": [
+    "Seven configured-reference development errors are copied from the sealed evaluator; no independent surveyed truth or reference-error recalculation.",
+    "Full A is six low -> locked-high -> final-all paths, with final-all selection only; no separate A half-view accuracy rows.",
+    "Half-view B/C outcomes share discovery, geography and physical initialization; C lifts derive once from all-training proposals.",
+    "Raw fit scores differ across numerical models and observation views; they are not accuracy rankings.",
+    "Every selected view misses 0.5 km by a large margin; no failure or nonstationary call is relabelled or omitted.",
+    "Domain checks use saved vectors, original centers and reported physical feasibility margins; no fresh physical model evaluation.",
+    "One exact feasible source transfer includes clock coefficients numerically at bounds; the empty exact-equality active list does not mean interior coefficients.",
+    "The 20-second objective deadline is a declared fit option; retained C-all start 3 reports 20.0633335 seconds including finish/audit work. It is nonstationary and was not retried."
+  ],
+  "nonstationary_outcomes": [
+    {
+      "unit": "C-all",
+      "call": "3",
+      "start": 3,
+      "proposal_id": "shape-low",
+      "call_receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/units/C-all/calls/3.json",
+        "sha256": "sha256:d2a5484e39d9684ba8b5862ea6965995a2856b01619d8dacdd28f52b501c6792"
+      },
+      "converged": false,
+      "solver_success": false,
+      "stationarity": 235.23058713120705,
+      "elapsed_s": 20.063333520665765,
+      "reported_physical_constraints_minimum": 2.231755887850639,
+      "boundary": false,
+      "objective": 37671.31668043879,
+      "likelihood_nll": 37200.03392970022,
+      "error_type_present": false,
+      "reason_present": false,
+      "retained": true,
+      "eligible_for_selection": false
+    },
+    {
+      "unit": "C-low",
+      "call": "2",
+      "start": 2,
+      "proposal_id": "cold-2",
+      "call_receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/units/C-low/calls/2.json",
+        "sha256": "sha256:0c6282de2c1d526f2c848a6cb3d70fdd6a381e1e353cec0a072540a00ce4900b"
+      },
+      "converged": false,
+      "solver_success": true,
+      "stationarity": 0.001292600349297849,
+      "elapsed_s": 7.620695579331368,
+      "reported_physical_constraints_minimum": 6.458833468059311e-12,
+      "boundary": true,
+      "objective": 20028.93941014746,
+      "likelihood_nll": 19575.759252300493,
+      "error_type_present": false,
+      "reason_present": false,
+      "retained": true,
+      "eligible_for_selection": false
+    }
+  ],
+  "case_identity": {
+    "label": "DS21-013",
+    "session_id": "fast-f7d2ccb1dc2731824be77cf0b6de2fe6",
+    "recording_id": "fast8-auto-20261012-035154-545913af-1-upper",
+    "raw_identity": "sha256:f82c985cd514270c4331ef168084336a4ccc5d2f117df82e61893115358088fa",
+    "captured_utc_ns": 1791777121063691255,
+    "start_utc_ns": 1791777120929297737,
+    "role": "development",
+    "acquired_channels": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "original_input": {
+      "path": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_10_12_ds21_post_ds20/local/analysis/85a57f9e7cca3ad6cd79aee9be0c47a50bf76e9fb577b07b8aa80a54b64fd69e.json",
+      "sha256": "sha256:85a57f9e7cca3ad6cd79aee9be0c47a50bf76e9fb577b07b8aa80a54b64fd69e"
+    },
+    "case_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-013/case/protocol.json",
+      "sha256": "sha256:8f6b5898f242bbf7d52de7d923027fbe23cb3eda4d464fb061a2895b6bcfa676"
+    },
+    "source_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-013/case/source-protocol.json",
+      "sha256": "sha256:27fcf1da96c27ba3e9e6f9f053848fbaa259cdac57b881a99583f880356edd99"
+    },
+    "membership": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/membership.json",
+      "sha256": "sha256:a701553b01ae023ea8b68b4ea6757fc7a75dc9ac7c754118b69bd8bce6003c39"
+    },
+    "census": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/census/DS21-013.json",
+      "sha256": "sha256:a0fe04aae4d4b5098f4211234b1f3752dd0b8b4ed9a90c7bf9dbe5dbcb654b1b"
+    },
+    "membership_entry_exact": true,
+    "prepared_prior_partition_frames_match_original_case": true,
+    "input_payload": "Byte hash checked only; no new input decoding or observation preparation"
+  },
+  "coordinate_transport": {
+    "source": "src/leo/analysis/regional_position_score.py:38-49",
+    "method": "Independent standard-library spherical coordinate arithmetic from saved winner east/north and original prior; no reference/error recomputation",
+    "prior": {
+      "latitude_deg": 38.5816,
+      "longitude_deg": -121.4944,
+      "radius_km": 250.0,
+      "altitude_m": 0.0
+    },
+    "maximum_saved_coordinate_delta_deg": 0.0,
+    "original_proposal_centers_km": [
+      [
+        156.25,
+        6.25
+      ],
+      [
+        43.75,
+        -231.25
+      ],
+      [
+        25.0,
+        -225.0
+      ],
+      [
+        34.64166808210275,
+        -218.67592618813177
+      ],
+      [
+        167.68811756724122,
+        6.7916434802251855
+      ],
+      [
+        154.59033690235492,
+        -28.601487049454956
+      ]
+    ]
+  },
+  "initialization_checks": {
+    "initialization_location_calls": 0,
+    "matched_launch_and_termination": true,
+    "parent_export_pairings": 54,
+    "methods": {
+      "unused-initial-calibration": 12,
+      "original-strict-bounded-projection": 23,
+      "exact-feasible-source-transfer": 1,
+      "original-native": 18
+    },
+    "receiver_lift_derivations": 6,
+    "lift_view_pairings": 18,
+    "fallback": [
+      {
+        "model": "B",
+        "view": "all",
+        "start": 3,
+        "proposal_id": "shape-low",
+        "rms_hz": 4.700132462650116e-13,
+        "maximum_abs_hz": 7.275957614183426e-12,
+        "reported_proof_flags": {
+          "frame_verified": true,
+          "clock_basis_verified": true,
+          "coefficient_bounds_verified": true,
+          "timing_bounds_verified": true
+        },
+        "location_fit": false,
+        "calibration_and_nuisance_equal_source": true,
+        "frame_equal_original_training_frame": true,
+        "clock_coefficient_indices_numerically_at_bounds": [
+          14,
+          15,
+          17,
+          18,
+          20,
+          21
+        ],
+        "clock_bound_value_hz": -1999.9999999999995,
+        "distance_inside_clock_bound_hz": 4.547473508864641e-13,
+        "exact_active_bounds": [],
+        "saved_satellite_timing_range_s": [
+          -19.9,
+          19.900000000000002
+        ],
+        "strict_projection_error": "bounded carried-calibration projection did not converge"
+      }
+    ],
+    "native_candidates": {
+      "all": 3648,
+      "low": 2016,
+      "high": 1632
+    },
+    "certificate_limitation": "Saved basis/row-function closure certificate inspected; no new physical function, timing basis or projection replay"
+  },
+  "post_seal_reference_coverage": {
+    "authorization": "Parent explicitly authorized after all 12 outcomes and evaluation sealed; no fit, seed, selection or outcome changes",
+    "reference_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/cli/regional_position.py",
+      "sha256": "sha256:6de071077d8c2fe11a991b665c50edaf728ef9ffd320dca36cfedc44ee874bf9"
+    },
+    "coordinates_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/analysis/regional_position_score.py",
+      "sha256": "sha256:0ea7bf646896658488c7615a7a22f90597371a0a4f7634a4b75dc9303a8bcb79"
+    },
+    "reference_source_line": 32,
+    "reference_coordinates_deg": [
+      37.84903264307456,
+      -122.4856541910174
+    ],
+    "inverse_formula": "x=cos(lat1)*sin(dlon); y=cos(lat0)*sin(lat1)-sin(lat0)*cos(lat1)*cos(dlon); dot=sin(lat0)*sin(lat1)+cos(lat0)*cos(lat1)*cos(dlon); angle=atan2(hypot(x,y),dot); bearing=atan2(x,y); east=R*angle*sin(bearing); north=R*angle*cos(bearing); R=6371.0088 km",
+    "reference_point_km": [
+      -87.03579588322492,
+      -80.99086034665267
+    ],
+    "inverse_forward_closure_deg": 7.105427357601002e-15,
+    "prior_center_radius_km": 118.88965146183828,
+    "inside_original_250km_prior": true,
+    "local_radius_km": 25,
+    "distances_to_fixed_centers_km": {
+      "cold-0": 258.454921006659,
+      "cold-1": 199.2052545847441,
+      "cold-2": 182.45726037317598,
+      "shape-low": 183.7459729975219,
+      "shape-high": 269.42538867307286,
+      "shape-all": 247.2404386005408
+    },
+    "reference_inside_any_fixed_disk": false,
+    "fixed_disks_excluding_reference": 6,
+    "nearest_disk_gap_optimizer_km": 157.45726037317598,
+    "limit": "This proves fixed local searches cannot reach the configured reference in the original optimizer coordinates. It does not identify why discovery selected these proposals, establish true emitter identity, or prove a globally optimized model would be accurate."
+  },
+  "post_seal_discovery_coverage": {
+    "discovery_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-013/discovery/terminal.json",
+      "sha256": "sha256:cf735db9ec8fbca50293e0a317b47279b07b9e80012735861b5bb0496262be48"
+    },
+    "discovery_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-013/discovery/protocol.json",
+      "sha256": "sha256:de75077db75109902c5a6275bf402bf64772ea12befbf3ce228edc26e303e5ea"
+    },
+    "source_bindings": {
+      "src/leo/analysis/regional_position_search.py": {
+        "live": {
+          "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/analysis/regional_position_search.py",
+          "sha256": "sha256:63f800c7be02e36f153c9ee421485a134224f63567925dd4c5eca3672a9233bf"
+        },
+        "frozen_archive": {
+          "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/source-snapshot/0060-regional_position_search.py",
+          "sha256": "sha256:63f800c7be02e36f153c9ee421485a134224f63567925dd4c5eca3672a9233bf"
+        }
+      },
+      "src/leo/application/channel_group_discovery.py": {
+        "live": {
+          "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/application/channel_group_discovery.py",
+          "sha256": "sha256:5fa2d32f8a554f713b1149f09144192c6674af660009c19806543aff36cec9fd"
+        },
+        "frozen_archive": {
+          "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-013/source-snapshot/0130-channel_group_discovery.py",
+          "sha256": "sha256:5fa2d32f8a554f713b1149f09144192c6674af660009c19806543aff36cec9fd"
+        }
+      }
+    },
+    "points": 100,
+    "stop_reason": "point-budget",
+    "deferred_cells": 76,
+    "spacing_counts": {
+      "100.0": 16,
+      "50.0": 16,
+      "25.0": 24,
+      "12.5": 44
+    },
+    "bound_point_receipts_verified": 100,
+    "nearest_evaluated_point_km": [
+      -50.0,
+      -50.0
+    ],
+    "nearest_evaluated_spacing_km": 100.0,
+    "nearest_distance_optimizer_km": 48.29165147030725,
+    "nearest_distance_by_spacing_optimizer_km": {
+      "100.0": 48.29165147030725,
+      "50.0": 120.36953074684418,
+      "25.0": 164.93037462660004,
+      "12.5": 161.8479453167424
+    },
+    "no_finer_evaluated_point_closer": true,
+    "method": "Post-seal distance arithmetic over the original 100 saved search evaluations. No new search points, seeds, selection, scoring or reference-error evaluation.",
+    "limit": "This describes the evaluated search coverage. It does not identify why the hierarchy prioritized other regions or show that a globally searched original objective would select an accurate position."
+  }
+}

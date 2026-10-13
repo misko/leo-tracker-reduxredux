@@ -40,6 +40,17 @@ and no reported physical boundary flag. The near-threshold 009 result does not
 transfer to this case; A still misses 0.5 km here. No per-case reference-based
 choice between A/B/C is made.
 
+The subsequent [DS21-013 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_013_RESULTS.md)
+completed all 18 A calls, all stationary, but the training-selected `cold-0`
+final result misses severely at **266.839679 km**, with fitted c
+82.727343 Hz/GHz and no reported physical boundary flag. Its dependent stages
+are not independent half-band estimates. All three models fail severely on
+this shared initialization. The post-seal audit finds the configured reference
+outside all six original local disks despite being inside the regional prior.
+Fixed local refinement cannot recover it; why discovery missed is unresolved.
+A reference-blind coverage control must precede further expansion. The historical
+five-case statistics are unchanged.
+
 The current assigned investigation separates optimizer failure from objective
 mis-specification on DS21-039. It replays the original objective and profiles the
 unchanged all-band model at each training-selected full/half-band position.

@@ -32,8 +32,24 @@ The subsequent [DS21-011 comparison](THREE_MODEL_011_RESULTS.md) completed all
 **0.479573 / 1.080449 / 3.818150 km**. Only C/all passes 0.5 km on this case;
 all seven selected physical boundary flags are false. All 12 outcomes were
 sealed before reference evaluation. This does not establish full-DS21 success.
-DS21-013's final comparison is next. The [independent 009 audit](THREE_MODEL_009_AUDIT.json)
-passes; 011 has its own [receipt audit](THREE_MODEL_011_AUDIT.json).
+The subsequent [DS21-013 comparison](THREE_MODEL_013_RESULTS.md) now completed
+54 calls, 52 stationary, with two C nonstationary outcomes retained. A/all is
+**266.839679 km**, B/all/low/high **268.879362 / 268.826502 / 190.851447 km**,
+and C/all/low/high **267.759878 / 271.452943 / 198.398059 km**. All seven
+selected boundary flags are false and every view misses severely. The 12
+outcomes were sealed before reference evaluation; inactive reported boundaries
+and stationarity do not establish localization accuracy. The independent
+post-seal geometry audit finds the reference inside the original 250 km prior
+but outside all six fixed 25 km proposal disks, by at least 157.457260 km
+in optimizer coordinates.
+Local refinement cannot recover it. A reference-blind discovery-coverage/
+multiview exploration control with the unchanged 100-point budget is next;
+why the original discovery missed and which alternative works remain unresolved.
+DS21-025 has passed metadata readiness only; no case freeze or initialization
+has started. There are still nine proposal sets and 25 missing initializations.
+The [independent 009 audit](THREE_MODEL_009_AUDIT.json)
+passes; DS21-011 has its own [receipt audit](THREE_MODEL_011_AUDIT.json), as
+does [DS21-013](THREE_MODEL_013_AUDIT.json).
 Locked inference remains unopened.
 The metadata-only inventory below is retained as the historical audit.
 

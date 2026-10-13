@@ -82,3 +82,16 @@ case and improves on both halves. All selected physical boundary flags are false
 The winning combined proposal is `shape-all`, selected by training objective
 before the reference join. This single passing case does not establish full-DS21
 performance or justify selecting a different model for each known reference.
+
+The subsequent [DS21-013 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_013_RESULTS.md)
+has severe all/low/high misses of **267.759878 / 271.452943 / 198.398059 km**.
+Sixteen of 18 C fits are stationary. C/all `shape-low` start 3 retains KKT
+235.230587 after 20.063 seconds; C/low `cold-2` start 2 retains KKT 0.001292600,
+above the fixed 0.001 threshold despite solver success. Neither was retried or
+accepted by loosening the check. Training selects `cold-0` for all/low and
+`cold-2` for high; selected boundary flags are false. C's native seeds and six
+all-training receiver lifts are unchanged, so no cause is assigned to B's
+separate fallback. The independent post-seal audit finds the configured reference
+outside every original proposal disk despite being inside the regional prior.
+Why discovery missed is unresolved; a reference-blind coverage control must
+precede further expansion. The DS21-011 passing case does not establish generality.

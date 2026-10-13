@@ -6,7 +6,7 @@ report publication to remote `main`; research implementation remains separate.
 
 The original three-model comparison covers five fixed development recordings.
 The separate fitted-only expansion has now evaluated all three models on
-DS21-009 and DS21-011, in addition to the Model C-only DS21-007 baseline. All numbers below
+DS21-009, DS21-011 and DS21-013, in addition to the Model C-only DS21-007 baseline. All numbers below
 use **fitted `c`** and a training-objective-selected solution. Reference position
 is joined after results are sealed; lower frequency loss is not treated as proof
 of lower position error. The historical five-case table remains unchanged.
@@ -70,7 +70,32 @@ C's combined estimate passes 0.5 km on this case. Both B and C combining improve
 on their own halves, unlike B on 009. All seven selected physical boundary flags
 are false. A's near-threshold 009 result does not transfer to 011. No algorithm
 is chosen by per-case reference error; the full-DS21 target remains unmet.
-DS21-013's final comparison is next. Locked inference remains unopened.
+Locked inference remains unopened.
+
+The subsequent [DS21-013 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_013_RESULTS.md)
+has severe misses across all three models. All 54 calls completed and all 12
+outcomes were sealed before evaluation; 52 fits are stationary, with two C
+failures retained and excluded from selection:
+
+| DS21-013 fitted-only model | CH1–8 error km | CH1–4 error km | CH5–8 error km |
+| --- | ---: | ---: | ---: |
+| A, dependent sequential path | 266.839679 | — | — |
+| B, absolute-frequency fit | 268.879362 | 268.826502 | 190.851447 |
+| C, native association | 267.759878 | 271.452943 | 198.398059 |
+
+All seven selected boundary flags are false; stationarity and inactive reported
+timing/geographic boundaries coexist with severe position error. Every CH1–8
+winner uses `cold-0`, selected by training objective. The models share widely
+separated initialization proposals and original 25 km disks. The independent
+post-seal audit finds the configured reference inside the original 250 km prior
+but outside every proposal disk, by at least 157.457260 km in optimizer coordinates. Fixed local
+refinement therefore cannot recover it. Why discovery missed remains unresolved;
+the next step is a reference-blind discovery-coverage/multiview exploration
+control preserving the 100-point budget, before the remaining 25 initializations.
+B's one
+certified fallback seed is not a demonstrated cause; C uses unchanged native
+seeds. DS21-025 has passed metadata readiness only and has not been frozen or
+initialized. The single C/all pass on DS21-011 does not establish general success.
 
 The [cross-case timing audit](../2026_10_13_ds21_039_association/TIMING_SATURATION_009_011_039.md)
 has also passed independent reconstruction with zero new scientific calls.
@@ -104,9 +129,9 @@ accuracy improvement is justified by this result.
 
 ## Current four-direction investigation
 
-The [next four priorities](NEXT_FOUR_DIRECTIONS.md) incorporate the negative
-controls below: temporal association; calibration/timing confounding;
-likelihood-to-prior scale and correlation; initialization and dataset coverage.
+The [next four priorities](NEXT_FOUR_DIRECTIONS.md) now put the shared DS21-013
+initialization/coverage failure before further rollout. Temporal association,
+calibration/timing confounding and likelihood-to-prior scale remain unresolved.
 Two SOL workers are implementing the next controls in parallel, with bounded
 scientific runs serialized by the coordinator.
 
