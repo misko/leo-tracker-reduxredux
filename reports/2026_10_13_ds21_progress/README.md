@@ -25,6 +25,14 @@ Combining bands improves this case, but all views miss 0.5 km. It is reported
 separately from the original matched three-model table. Twenty-eight fast
 development cases still require initialization; locked inference is unopened.
 
+The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
+also completed: eight objective/gradient evaluations, zero fits, and all source
+and result seals verified. A 1 km move along the refined negative compensation
+ray is materially more expensive than the local quadratic predicts; exact prior
+arithmetic passes. A separate four-call fixed-geography nuisance-profile control
+is prescribed to distinguish finite linearization error from persistent local
+profile asymmetry. No new accuracy improvement is claimed by this diagnostic.
+
 ## Current four-direction investigation
 
 The [next four priorities](NEXT_FOUR_DIRECTIONS.md) incorporate the negative

@@ -1,0 +1,102 @@
+{
+  "schema": "ds21-039-timing-displacement-receipt-audit-v1",
+  "arm": "fitted-c",
+  "method": "Independent source/ancestor/seal hashes and saved-parameter/scalar arithmetic only; no new objective, gradient, fit, held or reference call",
+  "audit": {
+    "passed": true,
+    "live_archive_source_pairs": 338,
+    "immediate_ancestor_bindings": 9,
+    "old_cold_refinement_curvature_source_subsets_checked": true,
+    "original_input_bank_attempt_seed_bindings_checked": true,
+    "curvature_final_seal_files": 10,
+    "displacement_final_seal_files": 38,
+    "point_launch_result_termination_seals": 8,
+    "pair_receipts": 4,
+    "prescribed_source_step_displacement_physical_bounds_checked": true,
+    "objective_gradient_calls": 8,
+    "optimizer_calls": 0,
+    "reference_usage": "none",
+    "held_usage": "none",
+    "maximum_prior_ledger_abs_error": 4.26326e-12,
+    "maximum_prior_taylor_abs_error": 5.18474e-14
+  },
+  "authority": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-displacement-v1/freeze.json",
+      "sha256": "sha256:55919b458a0f8298613f5e6f428e42c3d1a1a09b65c42fef9f17fbb6b07b0c91"
+    },
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-displacement-v1/diagnostic/protocol.json",
+      "sha256": "sha256:94588f07daa815cc39f25987485fbbd6aeb1adfeb0084640fa07a9a84391f9a0"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-displacement-v1/diagnostic/terminal.json",
+      "sha256": "sha256:7bb1cebeb658f6ae88fcfe9c173adb90737b7df3a823203f5d242467cc8f9735"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-displacement-v1/diagnostic/final-seal.json",
+      "sha256": "sha256:382d6226933c2a5e325a44d3a1c33fe4dfb45be3a3069984a09e06d14d25b8f0"
+    },
+    "curvature_freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/freeze.json",
+      "sha256": "sha256:dc6ec6a7285d1405f8172fba882f944daa90d45973d6e67e7e77e858334ae04a"
+    },
+    "curvature_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/terminal.json",
+      "sha256": "sha256:398f16541bc416769954213b9c85f4afc0db49ae4d20945fc5c57c83d93ee7da"
+    },
+    "curvature_final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/timing-curvature-v1/diagnostic/final-seal.json",
+      "sha256": "sha256:077668c601d77c7b0c3db407b056c76b6df57c3948408a2787628d3591027486"
+    }
+  },
+  "limits": {"internal_seconds": 90, "external_term_seconds": 105, "external_kill_seconds": 110, "diagnostic_elapsed_seconds": 0.443987},
+  "rounding": "Compact scalar summaries use about six significant digits; full precision remains in the bound immutable point receipts",
+  "geometry": {
+    "displacement_km": 1,
+    "sign_convention": "East-positive weak axis; second saved step aligned to first",
+    "original_axis_east_north": [0.769738, 0.638360],
+    "refined_axis_east_north": [0.810346, 0.585952],
+    "steps": [0.0001, 0.00005],
+    "taylor_convention": "Matching source-step Hessian plus exact saved baseline physical gradient; separate likelihood and original-prior terms"
+  },
+  "results": [
+    {"endpoint": "original-all", "step": 0.0001, "sign": "minus", "exact_map_delta": 4.69935, "taylor_map_delta": 4.53569, "map_taylor_error": 0.163657, "exact_nll_delta": 5.49072, "exact_prior_delta": -0.791368, "prior_linear": -0.808252, "prior_quadratic": 0.0168841, "likelihood_linear": 0.808254, "likelihood_quadratic": 4.51881},
+    {"endpoint": "original-all", "step": 0.0001, "sign": "plus", "exact_map_delta": 4.32974, "taylor_map_delta": 4.53569, "map_taylor_error": -0.205946, "exact_nll_delta": 3.50461, "exact_prior_delta": 0.825137, "prior_linear": 0.808252, "prior_quadratic": 0.0168841, "likelihood_linear": -0.808254, "likelihood_quadratic": 4.51881},
+    {"endpoint": "original-all", "step": 0.00005, "sign": "minus", "exact_map_delta": 4.69935, "taylor_map_delta": 4.53629, "map_taylor_error": 0.163061, "exact_nll_delta": 5.49072, "exact_prior_delta": -0.791367, "prior_linear": -0.808251, "prior_quadratic": 0.0168841, "likelihood_linear": 0.808252, "likelihood_quadratic": 4.51940},
+    {"endpoint": "original-all", "step": 0.00005, "sign": "plus", "exact_map_delta": 4.32974, "taylor_map_delta": 4.53628, "map_taylor_error": -0.206545, "exact_nll_delta": 3.50460, "exact_prior_delta": 0.825135, "prior_linear": 0.808251, "prior_quadratic": 0.0168841, "likelihood_linear": -0.808252, "likelihood_quadratic": 4.51940},
+    {"endpoint": "refinement-free", "step": 0.0001, "sign": "minus", "exact_map_delta": 7.30184, "taylor_map_delta": 3.35819, "map_taylor_error": 3.94365, "exact_nll_delta": 7.67048, "exact_prior_delta": -0.368643, "prior_linear": -0.389575, "prior_quadratic": 0.0209315, "likelihood_linear": 0.389574, "likelihood_quadratic": 3.33726},
+    {"endpoint": "refinement-free", "step": 0.0001, "sign": "plus", "exact_map_delta": 3.42892, "taylor_map_delta": 3.35819, "map_taylor_error": 0.0707283, "exact_nll_delta": 3.01841, "exact_prior_delta": 0.410506, "prior_linear": 0.389575, "prior_quadratic": 0.0209315, "likelihood_linear": -0.389574, "likelihood_quadratic": 3.33726},
+    {"endpoint": "refinement-free", "step": 0.00005, "sign": "minus", "exact_map_delta": 7.30703, "taylor_map_delta": 3.27049, "map_taylor_error": 4.03653, "exact_nll_delta": 7.67796, "exact_prior_delta": -0.370928, "prior_linear": -0.393129, "prior_quadratic": 0.0222011, "likelihood_linear": 0.393129, "likelihood_quadratic": 3.24829},
+    {"endpoint": "refinement-free", "step": 0.00005, "sign": "plus", "exact_map_delta": 3.43003, "taylor_map_delta": 3.27050, "map_taylor_error": 0.159530, "exact_nll_delta": 3.01469, "exact_prior_delta": 0.415330, "prior_linear": 0.393129, "prior_quadratic": 0.0222011, "likelihood_linear": -0.393129, "likelihood_quadratic": 3.24829}
+  ],
+  "posterior_pairs": [
+    {"endpoint": "original-all", "step": 0.0001, "windows": 2798, "mean_total_variation": 0.0126031, "maximum_total_variation": 0.590710, "maximum_posterior_label_changes": 47},
+    {"endpoint": "original-all", "step": 0.00005, "windows": 2798, "mean_total_variation": 0.0126032, "maximum_total_variation": 0.590709, "maximum_posterior_label_changes": 47},
+    {"endpoint": "refinement-free", "step": 0.0001, "windows": 2798, "mean_total_variation": 0.00979423, "maximum_total_variation": 0.926088, "maximum_posterior_label_changes": 39},
+    {"endpoint": "refinement-free", "step": 0.00005, "windows": 2798, "mean_total_variation": 0.00980409, "maximum_total_variation": 0.926524, "maximum_posterior_label_changes": 39}
+  ],
+  "posterior_comparison": "Plus-versus-minus points 2 km apart, not change from original state; model satellite/clutter allocations are not measured emitter IDs",
+  "interpretation": {
+    "all_tested_map_deltas_positive": true,
+    "original_taylor_agreement": "Errors approximately 4-5% of predicted finite increase",
+    "refined_negative_ray": "Exact increase more than twice its local Taylor prediction; substantial likelihood mismatch with exact prior closure",
+    "maximum_step_to_step_exact_objective_difference": 0.00519404,
+    "finite_profile_minimum_established": false,
+    "position_accuracy_or_confidence_established": false,
+    "clock_or_tle_fault_established": false
+  },
+  "next_experiment": {
+    "proposal": "Four nuisance-only fits at fixed first-step plus/minus 1 km geography for both saved endpoints, starting from these same compensated vectors",
+    "fit_seconds_each": 20,
+    "iterations_each": 600,
+    "objective_candidates_priors": "Original and unchanged",
+    "arm": "fitted-c",
+    "retain_nonstationary_failures": true,
+    "retry": false,
+    "reference_usage": "none",
+    "held_usage": "none",
+    "purpose": "Distinguish a poor finite linear compensation ray from asymmetry of a locally optimized nuisance profile; four single-start fits cannot establish global minima",
+    "run_in_this_audit": false
+  }
+}

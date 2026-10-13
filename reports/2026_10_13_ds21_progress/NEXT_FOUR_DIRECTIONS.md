@@ -68,9 +68,13 @@ as calibration weakens the smallest position curvature eigenvalue by roughly
 140× and 300×, respectively. The exact prior contributes less than 1% of the
 remaining weak-axis curvature. This is strong local confounding, not proof of
 an incorrect physical prior or timing bug. Some per-satellite compensation
-estimates vary materially between the two numerical steps. The next check uses
-eight unchanged-objective evaluations at ±1 km along the saved compensated weak
-directions, without fitting, new priors or reference access. Timing corrections
+estimates vary materially between the two numerical steps. The
+[eight finite-displacement checks](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
+are complete and independently audited. All exact objective changes are positive;
+the refined negative ray costs 7.302–7.307 versus a local prediction of 3.270–3.358.
+Prior arithmetic closes, so the mismatch arises in the finite likelihood behavior.
+The next prescribed control refits nuisances at four fixed displaced positions
+to test whether the linear compensation ray is inadequate. Timing corrections
 need external justification; they cannot be tightened until a desired position
 appears.
 
