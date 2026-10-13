@@ -74,3 +74,11 @@ proposal initialization. C's all-band posterior frequency RMS of 95.538 Hz is
 not a position confidence bound. All 54 A/B/C calls and 12 reviewed outcomes
 were sealed before reference evaluation; the historical five-case table remains
 unchanged, and no algorithm is selected by its per-case reference error.
+
+The subsequent [DS21-011 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_011_RESULTS.md)
+completed 18 stationary C fits. All/low/high errors are
+**0.479573 / 1.080449 / 3.818150 km**. CH1–8 passes 0.5 km on this development
+case and improves on both halves. All selected physical boundary flags are false.
+The winning combined proposal is `shape-all`, selected by training objective
+before the reference join. This single passing case does not establish full-DS21
+performance or justify selecting a different model for each known reference.

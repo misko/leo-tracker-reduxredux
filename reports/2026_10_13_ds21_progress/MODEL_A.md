@@ -33,6 +33,13 @@ selected A half-band estimates. A-0's three saved fits were recovered through
 a narrow metadata reader, with no refit or numerical-source change. The original
 five-case table and its aggregate statistics above are unchanged.
 
+The subsequent [DS21-011 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_011_RESULTS.md)
+also completed all 18 sequential calls, all stationary. Its training-selected
+`shape-all` final result is **2.491943 km**, with fitted c -406.987881 Hz/GHz
+and no reported physical boundary flag. The near-threshold 009 result does not
+transfer to this case; A still misses 0.5 km here. No per-case reference-based
+choice between A/B/C is made.
+
 The current assigned investigation separates optimizer failure from objective
 mis-specification on DS21-039. It replays the original objective and profiles the
 unchanged all-band model at each training-selected full/half-band position.

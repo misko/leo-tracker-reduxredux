@@ -6,7 +6,7 @@ report publication to remote `main`; research implementation remains separate.
 
 The original three-model comparison covers five fixed development recordings.
 The separate fitted-only expansion has now evaluated all three models on
-DS21-009, in addition to the Model C-only DS21-007 baseline. All numbers below
+DS21-009 and DS21-011, in addition to the Model C-only DS21-007 baseline. All numbers below
 use **fitted `c`** and a training-objective-selected solution. Reference position
 is joined after results are sealed; lower frequency loss is not treated as proof
 of lower position error. The historical five-case table remains unchanged.
@@ -54,8 +54,23 @@ worsens B relative to both halves. B/all and B/high selected states reach timing
 constraints, while remaining inside their 25 km geographic disks. B/C halves
 inherit shared discovery and physical initialization; C also shares all-training
 receiver lifts. A reports its final-all selection, not independent half-band
-estimates. DS21-011's comparison has started without an accuracy result;
-DS21-013's final models have not started. Locked inference remains unopened.
+estimates.
+
+The subsequent [DS21-011 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_011_RESULTS.md)
+completed another **54 stationary fits**, with all 12 outcomes sealed before
+reference evaluation:
+
+| DS21-011 fitted-only model | CH1–8 error km | CH1–4 error km | CH5–8 error km |
+| --- | ---: | ---: | ---: |
+| A, dependent sequential path | 2.491943 | — | — |
+| B, absolute-frequency fit | 0.743996 | 1.142057 | 6.735033 |
+| C, native association | **0.479573** | 1.080449 | 3.818150 |
+
+C's combined estimate passes 0.5 km on this case. Both B and C combining improve
+on their own halves, unlike B on 009. All seven selected physical boundary flags
+are false. A's near-threshold 009 result does not transfer to 011. No algorithm
+is chosen by per-case reference error; the full-DS21 target remains unmet.
+DS21-013's final comparison is next. Locked inference remains unopened.
 
 The [DS21-039 finite-displacement audit](../2026_10_13_ds21_039_association/TIMING_DISPLACEMENT_RESULTS.md)
 also completed: eight objective/gradient evaluations, zero fits, and all source

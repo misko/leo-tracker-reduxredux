@@ -1,0 +1,382 @@
+{
+  "schema": "ds21-three-model-011-receipt-audit-v1",
+  "label": "DS21-011",
+  "audit_scope": "Receipt bytes and metadata arithmetic only; no predictor, objective, gradient, optimizer, projection or reference evaluation calls",
+  "bindings": {
+    "reader_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-011/protocol.json",
+      "sha256": "sha256:ccf5f2b2ed77f27b7c45ed441448d132dc06d1215c528109089cb30428b3a030"
+    },
+    "reader_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-011/terminal.json",
+      "sha256": "sha256:406cd9a13724b48abb385bf6292fd7db6e00ba37d093d5e255e3ee5f46a32cb4"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-011/development-errors.json",
+      "sha256": "sha256:a52b42c83eeb16501ddb38e3d65da8bd90ae71164e094cbb25dad5334ba00805"
+    },
+    "scientific_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-011/protocol.json",
+      "sha256": "sha256:a2e4779eccba0526e086ca2a6d544dcfe02c7846dc6da7d58b74c4f21e1ddf4e"
+    },
+    "initialization": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-011/initialization.json",
+      "sha256": "sha256:4879952b22bc9c16643ca559e365dbef1701a7652a9963460a1610c4b083f89a"
+    },
+    "reader_source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds21_fitted_model_receipts.py",
+      "sha256": "sha256:767369586f259e3c854f53e8c3bfe1808cd46c1d4b42531ffb70dccdfc6932b5"
+    }
+  },
+  "checks": {
+    "reader_sources_live_and_archived": 412,
+    "numerical_sources_live_and_archived": 411,
+    "unchanged_v1_source_hashes": 410,
+    "verified_immediate_parent_and_evaluation_bindings": 13,
+    "scientific_inventory_bindings": 246,
+    "unit_reviews": 12,
+    "complete_outcomes": 12,
+    "optimizer_calls": 54,
+    "stationary_calls": 54,
+    "launches": 54,
+    "call_receipts": 54,
+    "terminations": 54,
+    "complete_slices": 12,
+    "orphan_or_failed_inventory": 0,
+    "prefit_seed_and_options_checks": 54,
+    "raw_numeric_call_fields_preserved": true,
+    "high_descriptive_overrides": 6,
+    "scalar_diagnostic_checks": 12,
+    "selection_checks": 7,
+    "review_optimizer_calls": 0,
+    "reference_or_held_used_in_fit_or_selection": false
+  },
+  "inventory": {
+    "training_windows": {
+      "all": 3062,
+      "low": 1805,
+      "high": 1257
+    },
+    "satellites": 41,
+    "held_blocks": [
+      3,
+      4,
+      11
+    ],
+    "proposal_order": [
+      "cold-0",
+      "cold-1",
+      "cold-2",
+      "shape-low",
+      "shape-high",
+      "shape-all"
+    ]
+  },
+  "limits": {
+    "fit_seconds": 20,
+    "iterations": 600,
+    "local_radius_km": 25,
+    "stationarity_ceiling": 0.001,
+    "physical_constraints_minimum_floor": -1e-07,
+    "maximum_calls": 54,
+    "fit_elapsed_s_range": [
+      1.049988220911473,
+      19.49766220431775
+    ],
+    "stationarity_range": [
+      2.2012973380293424e-06,
+      0.0009900896681362958
+    ],
+    "reported_physical_constraints_minimum_range": [
+      0.23026890371948738,
+      5.936582887041741
+    ],
+    "geography_radius_from_original_center_km_range": [
+      1.7768725140856503,
+      24.902484662441353
+    ],
+    "boundary_calls": []
+  },
+  "unit_summary": [
+    {
+      "unit": "A-0",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 0,
+      "objective": 39478.868827078484
+    },
+    {
+      "unit": "A-1",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 1,
+      "objective": 40246.41212853619
+    },
+    {
+      "unit": "A-2",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 2,
+      "objective": 44549.93810619647
+    },
+    {
+      "unit": "A-3",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 3,
+      "objective": 40716.119790067474
+    },
+    {
+      "unit": "A-4",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 4,
+      "objective": 39999.37017912233
+    },
+    {
+      "unit": "A-5",
+      "calls": 3,
+      "stationary_calls": 3,
+      "selected_start": 5,
+      "objective": 39079.54601320366
+    },
+    {
+      "unit": "B-all",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 3,
+      "objective": 37669.86010432596
+    },
+    {
+      "unit": "B-low",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 4,
+      "objective": 22317.320302268792
+    },
+    {
+      "unit": "B-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 5,
+      "objective": 15658.623992532723
+    },
+    {
+      "unit": "C-all",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 5,
+      "objective": 36364.559021164474
+    },
+    {
+      "unit": "C-low",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 4,
+      "objective": 21469.19886542911
+    },
+    {
+      "unit": "C-high",
+      "calls": 6,
+      "stationary_calls": 6,
+      "selected_start": 2,
+      "objective": 14584.567672304847
+    }
+  ],
+  "rows": [
+    {
+      "model": "A",
+      "view": "all",
+      "error_km": 2.4919427984022553,
+      "below_0_5km": false,
+      "proposal_id": "shape-all",
+      "common_c_hz_per_ghz": -406.9878805096967,
+      "objective": 39079.54601320366,
+      "likelihood_nll": 38846.483121993704,
+      "fit_posterior_rms_hz": 105.99847864480039,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1772.0866922088653,
+      "boundary": false,
+      "stationarity": 0.0007435422371088185,
+      "reported_physical_constraints_minimum": 3.0200142940949277,
+      "local_center_distance_km": 3.1232683628226554,
+      "prior_center_distance_km": 117.99487912905275
+    },
+    {
+      "model": "B",
+      "view": "all",
+      "error_km": 0.7439962031343751,
+      "below_0_5km": false,
+      "proposal_id": "shape-low",
+      "common_c_hz_per_ghz": -500.7674047141726,
+      "objective": 37669.86010432596,
+      "likelihood_nll": 37423.11853918272,
+      "fit_posterior_rms_hz": 97.21672472391731,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 2093.090252836876,
+      "boundary": false,
+      "stationarity": 0.0005798700001229118,
+      "reported_physical_constraints_minimum": 2.714803018812411,
+      "local_center_distance_km": 12.189746328251928,
+      "prior_center_distance_km": 118.74610365790362
+    },
+    {
+      "model": "B",
+      "view": "low",
+      "error_km": 1.142056944956451,
+      "below_0_5km": false,
+      "proposal_id": "shape-high",
+      "common_c_hz_per_ghz": -552.1117196846725,
+      "objective": 22317.320302268792,
+      "likelihood_nll": 22076.45996570022,
+      "fit_posterior_rms_hz": 78.41504492660675,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 1195.9534788032804,
+      "boundary": false,
+      "stationarity": 0.00028439603055208096,
+      "reported_physical_constraints_minimum": 1.463341771588837,
+      "local_center_distance_km": 1.9477178503664596,
+      "prior_center_distance_km": 118.73305785772267
+    },
+    {
+      "model": "B",
+      "view": "high",
+      "error_km": 6.735032988492198,
+      "below_0_5km": false,
+      "proposal_id": "shape-all",
+      "common_c_hz_per_ghz": -600.02977824797,
+      "objective": 15658.623992532723,
+      "likelihood_nll": 15380.727653582306,
+      "fit_posterior_rms_hz": 107.77308680449235,
+      "native_posterior_rms_hz": null,
+      "signal_mass": 886.3703646524312,
+      "boundary": false,
+      "stationarity": 0.0002702086627055346,
+      "reported_physical_constraints_minimum": 1.7005521090232918,
+      "local_center_distance_km": 3.545378272688733,
+      "prior_center_distance_km": 120.11303115341141
+    },
+    {
+      "model": "C",
+      "view": "all",
+      "error_km": 0.479572504168768,
+      "below_0_5km": true,
+      "proposal_id": "shape-all",
+      "common_c_hz_per_ghz": -477.6513923099123,
+      "objective": 36364.559021164474,
+      "likelihood_nll": 36155.90780742848,
+      "fit_posterior_rms_hz": 93.21194120185766,
+      "native_posterior_rms_hz": 93.21194120185764,
+      "signal_mass": 2146.847266352305,
+      "boundary": false,
+      "stationarity": 0.0002068519385613199,
+      "reported_physical_constraints_minimum": 3.133655011280158,
+      "local_center_distance_km": 3.94616007052121,
+      "prior_center_distance_km": 118.45500460929314
+    },
+    {
+      "model": "C",
+      "view": "low",
+      "error_km": 1.0804488965045955,
+      "below_0_5km": false,
+      "proposal_id": "shape-high",
+      "common_c_hz_per_ghz": -543.1331847560648,
+      "objective": 21469.19886542911,
+      "likelihood_nll": 21250.57517832637,
+      "fit_posterior_rms_hz": 83.56303835478175,
+      "native_posterior_rms_hz": 83.56303835478175,
+      "signal_mass": 1258.376057897357,
+      "boundary": false,
+      "stationarity": 0.00026789227466988974,
+      "reported_physical_constraints_minimum": 1.498836658448731,
+      "local_center_distance_km": 1.7768725140856503,
+      "prior_center_distance_km": 118.50331088297787
+    },
+    {
+      "model": "C",
+      "view": "high",
+      "error_km": 3.818150469446627,
+      "below_0_5km": false,
+      "proposal_id": "cold-2",
+      "common_c_hz_per_ghz": -447.9049385453569,
+      "objective": 14584.567672304847,
+      "likelihood_nll": 14434.229829437618,
+      "fit_posterior_rms_hz": 96.25606704274068,
+      "native_posterior_rms_hz": 96.2560670427407,
+      "signal_mass": 965.0384875778607,
+      "boundary": false,
+      "stationarity": 4.0867904239154026e-05,
+      "reported_physical_constraints_minimum": 0.24070418779969316,
+      "local_center_distance_km": 5.10319477198925,
+      "prior_center_distance_km": 118.97103090296666
+    }
+  ],
+  "metadata_compatibility": {
+    "reader_commit": "13332f295",
+    "review_calls": 0,
+    "raw_high_training_fractions": [
+      0.5,
+      0.5
+    ],
+    "path_high_training_fractions": null,
+    "offset_parameterization": "uncentred-high-minus-low",
+    "all_other_raw_high_fields_exact": true,
+    "low_and_final_path_raw_fields_exact": true,
+    "all_raw_calls_retained": 54,
+    "no_fit_retries": true
+  },
+  "reference_gate": {
+    "method": "Source order and sealed bindings; no independent reference recomputation",
+    "source": "tools/ds21_fitted_model_receipts.py:275-312",
+    "all_twelve_reviews_validated_before_terminal_write": true,
+    "terminal_written_and_read_before_reference_call": true
+  },
+  "limitations": [
+    "Seven configured-reference development errors are copied from the sealed evaluator; no independent surveyed truth or reference recalculation.",
+    "Full A is six low -> locked-high -> final-all paths, with final-all selection only; no separate A half-view accuracy rows.",
+    "Half-view B/C outcomes share discovery, geography and physical initialization; C lifts derive once from all-training proposals.",
+    "Raw fit scores differ across numerical models and observation views; they are not accuracy rankings.",
+    "Only C-all is below 0.5 km; one-case success does not establish universal DS21 accuracy or a general model choice.",
+    "Domain checks use saved vectors, original centers and reported physical feasibility margins; no fresh physical model evaluation."
+  ],
+  "initialization_checks": {
+    "source_and_policy_equal_DS21_009": true,
+    "initialization_location_calls": 0,
+    "matched_launch_and_termination": true,
+    "parent_export_pairings": 54,
+    "strict_success_projections": 24,
+    "unused_A_calibration_seeds": 12,
+    "original_native_C_seeds": 18,
+    "fallback_seeds": 0,
+    "methods": {
+      "A-all/unused-initial-calibration": 6,
+      "A-low/original-strict-bounded-projection": 6,
+      "A-high/unused-initial-calibration": 6,
+      "B-all/original-strict-bounded-projection": 6,
+      "B-low/original-strict-bounded-projection": 6,
+      "B-high/original-strict-bounded-projection": 6,
+      "C-all/original-native": 6,
+      "C-low/original-native": 6,
+      "C-high/original-native": 6
+    },
+    "strict_projection_rms_hz_range": [
+      3.806636471996349e-11,
+      1.2423772865419118e-09
+    ],
+    "strict_projection_maximum_hz_range": [
+      7.275957614183426e-11,
+      2.5393092073500156e-09
+    ],
+    "receiver_lift_derivations": 6,
+    "lift_view_pairings": 18,
+    "lift_integers_per_proposal": [
+      -1,
+      2
+    ],
+    "native_candidates": {
+      "all": 3951,
+      "low": 2371,
+      "high": 1580
+    }
+  }
+}

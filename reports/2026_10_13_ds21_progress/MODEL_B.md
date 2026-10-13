@@ -35,6 +35,13 @@ Two all-band initial seeds needed independently verified exact source transfer
 after strict projection nonconvergence; no failed solver result was accepted.
 The historical five-case table and its aggregate statistics remain unchanged.
 
+The subsequent [DS21-011 comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_011_RESULTS.md)
+completed 18 stationary B fits. All/low/high errors are
+**0.743996 / 1.142057 / 6.735033 km**, with no selected physical boundary flags.
+Combining improves on both halves here, unlike 009, but still misses 0.5 km.
+All required initialization projections succeeded with the original strict
+solver; no fallback was needed. The shared initialization caveat remains.
+
 The current assigned investigation verifies native sky-RF scaling, clock
 correction at actual receive times, and physical cross-view calibration
 transport. It profiles local calibration directions against affine terms,

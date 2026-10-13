@@ -25,10 +25,16 @@ A/all **0.658299 km**, B/all/low/high **5.327196 / 0.790354 / 0.772167 km**, and
 C/all/low/high **1.595252 / 4.547625 / 1.758365 km**. None is below 0.5 km.
 B's all/high winners reach timing constraints while their positions stay inside
 the original geographic disks. Half views share discovery and initialization;
-reference error does not select a start or algorithm. DS21-011's final model
-comparison has started without an accuracy result; DS21-013's final models have
-not started. The [independent 009 audit](THREE_MODEL_009_AUDIT.json) passes, and
-locked inference remains unopened.
+reference error does not select a start or algorithm.
+The subsequent [DS21-011 comparison](THREE_MODEL_011_RESULTS.md) completed all
+54 fits, all stationary: A/all **2.491943 km**, B/all/low/high
+**0.743996 / 1.142057 / 6.735033 km**, and C/all/low/high
+**0.479573 / 1.080449 / 3.818150 km**. Only C/all passes 0.5 km on this case;
+all seven selected physical boundary flags are false. All 12 outcomes were
+sealed before reference evaluation. This does not establish full-DS21 success.
+DS21-013's final comparison is next. The [independent 009 audit](THREE_MODEL_009_AUDIT.json)
+passes; 011 has its own [receipt audit](THREE_MODEL_011_AUDIT.json).
+Locked inference remains unopened.
 The metadata-only inventory below is retained as the historical audit.
 
 The subsequent [DS21-007 joint baseline](JOINT_007_RESULTS.md) completed all
