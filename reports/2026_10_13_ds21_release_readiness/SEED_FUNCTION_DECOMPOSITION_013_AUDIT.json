@@ -1,0 +1,924 @@
+{
+  "schema": "ds21-seed-function-decomposition-receipt-audit-v1",
+  "label": "DS21-013",
+  "scope": "Independent standard-library source/binding/receipt/scalar arithmetic; no linear solves, targets, predictors, likelihood, optimization or reference calculations",
+  "audit_numerical_calls": 0,
+  "diagnostic_numerical_calls": {
+    "bounded_projections": 12,
+    "explicit_unbounded_linear_solves": 24,
+    "location_optimizers": 0,
+    "likelihoods": 0,
+    "orbit_predictions": 0
+  },
+  "terminal_elapsed_s": 68.38720860192552,
+  "provenance": {
+    "protocol.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/seed-function-decomposition-v1/DS21-013/protocol.json",
+      "sha256": "sha256:c01f1464fbac74657a2b422e347c74a9a928db50b492b0e68d45d74f72d5e449"
+    },
+    "launch.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/seed-function-decomposition-v1/DS21-013/launch.json",
+      "sha256": "sha256:5c59fa751ebbf3d08a9efeacda62f30d9f46a82613db6ed4f064e33b7606c416"
+    },
+    "result.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/seed-function-decomposition-v1/DS21-013/result.json",
+      "sha256": "sha256:8fbad5c469741daac6f9b45665086b39b8fdf1925611fac5832d4471a43bca6f"
+    },
+    "terminal.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/seed-function-decomposition-v1/DS21-013/terminal.json",
+      "sha256": "sha256:016810e426685251297e7a6bbc828d927cbcf3e9675b4f6fe0e3560cb7d7217e"
+    },
+    "termination.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/seed-function-decomposition-v1/DS21-013/termination.json",
+      "sha256": "sha256:1771567160e912547932377a1e76c8a46307719b49824c4b214f846546aae650"
+    }
+  },
+  "parent_authority": {
+    "protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/protocol.json",
+      "sha256": "sha256:0b115894ed6d09b5163c458584fcddcc6357b8e3340f07ed92b3051a000117d8"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/terminal.json",
+      "sha256": "sha256:ac51aa9b16ef26c9388ce81564bfe018c8ea9f49e7f45b89f61e47ed6a04574d"
+    },
+    "initialization": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-models-v1/DS21-013/initialization.json",
+      "sha256": "sha256:3ab06f8921dcabf5366689fb2dfc15b48d85c12805a7d139c2017972984008d2"
+    }
+  },
+  "donor_authority": {
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-0.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-0.json",
+      "sha256": "sha256:e9e09c5b785bf307cfda192a1a0917f0be33603f760b06ae9341a63fdd2ec589"
+    },
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-1.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-1.json",
+      "sha256": "sha256:c4965fd51cb4a27574ec9fe9aeef958c8264bd5722b6f4e0fe2c97b8782d47ab"
+    },
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-2.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/cold-bootstrap/bootstrap/proposal-2.json",
+      "sha256": "sha256:ce5231a7753d929bf58a9924356378def5065a112cc196d5b7d15d073e3a214a"
+    },
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-0.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-0.json",
+      "sha256": "sha256:3eaaba25927857a37caf0b9994158c558fa7dd4a7e3531bb44bf6179fe6a62a3"
+    },
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-1.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-1.json",
+      "sha256": "sha256:e9263df1f1f2553eb57720ff0f616ad7fc26efd1756bed9da9b5f5dfdd408798"
+    },
+    "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-2.json": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/coverage-initialization-v1/DS21-013/shape-bootstrap/bootstrap/proposal-2.json",
+      "sha256": "sha256:e4b1b9521f761351094c997472f25fe83445945e697b39ad07e0ea03b5e0aeba"
+    }
+  },
+  "checks": {
+    "live_and_archive_source_pairs": 416,
+    "unchanged_parent_source_subset": 415,
+    "six_exact_donor_receipts": true,
+    "all_twelve_stored_bounded_replay_certificates_verified": true,
+    "rank_convention": "rcond=-1",
+    "all_original_and_expanded_columns_full_rank": true,
+    "original_coefficient_bounds_verified": true,
+    "unbounded_violations_verified": true,
+    "unaltered_signed_mean_square_ledgers": true,
+    "exact_zero_location_likelihood_orbit_inventory": true,
+    "reference_and_held_usage": "none",
+    "verified_unique_file_hashes": 938
+  },
+  "results": [
+    {
+      "proposal_id": "cold-0",
+      "point_km": [
+        -93.75,
+        -81.25
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 235.57613377896618,
+          "maximum_abs_hz": 1061.6343412422902,
+          "relative_rms": 0.007146284233912019,
+          "target_rms_hz": 32964.84243672562,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 235.57613377896618,
+          "maximum_abs_hz": 1061.6343412422902,
+          "relative_rms": 0.007146284233912019,
+          "target_rms_hz": 32964.84243672562,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.2165773569971165e-10,
+          "maximum_abs_hz": 2.546585164964199e-10,
+          "relative_rms": 3.690529870823063e-15,
+          "target_rms_hz": 32964.84243672562
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 32964.84243672562
+        },
+        "added_basis_component": {
+          "rms_hz": 235.57613377896607,
+          "maximum_abs_hz": 1061.6343412421456,
+          "relative_rms": 0.007146284233912016,
+          "target_rms_hz": 32964.84243672562
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 55496.11480624537
+        },
+        "saved_function_replay": {
+          "rms_hz": 2.8369690395891203e-16,
+          "maximum_abs_hz": 1.4210854715202004e-14,
+          "relative_rms": 8.606044591399281e-21,
+          "target_rms_hz": 32964.84243672562
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          0.7501809101104921,
+          -9.90601329377278
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 86.51469780579805,
+          "maximum_abs_hz": 960.0123926244523,
+          "relative_rms": 0.006103119839007081,
+          "target_rms_hz": 14175.487306156707,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 86.51469780579805,
+          "maximum_abs_hz": 960.0123926244523,
+          "relative_rms": 0.006103119839007081,
+          "target_rms_hz": 14175.487306156707,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.3372597141429174e-11,
+          "maximum_abs_hz": 3.456079866737127e-11,
+          "relative_rms": 9.43360665676811e-16,
+          "target_rms_hz": 14175.487306156707
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 14175.487306156707
+        },
+        "added_basis_component": {
+          "rms_hz": 86.51469780579794,
+          "maximum_abs_hz": 960.0123926244632,
+          "relative_rms": 0.006103119839007074,
+          "target_rms_hz": 14175.487306156707
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 7484.792936428558
+        },
+        "saved_function_replay": {
+          "rms_hz": 9.29708092742642e-12,
+          "maximum_abs_hz": 1.6370904631912708e-11,
+          "relative_rms": 6.558561781074366e-16,
+          "target_rms_hz": 14175.487306156707
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": -1.8799890481947278e-12,
+          "1": 1.9972374796902557e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    },
+    {
+      "proposal_id": "cold-1",
+      "point_km": [
+        -87.5,
+        -62.5
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 969.0470531000257,
+          "maximum_abs_hz": 4229.535798026038,
+          "relative_rms": 0.030123428534335275,
+          "target_rms_hz": 32169.215134176604,
+          "active_bounds": [
+            18
+          ]
+        },
+        "unbounded": {
+          "rms_hz": 968.9747382245806,
+          "maximum_abs_hz": 4249.714059675931,
+          "relative_rms": 0.030121180581590905,
+          "target_rms_hz": 32169.215134176604,
+          "outside_original_bounds": [
+            {
+              "index": 18,
+              "coefficient": 2107.5935865096785,
+              "excess": 107.59358650967852
+            }
+          ]
+        },
+        "expanded": {
+          "rms_hz": 1.1690283349754617e-10,
+          "maximum_abs_hz": 2.510205376893282e-10,
+          "relative_rms": 3.633997068624422e-15,
+          "target_rms_hz": 32169.215134176604
+        },
+        "bounds_component": {
+          "rms_hz": 11.838403796509851,
+          "maximum_abs_hz": 72.66857696048464,
+          "relative_rms": 0.0003680041227966647,
+          "target_rms_hz": 32169.215134176604
+        },
+        "added_basis_component": {
+          "rms_hz": 968.9747382245802,
+          "maximum_abs_hz": 4249.714059676079,
+          "relative_rms": 0.03012118058159089,
+          "target_rms_hz": 32169.215134176604
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 140.1478044494288,
+          "unbounded_minus_expanded": 938912.0433173946
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.3382866196532419e-14,
+          "maximum_abs_hz": 2.2737367544323206e-13,
+          "relative_rms": 4.160146941948375e-19,
+          "target_rms_hz": 32169.215134176604
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          6.489390610823491,
+          39.76018645696058
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 339.887587896369,
+          "maximum_abs_hz": 3769.8240467776923,
+          "relative_rms": 0.028414623480173425,
+          "target_rms_hz": 11961.713592070955,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 339.887587896369,
+          "maximum_abs_hz": 3769.8240467776923,
+          "relative_rms": 0.028414623480173425,
+          "target_rms_hz": 11961.713592070955,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 2.0377919721787245e-11,
+          "maximum_abs_hz": 6.184563972055912e-11,
+          "relative_rms": 1.7035953557101659e-15,
+          "target_rms_hz": 11961.713592070955
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 11961.713592070955
+        },
+        "added_basis_component": {
+          "rms_hz": 339.8875878963692,
+          "maximum_abs_hz": 3769.824046777717,
+          "relative_rms": 0.028414623480173446,
+          "target_rms_hz": 11961.713592070955
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 115523.57240601195
+        },
+        "saved_function_replay": {
+          "rms_hz": 5.304989899684772e-12,
+          "maximum_abs_hz": 1.2732925824820995e-11,
+          "relative_rms": 4.4349748544399884e-16,
+          "target_rms_hz": 11961.713592070955
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": -1.4259916929391926e-12,
+          "1": -2.6243270969693467e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    },
+    {
+      "proposal_id": "cold-2",
+      "point_km": [
+        -81.25,
+        -93.75
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 1272.9500451927372,
+          "maximum_abs_hz": 2990.541263251049,
+          "relative_rms": 0.037037153426335845,
+          "target_rms_hz": 34369.54321353396,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 1272.9500451927372,
+          "maximum_abs_hz": 2990.541263251049,
+          "relative_rms": 0.037037153426335845,
+          "target_rms_hz": 34369.54321353396,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.3982313595906194e-10,
+          "maximum_abs_hz": 2.546585164964199e-10,
+          "relative_rms": 4.0682279392064405e-15,
+          "target_rms_hz": 34369.54321353396
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 34369.54321353396
+        },
+        "added_basis_component": {
+          "rms_hz": 1272.9500451927372,
+          "maximum_abs_hz": 2990.5412632509033,
+          "relative_rms": 0.037037153426335845,
+          "target_rms_hz": 34369.54321353396
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 1620401.8175561917
+        },
+        "saved_function_replay": {
+          "rms_hz": 2.2613734060338378e-14,
+          "maximum_abs_hz": 1.1368683772161603e-13,
+          "relative_rms": 6.579585279863014e-19,
+          "target_rms_hz": 34369.54321353396
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          31.663096976005846,
+          23.713199741218656
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 283.2311065721197,
+          "maximum_abs_hz": 2260.236240951075,
+          "relative_rms": 0.019842363882429694,
+          "target_rms_hz": 14274.060704174432,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 283.2311065721197,
+          "maximum_abs_hz": 2260.236240951075,
+          "relative_rms": 0.019842363882429694,
+          "target_rms_hz": 14274.060704174432,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.383244951338059e-11,
+          "maximum_abs_hz": 3.637978807091713e-11,
+          "relative_rms": 9.69061978931847e-16,
+          "target_rms_hz": 14274.060704174432
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 14274.060704174432
+        },
+        "added_basis_component": {
+          "rms_hz": 283.2311065721195,
+          "maximum_abs_hz": 2260.2362409511043,
+          "relative_rms": 0.019842363882429676,
+          "target_rms_hz": 14274.060704174432
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 80219.85973006743
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.0292444387138913e-11,
+          "maximum_abs_hz": 2.546585164964199e-11,
+          "relative_rms": 7.210593117436373e-16,
+          "target_rms_hz": 14274.060704174432
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": -6.031964861016276e-12,
+          "1": -2.9228389353316537e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    },
+    {
+      "proposal_id": "shape-low",
+      "point_km": [
+        -92.2432538933818,
+        -83.01120539225049
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 1569.9149861453034,
+          "maximum_abs_hz": 5356.305611397455,
+          "relative_rms": 0.05036084269105878,
+          "target_rms_hz": 31173.326383278152,
+          "active_bounds": [
+            15,
+            18,
+            20
+          ]
+        },
+        "unbounded": {
+          "rms_hz": 1567.527976467808,
+          "maximum_abs_hz": 5545.26062277867,
+          "relative_rms": 0.050284270507258214,
+          "target_rms_hz": 31173.326383278152,
+          "outside_original_bounds": [
+            {
+              "index": 15,
+              "coefficient": -2077.940138700298,
+              "excess": 77.94013870029812
+            },
+            {
+              "index": 18,
+              "coefficient": -2756.9460551266984,
+              "excess": 756.9460551266984
+            },
+            {
+              "index": 20,
+              "coefficient": -2381.872922415368,
+              "excess": 381.87292241536807
+            },
+            {
+              "index": 21,
+              "coefficient": -2018.5763060943252,
+              "excess": 18.57630609432522
+            }
+          ]
+        },
+        "expanded": {
+          "rms_hz": 1.2781266735779637e-10,
+          "maximum_abs_hz": 2.3283064365386963e-10,
+          "relative_rms": 4.100065093674348e-15,
+          "target_rms_hz": 31173.326383278152
+        },
+        "bounds_component": {
+          "rms_hz": 86.53962511097113,
+          "maximum_abs_hz": 640.1117081992415,
+          "relative_rms": 0.0027760792687620372,
+          "target_rms_hz": 31173.326383278152
+        },
+        "added_basis_component": {
+          "rms_hz": 1567.527976467805,
+          "maximum_abs_hz": 5545.260622778555,
+          "relative_rms": 0.05028427050725812,
+          "target_rms_hz": 31173.326383278152
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 7489.106714346912,
+          "unbounded_minus_expanded": 2457143.957009261
+        },
+        "saved_function_replay": {
+          "rms_hz": 4.8312910636270516e-14,
+          "maximum_abs_hz": 9.094947017729282e-13,
+          "relative_rms": 1.5498156995586553e-18,
+          "target_rms_hz": 31173.326383278152
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          27.52692371286053,
+          -51.47746526445053
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 426.4428814280322,
+          "maximum_abs_hz": 4375.412875023409,
+          "relative_rms": 0.035490930387891854,
+          "target_rms_hz": 12015.545289100626,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 426.4428814280322,
+          "maximum_abs_hz": 4375.412875023409,
+          "relative_rms": 0.035490930387891854,
+          "target_rms_hz": 12015.545289100626,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 2.1717534170118664e-11,
+          "maximum_abs_hz": 5.093170329928398e-11,
+          "relative_rms": 1.807453065806241e-15,
+          "target_rms_hz": 12015.545289100626
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 12015.545289100626
+        },
+        "added_basis_component": {
+          "rms_hz": 426.44288142803214,
+          "maximum_abs_hz": 4375.4128750233685,
+          "relative_rms": 0.03549093038789185,
+          "target_rms_hz": 12015.545289100626
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 181853.53112064273
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.0297308473855524e-11,
+          "maximum_abs_hz": 1.9554136088117957e-11,
+          "relative_rms": 8.569988482500477e-16,
+          "target_rms_hz": 12015.545289100626
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": 7.07995875596738e-13,
+          "1": -1.2412938314634062e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    },
+    {
+      "proposal_id": "shape-high",
+      "point_km": [
+        -87.32480844257886,
+        -80.49883926395046
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 316.50043629855355,
+          "maximum_abs_hz": 821.4729507429292,
+          "relative_rms": 0.009231192769388195,
+          "target_rms_hz": 34285.974110313146,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 316.50043629855355,
+          "maximum_abs_hz": 821.4729507429292,
+          "relative_rms": 0.009231192769388195,
+          "target_rms_hz": 34285.974110313146,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.2145375533717017e-10,
+          "maximum_abs_hz": 2.6193447411060333e-10,
+          "relative_rms": 3.5423743524509384e-15,
+          "target_rms_hz": 34285.974110313146
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 34285.974110313146
+        },
+        "added_basis_component": {
+          "rms_hz": 316.50043629854986,
+          "maximum_abs_hz": 821.4729507428492,
+          "relative_rms": 0.009231192769388087,
+          "target_rms_hz": 34285.974110313146
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 100172.52617717476
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.7542311313157869e-16,
+          "maximum_abs_hz": 7.105427357601002e-15,
+          "relative_rms": 5.1164686926252975e-21,
+          "target_rms_hz": 34285.974110313146
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          8.639343717798576,
+          2.3551495417853463
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 57.558474344845045,
+          "maximum_abs_hz": 218.26505902754434,
+          "relative_rms": 0.004075386708497954,
+          "target_rms_hz": 14123.43869719767,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 57.558474344845045,
+          "maximum_abs_hz": 218.26505902754434,
+          "relative_rms": 0.004075386708497954,
+          "target_rms_hz": 14123.43869719767,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.1744714300083334e-11,
+          "maximum_abs_hz": 2.9103830456733704e-11,
+          "relative_rms": 8.315761162622305e-16,
+          "target_rms_hz": 14123.43869719767
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 14123.43869719767
+        },
+        "added_basis_component": {
+          "rms_hz": 57.55847434484503,
+          "maximum_abs_hz": 218.2650590275589,
+          "relative_rms": 0.004075386708497953,
+          "target_rms_hz": 14123.43869719767
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 3312.977968906185
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.4367521194143259e-11,
+          "maximum_abs_hz": 2.717115421546623e-11,
+          "relative_rms": 1.0172820870454176e-15,
+          "target_rms_hz": 14123.43869719767
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": -1.4859913434134924e-12,
+          "1": -2.4192344310441644e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    },
+    {
+      "proposal_id": "shape-all",
+      "point_km": [
+        -89.79504435039013,
+        -81.67159636001027
+      ],
+      "bootstrap": {
+        "bounded": {
+          "rms_hz": 1334.4504158183263,
+          "maximum_abs_hz": 3517.995289462575,
+          "relative_rms": 0.04121868315374268,
+          "target_rms_hz": 32374.892008095547,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 1334.4504158183263,
+          "maximum_abs_hz": 3517.995289462575,
+          "relative_rms": 0.04121868315374268,
+          "target_rms_hz": 32374.892008095547,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 1.0699785823755237e-10,
+          "maximum_abs_hz": 2.473825588822365e-10,
+          "relative_rms": 3.3049641744224777e-15,
+          "target_rms_hz": 32374.892008095547
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 32374.892008095547
+        },
+        "added_basis_component": {
+          "rms_hz": 1334.4504158183236,
+          "maximum_abs_hz": 3517.995289462473,
+          "relative_rms": 0.041218683153742594,
+          "target_rms_hz": 32374.892008095547
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 1780757.9122777039
+        },
+        "saved_function_replay": {
+          "rms_hz": 9.730723527652727e-17,
+          "maximum_abs_hz": 3.552713678800501e-15,
+          "relative_rms": 3.005638914631591e-21,
+          "target_rms_hz": 32374.892008095547
+        },
+        "sampling_inventory": {
+          "rows": 2666,
+          "row_metadata_sha256": "sha256:6f74107fd411e2cdd6bfb48791b5116371b96359989c17df81e80c3ac7c3f30a",
+          "weights_sha256": "sha256:ccd47c52f60ce8bd05441b7da7894052a7d5d5fa40863fabb0883ff6131ac8dc"
+        },
+        "original_columns_sha256": "sha256:7beaf3b2a2a1990c930ccd657c9a3651f6768b67f2cc79f9c975907152d4ca96",
+        "expanded_columns_sha256": "sha256:89e36f7f986aaf586b2a0a69f4bf7450c43a8186b350d437b54ef4cddf3de529",
+        "rank": {
+          "original": 25,
+          "expanded": 27,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.0015788007145081003,
+          "expanded_singular_value_ratio": 0.0015587639474750658
+        },
+        "high_minus_low_slope_hz_s": [
+          36.91500589650108,
+          4.128905885769235
+        ]
+      },
+      "native": {
+        "bounded": {
+          "rms_hz": 233.85025052259869,
+          "maximum_abs_hz": 613.428671680027,
+          "relative_rms": 0.017701976620419682,
+          "target_rms_hz": 13210.403309020669,
+          "active_bounds": []
+        },
+        "unbounded": {
+          "rms_hz": 233.85025052259869,
+          "maximum_abs_hz": 613.428671680027,
+          "relative_rms": 0.017701976620419682,
+          "target_rms_hz": 13210.403309020669,
+          "outside_original_bounds": []
+        },
+        "expanded": {
+          "rms_hz": 2.340166299088984e-11,
+          "maximum_abs_hz": 5.4569682106375694e-11,
+          "relative_rms": 1.7714571193227774e-15,
+          "target_rms_hz": 13210.403309020669
+        },
+        "bounds_component": {
+          "rms_hz": 0.0,
+          "maximum_abs_hz": 0.0,
+          "relative_rms": 0.0,
+          "target_rms_hz": 13210.403309020669
+        },
+        "added_basis_component": {
+          "rms_hz": 233.85025052259826,
+          "maximum_abs_hz": 613.4286716800143,
+          "relative_rms": 0.01770197662041965,
+          "target_rms_hz": 13210.403309020669
+        },
+        "signed_mean_square_gaps_hz2": {
+          "bounded_minus_unbounded": 0.0,
+          "unbounded_minus_expanded": 54685.93966948217
+        },
+        "saved_function_replay": {
+          "rms_hz": 1.735553717450626e-11,
+          "maximum_abs_hz": 3.2741809263825417e-11,
+          "relative_rms": 1.3137779951544025e-15,
+          "target_rms_hz": 13210.403309020669
+        },
+        "sampling_inventory": {
+          "rows": 3648,
+          "row_metadata_sha256": "sha256:0e8a5bed267d7ef4f613a0c15e83bcbb3f498f773dacb4d75f208cb96b71d2cb",
+          "weights_sha256": "sha256:08294314ae901b97cb27c1cc25ecb8020bf38f2928bff2601a6c76349ddb191b"
+        },
+        "original_columns_sha256": "sha256:2c3752f8c788c3275aac5a9e74c56a74c95c7090d83f36ea53d62593ee72ce53",
+        "expanded_columns_sha256": "sha256:b63d39f01053894acb09394ee24df2ce360eebd1d867ef578a020e077d6a63aa",
+        "rank": {
+          "original": 5,
+          "expanded": 23,
+          "relative_cutoff_machine_epsilon": 2.220446049250313e-16,
+          "original_singular_value_ratio": 0.026315239633260292,
+          "expanded_singular_value_ratio": 0.0015788616475201735
+        },
+        "receiver_mean_residual_hz": {
+          "0": 6.159964115361449e-13,
+          "1": -1.5183299980010868e-12
+        },
+        "clock_basis_sha256": "sha256:000736bf7608b8c801373aff692a0f980ca058b19584e437f4d7b14842c3724e"
+      }
+    }
+  ],
+  "limits": [
+    "Audit checks stored replay certificates and scalar relations; it does not repeat any decomposition solve or function evaluation",
+    "Expanded columns classify the six saved function targets, not observed Doppler or true calibration",
+    "No new nuisance/prior/model is promoted and no localization effect is inferred",
+    "Rank/gauge and minimum scaled-norm coefficient interpretation remain explicit",
+    "Original final-model results and configured-reference accuracy remain separate"
+  ]
+}
