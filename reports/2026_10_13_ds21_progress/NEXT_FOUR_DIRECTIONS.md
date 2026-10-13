@@ -18,7 +18,7 @@ execution order.
 
 | Priority | Investigation | Discriminating next step | Ownership/status |
 | --- | --- | --- | --- |
-| 1 | Shared initialization/source/coverage failure | DS21-013 gives CH1–8 errors 267–269 km across A/B/C despite 52 stationary fits out of 54. All six original 25 km proposal disks exclude the configured reference; source bindings pass. Plan a reference-blind discovery-coverage/multiview exploration control with the unchanged 100-point budget before remaining initialization. No alternative is validated. DS21-025 is metadata-ready only. | Coordinator diagnosis; SOL report and independent receipt audit |
+| 1 | Shared initialization/source/coverage failure | DS21-013 baseline CH1–8 errors are 267–269 km; all six original local disks exclude the reference. The same-budget 50 km initial-grid control completed 100 points, with 299/300 stationary fits. All three new training-selected discovery disks contain the reference. Qualify the unchanged downstream stages and compare final A/B/C fits; discovery recovery alone is not accuracy. DS21-025 remains metadata-ready only. | SOL adapter implementation and independent receipt audit; coordinator integration |
 | 2 | Timing versus position identifiability | Finite-displacement asymmetry persists. The 75-endpoint timing audit finds seven boundary states on DS21-009, none on DS21-011 or original DS21-039 controls; active saturation is not shared by every combination failure. Further attribution must distinguish continuous nuisance compensation and association changes from an actual timestamp/orbit defect. | SOL timing reconstruction and independent audit complete |
 | 3 | Satellite association and frequency ambiguity | Locate which windows change satellite/clutter assignments along those fixed displacements; establish whether ambiguity switches or continuous nuisance compensation dominate. Use existing posterior receipts before proposing new temporal assumptions. | Coordinator integration; dedicated SOL review queued |
 | 4 | Cross-band calibration, transmitter dynamics and error dependence | Paired-receiver increment diagnostic completed without a reproducible shared positive excess. CH1/CH8 lack adequate support; do not add transmitter terms from this result. Retain prior negative controls and require training-only transfer evidence. | SOL independent receipt audit completed; no intervention promoted |
@@ -159,9 +159,17 @@ disk gap is 157.457260 km in optimizer coordinates. The saved search ends at 100
 cells, allocating 16 / 16 / 24 / 44 points at 100 / 50 / 25 / 12.5 km spacings.
 Its all-view best-first score does not certify bounds for finer cells. Fixed
 local refinement cannot recover the reference, but why discovery missed and
-which replacement policy works remain unresolved. Plan a reference-blind
-discovery-coverage/multiview exploration control with the same 100-point budget
-and original namespaces preserved. DS21-025 has passed metadata checks but has
+which replacement policy works remain unresolved. The subsequent
+[discovery coverage control](../2026_10_13_ds21_release_readiness/DISCOVERY_COVERAGE_013_RESULTS.md)
+completed the same 100-point budget with levels 50 / 25 / 12.5 km and the original
+all-view priority. It used 80 / 12 / 8 points at those levels, with 299/300
+stationary fits. Its three training-selected discovery locations are
+6.719 / 18.496 / 14.009 km from the reference, joined only after sealing.
+All three 25 km disks now contain it. This supports broader initial coverage on
+this case, but does not establish final accuracy or full-DS21 transfer. A new
+qualified authority adapter will preserve the original downstream numerical
+stages and budgets for comparison. All original namespaces remain intact.
+DS21-025 has passed metadata checks but has
 not been frozen or initialized. No reference-derived seed or added nuisance term
 is justified by these errors.
 

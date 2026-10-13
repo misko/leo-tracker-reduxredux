@@ -42,9 +42,15 @@ and stationarity do not establish localization accuracy. The independent
 post-seal geometry audit finds the reference inside the original 250 km prior
 but outside all six fixed 25 km proposal disks, by at least 157.457260 km
 in optimizer coordinates.
-Local refinement cannot recover it. A reference-blind discovery-coverage/
-multiview exploration control with the unchanged 100-point budget is next;
-why the original discovery missed and which alternative works remain unresolved.
+Local refinement cannot recover it. The subsequent
+[matched-budget discovery control](DISCOVERY_COVERAGE_013_RESULTS.md) changes
+only the grid levels to 50 / 25 / 12.5 km. It completed 100 points and 300 fits,
+299 stationary, in 361.223 seconds. All three training-selected discovery
+points now place the reference inside a 25 km local disk: their post-seal
+geodesic errors are 6.719 / 18.496 / 14.009 km. The nearest visited point is
+5.791596 km away in optimizer coordinates, versus 48.291651 km originally.
+This recovers useful discovery coverage; it is not a new A/B/C accuracy result.
+A qualified adapter for the unchanged downstream stages is being implemented.
 DS21-025 has passed metadata readiness only; no case freeze or initialization
 has started. There are still nine proposal sets and 25 missing initializations.
 The [independent 009 audit](THREE_MODEL_009_AUDIT.json)

@@ -21,6 +21,15 @@ The current target is **less than 0.5 km for every eligible CH1–8 DS21 recordi
 including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
+The latest [DS21-013 discovery control](../2026_10_13_ds21_release_readiness/DISCOVERY_COVERAGE_013_RESULTS.md)
+recovers search coverage using the same 100-point budget: 80 broadly spaced
+initial points replace the original 16. All three training-selected discovery
+locations now have 25 km disks containing the reference. Their errors are
+6.719 / 18.496 / 14.009 km after sealing; these are discovery points, not final
+model estimates. The run completed 300 fits, 299 stationary, in 361.223 seconds.
+Qualification of the unchanged downstream A/B/C comparison is underway. The
+original severe DS21-013 final-fit errors remain in the tables below.
+
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
 completed 18 stationary fits, with all/low/high errors of **3.524 / 3.738 / 4.325 km**.
 Combining bands improves this case, but all views miss 0.5 km. It is reported
