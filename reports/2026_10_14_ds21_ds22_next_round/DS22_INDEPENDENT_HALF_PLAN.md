@@ -420,3 +420,51 @@ Implementation commits: metadata recovery `08940c0b7`; qualified authority
 `b88097641`; stage runtime `6adcc5806`; full-model composition `6696cc031`;
 post-seal reporting `bcbd132e9`. Runtime artifacts are under
 `local/ds22-{bootstrap-recovery,initialization-authority,initialization-runtime,runtime-models}-v1`.
+
+## Nine sealed DS22 development matrices
+
+Both new matrices have now sealed all 12 units. DS22-035 used 52 actual fits,
+50 stationary; DS22-037 used 54 fits, all stationary. The two rejected 035
+fits were A-start5/lower and B-lower/start5, with identical scaled KKT residual
+0.002051 despite solver success after about 1.09 seconds. This was not a
+deadline failure. The sequential A path correctly skipped upper/final stages
+after its rejected lower fit; nothing was retried.
+
+The first nine available development matrices are shown below. These are
+distances in kilometres to the **configured, unconfirmed** station, not verified
+accuracy; locked evaluation cases have not been used. Lower/upper columns in
+this table share discovery and initialization. The separate independent controls
+above are different experiments and must not be substituted silently.
+
+| DS22 | A all | B all | B lower | B upper | C all | C lower | C upper |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 001 | 3.750 | 0.785 | 3.555 | 6.440 | 21.266 | 23.645 | 12.163 |
+| 003 | 1.903 | 1.819 | 2.809 | 2.829 | 2.828 | 4.132 | 1.643 |
+| 017 | 1.532 | 3.059 | 2.463 | 1.638 | 3.769 | 3.303 | 2.042 |
+| 019 | 107.371 | 113.239 | 166.428 | 154.377 | 142.114 | 203.397 | 214.751 |
+| 029 | 3.296 | 0.841 | 4.087 | 2.133 | 2.392 | 5.988 | 0.796 |
+| 031 | 0.168 | 0.510 | 1.027 | 3.018 | 1.169 | 2.257 | 5.790 |
+| 033 | 1.793 | 1.478 | 0.412 | 1.927 | 1.975 | 1.090 | 3.424 |
+| 035 | 0.597 | 0.289 | 0.695 | 0.878 | 0.507 | 0.315 | 1.203 |
+| 037 | 1.802 | 3.967 | 4.429 | 17.266 | 6.425 | 4.688 | 16.781 |
+
+| Statistic over these nine cases | A all | B all | C all |
+|---|---:|---:|---:|
+| Median configured distance (km) | 1.802 | 1.478 | 2.828 |
+| Configured distance below 1km | 2/9 | 4/9 | 1/9 |
+| Configured distance below 0.5km | 1/9 | 1/9 | 0/9 |
+| All no worse than both shared halves | not a standalone A comparison | 7/9 | 2/9 |
+| All worse than both shared halves | not a standalone A comparison | 1/9 | 1/9 |
+
+C all is farther from the configured station than B all on all nine cases.
+Adding 035/037 expands coverage; it is not an algorithm improvement on matched
+old cases. The nine-case subset does not establish performance on all 44 ready
+development cases or the locked evaluation set, and the sub-kilometre/0.5km
+median goals remain unmet even conditionally on this reference.
+
+The new comparisons are sealed at
+`local/ds22-runtime-configured-comparison-v1/DS22-{035,037}`. They were computed
+only after both new matrices had sealed; original-case comparisons remain at
+`local/ds22-configured-comparison-v1`. Training-only minimum-stationary-objective
+selectors were fixed before comparison. No model, start, or half was selected
+using the reporting distances.
