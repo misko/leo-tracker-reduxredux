@@ -233,8 +233,7 @@ their training coordinates in the common regional frame are
 The complete artifacts use the same private namespaces with `DS22-003`;
 comparison protocol SHA256 is
 `d9519a6ea93dd3dcd237cf292985004987f1a8fdfa80b3fd39a6c822600ecddb`.
-DS22-019 is the next authorized pair, still in bounded preparation stages at
-this report update; it has not supplied comparison results.
+DS22-019 has now completed both independent matrices, as reported below.
 
 A separate receipt-only check on DS22-001 found identical selected receiver
 ambiguity integers in shared C-all/start2, shared C-low/start2, shared
@@ -243,3 +242,68 @@ receiver 0 = −1, receiver 1 = +2. Therefore different selected receiver-wide
 integer lifts do not explain that sample's improved independent C halves.
 Candidate pools, geographic/timing seeds and continuous physical corrections
 still differ, so this is not a general causal exclusion of lift derivation.
+
+## DS22-019 completed independent controls
+
+Both discoveries completed all 100 points in their first slice (91.30/85.41s).
+The lower initializer supplied six starts and 43 candidates; the upper supplied
+five starts and 22 candidates because one shape attempt was not stationary.
+The shortage was retained without replacement or retry. All 22 planned final
+B/C fits were stationary, and both matrices sealed before comparison.
+
+Distances below are kilometres to the existing **configured, unconfirmed**
+station reference, not verified position accuracy.
+
+| Model | Original all | Shared lower | Shared upper | Independent lower | Independent upper |
+|---|---:|---:|---:|---:|---:|
+| B | 113.239 | 166.428 | 154.377 | 133.061 | 275.894 |
+| C | 142.114 | 203.397 | 214.751 | 137.918 | 278.676 |
+
+The comparison protocol SHA256 is
+`8b1b72f55c01a97ef2e99722188c5f6cd390f012d6b7a49dc553d4e2f584ccb1`.
+No target-accuracy claim is permitted. The independent recipe's omitted unused
+hybrid stage and differing initializer budgets remain an explicit limitation.
+
+## Reference-free basin audit: different causes on 001 and 019
+
+The sealed audits under `local/ds22-independent-basin-audit-v1/DS22-{001,019}`
+replayed six original saved objectives per case with zero optimizer calls and
+no reference or held data. Training window identities and the regional prior
+were matched exactly. Posterior coverage is the fraction of the original full
+winner's band-specific satellite mass whose identities exist in the independent
+bank; it is not satellite identity truth. MAP agreement includes only windows
+where both compared states assign at least 0.5 posterior mass to their top ID.
+
+| Case/model/band | Full posterior mass covered | Confident MAP agreement | Closest independent seed to full winner (km) | Within any 25km fit domain? |
+|---|---:|---:|---:|---|
+| 001 C lower | 92.40% | 70.50% | 4.22 | yes |
+| 001 C upper | 83.69% | 54.49% | 15.44 | yes |
+| 019 C lower | 88.69% | 58.34% | 48.50 | no |
+| 019 C upper | 12.84% | 5.10% | 223.70 | no |
+| 019 B lower | 85.64% | 57.65% | 20.40 | yes |
+| 019 B upper | 21.61% | 13.36% | 178.89 | no |
+
+All selected C receiver integers remain receiver0=-1, receiver1=+2 in these
+full and independent states. On 019, the upper independent pipeline changes
+both available satellite support and reachable geography drastically. Its
+different result cannot isolate the effect of adding channels to a fixed model.
+The close original shared-half agreement depended materially on the shared
+discovery/initialization recipe. This does not establish which basin is correct.
+
+On 001, the full winner is geographically reachable in both independent
+controls, and candidate coverage remains relatively high. The parent's separate
+matched full-model checkpoint experiment is stronger causal evidence: after
+the extra explicitly budgeted profile step, the lower/high anchored releases
+were stationary and nearer the configured station (9.481/3.405km versus
+21.266km), but the original full state retained the best objective and NLL.
+NLLs were 41529.963, 41779.457, 43404.249 respectively; the nearer alternatives
+had lower prior penalties (253.139/214.626 versus333.588). Exact band likelihood
+decomposition also preferred the original state in each band separately.
+Consequently missing starts, convergence, or positive band weighting of these
+fixed likelihood states cannot alone explain/reverse this ranking.
+
+The next diagnostic uses the existing orbit-blind bootstrap track memberships
+to assess posterior identity switches, edge gaps, and confidence at these same
+saved states. Cross-state identity differences above do **not** prove temporal
+switching or justify adding a consistency penalty. Tracks themselves must be
+audited before treating their membership as persistent satellite identity.
