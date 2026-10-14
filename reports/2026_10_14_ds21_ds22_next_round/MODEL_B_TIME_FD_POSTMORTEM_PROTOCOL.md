@@ -1,0 +1,9 @@
+# Receiver-time derivative failure postmortem
+
+The first fixed-state timing-profile launches stopped on both cases at the first incumbent's prediction-array central finite-difference gate. Each consumed one original objective evaluation and zero fits; no profile terminal exists. Preserve both failed namespaces and their source bytes. No threshold is weakened and no restart occurs.
+
+The authorized postmortem loads only each paired-sealed incumbent, makes five original orbital predictions (delta0 with derivatives and±1e-4/±1e-5s receiver contrasts), and evaluates no likelihood or objective. For each query, compute original uniform-grid interpolation cells at minus/zero/plus. Report central finite-difference errors separately for stable versus crossed cells; also compare source-cell one-sided differences where a side stays in the original interpolation cell. Native interpolation uses the right cell at an exact interior knot, while central differences can average left/right tangents. This explanation is a hypothesis until measured, not a basis to silently loosen the derivative gate.
+
+Freeze the new array-only component/driver, preserved failed launch receipts and all original training source/input/scientific authority before preparation. Each case has0 objective calls,0 fits,5 explicit orbit calls, independent whole120/TERM135/KILL140-second bounds, one exclusive launch and no retry; at most two workers. Record largest error locations, receiver/catalogue IDs, cell indices, visibility changes and unsupported comparisons. No references, timestamp repair, geography fit or new receiver-time model parameter are involved. Review actual errors before a new profile version.
+
+Use `tools/ds21_model_b_time_fd_postmortem.py freeze --failed <preserved-v1-time-audit> --output <fresh-bulk-directory>`, followed by separate source-frozen `run --label DS21-053` / `DS21-059` under135-second external caps in the pinned single-thread environment.
