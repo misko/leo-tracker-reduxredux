@@ -3,7 +3,18 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
-The latest [DS21-039 native band-calibration control](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
+The [saved-state timing/calibration factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
+completed 18 evaluations and zero fits in 18.760 seconds. At four prescribed
+1 km displacements along the previously identified weak position directions,
+timing adjustments remove roughly 7,038–8,051 NLL units
+relative to geography-only states; calibration alone removes 30–307. Positive
+interactions of 24–273 mean those separate gains cannot be added. The fully
+adjusted states differ from their original endpoints by only 15–29
+satellite/clutter MAP labels out of 2,798 windows, with unchanged visibility and
+sampling integers. This strengthens timing–position ambiguity as an investigation
+priority without establishing a timing bug or estimating a new position.
+
+The preceding [DS21-039 native band-calibration control](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
 completed four stationary fits in 42.228 seconds. Two band-specific drift terms
 and one band RF-slope contrast improve training NLL by 17.222 and frozen held
 NLL by 2.949 on the same 633 held windows, but position error **worsens from
@@ -11,8 +22,8 @@ NLL by 2.949 on the same 633 held windows, but position error **worsens from
 physical constraints. This model is not promoted: representing the separate
 band functions more faithfully does not resolve DS21-039's localization error.
 Its original low/high baselines remain 3.758515 / 2.556792 km; no new half-only
-pipeline was run. Timing/calibration ambiguity and assignment attribution are
-the next investigations. The fixed five-case results below are unchanged.
+pipeline was run. The factorial above follows up timing/calibration ambiguity
+and assignment attribution. The fixed five-case results below are unchanged.
 
 The [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
 completed 18 C calls, 17 stationary. All/low/high errors improve to

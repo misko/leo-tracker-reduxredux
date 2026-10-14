@@ -21,7 +21,18 @@ The current target is **less than 0.5 km for every eligible CH1–8 DS21 recordi
 including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
-The latest [DS21-039 band-calibration comparison](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
+The latest [DS21-039 saved-state factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
+separates timing from calibration at four prescribed 1 km displacements along
+the previously identified weak position directions.
+All 18 evaluations completed in 18.760 seconds, with zero fits and no reference
+or held-data use. Timing absorbs most of the geography-only frequency penalty;
+calibration has a smaller, non-additive effect. Endpoint-to-full comparisons
+retain identical visibility and sampling integers, with 15–29 satellite/clutter
+MAP changes per 2,798 windows. This is evidence of timing–position ambiguity,
+not a proven clock/orbit bug or a new localization result. All four full states
+and both original endpoints reproduce their saved scalar objectives/NLLs.
+
+The preceding [DS21-039 band-calibration comparison](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
 is a completed negative localization control: all four fits are stationary, and
 the added band drift/RF terms improve training and held likelihood, but error
 increases from **4.072515 to 4.186817 km**. The run preserves the original
@@ -77,9 +88,9 @@ led to the [completed fixed-function decomposition](../2026_10_13_ds21_release_r
 Removing bounds leaves almost all bootstrap loss and all native transport loss;
 adding band/time or shared-clock columns closes the prescribed saved targets to
 below 3e-10 Hz maximum error. This establishes missing function dimensions, not
-truthful calibration or an accuracy improvement. The next DS21-039 diagnostics
-test its own band compatibility and finite timing/calibration interactions in
-new namespaces; the [updated priorities](../2026_10_13_ds21_039_root_cause/NEXT_FOUR_PRIORITIES.md)
+truthful calibration or an accuracy improvement. The completed DS21-039 controls
+above now separate band compatibility from finite timing/calibration interactions;
+the [updated priorities](../2026_10_13_ds21_039_root_cause/NEXT_FOUR_PRIORITIES.md)
 retain the full development/locked evaluation gates.
 
 Subsequent coverage: [DS21-007 Model C](../2026_10_13_ds21_release_readiness/JOINT_007_RESULTS.md)
