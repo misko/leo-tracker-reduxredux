@@ -1,0 +1,9 @@
+# DS22 B conditional-observation transfer qualification
+
+This zero-fit qualification uses the original full-training B winners on DS22-059 and DS22-071. They represent broadly displaced full/half solutions and a combined-view regression, respectively. No new geography or optimizer start is selected and no held or reference data is read.
+
+The exact original 50- and 59-candidate banks, physical calibration frame, clock nodes, priors and winning state remain fixed. Masks are all training windows and the two predetermined 20-second time-parity subsets. These are conditional development masks: discovery, initialization and the original winning state already used full training. The diagnostic cannot establish predictive generalization or repair a deficient candidate bank, especially on 059.
+
+For each mask, evaluate the unchanged legacy model, the proper conditional-CFO model, detectability with zero tail, and detectability with tail `0.1*cos(i)`. Check full-mask legacy objective, all physical/base nuisance gradients and posterior against the original model; check conditional-minus-legacy equals the integrated event log-mass; check zero-tail objective, base gradients and posterior nesting; and verify full-bank detection probabilities lie in (0,1) and sum to 1.6. Every nonzero detectability coordinate receives a centered finite difference with step 0.0001, absolute tolerance 0.0001 and relative tolerance 0.00001. This checks the implicit fixed-budget intercept derivative too.
+
+There are exactly 307 objective calls on 059 and 361 on 071, with hard count caps 310/365. Each case has a 180-second internal limit, TERM at 195 seconds and KILL five seconds later. At most two workers run, with single-thread BLAS. There are zero optimizer calls, no retry, no RF access and no held/reference joins. A failed qualification remains preserved and does not authorize a fit. The source-frozen report records all accounting and closure residuals.
