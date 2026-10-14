@@ -336,3 +336,87 @@ tracks, and physical track purity remains unverified. A naive consistency
 penalty therefore has weaker support than a controlled test of the known B/C
 temporal-calibration difference. No penalty or threshold was tuned using these
 distances, and no further fit was launched by this audit.
+
+## Original full-channel expansion: 035/037 runtime qualification
+
+Both cases completed their original 100-point discovery and fitted-shape
+stages. DS22-035 then completed all nine shape-bootstrap scientific calls and
+assembled its candidate union and physical seed artifacts, but exhausted the
+original 90-second stage cap during final recursive source/parent validation.
+The failure is retained at `local/ds22-initialization-v1/DS22-035/shape-bootstrap`;
+there is no fabricated original terminal and no repeated scientific call.
+
+An explicit metadata-only recovery receipt under
+`local/ds22-bootstrap-recovery-v1/DS22-035` validated all nine paired calls,
+aggregates, candidate union, and seed layouts, then pinned the original bytes.
+It completed in 20.233 seconds with zero optimizer, objective, or predictor
+calls. This is a new qualified authority, not a reclassification of the failed
+original slice.
+
+The separate `ds22_initialization_authority` port qualifies genuine original
+or explicitly recovered parents once and reconstructs the original discovery
+bank separately from the later candidate union. Runtime reads check exact
+ancestor/source/input/membership/TLE bytes; training preparation is replayed
+through the original public provider and canonical receipt comparison.
+
+| Case/qualified parent | Authority read | Preparation | Final authority check |
+|---|---:|---:|---:|
+| 035 recovered shape-bootstrap | 0.207s | 35.781s | 0.382s |
+| 037 original shape | 0.382s | 34.385s | 0.219s |
+
+Both zero-fit qualifications passed. A separate runtime stage consumer keeps
+the original numerical operations, selectors, scientific budgets, and artifact
+validation, with exclusive slice/call claims and no failed/orphan retry. Its
+distinct schema makes the recovery lineage explicit. The first prescribed
+stages are 035 hybrid and 037 shape-bootstrap, each slice 0 under its unchanged
+240s/90s cap. Both completed, followed by the remaining stages below. The
+original consumer is not monkeypatched.
+
+| Case | Stage | Completed calls | Whole stage elapsed |
+|---|---|---:|---:|
+| 035 | Hybrid | 9 | 32.757s |
+| 035 | Cold bootstrap | 9 | 26.704s |
+| 035 | Six-proposal export | 0 | 20.683s |
+| 037 | Shape bootstrap | 9 | 21.034s |
+| 037 | Hybrid | 9 | 48.587s |
+| 037 | Cold bootstrap | 9 | 15.826s |
+| 037 | Six-proposal export | 0 | 15.432s |
+
+Every row completed in its first numbered runtime slice, under the original
+stage cap. The 035 recovered scientific calls were not repeated. Runtime
+six-proposal terminal protocols are
+`21414dd472f645b7ac16b9fc6da2758ce9f47cd90294bb992687e8e6dbba1818`
+(035) and `75d591099d230df28cadcaadbb063e2b9fc9951825efae53f304f13019e363fc`
+(037).
+
+The explicit full-model adapter `tools/ds22_runtime_models.py` now consumes
+these genuine runtime authorities. It retains original A/B/C model creation,
+training frame metadata, six physical starts, six receiver-lift derivations,
+sequential A stages, stationary acceptance, and 20s/600-iteration fit caps.
+Unit budgets remain 90s for A and 165s for B/C; failed/orphan attempts cannot
+resume. Original receipt validators check the resulting units. Component
+verification exercised real synthetic public training/model construction,
+all 54 prescribed model calls, all 12 terminal validators, final sealing,
+and cached re-entry without refitting. Tests passed; frozen scientific modules
+were unchanged.
+
+Actual full-model preparation qualification completed with zero optimizer,
+objective, or predictor calls:
+
+| Case | Initial authority | Training preparation | Final authority | Total |
+|---|---:|---:|---:|---:|
+| 035 | 0.372s | 17.842s | 0.352s | 18.567s |
+| 037 | 0.385s | 13.658s | 0.367s | 14.410s |
+
+Both physical initializations passed. The first A path in each case completed
+all three stages stationarily. The remaining 22 units are queued/running in
+two bounded worker chains; each chain stops at a failure or checkpoint instead
+of silently continuing that attempt. No position comparison for these cases
+has been performed at this update. The new reporting adapter reads the explicit
+configured reference only after the entire matrix seal and retains the
+unconfirmed-station and shared-half limitations.
+
+Implementation commits: metadata recovery `08940c0b7`; qualified authority
+`b88097641`; stage runtime `6adcc5806`; full-model composition `6696cc031`;
+post-seal reporting `bcbd132e9`. Runtime artifacts are under
+`local/ds22-{bootstrap-recovery,initialization-authority,initialization-runtime,runtime-models}-v1`.
