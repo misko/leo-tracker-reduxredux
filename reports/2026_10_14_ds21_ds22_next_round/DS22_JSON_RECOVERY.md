@@ -44,3 +44,23 @@ real saved-bank/point/terminal validation tests also qualify the new facade.
 This establishes preparation compatibility, not DS22 position accuracy.
 The run remains the shared-discovery baseline; independent half-only discovery
 and initialization controls are still outstanding.
+
+The authorized recovery slice 0 subsequently cleanly checkpointed at
+450.549 seconds, retaining a 963-satellite bank and 91 completed discovery
+points. Point launches/results/terminations each number 91, with no orphan.
+All 273 view fits returned results; converged counts are all 89/91, low 91/91,
+high 89/91. The last saved point is `point:-106.25:-118.75`; the next unclaimed
+point is `point:-106.25:-106.25`. No model position estimate is selected yet.
+Slice-0 termination SHA256:
+`e01aa7dda97deb98da8ce7d89b9c2ed7a520f6b7b7ffececc1caefe0c45c5a76`.
+An additional numbered slice requires explicit scheduling authorization and
+must preserve every completed point.
+
+After explicit authorization, slice 1 completed the nine remaining points in
+74.383 seconds. The final inventory contains exactly 100 point claims, results
+and terminations. Its discovery terminal SHA256 is
+`d490809cf24cc850db6540c597f5c53a855d3787afdfe2a43a5e23d091df932f`.
+A separate read-only authority and selector replay took 6.130 seconds. The
+training selector retained a 39-satellite union and three initial coordinates
+(-50, -50), (-106.25, -106.25), (-106.25, -118.75) km relative to the prior.
+These are initialization coordinates, not position-error measurements.

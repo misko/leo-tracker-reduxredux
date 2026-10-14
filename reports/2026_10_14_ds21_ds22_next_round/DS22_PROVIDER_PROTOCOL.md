@@ -147,6 +147,19 @@ and strict separation of post-seal evaluation. A compatible case payload alone
 does not establish that the full six-stage initializer or A/B/C model consumer
 has been implemented or qualified.
 
+Implementation update: `tools/ds22_fitted_initialization.py` now implements the
+five post-discovery stages with a genuine DS22 context, frozen source archives,
+exact provider/predecessor bindings and the existing numerical operation and
+assembly ports. It consumes the separately versioned JSON-compatible discovery
+facade described in `DS22_JSON_RECOVERY.md`. It never invokes the DS21 case
+reader; the synthetic chain tests explicitly reject that call. Bootstrap
+aggregates are replayed from sealed calls without invoking a writer. The
+end-to-end component test checks all five transitions, the existing call counts,
+candidate union, and physical correction closure for all six exported seeds in
+each view. Additional tests cover cached completion, source/archive lineage,
+explicit checkpoint continuation, orphan refusal, and aggregate tampering.
+No real DS22 post-discovery stage or A/B/C fit has run at this update.
+
 ## Independent half-only controls
 
 The preparation provider's three views are a baseline input port, not the final
