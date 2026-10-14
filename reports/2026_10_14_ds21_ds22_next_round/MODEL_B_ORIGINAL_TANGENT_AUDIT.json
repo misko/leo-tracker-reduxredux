@@ -1,0 +1,705 @@
+{
+  "schema": "ds21-model-b-original-tangent-receipt-audit-v1",
+  "scope": "Saved receipt hashes and scalar arithmetic only; no decoder, preparation, prediction, likelihood, optimizer or reference calls",
+  "freeze": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/model-b-original-freeze.json",
+    "sha256": "sha256:78bbd8c748d29221246f5fb6d63e29157dcc02dc3c59a1b706ba7aa1760392e6"
+  },
+  "source_files": 385,
+  "input_bindings": 92,
+  "rows": [
+    {
+      "label": "DS21-039",
+      "view": "all",
+      "fitted_c_hz_per_ghz": -618.6802258725146,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "gradient": 1.7701951016135808e-12,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 0.6282444224389643,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 6277.942417373641,
+            "strong_eigenvalue": 17448.43746651708
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 2175.272164533294,
+            "strong_eigenvalue": 4206.065459826332
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 37.926824517333046,
+            "strong_eigenvalue": 138.9771865779324
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 24.781565192467998,
+            "strong_eigenvalue": 39.67783912009256
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 5377.024199896796,
+            "strong_eigenvalue": 15584.066506048897
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 1361.9382553740033,
+            "strong_eigenvalue": 3210.541184924624
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 26.135850329889383,
+            "strong_eigenvalue": 118.35269753281587
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 13.611419648874111,
+            "strong_eigenvalue": 15.059795158686184
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 2798,
+          "signal_mass": 1893.710141676254,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 23.267215301408815,
+          "prior_information_per_km2": 1.514349891069411,
+          "largest_positive_group": {
+            "group": "8",
+            "windows": 189,
+            "signal_mass": 77.95133533582407,
+            "likelihood_information_per_km2": 5.937781390944069
+          },
+          "most_negative_group": {
+            "group": "11",
+            "windows": 192,
+            "signal_mass": 81.15430875867209,
+            "likelihood_information_per_km2": 0.4531958446834066
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 2798,
+          "signal_mass": 1893.710141676254,
+          "negative_likelihood_groups": 1,
+          "likelihood_information_per_km2": 12.01415749047871,
+          "prior_information_per_km2": 1.5972621583968252,
+          "largest_positive_group": {
+            "group": "8",
+            "windows": 189,
+            "signal_mass": 77.95133533582407,
+            "likelihood_information_per_km2": 3.6891740835332847
+          },
+          "most_negative_group": {
+            "group": "0",
+            "windows": 213,
+            "signal_mass": 156.92441764012563,
+            "likelihood_information_per_km2": -0.06440321492941962
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 395.0377211639026,
+      "fixed_over_timing_weak_ratio": 205.73366207823526,
+      "complete_over_observed_both_weak_ratio": 1.8206451517728235
+    },
+    {
+      "label": "DS21-039",
+      "view": "low",
+      "fitted_c_hz_per_ghz": -616.4371867892243,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "gradient": 5.619810172774464e-13,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 3.8535970233694066,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 2176.9320556782304,
+            "strong_eigenvalue": 12236.56180844197
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 888.7831451237805,
+            "strong_eigenvalue": 2724.3388575600084
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 9.417766230545169,
+            "strong_eigenvalue": 54.051975461287924
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 6.261776457795587,
+            "strong_eigenvalue": 22.73924910661497
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 1780.543091190069,
+            "strong_eigenvalue": 11092.705539642982
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 599.5698522819998,
+            "strong_eigenvalue": 2208.2921374955445
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 6.22012281754581,
+            "strong_eigenvalue": 48.580739972999815
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 3.460159994890912,
+            "strong_eigenvalue": 17.000480469215244
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 1692,
+          "signal_mass": 1179.1297650343731,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 5.891559481010416,
+          "prior_information_per_km2": 0.37021697679533055,
+          "largest_positive_group": {
+            "group": "9",
+            "windows": 162,
+            "signal_mass": 147.289990576071,
+            "likelihood_information_per_km2": 1.7164927678569746
+          },
+          "most_negative_group": {
+            "group": "11",
+            "windows": 125,
+            "signal_mass": 89.11761700456933,
+            "likelihood_information_per_km2": 0.058301604300561055
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 1692,
+          "signal_mass": 1179.1297650343731,
+          "negative_likelihood_groups": 5,
+          "likelihood_information_per_km2": 2.969976778882567,
+          "prior_information_per_km2": 0.4901832160201006,
+          "largest_positive_group": {
+            "group": "9",
+            "windows": 162,
+            "signal_mass": 147.289990576071,
+            "likelihood_information_per_km2": 1.4888570570317192
+          },
+          "most_negative_group": {
+            "group": "0",
+            "windows": 126,
+            "signal_mass": 87.2243418315735,
+            "likelihood_information_per_km2": -0.1264786733419094
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 514.5840347900456,
+      "fixed_over_timing_weak_ratio": 286.2552948580835,
+      "complete_over_observed_both_weak_ratio": 1.8096783001483725
+    },
+    {
+      "label": "DS21-039",
+      "view": "high",
+      "fitted_c_hz_per_ghz": -674.6187400634159,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "gradient": 1.4674546300330604e-13,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 2.471410391783831,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 1786.4140685658679,
+            "strong_eigenvalue": 7072.010102025313
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 474.13913650204637,
+            "strong_eigenvalue": 910.3456525852205
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 9.82085544226049,
+            "strong_eigenvalue": 33.93600217408987
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 7.326422962551997,
+            "strong_eigenvalue": 14.399254379948086
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 1609.2459354098187,
+            "strong_eigenvalue": 6425.738149694374
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 296.16180997832396,
+            "strong_eigenvalue": 698.6966745660221
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 5.820000862498891,
+            "strong_eigenvalue": 25.541673892468133
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 0.6611481687521813,
+            "strong_eigenvalue": 6.912660067921646
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 1106,
+          "signal_mass": 602.4068172030295,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 6.765971413937288,
+          "prior_information_per_km2": 0.560451548622013,
+          "largest_positive_group": {
+            "group": "8",
+            "windows": 67,
+            "signal_mass": 13.73914209106507,
+            "likelihood_information_per_km2": 2.059859631039184
+          },
+          "most_negative_group": {
+            "group": "7",
+            "windows": 104,
+            "signal_mass": 75.53790990583009,
+            "likelihood_information_per_km2": 0.08671317188910231
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 1106,
+          "signal_mass": 602.4068172030295,
+          "negative_likelihood_groups": 3,
+          "likelihood_information_per_km2": -0.3011465300726637,
+          "prior_information_per_km2": 0.9622946988289922,
+          "largest_positive_group": {
+            "group": "13",
+            "windows": 123,
+            "signal_mass": 75.37454483494272,
+            "likelihood_information_per_km2": 0.7410688285760375
+          },
+          "most_negative_group": {
+            "group": "9",
+            "windows": 77,
+            "signal_mass": 31.00206267074737,
+            "likelihood_information_per_km2": -2.669205037740341
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 2434.0170803876395,
+      "fixed_over_timing_weak_ratio": 276.50269706641734,
+      "complete_over_observed_both_weak_ratio": 11.081363163085712
+    },
+    {
+      "label": "DS21-023",
+      "view": "all",
+      "fitted_c_hz_per_ghz": -523.3438262211707,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 3.637978807091713e-12,
+        "likelihood_nll": 0.0,
+        "gradient": 8.172264948091978e-13,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 5.689365157364893,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 8259.667421092146,
+            "strong_eigenvalue": 15990.754000807518
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 1007.1239349832755,
+            "strong_eigenvalue": 5523.277564839858
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 34.705244622992055,
+            "strong_eigenvalue": 73.74919469263752
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 14.228950875680402,
+            "strong_eigenvalue": 50.39608817588462
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 7688.271035338568,
+            "strong_eigenvalue": 14593.715629416056
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 481.2812369363379,
+            "strong_eigenvalue": 4805.971402361054
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 27.77608337947586,
+            "strong_eigenvalue": 54.993307764752515
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 7.432860125039517,
+            "strong_eigenvalue": 31.501609636895232
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 2384,
+          "signal_mass": 1743.856751882002,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 12.815726683531974,
+          "prior_information_per_km2": 1.4132241921341586,
+          "largest_positive_group": {
+            "group": "3",
+            "windows": 216,
+            "signal_mass": 158.78452475559254,
+            "likelihood_information_per_km2": 2.514220349342791
+          },
+          "most_negative_group": {
+            "group": "12",
+            "windows": 192,
+            "signal_mass": 153.56762727584552,
+            "likelihood_information_per_km2": 0.4435313370223721
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 2384,
+          "signal_mass": 1743.856751882002,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 5.876820344383653,
+          "prior_information_per_km2": 1.5560397806306772,
+          "largest_positive_group": {
+            "group": "8",
+            "windows": 264,
+            "signal_mass": 168.26380054899403,
+            "likelihood_information_per_km2": 1.1996897027644182
+          },
+          "most_negative_group": {
+            "group": "13",
+            "windows": 224,
+            "signal_mass": 175.12248486625163,
+            "likelihood_information_per_km2": 0.010495944271180935
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 1034.3623996688211,
+      "fixed_over_timing_weak_ratio": 276.79464128551473,
+      "complete_over_observed_both_weak_ratio": 1.9143305048545836
+    },
+    {
+      "label": "DS21-023",
+      "view": "low",
+      "fitted_c_hz_per_ghz": -438.75226108765764,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "gradient": 5.24913446042774e-13,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 2.7211142973490006,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 1358.0137655830276,
+            "strong_eigenvalue": 8735.464296314873
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 410.83197006468384,
+            "strong_eigenvalue": 1210.4266668599498
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 14.814427946640201,
+            "strong_eigenvalue": 48.33260176860721
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 9.957074137417878,
+            "strong_eigenvalue": 31.023281592188177
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 1023.5645694339713,
+            "strong_eigenvalue": 7578.3965074412645
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 193.82111291484557,
+            "strong_eigenvalue": 830.8467914674986
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 10.669299491973359,
+            "strong_eigenvalue": 33.60297281398225
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 5.799709143369237,
+            "strong_eigenvalue": 18.19813101095412
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 1317,
+          "signal_mass": 817.658272041333,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 9.077606153901677,
+          "prior_information_per_km2": 0.8794679835213721,
+          "largest_positive_group": {
+            "group": "12",
+            "windows": 95,
+            "signal_mass": 42.94034706534904,
+            "likelihood_information_per_km2": 2.4937047276709237
+          },
+          "most_negative_group": {
+            "group": "1",
+            "windows": 87,
+            "signal_mass": 40.970048164713084,
+            "likelihood_information_per_km2": 0.14287916303548726
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 1317,
+          "signal_mass": 817.658272041333,
+          "negative_likelihood_groups": 5,
+          "likelihood_information_per_km2": 4.7949999432668715,
+          "prior_information_per_km2": 1.0047092001041857,
+          "largest_positive_group": {
+            "group": "12",
+            "windows": 95,
+            "signal_mass": 42.94034706534904,
+            "likelihood_information_per_km2": 2.2460687858249235
+          },
+          "most_negative_group": {
+            "group": "1",
+            "windows": 87,
+            "signal_mass": 40.970048164713084,
+            "likelihood_information_per_km2": -0.2070948706063419
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 176.48550024343976,
+      "fixed_over_timing_weak_ratio": 95.93549887731722,
+      "complete_over_observed_both_weak_ratio": 1.7168230149613148
+    },
+    {
+      "label": "DS21-023",
+      "view": "high",
+      "fitted_c_hz_per_ghz": -498.83007850918204,
+      "objective_replay_difference": 0.0,
+      "original_b_oracle_closure": {
+        "objective": 0.0,
+        "likelihood_nll": 0.0,
+        "gradient": 1.480274236520529e-13,
+        "posterior": 0.0
+      },
+      "boundary": false,
+      "minimum_constraint_slack": 2.9194980449670886,
+      "curvatures": {
+        "complete_data": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 3187.2396855285815,
+            "strong_eigenvalue": 6991.809086756477
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 395.56146723572044,
+            "strong_eigenvalue": 697.0516034218651
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 7.754444287375705,
+            "strong_eigenvalue": 31.72109647325528
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 4.663697149244771,
+            "strong_eigenvalue": 14.069132307979437
+          }
+        },
+        "linearized_observed": {
+          "fixed": {
+            "state": "positive",
+            "weak_eigenvalue": 2970.3660264711093,
+            "strong_eigenvalue": 6442.730039736918
+          },
+          "calibration": {
+            "state": "positive",
+            "weak_eigenvalue": 269.26533653903664,
+            "strong_eigenvalue": 409.3355735025346
+          },
+          "timing": {
+            "state": "positive",
+            "weak_eigenvalue": 5.651707891983704,
+            "strong_eigenvalue": 24.186612329227096
+          },
+          "both": {
+            "state": "positive",
+            "weak_eigenvalue": 2.408577608952667,
+            "strong_eigenvalue": 7.560373192965841
+          }
+        }
+      },
+      "attribution": {
+        "complete_data": {
+          "groups": 12,
+          "windows": 1067,
+          "signal_mass": 685.8070689048593,
+          "negative_likelihood_groups": 0,
+          "likelihood_information_per_km2": 4.131397661034918,
+          "prior_information_per_km2": 0.5322994882152741,
+          "largest_positive_group": {
+            "group": "3",
+            "windows": 86,
+            "signal_mass": 63.25245302503579,
+            "likelihood_information_per_km2": 1.462463311036323
+          },
+          "most_negative_group": {
+            "group": "14",
+            "windows": 60,
+            "signal_mass": 2.9425203673752542,
+            "likelihood_information_per_km2": 0.0003597059549301163
+          }
+        },
+        "linearized_observed": {
+          "groups": 12,
+          "windows": 1067,
+          "signal_mass": 685.8070689048593,
+          "negative_likelihood_groups": 2,
+          "likelihood_information_per_km2": 1.672917242762238,
+          "prior_information_per_km2": 0.7356603661975719,
+          "largest_positive_group": {
+            "group": "3",
+            "windows": 86,
+            "signal_mass": 63.25245302503579,
+            "likelihood_information_per_km2": 1.410178645310454
+          },
+          "most_negative_group": {
+            "group": "7",
+            "windows": 85,
+            "signal_mass": 68.28603557172826,
+            "likelihood_information_per_km2": -0.8805664354558825
+          }
+        }
+      },
+      "fixed_over_both_weak_ratio": 1233.2448891952986,
+      "fixed_over_timing_weak_ratio": 525.5696301438776,
+      "complete_over_observed_both_weak_ratio": 1.9362868490970935
+    }
+  ],
+  "cases": {
+    "DS21-039": {
+      "whole_slice_termination": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-039/whole-slice-termination.json",
+        "sha256": "sha256:e44681091897cab83bbc2b5bd460f3d9a6aaebbe6e5977b78d4bd4a03b4200f3"
+      },
+      "numerical_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-039/diagnostic/terminal.json",
+        "sha256": "sha256:4714201371a79178f681c320a248184b0f558460924f592771169f7e55e2a219"
+      },
+      "numerical_seal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-039/diagnostic/seal.json",
+        "sha256": "sha256:e6e6bc5babc401f896dba7170e04d62cb7a314cd92280b1529c50750fb506d48"
+      },
+      "preparation_seconds": 16.518062976188958,
+      "whole_slice_seconds": 18.30995337991044,
+      "numerical_seconds": 1.093582124914974,
+      "objective_calls": 3,
+      "orbit_calls": 3,
+      "standalone_likelihood_calls": 3,
+      "partition": {
+        "seed": 20261012,
+        "held_blocks": [
+          2,
+          6,
+          12
+        ]
+      }
+    },
+    "DS21-023": {
+      "whole_slice_termination": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-023/whole-slice-termination.json",
+        "sha256": "sha256:2d45cc90da9c1b5eb6a060b5f9309b37ae2ebfd48b372b66ce6365859ac5d5ee"
+      },
+      "numerical_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-023/diagnostic/terminal.json",
+        "sha256": "sha256:90c9635a646323fed7761c413104301f8a22287fac04d639b1e890921452ff80"
+      },
+      "numerical_seal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-b-original-023/diagnostic/seal.json",
+        "sha256": "sha256:3b3857054da3213b6a3a7042d2d56f9cfec0ae235a26a161f3cca1d28260c0da"
+      },
+      "preparation_seconds": 12.392550772055984,
+      "whole_slice_seconds": 13.595672812312841,
+      "numerical_seconds": 0.6435629902407527,
+      "objective_calls": 3,
+      "orbit_calls": 3,
+      "standalone_likelihood_calls": 3,
+      "partition": {
+        "seed": 20261012,
+        "held_blocks": [
+          0,
+          4,
+          9
+        ]
+      }
+    }
+  },
+  "optimizer_calls": 0,
+  "reference_usage": "none",
+  "held_preparation": false,
+  "receipt_hashes_verified": true,
+  "scalar_group_prior_closure_verified": true
+}
