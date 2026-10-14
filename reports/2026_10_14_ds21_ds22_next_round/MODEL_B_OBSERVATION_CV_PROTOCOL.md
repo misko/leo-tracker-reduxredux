@@ -1,0 +1,40 @@
+# B059 four-arm conditional training CV: event convention, dispersion and detectability
+
+This prespecified pilot has **16 maximum optimizer calls**: two internal training folds×two fixed training-derived geographies×four arms. It supersedes the12-call proposal in the block-audit report, before any new pilot fit. Original held and locked observations remain untouched. No new RF, reference seed, free-geography search, candidate expansion or truth-derived weight is permitted.
+
+## Why four arms are necessary
+
+The original B singleton score is `P0/(1-P0) * H`, where `P0=exp(-lambda)*product_visible(1-q_s)` and `H=lambda/A + sum_visible q_s/(1-q_s)*phi_s`. Its continuous CFO integral is `M=P0/(1-P0)*(lambda+sum_visible q_s/(1-q_s))`. It is a joint single-event frequency density conditional on at least one event, not a unit selected-frequency density. Whether that event convention describes extraction of the single highest-margin peak is an **unproven observation-model hypothesis**. An expansion must not silently renormalize it while claiming exact original B nesting.
+
+Keep four explicitly different arms:
+
+1. `legacy`: exact original B joint-event convention, sigma125Hz, uniform full-bank `q=1.6/K`.
+2. `conditional`: unit selected-CFO density `H/Z`, where `Z=lambda+sum_visible q_s/(1-q_s)`, original sigma125Hz and uniform q.
+3. `dispersion`: the same unit selected-CFO density, with train-fold fitted shrinkage RX/channel sigma; uniform q.
+4. `detectability`: the same unit selected-CFO density and sigma125Hz, with train-fold fitted shrinkage catalogue propensities.
+
+All arms retain the original folded period `A=227272.727273Hz`, original positive clutter rate `lambda=.5`, bank, timing physics, calibrated receiver functions and physical priors. This does not change to the native2.5MHz circle. The normalized arm differs from the legacy NLL by the explicitly reported `sum(log M)` at identical parameters/visibility. Never compare their raw objectives as if they represented the same event. Dispersion/detectability expansions must nest the **normalized** baseline at zero; legacy must independently nest the original B objective/gradients/posteriors. No normalized-baseline fit may be reused unless M is proven constant over all fitted nuisance including orbit visibility; no such constancy is assumed.
+
+## Frozen parameterization and priors
+
+Dispersion uses `log(sigma_rc/125)=alpha_rx+(B8 beta)_channel`, with two RX coefficients and the existing orthonormal zero-sum basis for eight channels (seven coefficients). Each of the nine private coefficients has Gaussian prior N(0,.25²). RX coefficient bounds are±log(2)/2; each channel-basis coefficient bound is `log(2)/(2*max_row(sum(abs(B8))))`, guaranteeing each channel term≤log(2)/2 and every sigma cell in62.5–250Hz. These limits/shrinkage are fixed here, not estimated from truncated fitted residual RMS or tuned against reference/CV results. Both receivers share each channel contrast.
+
+Detectability uses `q_s=logistic(a+(BK theta)_s)` with the orthonormal zero-sum catalogue basis. Solve scalar a so the **entire unchanged bank** has `sum(q_s)=1.6`; do not redistribute invisible mass or renormalize q over visible satellites. Each theta coefficient has prior N(0,1) and box±2. The visibility-dependent selected-CFO denominator is Z above. Record full-bank budget, visible probability/odds sums, P0, M and Z separately. Satellite weights are shared across receivers/channels; no satellite identity label, dropped candidate or authoritative beam footprint is invented. Sigma stays125Hz in this arm.
+
+The physical B vector, clock coefficients and original receiver-group offsets remain original parameters. Observation parameters occupy explicitly labelled private nuisance tails with their declared priors, bounds and scales; they must not be reported as physical clock/group coefficients. Original physical and nuisance parameter bounds remain unchanged. All fitted-c coefficients remain fitted; there is no c=0 arm.
+
+## Internal folds and matched fixed-position fits
+
+Use exactly the updated accepted incumbent and donor free-release XY from sealed `model-b-common-nuisance-profile-059-v2`. Each arm/fold receives the **same complete incumbent non-geographic vector/nuisance**, with only the declared XY substituted and observation tails initialized to zero. Far uses original proposal1 disk `[125,175]`; nearby uses original proposal3 disk `[-97.65564087158711,-96.14540367890797]`, radius25km. Check raw domain/initializer margins without clipping.
+
+Split only existing original-training selected windows by `floor(time_s/20) % 2`. Fold0 fits even bins and scores odd bins; fold1 fits odd and scores even bins. No empty/held bins are inserted. Calibration, c, satellite timing, common clocks, group offsets and observation parameters fit only fold-training measurement values. Opposite-fold values cannot contribute to a fitting objective/gradient. Preserve the existing full-derived physical domain, bank, frame/clock-node metadata and starts explicitly; no extra discovery runs. Their use, and fixed geographies derived from full training, leaks information across folds: this is **conditional development CV, not untouched validation or a new accuracy benchmark**.
+
+There are four independent units (fold×fixed geography), each with four separately executed original20-second/600-iteration calls. No retries, polish, or reallocation of a failed call's budget. Whole180/TERM195/KILL200 seconds per unit includes source checks, preparation, four calls and independent audits; admit each call only with≥30s remaining. Up to two numerical workers, coordinated with the global allocation. All solver returns retain strict original fixed-position physical/nuisance projected KKT≤.001, objective/NLL replay and exact fixed XY/original disk checks. Nonstationary/failed outcomes remain explicit and are never silently selected or restarted.
+
+## Qualification, sealing and predictive reporting
+
+Before any fit, component tests and a separately bounded source-frozen qualification must prove original legacy nesting; `conditional=legacy+log M`; proper unit integrated CFO density including all/partial/no visibility; precise full-bank detection budget; normalized expansion nesting at zero; analytic physical/calibration and observation-tail finite differences; proper log-sigma normalization; catalogue-budget derivative; malformed/boundary handling. Validate actual prepared fold masks, source functions, original disks and nuisance-tail embedding. If expansion qualification fails, preserve that namespace and launch no pilot fits. Numerical tests may use synthetic data; actual qualification must read only original training.
+
+Seal **all16 attempted outcomes and all four unit terminals**, source/seed/options/return consistency and independent audits before any post-fit opposite-fold score is computed. Failed fits cannot be promoted, and missing accepted fold results leave the corresponding comparison incomplete. Predictive scoring evaluates fold-excluded observations with training-fold-fitted physical/observation parameters and frozen training functions; it fits nothing. Report original joint-event scores and proper conditional-CFO scores separately, including per-RX/channel/block NLL, signal/clutter mass, sigma/q values and priors. Compare dispersion/detectability against the normalized control only within proper conditional-CFO space; do not use prior penalties as predictive likelihood. Include the original legacy control's separately executed outcomes. No reference join is required or allowed for tuning, weights or model selection.
+
+The strong current CH3 loss across11/12 blocks and the block-sensitive full ranking motivate these falsifiable controls; they do not determine which arm should win. The original source RF mapping remains a conditional scientific input, not independently confirmed by numeric closure. No model or histogram is promoted by this pilot alone. New source, exact parameter policy, parent/input authority, masks and bounded execution receipts must be frozen before preparation/fitting.
