@@ -1,0 +1,902 @@
+{
+  "schema": "ds21-039-qualified-discovery-coverage-receipt-audit-v1",
+  "label": "DS21-039",
+  "scope": "Metadata/source/receipt hashes and saved scalar arithmetic only; no preparation, predictor, objective, optimizer, projection or reference evaluation calls",
+  "source_count": 406,
+  "source_map_sha256": "sha256:a7a62389931e27247e00617219db72cebb213cfc4ad525b111dd1abd1f1d35b3",
+  "source_archives_verified": true,
+  "full_regional_bank": 836,
+  "source_pin": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/source-protocol.json",
+    "sha256": "sha256:8ace95c3fb4d5aa2dffc1ee6550fb434d0d969333d13c5b35895cdd76c7c6d39"
+  },
+  "qualification": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/qualified-preparation.json",
+    "sha256": "sha256:841089174c0d1435e823df4d122bdfcac0bf99f644f0d1dea74f3dedba8b3944"
+  },
+  "qualification_termination": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/qualification-termination.json",
+    "sha256": "sha256:1d3f49f688e3159490b471e50c778f744790ce9aebd8683b995497e4a9477777"
+  },
+  "control_policy": {
+    "schema": "ds21-discovery-coverage-control-v1",
+    "arm": "fitted-c",
+    "points": 100,
+    "levels_km": [
+      50.0,
+      25.0,
+      12.5
+    ],
+    "priority_view": "all",
+    "bootstrap_seconds": 5,
+    "fixed_position_fit_seconds": 5,
+    "fixed_position_fit_iterations": 200,
+    "initial_centers": 80,
+    "internal_seconds": 480,
+    "external_term_seconds": 495,
+    "external_kill_seconds": 500,
+    "point_admission_reserve_seconds": 31,
+    "failed_retry": false,
+    "held_usage": "none",
+    "reference_usage": "none",
+    "scope": "Discovery-only grid sensitivity; no downstream six-proposal or A/B/C result"
+  },
+  "training_windows": {
+    "all": 2798,
+    "low": 1692,
+    "high": 1106
+  },
+  "partition": {
+    "seed": 20261012,
+    "block_seconds": 20,
+    "held_blocks": [
+      2,
+      6,
+      12
+    ]
+  },
+  "runs": {
+    "original": {
+      "protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/protocol.json",
+        "sha256": "sha256:ad50813581f58f0a9d655bb83de36fdc60bcda4dcc8be5fdb08f95339eca1261"
+      },
+      "terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/terminal.json",
+        "sha256": "sha256:f7ea7d77ef6bd6f975c275843d3a65c871afbad8e4b38122793ebc1f26028654"
+      },
+      "point_count": 100,
+      "fit_counts": {
+        "all": {
+          "stored_fits": 100,
+          "stationary": 97,
+          "nonstationary": 3,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 35139.65887490444,
+          "median_stationary_objective": 38836.200930861094
+        },
+        "low": {
+          "stored_fits": 100,
+          "stationary": 99,
+          "nonstationary": 1,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 21540.39082947824,
+          "median_stationary_objective": 22997.99314848548
+        },
+        "high": {
+          "stored_fits": 100,
+          "stationary": 100,
+          "nonstationary": 0,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 14299.51474801907,
+          "median_stationary_objective": 15279.723768075068
+        }
+      },
+      "spacing_counts": {
+        "100.0": 16,
+        "50.0": 22,
+        "25.0": 26,
+        "12.5": 36
+      },
+      "stop_reason": "point-budget",
+      "deferred_cells": 75,
+      "selected_candidate_union": [
+        48019,
+        51123,
+        52606,
+        52607,
+        53143,
+        53852,
+        56120,
+        56876,
+        56915,
+        57606,
+        57621,
+        57634,
+        57650,
+        57673,
+        57677,
+        57789,
+        58181,
+        58836,
+        59647,
+        60368,
+        60376,
+        60584,
+        62420,
+        62999,
+        63850,
+        63854,
+        63886,
+        65622,
+        65635,
+        67644,
+        67645,
+        68021,
+        68389,
+        68404,
+        100771
+      ],
+      "selected_candidate_count": 35,
+      "selected": [
+        {
+          "index": 0,
+          "point_km": [
+            -81.25,
+            -106.25
+          ],
+          "ranking_origin": "low",
+          "selection_score": 35139.65887490444,
+          "candidate_count": 23,
+          "fits": {
+            "all": {
+              "objective": 35139.65887490444,
+              "likelihood_nll": 34516.707314527244,
+              "posterior_rms_hz": 117.29916976684476,
+              "stationarity": 0.00010697240735664006,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 21540.39082947824,
+              "likelihood_nll": 21146.2356210368,
+              "posterior_rms_hz": 131.53385329124305,
+              "stationarity": 0.0003266092686960327,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 14888.5689834995,
+              "likelihood_nll": 14646.428926429635,
+              "posterior_rms_hz": 137.18607254064216,
+              "stationarity": 0.0002023789819727284,
+              "converged": true,
+              "boundary": true,
+              "solver_success": true
+            }
+          }
+        },
+        {
+          "index": 1,
+          "point_km": [
+            -6.25,
+            -131.25
+          ],
+          "ranking_origin": "high",
+          "selection_score": 36339.761185667565,
+          "candidate_count": 19,
+          "fits": {
+            "all": {
+              "objective": 36339.761185667565,
+              "likelihood_nll": 35749.73047618047,
+              "posterior_rms_hz": 136.85488668636924,
+              "stationarity": 0.0004896500065916354,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 22744.101744029143,
+              "likelihood_nll": 22481.52170616242,
+              "posterior_rms_hz": 148.88130663278216,
+              "stationarity": 0.0004148545863020825,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 14299.51474801907,
+              "likelihood_nll": 14079.31914015179,
+              "posterior_rms_hz": 120.13160331056221,
+              "stationarity": 0.0003999584966971892,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            }
+          }
+        },
+        {
+          "index": 2,
+          "point_km": [
+            -25.0,
+            -125.0
+          ],
+          "ranking_origin": "all-fallback",
+          "selection_score": 35726.375118536766,
+          "candidate_count": 20,
+          "fits": {
+            "all": {
+              "objective": 35726.375118536766,
+              "likelihood_nll": 35219.27691807448,
+              "posterior_rms_hz": 122.01231888587802,
+              "stationarity": 0.00020194388258595565,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 22611.378812376457,
+              "likelihood_nll": 22361.31628313752,
+              "posterior_rms_hz": 147.3165073356544,
+              "stationarity": 0.000206481322782337,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 14718.467439314569,
+              "likelihood_nll": 14464.523396768298,
+              "posterior_rms_hz": 114.61286922671445,
+              "stationarity": 0.00010044840795337545,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            }
+          }
+        }
+      ],
+      "view_minima": {
+        "all": {
+          "point_km": [
+            -81.25,
+            -106.25
+          ],
+          "objective": 35139.65887490444,
+          "likelihood_nll": 34516.707314527244,
+          "candidate_count": 23
+        },
+        "low": {
+          "point_km": [
+            -81.25,
+            -106.25
+          ],
+          "objective": 21540.39082947824,
+          "likelihood_nll": 21146.2356210368,
+          "candidate_count": 23
+        },
+        "high": {
+          "point_km": [
+            -6.25,
+            -131.25
+          ],
+          "objective": 14299.51474801907,
+          "likelihood_nll": 14079.31914015179,
+          "candidate_count": 19
+        }
+      }
+    },
+    "control": {
+      "protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/protocol.json",
+        "sha256": "sha256:d632a15d3061b0567ce69c4ec6f85c309a6de8d86528c0d05016cd84c34d43ee"
+      },
+      "terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/terminal.json",
+        "sha256": "sha256:446c82c25cfa691cafe3986a0bf5d97bc50cd74810f23dace1d52803a63d5b78"
+      },
+      "point_count": 100,
+      "fit_counts": {
+        "all": {
+          "stored_fits": 100,
+          "stationary": 99,
+          "nonstationary": 1,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 34593.56319779517,
+          "median_stationary_objective": 39252.90790404348
+        },
+        "low": {
+          "stored_fits": 100,
+          "stationary": 98,
+          "nonstationary": 2,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 20900.012205324616,
+          "median_stationary_objective": 23190.137319900343
+        },
+        "high": {
+          "stored_fits": 100,
+          "stationary": 99,
+          "nonstationary": 1,
+          "missing_fits": 0,
+          "minimum_stationary_objective": 13085.38938617194,
+          "median_stationary_objective": 15424.485236485172
+        }
+      },
+      "spacing_counts": {
+        "50.0": 80,
+        "25.0": 12,
+        "12.5": 8
+      },
+      "stop_reason": "point-budget",
+      "deferred_cells": 119,
+      "selected_candidate_union": [
+        47179,
+        48019,
+        52371,
+        52607,
+        53143,
+        53285,
+        55423,
+        56876,
+        56915,
+        57076,
+        57606,
+        57621,
+        57789,
+        58009,
+        58094,
+        58181,
+        58668,
+        58836,
+        59243,
+        59647,
+        59889,
+        59891,
+        60140,
+        60368,
+        60376,
+        60587,
+        62128,
+        62134,
+        62420,
+        62844,
+        62887,
+        62999,
+        63865,
+        65622,
+        65640,
+        67644,
+        67645,
+        69201,
+        100771
+      ],
+      "selected_candidate_count": 39,
+      "selected": [
+        {
+          "index": 0,
+          "point_km": [
+            -112.5,
+            -87.5
+          ],
+          "ranking_origin": "low",
+          "selection_score": 35275.91746682658,
+          "candidate_count": 19,
+          "fits": {
+            "all": {
+              "objective": 35275.91746682658,
+              "likelihood_nll": 35036.03941316426,
+              "posterior_rms_hz": 115.96719165195532,
+              "stationarity": 0.00047312355713507927,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 20900.012205324616,
+              "likelihood_nll": 20690.534589907227,
+              "posterior_rms_hz": 116.90349817963907,
+              "stationarity": 0.00027401490035878964,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 15044.983745354897,
+              "likelihood_nll": 14837.777468242908,
+              "posterior_rms_hz": 121.51767258047667,
+              "stationarity": 8.220483459203155e-05,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            }
+          },
+          "saved_error_km": 26.28262194133164,
+          "saved_coordinates_deg": [
+            37.78768628316219,
+            -122.7746128492815
+          ]
+        },
+        {
+          "index": 1,
+          "point_km": [
+            -75.0,
+            225.0
+          ],
+          "ranking_origin": "all-fallback",
+          "selection_score": 35391.882455352235,
+          "candidate_count": 22,
+          "fits": {
+            "all": {
+              "objective": 35391.882455352235,
+              "likelihood_nll": 34999.67176187219,
+              "posterior_rms_hz": 125.15521611314986,
+              "stationarity": 0.00046537741541721744,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 23003.978571812517,
+              "likelihood_nll": 22703.106860009648,
+              "posterior_rms_hz": 128.0098212402377,
+              "stationarity": 0.0003280012473571934,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 14473.993150035996,
+              "likelihood_nll": 14181.948958611018,
+              "posterior_rms_hz": 129.7918667705963,
+              "stationarity": 0.00010472825420065543,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            }
+          },
+          "saved_error_km": 306.2186470918067,
+          "saved_coordinates_deg": [
+            40.60176242602088,
+            -122.38259277009233
+          ]
+        },
+        {
+          "index": 2,
+          "point_km": [
+            -125.0,
+            -75.0
+          ],
+          "ranking_origin": "all-fallback",
+          "selection_score": 35601.562501446446,
+          "candidate_count": 22,
+          "fits": {
+            "all": {
+              "objective": 35601.562501446446,
+              "likelihood_nll": 35118.29223758163,
+              "posterior_rms_hz": 130.5114425769812,
+              "stationarity": 0.0004507014621597111,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "low": {
+              "objective": 21798.492252861663,
+              "likelihood_nll": 21600.06590494215,
+              "posterior_rms_hz": 134.1518385829937,
+              "stationarity": 0.000133634029252587,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            },
+            "high": {
+              "objective": 14935.614717403312,
+              "likelihood_nll": 14777.681541175689,
+              "posterior_rms_hz": 152.9125203302383,
+              "stationarity": 0.00034062932285289227,
+              "converged": true,
+              "boundary": false,
+              "solver_success": true
+            }
+          },
+          "saved_error_km": 38.432603384883215,
+          "saved_coordinates_deg": [
+            37.89843711615999,
+            -122.91901918772825
+          ]
+        }
+      ],
+      "view_minima": {
+        "all": {
+          "point_km": [
+            -106.25,
+            -93.75
+          ],
+          "objective": 34593.56319779517,
+          "likelihood_nll": 34280.775359921805,
+          "candidate_count": 20
+        },
+        "low": {
+          "point_km": [
+            -112.5,
+            -87.5
+          ],
+          "objective": 20900.012205324616,
+          "likelihood_nll": 20690.534589907227,
+          "candidate_count": 19
+        },
+        "high": {
+          "point_km": [
+            -106.25,
+            -93.75
+          ],
+          "objective": 13085.38938617194,
+          "likelihood_nll": 12853.039308411706,
+          "candidate_count": 20
+        }
+      }
+    }
+  },
+  "slices": [
+    {
+      "protocol_sha256": "sha256:d632a15d3061b0567ce69c4ec6f85c309a6de8d86528c0d05016cd84c34d43ee",
+      "slice_id": 0,
+      "state": "complete",
+      "elapsed_s": 337.35889638820663
+    }
+  ],
+  "elapsed_s": 337.35784197505563,
+  "nonstationary": [
+    {
+      "run": "original",
+      "point_km": [
+        -18.75,
+        -118.75
+      ],
+      "view": "low",
+      "stationarity": 0.001613901325843159,
+      "solver_success": true,
+      "boundary": true,
+      "objective": 22976.255881489815,
+      "likelihood_nll": 22644.17536872911,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/points/4a636d40815cf8225f03251f90551f93c26a7105acebbd56fb69659a7c4b91e1.json",
+        "sha256": "sha256:d6fb447b089317ad70d80a938d2cd61333e46be1f155b2e39538d513f7cb8e11"
+      }
+    },
+    {
+      "run": "original",
+      "point_km": [
+        143.75,
+        31.25
+      ],
+      "view": "all",
+      "stationarity": 2.156721428632096,
+      "solver_success": true,
+      "boundary": false,
+      "objective": 41096.68945329574,
+      "likelihood_nll": 40883.92861758942,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/points/a5f5cf1078d35f76ed7125107cececcbaa2f36c53888404d36ffde4ec73e10eb.json",
+        "sha256": "sha256:438501d991622e7de384299365cbc3574b6cc781948aad108ef3a452eba020d9"
+      }
+    },
+    {
+      "run": "original",
+      "point_km": [
+        43.75,
+        -6.25
+      ],
+      "view": "all",
+      "stationarity": 20.197803376927027,
+      "solver_success": false,
+      "boundary": false,
+      "objective": 39200.07432819951,
+      "likelihood_nll": 38716.52028006821,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/points/cb2a01e8c219b50f838e5673ae41c036276e4825e970b8eda7fc4284e945c193.json",
+        "sha256": "sha256:97f87533c09e3a0fe32e9d150a21494839e94fb3ad5463abf250f112b3693a43"
+      }
+    },
+    {
+      "run": "original",
+      "point_km": [
+        -50.0,
+        -50.0
+      ],
+      "view": "all",
+      "stationarity": 16.742730103672656,
+      "solver_success": true,
+      "boundary": false,
+      "objective": 36358.11594558609,
+      "likelihood_nll": 36124.14846608003,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_three_models/local/discovery-v2/DS21-039/points/ee6dabfc1a971e84bf35129dd7d6a1badb2cfd643efbc98afc0894ae5ac83e20.json",
+        "sha256": "sha256:785d9393127ea75650dabd437c5f43c1cbcaf195361f12c0d259b5e6392e8998"
+      }
+    },
+    {
+      "run": "control",
+      "point_km": [
+        75.0,
+        25.0
+      ],
+      "view": "low",
+      "stationarity": 9.503257008269975,
+      "solver_success": true,
+      "boundary": false,
+      "objective": 22585.404234522244,
+      "likelihood_nll": 22311.130669150472,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/points/54f410c125637a26813eb825a4aa8c0e7fb314492469b605ee275d512e770e42.json",
+        "sha256": "sha256:8267e79829a31927fd9243f791392b3da296e31ec6e5fd877f52cbd5cbf5fb61"
+      }
+    },
+    {
+      "run": "control",
+      "point_km": [
+        -93.75,
+        231.25
+      ],
+      "view": "low",
+      "stationarity": 2.977968863677014,
+      "solver_success": true,
+      "boundary": false,
+      "objective": 21300.880606001763,
+      "likelihood_nll": 20948.647340389994,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/points/a94e2c4fab514a13817522d1d6c59eea0326b89e7d2fa89825ffb97472e0e97a.json",
+        "sha256": "sha256:bbb3d65692f4b5f254571369df4e2dfa2c612036025be6013373cca3cae933cd"
+      }
+    },
+    {
+      "run": "control",
+      "point_km": [
+        125.0,
+        -175.0
+      ],
+      "view": "all",
+      "stationarity": 6.443515235262349,
+      "solver_success": false,
+      "boundary": false,
+      "objective": 39504.258461617756,
+      "likelihood_nll": 39088.21249689931,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/points/b7e29cd1010b78c60894d6fde2b64424e6ea173d697ea5defeade930a963f8bf.json",
+        "sha256": "sha256:ba65324bc8253d224a3855669d76776275231e0fc606678dc1f62faf7f8ece8c"
+      }
+    },
+    {
+      "run": "control",
+      "point_km": [
+        -125.0,
+        -25.0
+      ],
+      "view": "high",
+      "stationarity": 9.011545765774393,
+      "solver_success": true,
+      "boundary": false,
+      "objective": 15390.31102803886,
+      "likelihood_nll": 15068.805658526428,
+      "receipt": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/points/d6981ef00f6bb0f6d145b99c93538ab66fda74e52430674eabce6d50e0b43075.json",
+        "sha256": "sha256:24d13a92b373758bc73b5d02ca7592c45bede93ae271586d2765861621831489"
+      }
+    }
+  ],
+  "failures": [],
+  "common_point_summary": {
+    "points": 27,
+    "equal_candidate_unions": 27,
+    "fit_comparisons": 81,
+    "exact_numeric_states_equal": 81,
+    "maximum_abs_objective_delta": 0.0,
+    "maximum_abs_NLL_delta": 0.0,
+    "maximum_abs_vector_delta": 0.0,
+    "maximum_abs_nuisance_delta": 0.0,
+    "all_three_views_compared_per_point": true
+  },
+  "common_points": [
+    [
+      -12.5,
+      -112.5
+    ],
+    [
+      -12.5,
+      -137.5
+    ],
+    [
+      -125.0,
+      -125.0
+    ],
+    [
+      -125.0,
+      -175.0
+    ],
+    [
+      -175.0,
+      -125.0
+    ],
+    [
+      -175.0,
+      -175.0
+    ],
+    [
+      -18.75,
+      -143.75
+    ],
+    [
+      -25.0,
+      -125.0
+    ],
+    [
+      -25.0,
+      -175.0
+    ],
+    [
+      -25.0,
+      -225.0
+    ],
+    [
+      -37.5,
+      -112.5
+    ],
+    [
+      -37.5,
+      -137.5
+    ],
+    [
+      -75.0,
+      -125.0
+    ],
+    [
+      -75.0,
+      -175.0
+    ],
+    [
+      -75.0,
+      -225.0
+    ],
+    [
+      125.0,
+      125.0
+    ],
+    [
+      125.0,
+      175.0
+    ],
+    [
+      125.0,
+      25.0
+    ],
+    [
+      125.0,
+      75.0
+    ],
+    [
+      175.0,
+      125.0
+    ],
+    [
+      175.0,
+      175.0
+    ],
+    [
+      175.0,
+      25.0
+    ],
+    [
+      175.0,
+      75.0
+    ],
+    [
+      25.0,
+      -25.0
+    ],
+    [
+      25.0,
+      -75.0
+    ],
+    [
+      75.0,
+      -25.0
+    ],
+    [
+      75.0,
+      -75.0
+    ]
+  ],
+  "relative_pin_failure": {
+    "failed_pin": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1/source-protocol.json",
+      "sha256": "sha256:eafad895abeb327cd0c94c45696bdfbf863d6aed1adf0796f95fcf06c58e5942"
+    },
+    "new_pin": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/source-protocol.json",
+      "sha256": "sha256:8ace95c3fb4d5aa2dffc1ee6550fb434d0d969333d13c5b35895cdd76c7c6d39"
+    },
+    "only_two_authority_key_paths_changed": true,
+    "no_qualification_or_scientific_attempt_in_failed_namespace": true,
+    "limitation": "Frozen adapter requires absolute input/census paths; relative-key defect retained and documented, not a numerical retry"
+  },
+  "audit_scientific_calls": 0,
+  "reference_usage": "Bound saved postseal evaluation rows only; no new reference calculations",
+  "downstream_models_evaluated": false,
+  "evaluation": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/discovery-coverage-v1-absolute-source/development-errors.json",
+    "sha256": "sha256:228cc88f93dd6425b9ff8d88056e7c0725a05fc5d65fa56a76ea8a038c66cc70"
+  },
+  "discovery_candidate_union_comparison": {
+    "original_count": 35,
+    "control_count": 39,
+    "common": 19,
+    "added": [
+      47179,
+      52371,
+      53285,
+      55423,
+      57076,
+      58009,
+      58094,
+      58668,
+      59243,
+      59889,
+      59891,
+      60140,
+      60587,
+      62128,
+      62134,
+      62844,
+      62887,
+      63865,
+      65640,
+      69201
+    ],
+    "omitted": [
+      51123,
+      52606,
+      53852,
+      56120,
+      57634,
+      57650,
+      57673,
+      57677,
+      60584,
+      63850,
+      63854,
+      63886,
+      65635,
+      68021,
+      68389,
+      68404
+    ],
+    "historical_final_model_count": 43,
+    "limitation": "Discovery point unions only; downstream pool expansion and A/B/C qualification are not performed"
+  },
+  "checks": {
+    "legacy_hierarchy_and_training_selector_replayed": true,
+    "new_hierarchy_and_training_selector_replayed": true,
+    "source_and_qualification_before_numerical_work": true,
+    "complete_numbered_slices": 1,
+    "point_launches": 100,
+    "point_results": 100,
+    "point_terminations": 100,
+    "all_fit_results_retained": 300,
+    "control_stationary_fits": 296,
+    "control_nonstationary_fits": 4,
+    "failed_fit_exceptions": 0,
+    "reference_join_after_training_terminal": true,
+    "no_held_preparation": true,
+    "no_audit_scientific_calls": true
+  },
+  "limits": [
+    "Training-selected fixed-geography discovery only, not final A/B/C localization",
+    "Point-local candidate unions vary, so lower discovery objectives do not establish a common-support global likelihood improvement",
+    "80 initial centers plus20 refinements do not guarantee coverage by25km disks or global optimization",
+    "Saved geodesic point errors are not optimizer-coordinate disk slacks; no disk-exclusion conclusion",
+    "Old discovery lacks a complete historic source closure/modern numbered receipts; available genuine attestations validated without inventing them",
+    "Frozen relative-path source-pin defect retained; only absolute paths are supported in successful namespace",
+    "No new priors, seed substitutions, reference-driven selection, numerical retries or downstream fits"
+  ],
+  "qualification_elapsed_s": 19.601656678132713
+}

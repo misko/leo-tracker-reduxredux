@@ -43,7 +43,17 @@ nonstationary fits remain recorded and excluded. These are first baseline
 results for 025, not an improvement over an earlier 025 algorithm or a basis
 for reference-based model selection. Half-band initialization remains shared.
 
-The latest [DS21-039 saved-state factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
+The [DS21-039 discovery coverage control](../2026_10_13_ds21_039_association/DISCOVERY_COVERAGE_039_RESULTS.md)
+is complete: 100 points, 300 fits, 296 stationary, in 337.358 seconds. All 81
+fitted states at 27 points shared with historical discovery reproduce exactly.
+The original low-first selector drops the new high/all minimum because it lies
+8.839 km from the low winner, within the 12.5 km separation threshold. A distant
+all-score fallback becomes the second proposal. The three selected discovery
+errors are 26.283 / 306.219 / 38.433 km; these are not final A/B/C estimates.
+This motivates a matched selection-order control on the same saved points,
+without changing the grid budget or choosing points by reference error.
+
+The preceding [DS21-039 saved-state factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
 separates timing from calibration at four prescribed 1 km displacements along
 the previously identified weak position directions.
 All 18 evaluations completed in 18.760 seconds, with zero fits and no reference
