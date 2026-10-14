@@ -47,8 +47,10 @@ parent inventory and archives its own source closure, including the new componen
 and runner. The frozen historical sources remain unchanged. Existing-protocol
 validation precedes any archive mutation, so a missing archive is not restored.
 
-Freeze validates original-order closure without producing the alternative
-condition. One explicit metadata-only run computes both fixed conditions under
+Freeze binds the genuine parent and source authority and validates the original
+selection against its parent. The comparison computes both pure selections
+without fitting or reference access; only its completed terminal persists the
+outcomes. One explicit metadata-only run computes both fixed conditions under
 **60 seconds internal / 75 seconds TERM / 80 seconds KILL**, including final
 parent/source checks. A durable launch precedes validation/computation; completion
 binds the immutable terminal. Failed or orphan attempts refuse continuation and
