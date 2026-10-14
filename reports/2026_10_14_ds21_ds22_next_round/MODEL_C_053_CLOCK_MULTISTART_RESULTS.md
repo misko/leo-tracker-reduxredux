@@ -1,0 +1,15 @@
+# C053 twelve original starts do not improve the accepted clock solution
+
+All twelve genuine initializers from the original before/after C053 runs were transported to the same 59-satellite union model and extended with zero receiver-clock coefficients. Four workers ran three 20-second/600-iteration fits each. All twelve calls returned, but none met the unchanged stationarity threshold. Both previously accepted clock endpoints remained eligible, so selection stays at 10.055802 km error.
+
+The best raw new objective was 24560.204965 (after start 5), still worse than the accepted incumbent's 23693.894241. New endpoint stationarity ranged from 0.009185 to 5445.270405, with 170–402 evaluations per call. No rejected state was made selectable, and this result does not prove that the original basins were fully optimized. It establishes that the prescribed additional starting-state search did not improve selection within this budget.
+
+Qualification retained every original receiver lift and search disk, preserved receiver correction exactly, and reproduced common-satellite predictions within 9.023e-10 Hz. Zero-clock objective, existing gradients and posterior comparisons had maximum difference zero. No initializer projection occurred. Qualification used 48 objective evaluations and 24 explicit orbit calls, with zero fits, in 28.475 seconds. Four three-fit units completed in 71.243–71.430 seconds each. This is additional search cost beyond the earlier accepted endpoint experiments.
+
+Inspection of the sealed original/clock endpoint metadata identifies an unresolved geographic boundary: the closer original endpoint and closer clock endpoint both sit at radius 25.000000 km from their original search center. The distant clock endpoint is interior at radius 21.028709 km. The accepted closer solution is therefore constrained by its local geographic search disk, not merely by a poor raw initializer. The generic boundary flag also covers timing constraints, so the measured geographic radius is the relevant evidence here.
+
+Next: a reference-free radial derivative audit at the accepted closer clock endpoint should check whether the score would improve outward beyond its disk. If it does, compare a controlled geographic disk expansion with an unchanged-disk repeat using the same endpoint, model, nuisance values and fit budget. Do not choose a new center or direction using reference coordinates. Original disk-release tests on other samples do not resolve this distinct C053 boundary.
+
+The original source and twelve-outcome seals were validated before joining reference coordinates. Two component tests and Ruff passed, covering genuine native transport, zero-clock nesting, three calls per unit, retained failures, no retry and blocked early reference access. Source `cc2f27b86`; evaluator `12df3e087`.
+
+Output `/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-c-clock-multistart-053-v1/`. Qualification SHA256 `ca619548016df49f2a90b60c4f3e802b9e5d95f7761fdaf24926fc1fb498e9b5`; terminal SHA256 `da2dc7175098b8cada3ac8e346637abfca865be8f5c867ec990bf8761d0aeea3`. No model or cohort metric is promoted.
