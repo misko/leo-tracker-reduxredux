@@ -46,7 +46,7 @@ Detectability improves the far free endpoint's conditional NLL by1402.875086 ver
 
 The whole-bank probability budget remains1.6 with every original candidate retained. Uniform control q is.0280701754 for all57 candidates. Learned far q ranges[.005690,.155510], with two active lower catalogue-basis coefficients; nearby q ranges[.004099,.160690], with three. Sigma stays125Hz in both arms. Active outward lower-face gradients were valid constrained optima in the preceding audit and did not trigger a bound change. Free far/near signal masses are1341.523/1232.326 in detectability versus1313.123/1098.868 in the normalized control; more signal mass is not position truth.
 
-The earlier accepted conditional-CV gain is real within its disclosed development leakage and incomplete nearby comparison, yet it does not transfer to a useful full-training geographic selection on this case. A stable catalogue propensity can support a false geographic mode. This result warrants case-dependent testing of the declared model rather than claiming detectability solved B059, widening its bounds, choosing the near endpoint by truth, or modifying baseline coverage results. Original all-band versus half-band localization targets remain unmet here.
+The earlier accepted conditional-CV gain is real within its disclosed development leakage and incomplete nearby comparison, yet this **same-common-start experiment** does not produce a useful full-training geographic selection. A stable catalogue propensity can support a false geographic mode reached from that start. This does not establish that the target likelihood fundamentally prefers far: later lower-basin replay evidence is separated in the addendum below. No bounds, reference-based selector or baseline coverage results change. Original all-band versus half-band localization targets remain unmet by these eight calls.
 
 ## Frozen receipts
 
@@ -61,3 +61,17 @@ Output: `/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-b-detectability-full-
 | postseal evaluation |`4bdc85ec9ad7df406f872a87ccbbcb940e65c0f6d32d9923ca1396024b138305` |
 
 Postseal evaluation took12.508s, eight training-objective replays and zero fits. It reports the configured development reference only after both arm selectors were sealed, with original held/locked observations untouched.
+
+## Later independent replay: a better full-training state exists
+
+A separately source-frozen zero-fit qualification (`88fae6803`, [continuation protocol](MODEL_B_CV_CONTINUATION_PROTOCOL.md)) replays all three accepted CV propensity states and both existing full-q incumbents. Eight objective calls in13.199s verify original fold scores, full-target scores, unchanged priors and additive NLL against the saved opposite-fold predictions. Source-fold posterior/residual/q transport errors are **exactly zero** for all three, original disks are feasible, and all original fitter initializer adjustments are zero. The rejected nearby CV fold0 state remains excluded.
+
+| Accepted CV source | Replayed full-training objective | Full-training free KKT | Eligible as a stationary full endpoint |
+|---|---:|---:|---|
+| incumbent fold0 |29538.421700 |1936.188510 |no |
+| incumbent fold1 |29681.793488 |1864.332085 |no |
+| donor fold1 |28410.688381 |2658.515305 |no |
+
+The donor fold1 state is943.306348 objective units below the accepted far winner, despite being full-nonstationary. At the same nearby fixed XY, it is1137.394768 below the common-start fixed profile. This directly demonstrates that those common-start profiles did not exhaust the target model's better coupled nuisance/timing basins. It does **not** make the CV state accepted under full training or authorize choosing it by known position.
+
+Both original full-q incumbents independently retain exact target objectives and strict full-free stationarity (.000417021 and.000141713). The next controlled experiment continues **all three accepted CV states** under the full target with unchanged own disks and20s/600 limits, retaining those two incumbents and a training-only five-state selector. All outcomes must seal before position-error joins. This later experiment and its eligibility/selection results are distinct from the original eight-call result, whose sealed bytes remain unchanged. Replay receipt: `/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-b-cv-continuation-059-v1/qualification.json`, SHA256 `b32e8dedd30d40b25d2416ebc0b0977a9eb95dfb0edac4a8e1aafa6c78290f69`. No original held/locked measurements or new fits were used by the replay itself.

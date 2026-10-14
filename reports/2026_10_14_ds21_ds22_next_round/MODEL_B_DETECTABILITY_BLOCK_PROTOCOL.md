@@ -1,0 +1,7 @@
+# B059 propensity full-training block decomposition
+
+Two objective calls, zero fits, unchanged full-training B folded-period physics, original full frame/bank/calibration and learned-propensity model. Replay the two accepted free detectability endpoints from `model-b-detectability-full-059-v1`. No original held/locked observations or reference reads; no channel/window removal or weights.
+
+Prespecify20-second bins from original training timestamps. Report each observed bin's window counts, near-minus-far conditional NLL, positive/negative window losses and top10 positive-loss fraction, signal/clutter masses, plus low/high and receiver subdivisions. Compare each bin with the already sealed opposite-fold CV prediction at the corresponding propensity states, retaining both CV acceptance flags and its training-fold index. CV and full states have different fitted nuisance, orbital timing, q, and free geographies; this comparison is descriptive, not an isolated effect of correlation or parameter flexibility. Odd validation bins include rejected nearby fold0 and remain explicitly ineligible for a complete accepted comparison.
+
+Freeze all source/parent/input/CV authority, this protocol and owned tests before preparation. One worker, internal120/TERM135/KILL140 seconds including source guards/cache preparation. Stop/preserve on replay or count mismatch. No new fits, discarded blocks, truth weights, q-bound changes or causal claims from concentration alone.
