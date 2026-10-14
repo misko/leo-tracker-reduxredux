@@ -48,3 +48,31 @@ failure logs remain intact. The explicit recovery record also discloses that its
 first disk write lacked permission and was successfully persisted after launch;
 it does not pretend that this record was sealed beforehand. No scientific fit
 from wave 010 was retried because none had started.
+
+## Subsequent bounded parallel work
+
+Wave 011 completed five full 100-point discoveries and saved a clean 91-point
+checkpoint for 061. Its explicitly admitted slice 1 subsequently returned
+successfully in wave 014. Wave 012 completed five more full discoveries
+(077, 079, 081, 083, 085); 075 saved a clean 83-point checkpoint. That checkpoint
+still requires an explicit continuation. Neither checkpoint is a failed fit.
+
+Wave 015 ran 24 independent source/protocol freezes with a 24-worker pool and
+single-threaded numerical libraries. All 24 completed successfully in 51.985 s.
+These are preparation jobs, not 24 finished scientific comparisons. The next
+large optimizer batch remains dependent on the qualified runtime facade.
+
+Wave 013 completed the remaining 001 C-high unit and sealed 005. Their post-seal
+evaluations in wave 014 now provide six before-arm recording evaluations across
+the development population. Only 009 and 013 have all six matched before/after
+A/B/C estimates, so the paired histogram population remains two of 34.
+
+| Newly evaluated generic before case | A all km | B all / low / high km | C all / low / high km |
+|---|---:|---|---|
+| 001 | 0.534148 | 2.145329 / 0.826698 / 1.694091 | 1.424955 / 5.790864 / 3.292850 |
+| 005 | 1.871189 | 1.421114 / 2.091193 / 4.415207 | 1.751815 / 1.538675 / 1.458763 |
+
+These are the current generic initialization version, not replacements for the
+historical shared-six results. The half-band fits share discovery/proposals.
+In particular, B still worsens on 001 when combining bands, and C worsens on
+005. Completing the pipeline has not itself resolved that scientific problem.
