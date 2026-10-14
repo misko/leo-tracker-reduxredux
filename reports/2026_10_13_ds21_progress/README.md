@@ -21,6 +21,14 @@ The current target is **less than 0.5 km for every eligible CH1–8 DS21 recordi
 including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
+The next previously unprocessed development case, DS21-025, now has a
+[complete initialization chain](../2026_10_13_ds21_release_readiness/PROPOSALS_025_RESULTS.md):
+100 discovery points, 290/300 stationary discovery fits, nine stationary shape
+fits, nine stationary hybrid fits and 18 physical seed exports. Its final-model
+initialization passes all 24 original strict A/B projections without fallback;
+the A/B/C comparison is in progress with no reference join yet. This brings
+completed proposal coverage to ten of 34 development recordings, leaving 24.
+
 The latest [DS21-039 saved-state factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
 separates timing from calibration at four prescribed 1 km displacements along
 the previously identified weak position directions.
@@ -161,13 +169,13 @@ winner uses `cold-0`, selected by training objective. The models share widely
 separated initialization proposals and original 25 km disks. The independent
 post-seal audit finds the configured reference inside the original 250 km prior
 but outside every proposal disk, by at least 157.457260 km in optimizer coordinates. Fixed local
-refinement therefore cannot recover it. Why discovery missed remains unresolved;
-the next step is a reference-blind discovery-coverage/multiview exploration
-control preserving the 100-point budget, before the remaining 25 initializations.
+refinement therefore cannot recover it. The subsequent reference-blind
+100-point coverage control substantially recovered this case, as reported above,
+but did not reach 0.5 km or establish universal transfer.
 B's one
 certified fallback seed is not a demonstrated cause; C uses unchanged native
-seeds. DS21-025 has passed metadata readiness only and has not been frozen or
-initialized. The single C/all pass on DS21-011 does not establish general success.
+seeds. DS21-025 now has complete initialization and its final comparisons are
+in progress. The single C/all pass on DS21-011 does not establish general success.
 
 The [cross-case timing audit](../2026_10_13_ds21_039_association/TIMING_SATURATION_009_011_039.md)
 has also passed independent reconstruction with zero new scientific calls.
@@ -368,7 +376,7 @@ observations together. The historical
 [metadata-only readiness audit](../2026_10_13_ds21_release_readiness/README.md)
 recorded preparation receipts for all 34 fast development members and five
 complete discovery/proposal pairs in its original namespaces. Subsequent fitted-only
-work has brought completed proposal coverage to nine, leaving 25 requiring
+work has brought completed proposal coverage to ten, leaving 24 requiring
 initialization. The historical audit receipt is retained unchanged. The 54 adaptive members
 have no tracking-input binding in this membership and require separate preparation.
 
@@ -379,7 +387,7 @@ with 295 of 300 per-view fits stationary and five failures retained. Exact censu
 evidence, partition and causal catalogue were bound before inference. A cached
 terminal validation passed without new fits. This adds one discovery result:
 28 development recordings still need discovery, and 29 need downstream proposal
-caches at that stage. These are historical stage counts; the current nine-set
+caches at that stage. These are historical stage counts; the current ten-set
 coverage and completed 009 comparison are reported above.
 
 DS21-007's [fitted shape stage](../2026_10_13_ds21_release_readiness/SHAPE_007_RESULTS.md)
