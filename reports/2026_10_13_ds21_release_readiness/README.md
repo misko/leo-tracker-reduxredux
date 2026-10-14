@@ -79,7 +79,13 @@ the original two nearby selections and all three view minima, replacing only
 the remote fallback. Initialization returns nine stationary shape fits, nine
 stationary hybrid fits and 18 exports over 33 candidates. Model-seed preparation
 passes with 21 strict and three verified exact transfers. The final-model
-comparison is underway; no transfer accuracy result is available yet.
+[comparison is complete](COVERAGE_THREE_MODEL_009_RESULTS.md): 54 calls, 53
+stationary, with all 12 outcomes sealed before reference evaluation. A/all is
+**3.155489 km** (original 0.658299); B all/low/high is
+**0.436419 / 0.940492 / 4.181058 km**; C is
+**1.152329 / 1.297634 / 1.578834 km**. B/all passes 0.5 km and both B and C
+beat their two half-band fits, but A regresses and the full target remains unmet.
+All selected boundary flags are false; one nonstationary C-all start is retained.
 The [saved-function projection diagnosis](COVERAGE_PROJECTION_013_DIAGNOSIS.md)
 separates missing band/time terms, shared-clock capacity and coefficient bounds.
 The [completed fixed-function decomposition](SEED_FUNCTION_DECOMPOSITION_013_RESULTS.md)

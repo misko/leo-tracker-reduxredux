@@ -3,7 +3,16 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
-The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
+completed 18 stationary B fits. All/low/high errors are
+**0.436419 / 0.940492 / 4.181058 km**, versus the original
+**5.327196 / 0.790354 / 0.772167 km**. CH1–8 now passes 0.5 km and beats both
+halves on this recording, while both half-band errors worsen. Training selects
+`shape-all` for CH1–8; all selected boundary flags are false. This is one
+successful development case, not a full-DS21 release or a reason to select B
+by each recording's reference error.
+
+The earlier [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
 completed 18 stationary B fits. All/low/high errors are
 **2.021218 / 2.895507 / 7.808977 km**, versus the original
 **268.879362 / 268.826502 / 190.851447 km**. Combining improves on both halves

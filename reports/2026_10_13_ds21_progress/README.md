@@ -1,6 +1,6 @@
 # DS21 localization progress
 
-Updated 2026-10-13. This is an interim measured-results report, not a
+Updated 2026-10-14. This is an interim measured-results report, not a
 claim that the accuracy target has been achieved. The user authorized periodic
 report publication to remote `main`; research implementation remains separate.
 
@@ -55,8 +55,15 @@ The unchanged coverage policy now has a
 and [complete initialization](../2026_10_13_ds21_release_readiness/COVERAGE_PROPOSALS_009_RESULTS.md).
 The two nearby discovery selections and all view minima are unchanged; only the
 remote fallback is replaced. All nine shape and nine hybrid fits are stationary,
-and 18 physical seeds use a 33-candidate pool. The new final-model comparison is
-underway, with no reference-error result yet. Separately, the
+and 18 physical seeds use a 33-candidate pool. The
+[completed final-model comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
+has 54 calls, 53 stationary, sealed before the reference join. A/all worsens
+from 0.658299 to **3.155489 km**; B/all improves from 5.327196 to **0.436419 km**;
+C/all improves from 1.595252 to **1.152329 km**. B and C now beat their own two
+half-band fits. Only B/all passes 0.5 km on this transfer. All selected boundary
+flags are false; the one nonstationary C-all start is retained. This mixed
+transfer is not a full-DS21 success or a reference-based model-selection rule.
+Separately, the
 [projection diagnosis](../2026_10_13_ds21_release_readiness/COVERAGE_PROJECTION_013_DIAGNOSIS.md)
 led to the [completed fixed-function decomposition](../2026_10_13_ds21_release_readiness/SEED_FUNCTION_DECOMPOSITION_013_RESULTS.md).
 Removing bounds leaves almost all bootstrap loss and all native transport loss;

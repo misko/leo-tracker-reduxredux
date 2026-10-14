@@ -3,7 +3,16 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
-The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
+completed 18 C calls, 17 stationary. All/low/high errors improve to
+**1.152329 / 1.297634 / 1.578834 km** from
+**1.595252 / 4.547625 / 1.758365 km**. Combining now beats both halves, but
+none meets 0.5 km. All selected boundary flags are false. The all/`cold-2`
+start fails the unchanged stationarity criterion despite solver success and
+remains recorded without retry. The candidate pool and proposals change with
+coverage; this is not an isolated calibration-model improvement.
+
+The earlier [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
 completed 18 C calls, 16 stationary. All/low/high errors are
 **1.846733 / 3.104978 / 1.065469 km**, versus the original
 **267.759878 / 271.452943 / 198.398059 km**. Combining improves on the low half

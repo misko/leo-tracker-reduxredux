@@ -3,7 +3,14 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
-The latest [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
+The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
+completed all 18 sequential stages, all stationary. Its final-training-objective
+winner is `cold-1`, with **3.155489 km** error versus **0.658299 km** originally.
+The NLL improves by 676.618 while position worsens by 2.497190 km. The selected
+boundary flag is false. Thus the coverage change does not uniformly help this
+method, and no reference-based choice between its old/new solutions is permitted.
+
+The earlier [DS21-013 coverage-conditioned comparison](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_013_RESULTS.md)
 completed all 18 sequential fits, all stationary. Its final training-selected
 `shape-high` result is **1.509542 km**, versus **266.839679 km** with the original
 initialization; fitted c is -730.616690 Hz/GHz. Broader discovery recovered a
