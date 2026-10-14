@@ -1,0 +1,20 @@
+# Fixed selected-bank fitted-c outcome
+
+The deferred control is now complete: **18 new fitted-c optimizers, 17 stationary**, plus the six previously sealed 005 original-bank fitted-c outcomes. The nonstationary 023 augmented start 1 has KKT 0.004063794876235982 and is retained without retry. All three new conditions, carried source/launch/termination/seed provenance and training selections were globally sealed before new held scoring or reference evaluation. The new slice took **271.097818 seconds**, including 27.039870 seconds of preparation, under 480/495/500 whole bounds and unchanged 20-second/600-iteration calls. No new zero-c fit, candidate screen, bank tuning or monkeypatch occurred.
+
+| Case / bank | Selected start | Error km | Held NLL/window | Held native posterior RMS Hz |
+|---|---:|---:|---:|---:|
+| 005 original, carried | 4 | 0.909474895 | 12.520898537 | 110.676147 |
+| 005 augmented | 4 | 0.943402077 | 12.552318492 | 106.381840 |
+| 023 original | 2 | 5.149427356 | 12.599842227 | 101.883500 |
+| 023 augmented | 0 | 5.476163852 | 12.602111997 | 105.376073 |
+
+**The fixed additions worsen both matched position errors and both held predictive NLLs.** 005 RMS falls despite worse NLL and position; this is not a localization improvement. No result reaches 0.5 km. This all-band control does not test improvement over both halves. The configured reference is not independently surveyed.
+
+The pool remains exactly 005: 52665/59377/62024/69821 (44→48), and 023: 49768/65493/66238/67207 (33→37). Its historical eligibility used both c arms, with an ill-conditioned 005 fitted-c projected span and small support in some receiver lanes. It was a local training sensitivity rule, not verified identity evidence. Six original physical seeds and receiver lifts were retained; added timings begin at the original common shift with zero relative shift. Uniform satellite mass changes with bank size while signal/clutter mass and physical priors stay fixed. The existing omission of Gaussian dimension constants prevents using cross-bank MAP values as calibrated model evidence. For completeness, original→augmented training NLL rises by 115.463124 on 005 and 629.796878 on 023.
+
+All original 31 declared and 315 loaded source bytes still match. The new freeze binds **640 live/archive source entries** and complete original selection, replay, input/bank/seed/carry authority before preparation. Fourteen fresh fitted-only source replay states (28 objective evaluations) match complete gradients and satellite/clutter/candidate posteriors before optimization. Thirteen owned tests and Ruff passed, including actual ndarray serialization, complete launch/termination consistency, unknown exceptions, no retry, finite/layout rejection and the saved timing-boundary regression. Source/input guards pass after inference and after evaluation; all frozen scientific cores/runners remain unchanged.
+
+The failed v1 is preserved with zero optimizers: it incorrectly treated carried legal timing-face endpoints as new interiorized initializers. The corrected endpoint gate evaluates original saved-state feasibility, while exact initial-seed and no-transfer-clipping checks remain strict. The v2 source freeze is fresh. Concurrent prerequisite/model/host work was present, so durations are not isolated timing benchmarks.
+
+Actual namespace: `local/model-c-bank-fitted-v2`. Preparation freeze SHA-256 `65b057e9e60e5e18a5e3f484df4911368dc26498a3b30e02f0f18f8ca7c6182a`; inference freeze `d603f2ebacb6cc4da6beea226c14793f2ed04b554225415708c8c3e0b97710a9`; source replay `9545b4cb83ea0840ed66da8f5fed1cea25091594c3820faa17411dd2a2b8616b`; global terminal `413a1ecc270f5159a5ede34752871f470d2322bdeec361148d04da03ce553e41`; aggregate seal `3dbf6720cd4099425cda466d0c44f1d79293c14b73845f75e5c78a2d792005f5`; held prediction `20f4f4059da4cb303de5ecafaecee822e499a187c0a91e2660edf378d16fffbd`; configured-reference join `b569a049c62a9205e6c9cf15b072388b2defdfd66b85eadb0986a01b8502861a`. Both original-bank comparisons are the exact all-candidate model; they are not interchangeable with older collapsed-C values.
