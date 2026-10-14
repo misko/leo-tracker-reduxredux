@@ -39,3 +39,23 @@ missing or failed runs remain explicit misses rather than being dropped.
 Report completed/eligible counts, median, p90, maximum, and fraction below
 0.5 km with the distributions. A partial chart is labelled partial. Full DS21
 accuracy and the 0.5 km target are not established by this launch.
+
+## Preparation scheduling qualification
+
+Wave 001 launched 24 case preparations. Twelve completed and twelve hit the
+unchanged 60-second training-preparation deadline (`SliceHardStop`), before
+any position fits or candidate discovery. The failed cases are 007, 029, 031,
+033, 039, 043, 045, 055, 057, 061, 071 and 077. These original namespaces and
+failure receipts remain immutable. This wave is a failed scheduling trial,
+not a position-accuracy measurement.
+
+Further preparation waves use at most six workers. To complete the intended
+population, a separately recorded preparation-only recovery is permitted for
+these twelve cases, in new per-label initialization namespaces. An explicit
+mapping must bind each original failed preparation to its new namespace. The
+planner permits this only for a saved `SliceHardStop`, with no completed case
+protocol, discovery or downstream stages. This exception changes scheduling
+only: preprocessing, training partition, original numerical sources and limits
+remain identical. It does not authorize retrying any discovery or position fit.
+The final report must retain the initial scheduling failures and distinguish
+recovered preparation from first-attempt completion.
