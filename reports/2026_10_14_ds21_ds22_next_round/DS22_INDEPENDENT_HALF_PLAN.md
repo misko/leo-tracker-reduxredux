@@ -205,3 +205,41 @@ Artifacts:
 The reporting reference source remains pinned to SHA256
 `6de071077d8c2fe11a991b665c50edaf728ef9ffd320dca36cfedc44ee874bf9`.
 The comparison explicitly sets `target_accuracy_claim_permitted=false`.
+
+## DS22-003 replication and selected-lift audit
+
+The next authorized pair used exactly the frozen pipeline, without source edits
+or retries. Both discoveries completed 100 points on slice 0 (lower 131.578,
+upper 79.924 seconds). Each initializer produced six distinct physical starts;
+their candidate pools contain 42 and 25 satellites. Both model matrices sealed
+all twelve calls, with **24/24 stationary** fit outcomes across the pair.
+
+Distances below retain the same configured-unconfirmed reference limitation:
+
+| Model | CH1–8 original | Shared CH1–4 | Shared CH5–8 | Independent CH1–4 | Independent CH5–8 |
+|---|---:|---:|---:|---:|---:|
+| B | 1.819243 | 2.809257 | 2.828654 | 34.689424 | 1.350193 |
+| C | 2.827544 | 4.132040 | 1.642876 | 3.518443 | 1.663814 |
+
+On DS22-003, each original full-channel model is farther from the configured
+reference than its independent upper-band control, and closer than its
+independent lower-band control. The lower B control's large change also shows
+that shared initialization can materially help a half-band result. No seed was
+chosen by these distances. The selected independent C starts are both index 0;
+their training coordinates in the common regional frame are
+`[-83.5251835217225, -80.75503595458517]` (lower) and
+`[-85.44271249253627, -81.471072270812]` (upper).
+
+The complete artifacts use the same private namespaces with `DS22-003`;
+comparison protocol SHA256 is
+`d9519a6ea93dd3dcd237cf292985004987f1a8fdfa80b3fd39a6c822600ecddb`.
+DS22-019 is the next authorized pair, still in bounded preparation stages at
+this report update; it has not supplied comparison results.
+
+A separate receipt-only check on DS22-001 found identical selected receiver
+ambiguity integers in shared C-all/start2, shared C-low/start2, shared
+C-high/start5, independent C-low/start0 and independent C-high/start3:
+receiver 0 = −1, receiver 1 = +2. Therefore different selected receiver-wide
+integer lifts do not explain that sample's improved independent C halves.
+Candidate pools, geographic/timing seeds and continuous physical corrections
+still differ, so this is not a general causal exclusion of lift derivation.
