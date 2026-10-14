@@ -3,7 +3,18 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
-The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
+The latest [DS21-039 native band-calibration control](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
+completed four stationary fits in 42.228 seconds. Two band-specific drift terms
+and one band RF-slope contrast improve training NLL by 17.222 and frozen held
+NLL by 2.949 on the same 633 held windows, but position error **worsens from
+4.072515 to 4.186817 km**. Both selected states are interior to the reported
+physical constraints. This model is not promoted: representing the separate
+band functions more faithfully does not resolve DS21-039's localization error.
+Its original low/high baselines remain 3.758515 / 2.556792 km; no new half-only
+pipeline was run. Timing/calibration ambiguity and assignment attribution are
+the next investigations. The fixed five-case results below are unchanged.
+
+The [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
 completed 18 C calls, 17 stationary. All/low/high errors improve to
 **1.152329 / 1.297634 / 1.578834 km** from
 **1.595252 / 4.547625 / 1.758365 km**. Combining now beats both halves, but

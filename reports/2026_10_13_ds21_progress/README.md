@@ -21,6 +21,14 @@ The current target is **less than 0.5 km for every eligible CH1–8 DS21 recordi
 including failures as misses. None of the three approaches currently meets it.
 The table covers five development recordings, not the full dataset.
 
+The latest [DS21-039 band-calibration comparison](../2026_10_13_ds21_039_association/NATIVE_BAND_CALIBRATION_RESULTS.md)
+is a completed negative localization control: all four fits are stationary, and
+the added band drift/RF terms improve training and held likelihood, but error
+increases from **4.072515 to 4.186817 km**. The run preserves the original
+observations, 43 satellites, starts and physical priors; held prediction uses
+frozen training corrections. It is not promoted. This separates the confirmed
+band-function representation loss from the still-unresolved position error.
+
 The latest [DS21-013 discovery control](../2026_10_13_ds21_release_readiness/DISCOVERY_COVERAGE_013_RESULTS.md)
 recovers search coverage using the same 100-point budget: 80 broadly spaced
 initial points replace the original 16. All three training-selected discovery

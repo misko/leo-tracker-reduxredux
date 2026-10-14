@@ -1,0 +1,420 @@
+{
+  "schema": "ds21-039-native-band-calibration-receipt-audit-v1",
+  "scope": "Hashes and saved scalar/constraint arithmetic only; no prediction, objective, KKT solve, fit or reference calls",
+  "bindings": {
+    "freeze": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/freeze.json",
+      "sha256": "sha256:b8901b1fcf0db7ea8e2f50d24f1393054d3875ae3649bc4b5c21c48b2e953d36"
+    },
+    "capacity_parent": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/band-function-capacity-v1/freeze.json",
+      "sha256": "sha256:002aced90e7789f2ec55372f628c6192d5810d7bd22724aa4fbc0e90ae69b7f5"
+    },
+    "outer_completion": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/outer-termination.json",
+      "sha256": "sha256:0670cacf480210cda88195aa8c9265acee2c45a1712524ff9bf7749494e5f05a"
+    },
+    "training": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/control/training.json",
+      "sha256": "sha256:f639f6841441c9b6cf07b337e32fe29dcd3d1b4109e7a7e6cc1e4bf0204d5bfd"
+    },
+    "training_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/control/training-seal.json",
+      "sha256": "sha256:07762a4095ff8314061909e956c1636dc49b878954d633f09b966b4b7c81edb1"
+    },
+    "held": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/control/held.json",
+      "sha256": "sha256:5b45c27262c3d9a7cb18e319bde3f2c4604dd272c34239a12b34a2d913f5846b"
+    },
+    "terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/control/terminal.json",
+      "sha256": "sha256:15318072cccbffb32b03024a018ede8a1242e2257b87669d10fdd2e67e13f293"
+    },
+    "final_seal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/control/final-seal.json",
+      "sha256": "sha256:98ea374e99e39311385f5ff7fc33a637287af33cdac46f284f052cc6d8668a4f"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_039_root_cause/local/native-band-calibration-v1/evaluation.json",
+      "sha256": "sha256:45304eb602937fddebf6034057cf7b2faefeba8770f56915ae2b20c70e61e18f"
+    }
+  },
+  "sources": {
+    "live_archive_pairs": 345,
+    "unchanged_parent_subset": 339
+  },
+  "checks": {
+    "all_parent_input_ancestor_bindings": true,
+    "exact_original_refined_starts": true,
+    "unique_nested_bound_files_checked": 61,
+    "four_launch_result_terminations": true,
+    "two_zero_tail_source_oracles_exact": true,
+    "source_bound_full_coupled_kkt": true,
+    "independent_physical_and_band_slack_reconstruction": true,
+    "training_argmins_reconstructed": true,
+    "training_and_held_window_overlap": 0,
+    "identical_held_support": true,
+    "held_no_fit": true,
+    "sealed_training_before_held_source_gate": true,
+    "outer_complete_binds_final_seal": true,
+    "post_seal_evaluation_binding_and_timestamp": true,
+    "maximum_prior_ledger_abs_delta": 4.007461029686965e-12,
+    "maximum_constraint_abs_delta": 7.105427357601002e-15,
+    "maximum_effective_coefficient_abs_delta": 0
+  },
+  "inventory": {
+    "training_windows": 2798,
+    "training_native_candidates": 3714,
+    "satellites": 43,
+    "original_training_blocks": [
+      0,
+      1,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11,
+      13,
+      14
+    ],
+    "partition_seed": 20261012,
+    "block_seconds": 20,
+    "optimizer_calls": 4,
+    "stationary_calls": 4,
+    "failed_calls": 0,
+    "held_prediction_calls": 2,
+    "held_optimizer_calls": 0,
+    "held_windows": 633,
+    "held_native_candidates": 849,
+    "original_parameters": 52,
+    "compatible_parameters": 55,
+    "whole_elapsed_s": 42.227539473213255,
+    "per_fit_seconds": 20,
+    "per_fit_iterations": 600,
+    "internal_seconds": 165,
+    "TERM_seconds": 175,
+    "KILL_seconds": 180
+  },
+  "training_frame": {
+    "time_center_s": 150.07580605750002,
+    "rf_center_hz": 11584687500,
+    "receiver_high_fractions": [
+      0.40312674483528754,
+      0.381330685203575
+    ],
+    "global_high_fraction": 0.39528234453180844
+  },
+  "rank": {
+    "original": 5,
+    "expanded": 8,
+    "increment": 3
+  },
+  "source_oracles": {
+    "original-all": {
+      "passed": true,
+      "maximum_abs_deltas": {
+        "objective": 0,
+        "likelihood_nll": 0,
+        "vector_gradient": 0,
+        "original_nuisance_gradient": 0,
+        "satellite_posterior": 0,
+        "clutter_posterior": 0,
+        "saved_objective": 0,
+        "saved_likelihood_nll": 0
+      },
+      "added_nuisance_gradient": [
+        -21.32123604219588,
+        -25.577809577340204,
+        0.031952128796367024
+      ]
+    },
+    "refinement-free": {
+      "passed": true,
+      "maximum_abs_deltas": {
+        "objective": 0,
+        "likelihood_nll": 0,
+        "vector_gradient": 0,
+        "original_nuisance_gradient": 0,
+        "satellite_posterior": 0,
+        "clutter_posterior": 0,
+        "saved_objective": 0,
+        "saved_likelihood_nll": 0
+      },
+      "added_nuisance_gradient": [
+        -25.65138674102665,
+        -44.6538913299432,
+        0.0319361876119631
+      ]
+    }
+  },
+  "outcomes": {
+    "original-original-all": {
+      "state": "returned",
+      "stationary": true,
+      "objective": 33172.42342910419,
+      "likelihood_nll": 32969.49976993959,
+      "stationarity": 0.0005356599810205642,
+      "solver_success": true,
+      "boundary": false,
+      "elapsed_s": 0.5912819290533662,
+      "feasible_evaluations": 21,
+      "posterior_rms_hz": 104.38093440140528,
+      "signal_windows": 2068.045452787438,
+      "shared_drift_hz_s": [
+        2.756218885706727,
+        2.2799003444738823
+      ],
+      "fitted_common_c_hz_per_ghz": -626.5782993257161,
+      "prior_ledger": {
+        "common_timing": 0.11928655017851092,
+        "relative_timing": 202.405030367816,
+        "group_offsets": 0.3993422466007228
+      },
+      "timing_shift_range_s": [
+        -16.116912869513296,
+        12.697009160219478
+      ],
+      "physical_constraints_minimum": 3.8830871304867003
+    },
+    "original-refinement-free": {
+      "state": "returned",
+      "stationary": true,
+      "objective": 32380.954534755605,
+      "likelihood_nll": 32225.181022133584,
+      "stationarity": 0.0000704178236427544,
+      "solver_success": true,
+      "boundary": false,
+      "elapsed_s": 0.7991130431182683,
+      "feasible_evaluations": 29,
+      "posterior_rms_hz": 92.14956192210276,
+      "signal_windows": 2167.2475963433853,
+      "shared_drift_hz_s": [
+        3.077384324971651,
+        2.4758244859732077
+      ],
+      "fitted_common_c_hz_per_ghz": -618.997814118364,
+      "prior_ledger": {
+        "common_timing": 0.13019054638093955,
+        "relative_timing": 155.24357443633394,
+        "group_offsets": 0.39974763930480406
+      },
+      "timing_shift_range_s": [
+        -16.205511197889805,
+        15.887745169596462
+      ],
+      "physical_constraints_minimum": 3.7944888021101946
+    },
+    "compatible-original-all": {
+      "state": "returned",
+      "stationary": true,
+      "objective": 33164.77807927316,
+      "likelihood_nll": 32961.5483606325,
+      "stationarity": 0.00028540646221465315,
+      "solver_success": true,
+      "boundary": false,
+      "elapsed_s": 6.939131081104279,
+      "feasible_evaluations": 247,
+      "posterior_rms_hz": 103.91245158848997,
+      "signal_windows": 2068.196000719385,
+      "shared_drift_hz_s": [
+        2.9217547311844783,
+        2.454488375454457
+      ],
+      "fitted_common_c_hz_per_ghz": -613.639897825293,
+      "prior_ledger": {
+        "common_timing": 0.11783235335583254,
+        "relative_timing": 202.71247342698055,
+        "group_offsets": 0.3994128603252829,
+        "added_band_coefficients": 0
+      },
+      "timing_shift_range_s": [
+        -16.107795257930228,
+        12.707818988551606
+      ],
+      "physical_constraints_minimum": 3.8922047420697723,
+      "contrasts": {
+        "q_rx_hz_s": [
+          0.21478468848824836,
+          0.38246146697517097
+        ],
+        "d_hz_per_ghz": -32.43989932805434
+      },
+      "effective_band_coefficients": {
+        "drift_low_hz_s": [
+          2.8351692788737495,
+          2.3086440821888505
+        ],
+        "drift_high_hz_s": [
+          3.049953967361998,
+          2.6911055491640212
+        ],
+        "rf_low_hz_per_ghz": -600.8169783625239,
+        "rf_high_hz_per_ghz": -633.2568776905782
+      },
+      "coupled_constraints_minimum": 3.8922047420697723,
+      "active_inequality_indices": []
+    },
+    "compatible-refinement-free": {
+      "state": "returned",
+      "stationary": true,
+      "objective": 32363.806372710205,
+      "likelihood_nll": 32207.959018371243,
+      "stationarity": 0.0004664473323053025,
+      "solver_success": true,
+      "boundary": false,
+      "elapsed_s": 7.376470664981753,
+      "feasible_evaluations": 261,
+      "posterior_rms_hz": 90.9207153001231,
+      "signal_windows": 2167.6739701870924,
+      "shared_drift_hz_s": [
+        3.2683724162981043,
+        2.7009981236209333
+      ],
+      "fitted_common_c_hz_per_ghz": -606.803434948638,
+      "prior_ledger": {
+        "common_timing": 0.12641727638258776,
+        "relative_timing": 155.32115226571275,
+        "group_offsets": 0.3997847968669784,
+        "added_band_coefficients": 0
+      },
+      "timing_shift_range_s": [
+        -16.188195107970085,
+        15.904338265046675
+      ],
+      "physical_constraints_minimum": 3.811804892029919,
+      "contrasts": {
+        "q_rx_hz_s": [
+          0.24774958024452798,
+          0.6110716054457129
+        ],
+        "d_hz_per_ghz": -24.200680338355557
+      },
+      "effective_band_coefficients": {
+        "drift_low_hz_s": [
+          3.1684979344798188,
+          2.467977769607871
+        ],
+        "drift_high_hz_s": [
+          3.416247514724347,
+          3.079049375053584
+        ],
+        "rf_low_hz_per_ghz": -597.237333285228,
+        "rf_high_hz_per_ghz": -621.4380136235835
+      },
+      "coupled_constraints_minimum": 3.811804892029919,
+      "active_inequality_indices": []
+    }
+  },
+  "selection": {
+    "original": {
+      "name": "incumbent-refinement-free",
+      "origin": "saved-original"
+    },
+    "compatible": {
+      "name": "compatible-refinement-free",
+      "origin": "new-fit"
+    }
+  },
+  "held": {
+    "original": {
+      "state": "predicted",
+      "selected_name": "incumbent-refinement-free",
+      "windows": 633,
+      "native_candidates": 849,
+      "nll": 7305.961858481724,
+      "nll_per_window": 11.541803883857385,
+      "signal_windows": 492.4518308309497,
+      "clutter_windows": 140.5481691690503,
+      "oracle_delta": {
+        "nll": 0,
+        "satellite": 5.551115123125783e-16,
+        "clutter": 3.3306690738754696e-16
+      },
+      "prediction_calls": 1,
+      "optimizer_calls": 0
+    },
+    "compatible": {
+      "state": "predicted",
+      "selected_name": "compatible-refinement-free",
+      "windows": 633,
+      "native_candidates": 849,
+      "nll": 7303.012832360002,
+      "nll_per_window": 11.537145074818328,
+      "signal_windows": 492.2022955043986,
+      "clutter_windows": 140.79770449560135,
+      "oracle_delta": {
+        "nll": 0,
+        "satellite": 8.881784197001252e-16,
+        "clutter": 4.996003610813204e-16
+      },
+      "prediction_calls": 1,
+      "optimizer_calls": 0
+    }
+  },
+  "evaluation": {
+    "original": {
+      "state": "estimated",
+      "coordinates_deg": [
+        37.85903701420016,
+        -122.44103269969138
+      ],
+      "error_km": 4.072514869877426,
+      "below_0_5km": false,
+      "below_1km": false
+    },
+    "compatible": {
+      "state": "estimated",
+      "coordinates_deg": [
+        37.85960617782916,
+        -122.43988542459351
+      ],
+      "error_km": 4.186817199112689,
+      "below_0_5km": false,
+      "below_1km": false
+    }
+  },
+  "original_view_baselines": {
+    "all": {
+      "state": "estimated",
+      "coordinates_deg": [
+        37.85481441011614,
+        -122.43733054382976
+      ],
+      "error_km": 4.29122720423374,
+      "below_0_5km": false,
+      "below_1km": false
+    },
+    "low": {
+      "state": "estimated",
+      "coordinates_deg": [
+        37.858350618389665,
+        -122.4445040109413
+      ],
+      "error_km": 3.7585152658957535,
+      "below_0_5km": false,
+      "below_1km": false
+    },
+    "high": {
+      "state": "estimated",
+      "coordinates_deg": [
+        37.85063292278071,
+        -122.45660483969307
+      ],
+      "error_km": 2.556791953929764,
+      "below_0_5km": false,
+      "below_1km": false
+    }
+  },
+  "selected_changes": {
+    "objective": -17.14816204539966,
+    "training_nll": -17.222003762341046,
+    "held_nll": -2.9490261217224543,
+    "held_nll_per_window": -0.004658809039057132,
+    "posterior_mean_residual_rms_hz": -1.2288466219796987,
+    "development_error_km": 0.11430232923526251
+  },
+  "interpretation": "Training/held frequency fit improves; development localization worsens. No promotion, hardware-truth or calibrated uncertainty claim."
+}
