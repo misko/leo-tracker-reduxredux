@@ -1,0 +1,13 @@
+# C075 broad coverage qualification passes; clock projection is materially lossy
+
+All sixteen original coarse starts qualified on the same 87-satellite union in both native models. There were **zero localization fits**: 96 objective evaluations, sixteen bounded calibration projections and 64 explicit orbit predictions. Four units completed in 31.56, 32.56, 32.53 and 32.46 seconds. The original folded source scores replayed, identical source-derived integer receiver lifts were used for paired arms, and satellite timing was preserved with only the explicitly declared fitter margin where required.
+
+The complete-clock native model reproduces the source calibration function to at most **1.1642e-10 Hz** at native observation times. Projecting that function into original C without common receiver clocks loses **100.086–776.599 Hz RMS** across the sixteen starts, with the likelihood's nominal frequency width 125 Hz. This is a functional transport loss, not an accuracy measurement or proof the clock model will localize correctly.
+
+All sixteen original full-channel coarse fits were accepted before this qualification. Their centers are the entire original Cartesian grid {-150,-50,50,150} km; none was chosen or excluded by score or configured position. Unioning all their banks with the original 43 satellites yields 87. Each prospective coarse start has radius 100 sqrt(2) km, a geometry-derived domain covering the prior's entire 250 km bounding square. The original regional prior still applies.
+
+Separately, replaying the original sealed six disk centers against the configured reference gives planar clearances 55.922251, 13.351443, 51.060794, 26.502195, 6.916315 and 28.675243 km. Every original 25 km disk excludes that configured point. This independently verified post-seal diagnosis means earlier original-disk C075 experiments could not reach sub-kilometer configured distance. Station continuity remains unconfirmed; this diagnosis does not authorize reference-derived starts.
+
+The qualification uses the genuine runtime model parent and recorded discovery authority. It imports existing tested inventory, physical timing-margin, bounded projection and complete-clock transport ports; it does not fabricate a legacy parent or change frozen code. Sixteen component tests and Ruff passed. Source commit: `20621912f`.
+
+Frozen evidence: `/srv/bulk/leo-research-ds21-ds22/2026_10_14/ds22-c075-coverage-qualification-v1`, including the four complete unit terminations and result hashes. No held observations or reference values enter numerical qualification. The prospective matched 44-fit pilot will additionally qualify the original six native endpoint controls without relifting them; its fits and selectors are not results of this report.
