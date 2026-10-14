@@ -468,3 +468,58 @@ only after both new matrices had sealed; original-case comparisons remain at
 `local/ds22-configured-comparison-v1`. Training-only minimum-stationary-objective
 selectors were fixed before comparison. No model, start, or half was selected
 using the reporting distances.
+
+## Training-only local curvature: completed, no new fits
+
+The original C and selected native-clock states on 001/019 were replayed with
+all physical and nuisance parameters included. The protocol fixed two central
+finite-difference steps in optimizer-scaled coordinates (1e-4 and 5e-5), at most
+600 objective/gradient evaluations and 180 seconds per case. It prohibited
+reference and held-data access, optimizer calls, and silent regularization.
+The nuisance Schur complement was computed only for a positive, nonsingular
+nuisance Hessian at the prescribed relative eigenvalue tolerance 1e-10.
+Hessian relative step/asymmetry tolerance was 1e-3; profile eigenvalues also
+had to agree in sign and within 10% between steps.
+
+Both cases completed: 001 used 514 evaluations in 57.025s; 019 used 434 in
+45.188s. All four state Hessians and computed profile spectra passed these
+stability checks. The entries below use the smaller finite-difference step.
+The geography block eliminates **all** remaining physical/timing/calibration
+and clock/group parameters, not just newly added clocks.
+
+| Case/state | Active original constraints | Geography-profile eigenvalues (objective units/km²) |
+|---|---|---:|
+| 001 original C | Upper satellite timing bound, satellite 63720 | Unconstrained extension: −1.868, 15.947 |
+| 001 selected native-clock C | none | 7.782, 14.006 |
+| 019 original C | none | 17.628, 47.719 |
+| 019 selected native-clock C | none | 10.779, 35.914 |
+
+The negative unconstrained 001 eigenvalue does **not** invalidate its accepted
+constrained fit. The weak direction changes the active timing constraint; the
+Hessian restricted to its equality tangent is positive (minimum eigenvalue
+9.227), with tangent-normal residual below 2e-16. The selected state is 23.433km
+from its 25km search-disk centre, so this active constraint is satellite timing,
+not the geographic search disk. The diagnostic does not substitute an
+unconstrained step or relax that timing bound.
+
+Both 019 states are interior local basins with positive observed Hessians.
+Their geographic profile curvatures remain positive, with no near-null
+geographic direction under the fixed tolerance. The weakest full native-clock
+mode has eigenvalue 0.202 and 99.84% of its squared norm in optimizer-scaled
+clock coefficients; geography contributes approximately 0.0028%. Thus these
+selected states do not support a simple local geographic collapse explanation.
+The clock-profile curvature comparison is between different fitted states and
+is descriptive, not a causal estimate of information lost by adding clocks.
+
+These are local **penalized observed-objective** curvatures. They are not Fisher
+information, position uncertainties, proof of global identifiability, or proof
+of correct satellite identities. Equality-tangent diagnostics do not replace
+a full inward-cone/Lagrangian second-order analysis. Combined with the earlier
+019 candidate-support and search-domain divergence, the evidence points toward
+global association/basin discrimination as a more useful next investigation
+than additional small steps inside these already locally stiff basins.
+
+Artifacts: `local/ds22-c-curvature-v1/DS22-{001,019}`; source/protocol commit
+`699658280`. Component tests cover two-step quadratic Hessian/Schur closure,
+indefinite/singular nuisance refusal, and actual original-bound tangent
+construction. No scientific model or selection was changed by this audit.
