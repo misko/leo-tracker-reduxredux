@@ -91,3 +91,26 @@ receiver lifts and original 54-call A/B/C consumer. Existing generic consumers
 reject this legacy-qualified policy. Those adapters and any downstream numerical
 comparison are outside this control; no discovery-only outcome establishes a
 sub-0.5 km result for the three original models.
+
+## Source-pin execution note
+
+Implementation `fa2cd702a` passed 16 tests and Ruff checks. Its first source-pin
+invocation used relative input/census paths and failed the immediate cached
+validation: two authority-map keys were relative on creation and absolute on
+re-read. Independent comparison found identical bound file hashes, all common
+authority entries, snapshot and source closure. No qualification, preparation,
+propagation or optimizer call occurred. The failed `discovery-coverage-v1`
+source pin remains unchanged.
+
+Using explicit absolute input/census paths in the fresh
+`discovery-coverage-v1-absolute-source` namespace succeeds with the same code,
+policy, inputs and 406-source closure. Its source-protocol SHA-256 is
+`8ace95c3fb4d5aa2dffc1ee6550fb434d0d969333d13c5b35895cdd76c7c6d39`.
+The adapter currently requires this invocation convention; relative-path
+canonicalization is not claimed fixed in the frozen implementation. This is a
+metadata-only source pin, not a numerical retry or a completed discovery result.
+Training qualification subsequently passed in **19.602 seconds**, binding runtime
+protocol SHA-256
+`d632a15d3061b0567ce69c4ec6f85c309a6de8d86528c0d05016cd84c34d43ee`.
+Discovery follows under the unchanged numbered-slice policy; its outcomes are
+reported separately from source pinning and preparation.

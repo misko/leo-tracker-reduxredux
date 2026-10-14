@@ -6,7 +6,7 @@ report publication to remote `main`; research implementation remains separate.
 
 The original three-model comparison covers five fixed development recordings.
 The separate fitted-only expansion has now evaluated all three models on
-DS21-009, DS21-011 and DS21-013, in addition to the Model C-only DS21-007 baseline. All numbers below
+DS21-009, DS21-011, DS21-013 and DS21-025, in addition to the Model C-only DS21-007 baseline. All numbers below
 use **fitted `c`** and a training-objective-selected solution. Reference position
 is joined after results are sealed; lower frequency loss is not treated as proof
 of lower position error. The historical five-case table remains unchanged.
@@ -25,9 +25,23 @@ The next previously unprocessed development case, DS21-025, now has a
 [complete initialization chain](../2026_10_13_ds21_release_readiness/PROPOSALS_025_RESULTS.md):
 100 discovery points, 290/300 stationary discovery fits, nine stationary shape
 fits, nine stationary hybrid fits and 18 physical seed exports. Its final-model
-initialization passes all 24 original strict A/B projections without fallback;
-the A/B/C comparison is in progress with no reference join yet. This brings
+initialization passes all 24 original strict A/B projections without fallback.
+The [final comparison](../2026_10_13_ds21_release_readiness/THREE_MODEL_025_RESULTS.md)
+is now complete: 54 calls, 52 stationary, with all twelve outcomes sealed before
+the reference join. This brings
 completed proposal coverage to ten of 34 development recordings, leaving 24.
+
+| DS21-025 first baseline | CH1–8 error km | CH1–4 error km | CH5–8 error km |
+| --- | ---: | ---: | ---: |
+| A, dependent sequential path | 3.297411 | — | — |
+| B, absolute-frequency fit | 8.315280 | 3.385533 | 0.588376 |
+| C, native association | 1.121626 | 5.954192 | 8.584032 |
+
+None reaches 0.5 km. B worsens both halves when combined; C improves on both.
+Only B/all has a selected timing-boundary flag. The two solver-success but
+nonstationary fits remain recorded and excluded. These are first baseline
+results for 025, not an improvement over an earlier 025 algorithm or a basis
+for reference-based model selection. Half-band initialization remains shared.
 
 The latest [DS21-039 saved-state factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
 separates timing from calibration at four prescribed 1 km displacements along
@@ -174,8 +188,8 @@ refinement therefore cannot recover it. The subsequent reference-blind
 but did not reach 0.5 km or establish universal transfer.
 B's one
 certified fallback seed is not a demonstrated cause; C uses unchanged native
-seeds. DS21-025 now has complete initialization and its final comparisons are
-in progress. The single C/all pass on DS21-011 does not establish general success.
+seeds. DS21-025 now has complete initialization and final comparisons, reported
+above. The single C/all pass on DS21-011 does not establish general success.
 
 The [cross-case timing audit](../2026_10_13_ds21_039_association/TIMING_SATURATION_009_011_039.md)
 has also passed independent reconstruction with zero new scientific calls.

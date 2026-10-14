@@ -1,0 +1,605 @@
+{
+  "schema": "ds21-three-model-025-receipt-audit-v1",
+  "label": "DS21-025",
+  "scope": "Saved metadata/receipt hashes and scalar arithmetic only; no new preparation, projection, predictor, objective, gradient, optimizer or reference evaluation",
+  "comparison": "First DS21-025 baseline; no historical DS21-025 improvement comparator",
+  "bindings": {
+    "reader_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-025/protocol.json",
+      "sha256": "sha256:776784dc45916d0938d64707843d3a2bd64b028d302fe556440a8e7519055466"
+    },
+    "reader_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-025/terminal.json",
+      "sha256": "sha256:d59eb71a1533d2c83bda82b7797d7d40183bcf4748af5db43e69b06c0479e44f"
+    },
+    "evaluation": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/model-receipts-v1/DS21-025/development-errors.json",
+      "sha256": "sha256:0995e078798d6cbf4eae708ac9adc436e0f3cc5da004c8769342fc981ceec461"
+    },
+    "model_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-025/protocol.json",
+      "sha256": "sha256:8de2770a01104df3334cb07017a957c84d390debfefc7d2539083af726885668"
+    },
+    "initialization": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/models-v2/DS21-025/initialization.json",
+      "sha256": "sha256:1dc49725092318e53b583f504fcfbcc78b7cfbdf9f5fb8daf81d830a8765107c"
+    },
+    "case_protocol": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-025/case/protocol.json",
+      "sha256": "sha256:60a8ee712d34391a41acff07798da147cc09df803cac01982fbed383af5df9af"
+    },
+    "six_proposal_terminal": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_13_ds21_release_readiness/local/initialization-v1/DS21-025/six-proposals/terminal.json",
+      "sha256": "sha256:f68563ed8b89ebd4a86062ddc88b69a2e08769a65be1d67141b199026bbc73fa"
+    }
+  },
+  "checks": {
+    "initialization_sources_live_and_archived": 402,
+    "numerical_sources_live_and_archived": 411,
+    "reader_sources_live_and_archived": 412,
+    "numerical_source_map_identical_to_DS21_011": true,
+    "numerical_source_map_sha256": "sha256:de997e297936c4db25af848cc611b82d8fa02a9baa54e8257080e0f2d0af284a",
+    "scientific_inventory_bindings": 202,
+    "scientific_inventory_sha256": "sha256:6f0fdee5cfac834a7c0c5f5ae5a4f9cb47e05147afae321fb01e55220cebc22e",
+    "sealed_units": 12,
+    "optimizer_calls": 54,
+    "stationary_calls": 52,
+    "launches": 54,
+    "call_receipts": 54,
+    "terminations": 54,
+    "prefit_seed_options_center_layout_checks": 54,
+    "exact_raw_numeric_fit_fields_preserved": true,
+    "known_high_descriptive_overrides": 6,
+    "own_objective_training_selections_replayed": 7,
+    "selected_scalar_diagnostic_tolerance": 1e-07,
+    "saved_reference_rows_bound_not_recalculated": true,
+    "reference_after_all_outcomes_sealed": true,
+    "held_inference": false,
+    "audit_scientific_calls": 0
+  },
+  "initialization": {
+    "full_regional_bank": 870,
+    "candidates": 36,
+    "training_windows": {
+      "all": 2428,
+      "low": 1240,
+      "high": 1188
+    },
+    "native_alternatives": {
+      "all": 3346,
+      "low": 1686,
+      "high": 1660
+    },
+    "held_counter_blocks": [
+      2,
+      3,
+      13
+    ],
+    "stages": {
+      "discovery": {
+        "elapsed_s": 352.1006895797327,
+        "calls": 0,
+        "failed_calls": 0,
+        "sources": 402,
+        "points": 100,
+        "fits": 300,
+        "stationary": 290,
+        "bank_count": 870
+      },
+      "shape": {
+        "elapsed_s": 18.730796596966684,
+        "calls": 3,
+        "failed_calls": 0,
+        "fits": 9,
+        "stationary": 9
+      },
+      "shape-bootstrap": {
+        "elapsed_s": 24.152253784704953,
+        "calls": 9,
+        "failed_calls": 0
+      },
+      "hybrid": {
+        "elapsed_s": 32.29711246583611,
+        "calls": 9,
+        "failed_calls": 0,
+        "fits": 9,
+        "stationary": 9
+      },
+      "cold-bootstrap": {
+        "elapsed_s": 24.568163965828717,
+        "calls": 9,
+        "failed_calls": 0
+      },
+      "six-proposals": {
+        "elapsed_s": 25.251002424862236,
+        "calls": 0,
+        "failed_calls": 0
+      }
+    },
+    "required_AB_strict_projections": 24,
+    "exact_source_fallbacks": 0,
+    "unused_A_calibration_placeholders": 12,
+    "C_native_seeds": 18,
+    "receiver_lift_derivations": 6,
+    "receiver_lift_pairings": [
+      [
+        -1,
+        1
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        2
+      ]
+    ],
+    "maximum_saved_source_export_closure_hz": 7.275957614183426e-12,
+    "maximum_saved_strict_projection_error_hz": 9.968061931431293e-10,
+    "C_all_initialization_projection_rms_hz": [
+      231.06467877095815,
+      64.88644883484024,
+      95.28628732446649,
+      163.39276936396237,
+      73.16663001638953,
+      224.47376893636823
+    ]
+  },
+  "limits": {
+    "fit_seconds": 20,
+    "iterations": 600,
+    "local_radius_km": 25,
+    "maximum_optimizer_calls": 54,
+    "stationarity_ceiling": 0.001,
+    "reported_elapsed_s_range": [
+      0.6945269471034408,
+      10.542635531164706
+    ],
+    "stationary_KKT_range": [
+      4.6010599641876926e-05,
+      0.0008799433808260593
+    ],
+    "reported_physical_minimum_range": [
+      -3.552713678800501e-15,
+      5.059753737134047
+    ]
+  },
+  "units": {
+    "A-0": {
+      "calls": 3,
+      "stationary": 3,
+      "selection_start": 0,
+      "path_status": "complete",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "A-1": {
+      "calls": 3,
+      "stationary": 3,
+      "selection_start": 1,
+      "path_status": "complete",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "A-2": {
+      "calls": 3,
+      "stationary": 3,
+      "selection_start": 2,
+      "path_status": "complete",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "A-3": {
+      "calls": 3,
+      "stationary": 2,
+      "selection_start": null,
+      "path_status": "final-nonstationary",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "A-4": {
+      "calls": 3,
+      "stationary": 3,
+      "selection_start": 4,
+      "path_status": "complete",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "A-5": {
+      "calls": 3,
+      "stationary": 3,
+      "selection_start": 5,
+      "path_status": "complete",
+      "inventory": {
+        "launches": 3,
+        "calls": 3,
+        "terminations": 3
+      }
+    },
+    "B-all": {
+      "calls": 6,
+      "stationary": 5,
+      "selection_start": 1,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    },
+    "B-low": {
+      "calls": 6,
+      "stationary": 6,
+      "selection_start": 1,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    },
+    "B-high": {
+      "calls": 6,
+      "stationary": 6,
+      "selection_start": 2,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    },
+    "C-all": {
+      "calls": 6,
+      "stationary": 6,
+      "selection_start": 2,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    },
+    "C-low": {
+      "calls": 6,
+      "stationary": 6,
+      "selection_start": 1,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    },
+    "C-high": {
+      "calls": 6,
+      "stationary": 6,
+      "selection_start": 2,
+      "path_status": null,
+      "inventory": {
+        "launches": 6,
+        "calls": 6,
+        "terminations": 6
+      }
+    }
+  },
+  "nonstationary": [
+    {
+      "unit": "A-3",
+      "call": "final",
+      "start": 3,
+      "proposal_id": "shape-low",
+      "stationary": false,
+      "fit_sha256": "sha256:6de628283e10591e824d218d32c93372e52306ce10d0d502557cfae551ac7faa",
+      "fit_point_km": [
+        -81.25739605216084,
+        -81.22815103700702
+      ],
+      "objective": 31877.16164059092,
+      "likelihood_nll": 31477.85004865769,
+      "posterior_rms_hz": 136.894728767727,
+      "stationarity": 1.5349130229707555,
+      "solver_success": true,
+      "boundary": true,
+      "elapsed_s": 2.664463325869292,
+      "physical_constraints_minimum": 2.41247022358948e-10,
+      "evaluations": 625,
+      "local_center_distance_km": 14.94398911304905
+    },
+    {
+      "unit": "B-all",
+      "call": "5",
+      "start": 5,
+      "proposal_id": "shape-all",
+      "stationary": false,
+      "fit_sha256": "sha256:6837f86294d710b36dbaf17f7e68d39687f33f2edc3e876752f6ba90f6b70c1d",
+      "fit_point_km": [
+        -84.54197169129297,
+        -80.73238724302476
+      ],
+      "objective": 30909.280216932275,
+      "likelihood_nll": 30516.262776464166,
+      "posterior_rms_hz": 99.72584055304203,
+      "stationarity": 6.737279218525176,
+      "solver_success": true,
+      "boundary": false,
+      "elapsed_s": 2.44579794164747,
+      "physical_constraints_minimum": 0.397263996349146,
+      "evaluations": 538,
+      "local_center_distance_km": 12.322845709641486
+    }
+  ],
+  "boundary_calls": [
+    {
+      "unit": "A-3",
+      "call": "final",
+      "start": 3,
+      "stationary": false,
+      "physical_constraints_minimum": 2.41247022358948e-10,
+      "local_center_distance_km": 14.94398911304905
+    },
+    {
+      "unit": "B-all",
+      "call": "1",
+      "start": 1,
+      "stationary": true,
+      "physical_constraints_minimum": 1.0658141036401503e-14,
+      "local_center_distance_km": 14.710006423738788
+    },
+    {
+      "unit": "B-high",
+      "call": "5",
+      "start": 5,
+      "stationary": true,
+      "physical_constraints_minimum": 0.0,
+      "local_center_distance_km": 7.7611807175057566
+    },
+    {
+      "unit": "C-low",
+      "call": "0",
+      "start": 0,
+      "stationary": true,
+      "physical_constraints_minimum": 0.0,
+      "local_center_distance_km": 7.217014964111342
+    },
+    {
+      "unit": "C-low",
+      "call": "3",
+      "start": 3,
+      "stationary": true,
+      "physical_constraints_minimum": -3.552713678800501e-15,
+      "local_center_distance_km": 13.965987613339609
+    },
+    {
+      "unit": "C-high",
+      "call": "1",
+      "start": 1,
+      "stationary": true,
+      "physical_constraints_minimum": -3.552713678800501e-15,
+      "local_center_distance_km": 7.330223965341243
+    },
+    {
+      "unit": "C-high",
+      "call": "3",
+      "start": 3,
+      "stationary": true,
+      "physical_constraints_minimum": 0.0,
+      "local_center_distance_km": 9.11954022294107
+    },
+    {
+      "unit": "C-high",
+      "call": "5",
+      "start": 5,
+      "stationary": true,
+      "physical_constraints_minimum": 4.973799150320701e-14,
+      "local_center_distance_km": 11.816737866083336
+    }
+  ],
+  "rows": [
+    {
+      "key": "A-all",
+      "model": "A",
+      "view": "all",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 2,
+      "proposal_id": "cold-2",
+      "coordinates_deg": [
+        37.85256884058636,
+        -122.4483666143952
+      ],
+      "error_km": 3.2974108016234056,
+      "common_c_hz_per_ghz": -590.5664597387693,
+      "selected_fit": {
+        "objective": 30418.24183592278,
+        "likelihood_nll": 30187.775287319728,
+        "posterior_rms_hz": 129.2661088133072,
+        "stationarity": 0.00042743022003359824,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.11237247609032508
+      }
+    },
+    {
+      "key": "B-all",
+      "model": "B",
+      "view": "all",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 1,
+      "proposal_id": "cold-1",
+      "coordinates_deg": [
+        37.82198360887367,
+        -122.39737887653159
+      ],
+      "error_km": 8.315279873601797,
+      "common_c_hz_per_ghz": -624.1694076555456,
+      "selected_fit": {
+        "objective": 29181.89649002675,
+        "likelihood_nll": 28791.71494551126,
+        "posterior_rms_hz": 111.82173881234824,
+        "stationarity": 0.0002894316779483311,
+        "boundary": true,
+        "solver_success": true,
+        "physical_constraints_minimum": 1.0658141036401503e-14
+      }
+    },
+    {
+      "key": "B-low",
+      "model": "B",
+      "view": "low",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 1,
+      "proposal_id": "cold-1",
+      "coordinates_deg": [
+        37.83892808385357,
+        -122.44928376424434
+      ],
+      "error_km": 3.3855329774196394,
+      "common_c_hz_per_ghz": -523.6451125987625,
+      "selected_fit": {
+        "objective": 14933.156556592812,
+        "likelihood_nll": 14601.108750689382,
+        "posterior_rms_hz": 99.86231578936989,
+        "stationarity": 0.0001446804161926163,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 0.14025235472391984
+      }
+    },
+    {
+      "key": "B-high",
+      "model": "B",
+      "view": "high",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 2,
+      "proposal_id": "cold-2",
+      "coordinates_deg": [
+        37.84578156279867,
+        -122.49094115102625
+      ],
+      "error_km": 0.5883761696688268,
+      "common_c_hz_per_ghz": -679.3390173755907,
+      "selected_fit": {
+        "objective": 13846.625045845964,
+        "likelihood_nll": 13697.224637710526,
+        "posterior_rms_hz": 84.05184640538992,
+        "stationarity": 0.0005346452335576873,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 3.819373402473488
+      }
+    },
+    {
+      "key": "C-all",
+      "model": "C",
+      "view": "all",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 2,
+      "proposal_id": "cold-2",
+      "coordinates_deg": [
+        37.85903402004184,
+        -122.48399310461343
+      ],
+      "error_km": 1.1216255948118632,
+      "common_c_hz_per_ghz": -601.6300653514365,
+      "selected_fit": {
+        "objective": 28915.850380496988,
+        "likelihood_nll": 28770.494009382448,
+        "posterior_rms_hz": 113.77635319949913,
+        "stationarity": 0.00016351478039968017,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 4.893819002265026
+      }
+    },
+    {
+      "key": "C-low",
+      "model": "C",
+      "view": "low",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 1,
+      "proposal_id": "cold-1",
+      "coordinates_deg": [
+        37.824721326601896,
+        -122.425243123953
+      ],
+      "error_km": 5.954192293904236,
+      "common_c_hz_per_ghz": -627.8654232460896,
+      "selected_fit": {
+        "objective": 14668.578774318343,
+        "likelihood_nll": 14438.947160195401,
+        "posterior_rms_hz": 109.41480219466521,
+        "stationarity": 0.00014528438536582505,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 2.57902882329023
+      }
+    },
+    {
+      "key": "C-high",
+      "model": "C",
+      "view": "high",
+      "state": "estimated",
+      "below_0_5km": false,
+      "start": 2,
+      "proposal_id": "cold-2",
+      "coordinates_deg": [
+        37.903435145062055,
+        -122.41626540209458
+      ],
+      "error_km": 8.584031821894243,
+      "common_c_hz_per_ghz": -709.4049836079793,
+      "selected_fit": {
+        "objective": 13971.872564394995,
+        "likelihood_nll": 13824.56474321315,
+        "posterior_rms_hz": 111.5462429187802,
+        "stationarity": 5.30945996088294e-05,
+        "boundary": false,
+        "solver_success": true,
+        "physical_constraints_minimum": 2.863047519118318
+      }
+    }
+  ],
+  "limitations": [
+    "A uses six dependent low/locked-high/final-all paths; 18 calls are not 18 independent final fits",
+    "B/C half views inherit all-channel discovery/proposals; C also shares six all-training ambiguity lifts",
+    "Stored KKT/physical certificates are validated, not recalculated from scientific objectives",
+    "Reported boundary flag covers satellite timing/geographic constraints, not every calibration coefficient bound",
+    "No fit retries or reference-based start/model selection; both nonstationary solver-success outputs retained",
+    "Different objectives/NLL/posterior RMS structures are not interchangeable validation or confidence measures",
+    "Configured-reference development errors do not establish surveyed truth or full-DS21/generalization success"
+  ]
+}

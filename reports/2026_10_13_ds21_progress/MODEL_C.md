@@ -3,6 +3,14 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The first [DS21-025 baseline](../2026_10_13_ds21_release_readiness/THREE_MODEL_025_RESULTS.md)
+completed 18 stationary C fits. All/low/high errors are
+**1.121626 / 5.954192 / 8.584032 km**. Combining improves on both halves, but
+all three miss 0.5 km. Training selects `cold-2` for all/high and `cold-1` for
+low; all selected boundary flags are false. The half-band likelihoods inherit
+shared discovery, physical seeds and all-training receiver lifts. This first
+baseline adds development coverage without establishing an algorithm improvement.
+
 The [saved-state timing/calibration factorial](../2026_10_13_ds21_039_association/TIMING_CALIBRATION_FACTORIAL_RESULTS.md)
 completed 18 evaluations and zero fits in 18.760 seconds. At four prescribed
 1 km displacements along the previously identified weak position directions,

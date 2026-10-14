@@ -3,6 +3,15 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The first [DS21-025 baseline](../2026_10_13_ds21_release_readiness/THREE_MODEL_025_RESULTS.md)
+completed 18 B fits, 17 stationary. All/low/high errors are
+**8.315280 / 3.385533 / 0.588376 km**. Combining is worse than either half, and
+none reaches 0.5 km. The all-band `cold-1` winner has a timing boundary flag;
+the half-band winners do not. All/`shape-all` retains KKT 6.737279 despite solver
+success and is excluded. Shared initialization and candidate information remain
+part of these half-band comparisons. This is a first baseline, not an improvement
+comparison or a reason to choose the closest-to-reference half.
+
 The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
 completed 18 stationary B fits. All/low/high errors are
 **0.436419 / 0.940492 / 4.181058 km**, versus the original

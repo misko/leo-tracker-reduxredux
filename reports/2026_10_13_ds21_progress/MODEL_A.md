@@ -3,6 +3,14 @@
 Status: implemented; five-recording shared-proposal development comparison
 complete. This is an interim report; the full DS21 0.5 km target is unmet.
 
+The first [DS21-025 baseline](../2026_10_13_ds21_release_readiness/THREE_MODEL_025_RESULTS.md)
+completed 18 dependent-stage calls, 17 stationary. Training selects `cold-2`
+with **3.297411 km** all-band error and a false boundary flag. The `shape-low`
+final fit retains KKT 1.534913 despite solver success and is excluded without
+retry. A's locked-high stage is not an independently estimated high-only location.
+This new baseline misses 0.5 km; it is not a measured improvement over an older
+DS21-025 result.
+
 The latest [DS21-009 fixed-policy coverage transfer](../2026_10_13_ds21_release_readiness/COVERAGE_THREE_MODEL_009_RESULTS.md)
 completed all 18 sequential stages, all stationary. Its final-training-objective
 winner is `cold-1`, with **3.155489 km** error versus **0.658299 km** originally.
