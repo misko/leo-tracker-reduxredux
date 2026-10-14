@@ -307,3 +307,32 @@ to assess posterior identity switches, edge gaps, and confidence at these same
 saved states. Cross-state identity differences above do **not** prove temporal
 switching or justify adding a consistency penalty. Tracks themselves must be
 audited before treating their membership as persistent satellite identity.
+
+## Temporal identity audit completed
+
+`local/ds22-track-identity-audit-v1` now contains the bounded zero-fit audit:
+four saved-state evaluations for 001 and one for 019. No model was changed.
+The threshold 0.5 and retention of all consecutive track edges were fixed
+before execution. Track membership came from the existing orbit-blind
+bootstrap reconstruction, without satellite posteriors or station reference.
+
+| Case/state | Confident consecutive edges | MAP identity switches | Switch fraction |
+|---|---:|---:|---:|
+| 001 original / all-anchor release | 679 | 62 | 9.13% |
+| 001 low-anchor release | 638 | 55 | 8.62% |
+| 001 high-anchor release | 583 | 65 | 11.15% |
+| 019 original | 654 | 70 | 10.70% |
+
+The 001 graph contains 24 tracks, 979 of 3229 windows, and 955 edges.
+Gaps have median 0.356s and maximum 3.904s. The 019 graph contains 24 tracks,
+1026 of 3144 windows, and 1002 edges. Neither graph has overlapping track
+membership or cross-channel edges; tracks are single receiver and channel.
+
+Identity switching is present, but this diagnostic does not explain the
+configured-distance ranking: the nearest 001 high-anchor state switches more
+often, not less. Different confident-edge counts also limit comparison of raw
+switch counts. Only roughly one third of windows occur in selected bootstrap
+tracks, and physical track purity remains unverified. A naive consistency
+penalty therefore has weaker support than a controlled test of the known B/C
+temporal-calibration difference. No penalty or threshold was tuned using these
+distances, and no further fit was launched by this audit.
