@@ -1,0 +1,1064 @@
+{
+  "schema": "ds21-model-a-current-timing-results-v1",
+  "conditions": [
+    "original-high-repeat",
+    "low-timing-locked-high"
+  ],
+  "prespecified_policy": {
+    "schema": "ds21-model-a-cached-timing-control-v1",
+    "arm": "fitted-c",
+    "conditions": [
+      "original-high-repeat",
+      "low-timing-locked-high"
+    ],
+    "starts": 6,
+    "fit_seconds": 20,
+    "iterations": 600,
+    "local_radius_km": 25,
+    "units": [
+      "original-high-repeat-0",
+      "original-high-repeat-1",
+      "original-high-repeat-2",
+      "original-high-repeat-3",
+      "original-high-repeat-4",
+      "original-high-repeat-5",
+      "low-timing-locked-high-0",
+      "low-timing-locked-high-1",
+      "low-timing-locked-high-2",
+      "low-timing-locked-high-3",
+      "low-timing-locked-high-4",
+      "low-timing-locked-high-5"
+    ],
+    "maximum_new_optimizer_calls": 14,
+    "maximum_seconds_per_unit": 90,
+    "external_term_seconds": 105,
+    "external_kill_seconds": 110,
+    "inherited_low_fits": 6,
+    "low_stage": "Reuse own original validated low fit in both conditions",
+    "treatment": "High receiver offsets only; position/correction/timing fixed to own low fit",
+    "baseline": "Original high timing/offset fit, then original final fit",
+    "final": "Original fitted-c free geography/common correction/timing with fixed learned offsets",
+    "selection": "Minimum stationary final training objective, then original start index",
+    "reference_usage": "none",
+    "held_usage": "none",
+    "failed_retry": false,
+    "half_view_scope": "Dependent shared-initialization stages; no independent half-only claim",
+    "preparation_seconds": 5,
+    "validation_reserve_seconds": 5,
+    "reused_baseline_optimizer_calls": 10,
+    "implementation_control": "Fresh baseline start zero high/final equals sealed parent",
+    "implementation_absolute_tolerance": 1e-8,
+    "metadata_recovery": "Five stationary sealed baseline high/final paths; own low fits"
+  },
+  "cases": [
+    {
+      "label": "DS21-023",
+      "protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-023-cached-v1/protocol.json",
+        "sha256": "sha256:395270a9b886c6a3d9c5a5f05075d78931be3f642d11139d17e230f14e4df939"
+      },
+      "cached_parent_protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-pipeline-coverage-023-cached-v2/protocol.json",
+        "sha256": "sha256:9b17a6f38bb829fb7f0f2f158e7a69409c659a529c3b8538c47d46b6c192d8fe"
+      },
+      "cached_parent_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-pipeline-coverage-023-cached-v2/terminal.json",
+        "sha256": "sha256:34a941a905a99d6b2175524e51f95574618fe811195de0d915142ec89958cf84"
+      },
+      "terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-023-cached-v1/terminal.json",
+        "sha256": "sha256:dec6d603a9fc738486834734ae104557d6716cc51f736e6c1af87e3f50457d19"
+      },
+      "evaluation": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-023-cached-v1/development-errors.json",
+        "sha256": "sha256:bc2e40b3edd3bbc40befaf6f6b8bcbd0222f479c6d6747ceaca677fa282d9ad3"
+      },
+      "rows": [
+        {
+          "condition": "original-high-repeat",
+          "view": "final-all",
+          "state": "estimated",
+          "arm": "fitted-c",
+          "start": 0,
+          "coordinates_deg": [
+            37.78047856184301,
+            -122.46918455831351
+          ],
+          "error_km": 7.758952671376304,
+          "below_0_5km": false,
+          "fitted_c_hz_per_ghz": -459.87294092419324,
+          "objective": 30973.521930759096,
+          "likelihood_nll": 30646.333859628056,
+          "frequency_rms_hz": 127.13410209582217
+        },
+        {
+          "condition": "low-timing-locked-high",
+          "view": "final-all",
+          "state": "estimated",
+          "arm": "fitted-c",
+          "start": 0,
+          "coordinates_deg": [
+            37.81406713790418,
+            -122.43559940917268
+          ],
+          "error_km": 5.868671976006308,
+          "below_0_5km": false,
+          "fitted_c_hz_per_ghz": -397.5125667410246,
+          "objective": 29674.53523696742,
+          "likelihood_nll": 29389.715207210877,
+          "frequency_rms_hz": 108.48778529449204
+        }
+      ],
+      "new_optimizer_calls": 13,
+      "reused_baseline_optimizer_calls": 10,
+      "inherited_low_fits": 6,
+      "implementation_maximum_absolute_difference": 0,
+      "paths": [
+        {
+          "unit": "original-high-repeat-0",
+          "condition": "original-high-repeat",
+          "start": 0,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 14887.094148888216,
+              "likelihood_nll": 14550.75828769086,
+              "posterior_rms_hz": 151.26596256374822,
+              "stationarity": 0.000459600871326655,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.095508517403349,
+              "elapsed_s": 1.6858443869277835,
+              "evaluations": 339,
+              "stationary": true,
+              "error_km_after_seal": 8.32832518179662
+            },
+            "final": {
+              "objective": 30973.521930759096,
+              "likelihood_nll": 30646.333859628056,
+              "posterior_rms_hz": 127.13410209582217,
+              "stationarity": 0.0003313042922016285,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.806039669482878,
+              "elapsed_s": 3.4835403049364686,
+              "evaluations": 303,
+              "stationary": true,
+              "error_km_after_seal": 7.758952671376304
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-1",
+          "condition": "original-high-repeat",
+          "start": 1,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 13705.55183263379,
+              "likelihood_nll": 13451.851509138047,
+              "posterior_rms_hz": 125.98283176847801,
+              "stationarity": 0.0002525039732631975,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.9043521795409752,
+              "elapsed_s": 0.8869981179013848,
+              "evaluations": 369,
+              "stationary": true,
+              "error_km_after_seal": 4.18940089238717
+            },
+            "final": {
+              "objective": 31240.016595674097,
+              "likelihood_nll": 30949.479125266997,
+              "posterior_rms_hz": 108.81845208485917,
+              "stationarity": 0.0008548884147842606,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.6261194097931018,
+              "elapsed_s": 1.4305320028215647,
+              "evaluations": 263,
+              "stationary": true,
+              "error_km_after_seal": 1.1698389461967145
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-2",
+          "condition": "original-high-repeat",
+          "start": 2,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15426.19654331165,
+              "likelihood_nll": 15108.88583421435,
+              "posterior_rms_hz": 179.27860499962117,
+              "stationarity": 0.00017060734674705243,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.1347526045905063,
+              "elapsed_s": 1.9041047170758247,
+              "evaluations": 379,
+              "stationary": true,
+              "error_km_after_seal": 58.89459473550194
+            },
+            "final": {
+              "objective": 34091.33333401762,
+              "likelihood_nll": 33756.2829377328,
+              "posterior_rms_hz": 159.94205554950614,
+              "stationarity": 0.00010560395001898374,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.06693121647120037,
+              "elapsed_s": 3.0052487701177597,
+              "evaluations": 259,
+              "stationary": true,
+              "error_km_after_seal": 57.722614664426224
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-3",
+          "condition": "original-high-repeat",
+          "start": 3,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 14623.421693666005,
+              "likelihood_nll": 14385.332367261126,
+              "posterior_rms_hz": 153.1138778140341,
+              "stationarity": 0.0007556673532864106,
+              "solver_success": true,
+              "physical_constraints_minimum": 4.05782253964353,
+              "elapsed_s": 1.8240012810565531,
+              "evaluations": 371,
+              "stationary": true,
+              "error_km_after_seal": 44.94440444679456
+            },
+            "final": {
+              "objective": 32466.83027308522,
+              "likelihood_nll": 32166.433474974558,
+              "posterior_rms_hz": 134.95410889049913,
+              "stationarity": 0.00037003103281627904,
+              "solver_success": true,
+              "physical_constraints_minimum": 5.156289172729494,
+              "elapsed_s": 3.187971274368465,
+              "evaluations": 276,
+              "stationary": true,
+              "error_km_after_seal": 36.941679189164205
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-4",
+          "condition": "original-high-repeat",
+          "start": 4,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 14102.65304735647,
+              "likelihood_nll": 13803.224335348925,
+              "posterior_rms_hz": 149.73854088999585,
+              "stationarity": 0.00032888635817915866,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.557944964206829,
+              "elapsed_s": 1.8194201388396323,
+              "evaluations": 366,
+              "stationary": true,
+              "error_km_after_seal": 30.518573363864093
+            },
+            "final": {
+              "objective": 32599.13771107104,
+              "likelihood_nll": 32140.088299949435,
+              "posterior_rms_hz": 149.42229445783948,
+              "stationarity": 0.0001087934892055149,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.8209155660990177,
+              "elapsed_s": 2.874052125029266,
+              "evaluations": 256,
+              "stationary": true,
+              "error_km_after_seal": 35.213435917004
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-5",
+          "condition": "original-high-repeat",
+          "start": 5,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15063.558753593354,
+              "likelihood_nll": 14619.28525495724,
+              "posterior_rms_hz": 158.0364792914302,
+              "stationarity": 0.0005484857494844323,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.3067804588612546,
+              "elapsed_s": 0.8197318990714848,
+              "evaluations": 351,
+              "stationary": true,
+              "error_km_after_seal": 43.143300335632155
+            },
+            "final": {
+              "objective": 32446.47087809782,
+              "likelihood_nll": 31941.82875606971,
+              "posterior_rms_hz": 141.78014175262976,
+              "stationarity": 0.00020067748328356227,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.9396928941237519,
+              "elapsed_s": 2.5271152928471565,
+              "evaluations": 439,
+              "stationary": true,
+              "error_km_after_seal": 36.982703448749064
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-0",
+          "condition": "low-timing-locked-high",
+          "start": 0,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 14798.178033922852,
+              "likelihood_nll": 14516.881303510516,
+              "posterior_rms_hz": 174.39154369503038,
+              "stationarity": 0.00027859079692532955,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.733695396776291,
+              "elapsed_s": 0.10348781011998653,
+              "evaluations": 21,
+              "stationary": true,
+              "error_km_after_seal": 8.32832518179662
+            },
+            "final": {
+              "objective": 29674.53523696742,
+              "likelihood_nll": 29389.715207210877,
+              "posterior_rms_hz": 108.48778529449204,
+              "stationarity": 0.00027053886183564524,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.6838216944572935,
+              "elapsed_s": 2.832770404871553,
+              "evaluations": 255,
+              "stationary": true,
+              "error_km_after_seal": 5.868671976006308
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-1",
+          "condition": "low-timing-locked-high",
+          "start": 1,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15498.286639130823,
+              "likelihood_nll": 15209.309808488333,
+              "posterior_rms_hz": 179.01817478560287,
+              "stationarity": 0.0004986420538243094,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.5101430127185154,
+              "elapsed_s": 0.15918227471411228,
+              "evaluations": 33,
+              "stationary": true,
+              "error_km_after_seal": 4.18940089238717
+            },
+            "final": {
+              "objective": 30922.744631603622,
+              "likelihood_nll": 30571.294699647042,
+              "posterior_rms_hz": 118.46056639595673,
+              "stationarity": 0.000016138575868074323,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.6507630912390567,
+              "elapsed_s": 2.2415809398517013,
+              "evaluations": 243,
+              "stationary": true,
+              "error_km_after_seal": 4.682571219008468
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-2",
+          "condition": "low-timing-locked-high",
+          "start": 2,
+          "status": "high-nonstationary",
+          "new_optimizer_calls": 1,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15591.116712709732,
+              "likelihood_nll": 15131.550918600744,
+              "posterior_rms_hz": 153.91594651560183,
+              "stationarity": 0.0010909196510439842,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.3921105661405271,
+              "elapsed_s": 0.15254407795146108,
+              "evaluations": 32,
+              "stationary": false,
+              "error_km_after_seal": 58.89459473550194
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-3",
+          "condition": "low-timing-locked-high",
+          "start": 3,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15697.615757313139,
+              "likelihood_nll": 15347.910404300485,
+              "posterior_rms_hz": 188.27607879461752,
+              "stationarity": 0.00014511910799866164,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.0001948451470426,
+              "elapsed_s": 0.13305026991292834,
+              "evaluations": 27,
+              "stationary": true,
+              "error_km_after_seal": 44.94440444679456
+            },
+            "final": {
+              "objective": 32625.238024858903,
+              "likelihood_nll": 32109.913266099247,
+              "posterior_rms_hz": 138.02878836460627,
+              "stationarity": 0.00003134265177897385,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.991121684912592,
+              "elapsed_s": 2.2881867731921375,
+              "evaluations": 211,
+              "stationary": true,
+              "error_km_after_seal": 44.0063409274549
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-4",
+          "condition": "low-timing-locked-high",
+          "start": 4,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15749.622018845195,
+              "likelihood_nll": 15407.93434629883,
+              "posterior_rms_hz": 196.474370587369,
+              "stationarity": 0.00021690689185539327,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.1732888803652166,
+              "elapsed_s": 0.06773163517937064,
+              "evaluations": 30,
+              "stationary": true,
+              "error_km_after_seal": 30.518573363864093
+            },
+            "final": {
+              "objective": 32014.127691128066,
+              "likelihood_nll": 31577.381833538355,
+              "posterior_rms_hz": 149.88103279162235,
+              "stationarity": 0.0002798961115402787,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.6373948907699614,
+              "elapsed_s": 1.5251231002621353,
+              "evaluations": 289,
+              "stationary": true,
+              "error_km_after_seal": 28.237573594841713
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-5",
+          "condition": "low-timing-locked-high",
+          "start": 5,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15731.850573823984,
+              "likelihood_nll": 15353.727378202206,
+              "posterior_rms_hz": 177.65765531273874,
+              "stationarity": 0.00006818726632268632,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.04706967086832137,
+              "elapsed_s": 0.053538508247584105,
+              "evaluations": 23,
+              "stationary": true,
+              "error_km_after_seal": 43.143300335632155
+            },
+            "final": {
+              "objective": 32461.599386328297,
+              "likelihood_nll": 31971.842779654224,
+              "posterior_rms_hz": 138.1130111899596,
+              "stationarity": 0.00014969938345821276,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.552713678800501e-15,
+              "elapsed_s": 1.2710255840793252,
+              "evaluations": 241,
+              "stationary": true,
+              "error_km_after_seal": 44.364462281349354
+            }
+          }
+        }
+      ],
+      "source_file_count": 423,
+      "training_likelihood_audit": [
+        {
+          "condition": "original-high-repeat",
+          "objective_order": [
+            0,
+            1,
+            5,
+            3,
+            4,
+            2
+          ],
+          "likelihood_order": [
+            0,
+            1,
+            5,
+            4,
+            3,
+            2
+          ],
+          "stationary_final_paths": 6
+        },
+        {
+          "condition": "low-timing-locked-high",
+          "objective_order": [
+            0,
+            1,
+            4,
+            5,
+            3
+          ],
+          "likelihood_order": [
+            0,
+            1,
+            4,
+            5,
+            3
+          ],
+          "stationary_final_paths": 5
+        }
+      ]
+    },
+    {
+      "label": "DS21-025",
+      "protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-025-cached-v1/protocol.json",
+        "sha256": "sha256:d89561c9d0af89df43205aacaa7620058a6011206d0973b7b29cda6a5b8165d4"
+      },
+      "cached_parent_protocol": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-pipeline-coverage-025-cached-v2/protocol.json",
+        "sha256": "sha256:c3432ff470ee94d191d79acfb5a3ce11aac1f8d5482327c8330c9339932d4409"
+      },
+      "cached_parent_terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-pipeline-coverage-025-cached-v2/terminal.json",
+        "sha256": "sha256:676e14ddf1f9e1afc342886b1b4c273d3b6f4ee9e256d17defaf1c470f122187"
+      },
+      "terminal": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-025-cached-v1/terminal.json",
+        "sha256": "sha256:6443a923c7f01469d2ab762a6356f70349c639ba363f95cc336545bda47ed3b8"
+      },
+      "evaluation": {
+        "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/local/model-a-timing-current-025-cached-v1/development-errors.json",
+        "sha256": "sha256:7306459ada8a81f8ecf473e597f1c5c5518f9f9557ca999a693669ea4dbdfb4d"
+      },
+      "rows": [
+        {
+          "condition": "original-high-repeat",
+          "view": "final-all",
+          "state": "estimated",
+          "arm": "fitted-c",
+          "start": 0,
+          "coordinates_deg": [
+            37.829200028856484,
+            -122.42151099815544
+          ],
+          "error_km": 6.049037296950948,
+          "below_0_5km": false,
+          "fitted_c_hz_per_ghz": -506.29423401704054,
+          "objective": 30629.717355681103,
+          "likelihood_nll": 30296.455045998162,
+          "frequency_rms_hz": 121.06666402318695
+        },
+        {
+          "condition": "low-timing-locked-high",
+          "view": "final-all",
+          "state": "estimated",
+          "arm": "fitted-c",
+          "start": 3,
+          "coordinates_deg": [
+            37.88969732916501,
+            -122.54106594965357
+          ],
+          "error_km": 6.641095683505422,
+          "below_0_5km": false,
+          "fitted_c_hz_per_ghz": -661.0811109666352,
+          "objective": 30556.96516824642,
+          "likelihood_nll": 30129.0238725548,
+          "frequency_rms_hz": 123.47735953751487
+        }
+      ],
+      "new_optimizer_calls": 13,
+      "reused_baseline_optimizer_calls": 10,
+      "inherited_low_fits": 6,
+      "implementation_maximum_absolute_difference": 0,
+      "paths": [
+        {
+          "unit": "original-high-repeat-0",
+          "condition": "original-high-repeat",
+          "start": 0,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15052.245269299117,
+              "likelihood_nll": 14796.609525426327,
+              "posterior_rms_hz": 135.84521492757455,
+              "stationarity": 0.0001946437462449381,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.3316427047550086,
+              "elapsed_s": 1.821884937118739,
+              "evaluations": 334,
+              "stationary": true,
+              "error_km_after_seal": 8.229311250629763
+            },
+            "final": {
+              "objective": 30629.717355681103,
+              "likelihood_nll": 30296.455045998162,
+              "posterior_rms_hz": 121.06666402318695,
+              "stationarity": 0.00023145768183593755,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.8775074554005116,
+              "elapsed_s": 4.358829333912581,
+              "evaluations": 342,
+              "stationary": true,
+              "error_km_after_seal": 6.049037296950948
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-1",
+          "condition": "original-high-repeat",
+          "start": 1,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15788.704319717423,
+              "likelihood_nll": 15558.372861792306,
+              "posterior_rms_hz": 146.35254883534404,
+              "stationarity": 0.00006943053224058947,
+              "solver_success": true,
+              "physical_constraints_minimum": 2.2176884536483072,
+              "elapsed_s": 2.2759532891213894,
+              "evaluations": 372,
+              "stationary": true,
+              "error_km_after_seal": 5.434566601950003
+            },
+            "final": {
+              "objective": 32095.957167899356,
+              "likelihood_nll": 31771.535274247653,
+              "posterior_rms_hz": 143.37551051688254,
+              "stationarity": 0.0003925525575005327,
+              "solver_success": true,
+              "physical_constraints_minimum": 1.6459102015352904,
+              "elapsed_s": 4.392394530121237,
+              "evaluations": 326,
+              "stationary": true,
+              "error_km_after_seal": 7.931906351017994
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-2",
+          "condition": "original-high-repeat",
+          "start": 2,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15465.763055942207,
+              "likelihood_nll": 15266.45438248725,
+              "posterior_rms_hz": 125.64346730684241,
+              "stationarity": 0.00019080260024567687,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.07084001266431983,
+              "elapsed_s": 2.1264454019255936,
+              "evaluations": 349,
+              "stationary": true,
+              "error_km_after_seal": 2.896080390810457
+            },
+            "final": {
+              "objective": 31937.421380229083,
+              "likelihood_nll": 31665.19297599001,
+              "posterior_rms_hz": 130.23470451692208,
+              "stationarity": 0.000040765986994896735,
+              "solver_success": true,
+              "physical_constraints_minimum": 4.791596355857909,
+              "elapsed_s": 8.703968400135636,
+              "evaluations": 740,
+              "stationary": true,
+              "error_km_after_seal": 8.55157951996393
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-3",
+          "condition": "original-high-repeat",
+          "start": 3,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15866.310849675288,
+              "likelihood_nll": 15549.16842797228,
+              "posterior_rms_hz": 141.11936775447634,
+              "stationarity": 0.0001303227415472634,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.4269744228927763,
+              "elapsed_s": 2.9571045958437026,
+              "evaluations": 485,
+              "stationary": true,
+              "error_km_after_seal": 7.129777022648138
+            },
+            "final": {
+              "objective": 33935.797066366555,
+              "likelihood_nll": 33525.516047191544,
+              "posterior_rms_hz": 139.92971043993708,
+              "stationarity": 0.00024337442448718605,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.1128127526739604,
+              "elapsed_s": 3.235780225135386,
+              "evaluations": 235,
+              "stationary": true,
+              "error_km_after_seal": 6.18655533101329
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-4",
+          "condition": "original-high-repeat",
+          "start": 4,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15964.874090998375,
+              "likelihood_nll": 15738.033379180186,
+              "posterior_rms_hz": 146.75947412024894,
+              "stationarity": 0.00024123769192531397,
+              "solver_success": true,
+              "physical_constraints_minimum": 1.4818264791660027,
+              "elapsed_s": 1.2316494598053396,
+              "evaluations": 426,
+              "stationary": true,
+              "error_km_after_seal": 2.9813299283368315
+            },
+            "final": {
+              "objective": 32017.82332172024,
+              "likelihood_nll": 31789.039481327753,
+              "posterior_rms_hz": 133.1639563835369,
+              "stationarity": 0.00016413607427376124,
+              "solver_success": true,
+              "physical_constraints_minimum": 1.443031392736433,
+              "elapsed_s": 1.871341705787927,
+              "evaluations": 291,
+              "stationary": true,
+              "error_km_after_seal": 2.9221564081714857
+            }
+          }
+        },
+        {
+          "unit": "original-high-repeat-5",
+          "condition": "original-high-repeat",
+          "start": 5,
+          "status": "complete",
+          "new_optimizer_calls": 0,
+          "reused_optimizer_calls": 2,
+          "stages": {
+            "high": {
+              "objective": 15808.750894952944,
+              "likelihood_nll": 15477.734285128117,
+              "posterior_rms_hz": 147.59596568472736,
+              "stationarity": 0.00022585325573377382,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.552713678800501e-15,
+              "elapsed_s": 1.6608966500498354,
+              "evaluations": 373,
+              "stationary": true,
+              "error_km_after_seal": 13.410055791132292
+            },
+            "final": {
+              "objective": 33488.50908360874,
+              "likelihood_nll": 33058.965742729815,
+              "posterior_rms_hz": 124.1522065461906,
+              "stationarity": 0.0007093021813489031,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.552713678800501e-15,
+              "elapsed_s": 1.8624474271200597,
+              "evaluations": 297,
+              "stationary": true,
+              "error_km_after_seal": 9.940259293174238
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-0",
+          "condition": "low-timing-locked-high",
+          "start": 0,
+          "status": "high-nonstationary",
+          "new_optimizer_calls": 1,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15598.344346404736,
+              "likelihood_nll": 15373.236877690846,
+              "posterior_rms_hz": 163.01771454896135,
+              "stationarity": 0.0012754347540202588,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.864294231877821,
+              "elapsed_s": 0.17823669128119946,
+              "evaluations": 33,
+              "stationary": false,
+              "error_km_after_seal": 8.229311250629763
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-1",
+          "condition": "low-timing-locked-high",
+          "start": 1,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 16487.386791750057,
+              "likelihood_nll": 16220.849175797372,
+              "posterior_rms_hz": 164.16585694870778,
+              "stationarity": 0.00010125938117258987,
+              "solver_success": true,
+              "physical_constraints_minimum": 7.105427357601002e-15,
+              "elapsed_s": 0.09130572015419602,
+              "evaluations": 36,
+              "stationary": true,
+              "error_km_after_seal": 5.434566601950003
+            },
+            "final": {
+              "objective": 30917.19268704097,
+              "likelihood_nll": 30588.485640104904,
+              "posterior_rms_hz": 118.44002266070602,
+              "stationarity": 0.0003559997628313559,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.2523156781925664,
+              "elapsed_s": 1.4240473001264036,
+              "evaluations": 250,
+              "stationary": true,
+              "error_km_after_seal": 5.465069841128744
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-2",
+          "condition": "low-timing-locked-high",
+          "start": 2,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 16403.29011680232,
+              "likelihood_nll": 16234.381686251367,
+              "posterior_rms_hz": 167.8371591226931,
+              "stationarity": 0.00005753042952091852,
+              "solver_success": true,
+              "physical_constraints_minimum": 3.8167282124747963,
+              "elapsed_s": 0.06410277122631669,
+              "evaluations": 26,
+              "stationary": true,
+              "error_km_after_seal": 2.896080390810457
+            },
+            "final": {
+              "objective": 31176.838159010334,
+              "likelihood_nll": 30966.169239962554,
+              "posterior_rms_hz": 114.98816163427946,
+              "stationarity": 0.00020046373433821318,
+              "solver_success": true,
+              "physical_constraints_minimum": 4.237567558388282,
+              "elapsed_s": 2.787737346254289,
+              "evaluations": 558,
+              "stationary": true,
+              "error_km_after_seal": 1.7886764588613682
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-3",
+          "condition": "low-timing-locked-high",
+          "start": 3,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 15551.813860309661,
+              "likelihood_nll": 15242.200564455296,
+              "posterior_rms_hz": 144.93501851887416,
+              "stationarity": 0.0005717987717861703,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.3701373246089439,
+              "elapsed_s": 0.06328598409891129,
+              "evaluations": 25,
+              "stationary": true,
+              "error_km_after_seal": 7.129777022648138
+            },
+            "final": {
+              "objective": 30556.96516824642,
+              "likelihood_nll": 30129.0238725548,
+              "posterior_rms_hz": 123.47735953751487,
+              "stationarity": 0.00041029299628767696,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.2993536893028832,
+              "elapsed_s": 1.2668408541940153,
+              "evaluations": 232,
+              "stationary": true,
+              "error_km_after_seal": 6.641095683505422
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-4",
+          "condition": "low-timing-locked-high",
+          "start": 4,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 17290.437423019943,
+              "likelihood_nll": 17132.03298737752,
+              "posterior_rms_hz": 180.3422080928462,
+              "stationarity": 0.000004482068608376632,
+              "solver_success": true,
+              "physical_constraints_minimum": 5.260424228015797,
+              "elapsed_s": 0.09346392983570695,
+              "evaluations": 36,
+              "stationary": true,
+              "error_km_after_seal": 2.9813299283368315
+            },
+            "final": {
+              "objective": 32439.094881003526,
+              "likelihood_nll": 32251.75392648996,
+              "posterior_rms_hz": 120.38591054356544,
+              "stationarity": 0.0002810428631890016,
+              "solver_success": true,
+              "physical_constraints_minimum": 5.238782676634678,
+              "elapsed_s": 1.2058060611598194,
+              "evaluations": 223,
+              "stationary": true,
+              "error_km_after_seal": 3.8655050297970135
+            }
+          }
+        },
+        {
+          "unit": "low-timing-locked-high-5",
+          "condition": "low-timing-locked-high",
+          "start": 5,
+          "status": "complete",
+          "new_optimizer_calls": 2,
+          "reused_optimizer_calls": 0,
+          "stages": {
+            "high": {
+              "objective": 16832.060822662537,
+              "likelihood_nll": 16555.593245446096,
+              "posterior_rms_hz": 165.63786126122162,
+              "stationarity": 0.000028681625382249857,
+              "solver_success": true,
+              "physical_constraints_minimum": 0.8711858814623419,
+              "elapsed_s": 0.14230305515229702,
+              "evaluations": 27,
+              "stationary": true,
+              "error_km_after_seal": 13.410055791132292
+            },
+            "final": {
+              "objective": 33278.39811589516,
+              "likelihood_nll": 33000.08769183518,
+              "posterior_rms_hz": 125.69865948721898,
+              "stationarity": 0.00039128774019452084,
+              "solver_success": true,
+              "physical_constraints_minimum": 1.3257874638199887,
+              "elapsed_s": 2.7174286590889096,
+              "evaluations": 392,
+              "stationary": true,
+              "error_km_after_seal": 9.782774242656293
+            }
+          }
+        }
+      ],
+      "source_file_count": 423,
+      "training_likelihood_audit": [
+        {
+          "condition": "original-high-repeat",
+          "objective_order": [
+            0,
+            2,
+            4,
+            1,
+            5,
+            3
+          ],
+          "likelihood_order": [
+            0,
+            2,
+            1,
+            4,
+            5,
+            3
+          ],
+          "stationary_final_paths": 6
+        },
+        {
+          "condition": "low-timing-locked-high",
+          "objective_order": [
+            3,
+            1,
+            2,
+            4,
+            5
+          ],
+          "likelihood_order": [
+            3,
+            1,
+            2,
+            4,
+            5
+          ],
+          "stationary_final_paths": 5
+        }
+      ]
+    }
+  ],
+  "optimizer_calls_in_reporting": 0,
+  "objective_calls_in_reporting": 0,
+  "predictor_calls_in_reporting": 0,
+  "reference_usage": "Only after both conditions and implementation controls sealed in both cases; never fit, seed, or selector",
+  "promotion": false
+}
