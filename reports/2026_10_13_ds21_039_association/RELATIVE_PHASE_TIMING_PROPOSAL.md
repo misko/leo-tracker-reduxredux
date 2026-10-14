@@ -98,3 +98,67 @@ subsequent fixed-rule development transfer and the untouched locked release
 sequence; there is no reference-selected prior, direction, timing convention or
 per-recording winner. Numerical execution follows implementation review and the
 root-owned frozen protocol; this proposal itself does not start a run.
+
+## Reviewed implementation entrypoints
+
+`tools/ds21_039_relative_phase_control.py` declares all twelve calls and performs
+training-only parent/oracle/transport qualification before claiming any fit.
+Both conditions receive the same two physical seeds in each view. Each half's
+first seed is its original training winner; its second is the refined all-band
+winner transported as a physical correction and unchanged satellite shifts into
+that half's own native frame. Any representation loss above 1e-6 Hz, timing
+change above 1e-12 s, or required clipping rejects qualification. Original
+receiver sampling lifts are carried exactly once. A transported half seed is
+not a stationary half-view incumbent.
+
+`relative-phase-run.py` in the root-cause report directory supplies `freeze` and
+`run` commands. Freeze requires `--directory`, `--refinement-terminal` and
+`--refinement-freeze`; run requires the same `--directory`. It preloads the
+genuine original seven-call numerical/adapter/native source closure, adds the
+new scorer, factory, control and both recipes, and archives exact bytes before
+training preparation. The original seven-call source/archive subset remains
+bound. The complete run is limited to 450 seconds internally, with external
+TERM/KILL at 480/500 seconds. Each of the twelve fits is limited to 20 seconds
+and 600 iterations inside the original per-view seed-5 25 km disk. Atomic claims,
+failures, terminations and checkpoints are retained; orphan claims are rejected.
+An additional durable outer slice claim covers training preparation, the control
+and final source/ancestor checks within that same 450-second envelope. Failed or
+orphaned outer slices cannot retry. A normal checkpoint can continue in a newly
+recorded slice without retrying already claimed fits. Cached completion explicitly
+reconstructs training inputs and validates physical domains within the same bound;
+it does not rescore an orbit/objective or call an optimizer. Tests trap all three.
+Publication also requires the complete outer launch/termination inventory and a
+last outer state of `complete`; a child twelve-fit terminal cannot bypass an
+orphaned preparation attempt or failed final source check.
+
+Freeze loads the pinned input once to reconstruct counter-only partition metadata,
+after archiving the complete source closure; elapsed loading/partition cost is
+recorded. It checks the historical discovery seed and held blocks and records all
+original index/counter assignments. It never projects held candidates or reads a
+reference. An existing freeze validates every source/archive before any write and
+rejects missing archives rather than restoring them.
+
+The original receive-epoch objective replays each original view winner and the
+refined all-band winner, including both gradient vectors and saved scalars. At
+`d=0`, the phase scorer must match forward likelihood, posteriors, geography,
+calibration, common-time and group gradients. Free relative gradients are
+expected to differ by the explicitly tested rotation torque; asserting equality
+there would remove the intended intervention. Synthetic finite differences
+cover these changed derivatives and the complete physical/native nuisance layout.
+
+Selection is per view and convention, using only its own stationary training
+objective. Genuine same-view source incumbents remain eligible only for the
+receive-epoch control. Phase selection uses new stationary fits only, without a
+fallback to an unscored source endpoint. All failures remain visible.
+
+`evaluate-relative-phase.py DIRECTORY` first verifies the complete twelve-call
+seal, current/archive sources, parent authority, exact seeds, source/null oracle,
+all attempt/launch/termination records, domain and selector. Only afterward does
+it prepare the original randomized held blocks and predict with frozen training
+calibration/position/timing, without a held fit. Reference import follows the
+complete paired seal as well. All six held and position outcomes are retained;
+held-score failures are explicit unavailable rows. Frequency prediction and
+position accuracy remain separate. The evaluator checks exact partition assignments,
+seed and blocks against the freeze, rechecks source/archive/ancestor authority
+before publication, and shares the 450/480/500 execution envelope with zero fits.
+These entrypoints have not been executed on DS21 by the implementation worker.
