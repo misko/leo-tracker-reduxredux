@@ -54,13 +54,19 @@ from wave 010 was retried because none had started.
 Wave 011 completed five full 100-point discoveries and saved a clean 91-point
 checkpoint for 061. Its explicitly admitted slice 1 subsequently returned
 successfully in wave 014. Wave 012 completed five more full discoveries
-(077, 079, 081, 083, 085); 075 saved a clean 83-point checkpoint. That checkpoint
-still requires an explicit continuation. Neither checkpoint is a failed fit.
+(077, 079, 081, 083, 085); 075 saved a clean 83-point checkpoint. Its explicitly
+admitted slice 1 subsequently completed. Neither checkpoint was a failed fit.
+087 also completed in wave 014. A current inventory check finds complete
+baseline discovery terminals and 100 point receipts for all 34 development cases.
 
 Wave 015 ran 24 independent source/protocol freezes with a 24-worker pool and
 single-threaded numerical libraries. All 24 completed successfully in 51.985 s.
-These are preparation jobs, not 24 finished scientific comparisons. The next
+Wave 016 then completed sixteen more independent freezes in 10.021 s. These
+are preparation jobs, not forty finished scientific comparisons. The next
 large optimizer batch remains dependent on the qualified runtime facade.
+Wave 017 admitted twelve previously unattempted coverage-discovery slices in
+a 24-worker pool; their individual scientific completion/checkpoint states
+must be checked after the batch ends.
 
 Wave 013 completed the remaining 001 C-high unit and sealed 005. Their post-seal
 evaluations in wave 014 now provide six before-arm recording evaluations across
