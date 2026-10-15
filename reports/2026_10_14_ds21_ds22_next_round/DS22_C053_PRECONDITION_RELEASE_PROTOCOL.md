@@ -1,0 +1,9 @@
+# C053 matched same-domain free release
+
+The exact1 m circular-arc probe decreases the accepted fixed profile's objective with unchanged visibility and consistent arc derivatives. This admits two prespecified free-geography controls from that identical accepted complete profile, within its original25 km disk. No expanded domain, reference-derived start, or new statistical parameter is introduced.
+
+One arm uses the original solver chart. The other prepends unchanged1 km geographic coordinate scales to the prior frozen51-coordinate diagonal scaling. It does not re-estimate or tune the Hessian. Both preserve exact native objective/priors/evidence, SLSQP ftol1e-11, all physical/nuisance bounds, and original-scale KKT. The independent endpoint audit now checks the original free-position constraints. Fixed-profile acceptance is not automatically treated as free-position acceptance.
+
+Both arms have a shared60 seconds/600 iterations, with five seconds reserved for independent acceptance audits. Actual objective calls are counted separately. Each arm has three pre-fit oracle objectives: native source/affine reconstruction closure and an independent replay of the original full incumbent in its own original domain. The original accepted full incumbent remains eligible for the final training-objective selector. Only accepted new free endpoints can join it.
+
+There are two optimizer invocations, at most two single-thread workers,180 seconds internal and195/200 seconds external bounds per unit. Source/tests freeze before genuine preparation. Both outcomes seal before any configured-reference comparison. Failures remain preserved; no further optimizer cycle is included in this protocol. The1 m arc decreases J only0.000697 while10 m increases it0.243850; admission is not a claim of monotonic geographic benefit or localization accuracy.
