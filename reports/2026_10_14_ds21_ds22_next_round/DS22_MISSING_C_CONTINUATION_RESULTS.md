@@ -2,6 +2,8 @@
 
 Four matched continuations recover strictly converged CH1–8 estimates for DS22-047 and DS22-059. This is availability progress, not attainment of the localization target. DS22 distances use the configured, unconfirmed reference. All fits use fitted c.
 
+![Two-case pilot cumulative curves and paired distances](missing-c-pilot/missing_c_pilot.png)
+
 | Case | Historical CH1–8 | Historical CH1–4 km | Historical CH5–8 km | Original-chart continuation km | Diagonal-chart continuation km |
 |---|---|---:|---:|---:|---:|
 | DS22-047 | unavailable | 3.216082 | 4.600712 | 2.634421 | 2.976395 |
@@ -31,3 +33,5 @@ Authoritative bulk receipts:
 - `/srv/bulk/leo-research-ds21-ds22/2026_10_14/ds22-missing-c-control-evaluation-v1/report.json`
 
 These results distinguish numerical availability from geographic validity. Next modeling work should preserve the original chart as an eligible competitor and investigate the shared distant association basin in 059; merely making the existing objective converge cannot resolve that failure. A full-cohort improvement still requires the same frozen candidate policy across all eligible recordings, with missing estimates retained in the denominator.
+
+The existing [059 domain audit](DS22_059_DISCOVERY_DOMAIN_RESULTS.md) establishes an important limit: all six original 25 km final-search disks exclude the configured station. These continuations preserve one of those disks. Consequently, 059's converged distant endpoint does **not** establish a global likelihood preference against a near-station solution. Native-C coverage of the complete original prior, using reference-independent seeds and qualified physical initialization, is the next discriminating intervention. The earlier [nine-disk B expansion](DS22_059_QUADRANT_DOMAIN_RESULTS.md) also excluded the configured station; it is not a completed native-C coverage control.
