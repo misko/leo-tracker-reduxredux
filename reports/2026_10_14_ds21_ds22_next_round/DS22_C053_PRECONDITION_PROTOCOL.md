@@ -1,0 +1,9 @@
+# C053 matched exact-model diagonal coordinate preconditioning
+
+Two fixed-geography solves begin at the identical training-selected best feasible state from the sealed restart control. One uses the original solver chart; the other uses `z = z_start + S*y`, where `S_i = 1/sqrt(max(1,abs(H_ii)))` from the smaller-step frozen Hessian. The diagonal floor is inactive in the actual case. Both arms retain the same exact native objective, priors, physical/nuisance domain, original25 km disk, and fixed geography. The six negative Hessian eigenvalues are not removed; this is not a positive-definite Hessian approximation or statistical regularization.
+
+Gradients and constraint Jacobians are multiplied by S, and box bounds are transformed by the inverse affine map. The baseline uses its original uncentered chart. Both arms retain objective units and SLSQP ftol1e-11. Strict KKT and independent endpoint acceptance use original physical/scaled coordinates, never the smaller transformed gradient. Exact source-state/model and transformation tests include analytic objective gradients, constraint Jacobians, bound equivalence, native priors/posteriors and a real SLSQP invocation.
+
+Each arm receives a shared60 seconds/600 iterations, including five seconds reserved for strict candidate selection and independent audit. There is one optimizer invocation per arm, with actual objective counts recorded separately from iterations. The best feasible trajectory remains distinct from the strict selected endpoint. Neither a nonstationary point nor a fit that cannot finish its independent audit is accepted.
+
+Two actual native oracle objective calls precede each arm. At most two single-thread workers run, with180 second internal and195/200 second external TERM/KILL bounds per unit. Both outcomes seal. No free-position release, reference or held evaluation is included; further action requires separate review. Original controls, sources and failures remain unchanged.
