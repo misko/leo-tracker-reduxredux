@@ -1,0 +1,276 @@
+{
+  "schema": "a035-current-band-profile-result-v1",
+  "date_utc": "2026-10-15",
+  "source_manifest": [
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-continuation-v1/protocol.json",
+      "sha256": "sha256:117480127b3e54a850beb02128fb92a8466199e56c257e91af44e221c7b1df2e"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-continuation-v1/terminal.json",
+      "sha256": "sha256:0b8e31149ecb0eb36983c94f936db0b7ba970ae6d7eaa398c14c60d7965b98f7"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-continuation-v1/seal.json",
+      "sha256": "sha256:72ccfa7858610f6ab4eeaffb6dfb48c9a2c3c93bd31b26af2f025f9b554d2511"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-continuation-v1/development-errors.json",
+      "sha256": "sha256:da43dffa01579fd36f31729462557b459efb08274f0f9d32f4b8a869f0c67708"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-control-v1/protocol.json",
+      "sha256": "sha256:c0b3f8039c12d973769165b23c2016967104c1f5f2327a6329f6033192f5fc03"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-control-v1/qualification.json",
+      "sha256": "sha256:73a3c82cc9b36859749805e6d6fe6af8b41ca94b5391f40a65b7f8a8f16970ec"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-profile-control-v1/qualification-termination.json",
+      "sha256": "sha256:57e79303611fe565e1965b51b996706e655bb4b9144a306ace4a5a852ddc9ce2"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/model_a035_band_profile_control.py",
+      "sha256": "sha256:94cb9fda439bc74581adf9aa391255ea99a265ec14b92528e0e1bf41185d675b"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/model_a035_band_profile_receipt_continuation.py",
+      "sha256": "sha256:33e850d9ed3a4be826036b171b6003e19bd786bc3631074600f3e706bfbef1a8"
+    }
+  ],
+  "results": {
+    "shared": {
+      "origin": "incumbent",
+      "objective": 28882.674102034314,
+      "likelihood_nll": 28571.60538342629,
+      "stationarity": 9.970483005883324e-08,
+      "error_km": 7.223108747982943
+    },
+    "contrast": {
+      "origin": "contrast-low-half",
+      "objective": 28554.575754342648,
+      "likelihood_nll": 28276.70031589881,
+      "stationarity": 0.00046571716620746884,
+      "error_km": 7.296744701434872
+    }
+  },
+  "source_incumbents": {
+    "shared": {
+      "objective": 28882.674102034314,
+      "nll": 28571.60538342629,
+      "stationarity": 9.970483005883324e-08
+    },
+    "contrast": {
+      "objective": 28647.017115854534,
+      "nll": 28323.94381012769,
+      "stationarity": 0.0007159556864166916
+    }
+  },
+  "units": [
+    {
+      "phase": "fixed",
+      "unit": "shared-low-full",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 479,
+      "elapsed_s": 20.026346063241363,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "fixed",
+      "unit": "shared-low-half",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 526,
+      "elapsed_s": 20.065491280984133,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "fixed",
+      "unit": "shared-high-full",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 589,
+      "elapsed_s": 20.03216193476692,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "fixed",
+      "unit": "shared-high-half",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 579,
+      "elapsed_s": 20.05211164522916,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "fixed",
+      "unit": "contrast-low-full",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": 28642.4142674204,
+      "nll": 28321.897776830097,
+      "stationarity": 0.005051744800084634,
+      "actual_objectives": 381,
+      "elapsed_s": 11.153524349909276,
+      "reason": "complete"
+    },
+    {
+      "phase": "fixed",
+      "unit": "contrast-low-half",
+      "optimizer_calls": 1,
+      "accepted": true,
+      "objective": 28555.40056149209,
+      "nll": 28278.031605792796,
+      "stationarity": 0.0003876860567828544,
+      "actual_objectives": 600,
+      "elapsed_s": 17.17432001279667,
+      "reason": "complete"
+    },
+    {
+      "phase": "fixed",
+      "unit": "contrast-high-full",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 599,
+      "elapsed_s": 17.30569598497823,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "fixed",
+      "unit": "contrast-high-half",
+      "optimizer_calls": 1,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 599,
+      "elapsed_s": 17.125708783976734,
+      "reason": "Numerical control objective/time budget exhausted"
+    },
+    {
+      "phase": "free",
+      "unit": "shared-low-full",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "shared-low-half",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "shared-high-full",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "shared-high-half",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "contrast-low-full",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "contrast-low-half",
+      "optimizer_calls": 1,
+      "accepted": true,
+      "objective": 28554.575754342648,
+      "nll": 28276.70031589881,
+      "stationarity": 0.00046571716620746884,
+      "actual_objectives": 320,
+      "elapsed_s": 8.749691328965127,
+      "reason": "complete"
+    },
+    {
+      "phase": "free",
+      "unit": "contrast-high-full",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    },
+    {
+      "phase": "free",
+      "unit": "contrast-high-half",
+      "optimizer_calls": 0,
+      "accepted": false,
+      "objective": null,
+      "nll": null,
+      "stationarity": null,
+      "actual_objectives": 0,
+      "elapsed_s": null,
+      "reason": "fixed-rejected-skip"
+    }
+  ],
+  "counts": {
+    "qualification_objectives": 10,
+    "fixed_calls": 8,
+    "fixed_accepted": 1,
+    "free_calls": 1,
+    "free_accepted": 1,
+    "skipped": 7,
+    "actual_fit_objectives": 4672
+  },
+  "reference_status": "Existing configured reference; physical continuity unconfirmed; consumed development only",
+  "held_usage": "none",
+  "model_comparison": "Own-model training selection only; no cross-model objective rank"
+}
