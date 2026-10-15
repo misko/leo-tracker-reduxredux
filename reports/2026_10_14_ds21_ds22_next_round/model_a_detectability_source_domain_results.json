@@ -1,0 +1,304 @@
+{
+  "schema": "A-detectability-source-domain-results-v1",
+  "date_utc": "2026-10-15",
+  "source_commit": "9262e9c09",
+  "tests": "19passed;Ruffpassed",
+  "optimizer_calls": 6,
+  "strict_accepted": 5,
+  "actual_objective_calls": 1448,
+  "selectors": {
+    "029-old-path": {
+      "origin": "029-old",
+      "objective": 29219.967781274394,
+      "likelihood_nll": 28916.26068503206,
+      "stationarity": 0.000205467989275121,
+      "error_km": 39.98714449149604
+    },
+    "029-full-prior-path": null,
+    "029-retained-case": {
+      "origin": "029-old",
+      "objective": 29219.967781274394,
+      "likelihood_nll": 28916.26068503206,
+      "stationarity": 0.000205467989275121,
+      "error_km": 39.98714449149604
+    },
+    "071-shared": {
+      "origin": "071-shared-donor",
+      "objective": 30378.08717664449,
+      "likelihood_nll": 29856.197544279865,
+      "stationarity": 0.0004944406064362432,
+      "error_km": 0.5465262071833233
+    },
+    "071-contrast": {
+      "origin": "071-contrast-donor",
+      "objective": 30310.704766713872,
+      "likelihood_nll": 29750.910266614606,
+      "stationarity": 0.0008290164680602174,
+      "error_km": 0.1953066838189543
+    }
+  },
+  "prior_q_selectors": [
+    {
+      "label": "DS21-029",
+      "seal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-path-detectability-control-029-v1/seal.json",
+        "sha256": "sha256:5d57c848ed09390d447dec4989bab0f660d9eac20b9ccc824a816daf11bcf955"
+      },
+      "selections": {
+        "shared": {
+          "origin": "shared-0",
+          "objective": 30740.225006750476,
+          "likelihood_nll": 30274.12538107198,
+          "stationarity": 0.00015585218250455113,
+          "error_km": 76.46868723716632
+        },
+        "contrast": {
+          "origin": "contrast-5",
+          "objective": 29219.967781274492,
+          "likelihood_nll": 28916.260684950437,
+          "stationarity": 0.00012639913691714355,
+          "error_km": 39.9871444921353
+        }
+      }
+    },
+    {
+      "label": "DS21-071",
+      "seal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-path-detectability-control-071-v1/seal.json",
+        "sha256": "sha256:aa887fd812cd0f7de71386bfe7b371faa75291914fdfc493af13f796f269d0b8"
+      },
+      "selections": {
+        "shared": {
+          "origin": "shared-2",
+          "objective": 32339.53768202071,
+          "likelihood_nll": 31979.476566680885,
+          "stationarity": 0.0008988305303470195,
+          "error_km": 56.17910322707934
+        },
+        "contrast": {
+          "origin": "contrast-2",
+          "objective": 32138.752903244327,
+          "likelihood_nll": 31764.693840149714,
+          "stationarity": 0.0007900915262553099,
+          "error_km": 57.799903510475886
+        }
+      }
+    }
+  ],
+  "rows": [
+    {
+      "unit": "029-old",
+      "accepted": true,
+      "objective": 29219.967781274394,
+      "likelihood_nll": 28916.26068503206,
+      "prior_penalty": 303.70709624233496,
+      "stationarity": 0.000205467989275121,
+      "q_prior": 17.523381810504834,
+      "fixed_contrast_prior": 0.3983363959772402,
+      "actual_objective_calls": 430,
+      "numerical_seconds": 5.105453462805599,
+      "maximum_seconds": 60,
+      "maximum_actual": 6000,
+      "radius_allowed_km": 25,
+      "radius_used_km": 25.00000000008589,
+      "movement_km": 1.5065841178366031e-09,
+      "fitted_c": -486.61848453965615,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/029-old/terminal.json",
+        "sha256": "sha256:fa98560b5e7e403a784fad1130b1200f6548fe01d05c628da1bc076f1ba9555e"
+      }
+    },
+    {
+      "unit": "029-prior",
+      "accepted": false,
+      "objective": 28421.14695810796,
+      "likelihood_nll": 28191.784387060354,
+      "prior_penalty": 229.36257104760443,
+      "stationarity": 0.0020763820755291817,
+      "q_prior": 20.093105066498858,
+      "fixed_contrast_prior": 0.3983363959772402,
+      "actual_objective_calls": 297,
+      "numerical_seconds": 3.614253300242126,
+      "maximum_seconds": 60,
+      "maximum_actual": 6000,
+      "radius_allowed_km": 305.58529337407504,
+      "radius_used_km": 60.25660273370426,
+      "movement_km": 36.524500417070996,
+      "fitted_c": -495.72617350796895,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/029-prior/terminal.json",
+        "sha256": "sha256:8acb548de5a30c4d69db7200a3e7175724e6ec0a07bc9cbf9ac6d6a96d4e8f72"
+      }
+    },
+    {
+      "unit": "071-shared-current",
+      "accepted": true,
+      "objective": 32339.53768202071,
+      "likelihood_nll": 31979.476566700418,
+      "prior_penalty": 360.0611153202917,
+      "stationarity": 0.0007766924192609713,
+      "q_prior": 14.104492584401305,
+      "fixed_contrast_prior": 0.37944061652210054,
+      "actual_objective_calls": 11,
+      "numerical_seconds": 0.19846939202398062,
+      "maximum_seconds": 20,
+      "maximum_actual": 2000,
+      "radius_allowed_km": 25,
+      "radius_used_km": 18.698935705282747,
+      "movement_km": 5.667295599260735e-10,
+      "fitted_c": -178.06987601969539,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-shared-current/terminal.json",
+        "sha256": "sha256:04b90edb70fc196996fda4d133bb9251c726a3541d9e09cf342c51e6d149cc2b"
+      }
+    },
+    {
+      "unit": "071-shared-donor",
+      "accepted": true,
+      "objective": 30378.08717664449,
+      "likelihood_nll": 29856.197544279865,
+      "prior_penalty": 521.8896323646259,
+      "stationarity": 0.0004944406064362432,
+      "q_prior": 20.420569582107134,
+      "fixed_contrast_prior": 0.3976876906370194,
+      "actual_objective_calls": 379,
+      "numerical_seconds": 6.694264533929527,
+      "maximum_seconds": 20,
+      "maximum_actual": 2000,
+      "radius_allowed_km": 25,
+      "radius_used_km": 6.1436764413355345,
+      "movement_km": 2.2536766611310997,
+      "fitted_c": -6.089201897957138,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-shared-donor/terminal.json",
+        "sha256": "sha256:746c88b8a52f0c3d4ef25fe7f53d6f70046dd232929f3fc68f46b2623ca6de98"
+      }
+    },
+    {
+      "unit": "071-contrast-current",
+      "accepted": true,
+      "objective": 32138.75290324433,
+      "likelihood_nll": 31764.693840149717,
+      "prior_penalty": 374.0590630946135,
+      "stationarity": 0.0007900901110815539,
+      "q_prior": 29.663116346400482,
+      "fixed_contrast_prior": 0.37944061652210054,
+      "actual_objective_calls": 14,
+      "numerical_seconds": 0.2516506491228938,
+      "maximum_seconds": 20,
+      "maximum_actual": 2000,
+      "radius_allowed_km": 25,
+      "radius_used_km": 21.13264498854481,
+      "movement_km": 0.0,
+      "fitted_c": -202.78002425354663,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-contrast-current/terminal.json",
+        "sha256": "sha256:bff55a8378cc5601067fdf93e7f796b3c72fcd9e44b2fd357c0cc16f5897eb6f"
+      }
+    },
+    {
+      "unit": "071-contrast-donor",
+      "accepted": true,
+      "objective": 30310.704766713872,
+      "likelihood_nll": 29750.910266614606,
+      "prior_penalty": 559.7945000992659,
+      "stationarity": 0.0008290164680602174,
+      "q_prior": 28.017258941111386,
+      "fixed_contrast_prior": 0.3976876906370194,
+      "actual_objective_calls": 317,
+      "numerical_seconds": 5.640208431053907,
+      "maximum_seconds": 20,
+      "maximum_actual": 2000,
+      "radius_allowed_km": 25,
+      "radius_used_km": 6.616684869863363,
+      "movement_km": 2.0513680313456506,
+      "fitted_c": 1.5255266060963897,
+      "terminal": {
+        "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-contrast-donor/terminal.json",
+        "sha256": "sha256:c9fed978295c1ea361346ce01a071c57902e6314f4db320ca402c1ea33fe1543"
+      }
+    }
+  ],
+  "held_usage": "none",
+  "fitted_c_only": true,
+  "source_bindings": [
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/protocol.json",
+      "sha256": "sha256:261a63bba8e8da094b14111102f45a596e71264d4da83c9eede08c3fc4870789"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/terminal.json",
+      "sha256": "sha256:ed01b2b907f708f00c6a4a6ad5e5d058ef82174fd984174501c78696c4400af4"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/seal.json",
+      "sha256": "sha256:1057195d7c8a47044ef144caab602bf10a2e732084d2d04b1c50cf930d8de976"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-evaluation-v1/development-errors.json",
+      "sha256": "sha256:bb50f4eabb361fab2019d4b0bb12d3c785a8520631a46303ac1f9ea7ec51d3a8"
+    },
+    {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-path-detectability-control-pair-evaluation-v1/development-errors.json",
+      "sha256": "sha256:b06ed38f0c72bd9aaabcd0058661aa37c9f0a5e95b5f8b7c0b0d3dab44bc8d89"
+    }
+  ],
+  "qualification_report": {
+    "path": "/home/mouse9911/gits/leo-ds21-three-models/reports/2026_10_14_ds21_ds22_next_round/model_a_detectability_followup_results.json",
+    "sha256": "sha256:5d94e4eb30786cbf86ec48efac73dc4c92de3b31bb280e14cf0a21c6ca98f06c"
+  },
+  "wave": {
+    "elapsed_seconds": 28.02222207421437,
+    "jobs": [
+      {
+        "elapsed_seconds": 14.422603894025087,
+        "id": "029-old",
+        "pid": 384236,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/029-old",
+        "returncode": 0,
+        "status": "complete"
+      },
+      {
+        "elapsed_seconds": 12.920516246929765,
+        "id": "029-prior",
+        "pid": 384237,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/029-prior",
+        "returncode": 0,
+        "status": "complete"
+      },
+      {
+        "elapsed_seconds": 9.616458146832883,
+        "id": "071-shared-current",
+        "pid": 384238,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-shared-current",
+        "returncode": 0,
+        "status": "complete"
+      },
+      {
+        "elapsed_seconds": 15.822605757042766,
+        "id": "071-shared-donor",
+        "pid": 384239,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-shared-donor",
+        "returncode": 0,
+        "status": "complete"
+      },
+      {
+        "elapsed_seconds": 9.60729391220957,
+        "id": "071-contrast-current",
+        "pid": 384364,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-contrast-current",
+        "returncode": 0,
+        "status": "complete"
+      },
+      {
+        "elapsed_seconds": 15.030902493279427,
+        "id": "071-contrast-donor",
+        "pid": 384385,
+        "resource_key": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-detectability-source-domain-control-v1/units/071-contrast-donor",
+        "returncode": 0,
+        "status": "complete"
+      }
+    ],
+    "status": "complete"
+  }
+}
