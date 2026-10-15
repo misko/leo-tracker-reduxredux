@@ -1,5 +1,7 @@
 # A conditional half incumbent replay
 
+Version note: this table records the eligible pool at the zero-fit replay. Later [event-aware low controls](MODEL_A053_EVENT_START_RESULTS.md) and [full profile/release controls](MODEL_A053_FULL_CROSSED_PROFILES_RESULTS.md) supersede A053's selected outcomes: full/low/high become **1.148233/1.659857/1.444907 km**. The old 0.190263 km low endpoint remains eligible but loses training selection once the visibility trap is escaped. Its retention here is an eligibility correction, not the latest optimized-half estimate.
+
 All earlier accepted half endpoints remain eligible. The old and fresh half objectives and domains are identical; changing the full-state initializer does not invalidate an accepted half fit. This corrects the earlier implication that only fresh half calls should be used with the repaired full selector.
 
 The current PD full selector and the training-selected pool of **all old and fresh** conditional half endpoints give:
