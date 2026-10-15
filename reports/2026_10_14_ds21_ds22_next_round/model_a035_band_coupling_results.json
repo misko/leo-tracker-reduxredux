@@ -1,0 +1,264 @@
+{
+  "source": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-coupling-audit-v1",
+  "bindings": {
+    "protocol.json": {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-coupling-audit-v1/protocol.json",
+      "sha256": "sha256:09d22f308e715b777475d4f74cf09dc5beb5c285acae18b5bfb9da214bde5679"
+    },
+    "result.json": {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-coupling-audit-v1/result.json",
+      "sha256": "sha256:c9d6b762fac07784abcbeb4c241afb392f08faad02c3529fbf78b7f388f83af1"
+    },
+    "seal.json": {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-coupling-audit-v1/seal.json",
+      "sha256": "sha256:307acdcbcd7ef6ad280f5e49888a08686105259c19ae7c2a660d32f2b3f3c662"
+    },
+    "termination.json": {
+      "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a035-band-coupling-audit-v1/termination.json",
+      "sha256": "sha256:0914307ba63cbd264fb1a49222d1ef0755ae756366d44d0e0b868d79cec19d08"
+    }
+  },
+  "objective_calls": 34,
+  "optimizer_calls": 0,
+  "elapsed_s": 13.103647574782372,
+  "models": {
+    "shared": {
+      "full": {
+        "objective": 28882.674102034314,
+        "nll": 28571.60538342629,
+        "priors": {
+          "common_timing": 0.10556026086359072,
+          "relative_timing": 191.4903136123361,
+          "calibration_clock": 75.66854749323332,
+          "shared_q": 43.804297241593176,
+          "contrast_q": 0.0
+        },
+        "geography_km": [
+          -87.25811219262404,
+          -73.77093606629613
+        ],
+        "projected_kkt": 9.970483005883324e-08
+      },
+      "full_band_geography_gradients": {
+        "all": [
+          3.6766051592085347e-09,
+          -1.8819167633965517e-08
+        ],
+        "low": [
+          -8.391208054787088,
+          300.7621005744757
+        ],
+        "high": [
+          8.391208058463556,
+          -300.76210059329446
+        ]
+      },
+      "complete_half_states": {
+        "low": {
+          "full_objective": 29160.58307294132,
+          "delta_full_objective": 277.90897090700673,
+          "timing_rms_s": 0.9550133249671677,
+          "clock_coefficients_rms_hz": 60.360722652116884,
+          "c_delta_hz_per_ghz": -22.157609350056077,
+          "posterior_candidate_mass_total_variation": 0.024385427629802336
+        },
+        "high": {
+          "full_objective": 30352.095241884555,
+          "delta_full_objective": 1469.4211398502412,
+          "timing_rms_s": 3.419381297771536,
+          "clock_coefficients_rms_hz": 245.3646398183121,
+          "c_delta_hz_per_ghz": -11.584102942392406,
+          "posterior_candidate_mass_total_variation": 0.04882981184930769
+        }
+      },
+      "swaps": {
+        "low-halfXY": {
+          "objective": 29081.374038634374,
+          "nll": 28770.30532002635,
+          "delta_objective": 198.69993660006003,
+          "projected_kkt": 19775.489429082823
+        },
+        "low-halfNongeo": {
+          "objective": 29280.355648094515,
+          "nll": 29012.587746653033,
+          "delta_objective": 397.6815460602011,
+          "projected_kkt": 15783.950293510714
+        },
+        "high-halfXY": {
+          "objective": 39424.11462747241,
+          "nll": 39113.045908864384,
+          "delta_objective": 10541.440525438094,
+          "projected_kkt": 951.0644388420907
+        },
+        "high-halfNongeo": {
+          "objective": 39350.59126671601,
+          "nll": 39215.84995715912,
+          "delta_objective": 10467.917164681694,
+          "projected_kkt": 2615.870011637588
+        }
+      }
+    },
+    "contrast": {
+      "full": {
+        "objective": 28647.017115854534,
+        "nll": 28323.94381012769,
+        "priors": {
+          "common_timing": 0.10516367732160428,
+          "relative_timing": 189.56544761060954,
+          "calibration_clock": 75.3955516163792,
+          "shared_q": 38.077383809393396,
+          "contrast_q": 19.9297590131401
+        },
+        "geography_km": [
+          -87.26649606798136,
+          -73.72989159628122
+        ],
+        "projected_kkt": 0.0007159556864166916
+      },
+      "full_band_geography_gradients": {
+        "all": [
+          -0.00014323329803112017,
+          -0.00014594650656363228
+        ],
+        "low": [
+          -15.2455033687721,
+          294.07353130731985
+        ],
+        "high": [
+          15.245360135474069,
+          -294.0736772538264
+        ]
+      },
+      "complete_half_states": {
+        "low": {
+          "full_objective": 29254.234793067986,
+          "delta_full_objective": 607.2176772134517,
+          "timing_rms_s": 1.1184681436371324,
+          "clock_coefficients_rms_hz": 49.499949291200046,
+          "c_delta_hz_per_ghz": -16.700718335632814,
+          "posterior_candidate_mass_total_variation": 0.021554856871769598
+        },
+        "high": {
+          "full_objective": 30606.33704685112,
+          "delta_full_objective": 1959.3199309965858,
+          "timing_rms_s": 3.034791375826288,
+          "clock_coefficients_rms_hz": 238.96598676109377,
+          "c_delta_hz_per_ghz": -17.667121612326696,
+          "posterior_candidate_mass_total_variation": 0.030330470752806198
+        }
+      },
+      "swaps": {
+        "low-halfXY": {
+          "objective": 29012.897988342775,
+          "nll": 28689.82468261593,
+          "delta_objective": 365.88087248824013,
+          "projected_kkt": 6803.217609570375
+        },
+        "low-halfNongeo": {
+          "objective": 29500.872685131388,
+          "nll": 29251.86774491435,
+          "delta_objective": 853.8555692768532,
+          "projected_kkt": 5329.63888379539
+        },
+        "high-halfXY": {
+          "objective": 39364.287606803904,
+          "nll": 39041.21430107706,
+          "delta_objective": 10717.27049094937,
+          "projected_kkt": 1763.7881463344004
+        },
+        "high-halfNongeo": {
+          "objective": 39017.84007653821,
+          "nll": 38865.6867517231,
+          "delta_objective": 10370.822960683676,
+          "projected_kkt": 1957.23636287771
+        }
+      }
+    }
+  },
+  "historical": {
+    "low": [
+      {
+        "origin": "legacy-previous",
+        "audit": {
+          "accepted": true,
+          "stationarity": 0.0007911093477974843,
+          "objective": 18092.55079718868,
+          "likelihood_nll": 17853.1723569877,
+          "prior_penalty": 239.37844020098055,
+          "fixed_position": false,
+          "local_center": [
+            -94.46478719111668,
+            -73.73983589954543
+          ],
+          "local_radius_km": 25,
+          "physical_constraint_minimum": 4.0858973591651715,
+          "objective_calls": 0
+        },
+        "hard_to_smooth_objective_delta": 0.0,
+        "hard_to_smooth_gradient_delta": 2.842170943040401e-14
+      },
+      {
+        "origin": "legacy-fresh",
+        "audit": {
+          "accepted": false,
+          "stationarity": 0.0019073664706375226,
+          "objective": 16943.750783599313,
+          "likelihood_nll": 16675.368714616838,
+          "prior_penalty": 268.3820689824752,
+          "fixed_position": false,
+          "local_center": [
+            -94.46478719111668,
+            -73.73983589954543
+          ],
+          "local_radius_km": 25,
+          "physical_constraint_minimum": 5.879978125101033,
+          "objective_calls": 0
+        },
+        "hard_to_smooth_objective_delta": -1.5041950973682106e-07,
+        "hard_to_smooth_gradient_delta": 0.0016356067309866162
+      }
+    ],
+    "high": [
+      {
+        "origin": "legacy-previous",
+        "audit": {
+          "accepted": false,
+          "stationarity": 0.004184126126471954,
+          "objective": 11540.750804149893,
+          "likelihood_nll": 11415.915037443396,
+          "prior_penalty": 124.83576670649745,
+          "fixed_position": false,
+          "local_center": [
+            -94.46478719111668,
+            -73.73983589954543
+          ],
+          "local_radius_km": 25,
+          "physical_constraint_minimum": 8.772011575437421,
+          "objective_calls": 0
+        },
+        "hard_to_smooth_objective_delta": 0.0,
+        "hard_to_smooth_gradient_delta": 1.0502709812953981e-13
+      },
+      {
+        "origin": "legacy-fresh",
+        "audit": {
+          "accepted": true,
+          "stationarity": 0.0009075225847337866,
+          "objective": 11722.661998368612,
+          "likelihood_nll": 11538.395687941364,
+          "prior_penalty": 184.26631042724875,
+          "fixed_position": false,
+          "local_center": [
+            -94.46478719111668,
+            -73.73983589954543
+          ],
+          "local_radius_km": 25,
+          "physical_constraint_minimum": 5.670326240425005,
+          "objective_calls": 0
+        },
+        "hard_to_smooth_objective_delta": 0.0,
+        "hard_to_smooth_gradient_delta": 3.941291737419306e-14
+      }
+    ]
+  }
+}

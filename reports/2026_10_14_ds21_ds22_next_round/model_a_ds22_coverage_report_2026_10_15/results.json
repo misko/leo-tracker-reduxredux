@@ -1,0 +1,120 @@
+{
+  "cases": {
+    "DS22-059": {
+      "selections": {
+        "high-timing/original-six": {
+          "unit": "original-4",
+          "objective": 50060.44536437188,
+          "likelihood_nll": 49463.44181819533,
+          "prior_penalty": 597.003546176551,
+          "stationarity": 0.00011028028203013962,
+          "configured_reference_distance_km": 217.5423231107347
+        },
+        "high-timing/covered-twenty-two": {
+          "unit": "coarse-10",
+          "objective": 47979.43672280804,
+          "likelihood_nll": 47680.178485342796,
+          "prior_penalty": 299.2582374652411,
+          "stationarity": 0.00024417553731440056,
+          "configured_reference_distance_km": 192.31670295411908
+        },
+        "low-timing/original-six": {
+          "unit": "original-0",
+          "objective": 47988.25671101618,
+          "likelihood_nll": 47443.04174130224,
+          "prior_penalty": 545.2149697139466,
+          "stationarity": 7.673209466249153e-05,
+          "configured_reference_distance_km": 307.428230368873
+        },
+        "low-timing/covered-twenty-two": {
+          "unit": "coarse-06",
+          "objective": 47614.68171556386,
+          "likelihood_nll": 47070.55577400445,
+          "prior_penalty": 544.1259415594031,
+          "stationarity": 4.0197721047879886e-05,
+          "configured_reference_distance_km": 139.68707783615685
+        }
+      },
+      "optimizer_calls": 75,
+      "objective_calls": 38044,
+      "bindings": [
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-059/protocol.json",
+          "sha256": "sha256:ff7c1e34816eefb4872a9b2a0e8ccf10f67f28c8a4c5b2564faa7510338c70dc"
+        },
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-059/terminal.json",
+          "sha256": "sha256:6a8c12ba46477ae0ade2f4ea5749680e9ddbb92b5a05695ed6b89f4b982f6bb7"
+        },
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-059/scientific-seal.json",
+          "sha256": "sha256:2db4e6f2f4b2cb24bae2e9d6e66f88005a4c74c3cf85e7b4dd7815920c18dd6c"
+        }
+      ]
+    },
+    "DS22-105": {
+      "selections": {
+        "high-timing/original-six": null,
+        "high-timing/covered-twenty-two": {
+          "unit": "coarse-13",
+          "objective": 42551.831026276486,
+          "likelihood_nll": 42198.05247676284,
+          "prior_penalty": 353.7785495136486,
+          "stationarity": 7.845225491068773e-05,
+          "configured_reference_distance_km": 237.998632457076
+        },
+        "low-timing/original-six": null,
+        "low-timing/covered-twenty-two": {
+          "unit": "coarse-13",
+          "objective": 41928.45182828895,
+          "likelihood_nll": 41549.530068731474,
+          "prior_penalty": 378.9217595574737,
+          "stationarity": 5.452983261203855e-05,
+          "configured_reference_distance_km": 237.39453855687591
+        }
+      },
+      "optimizer_calls": 48,
+      "objective_calls": 26911,
+      "bindings": [
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-105/protocol.json",
+          "sha256": "sha256:cb374552c110dfb8964dfb0d3116371fa8e900869c6a38afbe310ae8f8d69726"
+        },
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-105/terminal.json",
+          "sha256": "sha256:790c13910ff60ad863df08b41e9684fcd89ca6589f95706c819a57419702d68d"
+        },
+        {
+          "path": "/srv/bulk/leo-research-ds21-ds22/2026_10_14/model-a-ds22-coverage-handoff-v1/DS22-105/scientific-seal.json",
+          "sha256": "sha256:e9003d79ac7ea126e4ef9bf574a06923e87779a89b9b9d652226cd9dbf309424"
+        }
+      ]
+    }
+  },
+  "reference": {
+    "source": {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/src/leo/cli/regional_position.py",
+      "sha256": "sha256:6de071077d8c2fe11a991b665c50edaf728ef9ffd320dca36cfedc44ee874bf9"
+    },
+    "coordinates_deg": [
+      37.84903264307456,
+      -122.4856541910174
+    ],
+    "status": "configured-unconfirmed"
+  },
+  "reference_status": "configured-unconfirmed",
+  "target_accuracy_claim_permitted": false,
+  "optimizer_calls": 0,
+  "objective_calls": 0,
+  "limitation": "Development cases; original-six and covered-twenty-two have unequal search budgets/domains. Methods compared separately; no reference selector.",
+  "sources": [
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/model_a_ds22_coverage_evaluate.py",
+      "sha256": "sha256:85968bc1a08bacd3c5d5406429f98ba839ca289c213f0f67ef4b3f9d254e050d"
+    },
+    {
+      "path": "/home/mouse9911/gits/leo-ds21-three-models/tools/ds22_fitted_evaluate.py",
+      "sha256": "sha256:e0c4d8f72999703b9ecb6ed3a5c61bdf06a9142799c28d7648ad101cd21da7d8"
+    }
+  ]
+}
