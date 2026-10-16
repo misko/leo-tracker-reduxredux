@@ -38,7 +38,7 @@ def test_public_unseen_input_no_data_is_durable_unavailable_no_false_position(tm
     output = tmp_path / "attempt"
     result = cli.run(source, output, maximum_seconds=2)
     assert result["state"] == "unavailable" and result["position"] is None
-    assert result["selection"] is None and result["model_version"] == "shared-scan-q-v1"
+    assert result["selection"] is None and result["model_version"] == "shared-scan-q-v2"
     assert result["session_id"] == "arbitrary-unseen-fast-scan"
     assert result["input_sha256"] == cli.sha256_digest(source.read_bytes())
     assert json.loads((output / "terminal.json").read_text()) == result
@@ -110,6 +110,18 @@ def test_bounded_cli_rejects_invalid_envelope_before_writing(tmp_path):
         with pytest.raises(ValueError):
             cli.run(tmp_path / "missing", tmp_path / "out", maximum_seconds=bound)
     assert not (tmp_path / "out").exists()
+
+
+def test_v2_extends_only_final_q_allocation_and_preserves130s_reserve():
+    assert app.POLICY["model_version"] == "shared-scan-q-v2"
+    assert app.POLICY["solver_seconds"] == 15
+    assert app.POLICY["fit_seconds"] == 20
+    assert app.POLICY["actual_objectives_per_fit"] == 2000
+    assert app.POLICY["shared_solver_seconds"] == 60
+    assert app.POLICY["shared_fit_seconds"] == 65
+    assert app.POLICY["shared_actual_objectives_per_fit"] == 5000
+    assert app.POLICY["final_shared_reserve_seconds"] == 130
+    assert app.POLICY["source_generation_policy"] == "generic-cold24-shape3-fresh-six-ab-v1"
 
 
 @pytest.mark.parametrize("error", [KeyError("nuisance"), ValueError("no feasible endpoint")])

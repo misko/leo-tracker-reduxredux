@@ -203,7 +203,7 @@ class SmoothVisibilityModel(port.ObservationModel):
         ), details
 
 
-MODEL_VERSION = "shared-scan-q-v1"
+MODEL_VERSION = "shared-scan-q-v2"
 
 
 class SharedScanObjective(SmoothVisibilityModel):
@@ -308,10 +308,52 @@ def bounded_fit(
     model, vector, nuisance, *, local_center, local_radius_km=25.0, fixed_position=False
 ):
     """15s fitter + independent audit within20s/2000 actual; no invented endpoint."""
-    counted = CountedObjective(model)
+    return _bounded_fit(
+        model,
+        vector,
+        nuisance,
+        local_center=local_center,
+        local_radius_km=local_radius_km,
+        fixed_position=fixed_position,
+        solver_seconds=15.0,
+        total_seconds=20.0,
+        maximum=2000,
+    )
+
+
+def bounded_shared_fit(model, vector, nuisance, *, local_center, local_radius_km=25.0):
+    """Production v2 q-only60s solver/65s total/5000actual; original strict threshold."""
+    if not isinstance(model, SharedScanObjective):
+        raise ValueError("Longer production budget is only for the exact shared-q objective")
+    return _bounded_fit(
+        model,
+        vector,
+        nuisance,
+        local_center=local_center,
+        local_radius_km=local_radius_km,
+        fixed_position=False,
+        solver_seconds=60.0,
+        total_seconds=65.0,
+        maximum=5000,
+    )
+
+
+def _bounded_fit(
+    model,
+    vector,
+    nuisance,
+    *,
+    local_center,
+    local_radius_km,
+    fixed_position,
+    solver_seconds,
+    total_seconds,
+    maximum,
+):
+    counted = CountedObjective(model, seconds=total_seconds, maximum=maximum - 1)
     options = dict(
         arm="fitted-c",
-        seconds=15.0,
+        seconds=solver_seconds,
         iterations=600,
         local_center=local_center,
         local_radius_km=local_radius_km,
@@ -322,14 +364,14 @@ def bounded_fit(
         fitter = port.fit if isinstance(model, SmoothVisibilityModel) else fit_group_calibration
         fit = fitter(counted, vector, nuisance, **options)
         phase = "returned-unaudited"
-        counted.maximum = 2000
+        counted.maximum = maximum
         audit = audit_endpoint(counted, fit, options)
         phase = "audited"
     except (ValueError, TimeoutError) as error:
         audit = dict(accepted=False, reason=str(error), error_type=type(error).__name__)
     elapsed = time.monotonic() - counted.begun
-    if elapsed > 20:
-        audit.update(accepted=False, reason="Total20s allowance exhausted")
+    if elapsed > total_seconds:
+        audit.update(accepted=False, reason=f"Total{total_seconds:g}s allowance exhausted")
     return dict(
         fit=fit,
         audit=audit,
@@ -338,4 +380,10 @@ def bounded_fit(
         actual_objective_calls=counted.calls,
         actual_objective_calls_exact=True,
         elapsed_seconds=elapsed,
+        allocation=dict(
+            solver_seconds=solver_seconds,
+            total_seconds=total_seconds,
+            optimizer_objectives=maximum - 1,
+            total_objectives=maximum,
+        ),
     )

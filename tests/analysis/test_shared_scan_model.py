@@ -94,3 +94,46 @@ def test_counted_actual_cap_and_own_solver_deadline_allow_audit(monkeypatch):
 def test_probability_boundaries_are_valid():
     w, derivative = module.horizon_weight(np.linspace(-1e-5, 1e-5, 1_000_001))
     assert w.min() >= 0 and w.max() <= 1 and derivative.min() >= 0
+
+
+@pytest.mark.parametrize(
+    "shared,solver,total,maximum", [(False, 15, 20, 2000), (True, 60, 65, 5000)]
+)
+def test_q_only_long_budget_preserves_source_allocation_and_solver_audit_reserve(
+    family, monkeypatch, shared, solver, total, maximum
+):
+    raw, v, n, shift = family
+    model = module.SharedScanObjective(raw, shift)
+    n = np.r_[n, np.zeros(model.observation_parameter_count)]
+    clock = [0.0]
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+
+    def fit(counted, vector, nuisance, **options):
+        assert options["seconds"] == solver and options["iterations"] == 600
+        assert counted.seconds == total and counted.maximum == maximum - 1
+        counted.evaluate_joint(vector, nuisance)
+        clock[0] = solver + 0.1  # Own solver deadline can return before total wall deadline.
+        return dict(vector=vector, nuisance=nuisance)
+
+    def audit(counted, fitted, options):
+        assert counted.maximum == maximum
+        counted.evaluate_joint(fitted["vector"], fitted["nuisance"])
+        return dict(accepted=True)
+
+    monkeypatch.setattr(module.port, "fit", fit)
+    monkeypatch.setattr(module, "audit_endpoint", audit)
+    api = module.bounded_shared_fit if shared else module.bounded_fit
+    result = api(model, v, n, local_center=v[:2])
+    assert result["audit"]["accepted"] and result["phase"] == "audited"
+    assert result["actual_objective_calls"] == 2
+    assert result["allocation"] == dict(
+        solver_seconds=solver,
+        total_seconds=total,
+        optimizer_objectives=maximum - 1,
+        total_objectives=maximum,
+    )
+
+
+def test_long_budget_rejects_nonshared_model():
+    with pytest.raises(ValueError, match="only"):
+        module.bounded_shared_fit(None, None, None, local_center=[0, 0])

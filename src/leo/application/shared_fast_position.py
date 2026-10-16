@@ -24,6 +24,7 @@ from leo.analysis.shared_scan_model import (
     MODEL_VERSION,
     SharedScanObjective,
     bounded_fit,
+    bounded_shared_fit,
     donor_state,
 )
 from leo.application.channel_group_discovery import DiscoverySliceExpired, discover_channel_groups
@@ -46,13 +47,16 @@ POLICY = dict(
     source_starts=6,
     maximum_source_optimizer_calls=24,
     maximum_shared_optimizer_calls=2,
-    final_shared_reserve_seconds=40,
+    final_shared_reserve_seconds=130,
     local_radius_km=25.0,
     fitted_c=True,
     fit_seconds=20,
     solver_seconds=15,
     audit_reserve_seconds=5,
     actual_objectives_per_fit=2000,
+    shared_fit_seconds=65,
+    shared_solver_seconds=60,
+    shared_actual_objectives_per_fit=5000,
     iterations=600,
     visibility_width=1e-5,
     source_selector="full-zero-q A minimum J plus genuine joint B minimum J",
@@ -169,7 +173,7 @@ def run_shared_position(
     invocations = []
 
     def reserve(seconds, final=False):
-        if time.monotonic() - begun + seconds + (0 if final else 40) >= maximum_seconds:
+        if time.monotonic() - begun + seconds + (0 if final else 130) >= maximum_seconds:
             raise TimeoutError("Insufficient whole-scan stage reserve")
 
     def stage(name, seconds, operation):
@@ -306,11 +310,11 @@ def run_shared_position(
     )
     sources, b_fits = [], []
     for index, views in enumerate(hypotheses):
-        if time.monotonic() - begun + 120 >= maximum_seconds:
+        if time.monotonic() - begun + 210 >= maximum_seconds:
             receipts.put(
                 f"source-{index}",
                 dict(
-                    unavailable=True, reason="Preserved40s final reserve; source admission closed"
+                    unavailable=True, reason="Preserved130s final reserve; source admission closed"
                 ),
             )
             continue
@@ -431,8 +435,8 @@ def run_shared_position(
         call = "shared-all-" + row["name"]
         result = stage(
             call,
-            20,
-            lambda m=m, row=row: bounded_fit(
+            65,
+            lambda m=m, row=row: bounded_shared_fit(
                 m,
                 row["fit"]["vector"],
                 np.r_[row["fit"]["nuisance"], np.zeros(m.observation_parameter_count)],
