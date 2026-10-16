@@ -7,6 +7,7 @@ import os
 import time
 import uuid
 from contextlib import contextmanager
+from pathlib import Path
 
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.storage.fast_scan import FastScanStore, immutable_json, safe_id
@@ -21,6 +22,37 @@ class SharedFastScanStore:
         self.model_version = safe_id(model_version)
         self.namespace = f"fast-scan-shared-model-v1/{self.model_version}"
         self._input_hashes = {}
+
+    def orbit_store(self):
+        """Public PNG publisher isolated by shared-model version."""
+        path = self.root / self.namespace
+        if self.root.exists():
+            path = confined_path(self.root, path, must_exist=False)
+        return FastScanStore(path)
+
+    def orbit_manifest(self, run_id):
+        return self.orbit_store().orbit_manifest(run_id)
+
+    def orbit_artifact(self, run_id, name):
+        return self.orbit_store().orbit_artifact(run_id, name)
+
+    def plot_evidence(self, job_id):
+        job = self.status(job_id)
+        if job is None or job['state'] != 'complete':
+            raise ValueError('Completed shared inference required for plots')
+        terminal, receipt = self.terminal(job)
+        if receipt != job['terminal']:
+            raise ValueError('Published terminal changed')
+        stages = {}
+        for binding in terminal['stage_receipts']:
+            path = confined_path(self._path(job_id) / 'output' / 'stages',
+                                 Path(binding['path']), must_exist=True)
+            payload = path.read_bytes()
+            if sha256_digest(payload) != binding['sha256']:
+                raise ValueError('Shared stage evidence changed')
+            stages[path.stem] = json.loads(payload)
+        source = json.loads(self._local.tracking_input_path(job['run_id']).read_bytes())
+        return job, source, terminal, stages
 
     def _path(self, job_id=None):
         suffix = "jobs" if job_id is None else f"jobs/{safe_id(job_id)}"

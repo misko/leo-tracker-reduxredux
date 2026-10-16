@@ -298,7 +298,7 @@ def create_app(
     app.include_router(regional_position_router(regional_position_v3, version=3))
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
-    app.include_router(fast_scan_orbit_router(fast_scans))
+    app.include_router(fast_scan_orbit_router(fast_scans, shared_fast_scans))
     v2_router = APIRouter(prefix="/api/v2")
     v3_router = APIRouter(prefix="/api/v3")
     v4_router = APIRouter(prefix="/api/v4")

@@ -37,7 +37,7 @@ def execute(command, *, log, timeout):
         raise
 
 
-def process(job, *, store, command, maximum_seconds=1200, runner=execute):
+def process(job, *, store, command, maximum_seconds=1200, runner=execute, plot_command=None):
     if (not math.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1200
             or not command):
         raise ValueError("explicit shared inference command and bounded budget required")
@@ -61,8 +61,19 @@ def process(job, *, store, command, maximum_seconds=1200, runner=execute):
             if code:
                 raise RuntimeError(f"Shared inference exited {code}; see worker log")
             document, receipt = store.terminal(job)
-            return store.update(job, state=document["state"], terminal=receipt,
-                                result=document, failure=document.get("failure"))
+            result = store.update(job, state=document["state"], terminal=receipt,
+                                  result=document, failure=document.get("failure"))
         except Exception as error:
             store.update(job, state="failed", failure=f"{type(error).__name__}: {error}")
             raise
+        if plot_command and document['state'] == 'complete':
+            try:
+                with store.log(job['job_id']) as log:
+                    code = runner([*plot_command, '--job-id', job['job_id']], log=log, timeout=180)
+                if code:
+                    raise RuntimeError(f'Shared orbit rendering exited {code}')
+                result = store.update(result, plot_state='complete', plot_failure=None)
+            except Exception as error:
+                # Presentation failure never invalidates a successful scientific fit.
+                result = store.update(result, plot_state='failed', plot_failure=str(error))
+        return result

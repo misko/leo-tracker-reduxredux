@@ -25,6 +25,23 @@ def test_success_no_retry_and_corrupted_input_failure(tmp_path):
     assert len(calls) == 1 and pending(store) is None
 
 
+@pytest.mark.parametrize('plot_code', [0, 1])
+def test_post_fit_plot_failure_preserves_completed_science(tmp_path, plot_code):
+    _, store, job = source(tmp_path)
+    calls = []
+    def runner(command, **kwargs):
+        calls.append(command)
+        if command[0] == 'fit':
+            terminal(store, job)
+            return 0
+        assert kwargs['timeout'] == 180
+        return plot_code
+    result = process(job, store=store, command=['fit'], plot_command=['plot'], runner=runner)
+    assert result['state'] == 'complete'
+    assert result['plot_state'] == ('complete' if plot_code == 0 else 'failed')
+    assert calls[1] == ['plot', '--job-id', job['job_id']]
+
+
 @pytest.mark.parametrize("mode", ["exception", "nonzero", "missing", "invalid"])
 def test_failure_persistent_no_retry(tmp_path, mode):
     _, store, job = source(tmp_path)
