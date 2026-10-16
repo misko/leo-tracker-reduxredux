@@ -61,3 +61,23 @@ def test_automatic_progress_is_separate_from_immutable_results(tmp_path):
     assert store.detail("run") == {"points": [], "run_id": "run"}
     with pytest.raises(ValueError):
         store.update_automatic("../escape", state="complete")
+
+
+def test_orbit_publication_is_immutable_and_verifies_png_integrity(tmp_path):
+    from leo.presentation.fast_scan_orbits import PLOT_NAMES
+
+    store = FastScanStore(tmp_path)
+    assert store.orbit_manifest("run") == {"artifacts": []}
+    data = b"\x89PNG\r\n\x1a\ntest"
+    pngs = dict.fromkeys(PLOT_NAMES, data)
+    store.publish_orbits("run", pngs, {"time_limits_s": [0, 300]})
+    store.publish_orbits("run", pngs, {"time_limits_s": [0, 300]})
+    assert store.orbit_artifact("run", PLOT_NAMES[0]) == data
+    with pytest.raises(ValueError, match="immutable"):
+        store.publish_orbits("run", pngs, {})
+    with pytest.raises(FileNotFoundError):
+        store.orbit_artifact("run", "../secret")
+    path = next((tmp_path / "fast-scan-orbits-v1" / "run").glob("*.png"))
+    path.write_bytes(b"corrupt")
+    with pytest.raises(ValueError, match="integrity"):
+        store.orbit_artifact("run", PLOT_NAMES[0])

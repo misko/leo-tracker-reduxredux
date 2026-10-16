@@ -30,6 +30,20 @@ export function FastScanView({ renderTracking, recordingId }: {
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState<"cfo" | "score">("cfo");
   const [automatic, setAutomatic] = useState<Automatic[]>([]);
+  const [orbits, setOrbits] = useState<{ name: string }[]>([]);
+  const selectedRun = recordingId ? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
+  useEffect(() => {
+    setOrbits([]);
+    if (!selectedRun) return;
+    const controller = new AbortController();
+    const refresh = () => read<{ artifacts?: { name: string }[] }>(
+      `/api/v1/fast-scans/${encodeURIComponent(selectedRun)}/orbits`, controller.signal)
+      .then(value => { if (!controller.signal.aborted) setOrbits(value.artifacts ?? []); })
+      .catch(() => { /* Existing scans may not have orbit publications yet. */ });
+    void refresh();
+    const timer = setInterval(() => void refresh(), 10000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [selectedRun]);
   useEffect(() => {
     const controller = new AbortController();
     let busy = false;
@@ -53,7 +67,6 @@ export function FastScanView({ renderTracking, recordingId }: {
     const timer = setInterval(() => void refresh(), 10000);
     return () => { controller.abort(); clearInterval(timer); };
   }, []);
-  const selectedRun = recordingId ? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
   const selectedJob = automatic.find(job => job.recording_id === recordingId);
   useEffect(() => {
     setReport(null);
@@ -108,6 +121,17 @@ export function FastScanView({ renderTracking, recordingId }: {
       <p>Fast-score cutoff {current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.</p>
     </>}
     </section>
+    {!!orbits.length && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
+      <h3>Selected satellite orbits and GLRT CFO</h3>
+      <p>Full 0–300 s capture. Receiver calibration removed; satellite identities are conditional.
+        Unassociated means the selected model favors clutter over every satellite.</p>
+      {orbits.map(plot => {
+        const label = `${plot.name.startsWith("ch1-4") ? "CH1–4" : "CH5–8"} · ${plot.name.endsWith("unassociated") ? "Unassociated GLRT only" : "All GLRT"}`;
+        const url = `/api/v1/fast-scans/${encodeURIComponent(selectedRun)}/orbits/${encodeURIComponent(plot.name)}.png`;
+        return <figure key={plot.name}><figcaption><a href={url} target="_blank" rel="noreferrer">{label} · PNG</a></figcaption>
+          <img src={url} alt={label} loading="lazy" style={{ width: "100%" }} /></figure>;
+      })}
+    </section>}
     {trackingId ? renderTracking?.(trackingId) : <section className="scanner-artifact-panel" aria-label="Shared analysis publication">
       <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Tracking and positioning</h3></div></header>
       <p>Shared analysis artifacts will appear automatically after GLRT publishes its tracking input.</p>

@@ -40,6 +40,7 @@ def immutable_json(path, document):
 class FastSegmentSource:
     def __init__(self, entry):
         from leo.storage.short_window import ShortWindowReader
+
         self.reader = ShortWindowReader(Path(entry["path"]))
         if self.reader.manifest_sha256 != entry["manifest_digest"]:
             raise ValueError("fast-scan source manifest changed")
@@ -68,6 +69,7 @@ class FastSegmentSource:
 
     def windows(self):
         from leo.scanner.fast_scan_analysis import VerifiedFastWindow
+
         for w in self.reader.windows():
             yield VerifiedFastWindow(
                 w.index.sequence,
@@ -94,6 +96,7 @@ class FastScanStore:
 
     def ingest(self, recording):
         from leo.storage.short_window import ShortWindowReader
+
         recording = Path(recording).resolve(strict=True)
         paths = (
             [recording]
@@ -168,6 +171,63 @@ class FastScanStore:
         immutable_json(path, document)
         return path
 
+    def publish_orbits(self, run_id, artifacts, provenance):
+        from leo.contracts.digests import sha256_digest
+        from leo.contracts.fast_scan_orbits import PLOT_NAMES
+
+        if set(artifacts) != set(PLOT_NAMES):
+            raise ValueError("four standard orbit PNGs required")
+        folder = self._path("fast-scan-orbits-v1", safe_id(run_id))
+        folder.mkdir(parents=True, exist_ok=True)
+        entries = []
+        for name in PLOT_NAMES:
+            data = artifacts[name]
+            if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+                raise ValueError("invalid orbit PNG")
+            digest = sha256_digest(data)
+            path = self._path("fast-scan-orbits-v1", f"{safe_id(run_id)}/{digest[7:]}.png")
+            if path.exists():
+                if path.read_bytes() != data:
+                    raise ValueError("orbit artifact digest collision")
+            else:
+                temporary = path.with_name(f".{uuid.uuid4().hex}.partial")
+                with temporary.open("xb") as stream:
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, path)
+            entries.append({"name": name, "sha256": digest, "byte_count": len(data)})
+        manifest_path = self._path("fast-scan-orbits-v1", f"{safe_id(run_id)}/manifest.json")
+        immutable_json(
+            manifest_path,
+            {
+                "schema_version": 1,
+                "run_id": run_id,
+                "artifacts": entries,
+                "provenance": provenance,
+            },
+        )
+
+    def orbit_manifest(self, run_id):
+        path = self._path("fast-scan-orbits-v1", f"{safe_id(run_id)}/manifest.json")
+        return json.loads(path.read_bytes()) if path.exists() else {"artifacts": []}
+
+    def orbit_artifact(self, run_id, name):
+        from leo.contracts.digests import sha256_digest
+
+        entries = self.orbit_manifest(run_id)["artifacts"]
+        entry = next((a for a in entries if a["name"] == name), None)
+        if entry is None:
+            raise FileNotFoundError(name)
+        digest = entry["sha256"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+            raise ValueError("invalid artifact digest")
+        path = self._path("fast-scan-orbits-v1", f"{safe_id(run_id)}/{digest[7:]}.png")
+        data = path.read_bytes()
+        if sha256_digest(data) != digest or len(data) != entry["byte_count"]:
+            raise ValueError("orbit PNG integrity check failed")
+        return data
+
     def automatic_status(self, recording_id):
         path = self._path("fast-scan-automatic", f"{safe_id(recording_id)}.json")
         return json.loads(path.read_bytes()) if path.exists() else None
@@ -189,8 +249,11 @@ class FastScanStore:
     def automatic_page(self, limit=100):
         if not 1 <= limit <= 100:
             raise ValueError("invalid page limit")
-        paths = sorted(self._path("fast-scan-automatic").glob("*.json"),
-                       key=lambda p: p.stat().st_mtime_ns, reverse=True)[:limit]
+        paths = sorted(
+            self._path("fast-scan-automatic").glob("*.json"),
+            key=lambda p: p.stat().st_mtime_ns,
+            reverse=True,
+        )[:limit]
         return {"items": [self.automatic_status(p.stem) for p in paths]}
 
     def automatic_workspace(self, recording_id):

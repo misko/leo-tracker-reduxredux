@@ -3,6 +3,18 @@ import { afterEach, expect, it, vi } from "vitest";
 import { FastScanView } from "./FastScanView";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+it("shows four published orbit PNGs with download links", async () => {
+  const names = ["ch1-4-all", "ch5-8-all", "ch1-4-unassociated", "ch5-8-unassociated"];
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true, json: async () =>
+    url.endsWith("/orbits") ? { artifacts: names.map(name => ({ name })) }
+      : { items: url.includes("?") ? [{ run_id: "run", recording_name: "capture" }] : [] } })));
+  render(<FastScanView recordingId="capture" />);
+  const image = await screen.findByRole("img", { name: "CH1–4 · All GLRT" });
+  expect(image).toHaveAttribute("src", "/api/v1/fast-scans/run/orbits/ch1-4-all.png");
+  expect(screen.getAllByRole("img")).toHaveLength(4);
+  expect(screen.getByRole("link", { name: "CH5–8 · Unassociated GLRT only · PNG" }))
+    .toHaveAttribute("href", "/api/v1/fast-scans/run/orbits/ch5-8-unassociated.png");
+});
 it("embeds a selected recording and discovers its GLRT result after sealing", async () => {
   vi.useFakeTimers(); let published = false;
   const report = { run_id: "run", recording_name: "selected-fast", window_count: 2,
