@@ -21,6 +21,7 @@ from leo.api.position_methods import position_methods_router
 from leo.api.regional_position import regional_position_router
 from leo.api.scanner_refinement import scanner_refinement_router
 from leo.api.scanner_tracking import scanner_tracking_router
+from leo.api.shared_fast_scan import shared_fast_scan_router
 from leo.application.capture_control import OperatorCaptureControl
 from leo.application.research_reprocess import (
     AnalysisControlStatusV2,
@@ -92,6 +93,7 @@ from leo.presentation.scanner import (
     ScannerHistoryPageV3,
     ScannerReportStore,
 )
+from leo.presentation.shared_fast_scan import SharedFastScanReader
 from leo.presentation.sky import (
     MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_GLOBE_OBJECTS,
@@ -256,6 +258,7 @@ def create_app(
     adaptive_hop_analysis: AdaptiveHopAnalysisPresentationReader | None = None,
     partial_band_analysis: PartialBandReader | None = None,
     fast_scans: FastScanReports | None = None,
+    shared_fast_scans: SharedFastScanReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
     native_recordings: NativeRecordingReader | None = None,
     scanner_refinement: ScannerRefinementReader | None = None,
@@ -280,6 +283,7 @@ def create_app(
     )
     resolver = RegisteredArtifactResolver(artifact_root)
     app.include_router(partial_band_router(partial_band_analysis))
+    app.include_router(shared_fast_scan_router(shared_fast_scans))
     app.include_router(native_recording_router(native_recordings))
     app.include_router(scanner_refinement_router(scanner_refinement))
     app.include_router(scanner_refinement_router(scanner_refinement, version=2))

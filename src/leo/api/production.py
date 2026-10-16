@@ -73,6 +73,7 @@ from leo.storage.regional_position_v3 import B7Store
 from leo.storage.scanner_glrt import ScannerGlrtPresentationStore, ScannerGlrtStore
 from leo.storage.scanner_refinement import ScannerRefinementStore
 from leo.storage.scanner_tracking import ScannerTrackingStore
+from leo.storage.shared_fast_scan import SharedFastScanStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -226,6 +227,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             sky_archive_root=configured.tle_root,
             research_reprocessor=research_reprocessor,
             fast_scans=FastScanStore(configured.bulk_root),
+            shared_fast_scans=(
+                SharedFastScanStore(configured.bulk_root, os.environ["LEO_SHARED_FAST_MODEL"])
+                if os.environ.get("LEO_SHARED_FAST_MODEL") else None
+            ),
             scanner_reports=ScannerReportStore(
                 configured.scanner_report_root or configured.bulk_root / "scanner-reports"
             ),
