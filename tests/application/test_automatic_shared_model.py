@@ -102,3 +102,11 @@ def test_disappearing_export_visible_without_restarting_watcher(monkeypatch, tmp
         watcher.watch(SimpleNamespace(bulk_root=tmp_path, model_version="shared-scan-q-v1",
                                      shared_python="unused", maximum_seconds=1200))
     assert "shared_discovery_failure" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("budget", [1201, 0, float("nan"), float("inf")])
+def test_unsupported_budget_never_launches(tmp_path, budget):
+    _, store, job = source(tmp_path)
+    with pytest.raises(ValueError, match="bounded budget"):
+        process(job, store=store, command=["unused"], maximum_seconds=budget)
+    assert not store.launched(job["job_id"]) and store.status(job["job_id"]) is None

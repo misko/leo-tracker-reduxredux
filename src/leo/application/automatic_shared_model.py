@@ -38,7 +38,7 @@ def execute(command, *, log, timeout):
 
 
 def process(job, *, store, command, maximum_seconds=1200, runner=execute):
-    if (not math.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1800
+    if (not math.isfinite(maximum_seconds) or not 0 < maximum_seconds <= 1200
             or not command):
         raise ValueError("explicit shared inference command and bounded budget required")
     with store.owner(job["job_id"]) as acquired:
@@ -51,12 +51,12 @@ def process(job, *, store, command, maximum_seconds=1200, runner=execute):
                     failure="Interrupted prior shared inference; automatic retry disabled")
             return previous
         store.launch(job)
-        workspace = store.workspace(job["job_id"])
         invocation = [*command, "--input", job["input_path"], "--output",
-                      str(workspace/"output"), "--maximum-seconds", str(maximum_seconds)]
+                      str(store.output_path(job["job_id"])),
+                      "--maximum-seconds", str(maximum_seconds)]
         try:
             store.verify_input(job)
-            with (workspace/"worker.log").open("ab") as log:
+            with store.log(job["job_id"]) as log:
                 code = runner(invocation, log=log, timeout=maximum_seconds+15)
             if code:
                 raise RuntimeError(f"Shared inference exited {code}; see worker log")

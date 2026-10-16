@@ -74,6 +74,12 @@ class SharedFastScanStore:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def output_path(self, job_id):
+        return self._file(job_id, "output")
+
+    def log(self, job_id):
+        return self._file(job_id, "worker.log").open("ab")
+
     @contextmanager
     def owner(self, job_id):
         self.workspace(job_id)
