@@ -11,7 +11,10 @@ from leo.analysis.hard60_score import Hard60Objective, likelihood, predict_orbit
 
 
 class JointClockObjective(Hard60Objective):
-    def __init__(self, base, nodes, knots, prior_scale=1):
+    def __init__(self, base, nodes, knots, prior_scale=1, *, likelihood_port=None):
+        if likelihood_port is not None and not callable(likelihood_port):
+            raise ValueError("Frequency likelihood port must be callable")
+        self.likelihood_port = likelihood if likelihood_port is None else likelihood_port
         nodes, knots = np.asarray(nodes), np.asarray(knots)
         centered = nodes - nodes.mean()
         null = np.linalg.svd(
@@ -46,7 +49,7 @@ class JointClockObjective(Hard60Objective):
         prediction += (self.design @ vector[2:7] + self.baseline + self.clock_design @ clock)[
             :, None
         ]
-        terms = likelihood(self.observations.measured_hz, prediction, visible, self.score)
+        terms = self.likelihood_port(self.observations.measured_hz, prediction, visible, self.score)
         weight = terms.prediction_gradient
         shift = np.sum(weight * timing, axis=0)
         gradient = np.zeros(self.size)

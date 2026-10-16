@@ -47,6 +47,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bulk-root", type=Path, required=True)
     parser.add_argument("--shared-python", required=True)
-    parser.add_argument("--model-version", default="shared-scan-q-v1")
+    parser.add_argument("--model-version", default="shared-scan-q-v2")
     parser.add_argument("--maximum-seconds", type=int, choices=range(1, 1201), default=1200)
     watch(parser.parse_args())
