@@ -3,6 +3,21 @@ import { afterEach, expect, it, vi } from "vitest";
 import { FastScanView } from "./FastScanView";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+it("keeps the orbit panel visible before PNG publication", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true, json: async () =>
+    url.endsWith("/orbits") ? { artifacts: [] }
+      : { items: url.includes("?") ? [{ run_id: "run", recording_name: "capture" }] : [] } })));
+  render(<FastScanView recordingId="capture" />);
+  expect(await screen.findByText(/Orbit PNGs have not been published/)).toBeInTheDocument();
+});
+it("reports an orbit API failure instead of hiding the section", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+    ok: !url.endsWith("/orbits"), status: 503, json: async () =>
+      ({ items: url.includes("?") ? [{ run_id: "run", recording_name: "capture" }] : [] }),
+  })));
+  render(<FastScanView recordingId="capture" />);
+  expect(await screen.findByText(/Orbit plots unavailable:.*503/)).toBeInTheDocument();
+});
 it("shows four published orbit PNGs with download links", async () => {
   const names = ["ch1-4-all", "ch5-8-all", "ch1-4-unassociated", "ch5-8-unassociated"];
   vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true, json: async () =>
@@ -66,7 +81,7 @@ it("keeps shared artifacts available when the fast report request fails", async 
       : [summary]}),
   })));
   render(<FastScanView recordingId="capture" renderTracking={id => <p>Artifacts: {id}</p>} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("503");
+  expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent("503");
   expect(screen.getByText("Artifacts: shared-session")).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent("Analysis complete");
 });

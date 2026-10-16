@@ -31,15 +31,21 @@ export function FastScanView({ renderTracking, recordingId }: {
   const [metric, setMetric] = useState<"cfo" | "score">("cfo");
   const [automatic, setAutomatic] = useState<Automatic[]>([]);
   const [orbits, setOrbits] = useState<{ name: string }[]>([]);
+  const [orbitError, setOrbitError] = useState("");
   const selectedRun = recordingId ? items.find(item => item.recording_name === recordingId)?.run_id ?? "" : selected;
   useEffect(() => {
     setOrbits([]);
+    setOrbitError("");
     if (!selectedRun) return;
     const controller = new AbortController();
     const refresh = () => read<{ artifacts?: { name: string }[] }>(
       `/api/v1/fast-scans/${encodeURIComponent(selectedRun)}/orbits`, controller.signal)
-      .then(value => { if (!controller.signal.aborted) setOrbits(value.artifacts ?? []); })
-      .catch(() => { /* Existing scans may not have orbit publications yet. */ });
+      .then(value => { if (!controller.signal.aborted) {
+        setOrbits(value.artifacts ?? []); setOrbitError("");
+      } })
+      .catch((error: Error) => {
+        if (!controller.signal.aborted) setOrbitError(error.message);
+      });
     void refresh();
     const timer = setInterval(() => void refresh(), 10000);
     return () => { controller.abort(); clearInterval(timer); };
@@ -121,8 +127,10 @@ export function FastScanView({ renderTracking, recordingId }: {
       <p>Fast-score cutoff {current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.</p>
     </>}
     </section>
-    {!!orbits.length && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
+    {selectedRun && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
       <h3>Selected satellite orbits and GLRT CFO</h3>
+      {orbitError && <p role="alert">Orbit plots unavailable: {orbitError}</p>}
+      {!orbits.length && !orbitError && <p>Orbit PNGs have not been published for this analysis yet. This panel refreshes automatically.</p>}
       <p>Full 0–300 s capture. Receiver calibration removed; satellite identities are conditional.
         Unassociated means the selected model favors clutter over every satellite.</p>
       {orbits.map(plot => {
