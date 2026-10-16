@@ -1,0 +1,32 @@
+[Unit]
+Description=Shared satellite-weight localization for exported fast scans
+After=local-fs.target
+RequiresMountsFor=/srv/bulk/leo /var/lib/leo/tle
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+# The immutable release-specific drop-in supplies WorkingDirectory,
+# PYTHONPATH, and ExecStart. No database or radio connection is required.
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+ReadOnlyPaths=/var/lib/leo/tle
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target
