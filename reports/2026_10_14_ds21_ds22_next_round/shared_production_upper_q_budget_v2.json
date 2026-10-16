@@ -1,0 +1,118 @@
+{
+  "schema": "shared-production-upper-q-budget-v2-report",
+  "state": "complete",
+  "model_version": "shared-scan-q-v2",
+  "protocol": {
+    "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/protocol.json",
+    "sha256": "sha256:b5fc5fdebc547a1dc4d85a2e2a9a2c435e822c0c67370518147ea0360f3e21f9"
+  },
+  "terminal": {
+    "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/terminal.json",
+    "sha256": "sha256:2b0d56ca6d07a6876ef261dbf7912fe587c42937b10ff8931335084fceec1d17"
+  },
+  "seal": {
+    "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/seal.json",
+    "sha256": "sha256:265a9413f0c0c3cf417ad1b00230a7488b6109166d38dd82bbba0161f75c4b0b"
+  },
+  "termination": {
+    "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/termination.json",
+    "sha256": "sha256:f3d655312f5bf7e206cf1894b7dafe51f0dda99f42a0b37b2257b3d9909978a4"
+  },
+  "qualification": {
+    "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/qualification.json",
+    "sha256": "sha256:96e07aca70dd308fb071677259fc8ab1c596343bb7dfe05e6b2dd8b2f48b4398"
+  },
+  "source_fits": 0,
+  "discovery_calls": 0,
+  "new_q_optimizer_calls": 2,
+  "new_q_objectives": 1093,
+  "qualification_objectives": 6,
+  "rows": [
+    {
+      "source": "A-5",
+      "original_q_call": {
+        "path": "/srv/bulk/leo/qualification/shared-position-20261016-r1/upper/stages/shared-all-A-5.json",
+        "sha256": "sha256:133540771159545975e808b8bd2eff1dbee2b27bdd018ec4979dd076c0c0703d"
+      },
+      "original": {
+        "J": 58897.714618195205,
+        "KKT": 1470.4310064970384,
+        "actual_objective_calls": 289,
+        "seconds": 15.14676253683865
+      },
+      "longer_q_call": {
+        "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/A-5-result.json",
+        "sha256": "sha256:8c8d3185d1e3511a2884ca815fed52e079ac04be9d4a7bf6eea1626f6014a4a6"
+      },
+      "longer": {
+        "J": 58377.96652292172,
+        "NLL": 57475.90058454974,
+        "KKT": 0.007933594174339573,
+        "accepted": false,
+        "actual_objective_calls": 562,
+        "seconds": 29.065163121093065,
+        "allocation": {
+          "solver_seconds": 60.0,
+          "total_seconds": 65.0,
+          "optimizer_objectives": 4999,
+          "total_objectives": 5000
+        }
+      }
+    },
+    {
+      "source": "B-all",
+      "original_q_call": {
+        "path": "/srv/bulk/leo/qualification/shared-position-20261016-r1/upper/stages/shared-all-B-all.json",
+        "sha256": "sha256:5a8b37ada892483e772e01f9f92984dab8255d5cfeea2f7b79991a2d07cefa25"
+      },
+      "original": {
+        "J": 58540.802300963376,
+        "KKT": 2306.385657840384,
+        "actual_objective_calls": 305,
+        "seconds": 15.153211816214025
+      },
+      "longer_q_call": {
+        "path": "/srv/bulk/leo/qualification/shared-position-20261016-r2/upper-q-replay/B-all-result.json",
+        "sha256": "sha256:a4e57d5eb1f2511805352ca8316faf5349dd597a67c9e803275627a4e585a77a"
+      },
+      "longer": {
+        "J": 58237.87982022219,
+        "NLL": 57279.979814560706,
+        "KKT": 0.0009158117626031459,
+        "accepted": true,
+        "actual_objective_calls": 531,
+        "seconds": 28.697645795997232,
+        "allocation": {
+          "solver_seconds": 60.0,
+          "total_seconds": 65.0,
+          "optimizer_objectives": 4999,
+          "total_objectives": 5000
+        }
+      }
+    }
+  ],
+  "selection_source": "B-all",
+  "initial_states": [
+    {
+      "source": "A-5",
+      "initial_J": 60019.94107748462,
+      "oracle_errors": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "source": "B-all",
+      "initial_J": 60001.12857157703,
+      "oracle_errors": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "reference_usage": "none",
+  "held_usage": "none",
+  "localization_accuracy_claim": false
+}
