@@ -264,6 +264,12 @@ class FastScanStore:
     def tracking_input_path(self, run_id):
         return self._path("fast-scan-tracking-inputs", f"{safe_id(run_id)}.json")
 
+    def exported_tracking_inputs(self):
+        """Public local input port, newest first; independent of automatic status."""
+        paths = sorted(self._path("fast-scan-tracking-inputs").glob("*.json"),
+                       key=lambda p: (p.stat().st_mtime_ns, p.name), reverse=True)
+        return [self.tracking_input_path(path.stem) for path in paths]
+
     def page(self, limit=20):
         if not 1 <= limit <= 100:
             raise ValueError("invalid page limit")
