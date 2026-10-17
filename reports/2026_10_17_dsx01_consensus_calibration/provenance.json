@@ -1,0 +1,54 @@
+{
+  "input_sha256": {
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S01/recovered/results.json": "dc202d6691e68f3147d1400767fc4688af711344793230c26cde505d1d42ecb2",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S01/recovered/assignments.csv": "fc4a065180c92e303347449fdbba488ace8d973383323d5b5a901e081ceb8cd6",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S02/recovered/results.json": "785ba78f2afdc6a674f2935ad83a7a54c931e67e1c3561686425605f2be98fc2",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S02/recovered/assignments.csv": "3b89d6395c99a3315a67651b55623f999d16ee833f259160eec826b5dc5bd16b",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S03/recovered/results.json": "90abcf1d5f7866ff7657a2b4492ac6d7deb537b28024e400352c9194c2dbb811",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S03/recovered/assignments.csv": "07f3ef0830d5a9df5332c6fabc2ce07327a0ad8b8ec3dcb9d68d612d80013b28",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S04/recovered/results.json": "4ea3e15444cb8c6bf81fbcd11b069ab7bccdcb96f04d0e521127604ecc15504b",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S04/recovered/assignments.csv": "b1b24c14e2e4c9253cddbbac456255adeb2470b223726fc9f2e76b9df42fb9ff",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S05/recovered/results.json": "80252f07d70478d4db1b4ebcfa5f729c5b8647429d459c648577df185f1ae873",
+    "reports/2026_10_17_dsx01_all_scans_tracklets/graph/S05/recovered/assignments.csv": "05b6e1caef91ffd0e04898ccc91b250f2f7206888239fc3f64158c3dfff7ca33"
+  },
+  "source_sha256": {
+    "tools/evaluate_dsx01_consensus_calibration.py": "2d2f183c0f6506a102930ddc82416b352caba7153f28c1ae004fc9a2b3dbbc01",
+    "tools/audit_dsx01_offset_confidence.py": "b97b3aca5bae3c0879d688c98bc82df12d9006ce8cb0dfb9b6959f57d72e0941",
+    "tools/prototype_multilane_tracklets.py": "43fd0bd6718a4aad779aae5f8dbcb86ad551d8fea1253655b7a658a0205e9ad4",
+    "tools/compare_dsx01_graph_receivers.py": "faf8d2ed0bec8dd5aaf57363139d879c55312dd544b855d8560d953682ea2e51",
+    "tools/validate_multilane_tracklets.py": "f9d0f4736dda0bda134c26350c249483de51e02cddea86f9311ac9b704828d26",
+    "tools/model_dsx01_receiver_tracklets.py": "6aba8d15fbf4a591021e18e210db5435fac45830d9e75e3c0ed1ffee113f3ae9",
+    "tools/tune_full_data_tracklets.py": "3f329e7034ae966ffcbce80796ee5f5d4be7cc700daad58a38fe763fc7de0766"
+  },
+  "methods": [
+    "ransac",
+    "compatibility",
+    "trimmed",
+    "em"
+  ],
+  "sources": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05"
+  ],
+  "control_seeds": [
+    41,
+    142,
+    243
+  ],
+  "noise_sigma_hz": 150.0,
+  "candidate_min_overlap_s": 10,
+  "candidate_min_points_per_side": 12,
+  "shared_hypothesis_random_budget": 72,
+  "historical_calibration_used": false,
+  "controls_relearn_calibration": true,
+  "quadratic_solver": "active set; KKT residual checked on final selected pairs",
+  "final_consensus_refinement_rounds": 24,
+  "python_version": "3.12.14",
+  "machine": "x86_64",
+  "numpy_version": "2.5.2",
+  "control_tiny_fragments_excluded": true,
+  "evidence_cell_proxy": "45 seconds x 400 Hz/s; not ground-truth emitter identities"
+}
