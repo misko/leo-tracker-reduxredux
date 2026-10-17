@@ -1,4 +1,4 @@
-# DSX01 S01 alias aware polynomial tracklet study
+# DSX01 alias aware polynomial tracklet study
 
 ## Motivation
 
@@ -35,11 +35,138 @@ point set in this study, **3,522 points**. Graph was the fastest measured
 primary fitter on one desktop CPU core, with a median **1.17 seconds** for
 all 16 lanes; the corresponding embedded CPU ranking remains an inference.
 
-The final reader table and plots are collected in the
+The subsequent full-cohort replay covers **all five scans and 20,084 GLRT
+observations** with the selected configurations unchanged. Recovered coverage
+is 91.24–91.68% across methods; Graph associates **18,338 points (91.31%)** in
+676 tracklets. We select **Graph** for the next implementation because this
+coverage is close to the alternatives and its primary fitter led the measured
+desktop runtime comparison. This is an engineering decision pending bounded
+target-hardware timing, not a claim of superior identity or localization accuracy.
+
+The S01 final reader table and plots are collected in the
 [latest plot gallery](../2026_10_17_dsx01_residual_review/track-plots/review.html).
 For GitHub readers, the PNG links below work directly; HTML galleries can also
 be opened from a local checkout. Every saved figure, PDF variant and exported
 table is indexed in [ASSETS.md](ASSETS.md).
+
+## Full cohort replay and Graph selection
+
+The [full-cohort report](../2026_10_17_dsx01_all_scans_tracklets/README.md)
+extends the S01 development study below to every complete source scan in
+DSX01. S01–S05 contain 4,797, 3,524, 3,988, 3,719 and 4,056 observations,
+respectively. Each scan and receiver/channel lane is fitted separately with
+the previously selected S01 settings; there is no cohort retuning. Recovery
+uses the same leftover refit, quadratic discovery and explicit sparse-support
+trial. All observations remain in each denominator.
+
+| Method | Associated / 20,084 | Associated % | Tracks | Mean GLRT points/track | Median GLRT points/track |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| EM | 18,341 | 91.32% | 646 | 28.39 | 23 |
+| Graph | 18,338 | 91.31% | 676 | 27.13 | 22 |
+| Hough | 18,350 | 91.37% | 690 | 26.59 | 21 |
+| Kalman/MHT | 18,414 | 91.68% | 628 | 29.32 | 23 |
+| RANSAC reference | 18,324 | 91.24% | 658 | 27.85 | 22 |
+
+Source: [aggregate primary and recovered CSV](../2026_10_17_dsx01_all_scans_tracklets/comparison.csv).
+Mean size is associated observations divided by total tracklets, rather than
+an unweighted mean of scan means. Tracklets remain scan/receiver/channel
+segments and do not count unique spacecraft.
+
+![Full DSX01 cohort comparison](../2026_10_17_dsx01_all_scans_tracklets/comparison.png)
+
+*All five scans, 20,084 observations per method. Panels compare association
+percentage, mean GLRT points per track and track count before and after
+recovery. [PDF figure](../2026_10_17_dsx01_all_scans_tracklets/comparison.pdf);
+[per-scan counts and durations](../2026_10_17_dsx01_all_scans_tracklets/per-scan.csv).*
+
+Graph trails the largest recovered association count (MHT) by 76 observations,
+or 0.38 percentage points, and trails EM by three observations. Its primary
+coverage rises from 88.55% to 91.31% after recovery. Graph's earlier 1.17-second
+pinned-core S01 median measures primary fitting only; neither that timing nor
+the concurrently executed cohort runs measures recovery-enabled embedded
+performance. The selected direction is Graph with the documented recovery
+policy, followed by a bounded timing and memory replay on the target CPU.
+
+Coverage includes provisional and structure-flagged fits. Graph's recovered
+18,338 points comprise 14,048 supported points with no detected structure,
+633 flagged points and 3,657 short-support points; 1,746 remain unassociated.
+EM retains the largest supported category, 14,361 points. These distinctions
+remain necessary when comparing similar raw coverage.
+
+Matched within-lane CFO shuffles use seeds 1701–1705, shared across methods
+within each scan. All five primary methods associate zero null observations.
+After recovery EM still associates zero, while each other method associates
+one eight-point null track: Graph, Hough and MHT on S04, and the reference on
+S02. These are observed null counts, not calibrated false-discovery rates.
+See [all shuffled controls](../2026_10_17_dsx01_all_scans_tracklets/shuffled-controls.csv).
+On the 693 inspected challenge observations, Graph associates 671 (96.83%);
+the range across methods is 96.83–97.69%. These are original window IDs
+evaluated after whole-scan fitting, not held-out data or window-only fits:
+[challenge summary](../2026_10_17_dsx01_all_scans_tracklets/challenge-summary.csv).
+
+The cohort [validation receipt](../2026_10_17_dsx01_all_scans_tracklets/validation.json)
+and [reproduction instructions](../2026_10_17_dsx01_all_scans_tracklets/README.md#reproduction-and-checks)
+cover all real and shuffled result audits. Every method reproduces its earlier
+S01 recovered counts and support categories. The sections below retain the
+original S01 experiment's scope and historical evidence bindings.
+
+## Preliminary RX1/RX2 alignment with Graph
+
+The [receiver alignment study](../2026_10_17_dsx01_graph_rx_alignment/README.md)
+compares frozen recovered Graph curves without physical satellite labels.
+There is **no single constant frequency shift for the complete dataset**.
+Within S03 CH1–4, RX2 minus RX1 is approximately **−31.621 kHz**, with
+112 Hz RMS scatter across eight candidate-pair centers. Subtracting that
+offset from RX2 is a plausible preliminary alignment there. S01 CH1–4 and
+CH5–8 have distinct constants, −8.877 and +49.416 kHz, and fitted drifts of
+−7.31 and −11.62 Hz/s. S04 and S05 CH1–4 have constants −28.913 and
+−26.222 kHz and drifts +5.22 and +7.50 Hz/s. Offsets are modulo the
+227,272.727 Hz alias period and should be calibrated by scan and frequency
+group, with slow drift only where supported. S01's 58.293 kHz difference
+between frequency groups does not establish a hardware cause.
+
+![Graph receiver offsets](../2026_10_17_dsx01_graph_rx_alignment/receiver-offsets.png)
+
+*Candidate offsets by scan/frequency group and time trends.
+[PDF](../2026_10_17_dsx01_graph_rx_alignment/receiver-offsets.pdf);
+[constant and linear models](../2026_10_17_dsx01_graph_rx_alignment/offset-models.csv).*
+
+![Graph receiver alignment examples](../2026_10_17_dsx01_graph_rx_alignment/receiver-alignment-examples.png)
+
+*Illustrative pairs before correction and after constant or linear correction;
+all corrections are fitted on the displayed data.
+[PDF](../2026_10_17_dsx01_graph_rx_alignment/receiver-alignment-examples.pdf);
+[selected pair CSV](../2026_10_17_dsx01_graph_rx_alignment/selected-pairs.csv).*
+
+Selection requires a common source/channel/RF setting, at least eight seconds
+of overlap and four measurements per receiver, shape RMS ≤300 Hz after
+removing a constant, and exclusive greedy pairing within a ±1,500 Hz modal
+cluster. Of 42 selected candidate pairs, 39 belong to five groups supported
+across multiple channels; three one-pair groups remain unvalidated. Among
+the 39, constant correction gives fitted-curve RMS ≤450 Hz for 23 pairs,
+versus 37 for a linear drift correction. These are descriptive in-sample
+curve comparisons, not independent identity validation or original-point
+association/residual-whiteness gates.
+
+Circular time shifts produce 6, 9 and 7 modal pairs but zero multi-channel
+supported groups; reversal produces zero pairs. Shape-gate sensitivity shows
+sparse higher-frequency groups are unstable, so they should not be calibrated
+or filled in by extrapolation. See the
+[controls](../2026_10_17_dsx01_graph_rx_alignment/temporal-controls.csv) and
+[sensitivity table](../2026_10_17_dsx01_graph_rx_alignment/shape-gate-sensitivity.csv).
+Production fusion still requires original-observation circular gates and
+receiver-stratified residual checks, followed by independent validation.
+On the same 42 candidates, descriptive RMS falls from 28,195 Hz for one
+global constant to 550.5 Hz for scan/frequency-group constants and 221.4 Hz
+with supported linear corrections; parameter counts are 1, 8 and 13.
+This is an in-sample comparison. The
+[Hz-scale difference figure](../2026_10_17_dsx01_graph_rx_alignment/receiver-alignment-differences.png)
+and [supported-track sensitivity](../2026_10_17_dsx01_graph_rx_alignment/supported-track-sensitivity.csv)
+show the remaining mismatch and calibration limits. In particular, S03's
+drift changes under stronger support selection; a constant is already adequate
+there, and the slope should not be extrapolated. Details and the complete
+[model comparison](../2026_10_17_dsx01_graph_rx_alignment/correction-model-comparison.csv)
+are in the receiver study.
 
 ## Method
 
@@ -727,6 +854,73 @@ with the fitted track's stored RMS before plotting. The report builder derives
 all generated tables from JSON/CSV evidence and checks every local report link
 and evidence-file digest.
 
+## Scan-specific receiver/band calibration and sequential stitching
+
+The [joint receiver-model investigation](../2026_10_17_dsx01_receiver_model/README.md)
+extends the preliminary overlapping-pair comparison to original GLRT points
+and sequential receiver handoffs. Every scan has separate low/high-band
+relative offsets, with zero, shared or separate band drifts compared under a
+positive complexity penalty. Only RX2 relative to RX1 is identifiable without
+an external frequency reference; the common hardware offset and slope can be
+absorbed by the unknown polynomial curves.
+
+S01 selects separate low/high-band drifts, S03 selects a constant, and S04/S05
+benefit from a relative drift. Sparse bands remain weak rather than receiving
+an assumed calibration. Each join uses the frozen scan/band correction and
+must preserve every original point, stay inside the 450 Hz gate and pass
+joint and receiver-specific residual checks, including linear trends.
+
+The conservative pass finds 29 overlapping links and two sequential links,
+forming 30 merged groups and reducing 676 Graph tracklets to 645 candidate
+components. Ten merged groups have adequate residual support on both
+receivers; the remaining 20, including both sequential handoffs, are
+provisional. Retaining only adequately supported unions leaves 666 tracks.
+The sequential gaps are 2.131 s in S04 CH2 and 8.165 s in S05 CH1.
+All 18,338 associated points remain, so coverage stays 91.31%. A separate
+S05 high-band sequential-only calibration hypothesis is documented but not
+promoted to the primary result because most candidate joins fail full checks.
+
+![Receiver overlap and handoff examples](../2026_10_17_dsx01_receiver_model/stitching-examples.png)
+
+*Original GLRT points before correction, after one shared scan/band correction,
+and their common-polynomial residuals. The top handoff is provisional;
+the bottom overlap has adequate support from both receivers.
+[All five scans and eight-channel galleries](../2026_10_17_dsx01_receiver_model/README.md#whole-scan-inspection-and-controls),
+[calibration table](../2026_10_17_dsx01_receiver_model/scan-band-calibration.csv),
+[stitching counts](../2026_10_17_dsx01_receiver_model/per-scan-stitching.csv),
+[PDF](../2026_10_17_dsx01_receiver_model/stitching-examples.pdf).*
+
+## Any-RX/channel grouping prototype
+
+The [multi-lane prototype](../2026_10_17_dsx01_multilane_prototype/README.md)
+extends fusion to overlapping and sequential fragments across any receiver,
+channel and connected band reference within a scan. A shared scan/RX/band
+offset/drift model is fitted, then every proposed union must retain all member
+observations and pass the 450 Hz native-frequency gate and residual checks
+separately for each RX/channel lane. RF ratios are fixed from carrier settings;
+no learned RF c coefficient or localization model is used.
+
+Direct CFO alignment produces 615 candidate components from the 676 Graph
+tracklets. RF-scaled alignment produces 465, with 211 links: 183 overlapping
+and 28 sequential, including 176 same-RX cross-channel links and 82 cross-band
+links (categories overlap). All 18,338 associated observations remain, so
+association stays 91.31%. These are independent prototype runs, not nested
+stages or validated spacecraft counts.
+
+Lane-time controls still generate 30–39 RF-scaled links per dataset replay,
+showing that clean residuals alone cannot establish two-track identity. The
+real data contain 44 groups spanning at least three distinct lanes, compared
+with zero in the three matched frozen-calibration controls. This post hoc
+corroboration view would leave 563 components; only three such groups meet
+every lane's support floor and the prototype calibration checks. Calibration
+boundaries and weak modes remain explicit in the detailed report.
+
+![Eight fragments aligned across seven RX/channel lanes](../2026_10_17_dsx01_multilane_prototype/seven-lane-example.png)
+
+*S01: 184 original points across both receivers and bands, with native-Hz
+residual RMS 117 Hz. Short lane supports keep this example provisional.
+[All scan figures, comparisons, controls and exported memberships](../2026_10_17_dsx01_multilane_prototype/README.md).*
+
 ## Conclusions and next falsifiers
 
 The scan has a large common core of reproducible CFO curves. Finite discovery
@@ -736,13 +930,14 @@ recover additional points while preserving all previous memberships and
 retaining the same residual gate. The final raw coverage reaches 94.08%, but
 short-support additions must remain distinguishable from supported tracks.
 
-For a lean embedded CPU implementation, Graph is the first candidate to port
-and measure. For this scan's supported full-data coverage, EM is the strongest
-primary result. A production choice should compare the final recovery-enabled
-workflows, including memory, on the actual embedded target.
+The full five-scan replay now supports selecting Graph for the next lean
+implementation: its recovered coverage is 91.31%, within 0.38 percentage
+points of the largest count, with the fastest measured S01 primary fit.
+EM retains the strongest supported full-data coverage. Target-hardware timing
+and memory for the complete recovery-enabled workflow remain to be measured.
 
-The next scientific falsifiers are a frozen-configuration replay on other
-scans, grouped random validation, denser signal-like clutter and near-crossing
+The next scientific falsifiers are a frozen-configuration replay on new
+datasets, grouped random validation, denser signal-like clutter and near-crossing
 controls, and a blinded inventory of remaining coherent fragments. The
 experiment does not establish optimal clustering, completeness, physical
 spacecraft identities or localization accuracy. Shared finalization and an
@@ -750,6 +945,7 @@ inspected development scan limit the independence of the comparisons.
 
 ## Complete evidence navigation
 
+- [Full five-scan cohort results, figures and reproduction](../2026_10_17_dsx01_all_scans_tracklets/README.md).
 - [Every figure, PDF variant and exported table](ASSETS.md).
 - [Latest GLRT, unassociated and per-track RMS gallery](../2026_10_17_dsx01_residual_review/track-plots/review.html).
 - [All per-track RMS values, support categories and recovery origins](../2026_10_17_dsx01_residual_review/track-plots/all-track-rms.csv).
