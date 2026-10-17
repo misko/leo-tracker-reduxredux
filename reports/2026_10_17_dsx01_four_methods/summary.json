@@ -1,0 +1,145 @@
+{
+  "dataset": "DSX01 S01, all4797 frozen winning observations,16receiver/channel lanes",
+  "config": {
+    "alias_spacing_hz": 227272.72727272726,
+    "noise_sigma_hz": 150.0,
+    "association_sigma": 3.0,
+    "max_degree": 4,
+    "min_points": 8,
+    "points_per_coefficient": 4,
+    "min_span_s": 6.0,
+    "max_slope_hz_s": 8000.0,
+    "max_gap_s": 10.0,
+    "window_lengths_s": [
+      24.0,
+      48.0,
+      96.0
+    ],
+    "seed_trials": 96,
+    "max_proposals": 256,
+    "max_tracks": 64,
+    "track_penalty": 18.0,
+    "breakpoint_penalty": 10.0,
+    "max_join_gap_s": 8.0,
+    "joint_iterations": 4,
+    "random_seed": 1701
+  },
+  "methods": [
+    {
+      "method": "baseline",
+      "label": "RANSAC baseline",
+      "tracks": 147,
+      "pieces": 147,
+      "assigned": 4344,
+      "assigned_fraction": 0.9055659787367104,
+      "unresolved": 453,
+      "no_structure_detected_points": 3458,
+      "structure_flagged_points": 219,
+      "insufficient_support_points": 667,
+      "heldout_points_within_450hz": 2654,
+      "heldout_coverage_fraction": 0.5532624557014801,
+      "heldout_mean_log_density_gain_nats": 3.1178933994063347,
+      "full_scan_runtime_s": 7.651595655363053
+    },
+    {
+      "method": "em",
+      "label": "Wrapped EM",
+      "tracks": 196,
+      "pieces": 196,
+      "assigned": 4354,
+      "assigned_fraction": 0.9076506149676882,
+      "unresolved": 443,
+      "no_structure_detected_points": 2987,
+      "structure_flagged_points": 17,
+      "insufficient_support_points": 1350,
+      "heldout_points_within_450hz": 2947,
+      "heldout_coverage_fraction": 0.6143422972691266,
+      "heldout_mean_log_density_gain_nats": 3.4424449235185395,
+      "full_scan_runtime_s": 24.181250143796206
+    },
+    {
+      "method": "graph",
+      "label": "Graph DP",
+      "tracks": 155,
+      "pieces": 155,
+      "assigned": 4304,
+      "assigned_fraction": 0.8972274338127997,
+      "unresolved": 493,
+      "no_structure_detected_points": 3426,
+      "structure_flagged_points": 75,
+      "insufficient_support_points": 803,
+      "heldout_points_within_450hz": 2707,
+      "heldout_coverage_fraction": 0.5643110277256619,
+      "heldout_mean_log_density_gain_nats": 3.1622893685411557,
+      "full_scan_runtime_s": 1.2486525401473045
+    },
+    {
+      "method": "hough",
+      "label": "Hough voting",
+      "tracks": 154,
+      "pieces": 154,
+      "assigned": 4414,
+      "assigned_fraction": 0.9201584323535543,
+      "unresolved": 383,
+      "no_structure_detected_points": 3484,
+      "structure_flagged_points": 192,
+      "insufficient_support_points": 738,
+      "heldout_points_within_450hz": 2673,
+      "heldout_coverage_fraction": 0.5572232645403377,
+      "heldout_mean_log_density_gain_nats": 3.124525043552587,
+      "full_scan_runtime_s": 10.109481008723378
+    },
+    {
+      "method": "mht",
+      "label": "MHT",
+      "tracks": 149,
+      "pieces": 150,
+      "assigned": 4411,
+      "assigned_fraction": 0.919533041484261,
+      "unresolved": 386,
+      "no_structure_detected_points": 3528,
+      "structure_flagged_points": 192,
+      "insufficient_support_points": 691,
+      "heldout_points_within_450hz": 2890,
+      "heldout_coverage_fraction": 0.6024598707525537,
+      "heldout_mean_log_density_gain_nats": 3.3771393079861376,
+      "full_scan_runtime_s": 10.175611723214388
+    }
+  ],
+  "validation": {
+    "component_tests_passed": 74,
+    "ruff": "passed",
+    "synthetic_cases_per_method": 10,
+    "frequency_shuffled_assigned_points": {
+      "baseline": 0,
+      "graph": 0,
+      "hough": 0,
+      "em": 0,
+      "mht": 0
+    },
+    "integrity": "AlloriginalIDs retained; uniqueownership, integeralias lifts, residual gates, support/span/gap, analytic slope extrema, C1continuity and frozen source receipts checked."
+  },
+  "coverage_agreement": {
+    "new_method_count_histogram": {
+      "0": 310,
+      "1": 27,
+      "2": 38,
+      "3": 308,
+      "4": 4114
+    },
+    "assigned_by_at_least_one_new_method": 4487,
+    "assigned_by_all_four_new_methods": 4114,
+    "qualification": "Agreement concerns assignmentpresence, not commontrack or satellite identity. The union is not a fitted ensemble result."
+  },
+  "interpretation": {
+    "most_full_data_associations": "hough",
+    "best_heldout_prediction": "em",
+    "fastest": "graph",
+    "balanced_candidate": "mht",
+    "em_limit": "Higherfragmentation:196tracks and1350points on short tracks; poorer syntheticquartic/curvature-change recovery than baseline.",
+    "graph_limit": "Greedyexclusive pathpacking; syntheticcontinuous-curvature control retains153/181signalpoints in4fragments.",
+    "mht_limit": "BoundedKalman hypothesis beams, not exactglobal posterior; syntheticC1curve may remain2fragments.",
+    "hough_limit": "Finitevote grid withlocalrefinement; bestfull-data coverage doesnotproduce bestheldoutprediction."
+  },
+  "limits": "Allmethods share final numerical polynomialcompression and diagnostics but have independentdiscovery. Searchbudgets differ byfamily and runtimes are reported. S01 is inspecteddevelopment data; noverified true trackcount/satellite labels. No-structure-detected is conditional, not proofof whitenoise. Heldoutprediction excludes5secondblocks beforediscovery and scores all4797points once."
+}

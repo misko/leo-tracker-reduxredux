@@ -1,0 +1,69 @@
+{
+  "protocol": "Four balanced folds of randomly selected individual observations, stratified within each receiver/channel lane. Seeded independently of measured CFO and fitted memberships. Discover tracks from training points only; score every original point once. Same algorithms, coefficients, final 450 Hz residual gate, and predictive density as the prior interval test. No extrapolation outside training support. No full-data track or alias assignments reused.",
+  "split": {
+    "mode": "random_points",
+    "fold_count": 4,
+    "seed": 1701,
+    "block_s": null,
+    "assignment_sha256": "sha256:36186ac703c950ff7ace4045c61ca6eeb77b581329cdf9450a5db06b3f595013"
+  },
+  "methods": [
+    {
+      "method": "baseline",
+      "label": "RANSAC baseline",
+      "observations": 4797,
+      "random_predicted_points": 3671,
+      "random_prediction_fraction": 0.7652699603919116,
+      "interval_predicted_points": 2654,
+      "interval_prediction_fraction": 0.5532624557014801,
+      "random_mean_log_density_gain_nats": 4.386504280783806,
+      "random_runtime_s": 23.635630240198225
+    },
+    {
+      "method": "em",
+      "label": "Wrapped EM",
+      "observations": 4797,
+      "random_predicted_points": 3864,
+      "random_prediction_fraction": 0.8055034396497811,
+      "interval_predicted_points": 2947,
+      "interval_prediction_fraction": 0.6143422972691266,
+      "random_mean_log_density_gain_nats": 4.603967311031044,
+      "random_runtime_s": 73.34535245131701
+    },
+    {
+      "method": "graph",
+      "label": "Graph DP",
+      "observations": 4797,
+      "random_predicted_points": 3718,
+      "random_prediction_fraction": 0.7750677506775068,
+      "interval_predicted_points": 2707,
+      "interval_prediction_fraction": 0.5643110277256619,
+      "random_mean_log_density_gain_nats": 4.426068506285794,
+      "random_runtime_s": 3.752070885617286
+    },
+    {
+      "method": "hough",
+      "label": "Hough voting",
+      "observations": 4797,
+      "random_predicted_points": 3641,
+      "random_prediction_fraction": 0.7590160516989786,
+      "interval_predicted_points": 2673,
+      "interval_prediction_fraction": 0.5572232645403377,
+      "random_mean_log_density_gain_nats": 4.349553116296969,
+      "random_runtime_s": 26.93442098516971
+    },
+    {
+      "method": "mht",
+      "label": "MHT",
+      "observations": 4797,
+      "random_predicted_points": 3802,
+      "random_prediction_fraction": 0.7925786950177194,
+      "interval_predicted_points": 2890,
+      "interval_prediction_fraction": 0.6024598707525537,
+      "random_mean_log_density_gain_nats": 4.537625576525179,
+      "random_runtime_s": 32.505847284104675
+    }
+  ],
+  "limits": "Single-seed development comparison on inspected S01. Prediction means proximity to at least one training curve, not validated track or satellite identity. Random-point holdout retains nearby training observations.",
+  "validation": "All five methods use identical fold CSVs and unchanged algorithms; all 4,797 observations are predicted once; historical results are unchanged."
+}

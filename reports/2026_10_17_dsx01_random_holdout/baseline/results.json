@@ -1,0 +1,153 @@
+{
+  "method": "baseline",
+  "label": "RANSAC baseline",
+  "provenance": {
+    "source_id": "S01",
+    "recording_id": "fast8-auto-20261016-161535-99008d35-1-lower",
+    "first_sample_estimate_utc": "2026-10-16T16:15:42.609910+00:00",
+    "input_sha256": {
+      "manifest.json": "sha256:a7a81958f1aef17e3d958ee308965759829ea9b43f65d0ba54cc0c98d43d099a",
+      "context-observations.jsonl": "sha256:ddf587ed93815f911ddaf7cc0984a6df5b70ea8f8906944dae67a919418e781b",
+      "sources.json": "sha256:44f40dcc8cb7e918ec60b50e501b8f4d44b030596adc14ec4fab96d7900c293b"
+    },
+    "selection": "All frozen S01 winning observations; no association labels used",
+    "source_hashes": {
+      "src/leo/analysis/polynomial_tracklets.py": "sha256:933b83ce5e414a8441c62d17f8e5eb75e07b79cada283bf681193f7316346922",
+      "src/leo/analysis/tracklet_fitting.py": "sha256:8e3917e1bb94bf59e37d97a7a3782254612e459d36075f67acfdfe15b3a19414",
+      "tools/evaluate_random_tracklet_holdout.py": "sha256:a5e909a363e162d714654b8d33f8ab7430f3ea6ec157385491b34c8b190c2151",
+      "tools/validate_polynomial_tracklet_predictions.py": "sha256:71f756ee0e923b25ecc53281977f1627b9b9b9cc8367fd2316011f00dcd564df"
+    },
+    "fold_csv_sha256": "sha256:b52518d1e63fbb12805597cc3b4078eaf8c43abc273b4b54bcbe7b9408a15bbf",
+    "previous_receipt_sha256": "sha256:6b9731349dad6e4062391119a35491e0e693e96699c3e6bd9d17505fd260e085",
+    "runner_source_snapshot": "reports/2026_10_17_dsx01_random_holdout/source-snapshots/random-evaluation-runner.py",
+    "post_run_runner_formatting_preserves_AST": true
+  },
+  "protocol": "Four balanced folds of randomly selected individual observations, stratified within each receiver/channel lane. Seeded independently of measured CFO and fitted memberships. Discover tracks from training points only; score every original point once. Same algorithms, coefficients, final 450 Hz residual gate, and predictive density as the prior interval test. No extrapolation outside training support. No full-data track or alias assignments reused.",
+  "random_point_prediction": {
+    "config": {
+      "alias_spacing_hz": 227272.72727272726,
+      "noise_sigma_hz": 150.0,
+      "association_sigma": 3.0,
+      "max_degree": 4,
+      "min_points": 8,
+      "points_per_coefficient": 4,
+      "min_span_s": 6.0,
+      "max_slope_hz_s": 8000.0,
+      "max_gap_s": 10.0,
+      "window_lengths_s": [
+        24.0,
+        48.0,
+        96.0
+      ],
+      "seed_trials": 96,
+      "max_proposals": 256,
+      "max_tracks": 64,
+      "track_penalty": 18.0,
+      "breakpoint_penalty": 10.0,
+      "max_join_gap_s": 8.0,
+      "joint_iterations": 4,
+      "random_seed": 1701
+    },
+    "split": {
+      "mode": "random_points",
+      "fold_count": 4,
+      "seed": 1701,
+      "block_s": null,
+      "assignment_sha256": "sha256:36186ac703c950ff7ace4045c61ca6eeb77b581329cdf9450a5db06b3f595013"
+    },
+    "observations": 4797,
+    "folds": [
+      {
+        "fold": 0,
+        "excluded_points": 1206,
+        "training_discovered_tracks_across_lanes": 141
+      },
+      {
+        "fold": 1,
+        "excluded_points": 1201,
+        "training_discovered_tracks_across_lanes": 142
+      },
+      {
+        "fold": 2,
+        "excluded_points": 1196,
+        "training_discovered_tracks_across_lanes": 143
+      },
+      {
+        "fold": 3,
+        "excluded_points": 1194,
+        "training_discovered_tracks_across_lanes": 135
+      }
+    ],
+    "mean_log_density_gain_over_uniform_nats": 4.386504280783806,
+    "total_log_density_gain_over_uniform_nats": 21042.06103491992,
+    "points_with_active_prediction": 3929,
+    "points_within_3sigma_of_training_prediction": 3671,
+    "predictive_coverage_fraction": 0.7652699603919116,
+    "mean_active_tracks_per_excluded_point": 0.8482384823848238,
+    "nearest_residual_median_hz_when_prediction_exists": 73.45730181923136,
+    "runtime_s": 23.635630240198225
+  },
+  "previous_interval_prediction": {
+    "config": {
+      "alias_spacing_hz": 227272.72727272726,
+      "noise_sigma_hz": 150.0,
+      "association_sigma": 3.0,
+      "max_degree": 4,
+      "min_points": 8,
+      "points_per_coefficient": 4,
+      "min_span_s": 6.0,
+      "max_slope_hz_s": 8000.0,
+      "max_gap_s": 10.0,
+      "window_lengths_s": [
+        24.0,
+        48.0,
+        96.0
+      ],
+      "seed_trials": 96,
+      "max_proposals": 256,
+      "max_tracks": 64,
+      "track_penalty": 18.0,
+      "breakpoint_penalty": 10.0,
+      "max_join_gap_s": 8.0,
+      "joint_iterations": 4,
+      "random_seed": 1701
+    },
+    "observations": 4797,
+    "folds": [
+      {
+        "fold": 0,
+        "excluded_points": 1206,
+        "training_discovered_tracks_across_lanes": 147
+      },
+      {
+        "fold": 1,
+        "excluded_points": 1172,
+        "training_discovered_tracks_across_lanes": 145
+      },
+      {
+        "fold": 2,
+        "excluded_points": 1214,
+        "training_discovered_tracks_across_lanes": 144
+      },
+      {
+        "fold": 3,
+        "excluded_points": 1205,
+        "training_discovered_tracks_across_lanes": 141
+      }
+    ],
+    "mean_log_density_gain_over_uniform_nats": 3.1178933994063347,
+    "total_log_density_gain_over_uniform_nats": 14956.534636952187,
+    "points_with_active_prediction": 2919,
+    "points_within_3sigma_of_training_prediction": 2654,
+    "predictive_coverage_fraction": 0.5532624557014801,
+    "mean_active_tracks_per_excluded_point": 0.6191369606003753,
+    "nearest_residual_median_hz_when_prediction_exists": 85.49780221818946,
+    "runtime_s": 21.66851173201576
+  },
+  "unchanged_full_data_fit": {
+    "track_count": 147,
+    "assigned": 4344,
+    "assigned_fraction": 0.9055659787367104
+  },
+  "limits": "Single-seed development comparison on inspected S01. Prediction means proximity to at least one training curve, not validated track or satellite identity. Random-point holdout retains nearby training observations."
+}

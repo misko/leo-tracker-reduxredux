@@ -1,0 +1,256 @@
+{
+  "method": "graph",
+  "selected_trial": "base",
+  "config": {
+    "alias_spacing_hz": 227272.72727272726,
+    "noise_sigma_hz": 150.0,
+    "association_sigma": 3.0,
+    "max_degree": 4,
+    "min_points": 8,
+    "points_per_coefficient": 4,
+    "min_span_s": 6.0,
+    "max_slope_hz_s": 8000,
+    "max_gap_s": 10.0,
+    "window_lengths_s": [
+      24.0,
+      48.0,
+      96.0
+    ],
+    "seed_trials": 96,
+    "max_proposals": 256,
+    "max_tracks": 64,
+    "track_penalty": 18.0,
+    "breakpoint_penalty": 10.0,
+    "max_join_gap_s": 8.0,
+    "joint_iterations": 4,
+    "random_seed": 1701
+  },
+  "source_hashes": {
+    "src/leo/analysis/graph_tracklets.py": "sha256:74575f44c4e9716707faaac56e3e7c35bb423ba0f75332656d7c6576cd8f2c27",
+    "tools/compare_tracklet_methods.py": "sha256:529fe1fc87bf33e040f64894e6806813fab0f63fcac1f2a98b00e8ef73d0905a",
+    "tools/evaluate_polynomial_tracklets.py": "sha256:34c4d242e30ab69c257d7534723ca60199d4398c628bbf5c87a2be9d8d1c4640",
+    "tools/validate_polynomial_tracklet_predictions.py": "sha256:71f756ee0e923b25ecc53281977f1627b9b9b9cc8367fd2316011f00dcd564df",
+    "src/leo/analysis/polynomial_tracklets.py": "sha256:933b83ce5e414a8441c62d17f8e5eb75e07b79cada283bf681193f7316346922",
+    "src/leo/analysis/tracklet_fitting.py": "sha256:8e3917e1bb94bf59e37d97a7a3782254612e459d36075f67acfdfe15b3a19414"
+  },
+  "frozen_input": {
+    "source_id": "S01",
+    "recording_id": "fast8-auto-20261016-161535-99008d35-1-lower",
+    "first_sample_estimate_utc": "2026-10-16T16:15:42.609910+00:00",
+    "input_sha256": {
+      "manifest.json": "sha256:a7a81958f1aef17e3d958ee308965759829ea9b43f65d0ba54cc0c98d43d099a",
+      "context-observations.jsonl": "sha256:ddf587ed93815f911ddaf7cc0984a6df5b70ea8f8906944dae67a919418e781b",
+      "sources.json": "sha256:44f40dcc8cb7e918ec60b50e501b8f4d44b030596adc14ec4fab96d7900c293b"
+    },
+    "selection": "All frozen S01 winning observations; no association labels used"
+  },
+  "synthetic_cases": [
+    {
+      "case": "wrap_line",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.025151120964437723
+    },
+    {
+      "case": "quadratic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.011814703233540058
+    },
+    {
+      "case": "quartic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.011931261047720909
+    },
+    {
+      "case": "continuous_curvature_change",
+      "observations": 181,
+      "tracks": 4,
+      "assigned": 153,
+      "signal_coverage": 0.8453038674033149,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.1289083012379706
+    },
+    {
+      "case": "frequency_step",
+      "observations": 181,
+      "tracks": 2,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.018084052950143814
+    },
+    {
+      "case": "crossing_and_clutter",
+      "observations": 462,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 0.9972375690607734,
+      "clutter_assigned": 0,
+      "clutter_observations": 100,
+      "runtime_s": 0.03987375507131219
+    },
+    {
+      "case": "unobserved_gap",
+      "observations": 122,
+      "tracks": 2,
+      "assigned": 122,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.014556365087628365
+    },
+    {
+      "case": "realistic_noise",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.012395167723298073
+    },
+    {
+      "case": "parallel_close_tracks",
+      "observations": 362,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.03338220715522766
+    },
+    {
+      "case": "pure_clutter",
+      "observations": 181,
+      "tracks": 0,
+      "assigned": 0,
+      "signal_coverage": null,
+      "assigned_signal_purity": null,
+      "clutter_assigned": 0,
+      "clutter_observations": 181,
+      "runtime_s": 0.019909237045794725
+    }
+  ],
+  "synthetic_change_vs_previous": [
+    {
+      "case": "wrap_line",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "quadratic",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "quartic",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "continuous_curvature_change",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "frequency_step",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "crossing_and_clutter",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "unobserved_gap",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "realistic_noise",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "parallel_close_tracks",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": 0.0,
+      "signal_purity_change": 0.0
+    },
+    {
+      "case": "pure_clutter",
+      "assigned_change": 0,
+      "clutter_assigned_change": 0,
+      "signal_coverage_change": null,
+      "signal_purity_change": null
+    }
+  ],
+  "frequency_shuffled_S01": {
+    "seed": 1701,
+    "shuffle": "CFO permuted independently within each receiver/channel lane; times and frequency marginals preserved",
+    "observations": 4797,
+    "tracks": 0,
+    "assigned": 0,
+    "unresolved": 4797,
+    "residual_quality": {
+      "no_structure_detected": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "structure_flagged": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "insufficient_support": {
+        "tracks": 0,
+        "associated_points": 0
+      }
+    },
+    "runtime_s": 0.19386345008388162
+  },
+  "validation": "All synthetic and shuffled full-data ownership, alias, support, gap, degree, analytic slope and C1 checks passed. No holdout runs. Selected fit artifacts unchanged.",
+  "limitations": "Synthetic truth assesses controlled identities. Shuffled associations are chance associations under this null, not a labeled false-positive rate for real S01."
+}

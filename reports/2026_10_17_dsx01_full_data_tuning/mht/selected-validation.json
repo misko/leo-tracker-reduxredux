@@ -1,0 +1,264 @@
+{
+  "method": "mht",
+  "selected_trial": "trial-02",
+  "config": {
+    "alias_spacing_hz": 227272.72727272726,
+    "noise_sigma_hz": 150.0,
+    "association_sigma": 3.0,
+    "max_degree": 4,
+    "min_points": 8,
+    "points_per_coefficient": 4,
+    "min_span_s": 6.0,
+    "max_slope_hz_s": 12000,
+    "max_gap_s": 10.0,
+    "window_lengths_s": [
+      24.0,
+      48.0,
+      96.0
+    ],
+    "seed_trials": 96,
+    "max_proposals": 256,
+    "max_tracks": 64,
+    "track_penalty": 18.0,
+    "breakpoint_penalty": 10.0,
+    "max_join_gap_s": 8.0,
+    "joint_iterations": 4,
+    "random_seed": 1701
+  },
+  "provenance": {
+    "source_id": "S01",
+    "recording_id": "fast8-auto-20261016-161535-99008d35-1-lower",
+    "first_sample_estimate_utc": "2026-10-16T16:15:42.609910+00:00",
+    "input_sha256": {
+      "manifest.json": "sha256:a7a81958f1aef17e3d958ee308965759829ea9b43f65d0ba54cc0c98d43d099a",
+      "context-observations.jsonl": "sha256:ddf587ed93815f911ddaf7cc0984a6df5b70ea8f8906944dae67a919418e781b",
+      "sources.json": "sha256:44f40dcc8cb7e918ec60b50e501b8f4d44b030596adc14ec4fab96d7900c293b"
+    },
+    "selection": "All frozen S01 winning observations; no association labels used",
+    "method_sha256": "sha256:19929de4281ff2e4af68fbb0852a91e658eab6db59c0e3bdc0624ca0d0d94a11",
+    "baseline_synthetic_report_sha256": "sha256:fd2d465e7a94a0004eb3188dd961591323fb77feacf1b62700f70f62cb2709a7"
+  },
+  "protocol": "Full-data synthetic controls and frequency-shuffled S01 negative control; no holdout runs",
+  "synthetic_cases": [
+    {
+      "case": "wrap_line",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 1.8728564237244427
+    },
+    {
+      "case": "quadratic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 1.8783105690963566
+    },
+    {
+      "case": "quartic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 2.012963321991265
+    },
+    {
+      "case": "continuous_curvature_change",
+      "observations": 181,
+      "tracks": 2,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 2.1122251031920314
+    },
+    {
+      "case": "frequency_step",
+      "observations": 181,
+      "tracks": 2,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.9657143321819603
+    },
+    {
+      "case": "crossing_and_clutter",
+      "observations": 462,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 0.9972375690607734,
+      "clutter_assigned": 0,
+      "clutter_observations": 100,
+      "runtime_s": 1.558534959796816
+    },
+    {
+      "case": "unobserved_gap",
+      "observations": 122,
+      "tracks": 2,
+      "assigned": 122,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.6756221051327884
+    },
+    {
+      "case": "realistic_noise",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 1.8639349900186062
+    },
+    {
+      "case": "parallel_close_tracks",
+      "observations": 362,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 2.1685979259200394
+    },
+    {
+      "case": "pure_clutter",
+      "observations": 181,
+      "tracks": 0,
+      "assigned": 0,
+      "signal_coverage": null,
+      "assigned_signal_purity": null,
+      "clutter_assigned": 0,
+      "clutter_observations": 181,
+      "runtime_s": 0.08133689826354384
+    }
+  ],
+  "synthetic_comparison_to_slope8000": [
+    {
+      "case": "wrap_line",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "quadratic",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "quartic",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "continuous_curvature_change",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "frequency_step",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "crossing_and_clutter",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "unobserved_gap",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "realistic_noise",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "parallel_close_tracks",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": 0.0,
+      "assigned_signal_purity_delta": 0.0
+    },
+    {
+      "case": "pure_clutter",
+      "assigned_delta": 0,
+      "tracks_delta": 0,
+      "clutter_assigned_delta": 0,
+      "signal_coverage_delta": null,
+      "assigned_signal_purity_delta": null
+    }
+  ],
+  "frequency_shuffled_s01": {
+    "seed": 1701,
+    "procedure": "Independent CFO permutation within each RX/channel; times,counts,marginals unchanged",
+    "observations": 4797,
+    "assigned": 0,
+    "unresolved": 4797,
+    "track_count": 0,
+    "piece_count": 0,
+    "residual_quality": {
+      "no_structure_detected": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "structure_flagged": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "insufficient_support": {
+        "tracks": 0,
+        "associated_points": 0
+      }
+    },
+    "runtime_s": 0.45790357794612646,
+    "associated_fraction": 0.0,
+    "integrity_audit": "pass: all original IDs,uniqueownership,aliases,finalgate,support,degree,gaps,slope,C1",
+    "interpretation": "All reported associations are artificial temporal links after permutation; this quantifies negative-control overfitting, not real-data satellite identity accuracy"
+  },
+  "elapsed_s": 15.700830680783838
+}

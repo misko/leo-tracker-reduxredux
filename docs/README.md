@@ -37,6 +37,12 @@ Solution, Method—so it remains understandable when read alone.
 
 ## Start here
 
+DSX01 S01 polynomial tracklets: [complete method comparison and residual recovery report](../reports/2026_10_17_dsx01_alias_aware_tracklets/REPORT.md).
+Four discovery methods and a reference were compared across 49 tuning
+configurations. The latest recovery trial associates 4,513/4,797 GLRT points
+in 160 lane-level tracklets, including provisional short fits. The report
+includes every figure and table, pairwise agreement, controls and host timings.
+
 Recent eight-channel likelihood fitting: [six-scan local evaluation and controls](../reports/2026_10_12_fast_likelihood_cohort/README.md).
 Alias-aware and track-shape initialization controls improve the conditional
 frequency fit, but most strong evidence remains unexplained. The requested

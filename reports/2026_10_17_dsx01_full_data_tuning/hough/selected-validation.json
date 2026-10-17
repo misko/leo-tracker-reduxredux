@@ -1,0 +1,207 @@
+{
+  "method": "hough",
+  "selected": {
+    "name": "slope12000-penalty10",
+    "config": {
+      "alias_spacing_hz": 227272.72727272726,
+      "noise_sigma_hz": 150.0,
+      "association_sigma": 3.0,
+      "max_degree": 4,
+      "min_points": 8,
+      "points_per_coefficient": 4,
+      "min_span_s": 6.0,
+      "max_slope_hz_s": 12000.0,
+      "max_gap_s": 10.0,
+      "window_lengths_s": [
+        24.0,
+        48.0,
+        96.0
+      ],
+      "seed_trials": 96,
+      "max_proposals": 256,
+      "max_tracks": 64,
+      "track_penalty": 10.0,
+      "breakpoint_penalty": 5.0,
+      "max_join_gap_s": 8.0,
+      "joint_iterations": 4,
+      "random_seed": 1701
+    },
+    "track_count": 155,
+    "assigned": 4418,
+    "unresolved": 379,
+    "residual_quality": {
+      "no_structure_detected": {
+        "tracks": 97,
+        "associated_points": 3352
+      },
+      "structure_flagged": {
+        "tracks": 7,
+        "associated_points": 327
+      },
+      "insufficient_support": {
+        "tracks": 51,
+        "associated_points": 739
+      }
+    },
+    "runtime_s": 10.904337952844799,
+    "rank": [
+      3352,
+      4418,
+      -327,
+      -155,
+      -102.9182724156786
+    ]
+  },
+  "synthetic": [
+    {
+      "case": "wrap_line",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.22835454484447837
+    },
+    {
+      "case": "quadratic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.2667121533304453
+    },
+    {
+      "case": "quartic",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.29743840312585235
+    },
+    {
+      "case": "continuous_curvature_change",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.5430256118997931
+    },
+    {
+      "case": "frequency_step",
+      "observations": 181,
+      "tracks": 2,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.16065985057502985
+    },
+    {
+      "case": "crossing_and_clutter",
+      "observations": 462,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 100,
+      "runtime_s": 0.48550122883170843
+    },
+    {
+      "case": "unobserved_gap",
+      "observations": 122,
+      "tracks": 2,
+      "assigned": 122,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.0994879212230444
+    },
+    {
+      "case": "realistic_noise",
+      "observations": 181,
+      "tracks": 1,
+      "assigned": 181,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.2371664559468627
+    },
+    {
+      "case": "parallel_close_tracks",
+      "observations": 362,
+      "tracks": 2,
+      "assigned": 362,
+      "signal_coverage": 1.0,
+      "assigned_signal_purity": 1.0,
+      "clutter_assigned": 0,
+      "clutter_observations": 0,
+      "runtime_s": 0.33206979976966977
+    },
+    {
+      "case": "pure_clutter",
+      "observations": 181,
+      "tracks": 0,
+      "assigned": 0,
+      "signal_coverage": null,
+      "assigned_signal_purity": null,
+      "clutter_assigned": 0,
+      "clutter_observations": 181,
+      "runtime_s": 0.0797453848645091
+    }
+  ],
+  "shuffled_control": {
+    "seed": 1701,
+    "policy": "Permute CFO independently within each receiver/channel; preserve all times and frequency marginals.",
+    "observations": 4797,
+    "assigned": 0,
+    "tracks": 0,
+    "residual_quality": {
+      "no_structure_detected": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "structure_flagged": {
+        "tracks": 0,
+        "associated_points": 0
+      },
+      "insufficient_support": {
+        "tracks": 0,
+        "associated_points": 0
+      }
+    }
+  },
+  "provenance": {
+    "source_id": "S01",
+    "recording_id": "fast8-auto-20261016-161535-99008d35-1-lower",
+    "first_sample_estimate_utc": "2026-10-16T16:15:42.609910+00:00",
+    "input_sha256": {
+      "manifest.json": "sha256:a7a81958f1aef17e3d958ee308965759829ea9b43f65d0ba54cc0c98d43d099a",
+      "context-observations.jsonl": "sha256:ddf587ed93815f911ddaf7cc0984a6df5b70ea8f8906944dae67a919418e781b",
+      "sources.json": "sha256:44f40dcc8cb7e918ec60b50e501b8f4d44b030596adc14ec4fab96d7900c293b"
+    },
+    "selection": "All frozen S01 winning observations; no association labels used"
+  },
+  "source_hashes": {
+    "src/leo/analysis/hough_tracklets.py": "sha256:76e9c73e4e51efac3810a817cbd71f18571e03ac14e6f7f26e2e75cd4b34fc99",
+    "tools/compare_tracklet_methods.py": "sha256:529fe1fc87bf33e040f64894e6806813fab0f63fcac1f2a98b00e8ef73d0905a",
+    "tools/evaluate_polynomial_tracklets.py": "sha256:34c4d242e30ab69c257d7534723ca60199d4398c628bbf5c87a2be9d8d1c4640",
+    "tools/validate_polynomial_tracklet_predictions.py": "sha256:71f756ee0e923b25ecc53281977f1627b9b9b9cc8367fd2316011f00dcd564df",
+    "src/leo/analysis/polynomial_tracklets.py": "sha256:933b83ce5e414a8441c62d17f8e5eb75e07b79cada283bf681193f7316346922",
+    "src/leo/analysis/tracklet_fitting.py": "sha256:8e3917e1bb94bf59e37d97a7a3782254612e459d36075f67acfdfe15b3a19414"
+  }
+}
