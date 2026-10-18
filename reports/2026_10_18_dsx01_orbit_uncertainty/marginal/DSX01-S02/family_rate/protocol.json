@@ -1,0 +1,48 @@
+{
+  "no_reference_GPS_or_oracle_parameters": true,
+  "main_mean_is_latest_causal_orbit": true,
+  "only_original_individually_curved_points_calibrate_or_locate": true,
+  "modes_require_two_curved_RX_channel_owners": true,
+  "posterior_frequency_predictions_are_not_new_validated_SGP4_TLEs": true,
+  "covariance_scale_from_successive_causal_disagreement_not_calibrated_covariance": true,
+  "bias_sigma_hz": 1000,
+  "noise_sigma_hz": 150,
+  "student_nu": 4,
+  "mixture_signal_prior": 0.95,
+  "radial_floor_km": 0.05,
+  "cross_track_floor_km": 0.025,
+  "missing_prior_radial_km": 0.5,
+  "missing_prior_cross_km": 0.25,
+  "marginal_logdet_complexity_in_objective": true,
+  "no_new_fitted_mode_coordinates": true,
+  "common_c0_nominations_aliases_geographic_starts_and_24_iteration_budgets": true,
+  "unweighted_full_observation_family_likelihood": true,
+  "variants": [
+    "hierarchy_physical",
+    "student_none",
+    "student_physical"
+  ],
+  "source_by_variant": {
+    "student_none": "e26133af7f5afee20edb06c3551d8fea359e1cf8f0d8dea0b830820f9585e016",
+    "student_physical": "e26133af7f5afee20edb06c3551d8fea359e1cf8f0d8dea0b830820f9585e016",
+    "hierarchy_physical": "e26133af7f5afee20edb06c3551d8fea359e1cf8f0d8dea0b830820f9585e016"
+  },
+  "options_by_variant": {
+    "student_none": {
+      "kind": "none",
+      "likelihood": "student"
+    },
+    "student_physical": {
+      "kind": "physical",
+      "likelihood": "student"
+    },
+    "hierarchy_physical": {
+      "kind": "physical",
+      "likelihood": "student",
+      "curve_bias_sigma": 300.0,
+      "satellite_bias_sigma": 1000.0
+    }
+  },
+  "seed_sha256": "c06a770527b22441fec5a7d23462b29bbcdbb9b9d37c6e8dc8760cb206970bf6",
+  "code_sha256": "e26133af7f5afee20edb06c3551d8fea359e1cf8f0d8dea0b830820f9585e016"
+}
