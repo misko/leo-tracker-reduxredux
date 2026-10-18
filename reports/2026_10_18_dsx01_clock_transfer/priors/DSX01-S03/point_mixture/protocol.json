@@ -1,0 +1,48 @@
+{
+  "case": "DSX01-S03",
+  "method": "receiver_smooth",
+  "mode": "point_mixture",
+  "no_GPS_or_future_TLE_input": true,
+  "original_curved_population_no_withholding": true,
+  "same_center_nominations_and_aliases_in_both_nuisance_proposals": true,
+  "proposals": [
+    "center",
+    "wide_state"
+  ],
+  "all_geographic_anchors_are_town_center": true,
+  "supported_band_indices": [
+    0
+  ],
+  "pair_band_support": "20pairs,60seconds,2channels",
+  "only_repeated_curved_timing_links_with_agreeing_blind_labels": true,
+  "measurements": [
+    "original",
+    "glrt300"
+  ],
+  "matched_c_same_starts_and_24_iteration_budget": true,
+  "final_proposal_selected_by_c0_score_with_exact_fitted_c_partner": true,
+  "drift_mixture_core_tail_probability_sigmas": [
+    0.9,
+    0.5,
+    10
+  ],
+  "phase_mixture_core_probability": 0.9,
+  "phase_tail_sigma_s": "max(3,3*causal_sigma)",
+  "point_mixture_probability_sigmas": [
+    0.98,
+    150,
+    5000
+  ],
+  "point_mixture_source_bias_sigma_hz": 1000,
+  "point_mixture_EM_iterations": 12,
+  "mixture_weights_are_declared_hypotheses_not_calibrated_probabilities": true,
+  "measurement_sha256": "204c152895b5adc0e6c300f814d525ac112b208e20c48f0ffd5565e53013019d",
+  "seeds_sha256": {
+    "center": "f2cab4f5c6922e22b3f4556ca32eac7c8fb80c828a68d1bd388c372a73e745a4",
+    "wide_state": "fa05c3d5da63b41b080b4fe1257759698f41e76caf81a05e8f9711444334c004"
+  },
+  "sources_sha256": {
+    "tools/run_dsx01_clock_transfer.py": "bd720190442220f4eb43320c88b135ef3c0c0846a85248233817934e3b1471a9",
+    "tools/dsx01_clock_transfer_models.py": "0c521b89bbe118b1d0ae4d871e900913f31da0d6f055ff0160df733efb6fb816"
+  }
+}

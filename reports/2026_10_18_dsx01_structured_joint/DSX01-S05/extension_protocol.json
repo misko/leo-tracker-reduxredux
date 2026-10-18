@@ -1,0 +1,19 @@
+{
+  "variants": [
+    "eccentric",
+    "colored",
+    "eccentric_colored"
+  ],
+  "c0_fitted_c_matched_inputs_priors_and_search_budget": true,
+  "no_GPS_or_future_TLE_input": true,
+  "original_curved_points_preserved": true,
+  "eccentricity_prior": "previous-vs-latest vector at latest epoch; sigma clip(abs(delta),1e-5,5e-4)",
+  "missing_previous_eccentricity_sigma": 0.0001,
+  "colored_residual": "150 Hz exponential covariance, 10 s; radio-only white noise unchanged",
+  "colored_covariance_determinant_included_relative_to_original_radio_white_covariance": true,
+  "precision_scales_entire_fragment_noise_covariance": true,
+  "source_sha256": {
+    "tools/run_dsx01_structured_joint.py": "95c08861783f45b506825279a072ae13d0e41cd5930b39e107c9a2e46babbce1",
+    "tools/dsx01_structured_joint.py": "312d351f693158d2772be511819d9881a483086ce1fc2c96784ac7be9cfc6c82"
+  }
+}

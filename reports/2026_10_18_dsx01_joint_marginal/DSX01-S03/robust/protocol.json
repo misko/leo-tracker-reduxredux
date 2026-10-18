@@ -1,0 +1,163 @@
+{
+  "region_center": [
+    37.906,
+    -122.545
+  ],
+  "grid": [
+    [
+      -12.5,
+      -12.5
+    ],
+    [
+      -12.5,
+      -6.25
+    ],
+    [
+      -12.5,
+      0.0
+    ],
+    [
+      -12.5,
+      6.25
+    ],
+    [
+      -12.5,
+      12.5
+    ],
+    [
+      -6.25,
+      -12.5
+    ],
+    [
+      -6.25,
+      -6.25
+    ],
+    [
+      -6.25,
+      0.0
+    ],
+    [
+      -6.25,
+      6.25
+    ],
+    [
+      -6.25,
+      12.5
+    ],
+    [
+      0.0,
+      -12.5
+    ],
+    [
+      0.0,
+      -6.25
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      6.25
+    ],
+    [
+      0.0,
+      12.5
+    ],
+    [
+      6.25,
+      -12.5
+    ],
+    [
+      6.25,
+      -6.25
+    ],
+    [
+      6.25,
+      0.0
+    ],
+    [
+      6.25,
+      6.25
+    ],
+    [
+      6.25,
+      12.5
+    ],
+    [
+      12.5,
+      -12.5
+    ],
+    [
+      12.5,
+      -6.25
+    ],
+    [
+      12.5,
+      0.0
+    ],
+    [
+      12.5,
+      6.25
+    ],
+    [
+      12.5,
+      12.5
+    ]
+  ],
+  "box_width_km": 25,
+  "no_GPS_or_future_TLE_in_inference": true,
+  "measurements": "glrt300",
+  "measurement_metadata": {
+    "points": 2609,
+    "corrected": 2570,
+    "fallback": 39,
+    "correction_rms_hz": 57.13676837405639,
+    "correction_quantiles_hz": [
+      -554.8650568181818,
+      -27.74325284090909,
+      0.0,
+      27.74325284090909,
+      305.17578125
+    ]
+  },
+  "measurement_sha256": "204c152895b5adc0e6c300f814d525ac112b208e20c48f0ffd5565e53013019d",
+  "raw_curved_population_preserved_no_withholding": true,
+  "seed_selection": "original",
+  "seed_sha256": "94f4f34ff1183d748ffd9ae5d642fb5db8d114c24d6f63d2c562dd9fe49dfa19",
+  "noise_estimate_hz": 131.64242199185372,
+  "noise_estimate_method": "radio-only piecewise-polynomial leverage-corrected residuals",
+  "model": "diagonal noise plus jointly integrated radio/phase/orbit/curve-constant modes",
+  "cost": "quadratic + logdet(C/D) + soft visibility; fixed noise determinant omitted",
+  "offsets_prior_sigma_hz": 65607.98513518475,
+  "receiver_drift_mean_sigma_hz_s": 10,
+  "receiver_drift_contrast_sigma_hz_s": 0.5,
+  "receiver_smooth_sigma_hz": 200,
+  "curve_constant_sigma_hz": 1000,
+  "RF_c_prior_sigma": 200000,
+  "phase_sigma_floor_s": 1,
+  "priors_are_declared_hypotheses_not_calibrated_probabilities": true,
+  "three_shared_c0_selected_starts": true,
+  "iterations_per_start": 24,
+  "phase_linearization_rounds": 3,
+  "phase_prior_remains_absolute_zero_mean_after_relinearization": true,
+  "shared_c0_phase_reference_in_both_c_arms": true,
+  "finite_phase_linearization_not_exact_orbit_marginalization": true,
+  "candidate_labels_unverified": true,
+  "bank_sha256": "12a7f9766168c4f53ab1d48b982f1007561bd8bb00f68fe032bb849e26d5c77a",
+  "source_sha256": {
+    "tools/run_dsx01_joint_marginal.py": "77a83936cd547ec0be860ba679f5c6e4295417f44cef68245c81a7caca5a0ff2",
+    "tools/dsx01_joint_marginal.py": "cf12f2d60bcdff60dffd5eed6872503ec71df905cc6f7363c71e3d386721df0f",
+    "tools/build_dsx01_orbit_modes.py": "cbc05b6a14d3ca048ebffa9f4f0264f2ec1c99137592cfbe13b48c787dc1c4ab",
+    "src/leo/analysis/research/continuous_curve_fit.py": "e2d5b84d169d79b4657676fcbf8e4494351d5e400c18f183e94f2a31d56acf30"
+  },
+  "likelihood": "variational Student Gaussian/Gamma bound, one precision per original curve",
+  "student_nu": 4,
+  "variational_iterations": 24,
+  "posterior_variance_in_precision_updates": true,
+  "no_observations_removed_or_relabelled": true,
+  "robust_source_sha256": {
+    "tools/run_dsx01_robust_joint.py": "6edc8147ac80f3429e53d31734387594249e51ba7c15919d50d9d943c31a3dab",
+    "tools/dsx01_robust_joint.py": "5d84b8a51fe051ef3ee725b10e52f5103e43c42d1d8e9e74a5b4bc61ea170f41"
+  }
+}
