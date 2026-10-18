@@ -1,5 +1,16 @@
 # DSX01: completed radio, orbit and association experiments
 
+The latest [prior-bias and receiver-clock report](../2026_10_18_dsx01_prior_bias_iterations/README.md)
+adds 20 matched model variants across all five scans, with position, frequency-fit,
+cost-decomposition and receiver RF-rate figures. The preceding
+[radio/orbit followup](../2026_10_18_dsx01_radio_orbit_followup/README.md)
+documents the intermediate controls. The uniform independent all-five sub-1 km
+goal remains open.
+
+See the [publication scope](../2026_10_18_dsx01_prior_bias_iterations/PUBLICATION.md)
+for the distinction between hosted report artifacts and the locally retained
+numerical inputs used for validation and saved-endpoint replay.
+
 The robust joint model locates S01 and S04 within 1 km independently. Broader
 orbital uncertainty, residual correlation and variance learning improve other
 individual cases, but **no uniform blind rule achieves sub-1 km on all five
