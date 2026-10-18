@@ -1,0 +1,38 @@
+{
+  "sources_sha256": {
+    "tools/probe_s01_local_loss.py": "01ac520d1606d8833976196fa68a6ff12c234370607f0987f753069728b16a4a",
+    "tools/probe_s01_warm_loss.py": "7b15bc7988dca4413277ab93572447ca77c67b2211ffa2996618eeea03f14df2",
+    "tools/report_s01_local_loss.py": "85fb639b29df17fd0c430e11a2a5f8a4ee3952afd8165829532ffdf16c7ba28a",
+    "tests/analysis/test_s01_local_loss_tool.py": "f8e455b06c56fd46b31aab5c567611349ec0ed99f84c062142ef4e0e6657f4f1",
+    "tools/compare_dsx01_retention_localization.py": "ed933103917bf1d874acd292753b4d8aa03139d672df92a6ded6a74c5ee5a244",
+    "src/leo/analysis/research/retained_track_likelihood.py": "01bf995fa0212c99711ad718479a0df0baaa38e09d6baff822f95e7cb6fa7037",
+    "src/leo/analysis/research/phase_linear_geometry.py": "c21c07ec7b5ee206290e8578d4cbd46dcd85fe7cfd742dafb38a70d8a112529e",
+    "src/leo/analysis/research/polynomial_satellite_diagnostics.py": "8bf7d7935b74bba728d437d2652af636e5532be74d798ed4f56c6641be7352c5"
+  },
+  "input_sha256": {
+    "reports/2026_10_17_robust_curve_reassociation/partition/DSX01-S01/curves.json": "4f576eaf7be27337d7669c5aa561a92569399652a21247fe4fbd6cd77f8d53a5",
+    "reports/2026_10_17_dsx01_polynomial_satellite_dive/frozen_inputs/DSX01-S01/bank.npz": "6bffbe530c7161e01a4784e0acee5d626da737106e518678f1ebde386f64fcd6",
+    "reports/2026_10_18_dsx01_retention_localization/causal_tles.json": "aa49ff73546b4fc18bad58a46a565e928481cf5e8580b2981691ecdc72fa4874",
+    "reports/2026_10_18_dsx01_retention_localization/DSX01-S01/refined_endpoints.json": "af9eb7ba397063647dbc53d7faec3c494c2977beee6491608467fffb637a77bb"
+  },
+  "purpose": "GPS-centred loss/optimizer diagnostic, not blind localization validation",
+  "controls": {
+    "c0_fitted_c_matched": true,
+    "curved_calibration_and_position_ranking_only": true,
+    "coarse_initial_step_km": 2.0,
+    "fine_initial_step_km": 0.125,
+    "fine_resolution_km": 0.0625,
+    "known_GPS_used_for_region_and_local_start": true,
+    "location_prior_penalty_inside_disk": false,
+    "nuisance_rounds_per_spatial_query": 3,
+    "longer_fit_sensitivity_rounds": 8,
+    "no_normalized_probability_claim": true,
+    "geometry_reuse_and_query_resume_do_not_change_loss_definition": true
+  },
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.2",
+    "matplotlib": "3.11.1",
+    "sgp4": "2.27"
+  }
+}

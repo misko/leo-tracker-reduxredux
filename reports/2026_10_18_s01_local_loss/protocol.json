@@ -1,0 +1,41 @@
+{
+  "dataset": "DSX01-S01",
+  "reference_latitude_longitude": [
+    37.849061591561885,
+    -122.48574968092912
+  ],
+  "radius_km": 10.0,
+  "region": "10 km radius about supplied GPS; not a blind localization eval",
+  "grid_spacing_km": 2,
+  "grid_points": 93,
+  "grid_extra_probes_km": [
+    0.125,
+    0.5,
+    1.0
+  ],
+  "local_start": [
+    0,
+    0
+  ],
+  "local_scales_km": [
+    2.0,
+    1.0,
+    0.5,
+    0.25,
+    0.125,
+    0.0625
+  ],
+  "local_extra_budget_per_method": 192,
+  "maximum_sweeps_per_scale": 4,
+  "same_observations_candidates_priors_and_fit_budgets_for_c_arms": true,
+  "calibration_population": "raw-curved fragments only; linear points never rank location",
+  "location_prior": "none inside disk; supplied GPS sets diagnostic region and start",
+  "score_type": "existing gated composite loss; not a normalized posterior or probability",
+  "nuisance_refit": "cold zero hardware start and original seed; three proposal rounds",
+  "limitation": "effective finite-iteration loss, not an exactly optimized profile likelihood",
+  "orbit_model": "same tangent eccentricity-vector state model as comparison fitter",
+  "source_sha256": {
+    "tools/probe_s01_local_loss.py": "2dfe4681205b1916253c7d658448a6037298f367992c63c546f8f6754efe13a7",
+    "tools/compare_dsx01_retention_localization.py": "ed933103917bf1d874acd292753b4d8aa03139d672df92a6ded6a74c5ee5a244"
+  }
+}
