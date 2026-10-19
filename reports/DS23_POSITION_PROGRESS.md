@@ -985,3 +985,61 @@ Positive observed beam-clock agreement may qualify identities; absent clock
 agreement is not an automatic satellite rejection. Absolute timing needs a
 validated clock model first. Full413, untouched/new-location validation and
 the pending per-recording coordinate/height confirmation remain outstanding.
+
+## Checkpoint: objective control and linear predictive evidence
+
+Completed two further fixed-rule, matched-c experiments on the original twenty
+development scans. No IQ read, new RF, future TLE, GPS-selected identity or
+change to original observations, aliases, masks or physical orbit priors.
+
+Frozen-precision control: reproduce incumbent c0 coefficient means using frozen
+noise/prior precisions (maximum difference4.885e-10), then cold-fit Q+V versus
+Q alone at common precisions, with five phase rounds/48steps. Insert only the
+extra fitted-c unit Gaussian coordinate. All40paired controls pass. c0
+mean/median is1.315/0.991 marginal versus1.312/0.992 profile; fitted-c is
+1.275/0.865 versus1.272/0.864. Removing log-volume moves positions by median
+5.84m, maximum15.89m. It cannot explain kilometre-scale errors. The earlier
+154m local estimate included changing variational precisions and is not a
+verified correction. Four dense-Gaussian/ridge/coordinate tests pass.
+
+Linear predictive evidence: original graph extensions were previously attached
+after position fitting. Two declared policies now use them for position only:
+all qualified non-curved extensions with>=6probes, or the subset whose original
+curved family spans both receivers. Selection and aliases come from incumbent
+c0, not GPS, with canonical-ID uniqueness and zero overlap. At every trial
+position, curved data alone produce calibration mean and covariance. New curves
+use shared U_L A^-1 U_L' covariance, independent300Hz biases, and original RF
+noise times sqrt(2), the unseen Gamma(2,2) inverse-precision mean. Added factors
+have power1 while original curved powers remain frozen. This is an approximate
+conditional predictive objective, not a new exact joint hierarchical posterior.
+
+| Policy | c0 mean / median km | Fitted-c mean / median km | Paired valid |
+|---|---:|---:|---:|
+| Curved-data incumbent | 1.315 /0.991 | 1.266 /0.896 |20/20|
+| All linear extensions |1.229 /0.804|1.177 /0.811|16/20|
+| Cross-RX-supported extensions |1.276 /0.924|1.221 /0.827|19/20|
+
+Every scan remains in the denominator, including incumbent fallback for failures.
+All-linear offers441curves/7,046points, retaining357/5,734 after paired gates.
+Cross-RX offers188/3,169, retaining179/3,034. Original calibration coefficient
+replay difference is exactly0 in all80trials; linear observations never update
+receiver offsets/drifts or orbital/phase calibration at a fixed horizontal
+position. Both controls start cold with five phase refreshes/48steps. Four
+predictive tests cover dense covariance, shared-sample dependence, empty evidence
+and zero linear feedback despite inconsistent observations.
+
+Scan217 adds9curves/151points: errors1.025/0.869 become0.775/0.529km c0/fitted-c.
+Scan274 regresses in the all-linear arm (fitted-c1.277→1.345). Failed all-linear
+cases:321(new linear gate),365/173(original curved gates),74(both). Cross-RX
+fails original curved support on74. No points are trimmed to rescue a trial.
+Full results, raw gates and phase histories are archived in the linked reports.
+
+ALGO01 and DBG01 document the experiments without promoting a default. Goal
+remains unmet:20development scans are not all413recordings or independent
+new-location validation. Next measured issue: frozen labels and tight Gaussian
+300Hz new-curve biases can pull position enough to fail preserved evidence.
+Test a robust conditional predictive distribution for new-curve groups while
+keeping all curved calibration/precisions learned from curved data only. This
+must retain full shared calibration uncertainty, use matched c arms and fixed
+labels/aliases, and report raw failures rather than trim original points or
+choose the most geographically favorable per-scan policy.

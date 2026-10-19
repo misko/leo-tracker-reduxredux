@@ -59,6 +59,19 @@ negative range-curvature coupling and require clock/convention qualification
 before timing can constrain position. A local nuisance-volume sensitivity is
 also recorded; it is not a profiled-position result or an accuracy improvement.
 
+The [frozen-precision comparison](../2026_10_19_ds23_frozen_precision/README.md)
+isolates nuisance integration from precision feedback on all twenty development
+scans. Dropping log-volume moves positions by a median of 5.8 m and at most 15.9 m;
+it does not explain kilometre-scale error. Both controls pass every paired gate.
+
+The [linear predictive-evidence prototype](../2026_10_19_ds23_predictive_linear/README.md)
+uses linear extensions for position while learning calibration only from curved
+data at each trial position. It retains shared calibration covariance across all
+added tracks. Fitted-c mean/median improves from 1.266/0.896 to 1.177/0.811 km;
+c0 changes from 1.315/0.991 to 1.229/0.804 km, including four paired fallbacks.
+Scan 217 reaches 0.775/0.529 km c0/fitted-c. These remain development results,
+with no new default, full-DS23 claim or attainment of the 0.5 km target.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

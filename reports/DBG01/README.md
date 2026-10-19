@@ -496,3 +496,30 @@ Any profile-versus-marginal position experiment must first match observations,
 aliases, priors, fixed noise/prior precisions and both c-arm budgets. Separate
 the effect of freezing precisions from the effect of dropping log-volume.
 Their different objective definitions cannot select a winner by raw score.
+
+## 14. Conditional Gaussian marginal versus profile control
+
+The [completed control](../2026_10_19_ds23_frozen_precision/README.md) freezes
+the incumbent c0 noise/prior precisions and uses them in both c arms. Replay the
+coefficient mean before fitting; insert a unit precision only at the ninth
+hardware coordinate for fitted-c. Preserve absolute phase means, masks, aliases
+and the cold regional start. Compare Q+logdet(A/P) with Q at common precisions;
+do not rank their different costs as the same normalized probability. All twenty
+scans pass, with a median 5.8 m actual endpoint movement. The earlier 154 m local
+sensitivity used adaptive precisions and was not a refit. It cannot establish
+that deleting the determinant corrects the position bias.
+
+## 15. Linear evidence with curved-only calibration
+
+The [linear predictive prototype](../2026_10_19_ds23_predictive_linear/README.md)
+keeps linear data out of calibration normal equations, Gamma updates and owner
+votes. At each horizontal position, fit curved data and predict added curves
+with full covariance U_L A^-1 U_L', independent 300 Hz track constants and the
+unseen Gamma inverse-precision mean of 2. Do not substitute independent pointwise
+calibration errors for this shared covariance. Verify zero calibration-coefficient
+change at the same position and exact canonical-ID disjointness. Freeze extension
+labels/aliases from the c0 RF result and match them in fitted-c. A failure of an
+original curved gate or a new linear gate causes paired fallback without trimming.
+Report all twenty cases and distinguish additional predictive points from
+calibration points. Saved failures and curves belong in the report alongside
+position gains; the full cohort remains above the 0.5 km goal.
