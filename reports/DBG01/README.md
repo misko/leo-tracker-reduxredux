@@ -422,3 +422,46 @@ candidate's label order. Distinguish one-family full-catalogue screening from
 global reassociation, splits and mergers. Shared carrier priors do not inherit
 earlier receiver-prediction qualification automatically. Report both conditional
 fixed-identity improvements and the result after RF identity ranking.
+
+## 12. Qualify measurement changes across formats before interpreting position
+
+The [RX2 measurement cohort](../2026_10_19_ds23_rx2_measurement_cohort/README.md)
+extends direct known-pilot fitting beyond the initial fast-recording case.
+Seal physical observation IDs and complete original curves before fitting.
+Retain archived values and uncertainty at frequency, epoch or rate boundaries;
+never remove those points to manufacture a cleaner residual distribution.
+Keep measurement, effective-time and radio-noise interventions distinct. When
+testing additional physical orbit directions, compare matched c arms and
+integrate their priors and complexity rather than adding free polynomials.
+
+Verify the read port against each recording's real coordinate conventions.
+Fast tracking virtual sessions span separately named recording segments.
+Native adaptive chunk visit indices address the retained stream: map through
+the authenticated retained-visit list to recover original device events and
+retune gaps. Payload offsets are not elapsed time. Check whole selected
+adaptive chunks and selected fast windows against supplied authorities;
+do not claim a final complete decoded fast-chunk digest after stopping its
+iterator early. Exercise both 2.5 and 10 MHz through the real read paths.
+
+Compare a faster optimizer to the reference on identical samples, templates,
+parameter count and scout. Preserve slower pilot versions. Report optimizer
+timing separately from full remeasurement, I/O and localization timing.
+An increased projection score is not independent proof of a correct CFO.
+Scoring at the persisted final CFO may fail to reproduce an archived score
+when the acquisition CFO was not persisted; keep that provenance exception
+separate from a hash/counter mismatch and do not select points by replay luck.
+
+After precise measurement, audit both legacy and explicit pointwise-noise
+residual gates. A small absolute RMS can retain significant slope or steps.
+Do not trim original observations to rescue the new model. Preserve every
+raw trial, paired failure, incumbent fallback and cohort regression. Recheck
+phase-reference convergence before blaming a new optimum on insufficient
+refreshes. Repeat bounded causal identity competition under the new data;
+one-family screening is not global reassociation or identity certification.
+
+If testing phase continuity between pilot frames, separate amplitude fading
+from phase coherence, retain frame-rate aliases and compare fixed-support
+random-phase controls. Do not force a globally coherent model because a few
+probes support it. Phase diagnostics on the same IQ are not independent
+measurements. Keep the supplied evaluation coordinate out of all measurement
+and inference choices, and state the absence of per-recording survey authority.

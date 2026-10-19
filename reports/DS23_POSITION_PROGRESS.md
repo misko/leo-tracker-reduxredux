@@ -835,3 +835,80 @@ with bounded existing-corpus reads. Do not extrapolate one dense case to the
 original-noise cohort. Independently test RF-age-matched causal orbital prior
 calibration. Keep failed covariance controls. All 413 scans and untouched or
 new-location validation remain outstanding; do not close the goal.
+
+## Checkpoint: full RX2 measurement cohort and a qualified faster fitter
+
+The previous checkpoint was published as de4edaf0d. This turn makes new
+progress: every originally seeded curved RX2 graph track is remeasured on
+all twenty development scans, including both recording formats and sample
+rates. The full-DS23 0.5 km mean/median objective remains active and unmet.
+See the [measurement cohort](2026_10_19_ds23_rx2_measurement_cohort/README.md).
+
+There are 322 curves and 11,167 physical probes; 10,581 receive valid local
+carrier/epoch/rate refinements and 586 retain archived values/noise at a search
+boundary. No original calibration point is trimmed or silently restored.
+The fixed masks include remeasured active points only; all seeded curve
+points, including masked ones, remain available for later reconstruction.
+Median fixed-degree radio RMS falls 78.07 to 22.18 Hz. Local scatter uses
+complete radio curves, sliding 16-point windows, degree0–3 complexity selection,
+a 5 Hz floor and timing-adjusted odd/even-frame noise proxies. It is not
+independent validation or a calibrated absolute error bar.
+
+All twenty measurement jobs terminate successfully under explicit 900 s and
+8 GiB per-case limits; longest is533.4 s. Two workers read existing IQ only.
+An additive, tested read-only native adaptive port verifies manifest/chunk
+digests and maps retained ordinals to original device visits. Initial failed
+session/gap assumptions, exact sources and receipts remain preserved. Fast
+segments keep original session names while tracking uses a virtual session.
+No recording, QNAP path or public persisted contract changes.
+
+Continuous variable projection preserves the same three parameters, pilot,
+frame gains/DC and likelihood as the grid. The reused 96-probe 2.5 MHz
+development benchmark gives15.004 versus4.937 s (3.04 times faster), maximum
+carrier difference1.249 Hz and no score regression below1e-6. A separate
+42-probe real qualification panel has no physical-probe overlap with those96,
+includes adaptive2.5/10 MHz, matches/improves every reference likelihood, and
+has maximum carrier difference2.178 Hz. Synthetic 10 MHz edge/high-carrier
+tests pass. These are desktop core timings, not embedded/full-pipeline claims.
+
+All60 matched position trials complete with exact original observation-ID
+sets. Original causal catalogues/history, region, labels, aliases, receiver
+support weights and existing physical priors stay fixed. Each c arm starts
+at the regional center with five refreshes/48 steps. Pointwise-noise gates
+and legacy results are explicit. A failed pair falls back to the incumbent
+without extra trimming. Every scan remains in every denominator.
+
+Reference c0 mean/median is1.315206/.991302 km, fitted-c1.265780/.895613.
+CFO/time with original noise gives1.347/1.081 and1.309/.960; local noise gives
+1.306/1.171 and1.266/.950. Adding two causal eccentricity-vector directions
+gives1.362/1.267 and1.317/1.123. Each trial policy has10 paired-valid scans.
+RF-only selection between the three/five-mode local-noise hypotheses chooses
+six three-mode, four five-mode and ten incumbent fallbacks, giving1.369/1.267
+and1.325/1.123. No variant improves both metrics; ALGO01 is unchanged.
+
+Fresh all-bank family screening on diagnostic217/321 selects the target family
+by normalized active RX2 CFO change, not GPS. Six anchors, four full paired
+alternate finalists and unchanged physical priors retain57879 and59616.
+All eight alternatives fail gates; this is one-family competition, not global
+reassociation. The maximum final phase-reference gap is65.4 ms in a rejected
+scan74 five-mode trial; passing trials have maximum1.204 ms. Do not declare
+all five-round trials converged or promote failed results using their GPS error.
+
+On the96-probe panel, allow frame amplitudes to vary and test phase continuity
+over one750 Hz interval. Median phase coherence is.475 versus.313 under
+matched-amplitude fixed-seed random-phase controls; only two probes exceed.9.
+RX1/RX2 residual phase RMS medians are.927/.795 rad. A globally coherent
+carrier model is not qualified and no coherent CFO is applied. The original
+common-amplitude pilot is preserved.28 owned tests pass in2.84 s.
+
+Next: investigate independent constraints on the remaining position/phase
+tradeoff. Audit the fixed height0 assumption with a general regional terrain
+or height prior, preserving the causal catalogue and matched c controls.
+The question whether every DS23 recording shares the supplied coordinate,
+and its antenna altitude, has been asked; no answer is available yet.
+Continue RF work using the explicit existing assumption, not GPS model tuning.
+Consider position information from already-associated linear extensions only
+with calibration learned from curved evidence, respecting the user's rule
+that linear tracks must not calibrate offsets/drifts. Fresh broader identity
+competition and RF-age-matched orbital-prior validation remain open. Full413
+and untouched/new-location validation are still required; do not close the goal.

@@ -34,6 +34,20 @@ The [receiver-prediction follow-up](../2026_10_19_ds23_dense_receiver_prediction
 
 The [shared-carrier study](../2026_10_19_ds23_shared_carrier_constants/README.md) tests common satellite offsets with Gaussian or Student fragment deviations, preserving the previous correlation control. On the original twenty scans, RF selection worsens accuracy to **1.355/1.187 km c0 mean/median** and **1.284/1.007 km fitted-c**; robust alternatives are selected on no scan. These hypotheses are not promoted. Separately, dense scan 202 with fast RX1 and Gaussian 30 Hz fragment deviations reaches **1.646/1.630 km** and retains 67335 after fresh screening of all 1,569 causal candidates and seven full paired fits. That one-scan gain does not replace the negative cohort result or satisfy the 0.5 km goal. All original calibration points remain.
 
+The [RX2 measurement cohort](../2026_10_19_ds23_rx2_measurement_cohort/README.md)
+remeasures **322 curves / 11,167 probes** across the twenty fast/adaptive
+development scans at 2.5 and 10 MHz. Median fixed-degree radio RMS falls
+**78.07→22.18 Hz**, but the fixed local-noise policy gives **1.306/1.171 km c0
+mean/median** and **1.266/0.950 km fitted-c**. Its median worsens; no default
+changes. The five-orbit-mode and RF-selected controls also fail to improve
+both metrics. Every failed pair falls back without extra trimming. A qualified
+continuous pilot fitter is 3.04 times faster than the reference on the
+96-probe development benchmark; that is core desktop fitting, not embedded or
+full-pipeline runtime. Fresh bounded identity checks on scans 217/321 retain
+their incumbent families, and only two of 96 probes support phase coherence
+above 0.9. Cleaner radio evidence alone does not resolve the position bias
+or establish the 0.5 km goal.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
