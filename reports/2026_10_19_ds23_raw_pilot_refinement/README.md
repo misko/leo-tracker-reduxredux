@@ -107,7 +107,9 @@ the original incumbent pair and preserve raw failures. All four new paired
 trials pass the final gates. Unrefined points remain exactly unchanged.
 
 Only37 active calibration points change in202: the two selected RX1 curves
-are outside the incumbent calibration mask. In274, fixed refinement changes
+are active, while the cleaner37-point RX2 curve is outside the incumbent
+calibration mask after the learned phase-prior fit. Its CFO improvement cannot
+affect this fixed-mask position trial. In274, fixed refinement changes
 152 and joint refinement165 active points. These are deliberately partial
 interventions, not full-scan re-acquisition. The old radio-noise law has a40Hz
 floor and receiver-blind variance learning; it does not give the newly cleaner

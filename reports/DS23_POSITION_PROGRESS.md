@@ -463,7 +463,11 @@ Partial matched c position interventions retain the original noise, times,
 calibration masks, labels, aliases and priors; five phase rounds x48 steps,
 regional-center cold start. All four new paired trials pass final gates.
 202 c0/fitted baseline3.0609/3.0602 km -> joint3.0653/3.0645; only37 active
-calibration points change. 274 baseline1.3173/1.2769 -> fixed1.3080/1.2673 ->
+calibration points change (the two RX1 curves, not the37-point RX2 curve).
+The RX2 curve is masked by the learned phase-prior fit; an earlier report
+incorrectly attributed this mask to the RX1 curves. The subsequent canonical-ID
+audit corrects that explanation without changing numerical outputs.
+274 baseline1.3173/1.2769 -> fixed1.3080/1.2673 ->
 joint1.2980/1.2563; fixed152 and joint165 active points change. Strong radio
 RMS gains do not establish position improvement or solve phase degeneracy.
 
@@ -493,3 +497,63 @@ preserving every unmodified observation's exact effective original noise.
 Use independent-frame/predictive radio checks, account for differing effective
 times, optimize the measured local-fit cost before widening re-analysis, and
 then test untouched scans. Full413/locality generalization is still pending.
+
+## Checkpoint: refined precision and whole-family reentry, 2026-10-19
+
+Previous goal turn made progress and published as eec4b4e56. This turn also
+made progress. The 0.5 km mean/median objective remains active and unmet.
+
+tools/ds23_refined_noise.py learns per-curve uncertainty solely from reliable
+local radio estimates: profile-BIC degree0–4 with>=4 points/coefficient;
+leave-one-out predictive RMS, alternating-frame difference RMS/2 after radio
+rate/effective-time correction, and declared5Hz floor. Boundary points stay in
+the position likelihood at original CFO/noise and do not learn refined sigma.
+RX1 proxies79.75/111.81Hz on202 and153.31/164.02 on274; RX2 proxies11.33Hz on202,
+12.51/9.86Hz on274. Between-window scatter exceeds alternating-frame disagreement,
+particularly RX1; it is not all explained by instantaneous thermal noise.
+
+New precision research closure preserves the learned pre-RF phase model,
+physical orbit priors, fragment constants, Gamma noise and original-point
+uncertainties while allowing below40Hz scales. Every arm uses1Hz residual
+reference; normalized ELBO remains absolute. A synthetic test verifies equality
+up to a known additive constant and exact unchanged-point noise fidelity;
+real reference-only baseline endpoints reproduce within1m in both cases.
+
+Canonical-ID audit corrected the prior report:202's21+16 RX1 points are active;
+its cleaner37-point RX2 CH2 curve is masked. The learned phase refit removed
+both that curve and its34-point RX2 CH3 companion, all NORAD64442. Old numerical
+outputs stand; report prose/generator are corrected. No RX2 precision change
+can affect a fixed-mask trial with those points excluded.
+
+Fixed-mask precise-sigma202 error3.0721/3.0710km vs baseline3.0609/3.0602;
+274 improves1.3173/1.2769->1.2523/1.2068. Effective-time control (all geometry,
+indexes, RX bases and whiteners rebuilt) gives2741.2507/1.2048. Restoring only
+202 CH2 gives raw trial2.2248/2.2230 with timing but fails lag1ACF~.701>4/sqrt37;
+it correctly falls back. A synthetic opposite-chirp asymmetric-envelope test
+qualifies local CFO effective time within0.2Hz, not historical acquisition time.
+
+Adding BOTH missing eccentricity-vector directions per supported family, shared
+across RX/CH, uses existing causal latest/previous-TLE disagreement scales only.
+202 CH2 residual RMS~11Hz and its conditional gate now pass, but the family
+still fails independent-owner support because CH3 is masked. Reenter BOTH
+originally accepted curved family companions, retaining CH3 archived CFO/noise:
+precise model alone fails both; shared eccentricity passes every active-track
+gate in both arms. This restores71 calibration points with error2.6014/2.6013km.
+This is not a recomputed all-GLRT association count or untouched validation.
+
+Same-data normalized c0 evidence improves16.894 with eccentricity on202 family.
+On274 eccentricity yields geographically better1.1787/1.1246 but loses RF
+evidence by.08377, so RF-only development selection retains simpler274 model.
+Do NOT choose that GPS-favored variant. Eight focused tests pass; results,
+three figures, source snapshots and full evidence are in
+reports/2026_10_19_ds23_refined_precision/. No new RF, TLE retrieval, input
+mutation, point removal, alias change or production DSP modification occurs.
+
+NEXT ACTION: all-causal-catalogue identity search for newly active precise202
+family (earlier broad beam ignored it while masked); refine its CH3 companion
+through the bounded existing-IQ read port. Legacy gates have75Hz scale floors
+and conservative correlations: qualify precision-aware predictive structure
+tests before promoting below40Hz measurements or family reentry. Between-window
+RX1 scatter greatly exceeds odd/even frame noise; investigate common jitter,
+retune behavior and intrawindow frequency dynamics with RF-only controls.
+Freeze a general rule before untouched scans. Full413 remains untested.

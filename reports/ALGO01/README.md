@@ -24,6 +24,8 @@ The [clock and measurement controls](../2026_10_19_ds23_clock_measurement_contro
 
 The [archived-IQ refinement study](../2026_10_19_ds23_raw_pilot_refinement/README.md) tests seven complete graph curves, 240 observations, on development scans 202 and 274. Radio-only joint carrier/epoch/code-rate fits reduce the selected RX2 polynomial RMS from 41–99 Hz to 9–12 Hz; RX1 improves much less. Partial position interventions preserve original uncertainties, masks, labels and paired c budgets: scan 274 improves by about 20 m, while scan 202 remains near 3.06 km. These are measurement diagnostics, not a replacement ALGO01 default or independent validation. Actual acquisition/configuration provenance remains incomplete for 32 archived score replays.
 
+The [precision and family-reentry study](../2026_10_19_ds23_refined_precision/README.md) corrects an earlier mask explanation: scan 202's refined RX2 curve was excluded, while the two RX1 curves were active. RF-only predictive noise, effective timestamps and shared causal eccentricity-vector modes allow its original 71-point family to reenter with every native gate passing in both c arms; error becomes 2.601/2.601 km. Scan 274's simpler RF-preferred precision/timestamp model reaches 1.251/1.205 km. Extra eccentricity improves its GPS error but slightly loses penalized RF evidence and is not selected there. This is a two-scan development rule, not a new cohort result or a default. Legacy gate sensitivity at the new precision still needs qualification.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

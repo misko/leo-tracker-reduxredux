@@ -1,0 +1,70 @@
+{
+  "checks": {
+    "DS23-0202": {
+      "precision": {
+        "source": "tools/probe_ds23_refined_precision.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_times": {
+        "source": "tools/probe_ds23_refined_timestamps.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_eccentric": {
+        "source": "tools/probe_ds23_refined_eccentricity.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_restore": {
+        "source": "tools/probe_ds23_refined_restoration.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_family": {
+        "source": "tools/probe_ds23_refined_family_reentry.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      }
+    },
+    "DS23-0274": {
+      "precision": {
+        "source": "tools/probe_ds23_refined_precision.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_times": {
+        "source": "tools/probe_ds23_refined_timestamps.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      },
+      "_eccentric": {
+        "source": "tools/probe_ds23_refined_eccentricity.py",
+        "source_hash_matches": true,
+        "paired_validity_and_fallback_verified": true,
+        "point_counts_match_both_c_arms": true
+      }
+    }
+  },
+  "focused_tests": {
+    "command": "PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m pytest -q tests/analysis/test_ds23_refined_noise.py",
+    "exit_code": 0,
+    "result": "8 passed in 0.94s"
+  },
+  "tests_source_sha256": "c790518c0d335c0591c9866f965b2e08b9391b08f001ac7dc7957c382ff77fd2",
+  "summary_sha256": "4b4b66b93440985a99a3dc98d71a1e5baeb763ca807489c106d9206b31b5a9ea",
+  "no_original_data_or_golden_fixture_changed": true,
+  "matched_c_and_fallbacks_verified": true,
+  "GPS_inference_absent": true,
+  "old_mask_prose_corrected": true,
+  "full_DS23_goal_not_achieved": true,
+  "RF_policy_selection_is_development_only": true,
+  "precision_aware_validation_not_claimed": true
+}
