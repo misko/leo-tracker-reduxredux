@@ -236,3 +236,31 @@ Example figures:
 ![Loss and gradient](../2026_10_18_algo01_ds23_0217/loss_gradient_10km.png)
 
 ![Regional restart convergence](../2026_10_18_algo01_ds23_0217/convergence_10km.png)
+
+## 6. Diagnostic addendum, 2026-10-19 UTC
+
+The [DS23 uncertainty study](../2026_10_19_ds23_uncertainty_study/README.md)
+adds the following controls for subsequent DBG01 investigations. They supplement
+the published figures above; they do not replace the original frozen examples.
+
+Report the recorded UTC anchor and its complete host bracket. A midpoint is an
+estimate, not exact sample UTC. For a clock sensitivity control, shift one shared
+UTC value inside those recorded bounds, query ECEF geometry at the shifted UTC,
+and keep elapsed device times unchanged for receiver drift/smooth corrections.
+Freeze the TLE cutoff at the original earliest bound. Keep satellite phase
+adjustments separate from UTC, and hold data/labels/aliases fixed across the
+clock grid. Report both RF loss and position effects. A boundary optimum on a
+nearly flat profile does not identify a precise clock correction.
+
+When nuisance uncertainty could explain the error, report local Schur position
+information and oracle controls freezing receiver, satellite phase/orbit and
+fragment terms at their fitted values. State which noise/prior precisions are
+conditioned on, check derivative steps, and label these as local generalized
+widths. They are not new position estimates, calibrated coverage or a fundamental
+CRLB. Do not infer that reducing an oracle width is an available algorithmic fix.
+
+If an identity decision appears driven by the approximate integrated objective,
+an optional fixed-position importance audit can test its approximation gap.
+Preserve the same data, prior and normalization, and report sample count,
+effective sample size and Monte Carlo uncertainty. Poor sampling is inconclusive.
+Keep a c0-only objective audit separate from paired-c localization comparisons.

@@ -57,6 +57,76 @@ retained under masking for controlled comparisons. No linear tracks calibrate.
 
 ## Latest work / next useful continuation
 
+### 2026-10-19 uncertainty study: completed progress
+
+Previous goal turn was progress: publishedthrough7739f1194 with20-scan
+receiver/band/family residual transfer. This turn completed three new20-case
+studies and two UTC probes; no goal completion. Mainreport:
+`reports/2026_10_19_ds23_uncertainty_study/README.md`.
+
+Band covariance variance-matchedrho1/.5/0: all20pairedgatespass.
+rho.5 c0mean/median1.350/.959,fitted1.280/.828;rho0 1.450/.991,
+fitted1.338/.852; scalarcontrol1.315/.991 and1.266/.896.
+Low-only cases are numerical nullcontrols; no newdefault selected.
+
+Satellite-specific scale usesa variance-one population log-scale mixture,
+moment-matched posterior variance, pre-RF chronologicalqualification only.
+4/20qualify, c0mean/median1.309/.989,fitted1.261/.896,allgatespass.
+Its gain is tiny. Source `learn_ds23_satellite_phase_scale.py`,
+`probe_ds23_satellite_phase_scale.py`, `run_ds23_satellite_phase_scale.py`.
+Rawoutputs `reports/2026_10_19_ds23_satellite_phase_scale/`; newhistory
+receiptsin`...ds23_causal_phase_mean/history/*_satellite_scale.json`.
+
+Local Schur-information studyall20cases: medianlocalRMSradiusc0
+all-uncertain1.029km,receiver-known.704,phase-known.221,
+orbits-known.183,fragment-known.765,all-known.012. These are conditional
+generalized widths with Gamma precisions fixed, not calibrated intervals or
+new localizationresults. UTCuncertaintyexcluded, so widths optimistic.
+All40 informationmatrices positive; derivative.01/.02kmrelativechange<6.1e-10.
+Source `diagnose_ds23_position_information.py`; outputs
+`reports/2026_10_19_ds23_position_information/`.
+
+RecordedUTCuncertaintywasomittedfrompositionfit. Preparedmetadatahas
+`utc_half_width_s` forbothformats: adaptive~.183s,fast~.125s.
+`probe_ds23_utc_bracket.py` shiftsgeometryquerytimesonly, notelapsedhardware
+times, keepsoriginalearliestTLEcutoff andlabels/masks. Fiveclocknodes
+in[-half,+half], no trimminginsidegrid, pairedc fits. Both257/202 RFselect
+earlybound. 2573.722/3.699→2.877/2.859butRFgainonly.104c0
+(weaklyidentified);2023.061/3.060→2.943/2.942. Clock0replayexact.
+No clockdefaultadopted; notafullcohortrun.
+
+Rao-Blackwell importanceaudit257sameprior/data atincumbent/challengerRF
+endpoints: 1024then4096draws, no positionrefit, c0-onlyobjectiveaudit.
+4096 estimates−2logevidence5120.115/5135.449, nominalMCSE.015/.014,
+ESS3340/3426. ELBO5122.631/5137.900;gaps2.517/2.451.
+Challengerstillloses15.334vsELBOgap15.268. Mean-fieldapproximationdoes
+notexplainthisdecisionwithin thisaudit. Rawreceipts
+`reports/2026_10_19_ds23_marginal_evidence/`, includingpreservedn1024.
+
+Tests19passed: bandcov8,information3,satellitescale4,UTC2,evidence2.
+No runtimecomponentchanges,newRF,IQreread orQNAPmutation. ALGO01research
+statusandDBG01timing/informationaddendumupdatedforpublication.
+
+Extra read-onlyarchiveinventory: latest3pre-scan257snapshotscontain0
+regionalfuture-referenceepochs; `/tmp/ds23-prepublished-epoch-inventory.json`.
+Donotrelaxepoch/collectioncausalrules. Fastmetadatahasdeliveryclocks per
+visit whileRFprobesomit skippedvisits; alignbyexplicitvisit_index, notarray
+length. Quickunpublishedtiminginventoryon11fastcases: lower-envelope
+device/hostratesabout−.6..+.25ppm,minimumdeliveryupperanchorabout+70ms
+frommidpoint. Unknowntransportlatency prevents treatingthisasactualUTC.
+No timing-calibrationprior wasadoptedfrom thatinventory.
+
+Use structuredJSON reads ofselectedscalarfields: fasttrackingJSONisone
+huge line and containsnestedsource/probes. Do nothead/printwholemetadata.
+
+Next meaningful tests: variance-matched shared frequency constants for
+same-satellite/same-RF fragments (physicallycommontransmitter clock), and
+causal full-state signed orbitforecasts, notonlyphase. Currentphysicalmode
+means arezero; old/new projectedradiuscoefficientsaremostly−1on217,
+suggesting a signedforecast hypothesis toqualify using pre-RFTLEtriples.
+Avoid more arbitrary GPS-selected prior sweeps. Untouched-scan validation
+andfullDS23scope remainoutstanding; goal staysactive.
+
 ### Latest completed refinements and failure controls
 
 Published complete follow-up reports/raw receipts/source snapshots inremote

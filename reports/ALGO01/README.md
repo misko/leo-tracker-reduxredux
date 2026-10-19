@@ -14,6 +14,8 @@ A later [causal-history phase-prior prototype](../2026_10_18_ds23_history_calibr
 
 [Further variance-law and weight ablations](../2026_10_18_ds23_prior_refinements/README.md) do not improve that cohort result. [Remaining-failure controls](../2026_10_18_ds23_remaining_failures/README.md) investigate scans257/202/273 with family/receiver deletions and13 regional restarts each. A257 alternative family passes gates and lies closer to evaluation GPS but loses the RF objective, primarily through phase regularization; it is documented as an unresolved identity/model diagnostic, not a GPS-selected correction.
 
+The [receiver/orbit uncertainty study](../2026_10_19_ds23_uncertainty_study/README.md) finds that band-specific smooth corrections do not improve both cohort metrics, and satellite-specific historical scales give only a small change to **1.309/0.989 km c0** and **1.261/0.896 km fitted-c**. Local information diagnostics identify satellite-phase uncertainty as the largest tested nuisance contribution. The study also audits recorded UTC brackets and checks the variational evidence with importance sampling. These are research controls; no new ALGO01 default or achieved 0.5 km accuracy is asserted.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
