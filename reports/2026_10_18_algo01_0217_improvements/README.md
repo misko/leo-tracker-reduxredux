@@ -7,6 +7,13 @@ sub-kilometer correction. Candidate-gap weighting alone hardly moves the
 position. Family-replication weighting helps more, but requires the original
 gates to remain enforced; the result is still a development observation.
 
+**Later checkpoint:** the [weighted-prior cohort](../2026_10_18_ds23_weighted_prior_controls/README.md)
+includes a combination reaching 0.493/0.415 km on scan217. It performs worse
+across the cohort than the simpler fragment300 control and is not selected by
+the minimum RF objective on common data. The results below remain the original
+confidence/identity/recovery experiment, rather than being rewritten around
+that later single-case success.
+
 ## Controlled inputs and scope
 
 All inference uses the same frozen DS23-0217 radio archive, 1,411-member causal

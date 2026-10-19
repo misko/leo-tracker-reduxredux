@@ -8,6 +8,8 @@ The best demonstrated corrected results on the two inspected DS23 scans are **1.
 
 An independently specified [receiver-support weighting prototype](../2026_10_18_ds23_family_weighting_active_support/README.md) reaches **1.612/1.325 km mean/median at c=0** and **1.607/1.305 km with fitted c** on that same 20-scan development benchmark, with all final paired gates passing. It remains a separate variant; this is not the 0.5 km target or new-location validation.
 
+The subsequent [weighted-prior controls](../2026_10_18_ds23_weighted_prior_controls/README.md) reach **1.452/1.225 km mean/median at c=0** and **1.427/1.030 km with fitted c** using receiver support and 300 Hz fragment-offset priors. A different combination reaches 0.493/0.415 km on scan217 but performs worse across the cohort; neither result establishes the DS23-wide 0.5 km target. All final paired gates pass, and GPS is used only for evaluation.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
