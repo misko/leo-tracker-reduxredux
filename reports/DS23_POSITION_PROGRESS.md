@@ -59,6 +59,22 @@ retained under masking for controlled comparisons. No linear tracks calibrate.
 
 ### Latest completed refinements and failure controls
 
+Published complete follow-up reports/raw receipts/source snapshots inremote
+main b9faf9768. The20-scan learned residual audit also completed:
+`reports/2026_10_18_ds23_learned_residuals/`, replayloss exact,3new matching
+tests pass. High-band evidence occurs in11 short_window_iq_recording scans;
+the9 adaptive scans are low-band-only inthis cohort (do not reverse these).
+Atc0 pooled residual correlations: sameRX/sameband/differentfamily+.459
+(593trackpairs/20scans),sameRX/differentband/differentfamily+.329
+(444/11),differentRX/sameband/samefamily−.020(124/19).
+Medianofscanmedians+.449,+.304,−.039 respectively. Pairsoverlap and are
+conditionedonjointfit: descriptive, notcausal identification orindependent
+significance tests. RX1low/highmedianRMS119.4/147.9Hz;RX279.7/108.6Hz.
+Possible next controlled prototype: variance-matched receiver smooth
+covariance split into common and independent per-band terms; current
+smooth basis is shared across bands. Keep linear drift and marginal
+per-band variance unchanged, and use low-only cases as exact null controls.
+
 The causal scalar-history cohort and inputs/source snapshots are published to
 remote main in1bf3a7853771b5044d2dc3de8513d485167710ab. ALGO01 and DBG01
 were already pushed; no new production default has been promoted.
