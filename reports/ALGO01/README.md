@@ -12,6 +12,8 @@ The subsequent [weighted-prior controls](../2026_10_18_ds23_weighted_prior_contr
 
 A later [causal-history phase-prior prototype](../2026_10_18_ds23_history_calibrated_phase/README.md) learns forecast shrinkage, phase uncertainty and heavy tails from pre-scan TLE updates across the regional candidate bank. On the same 20 development scans it reaches **1.315/0.991 km mean/median at c=0**, and **1.266/0.896 km with fitted c**. All paired final gates pass. The prior is qualified on later historical TLE updates that still precede RF; neither GPS nor RF selects its hyperparameters. This remains a research extension with fixed inherited satellite labels, not an achieved 0.5 km target or a change to the specification below.
 
+[Further variance-law and weight ablations](../2026_10_18_ds23_prior_refinements/README.md) do not improve that cohort result. [Remaining-failure controls](../2026_10_18_ds23_remaining_failures/README.md) investigate scans257/202/273 with family/receiver deletions and13 regional restarts each. A257 alternative family passes gates and lies closer to evaluation GPS but loses the RF objective, primarily through phase regularization; it is documented as an unresolved identity/model diagnostic, not a GPS-selected correction.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

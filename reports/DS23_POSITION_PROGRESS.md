@@ -57,6 +57,49 @@ retained under masking for controlled comparisons. No linear tracks calibrate.
 
 ## Latest work / next useful continuation
 
+### Latest completed refinements and failure controls
+
+The causal scalar-history cohort and inputs/source snapshots are published to
+remote main in1bf3a7853771b5044d2dc3de8513d485167710ab. ALGO01 and DBG01
+were already pushed; no new production default has been promoted.
+
+Both subsequent20-scan cohorts completed. Summary:
+`reports/2026_10_18_ds23_prior_refinements/README.md`.
+All final paired gates pass; scalar replay is exact. Variance law qualifies
+on historical TLE prediction for18/20, but selected policy worsens mean/median
+to1.420/1.109 c0 and1.380/1.038 fitted-c. Unit powers under scalar prior:
+1.443/1.354 and1.365/1.223; confidence-only powers1.560/1.354 and1.500/1.325.
+Keep scalar+RX support as best current fixed rule1.315/.991 and1.266/.896.
+
+`reports/2026_10_18_ds23_remaining_failures/README.md` contains full controls
+and figures for257/202/273. Best single-family GPS-oracle deletions still
+leave2.861/2.820,2.406/2.402,1.913/1.922km respectively. Receiver deletions
+also fail to solve them. Thirteen fixed regional starts all converge to the
+same displaced endpoint on each scan (spread<3e-8km), using fixed learned
+labels/masks. These are not association-reselecting full pipeline restarts.
+
+New receiver RF-dependent linear-rate mode (one/RX, within band, sigma0/.25/1
+Hz/s/GHz) barely helps2171.025→1.009km and does not fix257. Seed-state and
+receiver-basis dimensions both expanded; zero mode replays to~1e-8km.
+
+257 whole-family search:26 all-bank single-family alternatives and35 pairs/
+triples,114.25s, no budget truncation, no accepted RF improvement. One valid
+single replacement63070→48482 on both RXs gives1.083/.831km, but full
+normalized generalized c0 RF loss is15.268 worse than incumbent. Data cost
+only+2.804; phase quadratic+5.318 and phase Gamma+4.972 dominate the
+disadvantage. Challenger phase−5.612s vsincumbent−.980s. Do not GPS-select
+it or label it true. Plot and decomposed receipts in remaining-failures report.
+This is a useful next focus: conditional causal uncertainty/identity ambiguity,
+not more regional starts or an arbitrary location-selected prior.
+
+No analysis subprocesses remain intentionally running after these cohorts.
+No new RF, IQ reread or QNAP mutation. Tests passed: history/calibration/
+variance10, likelihood weights6, RF-rate basis/seed-state3. Old intermediate
+script failures were missing SciPy (removed dependency), a seed-dimension
+mismatch (fixed and tested), and a nested pytest.approx literal (fixed).
+Goal stays active;0.5km mean+median is not achieved. Need untouched-scan
+validation and eventually broader DS23 coverage, not just these development20.
+
 ### Causal-history cohort completed
 
 `reports/2026_10_18_ds23_history_calibrated_phase/` now contains all20 cases,
