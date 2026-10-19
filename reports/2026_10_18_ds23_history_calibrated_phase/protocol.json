@@ -1,0 +1,79 @@
+{
+  "cases": [
+    "DS23-0274",
+    "DS23-0007",
+    "DS23-0321",
+    "DS23-0373",
+    "DS23-0365",
+    "DS23-0257",
+    "DS23-0202",
+    "DS23-0273",
+    "DS23-0138",
+    "DS23-0204",
+    "DS23-0108",
+    "DS23-0217",
+    "DS23-0109",
+    "DS23-0045",
+    "DS23-0173",
+    "DS23-0143",
+    "DS23-0188",
+    "DS23-0161",
+    "DS23-0074",
+    "DS23-0242"
+  ],
+  "workers": 2,
+  "prior_calibration_uses_only_pre_RF_TLE_history": true,
+  "candidate_history_is_not_RF_family_whitelist": true,
+  "history_window_hours": 72,
+  "historical_temporal_split": 0.7,
+  "hyperparameters": {
+    "shrinkage": [
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1
+    ],
+    "prior_nu": [
+      null,
+      3,
+      4,
+      8,
+      16
+    ],
+    "sigma_multiplier_range": [
+      0.1,
+      4
+    ]
+  },
+  "qualification": "heldout earlier-TLE predictive density improves, \u226530 transitions; else Gaussian zero-mean baseline",
+  "primary_algorithm": "mean_and_distribution",
+  "ablations": [
+    "baseline",
+    "mean_only",
+    "distribution_only"
+  ],
+  "GPS_used_for_selection_or_fitting": false,
+  "c0_fitted_c_matched": true,
+  "regional_center": [
+    37.906,
+    -122.545
+  ],
+  "box_width_km": 25,
+  "position_start": [
+    0,
+    0
+  ],
+  "budgets": {
+    "phase_rounds": 5,
+    "steps_per_round": 48,
+    "paired_gate_rounds": 4
+  },
+  "original_sample_sha256": "82f2e3ef7c5a8ca1b46e3b8c4462271c7d18b766b9461102cfd6efca16eb7aba",
+  "code_sha256": {
+    "export_ds23_causal_history.py": "78658828965b3a2a06f762c5057a14a39c492cf1cf06763174a69904218ef6c8",
+    "learn_ds23_causal_phase_forecast.py": "8e288bff10bef9339109d704a0172ebac53c1b08c0557bebfc479d7077d2dd8f",
+    "probe_ds23_history_calibrated_phase.py": "4303df69d6f364b53b9e8d2e2fca6dbd332b349ef354a088d4049e607b7cbebe",
+    "run_ds23_history_calibrated_phase.py": "e15d0cd93011a2001458528ad99c551be60d0616bf8cb97684f8fd33cd1563e6"
+  }
+}

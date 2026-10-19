@@ -10,6 +10,8 @@ An independently specified [receiver-support weighting prototype](../2026_10_18_
 
 The subsequent [weighted-prior controls](../2026_10_18_ds23_weighted_prior_controls/README.md) reach **1.452/1.225 km mean/median at c=0** and **1.427/1.030 km with fitted c** using receiver support and 300 Hz fragment-offset priors. A different combination reaches 0.493/0.415 km on scan217 but performs worse across the cohort; neither result establishes the DS23-wide 0.5 km target. All final paired gates pass, and GPS is used only for evaluation.
 
+A later [causal-history phase-prior prototype](../2026_10_18_ds23_history_calibrated_phase/README.md) learns forecast shrinkage, phase uncertainty and heavy tails from pre-scan TLE updates across the regional candidate bank. On the same 20 development scans it reaches **1.315/0.991 km mean/median at c=0**, and **1.266/0.896 km with fitted c**. All paired final gates pass. The prior is qualified on later historical TLE updates that still precede RF; neither GPS nor RF selects its hyperparameters. This remains a research extension with fixed inherited satellite labels, not an achieved 0.5 km target or a change to the specification below.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
