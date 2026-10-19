@@ -337,3 +337,35 @@ For bounded archived-IQ qualification, see the [seven-curve refinement study](..
 The [precision/family-reentry controls](../2026_10_19_ds23_refined_precision/README.md) show why every point-level intervention needs exact active-ID intersections. A cleaner curve can be entirely masked. Distinguish conditional residual rejection from the independent-owner cascade: eccentricity fixed scan 202's residual gate, but a second original channel companion was required for family support. Reconsider whole originally accepted companions with matched c arms, retain all incumbent points, and preserve failures rather than weaken a gate. Restore below-40Hz uncertainty only in an explicit research model with consistent normalization and unchanged noise for every other observation. Compare complexity by normalized RF evidence on the same observations; do not choose the more accurate GPS endpoint when RF prefers the simpler model. Report that legacy 75Hz floors may be insensitive to structure at newly measured 10Hz precision.
 
 After restoring previously masked observations or changing their precision, repeat broad causal identity competition; the old masked-data ranking is insufficient. The [scan-202 follow-up](../2026_10_19_ds23_refined_catalogue/README.md) uses a shared phase across family curves, all-catalogue proposal screening and matched full physical fits. It reverses an apparent fixed-identity position gain. Report the closest geographic candidate even when RF rejects it, but never select it using GPS. Separate legacy gates from precision-scaled conditional diagnostics. For a loss map, identify actual samples, box/radius clipping, fixed identities and nuisance-refresh rounds; mark gradient arrows as directions with arbitrary display length, not descent trajectories. At the known site and RF endpoint, decompose the normalized objective exactly and compare finite-difference gradients at two step sizes before attributing bias to an optimizer stall or one satellite.
+
+## 9. Dense measurement and uncertainty-consistent gates, 2026-10-19 UTC
+
+The [dense RX2 and causal-shape report](../2026_10_19_ds23_dense_rx2_and_causal_shape/README.md)
+keeps every original active calibration point. Recompute radio-only noise from
+local measured-CFO scatter rather than treating a whole-polynomial PRESS error
+as measurement variance. Report leverage, original masked-ID intersections,
+whole-curve prediction error, local scatter, split-frame floor and boundary
+fallbacks separately. A tail already excluded from calibration can still
+distort whole-curve noise learning. Never hide that by deleting active points
+or learning noise from satellite/GPS residuals.
+
+With heterogeneous pointwise sigmas, evaluate GLS profile residuals and weighted
+mean/slope/step tests, quadratic structure and whitened correlation. Preserve
+physical RMS/bias limits, aliases, visibility and independent-owner support.
+Keep the old rejection and revised development outcome side by side. Require
+uniform-noise parity, mixed-noise false-rejection controls and sensitivity to
+real slopes/discontinuities before interpreting a gate change. Exact saved-fit
+replay must show that no refit or observation deletion was used to pass it.
+Passing a pooled structure gate does not certify iid Gaussian residuals;
+illustrate individual large standardized residuals and noisy fallback prefixes.
+
+Keep causal mean and covariance qualification separate: the signed full-state
+forecast selected zero on scan 202, while a zero-mean Student diagonal shape
+prior improved historical innovation density. A later historical TLE remains
+a proxy, not true orbit error. Split by publication events and require RF-age
+qualification before generalizing next-publication results. Report both c arms,
+RF-ranked identity alternatives, unchanged denominators and actual position
+accuracy. A six-identity inherited shortlist retest is not a fresh all-bank
+rescreen under changed data. Update RX/band/family residual comparisons with
+the same unique-time matching rules after measurement interventions; keep
+conditional correlation distinct from causal attribution.

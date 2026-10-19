@@ -626,3 +626,83 @@ not runtime input: class paths are DSX-specific and its shrinkage validation
 is phase-only. Do not reuse that as full-state validation or import a DSX fitted
 state. Separate RF-only selection from GPS reporting and keep every regression.
 Full413 and untouched/location generalization still outstanding.
+
+## Checkpoint: dense RX2 evidence and causal orbital uncertainty, 2026-10-19
+
+Previous checkpoint was published as 09040783f. This turn made progress; the
+goal remains active and the 0.5 km mean/median target remains unmet. The
+[new report](2026_10_19_ds23_dense_rx2_and_causal_shape/README.md) is a one-scan
+development result, not a new 20-scan benchmark or published ALGO01 default.
+
+Completed 63 simultaneous-family proposals on the earlier four-curve precision
+input for scan 202, including alternatives failing alone. Six full paired
+finalists yield no accepted RF improvement. Proposals use two rounds/12 steps;
+finalists use five rounds/48 steps. Swaps are allowed, mergers forbidden.
+This is separate from the later dense-data experiments.
+
+The signed full-state shape forecast across 6,256 pre-RF historical transitions
+selects beta zero; no deterministic mean is adopted. Training BIC selects
+Student diagonal covariance with nu=3, improving later pre-RF TLE innovation
+density by 54.12%, not position by 54%. Covariance diagonal is
+[.86489216, 5.21504796, 9.69428704, 3.89768719, 5.24534532]; phase prior is
+unchanged. The 2,905 older/3,351 later transitions split by publication event.
+TLE innovations are proxies; RF-age-matched historical qualification is needed.
+Sparse-data Student 2.959 km versus same-covariance Gaussian 3.338 km controls
+are retained.
+
+The public read port remeasured all original active RX2 curves: 30 curves,
+1,050 whole points, 1,043 active; 6,323 verified windows below the 7,000-window
+and 1,200-point limits. Local IQ (~289 MB) stays outside publication. Both
+525-point numerical workers finished. No new RF or source recording mutation.
+Earlier RX1 refinements contribute 37 points; combined inputs have 1,087 unique
+rows. Active calibration stays 2,646 points (RX1 1,603; RX2 1,043). Bounded radio
+carrier search at ±600 Hz/20 Hz steps with final bound ±800 Hz corrects 19
+formerly quality-failing estimates, without orbit/GPS/track-shape guidance.
+
+Global PRESS noise learning fails for RX2 CH2 T004: 21 points, a 19-point active
+prefix and two already-masked late points. Quartic maximum leverage .99665
+gives sigma 2,289 Hz. Studentized global scatter is 238 Hz; local 16-point,
+degree 0–3 median scatter with split-frame floor gives 7.65 Hz. All reliable
+points participate, without satellite/GPS residuals or active-point trimming.
+Bounded pilot-cache parity tests pass; a .604→.242 s local benchmark is neither
+a whole-pipeline nor an ARM benchmark.
+
+Dense CFO with old noise gives 3.1067/3.1073 km and passes legacy gates.
+Dense local-noise narrow-search fits give 2.4088/2.4097 km; with Student shape,
+2.3987/2.3996 km. Broad carrier search gives 2.3262/2.3268 km; with Student,
+2.2823/2.2826 km. These fail legacy gates but pass explicit revised gates.
+All retain 2,646 active points. The remaining broad-search legacy failure is
+RX2 CH6 T000: weak/noisy first points, raw step statistic 4.956 > 4.
+
+Revised gates use declared sigmas for GLS/weighted structure tests, retaining
+numeric thresholds, original and new profile physical bounds, aliases,
+elevation and support. Uniform 75 Hz reproduces every old structure statistic.
+In 400 synthetic mixed-noise trials false rejection is 12.5%→0.75%; real
+slope/step controls are rejected. Exact saved broad/narrow posterior replay
+changes ELBO by <1e-5; no refit or observation removal is used to pass gates.
+Original files retain legacy fallbacks; a separate audit records revised
+development outcomes. A roughly 5.5-sigma point remains visible; this does
+not prove iid Gaussian residuals.
+
+Six inherited RF shortlisted identities are retested under both dense priors;
+67335 wins both. Gaussian 64442 gives 1.8768 km but loses RF evidence by 22.15;
+53531 now passes gates, gives 1.2318 km and loses by 109.20. Student 64442 gives
+2.1962 km and loses by 11.90; 53531 fails. No GPS choice. This is not a new
+all-1,569-candidate dense rescreen or global association optimum. Gaussian
+RF loss is 22841.70 versus Student 22856.93; Student is selected by pre-RF
+history, not GPS or best RF fit. Every c pair/control keeps matched budgets.
+
+Same-point c0 residual RMS: RX1 low 117.5→117.0/high 130.4→131.1 Hz;
+RX2 low 59.9→23.6/high 90.1→46.8 Hz. Same-RX1/different-family correlation
+is .454→.465 (101 pairs), RX2 −.243→+.095 (21); same-family/cross-RX
+−.161→−.059 (four). Conditional/descriptive only: nearest unique matches within
+.5 s, at least six matches, dependent track pairs. Twenty-one tests pass in
+3.25 s. Five figures, full numeric evidence, sources and earlier source versions
+are published with explicit noise/gate changes. No production DSP or golden
+fixture change is included.
+
+Next actions: freeze measurement/noise/gate policy and test untouched scans
+with qualified raw read ports; repeat all-bank and other-family competition
+on dense inputs; qualify RF-age-matched shape priors; test receiver/family
+prediction and residual satellite clock terms with precise measurements.
+All 413 scans and untouched/new-location generalization remain outstanding.
