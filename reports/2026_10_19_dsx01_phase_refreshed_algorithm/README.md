@@ -2,7 +2,7 @@
 
 This report documents the current research algorithm, the confirmed phase-linearization correction, the five-scan root-cause investigation, and the recommended next steps. It accompanies the [full root-cause report and 63 diagnostic figures](../2026_10_18_dsx01_localization_root_cause/README.md). The publication date is October 18, 2026 in the user's Pacific time zone; the directory uses the execution host's October 19 UTC date.
 
-The accompanying [DS dataset inventory and creation-date evidence](../2026_10_18_ds_dataset_inventory/README.md) lists 20 located named datasets, plus the DS2-22 revision. Explicit creation timestamps are distinguished from inventory completion dates and TLE-cutoff proxies.
+The accompanying [DS dataset inventory and creation-date evidence](../2026_10_18_ds_dataset_inventory/README.md) lists 20 located named datasets, plus the DS2-22 revision. Explicit creation timestamps are distinguished from inventory completion dates and acquisition-cutoff proxies.
 
 **Recommendation: retain phase refresh as the numerical treatment, and validate receiver-calibration priors on other archived scans before adopting a new calibration policy.** Phase refresh corrects an approximation without adding coefficients or moving the absolute phase prior. It materially improves S01–S03. It does not establish correct satellite identities, calibrated TLE uncertainty, or sub-kilometer accuracy on every scan. S04 remains unresolved.
 
