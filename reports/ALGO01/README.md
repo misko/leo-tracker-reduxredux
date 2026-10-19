@@ -20,6 +20,8 @@ The [fixed-point confidence and association study](../2026_10_19_ds23_associatio
 
 The [causal shape and curvature controls](../2026_10_19_ds23_curvature_shape_study/README.md) promote 29 statistically curved graph fragments, adding 705 calibration points without linear calibration votes or removal of incumbent points. On all twenty development scans this reaches **1.298/0.901 km c0 mean/median** and **1.243/0.881 km fitted-c**. Combining that rule with a pre-RF-qualified orbit-shape mean gives **1.302/0.941 km** and **1.245/0.851 km**, respectively. These are separate fixed-rule research variants; many promoted points were already associated output points, and the 0.5 km target remains unmet.
 
+The [clock and measurement controls](../2026_10_19_ds23_clock_measurement_controls/README.md) add a small shared satellite carrier rate on all twenty scans. RF-selected widths reach **1.314/0.976 km c0 mean/median** and **1.263/0.885 km fitted-c**; four conditional receiver-prediction probes reject extra receiver flexibility. A separate receipt-verified native control exposes deterministic FFT CFO interpolation bias and validates a template-derived inverse in eligible noiseless cases. That correction has not been applied to DS23, and capture-build/noise applicability remains unqualified. No default or achieved 0.5 km accuracy is asserted.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

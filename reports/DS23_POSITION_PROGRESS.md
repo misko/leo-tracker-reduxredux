@@ -354,3 +354,83 @@ family is+.326 before and+.459 after (593pairs/20scans). Both receiver-common
 and satellite-common discrepancies coexist; remaining residual correlation
 alone cannot assign the localization bias entirely to hardware. Both stages
 condition on the same jointly fitted receiver; no independent validation claim.
+
+## Checkpoint: predictive calibration and native CFO response, 2026-10-19
+
+Previous goal turn was progress: full weighting/identity/recovery studies were
+pushed to remote main as5b010d735. This continuation also made progress; goal
+remains active and0.5km mean/median remains unmet. All numbers below are the
+original20 development scans or explicitly identified diagnostic/synthetic tests.
+
+New shared satellite carrier-rate model (active curved support on both RX only),
+otherwise identical causal-history Student phase model and fixed primary masks:
+rate_prior0.25Hz/s gives c0mean/median1.3147/.9894km, fitted1.2655/.8949;
+rate_prior1 gives1.3117/.9932 and1.2661/.8943. RF-only normalizedELBO selection
+among paired-valid widths0/.25/1 chooses1 on10 cases and0 on10, yielding
+1.3135/.9763 and1.2635/.8853km. No GPS selection, no point removal or identity
+change, both c arms same data/prior/budget. All final outputs pass native gates.
+This is too small a gain to explain the main error.
+
+tools/probe_ds23_receiver_prediction.py tests reciprocal omission of the largest
+cross-RX family's RX1/RX2 curves, training position/nuisance from remaining data,
+then predicting test CFO with local joint position/nuisance covariance. Test
+groups use their Gamma(2,2) prior noise, not their own fitted residuals; shared
+family phase is learned on the opposite training RX. Test identities/aliases
+and radio-only noise proxy remain frozen from the incumbent, so this is a
+conditional calibration test, not blind-ID validation or raw-data independence.
+3phase×24steps diagnostic fold;5×48 full paired fits restore every point.
+Cases217/257/273 and smallest-fragment high-band case274 all reject both added
+fast receiver and half-shared band covariance, requiring gains in BOTH directions.
+On217 fastRX improves RX1 predictive score7.27 but worsens RX2 by1.65 and moves
+c0position1.025→1.509km. No new receiver default.
+
+Native timing controls use .build-short-window-native-host/libleo-adaptive-detector.so,
+SHA110c3e8f74952ef6950e35d264854f7acd4024dbeeca18279ce33f09ddaa2768,
+matching its receipt. THREE current C sources also exactly match the build:
+full_search.c, fine_precision.h, native_presence/presence.c. This does NOT prove
+the binary used for each DS23 capture. Blind native search over26 dynamic pilot
+scenes gives positive range-delay curvature gain.999984, epochRMS.105/.110samples
+at2.5MHz (~42/44ns). No IQ, GPS or TLE needed. Prior negative real frame timing
+is still not qualified pseudorange.
+
+Matched ±2000Hz/s chirps, same envelope/epoch, expose effective-CFO-time local
+sensitivity. Most320pairs across2rates×2edges×10CFOfrequencies×8phases are within
+.459ms of midpoint; one near-DC upper2.5MHz peak switch reaches10.6ms. No global
+8ms timestamp shift is justified. Stationary OFF-GRID signals show much larger
+error than exact-bin signals: the native500Hz FFT three-magnitude-bin parabola
+pulls estimates toward bin centers. This is a concrete noiseless estimator bias.
+
+tools/probe_native_fft_bias.py predicts the response solely from published pilot
+template power over the same alternating OFDM symbols and the known500Hz
+interpolator, without training on native results. Its inverse reduces RMS on
+64 eligible independent cases/rate/edge from~10.8Hz to.572/.319Hz at2.5MHz and
+.125/.107Hz at10MHz. Near-DC/boundary cases explicitly remain uncorrected.
+No correction has been applied to DS23. Match actual capture binary/config,
+qualify noise/fading and propagate uncertainty before any deployment claim.
+Canonical measured CFO must be used BEFORE graph integer alias lifting: the
+alias period is not divisible by500Hz. Do not quietly alter golden GLRT fixtures.
+
+Independent modulation-clock warp ±20/40ppm changes synthetic native CFO by
+roughly10–32Hz RMS. An oracle SFO-resampling control only partly removes dynamic
+error; it is not a real-data algorithm. Literature provides an independent
+reason to distinguish frame/carrier clocks and jointly estimate arrival/CFO/SFO:
+https://arxiv.org/html/2501.05302v1 (frame/carrier can differ by beam; timing
+precompensation is a hypothesis), and ION2026 Psiaki/Bowman abstract20760
+(joint edge-pilot carrier, code/carrier divergence, arrival estimation). These
+do not prove the cause of DS23 errors or calibrate our rate priors.
+
+New report reports/2026_10_19_ds23_clock_measurement_controls/README.md includes
+all20 paired rate results,4receiver probes, native controlled figures, exact
+binary/receipt, source snapshots and lossless evidence.13 focused tests pass.
+
+NEXT ACTION: bounded re-analysis of EXISTING DS23 IQ windows, fixed by RF-only
+criteria, to compare native CFO to local pilot CFO/SFO refinement and verify
+native bin-bias applicability. Never collect new RF, mutate QNAP, use future TLE,
+or fit calibration to GPS. Raw roots/manifests are in DS23 manifest raw_recording
+and must be read via existing recording ports; keep reads bounded to selected
+chunks, not a multi-hour corpus sweep. Avoid printing raw_recording/chunks:
+it has thousands of entries (one accidental full-dict diagnostic output was
+truncated; no scientific input changed). Print scalar keys/path/count only.
+Existing code src/leo/storage/scanner_analysis_source.py / short_window.py
+provides read-side ports. The current root no longer has scanner_tracking_source.py;
+use the frozen public exports for prior fits, not an invented replacement path.

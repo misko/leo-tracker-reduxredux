@@ -304,3 +304,30 @@ amplitude threshold. A higher polynomial degree alone is insufficient. Report
 noise-weighted departure from affine, a complexity penalty and residual screens.
 New calibration points may already have been associated as output tracks and
 must not be counted again as association gains.
+
+## 8. Predictive calibration and measurement controls, 2026-10-19 UTC
+
+The [clock/measurement report](../2026_10_19_ds23_clock_measurement_controls/README.md)
+adds reciprocal receiver/family prediction. Omit one satellite family's curves
+on one RX while retaining its opposite-RX evidence and other satellite families.
+Refit position from the regional center and calibration from training data only.
+Predict the omitted full CFO vector with position/nuisance uncertainty; do not
+refit omitted fragment constants or group noise. State that frozen identities,
+alias integers and radio-noise proxies make this a conditional calibration
+test, not independent blind satellite identification. Restore all original
+points for the final matched c=0/fitted-c comparison. Do not accept more receiver
+freedom merely because the in-sample residual decreases.
+
+Before adopting an apparent time-tag correction, use matched opposite chirps
+with the same known pilot envelope and phase. Separate CFO-versus-chirp response
+from off-grid static CFO bias and retain peak-selection switches as exceptions.
+A local sensitivity is not always a physically meaningful measurement instant.
+
+For native measurement qualification, pin binary and build-receipt hashes and
+distinguish that proof from identity of the actual capture binary. Test physical
+delay/Doppler, independent code/carrier rates and off-grid frequency cases.
+The tested500Hz FFT/magnitude-parabola interpolator has a template-predictable
+noise-free bias; a mathematical inverse validated on those cases is not yet a
+qualified noisy-data correction. Canonical GLRT CFO must be used before alias
+lifting, since the frequency alias period is not an integer multiple of500Hz.
+Keep the original persisted GLRT contract immutable and GPS outside calibration.
