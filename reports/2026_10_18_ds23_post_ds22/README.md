@@ -1,0 +1,11 @@
+# DS23: recordings strictly after DS22
+
+DS23 contains **413 recordings: 207 fast and 206 adaptive**, discovered in the established local recording roots. It includes 412 complete recordings and one incomplete recording, 1,845,159 windows/visits and 2,486,568,984,898 compressed IQ bytes. No metadata, index or observed payload-size integrity errors were found. Payload hashes are pinned from the recording authorities; the full 2.49 TB corpus was not rehashed.
+
+Membership uses recording **start time** strictly greater than DS22's cutoff, **1791988460030821438 ns**, and no later than the frozen upper cutoff, **1792370663310836738 ns**. Those bounds are October 14, 2026 07:34:20.030821438 PDT, exclusive, through October 18, 2026 17:44:23.310836738 PDT, inclusive. DS22's 137 recordings are excluded. Later segments of an admitted acquisition remain part of that acquisition. There is no format, tracking-readiness, location or scientific-result filter.
+
+The exact 377,703,956-byte membership authority is published losslessly in the [manifest archive](../2026_10_18_dataset_manifest_archive/README.md), as the two DS23 parts listed in its [catalogue](../2026_10_18_dataset_manifest_archive/catalogue.json). Decompression recovers the original `manifest.json`, whose digest is in [manifest.sha256](manifest.sha256). The [seal](seal.json), [freeze request](freeze_request.json) and [discovery summary](discovery_summary.json) document the freeze. No existing dataset authority was rewritten.
+
+The [random sample](random_sample_10.json) was sealed before position fitting: ten members drawn uniformly without replacement, seed **2026101801**, with no substitutions. It contains eight fast and two adaptive recordings; all ten yielded usable existing tracking inputs. [Sample membership](sample_members.csv) provides a compact index. See the [phase-refreshed evaluation](../2026_10_18_ds23_phase_refreshed_evaluation/README.md) for results, figures, controls and limitations.
+
+An earlier inclusive draft was invalidated when the requested boundary was clarified. It is preserved locally for audit, excluded from publication and all reported denominators, and contributed no position fits to this sample. Dataset membership is a snapshot of the inventoried roots, not a claim to know about recordings on undiscovered storage.

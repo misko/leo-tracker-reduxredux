@@ -1,0 +1,3906 @@
+{
+  "prepared": {
+    "case": "DS23-0116",
+    "status": "prepared",
+    "GLRT_points": 3809,
+    "graph_points": 3281,
+    "graph_tracks": 105,
+    "curved_tracks": 64,
+    "metadata": {
+      "anchor_utc_ns": 1792096544780246516,
+      "causal_cutoff_utc_ns": 1792096544655406315,
+      "utc_half_width_s": 0.1248402015,
+      "group_labels": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "receiver_factors": 7452,
+      "empty_factors": 6,
+      "duplicate_candidates_removed": 3482,
+      "distinct_candidates": 36596,
+      "duration_s": 299.9714392,
+      "mark_policy": "softmax-margin-temperature-0.1; q=0.05+0.9*clip(margin/0.1)",
+      "calibrated": false,
+      "rf_mapping_authorities": [
+        "hypothesis"
+      ],
+      "run_id": "fast-c1546f0accb8c5f4100802835de3c450",
+      "scope": "conditional on the recorded LNB reference hypotheses",
+      "skipped_fast_score": 3034,
+      "window_count": 6760
+    },
+    "graph_config_sha256": "c70958ae700739a181fa0404b53ffb63dde2a86f3d2aa31aabf2a8ef97bdcbce",
+    "tracking_sha256": "365a82999126556f0536b7095e986ff0e33db193be3eb0705379cc1ab61fdc6f",
+    "noise_sigma_hz": 150.0,
+    "measurement_transfer": "existing fractional GLRT CFO; no DSX01 GLRT300 remeasurement",
+    "source_sha256": "6f45fc62ba9a657359a03a18a618a437d77b6257cb85f6a1103a8112f1be6eed"
+  },
+  "receipt": {
+    "origin_utc_ns": 1792096544780246516,
+    "cutoff_utc_ns": 1792096544655406315,
+    "regional_center": [
+      37.5,
+      -122.0
+    ],
+    "radius_km": 250.0,
+    "reference_position_used": false,
+    "candidate_count": 1421,
+    "bank_sha256": "9170150c69dca1ec971b5975b504dd4e4650ed0f8f6ce96df7b39d5c221450bd",
+    "latest_tle_sha256": "83b931a857366f17147b5a9d2e700ce172945329eb5cfa7e5c407c554bad48f1",
+    "previous_tle_sha256": "89721f76381eb8a661f34d0f6a6cb37516a6a7b82c06b9462ab25977df527f80",
+    "latest_max_epoch_utc_ns": 1792080056743488000,
+    "latest_max_collection_utc_ns": 1792094682989334129,
+    "previous_count": 1421,
+    "candidate_filter": "regional elevation >= -12deg; no whitelist",
+    "search_center": [
+      37.906,
+      -122.545
+    ],
+    "search_box_width_km": 25.0,
+    "snapshot_count": 31
+  },
+  "noise": {
+    "constant_radio_sigma_hz": 87.7883536606814,
+    "extra_parameter_BIC_gain": 232.27553139835896,
+    "noise_samples": 2606,
+    "floor_sigma_hz": 40.0,
+    "strength_hz2": 2461.3616614276266,
+    "heteroscedastic_selected": true,
+    "rule": "floor + strength/margin; enable heteroscedasticity only if extra BIC gain > 0",
+    "model_is_uncertainty_proxy_not_calibrated_error_bar": true,
+    "no_GPS_TLE_or_satellite_residuals_used": true,
+    "source_sha256": {
+      "tracks.json": "d5633d020ee1e06371371c7760b2d801ebdeeb04e8fe35f6516c857256ebd449",
+      "observations.json": "39cc24d104d45075f5d99f74ce0ba3557d9e1338ca9fb23440d6f4e492b0e2f7"
+    },
+    "code_sha256": "51789feb1ae767b9f4ee6860baa091406a2f5fa02d7bd959d124ab463b666c19"
+  },
+  "results": [
+    {
+      "case": "DS23-0116",
+      "mode": "fixed150",
+      "arm": "c0",
+      "format": "short_window_iq_recording",
+      "GLRT_points": 3809,
+      "graph_points": 3281,
+      "graph_tracks": 105,
+      "associated_points": 2790,
+      "associated_percent": 73.2475715410869,
+      "associated_tracks": 85,
+      "points_per_track": 32.8235294117647,
+      "satellites": 18,
+      "curved_gate_points": 2371,
+      "RMS_hz": 97.71407604052166,
+      "score": 12004.39627090218,
+      "error_km": 2.481340708625135,
+      "latitude": 37.83054463030415,
+      "longitude": -122.50151912129623,
+      "zero_phase_error_km": 2.8401480069257063,
+      "zero_phase_score": 12015.149135037333,
+      "constant_noise_sigma_hz": 150.0,
+      "last_phase_change_s": 2.6084612939625273e-05,
+      "max_posterior_phase_s": 2.7294544777215406,
+      "inner_stop": "no_accepted_damped_step",
+      "paired_scan_seconds": 56.81551491608843
+    },
+    {
+      "case": "DS23-0116",
+      "mode": "fixed150",
+      "arm": "fitted_c",
+      "format": "short_window_iq_recording",
+      "GLRT_points": 3809,
+      "graph_points": 3281,
+      "graph_tracks": 105,
+      "associated_points": 2790,
+      "associated_percent": 73.2475715410869,
+      "associated_tracks": 85,
+      "points_per_track": 32.8235294117647,
+      "satellites": 18,
+      "curved_gate_points": 2371,
+      "RMS_hz": 97.73129150684002,
+      "score": 12012.096351158638,
+      "error_km": 2.508168137169374,
+      "latitude": 37.829857587244966,
+      "longitude": -122.50073226472625,
+      "zero_phase_error_km": 2.865560291495603,
+      "zero_phase_score": 12023.021361611422,
+      "constant_noise_sigma_hz": 150.0,
+      "last_phase_change_s": 2.618996427372622e-05,
+      "max_posterior_phase_s": 2.7313456437559847,
+      "inner_stop": "no_accepted_damped_step",
+      "paired_scan_seconds": 56.81551491608843
+    },
+    {
+      "case": "DS23-0116",
+      "mode": "radio",
+      "arm": "c0",
+      "format": "short_window_iq_recording",
+      "GLRT_points": 3809,
+      "graph_points": 3281,
+      "graph_tracks": 105,
+      "associated_points": 2757,
+      "associated_percent": 72.38120241533211,
+      "associated_tracks": 83,
+      "points_per_track": 33.21686746987952,
+      "satellites": 20,
+      "curved_gate_points": 2349,
+      "RMS_hz": 97.53841012280382,
+      "score": 11548.697178590326,
+      "error_km": 3.447158213918117,
+      "latitude": 37.81950835559418,
+      "longitude": -122.4738942729426,
+      "zero_phase_error_km": 3.3605083561351856,
+      "zero_phase_score": 11562.103670166485,
+      "constant_noise_sigma_hz": 87.7883536606814,
+      "last_phase_change_s": 7.950719991124938e-06,
+      "max_posterior_phase_s": 2.8581464165684958,
+      "inner_stop": "small_step_and_improvement",
+      "paired_scan_seconds": 56.218451984226704
+    },
+    {
+      "case": "DS23-0116",
+      "mode": "radio",
+      "arm": "fitted_c",
+      "format": "short_window_iq_recording",
+      "GLRT_points": 3809,
+      "graph_points": 3281,
+      "graph_tracks": 105,
+      "associated_points": 2757,
+      "associated_percent": 72.38120241533211,
+      "associated_tracks": 83,
+      "points_per_track": 33.21686746987952,
+      "satellites": 20,
+      "curved_gate_points": 2349,
+      "RMS_hz": 97.56842768994815,
+      "score": 11552.065901841866,
+      "error_km": 3.5439552767660003,
+      "latitude": 37.818699479306666,
+      "longitude": -122.47347788476905,
+      "zero_phase_error_km": 3.4592986479530348,
+      "zero_phase_score": 11565.887358355318,
+      "constant_noise_sigma_hz": 87.7883536606814,
+      "last_phase_change_s": 1.2849740577421977e-05,
+      "max_posterior_phase_s": 2.8560832881606992,
+      "inner_stop": "small_step_and_improvement",
+      "paired_scan_seconds": 56.218451984226704
+    }
+  ],
+  "associations": {
+    "c0": {
+      "accepted_points": 2757,
+      "accepted_tracks": 83,
+      "accepted_satellites": 20,
+      "tracks": [
+        {
+          "component": "DS23-0116-RX1-CH1-T000-RF10940312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 69,
+          "compatible": true,
+          "native_square_hz2": 343619.7736071929,
+          "innovation_square_hz2": 343622.0081399458,
+          "native_rms_hz": 70.56909181040113,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 343622.00813994574,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 70.56909181040113,
+            "mean_hz": -0.18780750943150834,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.020800617859719712,
+              "slope_z": 1.2720104850610918,
+              "quadratic_bic_gain": -12.702319513791778,
+              "maximum_step_z": 3.0002756358883453,
+              "lag1_acf": 0.4246691040799783
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T001-RF10940312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 67,
+          "compatible": true,
+          "native_square_hz2": 238008.00484639397,
+          "innovation_square_hz2": 237875.58689541343,
+          "native_rms_hz": 59.601663410423896,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 237875.5868954134,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 59.601663410423896,
+            "mean_hz": -1.406556792478833,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.15350884720150185,
+              "slope_z": 0.11741972592619114,
+              "quadratic_bic_gain": -12.614077858172898,
+              "maximum_step_z": 1.7196505450927657,
+              "lag1_acf": 0.16207066729418243
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T006-RF10940312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 156763.1803943227,
+          "innovation_square_hz2": 156761.2243296834,
+          "native_rms_hz": 93.32237447398332,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 156761.22432968338,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 93.32237447398332,
+            "mean_hz": 0.36073868140010745,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.015938029946112615,
+              "slope_z": 0.5850211555729458,
+              "quadratic_bic_gain": -4.526783954954404,
+              "maximum_step_z": 1.6809293877879998,
+              "lag1_acf": -0.018538649192756995
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T000-RF10940312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 52,
+          "compatible": true,
+          "native_square_hz2": 706897.1595395523,
+          "innovation_square_hz2": 706876.5224997419,
+          "native_rms_hz": 116.59406565083572,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 706876.5224997419,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 116.59406565083572,
+            "mean_hz": -0.6477989660000346,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.03967853193616351,
+              "slope_z": 0.23918280837426942,
+              "quadratic_bic_gain": -11.034031264088597,
+              "maximum_step_z": 1.0187160238595776,
+              "lag1_acf": -0.17197754001420973
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T001-RF10940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 407422.1786127327,
+          "innovation_square_hz2": 406339.1104031792,
+          "native_rms_hz": 109.46691396634724,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 406339.11040317913,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.46691396634724,
+            "mean_hz": -5.644434359444002,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.2966010115618782,
+              "slope_z": 0.7290039161917627,
+              "quadratic_bic_gain": -7.3534941671269545,
+              "maximum_step_z": 1.5831580558410827,
+              "lag1_acf": 0.030604810514451318
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T006-RF10940312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 16,
+          "compatible": true,
+          "native_square_hz2": 112768.53261553147,
+          "innovation_square_hz2": 112666.70111732242,
+          "native_rms_hz": 83.95256570510944,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 112666.70111732239,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 83.95256570510944,
+            "mean_hz": -2.526816790002613,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.1166224639419735,
+              "slope_z": 0.09522737048948002,
+              "quadratic_bic_gain": -8.025472464937081,
+              "maximum_step_z": 1.197044566297726,
+              "lag1_acf": -0.07837211113655658
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T001-RF11190312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 57,
+          "compatible": true,
+          "native_square_hz2": 167548.25332937713,
+          "innovation_square_hz2": 167544.12703963846,
+          "native_rms_hz": 54.21663066685595,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 167544.1270396385,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 54.21663066685595,
+            "mean_hz": -0.2797985175016118,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.02816576643161832,
+              "slope_z": 1.070117324185299,
+              "quadratic_bic_gain": -12.129153803503652,
+              "maximum_step_z": 1.595257219388751,
+              "lag1_acf": 0.10775764759014048
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T002-RF11190312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 73,
+          "compatible": true,
+          "native_square_hz2": 265515.79310537025,
+          "innovation_square_hz2": 265515.5949977218,
+          "native_rms_hz": 60.309225208744344,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 265515.5949977218,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.309225208744344,
+            "mean_hz": -0.060746351327334074,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.006920227376734891,
+              "slope_z": 0.035479649880731885,
+              "quadratic_bic_gain": -12.871378323445173,
+              "maximum_step_z": 1.5646875669553022,
+              "lag1_acf": 0.142214257892843
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T003-RF11190312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 121271.35417686375,
+          "innovation_square_hz2": 121240.59702009373,
+          "native_rms_hz": 58.04006139844361,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 121240.59702009372,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.04006139844361,
+            "mean_hz": 0.9629578089344351,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0770366247147548,
+              "slope_z": 0.048332430502682926,
+              "quadratic_bic_gain": -10.75055681536833,
+              "maximum_step_z": 2.312736069618029,
+              "lag1_acf": 0.3328461477559515
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T004-RF11190312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 277804.1328458708,
+          "innovation_square_hz2": 277807.4968143996,
+          "native_rms_hz": 90.39197856881127,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 277807.4968143996,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 90.39197856881127,
+            "mean_hz": 0.24231466023989282,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.01539956055347184,
+              "slope_z": 2.6892059104751733,
+              "quadratic_bic_gain": -2.128796487969856,
+              "maximum_step_z": 2.684076667031105,
+              "lag1_acf": 0.17888746671004666
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T007-RF11190312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 46103.05990360708,
+          "innovation_square_hz2": 46087.17525447156,
+          "native_rms_hz": 50.609101017069534,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 46087.17525447156,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 50.609101017069534,
+            "mean_hz": -0.946518365521317,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.053543164382218435,
+              "slope_z": 0.8090914698469329,
+              "quadratic_bic_gain": -8.671115273688493,
+              "maximum_step_z": 1.0618388996615087,
+              "lag1_acf": -0.20321051311448754
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T008-RF11190312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 86395.07494047895,
+          "innovation_square_hz2": 86371.16414189109,
+          "native_rms_hz": 69.28005763264176,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 86371.16414189107,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 69.28005763264176,
+            "mean_hz": -1.2907430292616482,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07301545190081421,
+              "slope_z": 0.6460616774930423,
+              "quadratic_bic_gain": -8.671115273688493,
+              "maximum_step_z": 1.9010964474970133,
+              "lag1_acf": 0.36923223333906463
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T000-RF11190312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 46,
+          "compatible": true,
+          "native_square_hz2": 550580.1882415295,
+          "innovation_square_hz2": 550370.6547369397,
+          "native_rms_hz": 109.40353982842498,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 550370.6547369395,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.40353982842498,
+            "mean_hz": 2.1347250425076156,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.13091804717480995,
+              "slope_z": 0.2417535932960503,
+              "quadratic_bic_gain": -10.695260889780323,
+              "maximum_step_z": 1.4851509031426022,
+              "lag1_acf": 0.09595170505125686
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T001-RF11190312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 37,
+          "compatible": true,
+          "native_square_hz2": 595657.668221291,
+          "innovation_square_hz2": 594901.0840325771,
+          "native_rms_hz": 126.88126693043671,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 594901.0840325769,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 126.88126693043671,
+            "mean_hz": -4.527496470927773,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.21423406481433258,
+              "slope_z": 0.4624023115813588,
+              "quadratic_bic_gain": -8.505331465807247,
+              "maximum_step_z": 1.9139851058007729,
+              "lag1_acf": 0.05363336212371999
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T002-RF11190312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 439376.2597702925,
+          "innovation_square_hz2": 439308.1651545069,
+          "native_rms_hz": 110.47577157336511,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 439308.1651545068,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 110.47577157336511,
+            "mean_hz": 1.4310921679769106,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07664274041403053,
+              "slope_z": 0.21427955219621003,
+              "quadratic_bic_gain": -4.128685080860946,
+              "maximum_step_z": 1.6587531981637478,
+              "lag1_acf": -0.25194221753797114
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T004-RF11190312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 25,
+          "compatible": true,
+          "native_square_hz2": 302113.5451072108,
+          "innovation_square_hz2": 301966.48214079766,
+          "native_rms_hz": 109.92971301831199,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 301966.4821407976,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.92971301831199,
+            "mean_hz": 2.428756824274606,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.1082631310549362,
+              "slope_z": 0.23663397944607018,
+              "quadratic_bic_gain": -9.5589933209749,
+              "maximum_step_z": 1.2731538483142792,
+              "lag1_acf": -0.2011144099510571
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T000-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 24,
+          "compatible": true,
+          "native_square_hz2": 39260.53682295875,
+          "innovation_square_hz2": 39247.93010414933,
+          "native_rms_hz": 40.44571301085709,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 39247.930104149316,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 40.44571301085709,
+            "mean_hz": 0.7788981553612757,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.05087741445947155,
+              "slope_z": 0.014749671870554672,
+              "quadratic_bic_gain": -9.534161491043838,
+              "maximum_step_z": 0.6956285708765664,
+              "lag1_acf": -0.14651503861425497
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T001-RF11440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 55,
+          "compatible": true,
+          "native_square_hz2": 103895.02326863063,
+          "innovation_square_hz2": 103820.08613617404,
+          "native_rms_hz": 43.46263249121032,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 103820.08613617401,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 43.46263249121032,
+            "mean_hz": 1.1749377190303427,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.11618095112405942,
+              "slope_z": 0.9371936746861016,
+              "quadratic_bic_gain": -12.021999555697413,
+              "maximum_step_z": 1.404522718961599,
+              "lag1_acf": 0.059795199418718595
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T002-RF11440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 42,
+          "compatible": true,
+          "native_square_hz2": 286444.49441167404,
+          "innovation_square_hz2": 285667.5378511151,
+          "native_rms_hz": 82.5839391758577,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 285667.5378511151,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 82.5839391758577,
+            "mean_hz": 4.303135235173526,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.3340963242691041,
+              "slope_z": 0.11519065933513935,
+              "quadratic_bic_gain": -3.121531857250595,
+              "maximum_step_z": 2.41687348366837,
+              "lag1_acf": 0.1882090168868977
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T003-RF11440312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 186112.42493585995,
+          "innovation_square_hz2": 186115.3028668368,
+          "native_rms_hz": 67.37453107413809,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 186115.30286683675,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 67.37453107413809,
+            "mean_hz": -0.09354715194519773,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.007986587146174787,
+              "slope_z": 0.14109482511246826,
+              "quadratic_bic_gain": -11.140716200112923,
+              "maximum_step_z": 1.286941954120101,
+              "lag1_acf": 0.05877426849913694
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T004-RF11440312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 21,
+          "compatible": true,
+          "native_square_hz2": 7910.5362694374,
+          "innovation_square_hz2": 7913.591700895093,
+          "native_rms_hz": 19.408560052372327,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 7913.591700895089,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 19.408560052372327,
+            "mean_hz": -0.1349831303544176,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.008247605498549467,
+              "slope_z": 0.03902532719342313,
+              "quadratic_bic_gain": -9.13356731317027,
+              "maximum_step_z": 0.23460293002003751,
+              "lag1_acf": -0.3169873069726647
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T005-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 72334.81165292153,
+          "innovation_square_hz2": 72322.94413412006,
+          "native_rms_hz": 48.30508276632993,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 72322.94413412006,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 48.30508276632993,
+            "mean_hz": -0.6576095764136088,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0488188688561525,
+              "slope_z": 0.5299076422771691,
+              "quadratic_bic_gain": -10.30196161345544,
+              "maximum_step_z": 1.0039879326495253,
+              "lag1_acf": -0.08689698028381193
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T007-RF11440312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 23,
+          "compatible": true,
+          "native_square_hz2": 63036.31554348324,
+          "innovation_square_hz2": 62967.93290540885,
+          "native_rms_hz": 52.351784797232966,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 62967.93290540884,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 52.351784797232966,
+            "mean_hz": -1.7275899102839858,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.11046973534795908,
+              "slope_z": 1.527151054214018,
+              "quadratic_bic_gain": -9.406482647787449,
+              "maximum_step_z": 2.4491868970321673,
+              "lag1_acf": 0.5612363212867125
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T000-RF11440312500.000000",
+          "norad": 55747,
+          "candidate_index": 365,
+          "points": 38,
+          "compatible": true,
+          "native_square_hz2": 513319.67006678367,
+          "innovation_square_hz2": 513041.331691613,
+          "native_rms_hz": 116.22569582574465,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 513041.3316916131,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 116.22569582574465,
+            "mean_hz": 2.8845017047234776,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.15100916202855943,
+              "slope_z": 1.1173232658296968,
+              "quadratic_bic_gain": 4.597461679478364,
+              "maximum_step_z": 2.9297339913465144,
+              "lag1_acf": 0.247649951257718
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T001-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 494163.0580161395,
+          "innovation_square_hz2": 485253.7962819205,
+          "native_rms_hz": 117.1612205960634,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 485253.7962819204,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 117.1612205960634,
+            "mean_hz": -15.747763452783046,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.8024684040018042,
+              "slope_z": 0.3546143358069687,
+              "quadratic_bic_gain": 6.194201374045495,
+              "maximum_step_z": 3.9955840883167055,
+              "lag1_acf": 0.41688611345763454
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T002-RF11440312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 424343.6564186735,
+          "innovation_square_hz2": 424353.32390463795,
+          "native_rms_hz": 111.71703440845451,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 424353.32390463795,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 111.71703440845451,
+            "mean_hz": -0.017121971833737062,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0008804229498854138,
+              "slope_z": 0.6143315081759562,
+              "quadratic_bic_gain": -7.838194741556666,
+              "maximum_step_z": 2.275269648851482,
+              "lag1_acf": -0.31569292783633757
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T000-RF11690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 48,
+          "compatible": true,
+          "native_square_hz2": 193337.38283016736,
+          "innovation_square_hz2": 193121.8229824986,
+          "native_rms_hz": 63.465440534949046,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 193121.82298249856,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 63.465440534949046,
+            "mean_hz": -2.125829777452509,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.19637574308216452,
+              "slope_z": 0.8409314079527339,
+              "quadratic_bic_gain": -11.613603032723674,
+              "maximum_step_z": 2.8388172550941015,
+              "lag1_acf": 0.4622214916202358
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T001-RF11690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 39,
+          "compatible": true,
+          "native_square_hz2": 143054.50984182578,
+          "innovation_square_hz2": 142891.45244251005,
+          "native_rms_hz": 60.564547013237124,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 142891.45244251,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.564547013237124,
+            "mean_hz": -2.055856632835154,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.17118427409399475,
+              "slope_z": 0.15993522219212503,
+              "quadratic_bic_gain": -10.990684938388938,
+              "maximum_step_z": 2.196912296102462,
+              "lag1_acf": 0.5685526365623048
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T002-RF11690312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 70,
+          "compatible": true,
+          "native_square_hz2": 324349.8350643527,
+          "innovation_square_hz2": 324324.00985900086,
+          "native_rms_hz": 68.07032446189672,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 324324.00985900086,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 68.07032446189672,
+            "mean_hz": -0.6643229891584529,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07410833196486767,
+              "slope_z": 0.06286229387485125,
+              "quadratic_bic_gain": -12.745485726148079,
+              "maximum_step_z": 1.8365387680171839,
+              "lag1_acf": 0.21405131758071777
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T004-RF11690312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 45,
+          "compatible": true,
+          "native_square_hz2": 147782.5223829546,
+          "innovation_square_hz2": 147343.54640471638,
+          "native_rms_hz": 57.30668419089127,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 147343.54640471636,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 57.30668419089127,
+            "mean_hz": -3.1392329213791528,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.28078152837636156,
+              "slope_z": 1.3863368580572102,
+              "quadratic_bic_gain": -11.419987469310959,
+              "maximum_step_z": 2.889382243092505,
+              "lag1_acf": 0.07155274954676932
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T005-RF11690312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 105563.59887561575,
+          "innovation_square_hz2": 105498.78202014405,
+          "native_rms_hz": 58.354754588502715,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 105498.78202014405,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.354754588502715,
+            "mean_hz": -1.4459833248301068,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.10734525900314047,
+              "slope_z": 0.8105313226208875,
+              "quadratic_bic_gain": -10.30196161345544,
+              "maximum_step_z": 1.5740677124910165,
+              "lag1_acf": 0.20121321461981706
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T006-RF11690312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 17,
+          "compatible": true,
+          "native_square_hz2": 250281.68491082612,
+          "innovation_square_hz2": 249353.35021429503,
+          "native_rms_hz": 121.336111910585,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 249353.35021429506,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 121.336111910585,
+            "mean_hz": -7.433726550961129,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.24552351209293516,
+              "slope_z": 1.5042976795151648,
+              "quadratic_bic_gain": -5.723311471270567,
+              "maximum_step_z": 2.275250343156551,
+              "lag1_acf": 0.21840002429003708
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH4-T000-RF11690312500.000000",
+          "norad": 55479,
+          "candidate_index": 342,
+          "points": 49,
+          "compatible": true,
+          "native_square_hz2": 681620.0642085393,
+          "innovation_square_hz2": 681618.4232704432,
+          "native_rms_hz": 117.94326413694134,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 681618.4232704431,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 117.94326413694134,
+            "mean_hz": -0.19616256963594683,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.011522964353056336,
+              "slope_z": 0.9246180814986698,
+              "quadratic_bic_gain": -10.662143356331008,
+              "maximum_step_z": 1.9518048550305027,
+              "lag1_acf": 0.14602592576780407
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T000-RF11940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 15,
+          "compatible": true,
+          "native_square_hz2": 54004.6639365943,
+          "innovation_square_hz2": 53965.38321049955,
+          "native_rms_hz": 60.00259101994085,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 53965.38321049954,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.00259101994085,
+            "mean_hz": -1.6183053798192608,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.08356893046823821,
+              "slope_z": 1.4306001742379195,
+              "quadratic_bic_gain": -8.12415060330663,
+              "maximum_step_z": 2.3202217363617312,
+              "lag1_acf": 0.36637141180202115
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T002-RF11940312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 69,
+          "compatible": true,
+          "native_square_hz2": 236887.03860566576,
+          "innovation_square_hz2": 236794.4144369611,
+          "native_rms_hz": 58.59304981854618,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 236794.4144369611,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.59304981854618,
+            "mean_hz": -1.1797784188211022,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.13066634088980164,
+              "slope_z": 0.9443676220392057,
+              "quadratic_bic_gain": -12.702319513791778,
+              "maximum_step_z": 1.866887150882155,
+              "lag1_acf": 0.09120702206766362
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T003-RF11940312500.000000",
+          "norad": 53432,
+          "candidate_index": 235,
+          "points": 50,
+          "compatible": true,
+          "native_square_hz2": 307923.1228541656,
+          "innovation_square_hz2": 307751.81886019255,
+          "native_rms_hz": 78.47587181473878,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 307751.8188601925,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 78.47587181473878,
+            "mean_hz": 1.8538810834148172,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.16541122649706308,
+              "slope_z": 0.24842951506795902,
+              "quadratic_bic_gain": -7.205759157456387,
+              "maximum_step_z": 2.8442510599800337,
+              "lag1_acf": 0.43780804540596646
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T004-RF11940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 38,
+          "compatible": true,
+          "native_square_hz2": 97297.67078584731,
+          "innovation_square_hz2": 97306.31187231034,
+          "native_rms_hz": 50.601037743115434,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 97306.31187231031,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 50.601037743115434,
+            "mean_hz": 0.08254220092011995,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.006784323989171548,
+              "slope_z": 0.32818757845797775,
+              "quadratic_bic_gain": -10.912758479179157,
+              "maximum_step_z": 1.8041857065571814,
+              "lag1_acf": 0.16245020652963654
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T000-RF12190312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 75,
+          "compatible": true,
+          "native_square_hz2": 491834.5586858852,
+          "innovation_square_hz2": 490860.28374873474,
+          "native_rms_hz": 80.98020817342842,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 490860.2837487346,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 80.98020817342842,
+            "mean_hz": -3.6050489524672353,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.3833353862066277,
+              "slope_z": 1.408474806770307,
+              "quadratic_bic_gain": -10.099606564061258,
+              "maximum_step_z": 3.522450238458861,
+              "lag1_acf": 0.17289590864100474
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T001-RF12190312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 63,
+          "compatible": true,
+          "native_square_hz2": 164339.47981151042,
+          "innovation_square_hz2": 164184.26010631045,
+          "native_rms_hz": 51.074094917201194,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 164184.2601063104,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 51.074094917201194,
+            "mean_hz": 1.578743482965538,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.16707850559563,
+              "slope_z": 0.9739193245178333,
+              "quadratic_bic_gain": -12.429404179174597,
+              "maximum_step_z": 1.7309748598179302,
+              "lag1_acf": 0.3576562244523214
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T003-RF12190312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 20,
+          "compatible": true,
+          "native_square_hz2": 98919.58972843301,
+          "innovation_square_hz2": 98642.12629005389,
+          "native_rms_hz": 70.32765804732624,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 98642.12629005387,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 70.32765804732624,
+            "mean_hz": -3.7292595725350113,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.22237007759813585,
+              "slope_z": 0.8532344154978737,
+              "quadratic_bic_gain": -8.987196820661973,
+              "maximum_step_z": 1.773170663295684,
+              "lag1_acf": 0.1746357472950588
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T005-RF12190312500.000000",
+          "norad": 53432,
+          "candidate_index": 235,
+          "points": 13,
+          "compatible": true,
+          "native_square_hz2": 154324.94694204835,
+          "innovation_square_hz2": 154047.58106886985,
+          "native_rms_hz": 108.95480606551025,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 154047.5810688698,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 108.95480606551025,
+            "mean_hz": 4.619286739330933,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.14699745486762475,
+              "slope_z": 0.6398222119585983,
+              "quadratic_bic_gain": -6.334407662480385,
+              "maximum_step_z": 0.9117518088802739,
+              "lag1_acf": 0.33501934142128315
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH6-T000-RF12190312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 671509.1280228031,
+          "innovation_square_hz2": 670531.0259854442,
+          "native_rms_hz": 140.53564840017964,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 670531.0259854442,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 140.53564840017964,
+            "mean_hz": -5.3644239190766445,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.21943716442411831,
+              "slope_z": 0.7657497556735074,
+              "quadratic_bic_gain": -9.888968311480804,
+              "maximum_step_z": 1.3937870259637328,
+              "lag1_acf": -0.25767164001414206
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH6-T001-RF12190312500.000000",
+          "norad": 55479,
+          "candidate_index": 342,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 579980.1421552687,
+          "innovation_square_hz2": 572291.4912295648,
+          "native_rms_hz": 136.78098129388584,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 572291.4912295646,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 136.78098129388584,
+            "mean_hz": 15.75541317209671,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.6351336470634266,
+              "slope_z": 2.1171654411589635,
+              "quadratic_bic_gain": 3.601203100523394,
+              "maximum_step_z": 2.675604520159588,
+              "lag1_acf": 0.09863234914837445
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T000-RF12440312500.000000",
+          "norad": 64355,
+          "candidate_index": 947,
+          "points": 70,
+          "compatible": true,
+          "native_square_hz2": 645665.8185747714,
+          "innovation_square_hz2": 644555.0204067683,
+          "native_rms_hz": 96.04060291465802,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 644555.0204067681,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 96.04060291465802,
+            "mean_hz": 3.9973908270134415,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.34603719836496905,
+              "slope_z": 0.36961266141387217,
+              "quadratic_bic_gain": -9.658917926010886,
+              "maximum_step_z": 3.2635907277576717,
+              "lag1_acf": 0.10714019590808728
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T001-RF12440312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 45,
+          "compatible": true,
+          "native_square_hz2": 505553.04573339614,
+          "innovation_square_hz2": 501810.4650957532,
+          "native_rms_hz": 105.99298150070506,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 501810.465095753,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 105.99298150070506,
+            "mean_hz": 9.120076769475741,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.5728769850335,
+              "slope_z": 1.6028602374368341,
+              "quadratic_bic_gain": 8.17188711474813,
+              "maximum_step_z": 3.3077410466677257,
+              "lag1_acf": 0.07521730973664681
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T003-RF12440312500.000000",
+          "norad": 59089,
+          "candidate_index": 578,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 328217.69020443875,
+          "innovation_square_hz2": 328195.38111173303,
+          "native_rms_hz": 89.47239528022837,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 328195.38111173303,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 89.47239528022837,
+            "mean_hz": 1.234579947850562,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.08727733940299884,
+              "slope_z": 0.16182821929307972,
+              "quadratic_bic_gain": -8.254768553144993,
+              "maximum_step_z": 1.8324349289361195,
+              "lag1_acf": 0.15539450379703118
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T004-RF12440312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 557920.9801610955,
+          "innovation_square_hz2": 542781.3576001872,
+          "native_rms_hz": 128.09933876868138,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 542781.3576001873,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 128.09933876868138,
+            "mean_hz": 21.101762087398075,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.9594066128244628,
+              "slope_z": 0.8938563704597928,
+              "quadratic_bic_gain": -0.2731393497386314,
+              "maximum_step_z": 2.653624766142858,
+              "lag1_acf": 0.11310118734968684
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T005-RF12440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 30,
+          "compatible": true,
+          "native_square_hz2": 120539.27822275752,
+          "innovation_square_hz2": 120510.93324390537,
+          "native_rms_hz": 63.387506188195985,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 120510.93324390538,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 63.387506188195985,
+            "mean_hz": -1.0251086505268177,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07486335090496242,
+              "slope_z": 0.20789636377462506,
+              "quadratic_bic_gain": -10.203592144986466,
+              "maximum_step_z": 1.751363474035811,
+              "lag1_acf": 0.2648855638308553
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T000-RF12440312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 39,
+          "compatible": true,
+          "native_square_hz2": 666647.6516543421,
+          "innovation_square_hz2": 664572.4375901517,
+          "native_rms_hz": 130.74222550346354,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 664572.4375901516,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 130.74222550346354,
+            "mean_hz": -7.294586766234342,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.3444717713980313,
+              "slope_z": 0.4771283380599608,
+              "quadratic_bic_gain": -7.861099101238163,
+              "maximum_step_z": 1.5617959316792145,
+              "lag1_acf": 0.12299146508473173
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T001-RF12440312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 24,
+          "compatible": true,
+          "native_square_hz2": 337779.35747795104,
+          "innovation_square_hz2": 337777.4300097781,
+          "native_rms_hz": 118.63448021091772,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 337777.4300097781,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 118.63448021091772,
+            "mean_hz": -0.5632507847773619,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0227698246747741,
+              "slope_z": 0.10082346026609869,
+              "quadratic_bic_gain": -9.380153645614978,
+              "maximum_step_z": 1.2010814671916135,
+              "lag1_acf": 0.18662223515375917
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T002-RF12440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 23,
+          "compatible": true,
+          "native_square_hz2": 253828.74528308294,
+          "innovation_square_hz2": 253817.53340558527,
+          "native_rms_hz": 105.05252211923472,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 253817.53340558524,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 105.05252211923472,
+            "mean_hz": -0.7016753759095952,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.03132930643838102,
+              "slope_z": 0.3597939299065947,
+              "quadratic_bic_gain": -9.229847713433978,
+              "maximum_step_z": 1.0853104018547415,
+              "lag1_acf": -0.06268556284844433
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T000-RF12690312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 78,
+          "compatible": true,
+          "native_square_hz2": 264954.0601092186,
+          "innovation_square_hz2": 264956.47551710554,
+          "native_rms_hz": 58.28247527754086,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 264956.47551710554,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.28247527754086,
+            "mean_hz": -0.04209602575466329,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.004957093771839526,
+              "slope_z": 1.0186189713729008,
+              "quadratic_bic_gain": -13.070126480068776,
+              "maximum_step_z": 2.874764518045793,
+              "lag1_acf": 0.2599442099297022
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T003-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 95466.83697852645,
+          "innovation_square_hz2": 95342.6724206089,
+          "native_rms_hz": 48.254113177019896,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 95342.67242060888,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 48.254113177019896,
+            "mean_hz": -1.7402367461950123,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.14857269451243413,
+              "slope_z": 0.5391112024245904,
+              "quadratic_bic_gain": -11.140716200112923,
+              "maximum_step_z": 1.7946490091391916,
+              "lag1_acf": 0.3207394481644093
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T004-RF12690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 73,
+          "compatible": true,
+          "native_square_hz2": 352646.0455556199,
+          "innovation_square_hz2": 352404.5161349183,
+          "native_rms_hz": 69.50372470117885,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 352404.5161349183,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 69.50372470117885,
+            "mean_hz": -1.822908310916742,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.2076658058112413,
+              "slope_z": 0.455968594716192,
+              "quadratic_bic_gain": -12.871378323445173,
+              "maximum_step_z": 2.4888365233309786,
+              "lag1_acf": 0.24164507502256982
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T005-RF12690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 35,
+          "compatible": true,
+          "native_square_hz2": 77924.52463573008,
+          "innovation_square_hz2": 77892.7776403393,
+          "native_rms_hz": 47.18490213608891,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 77892.77764033929,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 47.18490213608891,
+            "mean_hz": 0.9524619908552268,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07513121504359226,
+              "slope_z": 0.3472010778057409,
+              "quadratic_bic_gain": -10.666044184468241,
+              "maximum_step_z": 1.2015139734864908,
+              "lag1_acf": -0.001293655618057976
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T006-RF12690312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 25,
+          "compatible": true,
+          "native_square_hz2": 38676.089841884954,
+          "innovation_square_hz2": 38671.286736455186,
+          "native_rms_hz": 39.33247505148129,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 38671.28673645519,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 39.33247505148129,
+            "mean_hz": 0.9586716468419764,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.06391144312279842,
+              "slope_z": 0.8796876799788792,
+              "quadratic_bic_gain": -9.656627474604601,
+              "maximum_step_z": 1.490845903383352,
+              "lag1_acf": 0.06478509401542573
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH8-T000-RF12690312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 57,
+          "compatible": true,
+          "native_square_hz2": 673090.4529511015,
+          "innovation_square_hz2": 667517.3664924983,
+          "native_rms_hz": 108.66740282963711,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 667517.3664924983,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 108.66740282963711,
+            "mean_hz": -9.888329915499126,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.6837907300750773,
+              "slope_z": 1.0119848772528213,
+              "quadratic_bic_gain": -9.808066501349934,
+              "maximum_step_z": 3.0192726529770106,
+              "lag1_acf": 0.10033672621669694
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH8-T001-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 46,
+          "compatible": true,
+          "native_square_hz2": 845879.8826410659,
+          "innovation_square_hz2": 845870.6405126301,
+          "native_rms_hz": 135.60491547467126,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 845870.6405126303,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 135.60491547467126,
+            "mean_hz": 0.5214271932592333,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.025794535508251743,
+              "slope_z": 0.1355722910957719,
+              "quadratic_bic_gain": -9.103913791144663,
+              "maximum_step_z": 2.0401941133941373,
+              "lag1_acf": 0.08389433410407536
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T003-RF10940312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 8,
+          "native_rms_hz": 48.88748566740554,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 287.00095315212576
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T005-RF10940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 19,
+          "native_rms_hz": 51.847940955338345,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 158.86802130293296
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T007-RF10940312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 12,
+          "native_rms_hz": 64.42520083100932,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 1136.9948179878763
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T009-RF10940312500.000000",
+          "norad": 64355,
+          "candidate_index": 947,
+          "points": 10,
+          "native_rms_hz": 78.45492715123099,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -228.59161911220238
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T010-RF10940312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 8,
+          "native_rms_hz": 50.373941501935704,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 390.0926228135137
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T003-RF10940312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 23,
+          "native_rms_hz": 95.71143769802921,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 150.85991106024366
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T004-RF10940312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 23,
+          "native_rms_hz": 109.16225098123527,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -354.279066356867
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T007-RF10940312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 18,
+          "native_rms_hz": 143.8253059302953,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 561.2053968558102
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T008-RF10940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 9,
+          "native_rms_hz": 128.26798743871842,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -690.0288872993771
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T006-RF11190312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 21,
+          "native_rms_hz": 50.462461862307045,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -272.6013561246411
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T005-RF11190312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 19,
+          "native_rms_hz": 81.6122430408966,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -337.6692034732411
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T006-RF11440312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 13,
+          "native_rms_hz": 89.17014924807036,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 419.9700258344267
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T004-RF11440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 14,
+          "native_rms_hz": 145.80372091061875,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -746.7367250682316
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T007-RF11690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 20,
+          "native_rms_hz": 80.74820135523832,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 20.29118364581148
+        },
+        {
+          "component": "DS23-0116-RX2-CH4-T001-RF11690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 20,
+          "native_rms_hz": 130.1764503972264,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -576.5893770666252
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T006-RF11940312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 15,
+          "native_rms_hz": 79.16823155238603,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 308.6545554784022
+        },
+        {
+          "component": "DS23-0116-RX2-CH5-T000-RF11940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 23,
+          "native_rms_hz": 97.6263121633624,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 589.6851472869062
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T004-RF12190312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 12,
+          "native_rms_hz": 93.47787267460899,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -828.5506660471151
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T002-RF12440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 21,
+          "native_rms_hz": 46.02328814249081,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 222.6571553428626
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T006-RF12440312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 14,
+          "native_rms_hz": 54.30373766258894,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 797.3768655083774
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T003-RF12440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 22,
+          "native_rms_hz": 125.38216540271125,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -355.6638898403866
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T005-RF12440312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 13,
+          "native_rms_hz": 150.34984344380234,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 2.70553351702288
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T001-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 13,
+          "native_rms_hz": 108.26418665700523,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 55.02510503503724
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T002-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 11,
+          "native_rms_hz": 40.90147346534535,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 11.030990996803109
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T008-RF12690312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 27,
+          "native_rms_hz": 118.51078210395082,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 343.1482696616406
+        }
+      ],
+      "linear_tracks_never_calibrate": true,
+      "original_curved_gate_points": 2349,
+      "added_points": 408
+    },
+    "fitted_c": {
+      "accepted_points": 2757,
+      "accepted_tracks": 83,
+      "accepted_satellites": 20,
+      "tracks": [
+        {
+          "component": "DS23-0116-RX1-CH1-T000-RF10940312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 69,
+          "compatible": true,
+          "native_square_hz2": 343735.19354806776,
+          "innovation_square_hz2": 343731.5006022961,
+          "native_rms_hz": 70.58094269497346,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 343731.5006022961,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 70.58094269497346,
+            "mean_hz": -0.2438473071872621,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.027007304810533674,
+              "slope_z": 1.2596199804916763,
+              "quadratic_bic_gain": -12.702319513791778,
+              "maximum_step_z": 2.9763586517410503,
+              "lag1_acf": 0.42457573740941923
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T001-RF10940312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 67,
+          "compatible": true,
+          "native_square_hz2": 238970.7532235199,
+          "innovation_square_hz2": 238830.43567834925,
+          "native_rms_hz": 59.7220868695371,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 238830.43567834928,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 59.7220868695371,
+            "mean_hz": -1.4535873558548402,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.15864167056540215,
+              "slope_z": 0.09906136726539577,
+              "quadratic_bic_gain": -12.614077858172898,
+              "maximum_step_z": 1.7508428433489247,
+              "lag1_acf": 0.16495693691057534
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T006-RF10940312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 157263.6936154162,
+          "innovation_square_hz2": 157276.55046241105,
+          "native_rms_hz": 93.47123550870141,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 157276.550462411,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 93.47123550870141,
+            "mean_hz": 0.11576466716724099,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.005106494141430846,
+              "slope_z": 0.5969653520547652,
+              "quadratic_bic_gain": -4.471585271908546,
+              "maximum_step_z": 1.6924851386856046,
+              "lag1_acf": -0.016257792713479085
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T000-RF10940312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 52,
+          "compatible": true,
+          "native_square_hz2": 707092.5465231941,
+          "innovation_square_hz2": 707073.1217308361,
+          "native_rms_hz": 116.61017788762909,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 707073.121730836,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 116.61017788762909,
+            "mean_hz": -0.6954893944973894,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.04259384699685289,
+              "slope_z": 0.21971670670811833,
+              "quadratic_bic_gain": -11.04686005234127,
+              "maximum_step_z": 1.006391903021196,
+              "lag1_acf": -0.1708933386231757
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T001-RF10940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 408630.4773334556,
+          "innovation_square_hz2": 407456.60728299414,
+          "native_rms_hz": 109.62911771506687,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 407456.60728299414,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.62911771506687,
+            "mean_hz": -5.878284661008579,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.30846569925910533,
+              "slope_z": 0.826853162880665,
+              "quadratic_bic_gain": -7.239513882246861,
+              "maximum_step_z": 1.6642422263253962,
+              "lag1_acf": 0.03128237328422303
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T006-RF10940312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 16,
+          "compatible": true,
+          "native_square_hz2": 112848.8691437861,
+          "innovation_square_hz2": 112737.54109291303,
+          "native_rms_hz": 83.98246436897783,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 112737.541092913,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 83.98246436897783,
+            "mean_hz": -2.7028808944746743,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.12471220606555189,
+              "slope_z": 0.17281672125818073,
+              "quadratic_bic_gain": -7.99922579032323,
+              "maximum_step_z": 1.2567713108564875,
+              "lag1_acf": -0.07826863751675409
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T001-RF11190312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 57,
+          "compatible": true,
+          "native_square_hz2": 167344.7305294727,
+          "innovation_square_hz2": 167337.58467862586,
+          "native_rms_hz": 54.18369187707078,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 167337.58467862583,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 54.18369187707078,
+            "mean_hz": -0.35445940323118347,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.03568146411227079,
+              "slope_z": 1.0163619128231247,
+              "quadratic_bic_gain": -12.129153803503652,
+              "maximum_step_z": 1.5494861340126282,
+              "lag1_acf": 0.10801640744962503
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T002-RF11190312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 73,
+          "compatible": true,
+          "native_square_hz2": 265933.8863321998,
+          "innovation_square_hz2": 265933.9035922019,
+          "native_rms_hz": 60.35668935384181,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 265933.9035922018,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.35668935384181,
+            "mean_hz": -0.08584766269901493,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.009779770021695194,
+              "slope_z": 0.02604213994819817,
+              "quadratic_bic_gain": -12.871378323445173,
+              "maximum_step_z": 1.5671504283727618,
+              "lag1_acf": 0.1435791519125955
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T003-RF11190312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 121178.25968284186,
+          "innovation_square_hz2": 121150.38195189596,
+          "native_rms_hz": 58.01777976592891,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 121150.38195189595,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.01777976592891,
+            "mean_hz": 0.9664357843620464,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07731486274896371,
+              "slope_z": 0.0663314803436997,
+              "quadratic_bic_gain": -10.75055681536833,
+              "maximum_step_z": 2.2995821330615933,
+              "lag1_acf": 0.3323430836619644
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T004-RF11190312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 277665.1859394071,
+          "innovation_square_hz2": 277666.5582354802,
+          "native_rms_hz": 90.36937045185672,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 277666.5582354802,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 90.36937045185672,
+            "mean_hz": 0.20028717709668425,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.012731803444062207,
+              "slope_z": 2.6872766020441765,
+              "quadratic_bic_gain": -2.1445173234456423,
+              "maximum_step_z": 2.6808048313486967,
+              "lag1_acf": 0.17847419674025622
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T007-RF11190312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 46089.676393484566,
+          "innovation_square_hz2": 46074.8938392757,
+          "native_rms_hz": 50.601754687123346,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 46074.893839275675,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 50.601754687123346,
+            "mean_hz": -0.9918548168057492,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.05610778135327088,
+              "slope_z": 0.8073434493249961,
+              "quadratic_bic_gain": -8.671115273688493,
+              "maximum_step_z": 1.059541053664538,
+              "lag1_acf": -0.20376727393656427
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T008-RF11190312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 18,
+          "compatible": true,
+          "native_square_hz2": 84747.46424027553,
+          "innovation_square_hz2": 84738.88150858818,
+          "native_rms_hz": 68.61626962895232,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 84738.88150858817,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 68.61626962895232,
+            "mean_hz": -0.7484567090375802,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.04233910515080317,
+              "slope_z": 0.47717637829997583,
+              "quadratic_bic_gain": -8.671115273688493,
+              "maximum_step_z": 1.9806235210805103,
+              "lag1_acf": 0.3725735766501286
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T000-RF11190312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 46,
+          "compatible": true,
+          "native_square_hz2": 551956.6370091009,
+          "innovation_square_hz2": 551706.7258878838,
+          "native_rms_hz": 109.54020871937756,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 551706.7258878837,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.54020871937756,
+            "mean_hz": 2.331296967148576,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.14280015212857744,
+              "slope_z": 0.2970195370248513,
+              "quadratic_bic_gain": -10.580381522422753,
+              "maximum_step_z": 1.462330308018454,
+              "lag1_acf": 0.09623331815043312
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T001-RF11190312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 37,
+          "compatible": true,
+          "native_square_hz2": 595950.6948950206,
+          "innovation_square_hz2": 595211.9749802302,
+          "native_rms_hz": 126.91247195489993,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 595211.9749802301,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 126.91247195489993,
+            "mean_hz": -4.475629058283655,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.21172456834920197,
+              "slope_z": 0.44612335973486295,
+              "quadratic_bic_gain": -8.490190423597038,
+              "maximum_step_z": 1.902575304361544,
+              "lag1_acf": 0.05411600617046593
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T002-RF11190312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 440127.1663937685,
+          "innovation_square_hz2": 440062.17135398265,
+          "native_rms_hz": 110.57013440368573,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 440062.17135398247,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 110.57013440368573,
+            "mean_hz": 1.4060186808158808,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07523542711713993,
+              "slope_z": 0.21933003981931382,
+              "quadratic_bic_gain": -4.066931233010161,
+              "maximum_step_z": 1.6671903445873641,
+              "lag1_acf": -0.2504446982310533
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T004-RF11190312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 25,
+          "compatible": true,
+          "native_square_hz2": 302420.4367110336,
+          "innovation_square_hz2": 302269.25667485635,
+          "native_rms_hz": 109.98553299612337,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 302269.2566748563,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 109.98553299612337,
+            "mean_hz": 2.4606618670286844,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.10963032780646367,
+              "slope_z": 0.2407590528470389,
+              "quadratic_bic_gain": -9.533734567433367,
+              "maximum_step_z": 1.2842713894353917,
+              "lag1_acf": -0.19913813469081043
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T000-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 24,
+          "compatible": true,
+          "native_square_hz2": 39264.648701216654,
+          "innovation_square_hz2": 39250.2592484536,
+          "native_rms_hz": 40.447830958128776,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 39250.2592484536,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 40.447830958128776,
+            "mean_hz": 0.7918307212694344,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.05172216612720227,
+              "slope_z": 0.012118488118264088,
+              "quadratic_bic_gain": -9.534161491043838,
+              "maximum_step_z": 0.6929940699238261,
+              "lag1_acf": -0.14698660097643587
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T001-RF11440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 55,
+          "compatible": true,
+          "native_square_hz2": 104296.06801398218,
+          "innovation_square_hz2": 104213.15682070584,
+          "native_rms_hz": 43.546436659143154,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 104213.15682070584,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 43.546436659143154,
+            "mean_hz": 1.2435349352329716,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.12296402540433825,
+              "slope_z": 0.9595677679899743,
+              "quadratic_bic_gain": -12.021999555697413,
+              "maximum_step_z": 1.3935062147622468,
+              "lag1_acf": 0.06268692824423286
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T002-RF11440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 42,
+          "compatible": true,
+          "native_square_hz2": 285575.21472654585,
+          "innovation_square_hz2": 284792.8653510527,
+          "native_rms_hz": 82.45853427293967,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 284792.8653510526,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 82.45853427293967,
+            "mean_hz": 4.320530528589145,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.3359621623944238,
+              "slope_z": 0.08995036387671745,
+              "quadratic_bic_gain": -3.249184014325728,
+              "maximum_step_z": 2.391044225230225,
+              "lag1_acf": 0.1855859881219174
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T003-RF11440312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 186168.6169010921,
+          "innovation_square_hz2": 186170.05986185046,
+          "native_rms_hz": 67.38470132899134,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 186170.05986185043,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 67.38470132899134,
+            "mean_hz": -0.06547889059459898,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.005590259618753207,
+              "slope_z": 0.15041009251273812,
+              "quadratic_bic_gain": -11.140716200112923,
+              "maximum_step_z": 1.2794574036705098,
+              "lag1_acf": 0.05888069058592095
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T004-RF11440312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 21,
+          "compatible": true,
+          "native_square_hz2": 7905.005677716881,
+          "innovation_square_hz2": 7906.624714297057,
+          "native_rms_hz": 19.401774191966105,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 7906.624714297053,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 19.401774191966105,
+            "mean_hz": -0.12672890827663996,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.00774326419889091,
+              "slope_z": 0.03429929045361254,
+              "quadratic_bic_gain": -9.13356731317027,
+              "maximum_step_z": 0.23542036917213144,
+              "lag1_acf": -0.31295760785181503
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T005-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 72193.09644722371,
+          "innovation_square_hz2": 72182.17636276805,
+          "native_rms_hz": 48.25774096260275,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 72182.17636276805,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 48.25774096260275,
+            "mean_hz": -0.6077098452658374,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.04511446959216101,
+              "slope_z": 0.5078633733042394,
+              "quadratic_bic_gain": -10.30196161345544,
+              "maximum_step_z": 0.9746527455403118,
+              "lag1_acf": -0.08775414248406282
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T007-RF11440312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 23,
+          "compatible": true,
+          "native_square_hz2": 62754.11001271266,
+          "innovation_square_hz2": 62688.14573697244,
+          "native_rms_hz": 52.23446722012311,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 62688.14573697244,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 52.23446722012311,
+            "mean_hz": -1.6935571505882367,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.10829353025763643,
+              "slope_z": 1.5208222970760668,
+              "quadratic_bic_gain": -9.406482647787449,
+              "maximum_step_z": 2.4412208141963503,
+              "lag1_acf": 0.5599016390339253
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T000-RF11440312500.000000",
+          "norad": 55747,
+          "candidate_index": 365,
+          "points": 38,
+          "compatible": true,
+          "native_square_hz2": 513186.4251573989,
+          "innovation_square_hz2": 512879.0906490255,
+          "native_rms_hz": 116.21061020920038,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 512879.0906490254,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 116.21061020920038,
+            "mean_hz": 2.9630793398414665,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.15514564130455932,
+              "slope_z": 1.07506678138767,
+              "quadratic_bic_gain": 4.64648670622714,
+              "maximum_step_z": 2.8980644133434,
+              "lag1_acf": 0.24701697150433033
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T001-RF11440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 36,
+          "compatible": true,
+          "native_square_hz2": 492267.47241822374,
+          "innovation_square_hz2": 483512.8138976451,
+          "native_rms_hz": 116.9362922965397,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 483512.81389764487,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 116.9362922965397,
+            "mean_hz": -15.602557251005742,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.7964915696936474,
+              "slope_z": 0.3220796419895212,
+              "quadratic_bic_gain": 6.087499308458483,
+              "maximum_step_z": 3.9774823619405515,
+              "lag1_acf": 0.41573464802815535
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T002-RF11440312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 424424.7931190336,
+          "innovation_square_hz2": 424428.55320258386,
+          "native_rms_hz": 111.72771433516311,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 424428.5532025838,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 111.72771433516311,
+            "mean_hz": 0.05567878145666327,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0028627658748841996,
+              "slope_z": 0.6064954122408934,
+              "quadratic_bic_gain": -7.856367320139753,
+              "maximum_step_z": 2.270849197758348,
+              "lag1_acf": -0.3156344597574257
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T000-RF11690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 48,
+          "compatible": true,
+          "native_square_hz2": 192556.96242304795,
+          "innovation_square_hz2": 192353.10563614624,
+          "native_rms_hz": 63.33721957753986,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 192353.1056361462,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 63.33721957753986,
+            "mean_hz": -2.0615888541971494,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.190441420788649,
+              "slope_z": 0.8091067421908598,
+              "quadratic_bic_gain": -11.613603032723674,
+              "maximum_step_z": 2.8112785187317937,
+              "lag1_acf": 0.46067095365165767
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T001-RF11690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 39,
+          "compatible": true,
+          "native_square_hz2": 142329.37407944974,
+          "innovation_square_hz2": 142186.44441153973,
+          "native_rms_hz": 60.41085275215291,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 142186.4444115397,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.41085275215291,
+            "mean_hz": -1.9154044873674791,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.15948929586310956,
+              "slope_z": 0.1573767326011193,
+              "quadratic_bic_gain": -10.990684938388938,
+              "maximum_step_z": 2.1802394100777907,
+              "lag1_acf": 0.5667651029500536
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T002-RF11690312500.000000",
+          "norad": 65892,
+          "candidate_index": 1051,
+          "points": 70,
+          "compatible": true,
+          "native_square_hz2": 324791.89175105025,
+          "innovation_square_hz2": 324768.04568922875,
+          "native_rms_hz": 68.11669522130494,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 324768.04568922875,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 68.11669522130494,
+            "mean_hz": -0.5931861072147773,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0661726805602614,
+              "slope_z": 0.05192861843693869,
+              "quadratic_bic_gain": -12.745485726148079,
+              "maximum_step_z": 1.8129312466633403,
+              "lag1_acf": 0.21484076509123262
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T004-RF11690312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 45,
+          "compatible": true,
+          "native_square_hz2": 146119.58091162605,
+          "innovation_square_hz2": 145717.44527509302,
+          "native_rms_hz": 56.98334667283183,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 145717.445275093,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 56.98334667283183,
+            "mean_hz": -2.9907478319600664,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.2675006182329131,
+              "slope_z": 1.3165238309531666,
+              "quadratic_bic_gain": -11.419987469310959,
+              "maximum_step_z": 2.830669361564187,
+              "lag1_acf": 0.06428499218521525
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T005-RF11690312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 105408.33391314598,
+          "innovation_square_hz2": 105354.17357067871,
+          "native_rms_hz": 58.31182415177847,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 105354.17357067869,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.31182415177847,
+            "mean_hz": -1.3669622537964907,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.10147898296029212,
+              "slope_z": 0.8005237609835323,
+              "quadratic_bic_gain": -10.30196161345544,
+              "maximum_step_z": 1.5640833538536831,
+              "lag1_acf": 0.20001129094633244
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T006-RF11690312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 17,
+          "compatible": true,
+          "native_square_hz2": 250411.39351622708,
+          "innovation_square_hz2": 249566.18259523986,
+          "native_rms_hz": 121.36754908764851,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 249566.1825952398,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 121.36754908764851,
+            "mean_hz": -7.053071652061857,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.23284680710642572,
+              "slope_z": 1.5076900726236537,
+              "quadratic_bic_gain": -5.716544926311943,
+              "maximum_step_z": 2.277900745835278,
+              "lag1_acf": 0.2191221088677541
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH4-T000-RF11690312500.000000",
+          "norad": 55479,
+          "candidate_index": 342,
+          "points": 49,
+          "compatible": true,
+          "native_square_hz2": 681241.8180198364,
+          "innovation_square_hz2": 681244.0098633319,
+          "native_rms_hz": 117.91053492077282,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 681244.0098633317,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 117.91053492077282,
+            "mean_hz": 0.03759233987081216,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.002208855925710052,
+              "slope_z": 0.9261769179301418,
+              "quadratic_bic_gain": -10.686689160080908,
+              "maximum_step_z": 1.9612449371646938,
+              "lag1_acf": 0.14591999045278634
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T000-RF11940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 15,
+          "compatible": true,
+          "native_square_hz2": 54023.5927338515,
+          "innovation_square_hz2": 53986.1686789533,
+          "native_rms_hz": 60.01310564304628,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 53986.16867895331,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 60.01310564304628,
+            "mean_hz": -1.7963326926445007,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.09276222137146771,
+              "slope_z": 1.4251580927267922,
+              "quadratic_bic_gain": -8.12415060330663,
+              "maximum_step_z": 2.316661057524479,
+              "lag1_acf": 0.36535260653238144
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T002-RF11940312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 69,
+          "compatible": true,
+          "native_square_hz2": 238147.37370128508,
+          "innovation_square_hz2": 238040.13246025637,
+          "native_rms_hz": 58.74871243748328,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 238040.1324602563,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.74871243748328,
+            "mean_hz": -1.2481227399907042,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.13823581514476635,
+              "slope_z": 0.9887300003489014,
+              "quadratic_bic_gain": -12.702319513791778,
+              "maximum_step_z": 1.929752566764474,
+              "lag1_acf": 0.09509792816489071
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T003-RF11940312500.000000",
+          "norad": 53432,
+          "candidate_index": 235,
+          "points": 50,
+          "compatible": true,
+          "native_square_hz2": 309296.7837373987,
+          "innovation_square_hz2": 309146.958241425,
+          "native_rms_hz": 78.65071948016734,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 309146.9582414249,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 78.65071948016734,
+            "mean_hz": 1.7358270185008586,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.1545281409187212,
+              "slope_z": 0.3024594935484552,
+              "quadratic_bic_gain": -6.983202636427044,
+              "maximum_step_z": 2.881930159008866,
+              "lag1_acf": 0.4394708608817861
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T004-RF11940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 38,
+          "compatible": true,
+          "native_square_hz2": 97286.18069903961,
+          "innovation_square_hz2": 97286.91964265682,
+          "native_rms_hz": 50.59804986335666,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 97286.91964265685,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 50.59804986335666,
+            "mean_hz": 0.03901483346463034,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.003206714476438265,
+              "slope_z": 0.325477992787798,
+              "quadratic_bic_gain": -10.912758479179157,
+              "maximum_step_z": 1.801604389744751,
+              "lag1_acf": 0.16245614061713207
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T000-RF12190312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 75,
+          "compatible": true,
+          "native_square_hz2": 492213.39319965057,
+          "innovation_square_hz2": 491213.15172108833,
+          "native_rms_hz": 81.0113895860453,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 491213.15172108833,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 81.0113895860453,
+            "mean_hz": -3.654567219549305,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.38846159864590823,
+              "slope_z": 1.4091018143250522,
+              "quadratic_bic_gain": -10.048502830040697,
+              "maximum_step_z": 3.539587815347993,
+              "lag1_acf": 0.1734368579106801
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T001-RF12190312500.000000",
+          "norad": 59079,
+          "candidate_index": 572,
+          "points": 63,
+          "compatible": true,
+          "native_square_hz2": 164030.53708165625,
+          "innovation_square_hz2": 163879.31419079402,
+          "native_rms_hz": 51.02606509183761,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 163879.31419079402,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 51.02606509183761,
+            "mean_hz": 1.5538849206752188,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.16444772264479832,
+              "slope_z": 0.9887009307326351,
+              "quadratic_bic_gain": -12.429404179174597,
+              "maximum_step_z": 1.7263154872110242,
+              "lag1_acf": 0.3566087571593806
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T003-RF12190312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 20,
+          "compatible": true,
+          "native_square_hz2": 98905.53992512173,
+          "innovation_square_hz2": 98624.0607109504,
+          "native_rms_hz": 70.32266346104993,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 98624.06071095039,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 70.32266346104993,
+            "mean_hz": -3.768240550893097,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.22469445406315255,
+              "slope_z": 0.8569837871971392,
+              "quadratic_bic_gain": -8.987196820661973,
+              "maximum_step_z": 1.7717883466420299,
+              "lag1_acf": 0.17451589271043202
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T005-RF12190312500.000000",
+          "norad": 53432,
+          "candidate_index": 235,
+          "points": 13,
+          "compatible": true,
+          "native_square_hz2": 154135.95320888713,
+          "innovation_square_hz2": 153878.44809637358,
+          "native_rms_hz": 108.8880699861055,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 153878.44809637358,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 108.8880699861055,
+            "mean_hz": 4.456615751648105,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.14189907674596355,
+              "slope_z": 0.6428768562661094,
+              "quadratic_bic_gain": -6.346737727913095,
+              "maximum_step_z": 0.9178983668842713,
+              "lag1_acf": 0.3351547763421508
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH6-T000-RF12190312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 671062.4664221529,
+          "innovation_square_hz2": 670019.8626650869,
+          "native_rms_hz": 140.48890121770273,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 670019.8626650869,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 140.48890121770273,
+            "mean_hz": -5.538421899165876,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.22664113061210028,
+              "slope_z": 0.7622713300675084,
+              "quadratic_bic_gain": -9.908982189396218,
+              "maximum_step_z": 1.361642351538364,
+              "lag1_acf": -0.25880691913181103
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH6-T001-RF12190312500.000000",
+          "norad": 55479,
+          "candidate_index": 342,
+          "points": 31,
+          "compatible": true,
+          "native_square_hz2": 580090.4164006282,
+          "innovation_square_hz2": 572604.6621453471,
+          "native_rms_hz": 136.79398406888959,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 572604.662145347,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 136.79398406888959,
+            "mean_hz": 15.540148040044569,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.6262812709790978,
+              "slope_z": 2.0965005982596407,
+              "quadratic_bic_gain": 3.614657510437212,
+              "maximum_step_z": 2.671460012525826,
+              "lag1_acf": 0.098895127574744
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T000-RF12440312500.000000",
+          "norad": 64355,
+          "candidate_index": 947,
+          "points": 70,
+          "compatible": true,
+          "native_square_hz2": 646686.18101681,
+          "innovation_square_hz2": 645545.6394957473,
+          "native_rms_hz": 96.1164606845563,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 645545.6394957472,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 96.1164606845563,
+            "mean_hz": 4.0457312380705845,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.349952316131653,
+              "slope_z": 0.3947589719700927,
+              "quadratic_bic_gain": -9.67103961320847,
+              "maximum_step_z": 3.2799665340037603,
+              "lag1_acf": 0.10878831444640125
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T001-RF12440312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 45,
+          "compatible": true,
+          "native_square_hz2": 508501.347217115,
+          "innovation_square_hz2": 504611.26519786427,
+          "native_rms_hz": 106.30159894450371,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 504611.26519786427,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 106.30159894450371,
+            "mean_hz": 9.297656269644115,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.5824083777786917,
+              "slope_z": 1.65079702695793,
+              "quadratic_bic_gain": 8.419904749192971,
+              "maximum_step_z": 3.331375525370152,
+              "lag1_acf": 0.07816222270321808
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T003-RF12440312500.000000",
+          "norad": 59089,
+          "candidate_index": 578,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 328788.30980928434,
+          "innovation_square_hz2": 328770.7648266764,
+          "native_rms_hz": 89.55013717755618,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 328770.7648266764,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 89.55013717755618,
+            "mean_hz": 1.2563244176836168,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.08873772374741741,
+              "slope_z": 0.13649203010067273,
+              "quadratic_bic_gain": -8.18558155874688,
+              "maximum_step_z": 1.829480083758847,
+              "lag1_acf": 0.15685637921391668
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T004-RF12440312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 34,
+          "compatible": true,
+          "native_square_hz2": 558121.4540855922,
+          "innovation_square_hz2": 542817.3378881646,
+          "native_rms_hz": 128.12235123065125,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 542817.3378881644,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 128.12235123065125,
+            "mean_hz": 21.216469640630212,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.9645903916375437,
+              "slope_z": 0.8487871062226056,
+              "quadratic_bic_gain": -0.16492507026082137,
+              "maximum_step_z": 2.641479245278387,
+              "lag1_acf": 0.11397757665262406
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T005-RF12440312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 30,
+          "compatible": true,
+          "native_square_hz2": 120618.48454117817,
+          "innovation_square_hz2": 120588.7872131579,
+          "native_rms_hz": 63.40832872243681,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 120588.78721315789,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 63.40832872243681,
+            "mean_hz": -1.0168840944114588,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07426271425031587,
+              "slope_z": 0.21221474364143847,
+              "quadratic_bic_gain": -10.203592144986466,
+              "maximum_step_z": 1.7521891026196417,
+              "lag1_acf": 0.2650348254029469
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T000-RF12440312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 39,
+          "compatible": true,
+          "native_square_hz2": 671876.5511763442,
+          "innovation_square_hz2": 669696.1342765739,
+          "native_rms_hz": 131.25396708791897,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 669696.1342765737,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 131.25396708791897,
+            "mean_hz": -7.477400139623429,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.3517514289573175,
+              "slope_z": 0.5007866436673215,
+              "quadratic_bic_gain": -7.557865466727851,
+              "maximum_step_z": 1.6106199624436386,
+              "lag1_acf": 0.1276236296081779
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T001-RF12440312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 24,
+          "compatible": true,
+          "native_square_hz2": 337812.8328376779,
+          "innovation_square_hz2": 337809.8525338498,
+          "native_rms_hz": 118.64035865408496,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 337809.8525338498,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 118.64035865408496,
+            "mean_hz": -0.6134972684600749,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.02479989871262604,
+              "slope_z": 0.08588306593601368,
+              "quadratic_bic_gain": -9.378842744183222,
+              "maximum_step_z": 1.2138624669281144,
+              "lag1_acf": 0.18667545170360988
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T002-RF12440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 23,
+          "compatible": true,
+          "native_square_hz2": 253849.5896459364,
+          "innovation_square_hz2": 253838.0220232987,
+          "native_rms_hz": 105.05683547612742,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 253838.02202329866,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 105.05683547612742,
+            "mean_hz": -0.7137219039609393,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.03186589152206039,
+              "slope_z": 0.3692179199575594,
+              "quadratic_bic_gain": -9.228189750096982,
+              "maximum_step_z": 1.0908340384786448,
+              "lag1_acf": -0.06291546653869133
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T000-RF12690312500.000000",
+          "norad": 57904,
+          "candidate_index": 486,
+          "points": 78,
+          "compatible": true,
+          "native_square_hz2": 265063.03803608776,
+          "innovation_square_hz2": 265063.03983935167,
+          "native_rms_hz": 58.294460091725185,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 265063.0398393516,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 58.294460091725185,
+            "mean_hz": -0.01700856255905446,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.0020028740960206163,
+              "slope_z": 1.0068718264529584,
+              "quadratic_bic_gain": -13.070126480068776,
+              "maximum_step_z": 2.87072235231687,
+              "lag1_acf": 0.26006947821709936
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T003-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 41,
+          "compatible": true,
+          "native_square_hz2": 95114.89257062586,
+          "innovation_square_hz2": 95004.13569244354,
+          "native_rms_hz": 48.165085160849145,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 95004.13569244354,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 48.165085160849145,
+            "mean_hz": -1.6693623175717842,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.1425217908893462,
+              "slope_z": 0.5210310324378897,
+              "quadratic_bic_gain": -11.140716200112923,
+              "maximum_step_z": 1.7676888530705033,
+              "lag1_acf": 0.3170832305569397
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T004-RF12690312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 73,
+          "compatible": true,
+          "native_square_hz2": 351494.6934658071,
+          "innovation_square_hz2": 351268.96983717184,
+          "native_rms_hz": 69.39017078017223,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 351268.96983717184,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 69.39017078017223,
+            "mean_hz": -1.7587967793074872,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.20036221692874107,
+              "slope_z": 0.4970608937648539,
+              "quadratic_bic_gain": -12.871378323445173,
+              "maximum_step_z": 2.4871841216616426,
+              "lag1_acf": 0.23908576867300216
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T005-RF12690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 35,
+          "compatible": true,
+          "native_square_hz2": 77916.6281037206,
+          "innovation_square_hz2": 77886.63887919752,
+          "native_rms_hz": 47.18251131925914,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 77886.63887919752,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 47.18251131925914,
+            "mean_hz": 0.98368235292832,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.07759391041534792,
+              "slope_z": 0.3423407677246147,
+              "quadratic_bic_gain": -10.666044184468241,
+              "maximum_step_z": 1.1995485644834514,
+              "lag1_acf": -0.001435873128169926
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T006-RF12690312500.000000",
+          "norad": 67931,
+          "candidate_index": 1269,
+          "points": 25,
+          "compatible": true,
+          "native_square_hz2": 38717.48141943903,
+          "innovation_square_hz2": 38696.372188179346,
+          "native_rms_hz": 39.3535164474226,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 38696.37218817933,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 39.3535164474226,
+            "mean_hz": 1.0132642717054114,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.06755095144702743,
+              "slope_z": 0.8724608432205488,
+              "quadratic_bic_gain": -9.656627474604601,
+              "maximum_step_z": 1.4921365963930138,
+              "lag1_acf": 0.06592352294877593
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH8-T000-RF12690312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 57,
+          "compatible": true,
+          "native_square_hz2": 675261.0304749192,
+          "innovation_square_hz2": 669723.8372883108,
+          "native_rms_hz": 108.84247675045815,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 669723.8372883108,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 108.84247675045815,
+            "mean_hz": -9.85846136741288,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.6806025047517338,
+              "slope_z": 1.0538290480836103,
+              "quadratic_bic_gain": -9.776809257754142,
+              "maximum_step_z": 3.0345560080620984,
+              "lag1_acf": 0.1030430787020796
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX2-CH8-T001-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 46,
+          "compatible": true,
+          "native_square_hz2": 844529.4747216547,
+          "innovation_square_hz2": 844514.5037669728,
+          "native_rms_hz": 135.4966287661523,
+          "aliases_changed": 0,
+          "original_profile_compatible": true,
+          "profile_native_square_hz2": 844514.5037669728,
+          "conditional_residual_gate": {
+            "compatible": true,
+            "rms_hz": 135.4966287661523,
+            "mean_hz": 0.581154348603298,
+            "diagnostics": {
+              "noise_screen_pass": true,
+              "mean_z": 0.028772212130444254,
+              "slope_z": 0.12619102940478483,
+              "quadratic_bic_gain": -9.178755127500455,
+              "maximum_step_z": 2.0371114909047017,
+              "lag1_acf": 0.08317602864150392
+            }
+          },
+          "association_source": "curved_calibration"
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T003-RF10940312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 8,
+          "native_rms_hz": 49.61745290042957,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -261.4038076547962
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T005-RF10940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 19,
+          "native_rms_hz": 51.88655507980672,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -429.17340883840245
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T007-RF10940312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 12,
+          "native_rms_hz": 64.11585590248897,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 519.7695324160663
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T009-RF10940312500.000000",
+          "norad": 64355,
+          "candidate_index": 947,
+          "points": 10,
+          "native_rms_hz": 78.33297252455743,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -787.4224407256213
+        },
+        {
+          "component": "DS23-0116-RX1-CH1-T010-RF10940312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 8,
+          "native_rms_hz": 50.46819451457922,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -206.6120637685486
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T003-RF10940312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 23,
+          "native_rms_hz": 95.66605243871246,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -210.26501633064115
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T004-RF10940312500.000000",
+          "norad": 59520,
+          "candidate_index": 607,
+          "points": 23,
+          "native_rms_hz": 109.20458695099546,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -741.2256781865204
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T007-RF10940312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 18,
+          "native_rms_hz": 143.79376422887765,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 185.66171731720138
+        },
+        {
+          "component": "DS23-0116-RX2-CH1-T008-RF10940312500.000000",
+          "norad": 67516,
+          "candidate_index": 1218,
+          "points": 9,
+          "native_rms_hz": 128.26374202711037,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -1064.8771296628986
+        },
+        {
+          "component": "DS23-0116-RX1-CH2-T006-RF11190312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 21,
+          "native_rms_hz": 50.4530554521333,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -480.28358162059646
+        },
+        {
+          "component": "DS23-0116-RX2-CH2-T005-RF11190312500.000000",
+          "norad": 64348,
+          "candidate_index": 945,
+          "points": 19,
+          "native_rms_hz": 82.1548626005366,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -298.8049652390661
+        },
+        {
+          "component": "DS23-0116-RX1-CH3-T006-RF11440312500.000000",
+          "norad": 59358,
+          "candidate_index": 597,
+          "points": 13,
+          "native_rms_hz": 89.54537317923923,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 575.4015074987171
+        },
+        {
+          "component": "DS23-0116-RX2-CH3-T004-RF11440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 14,
+          "native_rms_hz": 145.75389080682692,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -443.3102439801476
+        },
+        {
+          "component": "DS23-0116-RX1-CH4-T007-RF11690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 20,
+          "native_rms_hz": 80.3057452996069,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 496.0182933911868
+        },
+        {
+          "component": "DS23-0116-RX2-CH4-T001-RF11690312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 20,
+          "native_rms_hz": 130.10795953076453,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 140.70757546217777
+        },
+        {
+          "component": "DS23-0116-RX1-CH5-T006-RF11940312500.000000",
+          "norad": 58872,
+          "candidate_index": 564,
+          "points": 15,
+          "native_rms_hz": 79.23769459642774,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -258.50868860463964
+        },
+        {
+          "component": "DS23-0116-RX2-CH5-T000-RF11940312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 23,
+          "native_rms_hz": 97.81708544898193,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -115.27841157568993
+        },
+        {
+          "component": "DS23-0116-RX1-CH6-T004-RF12190312500.000000",
+          "norad": 57954,
+          "candidate_index": 497,
+          "points": 12,
+          "native_rms_hz": 93.47183381447134,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -1009.2770769926682
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T002-RF12440312500.000000",
+          "norad": 65902,
+          "candidate_index": 1055,
+          "points": 21,
+          "native_rms_hz": 45.984796741832234,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 369.1171984768687
+        },
+        {
+          "component": "DS23-0116-RX1-CH7-T006-RF12440312500.000000",
+          "norad": 63591,
+          "candidate_index": 883,
+          "points": 14,
+          "native_rms_hz": 54.1905683603282,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 982.8661168168628
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T003-RF12440312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 22,
+          "native_rms_hz": 125.31644079639742,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": -395.2342706608435
+        },
+        {
+          "component": "DS23-0116-RX2-CH7-T005-RF12440312500.000000",
+          "norad": 58853,
+          "candidate_index": 556,
+          "points": 13,
+          "native_rms_hz": 151.04882616304377,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 15.7896132657664
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T001-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 13,
+          "native_rms_hz": 108.74323075346175,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 594.6324517538122
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T002-RF12690312500.000000",
+          "norad": 58867,
+          "candidate_index": 561,
+          "points": 11,
+          "native_rms_hz": 40.28413685396462,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 552.19019994519
+        },
+        {
+          "component": "DS23-0116-RX1-CH8-T008-RF12690312500.000000",
+          "norad": 63582,
+          "candidate_index": 881,
+          "points": 27,
+          "native_rms_hz": 117.83126294457827,
+          "compatible": true,
+          "active_curvature": false,
+          "association_source": "frozen_calibration_extension",
+          "bias_hz": 821.5291580526742
+        }
+      ],
+      "linear_tracks_never_calibrate": true,
+      "original_curved_gate_points": 2349,
+      "added_points": 408
+    }
+  }
+}

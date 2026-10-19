@@ -1,5 +1,17 @@
 # Dataset configuration index
 
+All located named dataset membership authorities are now published in the
+[lossless manifest archive](../../reports/2026_10_18_dataset_manifest_archive/README.md),
+including full authorities previously available only in ignored local directories.
+The catalogue supplies original checksums and recovery instructions; historical
+membership and seals remain unchanged. DS14, DS15 and DS19 remain unlocated.
+
+[DS23](../../reports/2026_10_18_ds23_post_ds22/README.md) contains **413 recordings
+strictly after DS22's cutoff**: 207 fast and 206 adaptive, with no analysis-readiness
+gate. Its [random ten-scan evaluation](../../reports/2026_10_18_ds23_phase_refreshed_evaluation/README.md)
+compares phase-refreshed graph localization with matched c=0/fitted-c controls,
+fixed and radio-only noise, per-scan figures and conditional position errors.
+
 For DS7 loading, model execution and scoring, see the [evaluation workflow](ds7-evaluation.md) and [parallel SOL-agent plan](ds7-parallel-plan.md). Model-arm configurations are in [`config/ds7/`](../../config/ds7/); they are separate from the frozen dataset membership below.
 
 Dataset membership configurations live in dated **`reports/` directories**, rather than a central `configs/datasets/` folder. The authorities below are immutable snapshots; analyzer/method settings are separate. Historical links are pinned to repository commit `75b76f66974c78588c6599822e8007aaa767466b`, because some are newer than this working checkout. DS7 is newly minted locally.
