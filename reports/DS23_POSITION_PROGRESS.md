@@ -434,3 +434,62 @@ truncated; no scientific input changed). Print scalar keys/path/count only.
 Existing code src/leo/storage/scanner_analysis_source.py / short_window.py
 provides read-side ports. The current root no longer has scanner_tracking_source.py;
 use the frozen public exports for prior fits, not an invented replacement path.
+
+## Checkpoint: bounded archived-IQ refinement, 2026-10-19
+
+This continuation made measurable progress; the 0.5 km mean/median goal remains
+active and unmet. No new RF was collected and no original scientific fixture,
+tracking contract, satellite label or causal input was changed.
+
+New read-side tools export whole original graph curves via ShortWindowReader
+using declared segment authorities and validated chunk/window hashes. Selection
+is radio-only: largest eligible early curved track per RX/band, 12–96 points,
+all visits below 1024. Scans 202 and 274 provide three and four curves, 74 and
+166 observations. Raw NPZ panels are local replay prerequisites, not published
+payloads. Both numerical jobs are complete; do not restart them as missing.
+
+tools/local_pilot_refinement.py uses a Fourier-interpolated known-pilot template,
+independent complex amplitude/DC per frame, direct local carrier fitting, and
+optional epoch/rate search. Its one rate ties frame cadence and intra-frame
+sample rate; it is not a fully independent clock model. Same polynomial degree,
+selected only from original data, gives RMS Hz (original -> joint):
+202 RX1 CH2 66.84->62.18, RX1 CH7 87.51->89.67, RX2 CH2 41.11->11.84;
+274 RX1 CH4 147.73->144.16, RX1 CH6 135.35->129.64,
+RX2 CH3 43.50->9.36, RX2 CH7 98.86->9.80. Some bounded fits hit search limits;
+raw radio tables retain them, and position trials revert boundary/control
+failures to original CFO. All original points remain present.
+
+Partial matched c position interventions retain the original noise, times,
+calibration masks, labels, aliases and priors; five phase rounds x48 steps,
+regional-center cold start. All four new paired trials pass final gates.
+202 c0/fitted baseline3.0609/3.0602 km -> joint3.0653/3.0645; only37 active
+calibration points change. 274 baseline1.3173/1.2769 -> fixed1.3080/1.2673 ->
+joint1.2980/1.2563; fixed152 and joint165 active points change. Strong radio
+RMS gains do not establish position improvement or solve phase degeneracy.
+
+The experimental native binary matches its own build receipt but not every
+archived CFO. Its500Hz inverse is NOT applied. The clean owned public GLRT64
+scorer exactly reproduces67/74 and141/166 archived scores; bounded acquired-CFO
+reconstruction over residual bins0,+/-1,+/-2 resolves no further cases. Seven
+and25 exceptions remain explicit. Actual acquisition binary/config provenance
+is not proven. Score normalization differs from the local projection energy;
+their magnitudes cannot be compared as evidences. The actual alias period is
+1/(4.4e-6)=227272.72727272726Hz, imported from the repository constant.
+
+Six focused tests pass: original three local-model controls plus alias-preserving
+updates/boundary fallback, wrong-peak rejection and a synthetic case that
+reconstructs an unpersisted acquired CFO. Report, figures, numerical evidence,
+source snapshots and receipts are under
+reports/2026_10_19_ds23_raw_pilot_refinement/. ALGO01 and DBG01 link this study;
+the baseline algorithm remains unchanged. Raw NPZ panels and partial/initial
+exploratory files are excluded from publication.
+
+NEXT ACTION: qualify actual acquisition/config support and RF-only uncertainty
+after refinement. The old receiver-blind radio law/floor40Hz underweights the
+new apparent RX2 precision. Do not silently lower floor40: WindowNoise enforces
+it and a residual normalization uses reference40Hz. Any new precise-noise
+research model needs consistent normalization and matching c0/fitted controls,
+preserving every unmodified observation's exact effective original noise.
+Use independent-frame/predictive radio checks, account for differing effective
+times, optimize the measured local-fit cost before widening re-analysis, and
+then test untouched scans. Full413/locality generalization is still pending.

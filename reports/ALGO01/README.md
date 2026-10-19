@@ -22,6 +22,8 @@ The [causal shape and curvature controls](../2026_10_19_ds23_curvature_shape_stu
 
 The [clock and measurement controls](../2026_10_19_ds23_clock_measurement_controls/README.md) add a small shared satellite carrier rate on all twenty scans. RF-selected widths reach **1.314/0.976 km c0 mean/median** and **1.263/0.885 km fitted-c**; four conditional receiver-prediction probes reject extra receiver flexibility. A separate receipt-verified native control exposes deterministic FFT CFO interpolation bias and validates a template-derived inverse in eligible noiseless cases. That correction has not been applied to DS23, and capture-build/noise applicability remains unqualified. No default or achieved 0.5 km accuracy is asserted.
 
+The [archived-IQ refinement study](../2026_10_19_ds23_raw_pilot_refinement/README.md) tests seven complete graph curves, 240 observations, on development scans 202 and 274. Radio-only joint carrier/epoch/code-rate fits reduce the selected RX2 polynomial RMS from 41–99 Hz to 9–12 Hz; RX1 improves much less. Partial position interventions preserve original uncertainties, masks, labels and paired c budgets: scan 274 improves by about 20 m, while scan 202 remains near 3.06 km. These are measurement diagnostics, not a replacement ALGO01 default or independent validation. Actual acquisition/configuration provenance remains incomplete for 32 archived score replays.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
