@@ -523,3 +523,48 @@ original curved gate or a new linear gate causes paired fallback without trimmin
 Report all twenty cases and distinguish additional predictive points from
 calibration points. Saved failures and curves belong in the report alongside
 position gains; the full cohort remains above the 0.5 km goal.
+
+## 16. Robust predictive tails and conditional precision
+
+The [robust predictive study](../2026_10_19_ds23_robust_predictive_linear/README.md)
+matches marginal noise variance and bias variance to the Gaussian comparator.
+Student tails still change central concentration and infer new-curve precision:
+median precision is about 1.252 versus the Gaussian control's fixed 0.5. Thus
+"robust" does not imply less position influence. Keep original curved calibration
+means and precisions unchanged at a given coordinate, retain shared predictive
+covariance, and report mean and median across every case, including fallback.
+The new models improve scan 217 but worsen cohort median; do not promote them.
+
+## 17. Coupled sample-clock frequency and time scale
+
+An error epsilon in actual/nominal sample rate divides both carrier Hz and
+elapsed time by 1+epsilon. Test the coupled physical column -F-t*F', separately
+per receiver; do not equate it with an arbitrary RF-times-time drift. Include
+current orbit corrections, receiver isolation, full prior normalization and
+exact nonlinear geometry replay. Treat 25/100 ppm prior widths as engineering
+hypotheses, not measured oscillator specifications. Two diagnostic scans retain
+all original gates and show small position changes, not a demonstrated cause.
+
+## 18. History-derived coordinates require current-scan evidence
+
+A causal prefix spatial median uses earlier RF positions and assumes one site.
+It is not an independent single-scan localization result. Test future-prefix
+invariance and non-unique median conventions; do not use later scan results in
+an earlier estimate. Replay calibration at each proposed coordinate with the
+same current observations, labels, aliases and c-arm evidence. All twenty
+individual-coordinate null replays pass; only fourteen prefix pairs pass.
+After paired fallback the diagnostic is 0.794/0.513 km fitted-c, not its raw
+0.507/0.431 km. Movement/reset handling and stationary-site confirmation remain
+outstanding, and the full DS23 goal is unmet.
+
+Preserve exact statistical failure margins. Examples include slope z=3.099,
+step z=4.081 and quadratic BIC gain=10.0036. A companion's noise failure can
+also trigger owner-support rejection. These cases motivate a noise-only audit
+of the joint false-rejection rate across tracks and tests, including fitting
+and group dependence. Do not simply loosen thresholds at geographically
+favorable coordinates. Calibrate any new policy without evaluation GPS,
+compare original and replacement policies on all scans, and retain physical
+alias/visibility/bias bounds and genuine structured-residual failures.
+Also test detection power against injected ramps, curvature and steps, including
+receiver-common and satellite-common perturbations. Accepting a noise test does
+not establish a satellite identity or absence of position bias.

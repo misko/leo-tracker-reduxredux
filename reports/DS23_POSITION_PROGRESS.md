@@ -1043,3 +1043,73 @@ keeping all curved calibration/precisions learned from curved data only. This
 must retain full shared calibration uncertainty, use matched c arms and fixed
 labels/aliases, and report raw failures rather than trim original points or
 choose the most geographically favorable per-scan policy.
+
+## Checkpoint: robust linear prediction, clock scaling and history gate replay
+
+Completed variance-matched robust conditional prediction on all twenty original
+development scans, with identical original curved data and the same 441 added
+linear tracks/7,046 probes. Curved calibration means and noise/prior precisions
+have exactly zero linear feedback at a fixed position. Noise Gamma(2,2) gives
+the previous Gaussian model's marginal variance 2*sigma_radio². The second
+control gives new-curve biases a four-degree Student prior of variance 300².
+Original phase-history/orbit priors, masks, aliases, labels and cold regional
+starts remain fixed, with five phase rounds and up to 48 steps in both c arms.
+
+| Policy | c0 mean / median km | Fitted-c mean / median km | Paired valid |
+|---|---:|---:|---:|
+| Gaussian linear prediction | 1.229 / 0.804 | 1.177 / 0.811 | 16/20 |
+| Student noise | 1.204 / 1.039 | 1.176 / 0.983 | 15/20 |
+| Student noise and bias | 1.209 / 1.016 | 1.171 / 0.973 | 15/20 |
+
+All cases remain, including paired fallback to the curved incumbent for failed
+trials. Both robust policies fail 74/173/321/365/373. Scan 217 improves to
+0.754/0.475 km c0/fitted-c, but this cannot select the cohort rule. Robust
+predictive noise precision has median about 1.252 versus the Gaussian control's
+fixed 0.5, and Student-bias prior precision has median 2.236 versus Gaussian1.
+Heavy tails also tighten the central distribution; they do not only suppress
+bad curves. Five owned normalization/robustness/no-feedback tests pass.
+
+Distinct physical sample-clock control on 257/202: epsilon = Fs_actual/Fs_nom-1
+divides carrier Hz and elapsed time by 1+epsilon. One coupled -F-t*F' direction
+per receiver includes current orbit corrections and Gaussian integration.
+Engineering prior SDs 0/25/100 ppm are not measured hardware specifications.
+All twelve diagnostic c arms pass, and zero-clock replays reproduce original
+fits. At 100 ppm SD, fitted-c error changes 3.699→3.688 km on 257 and
+3.060→2.974 km on 202. Maximum exact nonlinear replay difference is0.061Hz.
+The RF-selected 202 model uses roughly+129/-127ppm, not independently verified
+clock errors. Four owned physical/null/normalization tests pass. No cohort-wide
+clock claim or new default follows from these two cases.
+
+Separate stationary-site diagnostic: chronological spatial medians use only
+current and earlier RF positions, across about four days. The Gaussian-input
+prefix gives raw c0 errors0.659/0.606km mean/median and fitted-c0.507/0.431km.
+This assumes one unchanged site, has no movement/reset model and must not be
+substituted for independent single-scan results. Three tests check rigid-frame
+equivariance, future-prefix invariance and first/tied-time conventions. A slow
+vertex/collinear Weiszfeld case found by the future-input test is fixed through
+a convex vertex certificate and midpoint convention; initial diagnostic/source
+remain archived. No coordinate is adjusted using GPS.
+
+Fixed-position physical replay refits current curved calibration through five
+phase rounds at both the original individual coordinate and prefix coordinate.
+Use the exact current Gaussian policy evidence: its original linear set only
+when its paired fit qualified; otherwise curved data only. All twenty individual
+null pairs pass. Prefix pairs pass14/20, failing74/108/138/143/273/373. With
+paired fallback, c0 mean/median0.894/0.651km and fitted-c0.794/0.513km. No
+points are removed, and raw0.507/0.431km is not a gate-qualified result.
+
+Several failures are marginal statistical cutoffs: slope z3.099 vs3, step z4.081
+vs4, quadratic BIC10.0036 vs10. Their conditional RMS/bias/alias values are
+ordinary; a failed companion also causes support cascades. This does not prove
+false positives or authorize threshold relaxation. Next concrete diagnosis:
+qualify the false-rejection rate of all residual checks jointly across tracks
+under a declared noise model, accounting for nuisance fitting/correlation, with
+no GPS-based threshold selection. Compare the resulting policy against every
+original case and untouched scans before applying it to new positions.
+
+A proper causal history model additionally needs movement/reset handling and
+current-scan physical consistency; it depends on data outside one scan. The
+stationary-site and antenna-height question remains unconfirmed. Full413 and
+new-location validation remain outstanding, goal active and unmet. No new RF,
+IQ read, post-scan TLE, GPS-selected identity or runtime default change occurs.
+ALGO01/DBG01 and full archived results/figures/source document this checkpoint.

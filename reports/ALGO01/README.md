@@ -72,6 +72,17 @@ c0 changes from 1.315/0.991 to 1.229/0.804 km, including four paired fallbacks.
 Scan 217 reaches 0.775/0.529 km c0/fitted-c. These remain development results,
 with no new default, full-DS23 claim or attainment of the 0.5 km target.
 
+The [robust prediction and history study](../2026_10_19_ds23_robust_predictive_linear/README.md)
+tests variance-matched Student noise/bias tails on the same twenty scans. Its
+fitted-c mean/median is 1.171/0.973 km versus Gaussian prediction's
+1.177/0.811 km, so it is not promoted. Coupled sample-clock/time scaling has
+only small effects on two large-error scans. A separate chronological prefix
+median borrows earlier RF positions under an unverified stationary-site
+assumption. After replaying every current physical gate and applying paired
+fallback, that diagnostic gives 0.894/0.651 km c0 and 0.794/0.513 km fitted-c.
+It has no movement/reset model and is not a single-scan ALGO01 result. Raw
+prefix errors are lower but six scans fail gates; no threshold is relaxed.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
