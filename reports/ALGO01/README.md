@@ -26,6 +26,8 @@ The [archived-IQ refinement study](../2026_10_19_ds23_raw_pilot_refinement/READM
 
 The [precision and family-reentry study](../2026_10_19_ds23_refined_precision/README.md) corrects an earlier mask explanation: scan 202's refined RX2 curve was excluded, while the two RX1 curves were active. RF-only predictive noise, effective timestamps and shared causal eccentricity-vector modes allow its original 71-point family to reenter with every native gate passing in both c arms; error becomes 2.601/2.601 km. Scan 274's simpler RF-preferred precision/timestamp model reaches 1.251/1.205 km. Extra eccentricity improves its GPS error but slightly loses penalized RF evidence and is not selected there. This is a two-scan development rule, not a new cohort result or a default. Legacy gate sensitivity at the new precision still needs qualification.
 
+The [broader precise-family catalogue study](../2026_10_19_ds23_refined_catalogue/README.md) shows that scan 202's 2.601 km gain was conditional on retaining NORAD 64442. Screening all 1,569 causal candidates and refining its 34-point channel companion instead favors NORAD 67335 by RF evidence, with 3.076/3.076 km error. NORAD 53531 gives about 0.926 km but loses RF evidence and fails a precision-scaled family residual check; GPS cannot select it. Cross-RF shared constants further improve RF evidence while worsening accuracy. A fixed-identity loss map and exact objective decomposition show that the fitted objective itself favors the biased endpoint. These regressions are retained; no new default or improved DS23 cohort accuracy is established.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

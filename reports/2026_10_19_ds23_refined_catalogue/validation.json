@@ -1,0 +1,32 @@
+{
+  "checks": {
+    "CH2_only": {
+      "paired_counts_and_gates_verified": true,
+      "RF_only_winner_verified": true
+    },
+    "_companion": {
+      "paired_counts_and_gates_verified": true,
+      "RF_only_winner_verified": true
+    },
+    "_cross_rf": {
+      "paired_counts_and_gates_verified": true,
+      "RF_only_winner_verified": true
+    }
+  },
+  "tests": {
+    "command": "PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m pytest -q tests/analysis/test_ds23_refined_catalogue.py",
+    "exit_code": 0,
+    "result": "5 passed in 1.16s"
+  },
+  "tests_source_sha256": "f1d45b98e6ab741745bacacad101bdabaa776ca21429cb3bbea418c42bd0fbc5",
+  "summary_sha256": "31158f71f18422d6d7d57ce6256b03bbcbdca04eb6f6b1c9dc2824fb9cc0539d",
+  "loss_decomposition_exact_at_all_sites_and_arms": true,
+  "grid_points": 37,
+  "companion_points": 34,
+  "source_contracts_and_original_fixtures_not_modified": true,
+  "matched_c_for_every_trial": true,
+  "GPS_diagnostic_separate_from_inference": true,
+  "no_geographic_selection_of_identity": true,
+  "all_regressions_preserved": true,
+  "target_not_achieved": true
+}

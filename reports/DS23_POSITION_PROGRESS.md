@@ -557,3 +557,72 @@ tests before promoting below40Hz measurements or family reentry. Between-window
 RX1 scatter greatly exceeds odd/even frame noise; investigate common jitter,
 retune behavior and intrawindow frequency dynamics with RF-only controls.
 Freeze a general rule before untouched scans. Full413 remains untested.
+
+## Checkpoint: precise-family catalogue search and objective bias, 2026-10-19
+
+Previous turn made progress, published as747015856. This turn also made progress:
+all-catalogue competition overturns the previous conditional scan202 accuracy
+gain. Goal stays active;0.5km mean/median remains unmet. Do not report the old
+2.601km fixed-identity result as the broader RF-selected algorithm outcome.
+
+New ds23_family_screen.py integrates one common family phase and300Hz fragment
+constants with heteroscedastic noise/frozen powers; five tests cover dense
+Gaussian parity, shared phase, aliases/visibility, precision screening and
+RF-scaled constant covariance. Search screens all1,569 causal candidates at
+center, previous RF endpoint and4axial offsets, then full5x48 paired cold fits
+for six shortlisted identities. It is not exhaustive full refitting and skips
+already-active family mergers. No GPS or future TLE enters inference.
+
+With CH2 refined only: NORAD67335 passes and RF beats64442 by19.88, but error
+3.0972/3.0975km vs64442's2.6014/2.6013. New bounded export/refinement of all34
+RX2 CH3 companion points reads915 windows<1024 through verified public port;
+local panel OUT_RAW/DS23-0202_companion_panel.npz is NOT published. Companion
+raw fit file OUT_RAW/DS23-0202_companion.json has degree4 RMS9.71Hz and predictive
+noise10.81Hz (archived graph RMS57.88, possible degree difference declared).
+The file is complete; do not restart that job based on an old session handle.
+
+Both channels refined:67335 RF wins, error3.0759/3.0763;64442 error2.6673/2.6670
+and RF loss+24.06;53531 error.9262/.9257 but RF loss+98.26. Five other identity
+trials are retained, including failures. Precision diagnostic passes67335/64442
+family curves in both arms but rejects53531 CH2 step structure. It scales
+residuals by75/sigma before calling the legacy screen, exposing its75Hz floor;
+this is NOT a calibrated independent predictive test or a deployed new gate.
+
+Cross-RF same-family constants withrho.9 preserve each300Hz marginal exactly,
+using normalized RF and independent diagonal remainder. On the top3 valid RF
+identities,67335 remains winner. RF evidence improves~71.95 but error worsens
+to3.1389/3.1386;64442 gives2.7377/2.7374;53531 now fails native gates. Thus more
+physical covariance/better frequency objective still does not prove accuracy.
+
+diagnose_ds23_refined_loss.py is explicitly evaluation-only. For each of three
+valid identities, condition on RF endpoint vs supplied site and5refresh rounds.
+The exact algebraic decomposition reproduces normalized objective. At67335,
+site cost is+25.62895 versus RF endpoint; conditional weighted residual term
+only+1.993. Remaining gap includes phase+4.07, orbit+3.88, noiseGamma+7.62,
+RX/fragment priors, volume and priorGamma. Contributions are jointly coupled,
+not independent causal attributions. Leading family data+mean-prior changes
+spread across58735,62503,65837. No single term explains the entire bias.
+
+Fixed-identity map:37 actual samples on2.5km grid inside10km radius centered
+on evaluation site AND original25x25box. At every point5phase/nuisance refresh
+rounds, no graph/discovery/association/descent. Gradient atsite[-7.56,+14.91]
+loss/km vsRF endpoint[-.084,-.015], stable at.05/.1km steps. Map arrows are
+directions drawn2km long, not trajectories or posterior probabilities. This
+supports objective/model bias rather than a simple failure to descend, but
+does not prove a global discrete/continuous optimum.
+
+Report, four figures, full15 paired identity/covariance trials, loss diagnostics,
+companion numeric evidence and source snapshots:
+reports/2026_10_19_ds23_refined_catalogue/. ALGO01 andDBG01 explicitly retain
+the regression and old result's conditional scope. No new RF/recording mutation,
+point removal, post-scan TLE, golden-fixture or production DSP change occurred.
+
+NEXT ACTION: simultaneous other-family replacements using NEW precise active
+family evidence (old beam used original noise and excluded this family); extend
+bounded precise remeasurement beyond early curves. Evaluate signed FULL-state
+orbital mean/covariance forecasts using strictly pre-RF TLE transitions before
+RF position trials. Existing DSX01 causal_forecast code is a numerical reference,
+not runtime input: class paths are DSX-specific and its shrinkage validation
+is phase-only. Do not reuse that as full-state validation or import a DSX fitted
+state. Separate RF-only selection from GPS reporting and keep every regression.
+Full413 and untouched/location generalization still outstanding.
