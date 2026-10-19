@@ -32,6 +32,8 @@ The [dense RX2 and causal-shape study](../2026_10_19_ds23_dense_rx2_and_causal_s
 
 The [receiver-prediction follow-up](../2026_10_19_ds23_dense_receiver_prediction/README.md) reduces dense scan 202 to **1.976/1.976 km** using a regularized fast RX1 correction that predicts omitted family evidence. The same fixed addition, qualified by prediction/RF/gates on the original twenty scans, gives **1.290/0.955 km c0 mean/median** and **1.242/0.974 km fitted-c**. The fitted-c median worsens from 0.896 km, so this is not promoted as a general default. Positive conditional calibration prediction does not independently validate a geographic position. All original points remain and failures/regressions are reported.
 
+The [shared-carrier study](../2026_10_19_ds23_shared_carrier_constants/README.md) tests common satellite offsets with Gaussian or Student fragment deviations, preserving the previous correlation control. On the original twenty scans, RF selection worsens accuracy to **1.355/1.187 km c0 mean/median** and **1.284/1.007 km fitted-c**; robust alternatives are selected on no scan. These hypotheses are not promoted. Separately, dense scan 202 with fast RX1 and Gaussian 30 Hz fragment deviations reaches **1.646/1.630 km** and retains 67335 after fresh screening of all 1,569 causal candidates and seven full paired fits. That one-scan gain does not replace the negative cohort result or satisfy the 0.5 km goal. All original calibration points remain.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

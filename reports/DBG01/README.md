@@ -394,3 +394,31 @@ complete curves, including the omitted observations. This is not blind raw-IQ
 validation or exact predictive integration. Record approximate position/Student
 covariance, unfitted target constants/noise, family selection and dependence
 between folds. Restore all original points before matched final c-arm fits.
+
+## 11. Shared carrier priors and robust fragment contrasts
+
+The [carrier study](../2026_10_19_ds23_shared_carrier_constants/README.md)
+compares independent fragment constants, the old variance-preserving
+correlation, and one RF-scaled satellite carrier plus Gaussian or Student
+fragment deviations. Keep prior scales, actual marginal variances, phase priors,
+point masks, physical support and c-arm budgets explicit. A shared carrier
+prior can improve one precise scan while worsening the original cohort.
+Preserve the negative control and every gate failure; do not select a prior
+because its geographic endpoint is closer to the reference.
+
+Verify compact covariance versus explicit shared/independent Gaussian columns,
+including normalization under the grouped-noise likelihood. For robust
+contrasts, test that an exceptional fragment can deviate without dragging all
+others, and that wholly unobserved independent priors integrate to one.
+Collapse unused Student priors rather than accumulating a gratuitous
+Gaussian/Gamma variational gap. Preserve pilot source/results when correcting
+the calculation and verify geometry and active predictions remain identical.
+Interpret precision only on active fragments; it is not an identity probability.
+
+Repeat identity competition when a prior or measurement changes materially.
+Include the old RF shortlist and exact incumbent aliases, label fresh screen
+anchors and covariance assumptions, and recompute phase means in each new
+candidate's label order. Distinguish one-family full-catalogue screening from
+global reassociation, splits and mergers. Shared carrier priors do not inherit
+earlier receiver-prediction qualification automatically. Report both conditional
+fixed-identity improvements and the result after RF identity ranking.

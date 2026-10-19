@@ -766,3 +766,72 @@ precise data, preserving the earlier negative sparse-data cross-RF control;
 qualify orbital-shape priors at RF-age-matched historical horizons; test untouched
 scans/formats with qualified raw read ports. Do not promote RF fit alone or
 GPS-favorable per-case variants. All 413 and location generalization remain open.
+
+## Checkpoint: shared carriers, robust contrasts and fresh catalogue search
+
+The previous receiver-prediction checkpoint was published as 9b13afb15. This
+turn made progress: it rejects another general explanation using full matched
+cohort controls while improving and rechecking the precise scan-202 case.
+The goal stays active; 0.5 km mean/median on DS23 remains unmet. New report:
+[shared carrier study](2026_10_19_ds23_shared_carrier_constants/README.md).
+
+Model fragment bias as b_i = q_i*c_sat + d_i, with q = RF/11.5 GHz, a shared
+Gaussian carrier SD 300 Hz, and independent Gaussian or Student ν=3 deviations
+of SD 100/30 Hz. Student SD is marginal; its scale is SD/√3. Preserve independent
+300 Hz and old ρ=.9 controls. Compact Gaussian covariance matches explicit
+carrier/deviation columns, including normalized Gamma-noise evidence. No new
+polynomial, observation or linear calibration vote is introduced.
+
+All twenty Gaussian and twenty robust cases finish with verified receipts.
+Reference c0 mean/median is 1.315206/.991302 km; fitted-c 1.265780/.895613.
+Old ρ=.9 gives c0 1.344819/1.142393, fitted-c 1.290630/1.064795. Shared Gaussian
+100 gives c0 1.361919/1.194018, fitted-c 1.284882/1.016020; shared 30 gives c0
+1.351170/1.117331, fitted-c 1.279102/.990959. Paired failures are 5/7/16.
+Every failed policy falls back to the original pair without trimming.
+
+Robust contrasts pass a synthetic test allowing one large deviation without
+moving agreeing carrier fragments. Initial dense pilots and source_v1 are
+preserved. Exact empty-prior collapse removes a 0.3146289226 ELBO gap per wholly
+unobserved Student contrast. Geometry and active residuals are unchanged at
+three regional test positions. Geometry construction also avoids a discarded
+old Gamma solve. Final source version 2 keeps the active phase prior unchanged
+(all twenty ν=3); inactive contrast placeholders are not interpreted.
+
+Fixed robust 100 gives c0 1.343442/1.219045 km, fitted-c 1.239012/.972247;
+robust 30 gives c0 1.351423/1.179977, fitted-c 1.279142/.947611. Paired failures
+are 8/16. RF selection chooses independent on six scans, old ρ=.9 on eight,
+shared Gaussian 100 on six, and no robust variants. The selected cohort is
+unchanged from Gaussian-only selection: c0 1.355255/1.187431, fitted-c
+1.283764/1.007499. Both metrics worsen; no promotion. Scan 217 selects ρ=.9
+while worsening 1.0248/.8695→1.1895/1.0022 km; scan 7 also worsens.
+
+Dense scan 202 retains 2,646 points and the same CFO/time/noise/physical model.
+Slow RX selects robust 100 at 2.0291/2.0307 km. Gaussian 30 gives 1.7856/1.7684
+but fails RX1 CH5 T006/62503 step tests: profile 4.00495, conditional 4.02507
+above 4; hard bounds pass, RMS 156.63 Hz, slope below 3. No gate relaxation.
+Fast RX1 selects Gaussian 30 at 1.6460/1.6300 km; robust 100 gives 1.6714/1.6665
+and robust 30 gives 1.6750/1.6588, both losing RF evidence. Earlier RX1 predictive
+qualification used independent biases; it does not automatically qualify this
+combined prior. The dense gain remains experimental.
+
+Fresh correlated common-phase screening includes all 1,569 causal candidates
+at the center, new RF endpoint and four clipped ±2 km anchors. The cheap
+screen uses a Gaussian phase approximation and omits physical orbit modes.
+It retains the previous RF shortlist; seven full paired five-round/48-step
+fits start at the regional center. Candidate phase means use candidate-label
+order; the reused incumbent keeps its exact aliases. Mergers are excluded.
+67335 still wins at 1.646/1.630 km; 64442 gives 1.2875 km c0 but loses RF 20.46,
+and 53531 gives 1.3103 but loses 107.49. Both pass gates. Four other finalists
+fail. No GPS-selected identity is adopted.
+
+Ten tests pass in 1.01 s. The report preserves all raw outcomes, numeric
+evidence, exact sources, pilot_v1/source_v1, four figures and causal receipt
+checks. No new RF, IQ read, future TLE, recording mutation, production DSP
+or golden fixture change occurs.
+
+Next: qualify a faster local known-pilot estimator and test a fixed measurement
+policy on more fast/adaptive scans through the appropriate public read ports,
+with bounded existing-corpus reads. Do not extrapolate one dense case to the
+original-noise cohort. Independently test RF-age-matched causal orbital prior
+calibration. Keep failed covariance controls. All 413 scans and untouched or
+new-location validation remain outstanding; do not close the goal.
