@@ -465,3 +465,34 @@ random-phase controls. Do not force a globally coherent model because a few
 probes support it. Phase diagnostics on the same IQ are not independent
 measurements. Keep the supplied evaluation coordinate out of all measurement
 and inference choices, and state the absence of per-recording survey authority.
+
+## 13. Height geometry, frame timing and objective sensitivity
+
+The [height/clock study](../2026_10_19_ds23_height_uncertainty/README.md)
+tests a single shared antenna height with proper engineering priors, preserving
+all curved measurements and existing physical nuisance priors. Recompute
+elevation, range rate, phase derivatives and orbital features at each height
+reference; subtract the derivative times that reference from the intercept
+to preserve an absolute zero-mean prior. Include its Gaussian penalty and
+integration determinant. A zero Gaussian feature must integrate to one.
+Replay the complete physical mean at the posterior height before accepting
+a linearization. Report local height/position covariance with fixed Gamma
+precisions as an approximation, not surveyed altitude or calibrated coverage.
+
+Frame-epoch diagnostics must use device counters plus within-visit offset and
+the measured epoch. Form geometry at frame arrival, rather than the CFO's
+effective time. Keep the frame-period ambiguity separate from CFO aliases.
+Split gaps explicitly and test sensitivity to short-window boundaries without
+claiming alignment with actual network reconfiguration. Record positive-range,
+negative-range and free-curvature diagnostics on the same unwrapped support.
+A synthetic sign test qualifies the calculation, not the archived capture
+binary or transmitter clock. Negative measured coupling does not justify
+reversing physical propagation delay or treating an apparent clock-steering
+point as receiver position. No timing observation enters ALGO01 here.
+
+Integration-volume gradients are local sensitivity diagnostics. They are not
+optimization trajectories or evidence that removing a term improves accuracy.
+Any profile-versus-marginal position experiment must first match observations,
+aliases, priors, fixed noise/prior precisions and both c-arm budgets. Separate
+the effect of freezing precisions from the effect of dropping log-volume.
+Their different objective definitions cannot select a winner by raw score.

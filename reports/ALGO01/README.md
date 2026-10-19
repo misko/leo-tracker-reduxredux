@@ -48,6 +48,17 @@ their incumbent families, and only two of 96 probes support phase coherence
 above 0.9. Cleaner radio evidence alone does not resolve the position bias
 or establish the 0.5 km goal.
 
+The [height and clock study](../2026_10_19_ds23_height_uncertainty/README.md)
+tests one marginalized scan-wide height with preset 300/1,000 m uncertainty
+on both archived and refined measurements. On archived data, RF-selected height
+priors give **1.332/0.986 km c0 mean/median** and **1.277/0.836 km fitted-c**;
+the mean worsens. Refined-data selection gives **1.307/1.128 km** and
+**1.261/0.964 km**. Height uncertainty does not resolve the goal or change the
+default. Separate unused frame-epoch diagnostics on scans 217/274 show roughly
+negative range-curvature coupling and require clock/convention qualification
+before timing can constrain position. A local nuisance-volume sensitivity is
+also recorded; it is not a profiled-position result or an accuracy improvement.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

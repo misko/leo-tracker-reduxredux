@@ -912,3 +912,76 @@ with calibration learned from curved evidence, respecting the user's rule
 that linear tracks must not calibrate offsets/drifts. Fresh broader identity
 competition and RF-age-matched orbital-prior validation remain open. Full413
 and untouched/new-location validation are still required; do not close the goal.
+
+## Checkpoint: shared height, unused frame timing and integration volume
+
+The previous RX2 report was published as 18f25adf5. This turn makes progress
+through a new matched geometry ablation and new clock/estimator diagnostics.
+The full DS23 0.5 km mean-and-median goal remains active and unmet. See the
+[height and clock report](2026_10_19_ds23_height_uncertainty/README.md).
+
+All 40 case/scope jobs complete: archived and refined measurements on each
+of the original twenty development scans, with three height priors and two
+c arms (120 paired trials). One Gaussian height nuisance per scan has mean
+zero and SD 0, 300 or 1,000 m. The extra column differentiates full physical
+geometry, including the previous orbital correction, and preserves the absolute
+height prior after relinearization. Its prior penalty and determinant are
+integrated. All original IDs, masks, labels, aliases, other priors and five
+refresh/48-step budgets match. No extra point is removed. Broad mean-height
+engineering bounds -500 to 9,000 m and exact-height replay are explicit gates.
+
+Archived fixed-zero c0 mean/median is 1.315/.991 km, fitted-c 1.266/.896.
+SD300 gives 1.330/.993 and 1.272/.845; SD1000 gives 1.338/1.004 and 1.279/.896.
+RF selection chooses zero on ten scans and SD300 on ten, giving 1.332/.986
+and 1.277/.836. The mean worsens. Refined fixed-zero gives 1.306/1.171 and
+1.266/.950. SD300 gives 1.298/1.159 and 1.248/.964; SD1000 gives 1.289/1.109
+and 1.234/.988. RF selection gives 1.307/1.128 and 1.261/.964, with ten
+incumbent fallbacks, six zero-height and four SD300 choices. No promotion.
+
+All eighty null replays match earlier positions within 2.425 mm and RF scores
+within the recorded small numerical tolerances. Full-height replay maximum
+CFO discrepancy is 4.833e-7 Hz; largest final height-reference change is
+0.136 m. SD300 archived height means range from -561 to 382 m and the median
+local height SD is 174 m. Uncertainty includes horizontal-position coupling,
+but fixes Gamma precisions and identities. These are not surveyed heights.
+Different per-scan estimates cannot be pooled into a site prior using GPS.
+
+Unused frame epochs are investigated on diagnostic scans 217/274 only, with
+counter/within-probe timing, causal range at frame arrival and RF-fitted phase/
+physical corrections. Long-track affine clock residual RMS is tens of us.
+In fixed 15 s receiver-time windows with five boundary phases, signed curvature
+is close to -range/c: at phase0, median gamma is -1.012/-.991. Ordinary positive
+range correction leaves median RMS 3.580/3.896 us; the negative-sign diagnostic
+leaves .075/.041 us. All window phases, weak-curvature outliers and dependencies
+are preserved. This does not certify inverted epochs or clock precompensation,
+and timing is not applied to any position. Synthetic positive/negative delay
+tests validate arithmetic, not capture-binary identity. Primary Qin et al.
+literature supports separating frame and carrier clocks, not a cause for these
+particular observations. No new RF or IQ reread occurs.
+
+A c0-only local gradient decomposition estimates the effect of deleting just
+the integration log-volume at archived RF endpoints: median .154 km, maximum
+.340 km (scan45). This is a Gauss–Newton sensitivity with original precision
+updates still active, not a refitted result or controlled profile estimator.
+It motivates a matched objective experiment; it cannot select an algorithm by
+the lower numerical value of a differently defined cost. Nine owned tests pass.
+
+Next concrete comparison: implement frozen-precision Gaussian marginal versus
+penalized-profile position fits, starting cold in the same regional box. Use
+the same c0-derived noise and nuisance-prior precisions in both c arms; insert
+the fitted-c hardware coefficient's own unit Gaussian prior at column8 while
+preserving every other coordinate. Keep the learned phase mean and 300 Hz
+fragment priors. Weight log-volume by1 versus0 with no per-scan/GPS choice.
+Compare the frozen-marginal control to the adaptive incumbent to isolate
+precision feedback, then profile versus frozen-marginal to isolate volume.
+Do not compare their raw costs as the same probability or silently relax gates.
+
+Additional position information remains available in frozen-calibration linear
+extensions: diagnostics count 151/409/611/446 linear points on scans217/321/
+202/274, including 77/124/370/151 from cross-RX-supported families. A future
+conditional likelihood can use such evidence for position while deriving all
+receiver calibration from curved tracks and propagating its full covariance.
+Positive observed beam-clock agreement may qualify identities; absent clock
+agreement is not an automatic satellite rejection. Absolute timing needs a
+validated clock model first. Full413, untouched/new-location validation and
+the pending per-recording coordinate/height confirmation remain outstanding.
