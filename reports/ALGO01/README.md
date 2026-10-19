@@ -6,6 +6,8 @@ The best demonstrated corrected results on the two inspected DS23 scans are **1.
 
 **Subsequent 20-scan DS23 evaluation:** mean/median error is **1.771/1.924 km at c=0**, and **1.747/1.913 km with fitted c**. Six scans are below 1 km in each arm. The individual case studies above do not represent cohort accuracy. See the [sealed sample report](../2026_10_18_algo01_ds23_random20/README.md). The active development target is mean and median error of 0.5 km; it has **not** been achieved. [DBG01](../DBG01/README.md) records the standard diagnostic procedure, and the [scan-217 experiments](../2026_10_18_algo01_0217_improvements/README.md) separate association confidence, receiver residuals, simultaneous identity replacements and secondary-peak recovery. Those experiments do not change the published ALGO01 specification.
 
+An independently specified [receiver-support weighting prototype](../2026_10_18_ds23_family_weighting_active_support/README.md) reaches **1.612/1.325 km mean/median at c=0** and **1.607/1.305 km with fitted c** on that same 20-scan development benchmark, with all final paired gates passing. It remains a separate variant; this is not the 0.5 km target or new-location validation.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
