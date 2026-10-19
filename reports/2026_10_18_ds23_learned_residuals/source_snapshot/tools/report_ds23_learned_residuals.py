@@ -48,7 +48,7 @@ def run():
             for col,(band,family) in enumerate(columns):
                 s=next(r for r in correlation if r['arm']==arm and r['same_receiver']==rx and r['same_band']==band and r['same_family']==family)
                 if s['track_pairs']:matrix[row,col]=s['pooled_median_correlation']
-                label='No pairs' if s['pooled_median_correlation'] is None else f"{s['pooled_median_correlation']:+.3f}\n{s['track_pairs']} pairs / {s['scans']} scans"
+                label='No pairs' if s['pooled_median_correlation'] is None else f"{s['pooled_median_correlation']:+.3f}\n{s['track_pairs']} pairs\n{s['scans']} scans"
                 ax.text(col,row,label,ha='center',va='center',fontsize=8)
         im=ax.imshow(matrix,cmap='coolwarm',vmin=-.7,vmax=.7,aspect='auto')
         ax.set_xticks(range(4),[('Same' if b else 'Different')+' band\n'+('Same' if f else 'Different')+' family' for b,f in columns],fontsize=8)
