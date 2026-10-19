@@ -6,6 +6,27 @@ weighting, 300 Hz fragment constants, and Gaussian conditional position evidence
 from additional linear graph tracks. It preserves ALGO01 as a separate published
 experiment; it does not change public contracts or golden fixtures.
 
+**The full 413-recording evaluation is complete.** On the 404 recordings with
+qualified positions from both freshly run methods, ALGO02 improves mean and
+median in both c arms. Coverage is **407/413 for ALGO01 versus 404/413 for
+ALGO02**; three missing tracking contracts and six 1200 s timeouts remain in
+the recording denominator.
+
+| Matched 404 recordings | Fresh ALGO01 mean / median km | ALGO02 mean / median km |
+|---|---:|---:|
+| c0 | 1.870 / 1.633 | **1.520 / 1.270** |
+| Fitted c | 1.870 / 1.602 | **1.508 / 1.249** |
+
+On the additional 393 recordings outside the original development sample,
+384 common pairs improve fitted-c mean/median by **18.7% / 20.8%**. Both fast
+and adaptive capture formats improve. This supports broader within-site
+performance, not validation at new locations. Accepted outliers, including the
+16.98 km maximum, remain untrimmed. The 0.5 km mean-and-median objective remains
+unmet. See the [completed full-corpus report](../2026_10_19_algo02_ds23_full/README.md)
+for all failures, strata, matched comparisons, figures and audited numerical data.
+
+![Fresh matched comparison across all qualified recordings](../2026_10_19_algo02_ds23_full/baseline_comparison.png)
+
 On the same **20 development scans**, fitted-`c` mean/median position error is
 **1.177 / 0.811 km**, compared with **1.747 / 1.913 km** for the original ALGO01
 cohort: reductions of **32.6% / 57.6%**. With `c=0`, error is **1.229 / 0.804 km**,
@@ -14,10 +35,9 @@ priors and accepted membership, not an untouched validation or attribution of
 the whole gain to one algorithmic change. The 0.5 km mean-and-median goal remains
 unmet. Lower frequency residuals alone are never treated as better localization.
 
-The full DS23 campaign covers **413 manifest recordings**. Its fresh discovery,
-execution receipts and final result table are separate from the development
-benchmark below. **No full-corpus position-accuracy result is established by
-this report's development table.** See [campaign status](campaign_status.json)
+The development benchmark below is preserved separately from the completed
+413-recording run. Fresh discovery reproduces all 20 historical ALGO02 branches,
+curved masks and c-arm endpoints exactly. See [campaign status](campaign_status.json)
 and [execution specification](#full-ds23-execution-and-final-error-estimation).
 
 ![ALGO02 pipeline](figures/pipeline.png)
@@ -495,6 +515,8 @@ PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
 # Separate evaluation; the GPS reference appears only in this reporter.
 PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
   .venv/bin/python tools/report_algo02_ds23.py
+PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  .venv/bin/python reports/ALGO02/build_full_results.py --archive
 
 # Owned numerical controls, from an isolated source overlay.
 PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \

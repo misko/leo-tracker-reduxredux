@@ -4,7 +4,11 @@ DBG01 is the reusable diagnostic procedure for a named dataset, scan and
 algorithm version. It documents **why a position estimate or missing track
 occurs**, without silently changing the benchmark algorithm. The first complete
 example is [ALGO01 on DS23-0217](../2026_10_18_algo01_ds23_0217/README.md).
-The algorithm specification remains [ALGO01](../ALGO01/README.md).
+Versioned specifications are [ALGO01](../ALGO01/README.md) and
+[ALGO02](../ALGO02/README.md). The completed
+[ALGO02 evaluation on all 413 DS23 recordings](../2026_10_19_algo02_ds23_full/README.md)
+includes the matched fresh baseline, all outliers/failures and source/causal audits.
+Name the algorithm version explicitly; a diagnostic does not change its benchmark.
 
 An instruction such as **“Run DBG01 on DS23-0217 with ALGO01”** means perform
 the analysis below and deliver the standard figures, machine-readable evidence
