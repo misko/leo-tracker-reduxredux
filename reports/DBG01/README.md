@@ -369,3 +369,28 @@ accuracy. A six-identity inherited shortlist retest is not a fresh all-bank
 rescreen under changed data. Update RX/band/family residual comparisons with
 the same unique-time matching rules after measurement interventions; keep
 conditional correlation distinct from causal attribution.
+
+## 10. Calibration prediction does not establish localization accuracy
+
+The [dense receiver-prediction study](../2026_10_19_ds23_dense_receiver_prediction/README.md)
+extends reciprocal RX/family omission to up to three families per scan and
+the original twenty-scan cohort. It demonstrates a useful local correction
+on precise scan 202, but a worse fitted-c cohort median under the fixed rule.
+Report calibration prediction, full-data frequency loss and geographic error
+as separate outcomes, including cases where they disagree. Never choose the
+GPS-favored covariance per scan or discard a regression from the denominator.
+
+When predicting with an extended physical model, differentiate the complete
+current feature design with posterior coefficients fixed. A base-class feature
+builder can omit later-added physical columns even when the runtime prediction
+method correctly includes them. Require an analytic expanded-design covariance
+test. The actual scan-202 runtime orbit predictor was verified to include all
+five physical coordinates; no prediction truncation was found.
+
+State exactly what is held out. These folds omit target RX/family data from
+position and nuisance fitting but condition on previously frozen identities,
+aliases, support and radio-noise proxies. Local dense radio-noise proxies use
+complete curves, including the omitted observations. This is not blind raw-IQ
+validation or exact predictive integration. Record approximate position/Student
+covariance, unfitted target constants/noise, family selection and dependence
+between folds. Restore all original points before matched final c-arm fits.

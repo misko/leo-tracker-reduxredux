@@ -1,0 +1,448 @@
+{
+  "cohort": {
+    "Incumbent": {
+      "c0": {
+        "count": 20,
+        "mean_km": 1.3152058068342647,
+        "median_km": 0.9913022663183259,
+        "p90_km": 2.4770597602221707,
+        "maximum_km": 3.7218282626804142,
+        "below_1km": 10,
+        "below_2km": 16
+      },
+      "fitted_c": {
+        "count": 20,
+        "mean_km": 1.265780272419064,
+        "median_km": 0.8956129924414611,
+        "p90_km": 2.4163865082414913,
+        "maximum_km": 3.6990058460227218,
+        "below_1km": 12,
+        "below_2km": 16
+      }
+    },
+    "RX1, gates only": {
+      "c0": {
+        "count": 20,
+        "mean_km": 1.2830287487248309,
+        "median_km": 1.0377955064365318,
+        "p90_km": 2.259160480837994,
+        "maximum_km": 3.6237666402808406,
+        "below_1km": 10,
+        "below_2km": 17
+      },
+      "fitted_c": {
+        "count": 20,
+        "mean_km": 1.2358488146065558,
+        "median_km": 0.9809367560165625,
+        "p90_km": 2.25186066574222,
+        "maximum_km": 3.5831312432683466,
+        "below_1km": 12,
+        "below_2km": 17
+      }
+    },
+    "RX1, prediction qualified": {
+      "c0": {
+        "count": 20,
+        "mean_km": 1.2898169302999092,
+        "median_km": 0.9553937767443139,
+        "p90_km": 2.259160480837994,
+        "maximum_km": 3.7218282626804142,
+        "below_1km": 11,
+        "below_2km": 17
+      },
+      "fitted_c": {
+        "count": 20,
+        "mean_km": 1.2422438172706767,
+        "median_km": 0.974273274921458,
+        "p90_km": 2.25186066574222,
+        "maximum_km": 3.6990058460227218,
+        "below_1km": 12,
+        "below_2km": 17
+      }
+    }
+  },
+  "dense202": [
+    {
+      "method": "baseline",
+      "arm": "c0",
+      "error_km": 2.32616962580247,
+      "RF_loss": 22841.704671667998,
+      "RMS_hz": 97.7872081011833,
+      "paired_valid": true,
+      "prediction_qualified": false,
+      "gain_RX1": 0.0,
+      "gain_RX2": 0.0,
+      "active_points": 2646
+    },
+    {
+      "method": "baseline",
+      "arm": "fitted_c",
+      "error_km": 2.3267703641030613,
+      "RF_loss": 22856.23764422993,
+      "RMS_hz": 97.78833079564168,
+      "paired_valid": true,
+      "prediction_qualified": false,
+      "gain_RX1": 0.0,
+      "gain_RX2": 0.0,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_rx1",
+      "arm": "c0",
+      "error_km": 1.9763195759473113,
+      "RF_loss": 22714.29611388476,
+      "RMS_hz": 91.10296987108731,
+      "paired_valid": true,
+      "prediction_qualified": true,
+      "gain_RX1": 34.75051253291076,
+      "gain_RX2": 7.015296274024763,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_rx1",
+      "arm": "fitted_c",
+      "error_km": 1.9758974571146206,
+      "RF_loss": 22728.77357940419,
+      "RMS_hz": 91.10142860831824,
+      "paired_valid": true,
+      "prediction_qualified": true,
+      "gain_RX1": 34.75051253291076,
+      "gain_RX2": 7.015296274024763,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_both",
+      "arm": "c0",
+      "error_km": 1.9642569509571408,
+      "RF_loss": 22761.994743742973,
+      "RMS_hz": 91.14286036182935,
+      "paired_valid": true,
+      "prediction_qualified": true,
+      "gain_RX1": 33.24768203437611,
+      "gain_RX2": 8.283792223534476,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_both",
+      "arm": "fitted_c",
+      "error_km": 1.9640231780736226,
+      "RF_loss": 22776.47070025252,
+      "RMS_hz": 91.1422173079207,
+      "paired_valid": true,
+      "prediction_qualified": true,
+      "gain_RX1": 33.24768203437611,
+      "gain_RX2": 8.283792223534476,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_band_half",
+      "arm": "c0",
+      "error_km": 2.1378717868796664,
+      "RF_loss": 22807.525039779874,
+      "RMS_hz": 90.3296679526409,
+      "paired_valid": true,
+      "prediction_qualified": false,
+      "gain_RX1": 25.986681184597046,
+      "gain_RX2": -13.786858131998258,
+      "active_points": 2646
+    },
+    {
+      "method": "fast_band_half",
+      "arm": "fitted_c",
+      "error_km": 2.1369621173537157,
+      "RF_loss": 22821.993299836136,
+      "RMS_hz": 90.3292914375503,
+      "paired_valid": true,
+      "prediction_qualified": false,
+      "gain_RX1": 25.986681184597046,
+      "gain_RX2": -13.786858131998258,
+      "active_points": 2646
+    }
+  ],
+  "qualification": [
+    {
+      "case": "DS23-0007",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": -7.697200185362647,
+        "2": -1.3269546364826397
+      },
+      "total_gain": -9.024154821845286,
+      "RF_loss_change": -8.899791474117592,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0045",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": -0.6974147302823326,
+        "2": 1.0863548966872258
+      },
+      "total_gain": 0.38894016640489326,
+      "RF_loss_change": -7.244884465840187,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0074",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 26.600648562149445,
+        "2": 3.341201363170967
+      },
+      "total_gain": 29.941849925320412,
+      "RF_loss_change": -62.605574189037725,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0108",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": -0.06531195063053019,
+        "2": -0.3374409221814858
+      },
+      "total_gain": -0.402752872812016,
+      "RF_loss_change": -17.222024633530964,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0109",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": 17.324869124860186,
+        "2": -0.2816520390963433
+      },
+      "total_gain": 17.043217085763843,
+      "RF_loss_change": 1.9023865523413406,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0138",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 27.28857696380942,
+        "2": 2.7263012729191587
+      },
+      "total_gain": 30.014878236728578,
+      "RF_loss_change": -60.8692008198268,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0143",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": -0.6496992341989483,
+        "2": 0.454031400218355
+      },
+      "total_gain": -0.1956678339805933,
+      "RF_loss_change": 5.100311410889844,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0161",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": -1.4637484686272728,
+        "2": 0.5223458283631999
+      },
+      "total_gain": -0.9414026402640729,
+      "RF_loss_change": -5.382673596241148,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0173",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 38.16280513487834,
+        "2": 1.0827551039613468
+      },
+      "total_gain": 39.24556023883969,
+      "RF_loss_change": -62.95400815169705,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0188",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 27.23603684638556,
+        "2": 7.113139524362282
+      },
+      "total_gain": 34.34917637074784,
+      "RF_loss_change": -80.70393606670041,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0202",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 32.13556427550793,
+        "2": 0.8692407635307404
+      },
+      "total_gain": 33.00480503903867,
+      "RF_loss_change": -118.80448836671349,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0204",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": 38.07836973836777,
+        "2": -1.077548640324494
+      },
+      "total_gain": 37.000821098043275,
+      "RF_loss_change": -179.07556854468203,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0217",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 10.774080241117076,
+        "2": 0.1319113286110678
+      },
+      "total_gain": 10.905991569728144,
+      "RF_loss_change": -21.474305838408327,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0242",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 56.751894277418614,
+        "2": 1.591733368475957
+      },
+      "total_gain": 58.34362764589457,
+      "RF_loss_change": -98.58932233111773,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0257",
+      "qualified": false,
+      "per_receiver_gain": {
+        "1": 4.963497445097914,
+        "2": -1.1007552394469258
+      },
+      "total_gain": 3.8627422056509886,
+      "RF_loss_change": -10.728946863265264,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0273",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 12.066106626767123,
+        "2": 0.5693069685650016
+      },
+      "total_gain": 12.635413595332125,
+      "RF_loss_change": -8.851276331202826,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0274",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 20.365205193503243,
+        "2": 0.4045732025044231
+      },
+      "total_gain": 20.769778396007666,
+      "RF_loss_change": -36.403086384667404,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0321",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 17.747839727017322,
+        "2": 0.015806887013866344
+      },
+      "total_gain": 17.763646614031188,
+      "RF_loss_change": -89.36149771139571,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0365",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 7.351013125460639,
+        "2": 2.7542232724975406
+      },
+      "total_gain": 10.10523639795818,
+      "RF_loss_change": -53.16586461638872,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    },
+    {
+      "case": "DS23-0373",
+      "qualified": true,
+      "per_receiver_gain": {
+        "1": 21.13159206568639,
+        "2": 2.358164639345432
+      },
+      "total_gain": 23.489756705031823,
+      "RF_loss_change": -35.16429820362464,
+      "mode_penalty": 1.3862943611198906,
+      "same_rule_for_every_scan": true
+    }
+  ],
+  "qualified_scans": [
+    "DS23-0074",
+    "DS23-0138",
+    "DS23-0173",
+    "DS23-0188",
+    "DS23-0202",
+    "DS23-0217",
+    "DS23-0242",
+    "DS23-0273",
+    "DS23-0274",
+    "DS23-0321",
+    "DS23-0365",
+    "DS23-0373"
+  ],
+  "paired_failed_scans": [
+    "DS23-0204"
+  ],
+  "cases": [
+    "DS23-0007",
+    "DS23-0045",
+    "DS23-0074",
+    "DS23-0108",
+    "DS23-0109",
+    "DS23-0138",
+    "DS23-0143",
+    "DS23-0161",
+    "DS23-0173",
+    "DS23-0188",
+    "DS23-0202",
+    "DS23-0204",
+    "DS23-0217",
+    "DS23-0242",
+    "DS23-0257",
+    "DS23-0273",
+    "DS23-0274",
+    "DS23-0321",
+    "DS23-0365",
+    "DS23-0373"
+  ],
+  "total_prediction_folds": 228,
+  "target_met": false,
+  "original20_development_scans_not_untouched_validation": true,
+  "no_new_full_DS23_cohort_claim": true,
+  "report_source_sha256": "53ef7c5ac13ddde9fbe4efa5d3bdeae672afb44db80a3e54e9fb6b2def217f2e"
+}

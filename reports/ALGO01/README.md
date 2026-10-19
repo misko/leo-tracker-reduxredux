@@ -30,6 +30,8 @@ The [broader precise-family catalogue study](../2026_10_19_ds23_refined_catalogu
 
 The [dense RX2 and causal-shape study](../2026_10_19_ds23_dense_rx2_and_causal_shape/README.md) tests 63 simultaneous-family proposals with the earlier precise inputs, then remeasures all 30 original active RX2 curves on scan 202. Local radio-noise estimation, broader carrier search and an explicit pointwise-uncertainty residual gate give **2.326/2.327 km** c0/fitted-c error, retaining all 2,646 calibration points; a pre-RF-qualified Student shape prior gives **2.282/2.283 km**. The legacy gates reject those fits; revised gates pass after exact posterior replay and synthetic qualification, with no refit or point removal to pass them. Six dense-data identity refits still favor 67335 by RF evidence. These are one-scan development variants, not a change to the specification below, a new cohort result or the achieved 0.5 km target.
 
+The [receiver-prediction follow-up](../2026_10_19_ds23_dense_receiver_prediction/README.md) reduces dense scan 202 to **1.976/1.976 km** using a regularized fast RX1 correction that predicts omitted family evidence. The same fixed addition, qualified by prediction/RF/gates on the original twenty scans, gives **1.290/0.955 km c0 mean/median** and **1.242/0.974 km fitted-c**. The fitted-c median worsens from 0.896 km, so this is not promoted as a general default. Positive conditional calibration prediction does not independently validate a geographic position. All original points remain and failures/regressions are reported.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

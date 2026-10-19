@@ -706,3 +706,63 @@ with qualified raw read ports; repeat all-bank and other-family competition
 on dense inputs; qualify RF-age-matched shape priors; test receiver/family
 prediction and residual satellite clock terms with precise measurements.
 All 413 scans and untouched/new-location generalization remain outstanding.
+
+## Checkpoint: precise receiver prediction and fixed twenty-scan control
+
+The preceding dense-measurement checkpoint was published as c0943c638. This
+turn made progress: reciprocal prediction supports a scan-202 correction but
+the completed cohort rejects promoting it as a general accuracy fix. The goal
+remains active and the 0.5 km mean/median objective remains unmet. Full report:
+[receiver prediction](2026_10_19_ds23_dense_receiver_prediction/README.md).
+
+New research probe tests baseline, fast RX1, fast both, and half-shared band
+variants on dense 202. Additional projected Gaussian bases have 10 s centers,
+5 s width and 100 Hz coefficient prior scale. Largest three cross-RX families
+by active point count (62503/58741/69238) supply reciprocal omitted-RX folds.
+Three rounds/24 steps train from the regional center; full paired fits use
+five rounds/48 steps. Full-vector prediction includes local position/nuisance
+covariance and prior Gamma noise for unobserved groups. It differentiates
+every current physical feature column. The suspected inherited orbit-prediction
+truncation was ruled out: actual SatellitePriorControls override already
+includes phase plus all five physical coordinates; discrepancy is exactly zero.
+
+Dense 202 baseline 2.3262/2.3268 km becomes 1.9763/1.9759 with fast RX1; RF loss
+improves about 127.4 and omitted RX1/RX2 aggregate gains are 34.751/7.015.
+Fast both gives 1.9643/1.9640 but loses RF evidence relative to fast RX1;
+half-shared band gives 2.1379/2.1370 and fails omitted RX2 prediction despite
+lower full-data RF loss. Every full pair retains 2,646 points and passes revised
+pointwise-noise development gates. Dense shape prior remains Gaussian here.
+
+Freeze the RX1-only addition and qualify it on all original twenty development
+scans using their original observations/noise/three-mode physical model. Do not
+silently substitute dense 202 into this benchmark. All twenty numerical cases
+finish successfully under two workers and 420 s case bounds. There are 114
+reciprocal folds (228 model prediction records); scans 143/257/273 have only two
+eligible families. Final paired gates fail only scan 204 RX1 CH5 T008; it falls
+back without trimming.
+
+Qualification requires aggregate predictive gain on both RX sides, total gain
+above 2 log 2, lower normalized full c0 RF loss and valid paired gates. Twelve
+cases qualify. Incumbent c0 mean/median is 1.315206/.991302 km; fitted-c
+1.265780/.895613. Gates-only RX1 policy gives c0 1.283029/1.037796 and fitted-c
+1.235849/.980937. Prediction-qualified policy gives c0 1.289817/.955394 and
+fitted-c 1.242244/.974273. The fitted-c median worsens, so no default promotion.
+Original 202 improves 3.0609/3.0602 to 2.2089/2.2071 km; separate dense 202
+improves 2.326→1.976. Scan 321 qualifies but c0 worsens .2697→.9100 km;
+217 qualifies but worsens 1.0248→1.1210. Scan 7 GPS error improves .9579→.4890
+but prediction rejects it; retain incumbent. No GPS-selected fixes.
+
+Qualification is conditional on frozen identity/alias/support/noise inputs.
+Dense noise proxies came from whole radio curves, including omitted data;
+this is not blind raw-data CV. Covariance is local Gaussian with fitted Student
+precisions. Both RX prediction gains do not independently prove position.
+The model can predict CFO while retaining biased position/orbit/calibration
+tradeoffs. Nine owned tests pass in 1.32 s. The report preserves full numeric evidence,
+five figures, sources and exact per-case execution/hash receipts. No IQ reread,
+future TLE, recording mutation, production DSP or golden fixture modification.
+
+Next: test physically shared satellite/fragment frequency constants under new
+precise data, preserving the earlier negative sparse-data cross-RF control;
+qualify orbital-shape priors at RF-age-matched historical horizons; test untouched
+scans/formats with qualified raw read ports. Do not promote RF fit alone or
+GPS-favorable per-case variants. All 413 and location generalization remain open.
