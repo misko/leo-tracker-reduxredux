@@ -1,0 +1,19 @@
+method,name,c0_error_km,fitted_c_error_km,c0_RMS_hz,fitted_c_RMS_hz,input_points,c0_passing_points,fitted_c_passing_points,source
+ALGO01 baseline,baseline_replay,4.3150250301739455,4.190736928499676,163.50888077610958,163.50943453847876,795,795,795,weight_baseline_replay.json
+"Candidate-gap weighting, floor 0.20",confidence_soft,4.283634198248691,4.160105202890723,163.60903806627908,163.60843134630264,795,795,795,weight_confidence_soft.json
+"Candidate-gap weighting, floor 0.05",confidence_strong,4.276950532577992,4.154405733268459,163.6314634096048,163.63039195572125,795,795,795,weight_confidence_strong.json
+Candidate confidence ≥0.95 only,confident_only_095,4.427761061009487,4.310723975363861,163.9194007885185,163.94828020105683,758,758,758,weight_confident_only_095.json
+Multiple RX/channel owners: soft weighting,replicated_family_soft,3.968089847123586,3.8143738511969163,164.33219094368576,164.2809287880381,795,795,795,weight_replicated_family_soft.json
+Multiple RX/channel owners only,replicated_family_only,4.475249853007194,4.4924669600729725,173.80116718941167,173.7937038909798,587,587,587,weight_replicated_family_only.json
+"Cross-RX support weighting, before gates",cross_receiver_family_soft,3.5085607878588103,3.328831465367227,165.18100495861907,165.12896105360437,795,720,720,weight_cross_receiver_family_soft.json
+Cross-RX support weighting + paired gates,cross_receiver_family_soft_gated,3.3245063782288296,3.206831279863173,159.97672874536963,159.99836766369611,720,720,720,weight_cross_receiver_family_soft_gated.json
+"Same gated mask, equal weights",gated_matched_mask_unweighted,3.8656531503386007,3.7921344724005266,159.1506080390307,159.1693379136625,720,720,720,weight_gated_matched_mask_unweighted.json
+Identity search: best single,best_single,4.90619096488847,4.760107809014325,170.03666169145345,170.01705993214466,795,769,769,identity_finalists.json
+Identity search: best joint,best_joint,4.729556272090247,4.60230774170391,163.4957777312775,163.49696330070128,795,795,795,identity_finalists.json
+Best whole-family joint replacement,whole_family_best,4.729556272090247,4.60230774170391,163.4957777312775,163.49696330070128,795,795,795,identity_whole_family_combinations.json
+Add both recovered curved tracks,recovery,4.785861941733195,4.700912897828951,162.2262028934121,162.20208076297007,833,833,833,recovery_result.json
+Add recovered track 000 alone,recovery_0,4.694501759596416,4.627916439177296,163.57985055113292,163.5705428087382,817,817,817,recovery_result.json
+Add recovered track 003 alone,recovery_1,4.441056965636515,4.30185717433058,162.10722046473722,162.0917130363554,811,811,811,recovery_result.json
+Radio-only noise estimated per RX,radio_rx_noise,4.287697848348769,4.1647607949547565,163.5377736800416,163.5384099820299,795,795,795,receiver_model_radio_rx_noise.json
+Shared short-timescale RX error,shared_fast,4.306282585354055,4.1592366579187985,136.74307918176945,136.77382716519224,795,795,795,receiver_model_shared_fast.json
+Per-RX radio noise + shared fast error,radio_rx_noise_shared_fast,4.273680107681346,4.127357679526835,136.74628789179602,136.7765258112044,795,795,795,receiver_model_radio_rx_noise_shared_fast.json

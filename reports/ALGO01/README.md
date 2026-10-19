@@ -4,6 +4,8 @@ Published October 18, 2026 (America/Los_Angeles). ALGO01 names the **conservativ
 
 The best demonstrated corrected results on the two inspected DS23 scans are **1.786 km for scan 342 and 0.760 km for scan 39**, with `c=0`; matched fitted-`c` errors are **1.736 km and 0.893 km**. The 342 result needs both the prior correction and conservative track salvage. Changing the prior alone does not produce that result. These are retrospective case studies; rules and uncertainty scales need independent validation.
 
+**Subsequent 20-scan DS23 evaluation:** mean/median error is **1.771/1.924 km at c=0**, and **1.747/1.913 km with fitted c**. Six scans are below 1 km in each arm. The individual case studies above do not represent cohort accuracy. See the [sealed sample report](../2026_10_18_algo01_ds23_random20/README.md). The active development target is mean and median error of 0.5 km; it has **not** been achieved. [DBG01](../DBG01/README.md) records the standard diagnostic procedure, and the [scan-217 experiments](../2026_10_18_algo01_0217_improvements/README.md) separate association confidence, receiver residuals, simultaneous identity replacements and secondary-peak recovery. Those experiments do not change the published ALGO01 specification.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary
