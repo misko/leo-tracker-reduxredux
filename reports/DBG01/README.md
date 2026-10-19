@@ -264,3 +264,43 @@ an optional fixed-position importance audit can test its approximation gap.
 Preserve the same data, prior and normalization, and report sample count,
 effective sample size and Monte Carlo uncertainty. Poor sampling is inconclusive.
 Keep a c0-only objective audit separate from paired-c localization comparisons.
+
+## 7. Confidence and evidence addendum, 2026-10-19 UTC
+
+The [association-evidence study](../2026_10_19_ds23_association_evidence/README.md)
+adds fixed-observation confidence ablations, broader simultaneous family changes
+and secondary-peak recovery. Keep the original retained mask for soft weighting
+comparisons; report hard confidence selection separately. An invalid trial must
+stay in the denominator with an explicit failure/fallback rule. Conditional
+identity scores are not calibrated correctness probabilities. Do not compare
+generalized losses with different observation powers as model evidence.
+
+Compare residuals across all same/different receiver, band and satellite-family
+strata using unique matched physical observations. State available bands and
+pair counts. Residuals conditioned on the joint fit can reveal remaining shared
+structure but cannot prove that a receiver or orbit caused the position bias.
+Illustrate a family observed on both receivers; do not select only striking
+examples by eye or pool dependent track pairs as independent significance tests.
+
+For joint identity debugging, include changes to several complete families and
+retain alternatives that fail in isolation. Record the finite beam, proposal
+anchors, candidate catalogue, optimization budgets and all failed attempts.
+Distinguish cheap proposal fits from fully refined paired finalists. A finalist
+must improve the same normalized radio objective and satisfy the original
+physical gates; being geographically closer to the reference is not a selection
+criterion. A radio-preferred replacement can still increase position error.
+
+For secondary peaks, preserve the public adapter's canonical physical-probe ID
+and time authority for each recording format. Match that identity set against
+the frozen winning observations before recovery. Use at most one selected peak
+per probe and each chosen peak's own radio-noise estimate. Exclude incumbent
+calibration and already-associated output points when claiming new evidence.
+Test new curves individually before joint addition; retain all original points.
+Report local model-conditional information separately from actual position error.
+
+The [curvature/shape study](../2026_10_19_ds23_curvature_shape_study/README.md)
+also distinguishes statistically supported weaker curvature from a fixed
+amplitude threshold. A higher polynomial degree alone is insufficient. Report
+noise-weighted departure from affine, a complexity penalty and residual screens.
+New calibration points may already have been associated as output tracks and
+must not be counted again as association gains.

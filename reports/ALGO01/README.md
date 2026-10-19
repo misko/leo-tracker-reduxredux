@@ -16,6 +16,10 @@ A later [causal-history phase-prior prototype](../2026_10_18_ds23_history_calibr
 
 The [receiver/orbit uncertainty study](../2026_10_19_ds23_uncertainty_study/README.md) finds that band-specific smooth corrections do not improve both cohort metrics, and satellite-specific historical scales give only a small change to **1.309/0.989 km c0** and **1.261/0.896 km fitted-c**. Local information diagnostics identify satellite-phase uncertainty as the largest tested nuisance contribution. The study also audits recorded UTC brackets and checks the variational evidence with importance sampling. These are research controls; no new ALGO01 default or achieved 0.5 km accuracy is asserted.
 
+The [fixed-point confidence and association study](../2026_10_19_ds23_association_evidence/README.md) keeps receiver support as the reference: harder identity-confidence weighting does not materially improve localization. It also tests simultaneous whole-family replacements and truly unused secondary GLRT evidence on four diagnostic scans, recording RF fit separately from position accuracy. Passing gates or increasing point count does not establish a better position.
+
+The [causal shape and curvature controls](../2026_10_19_ds23_curvature_shape_study/README.md) promote 29 statistically curved graph fragments, adding 705 calibration points without linear calibration votes or removal of incumbent points. On all twenty development scans this reaches **1.298/0.901 km c0 mean/median** and **1.243/0.881 km fitted-c**. Combining that rule with a pre-RF-qualified orbit-shape mean gives **1.302/0.941 km** and **1.245/0.851 km**, respectively. These are separate fixed-rule research variants; many promoted points were already associated output points, and the 0.5 km target remains unmet.
+
 ![Algorithm from measured CFO to position](figures/pipeline.png)
 
 ## 1. Scope, evidence and causal boundary

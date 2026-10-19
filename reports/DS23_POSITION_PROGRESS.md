@@ -265,3 +265,92 @@ c0/fitted-c controls, true GPS only in evaluation, and all failures in denominat
 Use `.venv/bin/python`, PYTHONPATH=src:tools, OPENBLAS_NUM_THREADS=1,
 OMP_NUM_THREADS=1; use apply_patch for handwritten edits. Keep numerical work
 bounded and share progress at least every60s. No new RF or QNAP mutation.
+
+## Checkpoint, 2026-10-19: current causal evidence studies
+
+This checkpoint supersedes the older progress table above. The active target
+remains mean AND median <=0.5 km; it is not achieved. These are the original
+20 development scans, not all413 DS23 scans or untouched validation.
+
+| Fixed rule | c0 mean/median km | Fitted-c mean/median km |
+|---|---:|---:|
+| RX support + causal-history Student phase prior |1.315/0.991 |1.266/0.896 |
+| Equal weights, same retained points |1.411/1.361 |1.320/1.175 |
+| Confidence-only, paired fallback |1.364/1.131 |1.306/1.010 |
+| Support × confidence, paired fallback |1.308/0.999 |1.260/0.902 |
+| Confident-only, paired fallback |1.395/1.298 |1.393/1.255 |
+| RF-selected same-family/RF fragment covariance |1.289/1.130 |1.254/0.957 |
+| Pre-RF qualified shape ensemble |1.318/0.969 |1.266/0.843 |
+| Statistically supported extra graph curvature |1.298/0.901 |1.243/0.881 |
+| Curvature + causal shape, fixed composition |1.302/0.941 |1.245/0.851 |
+
+Confidence soft controls have exact incumbent masks and no additional trimming;
+paired trial failures cause a recorded incumbent fallback. Conditional confidence
+does not certify orbital accuracy or geometric information. Confidence-only,
+support×confidence and confident-only fail respectively6,7,5 of20 paired trials.
+All final policy outputs pass gates. Rho0.5/.9 pass17/15 cases, selected by c0
+normalized ELBO among paired-valid candidates; marginal fragment sigma300 Hz
+stays fixed. This does not improve both mean/median metrics.
+
+Shape interpolation/extrapolation is learned only on causal earlier TLE triples
+with the old chronological pre-RF split and complexity penalty.19 cases qualify,
+17 choose interpolate.125,2 interpolate.25,1 zero. Original state uncertainty
+modes and phase priors stay fixed. Derived arrays are large; keep full local
+files but publish compact distinctly named receipts with hashes/rebuild commands,
+small model-choice files and lossless result archives, not fake replacement inputs.
+
+Statistical curvature promotes29 existing graph fragments/705 calibration points
+with >=12 points, span20s, degree<=4, nonlinear weighted deltaBIC>=10 and existing
+noise screen, only when both c arms already agree on frozen family/alias.
+Original calibration never removed. Many were already associated output tracks,
+so705 is not a new unique association count.217 improves to.845/.685 km with
+curvature alone;257/273 have no eligible extra old graph curve. Fixed composition
+with shape mean passes all20 but gains are not additive. ALGO01 default unchanged.
+
+Dynamic pilot-only delay/Doppler synthetic control uses pinned acquisition.py
+from remote commit772633600, never dirty unrelated workspace DSP changes. Both
+edges yield positive delay curvature gain.999882 and RMS.376 samples at2.5MHz;
+negative delay misses2902samples. This is reference integer epoch, noiseless,
+truth-seeded CFO search, not production dense GLRT fractional timing qualification
+or a resolution of the unexplained negative real frame-phase relation.
+
+Current user-requested association diagnostics use217 plus worst primary cases
+257/202/273. Same-RX/different-family conditioned residual correlations remain
+larger than same-family/cross-RX; descriptive, not causal proof. Six valid new
+secondary-assisted curves add111 genuinely unused probes,46 secondary selections,
+without removing original calibration:217 error1.025/.869→1.193/1.140km;
+2573.722/3.699→3.866/3.725;2023.061/3.060→3.034/3.034;273no additions.
+This does not solve the error and should not be promoted by point count alone.
+
+New tools and reports: tools/probe_ds23_fixed_confidence.py,
+probe_ds23_joint_family_search.py, probe_ds23_secondary_curves.py;
+reports/2026_10_19_ds23_association_evidence and
+reports/2026_10_19_ds23_curvature_shape_study.33 focused tests pass. The joint
+search tests three alternatives/family and all72 two/three/four-family beam
+operations.217 has no c0 gate-passing replacement;257 has39 singles/72 joint
+and no RF improvement.273 accepts a slight RF gain but worsens2.412/2.345→
+2.837/2.797km.202's75-fragment model hit420s; the retry uses2×12 proposal
+steps with all finalists fully refined5×48 in BOTH arms. Preserve initial
+attempt receipts/source_v1 and exact masks/priors. Final202 search still running
+at the initial checkpoint. It subsequently completed all60 singles and72 joint
+operations: no proposal passed c0 gates. The retry hit480s after completing60
+singles and54 joint operations; exact checkpoint reuse and two numerical workers
+finished the remaining18, with unchanged data, priors and proposal budget.
+All four diagnostic cases are now complete. The source_v1 snapshot reproduces
+the first three searches; the source-version receipt and resumption driver
+document202's bounded computation. This is a finite beam, not proof that all
+labels are correct. No GPS-favored replacement was promoted.
+
+Next physically useful qualification: predict receiver/family evidence from
+other families' calibration, and qualify the actual dense GLRT fractional epoch
+kernel with dynamic delay/Doppler controls. Do not infer better localization
+from lower CFO RMS, more associations, narrower conditional widths or GPS-favored
+identity changes. Full413 and untouched validation are still outstanding.
+
+The new before/after satellite-correction comparison is important: same-family,
+cross-RX/same-band median correlation is+.461 before phase/orbit corrections
+and−.020 afterward (124 matched track pairs/19 scans). Same RX/band, different
+family is+.326 before and+.459 after (593pairs/20scans). Both receiver-common
+and satellite-common discrepancies coexist; remaining residual correlation
+alone cannot assign the localization bias entirely to hardware. Both stages
+condition on the same jointly fitted receiver; no independent validation claim.
