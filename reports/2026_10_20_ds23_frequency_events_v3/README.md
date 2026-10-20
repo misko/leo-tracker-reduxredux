@@ -145,3 +145,5 @@ Archived artifacts:
 - [Original HTML presentation](report.html), preserved as generated, and [publication checksums/provenance](publication_manifest.json).
 
 This is a compact report archive, not a self-contained executable release. It deliberately excludes raw IQ, the 25 MB analysis panel, large per-case arrays and incomplete helper dependency bundles. Earlier v1/v2 proposal experiments are superseded and excluded from the reported evaluation.
+
+The subsequent [satellite-family ablation report](../2026_10_20_ds23_0268_event_satellite_ablation/README.md) investigates the remaining DS23-0268 position bias, including paired family/track deletions, gate-support cascades and invalid same-observation identity controls.
