@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>DS23 frequency-event prototypes</title>
+<style>body{font:16px/1.6 system-ui;max-width:1150px;margin:40px auto;padding:0 24px;color:#182530}
+img{max-width:100%}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #ccd4da;padding:7px;text-align:left}
+th{background:#edf3f6}code{background:#edf3f6;padding:2px 5px}h1,h2{line-height:1.2}a{color:#157080}</style>
+<h1>DS23 shared frequency-event prototypes</h1>
+<p><strong>Result:</strong> a small shared frequency-event model recovers the complete longest rejected curve in DS23-0268.
+It improves association coverage but does not demonstrate improved localization. The RF-selected receiver model slightly
+worsens position on this debug case and on the matched 20-scan development comparison. These results do not replace ALGO02.</p>
+<h2>Hypotheses and controls</h2>
+<p>Four Gaussian event variants are tested: one additive receiver amplitude; one receiver amplitude proportional to RF;
+two independent low/high-band receiver amplitudes; and one RF-scaled amplitude per nominated satellite family crossing
+the event. On this case the family model has one amplitude. All use a zero-mean 300 Hz amplitude prior. A null model has
+the identical added observations without an event. A separate recovery experiment adds the independently checked 71-point
+67935 curve; its raw bound is not ranked against the variants with fewer observations.</p>
+<p>DS23-0268 contains 3,165 original winning GLRT points. The current 82-point RX1 CH3 curve spans 61.49–120.03 s and was
+already nominated as 64923 / STARLINK-34643. The earlier independent test learned an approximately 350–365 Hz event from
+170 other-channel points, without the target or another family's 71-point curve. Both held-out curves improved. Saved-IQ
+known-pilot refinement preserved the discrepancy. This motivated the full joint tests below.</p>
+<h2>RF-only event discovery and position refitting</h2>
+<ol><li>Use the frozen scan's GLRT, graph tracks, satellite nominations, aliases, radio noise and strictly causal TLE authority.
+No surveyed position or following TLE enters inference. This experiment does not rerun acquisition or cold satellite discovery.</li>
+<li>Select the longest wholly unassociated graph curve using original observation IDs. Its receiver and time support define
+the focused event search; no receiver number, event time or satellite number is hard-coded.</li>
+<li>Screen curved nomination residuals with at least 12 points, span ≥10 s, profile RMS ≤750 Hz, absolute bias ≤3,000 Hz and
+positive visibility. A proposal requires at least two channels with at least three measurements on each side. Weighted
+per-curve constant and linear terms are projected out only for proposal discovery, so unrelated offsets or smooth rate
+errors cannot alone nominate a jump. The actual calibration fit retains its original priors.</li>
+<li>Search 2 s event-time proposals, refine near a local candidate at 0.25 s spacing, and penalize the time/model search by
+<code>2 log(max(282, tested_times) × 4)</code>. Amplitude complexity and shared uncertainty are integrated in the full model.
+The focused case rediscovers 108.5 s and offers 136 additional curved measurements.</li>
+<li>Append Gaussian event coordinates to the original nuisance design without changing its original physical coordinates.
+Predictive linear observations keep the full shared covariance, including event uncertainty, and do not enter calibration
+normal equations. All original position evidence remains present. Cold position fits start at the regional origin in the
+original 25 × 25 km box centered at (37.906, −122.545), with five phase updates and 48 position steps per update.</li>
+<li>Apply every original profile, conditional residual, alias, visibility, support and phase-convergence gate in both matched
+c arms. Rank event models only on the same observation mask using the full c=0 bound plus the search penalty. Fitted c must
+pass the same policy gates. The reference coordinate is used only by this reporting tool for geodesic error.</li></ol>
+<h2>DS23-0268 results</h2>
+<table><tr><th>Method</th><th>Associated GLRT</th><th>Coverage</th><th>Tracks</th><th>c=0 error km</th><th>Fitted-c error km</th><th>Target RMS Hz, c=0</th></tr><tr><td>ALGO02</td><td>1832</td><td>57.88%</td><td>51</td><td>5.146</td><td>5.319</td><td>—</td></tr><tr><td>Shared RX step</td><td>1989</td><td>62.84%</td><td>55</td><td>5.265</td><td>5.437</td><td>92.5</td></tr><tr><td>RF-scaled RX step</td><td>1989</td><td>62.84%</td><td>55</td><td>5.249</td><td>5.426</td><td>92.8</td></tr><tr><td>Separate band steps</td><td>1989</td><td>62.84%</td><td>55</td><td>5.274</td><td>5.445</td><td>92.3</td></tr><tr><td>Satellite-family step</td><td>1989</td><td>62.84%</td><td>55</td><td>5.112</td><td>5.286</td><td>92.9</td></tr><tr><td>Shared RX step + family re-entry</td><td>2111</td><td>66.70%</td><td>59</td><td>5.359</td><td>5.485</td><td>92.4</td></tr></table>
+<p>All event rows pass the complete paired gates and preserve the original position evidence. The same-mask no-event control
+fails three curves, including the target, and has no accepted policy position. Its trial errors are 5.311 / 5.484 km.
+The shared additive receiver event has the best RF bound: a 31.03-unit improvement over the matched null, or 16.97 units after
+the search penalty. Adding per-band amplitudes is not supported by this comparison. The family event's small geographic
+advantage is not used to select it. Association counts include full frozen-calibration graph extensions and unique original
+winning IDs, not just position-evidence points.</p>
+<img src="DS23_0268_comparison.png" alt="Debug-case coverage, residuals, score and position comparison">
+<h2>20 other DS23 development scans</h2>
+<p>The same automatic focused detector and additive receiver model run on the previous 20 development scans; debug case 0268
+is excluded. No thresholds are tuned against their geographic errors. Accept a repair only if its same-mask c=0 gain exceeds
+the fixed search penalty and every paired gate passes; otherwise retain ALGO02. All 20 remain in the denominator.
+This is evidence from one recording site and an existing development set, not validation at a new location.</p>
+<table><tr><th>Arm</th><th>Scans</th><th>Accepted repairs</th><th>Mean error km</th><th>Median error km</th><th>Net associated points gained</th></tr><tr><td>c0</td><td>20</td><td>2</td><td>1.229 → 1.239</td><td>0.804 → 0.849</td><td>140</td></tr><tr><td>fitted_c</td><td>20</td><td>2</td><td>1.177 → 1.188</td><td>0.811 → 0.829</td><td>173</td></tr></table>
+<img src="cohort_position_errors.png" alt="Twenty-scan position comparison with all fallback cases included">
+<h2>Interpretation and recommendation</h2>
+<p>Keep the simple receiver-step model as an association-repair candidate. It explains a real compatibility failure in the
+long curve and passes joint gates without dropping old position evidence. Do not promote this policy as an ALGO03
+localization improvement: the controlled mean and median are slightly worse. Additional band parameters do not buy a
+demonstrated benefit here.</p>
+<p>Frequency-event repair does not resolve the existing satellite-identity, phase/orbit-prior and position-model biases.
+A useful next design is to validate proposed events across independent curved families, then investigate their influence
+on position separately. Sparse RX2 evidence near the debug event prevents attributing the physical change specifically
+to the RX1 LNB/LO rather than a common timing/reference disturbance. The family and receiver event types are not uniquely
+identified by this case. One focused event per scan is a bounded prototype, not an exhaustive multiple-event model.</p>
+<h2>Validation and artifacts</h2><p>Nine focused tests pass. Original endpoint and zero-scale event replays pass in both c arms.
+Linear calibration replay differences are checked; the frozen ALGO02 sources verify unchanged. No new RF collection occurs.
+Early uncentered/global proposal experiments remain in separate v1/v2 directories and are excluded from these results.</p>
+<ul><li><a href="debug_case_comparison.csv">All debug-case metrics</a></li>
+<li><a href="cohort_comparison.csv">All 20-scan metrics</a></li><li><a href="evaluation.json">Machine-readable evaluation</a></li>
+<li><a href="cohort_protocol.json">Cohort protocol</a></li><li><a href="cohort_execution.json">Terminal execution receipts</a></li>
+<li><a href="DS23-0268/replay.json">Original and zero-event replays</a></li></ul></html>
