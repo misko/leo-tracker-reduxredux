@@ -1,5 +1,11 @@
 # Simultaneous pilot components: shared frequency error and a positive DS23 confirmation
 
+**Disjoint replication update:** a fresh set of 20 random scans (seed `20261023`, excluding all 22 earlier scans) does **not** reproduce improvement in both mean and median. The earlier predictive variant changes fitted-`c` mean from **1.303 to 1.296 km**, but median worsens from **1.331 to 1.466 km**. A new conditional joint-calibration variant, restricted to independently curved secondary evidence, gives **1.316 km mean / 1.466 km median**. Both `c` arms show the same failure to improve both metrics. Every selected case, including unavailable-pair and gate fallbacks, remains in the denominator. The original positive 20-scan result below remains accurate for that set; robust localization generalization is **not established**, and neither variant is promoted to ALGO03.
+
+![Initial result and disjoint replication](disjoint_replication.png)
+
+[Fresh per-scan results](fresh_replication.csv) · [Frozen selection, controlled statistics and audit hashes](fresh_replication.json). The joint variant fixes several new-fragment gate failures in the earlier set but exposes conflicts in other retained tracks. More precise simultaneous measurements alone have not resolved the position problem. This update qualifies the earlier interpretation; it is not a new positive algorithm announcement.
+
 The same receiver can receive two distinct pilot components during one probe. Their frequency errors often move together. Retaining both components and accounting for this shared error gives a more precise frequency-difference measurement than treating them independently.
 
 On **20 seeded random additional DS23 fast scans**, the prototype reduces fitted-`c` mean position error from **1.365 to 1.320 km** and median from **1.210 to 1.109 km**. The comparison includes every selected scan and exact incumbent fallbacks. Both `c=0` and fitted-`c` improve. This is a modest positive result on other scans at the same site, **not a completed ALGO03, a full-DS23 result, or evidence of 0.5 km accuracy**.
