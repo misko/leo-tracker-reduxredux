@@ -31,6 +31,7 @@ history pooling are outside the current work.
 | [008](2026_10_22_ds23_dbg01_iteration_008/README.md) | 0157, 0207 | Whole-curve graph recovery gives0157 error3.384→1.335 km and0207 support repair3.321→3.108 km. Graph-seeded temporal recovery reaches75.41% in0207 but worsens error to3.270 km;0157 trials fail a parent ACF gate. An inconsistent endpoint and20 s duration cutoff explain a missing21-point curvy core; its calibration gives3.113 km, no further fitted-c gain. No new ALGO release. | 0028, 0311 |
 | [009](2026_10_22_ds23_dbg01_iteration_009/README.md) | 0028, 0311 | All20 paired recovery trials reject.0028's26-point partial suffix favors its existing57434 family, but restoring77 points fails ACF; other-track RF covariance removes correlation yet fails raw slope/step and gives3.307 km.0311 point-priority and extra47-point searches remain structured. Retain78.38%/66.77% association and3.264/3.240 km error. No ALGO release. | 0080, 0257 |
 | [010](2026_10_22_ds23_dbg01_iteration_010/README.md) | 0080, 0257 |0080 constrained temporal reaches80.83% association but fitted-c error remains3.291km, worse than3.236km incumbent.0257 short whole-curve recovery adds31 calibration points, error3.180→2.748km.20-case scan-disjoint confirmation adds394 calibration points and association69.89→71.08%, but fitted-c mean worsens1.548→1.555km despite median1.546→1.536km; c0 both regress. Retain incumbent; no ALGO release. |0163,0209|
+| [011](2026_10_22_ds23_dbg01_iteration_011/README.md) |0163,0209|Same-mask RF parent choice plus existing temporal recovery gives0163 association56.31→61.33%, error3.129→2.709km;0209 temporal gives68.13→72.19%,3.051→2.907km. Full410 saved-decision paired-RF guard changes only0080/0273: fitted-c mean/median1.469461/1.178102→1.462402/1.167197km, unchanged coverage, no regressions; temporal-block intervals reach zero. Provisional, no ALGO release. Native-time index repair preserves14 prior arms exactly. |0215,0281|
 
 0405 remains in the full evaluation. It is skipped in the next **debug queue**
 because prior DBG01 and bounded recovery controls already document its stalled
@@ -50,3 +51,8 @@ Current full-population reference:
 fitted-c mean **1.469461 km**, median **1.178102 km**. The mean-and-median
 **0.5 km goal remains unmet**. These data are from the existing site; full-DS23
 improvement alone does not establish generalization to other locations.
+
+Iteration011's full-population paired-evidence guard is a **provisional candidate**,
+not a replacement of this published reference. It changes two previously studied
+same-site cases and leaves GLRT coverage unchanged. Keep debug publications and
+ALGO-series release decisions separate.

@@ -930,3 +930,35 @@ and repair missing report metadata from frozen numerical state without
 changing positions. Continue to0163/0209; reuse0209's existing short-curve
 confirmation evidence. Inspect prior RF-only family-adequacy work before
 adding a deletion or nuisance rule. Full-DS23 ALGO promotion remains separate.
+
+### Iteration011: paired RF evidence, exact native timestamps and parent ambiguity
+
+[Iteration011](../2026_10_22_ds23_dbg01_iteration_011/README.md) closes0163/0209.
+Keep full-population decision replay distinct from new end-to-end inference:
+the paired positive-RF-gain guard reuses410 saved causal cases and changes only
+0080/0273, improving fitted-c mean/median to1.462402/1.167197km with unchanged
+point IDs/coverage. Time-block intervals reach zero and the evidence remains
+same-site; retain the published reference and do not issue a new ALGO version.
+
+For two already qualified graph parents, a normalized RF-bound comparison is
+allowed only when their entire calibration masks and predictive factors match.
+Require >2log2 improvement in both c arms for this bounded alternative. It can
+worsen geography before additional evidence is included:0163's better RF parent
+alone reaches3.401km. Its67 screened persistent predictive points yield2.709km;
+the default parent's temporal fit fails a source slope gate. Report both parent
+and child, and do not compare raw scores across different masks. On0209 the
+existing temporal rule gives72.19% and2.907km; reuse prior short-curve evidence.
+
+Actual overlapping intervals matter for RF-only curvature checks.0163's two
+same-RX nominees favor a common polynomial over whole unequal windows but
+strongly favor separate curvature over their overlap. This is a diagnostic,
+not permission to force a shared identity. Both scans'81-start searches return
+the incumbent and no individual family deletion cures the bias.
+
+When appending native observations, union their exact timestamps into the scan
+time grid and recompute every track's lookup. Never use unchecked searchsorted
+against the old graph-only grid. The repaired adapter preserves14 prior saved
+objectives, coefficients and membership sets exactly; only failed0209 was
+resumed. Preserve the original failures and pre-fix sources. Both c arms and
+all final source gates remain mandatory. Continue to0215/0281 without dwelling
+on closed cases absent a transferable new hypothesis.
