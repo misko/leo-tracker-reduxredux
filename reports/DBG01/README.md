@@ -836,3 +836,28 @@ absent. Small single-line RMS is not identity proof. Following-TLE diagnostics
 remain isolated from inference. Cross-check orbital means at native times
 against an independent propagation API; covariance algebra alone cannot catch
 an incorrectly broadcast frequency. Next bounded cases are0157/0207.
+
+## Iteration008: same-receiver curvature and short-core duration checks
+
+See the [0157/0207 report](../2026_10_22_ds23_dbg01_iteration_008/README.md).
+Within one receiver, compare RF-normalized curves after removing separate
+affine terms. A shared nonlinear curve must explain a common satellite plus
+the modeled shared receiver smooth term. Compare shared versus independent
+polynomials on identical native observations, with complexity penalties;
+do not call this an identity probability or compare raw BIC across masks.
+
+In0207 the original pair prefers different curvature, while a frozen HMM
+recovers21 of22 points and leaves an isolated endpoint unused. The core is
+measurably curved but spans13.93s, so the existing20s classification excludes
+it. An explicit10s duration ablation requires250Hz nonlinear amplitude and
+>10 BIC quadratic gain under every single-point deletion. Keep the published
+classifier unchanged; any derived core preserves native CFOs, incumbent
+likelihood rows, the original graph and all observation IDs.
+
+Test recovering missing families before temporal orphan search. Preserve the
+exact original coarse/fine receiver basis in appended paths, the graph
+parent's protected modes and joint predictive covariance.0157 gains a useful
+46-point curved family, reducing3.384→1.335km.0207 temporal coverage reaches
+75.41% but worsens relative to its graph parent. Reject0157 paths that break
+the parent's ACF gate; passing new paths cannot override a failed parent.
+No new ALGO version is warranted. Move to0028/0311 after the bounded tests.
