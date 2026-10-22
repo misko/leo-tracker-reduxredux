@@ -20,6 +20,11 @@ remains410 available scans, fitted-c mean **1.469461 km**, median **1.178102 km*
 These are conditional engineering and same-site confirmation results, not a new
 full-population benchmark or proof of generalization to a new location.
 
+The19-scan confirmation covers the **owner-support fix**. 0221's already-valid
+reentry belongs to the broader growth procedure, whose earlier random20 test
+regressed. Its two-scan improvement remains conditional; the19-scan test does
+not validate adopting that broader procedure across DS23.
+
 ![Two-scan results](figures/iteration_summary.png)
 
 ## Controlled results
