@@ -613,3 +613,34 @@ execution and code hashes; failed checks prevent geographic evaluation.
 The [full assessment](../2026_10_22_ds23_family_cavity_full_assessment/README.md)
 includes every scan, matched c arms, uncertainty, harms, source snapshots,
 numerical tests and proposed joint position/calibration experiments.
+
+## Bounded worst-scan iterations and ALGO promotion
+
+The current user instruction is to publish **every** bounded worst-N DBG01
+iteration, including failures. This supersedes older positive-only publication
+guidance. Use batches of two, preserve the full benchmark for ranking, and move
+to the next worst scans when bounded tests stall. Reuse ALGO02/ALGO03; a debug
+report is not a new ALGO release. New ALGO numbers require credible matched
+full-DS23 improvements with both c arms, coverage, availability and regressions.
+
+Aim for90% supported original GLRT association without forcing identities.
+Separate points outside graph tracks from graph-owned association failures and
+report graph-coverage ceilings. Gray is all original GLRT, red is unassociated
+in unused panels. Plot persisted **Legendre** coefficients in the raw CFO gauge
+using explicit physical observation IDs, with membership and alias gaps broken.
+
+Propagate correlated receiver-calibration uncertainty when proposing unused
+curves, especially on receivers with no retained curved calibration. A posterior
+mean does not establish a precise correction. Exclude a proposed curve from
+nomination calibration. Preserve ambiguity when predictive scores are close.
+For newly activated families, count active passing receiver/channel owners when
+authorizing orbital-shape coefficients; masked owners cannot justify extra
+freedom. A phase-only control may recover evidence without relaxing gates.
+
+[Iteration001](../2026_10_22_ds23_dbg01_iteration_001/README.md) records0081/0326:
+97/21 recovered points, but large boundary errors remain. It includes loss maps,
+81regional starts per scan, every active-family and curved-track ablation,
+residual diagnostics and independent numerical audits. Following-TLE diagnostics
+were explicitly omitted in this causal iteration. No new ALGO release or
+full-DS23 gain is claimed. The next cases are0035/0041; the
+[iteration index](../DS23_DEBUG_ITERATIONS.md) records the queue and policy.
