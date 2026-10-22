@@ -758,3 +758,29 @@ control on0322 finds a3.909 km alternative, but gain1.171<declared penalty2.773,
 so it retains the incumbent. Keep that distinction in future DBG01 reports.
 Following TLEs remain diagnostic only. Next scans are0272/0068; revisit a closed
 case only for a new transferable hypothesis. The0.5 km full-DS23 goal remains.
+
+## Iteration005: temporal predictive recovery and baseline qualification
+
+See the [0272/0068 report](../2026_10_22_ds23_dbg01_iteration_005/README.md).
+0272 gains106 curved position observations and148 total associations, reaching
+73.34% with fitted-c error1.220 km. A separate screened temporal prototype
+adds83 predictive points but error remains3.746 km; its independent control
+worsens error. Do not add these separate experiments' counts or promote an
+ALGO version from one favorable scan. Next bounded cases are0069/0291.
+
+Temporal marginal emissions and a clutter state may nominate unused original
+GLRT paths, but require correlated shared-calibration checks, whole-path
+residual checks and the final paired gates. Keep all old and new predictive
+evidence in one covariance block, with no calibration updates from recovered
+paths. Treat post-selection identity scores and timestamp/CFO permutations
+as compatibility/coherence diagnostics, not verified identity probabilities.
+Reject complete paths instead of trimming individual residual outliers.
+
+Audit the archived baseline against the **same** qualification criteria used
+for new trials.0068's inherited phase for58133 exceeds15 s even though the
+phase-reference refresh is clipped. Reference clipping does not constrain
+the posterior phase. Its screened paths pass residual checks but still fail
+the strict phase gate; an exact archived fallback is not a qualified new
+solution. Retain the historical benchmark for comparison, with explicit
+qualification flags; do not silently loosen the gate or remove the case.
+All81 failed restart endpoints are diagnostic, not81 accepted convergences.
