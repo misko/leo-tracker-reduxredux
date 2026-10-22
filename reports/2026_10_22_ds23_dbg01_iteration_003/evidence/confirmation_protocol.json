@@ -1,0 +1,42 @@
+{
+  "cases": [
+    "DS23-0322",
+    "DS23-0387",
+    "DS23-0079",
+    "DS23-0031",
+    "DS23-0034",
+    "DS23-0233",
+    "DS23-0014",
+    "DS23-0214",
+    "DS23-0229",
+    "DS23-0291",
+    "DS23-0227",
+    "DS23-0308",
+    "DS23-0224",
+    "DS23-0148",
+    "DS23-0093",
+    "DS23-0146",
+    "DS23-0025",
+    "DS23-0321",
+    "DS23-0344",
+    "DS23-0334"
+  ],
+  "seed": 2026102203,
+  "parent_protocol_sha256": "bf345215c383f7d977aa37b843ea31fd127f0ee55fe709e0651eeb342411a759",
+  "source_sha256": "f2fee6561e5f9251cb894f2c5344b742885f9b1a5c267ea9bf7a95b6087191b2",
+  "source_hashes": {
+    "probe_ds23_all_curve_families.py": "844976f6fd1f7bdc618b84a91c04c2c543fc2f71fccf696297dcf1e51dfbe8d9",
+    "probe_ds23_family_predictive_guard.py": "d9d14f16a73dec51429da85619b89967c84ed023536ceec99e5f60c3150fea00",
+    "run_ds23_dbg01_iteration_002.py": "db802a145359fd31d09d85d94026fbb1b2b097177d7b8cf983b48a4b59c05498",
+    "probe_ds23_single_curved_reentry.py": "b5c191ec19b0bcd3d0cf797b0c38a64e41b9c2bb1050cf22eb4cae2e23d4b25e"
+  },
+  "policy": "same initial three-curve reentry, eight common-family groups, up to three unions, frozen family predictive guard",
+  "no_proposal_or_guard_rejection": "exact published incumbent, included in all20 denominator",
+  "matched_c_arms_and_original_priors_gates_and_budgets": true,
+  "inference_no_GPS_or_following_TLE_or_manual_identity_choice": true,
+  "no_new_RF_or_IQ_reprocessing_or_stationary_pooling": true,
+  "same_dataset_and_site_not_untouched_or_new_location_validation": true,
+  "confirmation_list_frozen_before_development_fold_scores": true,
+  "guard_rule": "sum baseline-minus-expanded predictive score >2log(2) AND median family gain>=0 in BOTH c arms, valid phase convergence and visibility",
+  "maximum_workers": 24
+}

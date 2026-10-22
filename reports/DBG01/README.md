@@ -674,3 +674,48 @@ recovery improves 0035/0041 fitted-c errors to 3.741/2.835 km, but no full-DS23
 gain or new ALGO release is claimed. Close this batch; next debug 0111/0390.
 0405 stays in evaluation and is skipped only in this queue after its prior
 bounded tests.
+
+## Growth can pass residual gates while worsening localization
+
+[Iteration 003](../2026_10_22_ds23_dbg01_iteration_003/README.md) closes
+0111/0390 with all-family and all-retained-curved-track ablations, conditional
+maps and finite-bank regional restarts. Adding an 18-point curved fragment
+improves 0111 from 4.556 to 2.422 km fitted-c error. A coherent 43-point 0390
+continuation passes the original gates yet worsens 4.255 to 6.725 km. A bad
+join or incorrect identity is not established by that regression. Same-family
+agreement can coexist with shared calibration/phase/position bias.
+
+Report both association and likelihood utilization by c arm. 0390's expanded
+fitted-c result associates584 points, but only566 enter position; its c=0 arm
+associates566. No original accepted ID is lost. Neither scan can reach90%
+within its current graph: ceilings are81.20% and77.85%. Counterfactual existing
+physical orbit modes and diagnostic following TLEs do not remove the remaining
+long-curve structure; neither relaxes final gates or enters causal inference.
+
+The iteration prototypes a **research-only family predictive consistency
+guard**. Temporarily hold each original curved family out of training, remove
+its original predictive entries, retain newly proposed curves, and refit from
+the regional center in both c arms. Compare predictions of the exact same
+held original IDs and aliases using correlated calibration uncertainty. All
+original points return to final accepted fits; this introduces no permanent
+holdout. The frozen rule requires total old-minus-new score>2log2 and median
+family gain>=0 in both arms, with valid phase convergence and visibility.
+
+The rule was designed after seeing0390's geographic regression; the inspected
+two-case result is not blinded validation. A random20 cohort was frozen before
+fold scoring and includes rejected/no-proposal cases as exact incumbent
+fallbacks. Original labels remain hypotheses, overlapping folds are dependent,
+and the conditional Gaussian composite is not a calibrated Bayes factor.
+Do not promote this guard from development examples alone. See the linked
+report for its confirmation outcome. No ALGO version or production default
+changes here. Next DBG01 cases are0221/0322, with0405 still in full evaluation
+and skipped only in this bounded debug queue.
+
+Random20 confirmation does not justify promotion: unrestricted growth raises
+pooled association69.69→71.35% but worsens fitted-c mean1.742→2.195 km and
+median1.468→1.631 km. The frozen guard accepts only0334, gives mean1.735 km,
+and leaves median/P90 unchanged. Do not retune the guard against these GPS
+outcomes. Preserve the current method; next0322 DBG01 should reuse its rejected
+confirmation growth trial rather than rerunning it. All436 family folds and
+872 paired endpoint/predictive density checks passed after preserving430
+completed jobs and recovering six interrupted jobs with unchanged settings.
