@@ -807,3 +807,32 @@ replay. Keep0068 in historical accuracy metrics with an explicit exception.
 Clarify catalogue scope: the checked causal Space-Track archive contains only
 Starlink records; “full catalogue” does not imply every orbital transmitter.
 Next bounded cases are0227/0400. New ALGO releases still require full-DS23 gains.
+
+## Iteration007: grouped linear prediction and full-population confirmation
+
+See the [0227/0400 and410-scan report](../2026_10_22_ds23_dbg01_iteration_007/README.md).
+Multiple unused linear fragments on different RX/channel owners can nominate
+a new shared satellite family without calibrating receiver offsets or drift
+from those lines. Keep old/new predictive observations in one normalized
+joint density with the full curved-calibration covariance. At fixed position,
+verify that predictive evidence never changes the original curved coefficients.
+
+This experiment raises fitted-c GLRT association70.08→71.22% and lowers mean
+error1.469→1.449 km, but median stays near1.179 km, fast-scan mean worsens
+slightly, and three scans regress by more than500 m. Retain all410 cases and
+report both c arms, per-mode summaries and post-fit-only ID losses. Do not
+promote a new ALGO solely because the mean or association count improves.
+
+For unused high-order graph tracks, inspect point leverage and cadence gaps.
+0227's quartic has an isolated endpoint with leverage0.99991. A separately
+discovered family predicts the19-point core. Compare whole-track satellite,
+core plus uniform clutter, and unknown-curve models over the same original
+observations, with a search penalty. Any derived predictive subset preserves
+the original graph, CFO values and denominator; omitted IDs stay unassociated.
+This development-only extension is not part of the frozen full-scan method.
+
+Include the longest unused linear tracks in DBG01 when curved targets are
+absent. Small single-line RMS is not identity proof. Following-TLE diagnostics
+remain isolated from inference. Cross-check orbital means at native times
+against an independent propagation API; covariance algebra alone cannot catch
+an incorrectly broadcast frequency. Next bounded cases are0157/0207.
