@@ -861,3 +861,37 @@ parent's protected modes and joint predictive covariance.0157 gains a useful
 75.41% but worsens relative to its graph parent. Reject0157 paths that break
 the parent's ACF gate; passing new paths cannot override a failed parent.
 No new ALGO version is warranted. Move to0028/0311 after the bounded tests.
+
+## Iteration009: partial masks, covariance units and intermediate descent states
+
+See the [0028/0311 report](../2026_10_22_ds23_dbg01_iteration_009/README.md).
+Keep whole-track nomination inputs distinct from general unused-point
+inventories. Exclude partial or already active source components only from
+the whole-track offer list; retain their original measurements and diagnose
+unused contiguous blocks explicitly. Check scientific worker receipts before
+dependent stages, even when the outer command returns zero.
+
+For a partly used component, compare the prefix, unused suffix and whole
+original source under the frozen mean, then restore the complete missing
+mask without changing identities, aliases, priors or nuisance definitions.
+0028's26-point suffix favors57434, but the restored77-point source fails
+autocorrelation. Do not split at a mask boundary merely to weaken the
+sample-count-dependent ACF threshold.
+
+RF-only correlation shape may be learned from other same-RX polynomial
+contrasts with target IDs excluded, provided inherited noise estimates and
+their possible target reuse are disclosed. Validate on target RF contrasts
+before position tests. Preserve other blocks and joint predictive covariance;
+test the white-model null and independent predictive-density replay.
+Whitened innovations are dimensionless: the existing noise screen's75Hz
+floor must map to a unit normalized floor. Retain raw deterministic guards.
+Here whitening removes correlation but raw slope/step fail and position does
+not improve. All20 paired recovery trials reject; keep the incumbent.
+
+Convergence plots must distinguish intermediate phase-round states from
+final endpoints.0028's early boundary excursions are not final solutions.
+Annotate starts, intermediate states and final coordinates; preserve per-round
+coordinates and c-arm scheduling. Single-family ablations leave at least
+3.070/2.897km on these scans, so they do not establish one sufficient bad
+family. Move to0080/0257 after bounded tests. New ALGO releases still require
+credible full-DS23 improvements, separate from this debug report series.
