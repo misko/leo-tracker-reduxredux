@@ -572,3 +572,44 @@ alias/visibility/bias bounds and genuine structured-residual failures.
 Also test detection power against injected ramps, curvature and steps, including
 receiver-common and satellite-common perturbations. Accepting a noise test does
 not establish a satellite identity or absence of position bias.
+
+## 19. Conditional family exclusion and full-population checks
+
+Exclude every disputed family's curved point from calibration before testing
+replacement identities. Keep its curved and predictive linear points in joint
+prediction with shared phase/orbit uncertainty; linear points do not calibrate.
+Restore all original observations and the original hierarchical priors for
+final regional cold fits. Require unchanged gates and phase convergence in
+both c=0 and fitted-c arms. Correct unused Student-coordinate variational gaps
+only if no curved or predictive datum depends on the coordinate.
+
+State whether position itself is excluded. The current family-cavity proposal
+refits calibration at an endpoint originally estimated using the disputed
+family. It accounts for conditional calibration covariance but does not
+integrate position uncertainty. It is not a fully independent held-family
+validation. Test joint position/calibration cavities or region-wide proposals
+when the initial endpoint may restrict satellite nominations.
+
+The October22 full410case comparison changes74scans under equal identity
+priors: fitted-c mean/median1.498002/1.185452to1.469461/1.178102km;40improve,
+34worsen. The number within0.5km stays48. Matched c0 mean/median improve
+1.508507/1.249985to1.479378/1.190706km. Both formats improve in aggregate,
+but1/3/6hour block-resampling intervals for fitted-c mean change include zero.
+These are sensitivity intervals, not chronological holdouts or adoption rules.
+All cases remain in evaluation. The0.5km goal and new-location validation
+remain open.
+
+Retain268's5.461to1.649km improvement and80's0.712to3.236km harm together as
+diagnostic controls. Neither is a GPS-based selection rule. Passing residual
+gates does not certify a transmitter ID or geographic correctness.
+
+Use independent finite-orbit derivative checks with step convergence. A fixed
+1e-3step had0.09776Hz truncation bias for a large candidate uncertainty basis;
+Richardson extrapolation restored agreement under the unchanged2e-4Hz
+residual tolerance. This repaired the audit, not the inference. All410nomination
+and410position audits pass. Store per-case checkpoints with source-result,
+execution and code hashes; failed checks prevent geographic evaluation.
+
+The [full assessment](../2026_10_22_ds23_family_cavity_full_assessment/README.md)
+includes every scan, matched c arms, uncertainty, harms, source snapshots,
+numerical tests and proposed joint position/calibration experiments.
