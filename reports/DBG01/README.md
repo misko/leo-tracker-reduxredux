@@ -719,3 +719,42 @@ outcomes. Preserve the current method; next0322 DBG01 should reuse its rejected
 confirmation growth trial rather than rerunning it. All436 family folds and
 872 paired endpoint/predictive density checks passed after preserving430
 completed jobs and recovering six interrupted jobs with unchanged settings.
+
+## Separate support rejection, numerical qualification and point evidence
+
+[Iteration004](../2026_10_22_ds23_dbg01_iteration_004/README.md) closes0221/0322.
+Curved reentry recovers28 points on0221, fitted-c error4.133→2.273 km. On0322,
+a26-point curve passes frequency/alias/horizon checks but is rejected because
+masked-out nominees enabled three physical orbit modes without two active
+owners. Preserve incumbent modes and phase, remove unsupported new shape
+terms, then rerun all original gates. It recovers26 points, error4.056→3.776 km.
+The previously tested64-point union passes but worsens error to4.568 km.
+
+A mechanical confirmation excludes0322 from the earlier random20. Offer only
+old proposals rejected solely by owner support, not already-valid broad growth.
+Three of19 scans recover231 associated points; fitted-c mean1.620→1.609 km,
+median unchanged1.337 km, two improved/one worse/16 unchanged. This supports
+the bookkeeping repair, not a new ALGO release or full-population accuracy gain.
+
+Inventory points outside every graph track. Iteration004 tests all orphan
+winning points in a normalized wrapped-CFO/clutter mixture with shared Gaussian
+calibration uncertainty. A conditional signal probability is neither a verified
+satellite identity nor an accepted track. No new hard associations are claimed
+without separate validation. Initial prior sampling collapses; EM-guided
+importance sampling is corrected by the full proposal density. Do not report
+an apparent position minimum unless independent seeds, effective draws and
+quadrature checks qualify at the proposed point, not just at the incumbent.
+
+On0221 all nine proposed fine-grid points fail those checks; only the original
+RF endpoints qualify. A large likelihood gain versus all-clutter is not a new
+position solution. Existing linear evidence and new orphans share covariance:
+their separately integrated product is a composite approximation. A joint
+Gaussian conditioning control replays the original linear density and leaves
+curved calibration outputs unchanged; it is not a reoptimized regional result.
+
+When multi-start endpoints all fail gates, do not interpret their plotted
+convergence as qualified localization. A bounded per-branch paired-feasibility
+control on0322 finds a3.909 km alternative, but gain1.171<declared penalty2.773,
+so it retains the incumbent. Keep that distinction in future DBG01 reports.
+Following TLEs remain diagnostic only. Next scans are0272/0068; revisit a closed
+case only for a new transferable hypothesis. The0.5 km full-DS23 goal remains.
