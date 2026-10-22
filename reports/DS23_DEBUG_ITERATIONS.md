@@ -22,6 +22,12 @@ history pooling are outside the current work.
 | Iteration | Scans | Result and decision | Next batch |
 | --- | --- | --- | --- |
 | [001](2026_10_22_ds23_dbg01_iteration_001/README.md) | 0081, 0326 | Conditional calibration/support fixes recover 97 and 21 points; large boundary errors remain. No new ALGO release. | 0035, 0041 |
+| [002](2026_10_22_ds23_dbg01_iteration_002/README.md) | 0035, 0041 | Recover 52 and 31 points; fitted-c errors become 3.741 and 2.835 km. A 30-point existing curved association enters position; conflicting shared-family merges remain rejected. No new ALGO release. | 0111, 0390 |
+
+0405 remains in the full evaluation. It is skipped in the next **debug queue**
+because prior DBG01 and bounded recovery controls already document its stalled
+case; see the [full assessment](2026_10_22_ds23_family_cavity_full_assessment/README.md).
+Queue order is not an evaluation exclusion or a change to its reported error.
 
 New **ALGO series** versions are separate from debug-iteration reports. Promote
 one only when improvements are credible across the **full DS23** population:

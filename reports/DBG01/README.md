@@ -644,3 +644,33 @@ residual diagnostics and independent numerical audits. Following-TLE diagnostics
 were explicitly omitted in this causal iteration. No new ALGO release or
 full-DS23 gain is claimed. The next cases are0035/0041; the
 [iteration index](../DS23_DEBUG_ITERATIONS.md) records the queue and policy.
+
+## Iteration 002 additions: current labels, family alternatives and utilization
+
+Bind diagnostic base rows to the **current** assignment node before selecting
+family ablations or protected orbital support. A cached base object may retain
+labels from before a family replacement even when the final fitter is correct.
+Check measurement ordering/masks and null objectives; preserve initial requests
+and record the correction. The iteration002 grouping correction leaves both
+incumbent objectives and nomination scores unchanged.
+
+Record **GLRT associated** separately from **GLRT used in position**, alongside
+curved and predictive counts. An already associated curved track may remain
+outside the fitting mask. A bounded promotion test must preserve its identity,
+alias and original gates; linear tracks must remain predictive evidence.
+
+Keep common alternative satellite candidates through family-level testing.
+Combining only each curve's leading nominee can omit a valid joint original
+nominee. Compare alternatives on the same observation mask with normalized RF
+evidence, and never choose an ID using geographic error. A shared leading ID
+also does not justify merging incompatible phases: 0035's 99-point 68060 union
+is rejected with a 5.4–5.6 kHz long-track residual.
+
+[Iteration002](../2026_10_22_ds23_dbg01_iteration_002/README.md) includes all
+family/track ablations, 81 regional starts per scan, 27 figures, causal/following
+TLE diagnostics, 472 independently replayed DBG01 endpoint arms, candidate
+density checks and 15 tests. Following TLEs remain diagnostic only. Conditional
+recovery improves 0035/0041 fitted-c errors to 3.741/2.835 km, but no full-DS23
+gain or new ALGO release is claimed. Close this batch; next debug 0111/0390.
+0405 stays in evaluation and is skipped only in this queue after its prior
+bounded tests.
