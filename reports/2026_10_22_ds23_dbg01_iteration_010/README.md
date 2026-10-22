@@ -130,6 +130,18 @@ the later qualified endpoint and membership.
 
 ### Ablation and an RF-only test of the tempting merge
 
+This is a **known regression of the existing family-replacement method**,
+not a new failure of the original signed-prior fit. The earlier matched
+[full assessment](../2026_10_22_ds23_family_cavity_full_assessment/README.md)
+records66381→67014 with only **0.304286** final corrected c=0 RF gain:
+signed-prior c=0/fitted-c errors **0.745/0.712km** become **2.539/3.236km**.
+The family-excluded predictive nomination gain was38.86, illustrating that
+nomination gain and final full-observation evidence are distinct. Equal-prior
+adoption required positive final gain, with zero incumbent preference.
+Earlier joint-position-cavity controls also retained this harmful replacement;
+see the [historical receipt](evidence/prior_position_cavity_receipt.json).
+The present additions do not independently validate that identity change.
+
 Deleting67014 is the **only paired-passing single-family deletion** in0080.
 It removes39 calibration observations and gives c=0/fitted-c errors
 **0.615/0.737km**, with2,494 associated points,76.27%. Some other deletions
@@ -376,9 +388,14 @@ Machine-readable results:
 - [All20 confirmation positions](tables/confirmation20_positions.csv)
 - [Both-arm confirmation summaries](tables/confirmation20_summary.csv)
 
-The next useful question is whether RF-only family adequacy can distinguish
-0080's conflicting67014 model from an unknown curve, before selecting any
-deletion. That requires a comparable full-observation density and a physical
-or broad-curve alternative, not GPS-ranked ablation or additional unconstrained
-freedom. Inspect prior adequacy/outlier work before implementing it. Continue
-DBG01 on0163/0209 and revisit a closed scan only for a transferable hypothesis.
+The prior-work audit found that a proper unknown-polynomial alternative has
+**already been tested** on40 scans:240 single/pair unknown hypotheses,
+225 passing gates, but no adoption under the conditional-name control. A
+catalogue-category prior changed one scan and worsened it; confirmation did
+not improve. See the [historical unknown-model receipt](evidence/prior_unknown_polynomial_receipt.json).
+Do not present that model as an untested new solution or repeat it unchanged.
+Any new RF-only family-adequacy rule must explain how its evidence or physical
+error model differs. A decision margin for weak full-evidence identity changes
+also needs a controlled population assessment; do not choose it using0080's
+GPS outcome. Continue DBG01 on0163/0209 and revisit a closed scan only for
+a transferable hypothesis.
