@@ -895,3 +895,38 @@ coordinates and c-arm scheduling. Single-family ablations leave at least
 3.070/2.897km on these scans, so they do not establish one sufficient bad
 family. Move to0080/0257 after bounded tests. New ALGO releases still require
 credible full-DS23 improvements, separate from this debug report series.
+
+## Iteration010: short whole curves, protected-family conflicts and confirmation
+
+See the [0080/0257 and20-scan report](../2026_10_22_ds23_dbg01_iteration_010/README.md).
+The existing10s jackknife curvature rule can be applied to whole unused
+sources without trimming endpoints or changing persisted graph contracts.
+Require12points,250Hz linear-fit RMS and>10 quadratic BIC gain under every
+single-point deletion. Preserve native CFOs, bases, IDs, old powers and parent
+orbit support; simplify only unsupported new-family modes. Cold-fit the same
+observations and candidates in both c arms, then independently replay gates.
+
+0257 recovers31 calibration points and improves3.180→2.748km locally.
+The declared maximum-point policy must retain the union even though a
+GPS-ranked14-point single would look better.20 scan-disjoint same-site cases
+recover394 calibration points but worsen fitted-c mean and both c0 accuracy
+metrics. Do not promote the rule from its local success or coverage gain.
+
+In0080, lower-error unconstrained temporal fits violate67014's source slope
+gate. The unchanged near-feasible solver admits78 predictive points and
+reaches80.83% association, but returns to3.291km. A passing path cannot
+override a failing parent. The only paired-passing family deletion,67014,
+gives0.737km but is GPS-ranked diagnostic evidence, not an RF-only rejection
+rule. Same-RX normalized curvature favors keeping nearby66381 evidence
+separate; do not force that merge. Surface minima and gates must be reported
+together. None of81 unconstrained0080 restarts passes paired gates.
+
+Support rescued scans without legacy fit-choice archives explicitly: retain
+the current complete assignment and actual cold discoveries, record the
+missing archival pool, and discard all warm nuisance state. Keep empty
+predictive cases in evaluation; a calibration-only problem has no predictive
+density API to audit. Preserve failed results, reuse successful cases exactly,
+and repair missing report metadata from frozen numerical state without
+changing positions. Continue to0163/0209; reuse0209's existing short-curve
+confirmation evidence. Inspect prior RF-only family-adequacy work before
+adding a deletion or nuisance rule. Full-DS23 ALGO promotion remains separate.
