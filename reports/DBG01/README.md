@@ -784,3 +784,26 @@ the strict phase gate; an exact archived fallback is not a qualified new
 solution. Retain the historical benchmark for comparison, with explicit
 qualification flags; do not silently loosen the gate or remove the case.
 All81 failed restart endpoints are diagnostic, not81 accepted convergences.
+
+## Iteration006: residual feasibility is not association truth
+
+See the [0069/0291 report](../2026_10_22_ds23_dbg01_iteration_006/README.md).
+A bounded constrained fit of near-threshold supported-mode hypotheses admits
+76 new position observations on0291, reaching74.95% association, but fitted-c
+error worsens3.690→7.030 km. A19-case scan-disjoint confirmation also regresses
+in mean and median despite105 additional associations beyond the support-only
+control. Do not adopt this extension or weaken gates to increase counts.
+
+Report unconstrained and constrained RF cost on the same mask, geographic
+effects separately, and all cases in a confirmation cohort. A solver can move
+position to make residual tests pass without establishing the identity or
+improving location. Preserve complete observations and exact incumbent
+fallbacks, including their own qualification status.
+
+The full archived metadata audit reproduces all410 benchmark errors and finds
+409 pass residual, phase, refresh and regional checks in both c arms; only0068
+exceeds15s phase. This is a saved-record audit, not a fresh410-scan numerical
+replay. Keep0068 in historical accuracy metrics with an explicit exception.
+Clarify catalogue scope: the checked causal Space-Track archive contains only
+Starlink records; “full catalogue” does not imply every orbital transmitter.
+Next bounded cases are0227/0400. New ALGO releases still require full-DS23 gains.
