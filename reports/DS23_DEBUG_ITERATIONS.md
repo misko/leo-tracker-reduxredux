@@ -26,9 +26,22 @@ execution failures. Across all 410 positions, fitted-c association rises
 improves 1.178→1.157 km. Promotion still fails: seven regressions exceed 0.5 km
 in each c arm, and fitted-c p95 increases 3.157→3.202 km. Both format-specific
 medians worsen slightly. Retain the published reference. The next bounded
-mechanism pair is **0259/0365**: the largest new regressions enter ordinary
+mechanism pair was **0259/0365**: the largest new regressions enter ordinary
 native fitting and constrained native rescue, respectively. Do not reopen the
 previously closed 0081/0326 pair without new evidence.
+
+The [bounded native-recovery investigation](2026_10_23_ds23_native_recovery_mechanisms/README.md)
+now distinguishes those failures. On 0365, omitting the sole RF-gate-failing new
+40-point path avoids the constrained displacement: fitted-c error 2.707→0.671 km,
+with 2,194 associated points (72.82%), 121 above the graph parent. On 0259, two
+families dominate the native likelihood pull; doubling only new-path offset
+prior SD 300→600 Hz gives 3.421→2.748 km with all 678 points retained, still worse
+than the 0.951 km graph parent. Shared predictive covariance is already present;
+no repeated physical IDs or dominant log-determinant pull were found. Both c
+arms and 0041/0272 controls are reported. No new ALGO or prior is promoted.
+Next validate a general one-pass exclusion/refit rule for failing new native
+paths; separately investigate broader causal identities and RF-supported path
+mean uncertainty for 0259. Do not deploy a GPS-selected combination.
 
 | Iteration | Scans | Result and decision | Next batch |
 | --- | --- | --- | --- |

@@ -1,0 +1,108 @@
+{
+  "jobs": [
+    {
+      "name": "DS23-0259_all",
+      "case": "DS23-0259",
+      "mode": "all",
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_only_61627",
+      "case": "DS23-0259",
+      "mode": "only",
+      "family": 61627,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_without_61627",
+      "case": "DS23-0259",
+      "mode": "without",
+      "family": 61627,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_only_62739",
+      "case": "DS23-0259",
+      "mode": "only",
+      "family": 62739,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_without_62739",
+      "case": "DS23-0259",
+      "mode": "without",
+      "family": 62739,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_only_65340",
+      "case": "DS23-0259",
+      "mode": "only",
+      "family": 65340,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_without_65340",
+      "case": "DS23-0259",
+      "mode": "without",
+      "family": 65340,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_only_67618",
+      "case": "DS23-0259",
+      "mode": "only",
+      "family": 67618,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_without_67618",
+      "case": "DS23-0259",
+      "mode": "without",
+      "family": 67618,
+      "alpha": 1.0
+    },
+    {
+      "name": "DS23-0259_dose_0.25",
+      "case": "DS23-0259",
+      "mode": "all",
+      "alpha": 0.25
+    },
+    {
+      "name": "DS23-0259_dose_0.5",
+      "case": "DS23-0259",
+      "mode": "all",
+      "alpha": 0.5
+    },
+    {
+      "name": "DS23-0259_dose_0.75",
+      "case": "DS23-0259",
+      "mode": "all",
+      "alpha": 0.75
+    }
+  ],
+  "source_sha256": "52c740ebb40ab3a3cea32259d398c7beb8e1e3c0b9c2f4dfbb2fcdc65f7d11a9",
+  "input_hashes": {
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0259/native/DS23-0259_persistent5s_selection.json": "d694eefa268b28c27a60394808e5586c9e20cd6b977756093ec2eba87df3da6c",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0259/result.json": "cb69047ddaf2a4604f6050cd59bb96f87afd8a5a71fd15a3df24af37267c8c80"
+  },
+  "c_arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "common_starts": [
+    0,
+    0
+  ],
+  "phase_rounds": 5,
+  "iterations_per_round": 48,
+  "job_cap_s": 240,
+  "weighting": "graph-parent objective + alpha * (joint full objective - graph-parent objective); diagnostic conditional-evidence tempering",
+  "same_curved_data_priors_aliases_catalogue_gates": true,
+  "linear_points_do_not_learn_calibration": true,
+  "hypotheses": "single added family vs collective interaction; position gradients and mean/covariance decomposition",
+  "no_production_adoption": true,
+  "no_GPS_inference": true,
+  "no_future_TLE_no_new_RF": true,
+  "interpretation": "ablation changes observation subset; compare endpoint scores only on common evidence; no GPS-selected pruning"
+}
