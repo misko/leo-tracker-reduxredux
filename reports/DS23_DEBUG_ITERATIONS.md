@@ -19,6 +19,21 @@ and evaluate frozen outcomes. Keep c=0 and fitted-c observations, candidates,
 other priors and search budgets matched. A moving trajectory and stationary
 history pooling are outside the current work.
 
+The [family-held-out follow-up](2026_10_23_ds23_family_predictive/README.md)
+completes 16 paired jobs / 32 position fits on 0259 and 0353, plus eight
+symmetric causal identity comparisons. Withholding 65340 or 67618 improves
+0259 accuracy, but no qualified predictive disagreement selects those removals.
+Symmetric fresh priors still favor the original identities. The ordinary 0259
+fit is locally stationary and prefers the less accurate endpoint. On 0353,
+the prior 0.537 km result comes from constrained rescue, which raises the common
+RF loss by 17.084 despite the graph position already being feasible with all
+native evidence. All three predictive-tail flags arise from unqualified 0353
+training fits. No new position guard or ALGO release follows. A tested physical-ID
+ledger prevents postfit re-admission of rejected points. Seven figures, 11
+tables and 19 passing tests document the bounded negative result. Close this
+mechanism batch and return to the next unresolved worst scans; no full-DS23
+improvement is claimed.
+
 The [native-path qualification follow-up](2026_10_23_ds23_native_qualification/README.md)
 tests the general one-pass exclusion rule on all 29 RF-eligible native-rescue
 cases, plus three unchanged controls. Only 0232 and 0365 retain qualifying

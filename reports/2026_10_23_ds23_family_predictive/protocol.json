@@ -1,0 +1,168 @@
+{
+  "jobs": [
+    {
+      "name": "DS23-0259_65340_native_only",
+      "case": "DS23-0259",
+      "family": 65340,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0259_65340_whole_family",
+      "case": "DS23-0259",
+      "family": 65340,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0259_67618_native_only",
+      "case": "DS23-0259",
+      "family": 67618,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0259_67618_whole_family",
+      "case": "DS23-0259",
+      "family": 67618,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0259_61627_native_only",
+      "case": "DS23-0259",
+      "family": 61627,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0259_61627_whole_family",
+      "case": "DS23-0259",
+      "family": 61627,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0259_62739_native_only",
+      "case": "DS23-0259",
+      "family": 62739,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0259_62739_whole_family",
+      "case": "DS23-0259",
+      "family": 62739,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0353_63201_native_only",
+      "case": "DS23-0353",
+      "family": 63201,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0353_63201_whole_family",
+      "case": "DS23-0353",
+      "family": 63201,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0353_61635_native_only",
+      "case": "DS23-0353",
+      "family": 61635,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0353_61635_whole_family",
+      "case": "DS23-0353",
+      "family": 61635,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0353_62233_native_only",
+      "case": "DS23-0353",
+      "family": 62233,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0353_62233_whole_family",
+      "case": "DS23-0353",
+      "family": 62233,
+      "mode": "whole_family"
+    },
+    {
+      "name": "DS23-0353_62843_native_only",
+      "case": "DS23-0353",
+      "family": 62843,
+      "mode": "native_only"
+    },
+    {
+      "name": "DS23-0353_62843_whole_family",
+      "case": "DS23-0353",
+      "family": 62843,
+      "mode": "whole_family"
+    }
+  ],
+  "selection": {
+    "DS23-0259": {
+      "all_native_family_point_counts": {
+        "62739": 8,
+        "67618": 23,
+        "61627": 12,
+        "65340": 54
+      },
+      "selected": [
+        65340,
+        67618,
+        61627,
+        62739
+      ]
+    },
+    "DS23-0353": {
+      "all_native_family_point_counts": {
+        "63201": 45,
+        "61635": 37,
+        "62148": 21,
+        "62824": 26,
+        "57677": 14,
+        "63001": 8,
+        "56882": 33,
+        "65331": 10,
+        "59192": 11,
+        "62233": 37,
+        "62843": 34,
+        "62750": 26
+      },
+      "selected": [
+        63201,
+        61635,
+        62233,
+        62843
+      ]
+    }
+  },
+  "source_sha256": "24b479462643ddc24cc3b958ac0c7133e9ef81c832e056d561df77c181f6dac6",
+  "input_hashes": {
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0259/native/DS23-0259_persistent5s_selection.json": "d694eefa268b28c27a60394808e5586c9e20cd6b977756093ec2eba87df3da6c",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0259/result.json": "cb69047ddaf2a4604f6050cd59bb96f87afd8a5a71fd15a3df24af37267c8c80",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0259/native/DS23-0259.json": "3efc93ed6614f2fc181cbab5610b9ade57295243c71a67b07319ac2c6df51ba7",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0353/native/DS23-0353_persistent5s_selection.json": "bde011a6dfc8ab20e173e9e9537bea8487a6e6d38563af024ee7131b3b464ca5",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0353/result.json": "68d8b56c7a49c852e7157be4f966b5d1c9ac84edbd242fb893f9ceb17adf4663",
+    "/srv/bulk/leo/research/algo04-ordinary-full-ds23-20261023/raw/DS23-0353/native/DS23-0353.json": "abb710c06dafef2bbb9687a934295a33f4bbb9b323c79007493468b61bef4a09"
+  },
+  "selection_rule": "top4 new families by native point count, NORAD tie break; identical bothc arms",
+  "c_arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "fit": "cold region center, zero phase reference,5rounds x48ordinaryiterations",
+  "held_modes": "native_only:leave all native entries of family out; whole_family:also leave original retained curved family out",
+  "score": "Schur-complement Gaussian family prediction conditional on other predictive entries, full shared curved-calibration covariance",
+  "covariance": "empirical Bayes Gaussian, fixed identities/aliases/discovery; curve measurement variance2sigma\u00b2/power; native2sigma\u00b2+300Hzpathbias",
+  "tests": "chi2 tails diagnostic only; preregistered flag p<.01/(4families*2arms) in BOTH arms, not adoption criterion",
+  "local_information": "GN actual residual sensitivity fixed phase; not calibrated posterior uncertainty",
+  "no_GPS_inference": true,
+  "no_future_TLE": true,
+  "no_new_RF": true,
+  "no_production_adoption": true,
+  "region_center": [
+    37.906,
+    -122.545
+  ],
+  "region_width_km": 25,
+  "job_cap_seconds": 180
+}
