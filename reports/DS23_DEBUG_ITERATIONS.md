@@ -85,3 +85,13 @@ model preference from0326's sparse, late, single-receiver evidence. It reviews
 earlier failed position-cavity, partition, soft-identity and uncertainty controls
 and proposes bounded tests of physical bias and information. No new position
 fit, coverage change, candidate promotion or debug-queue closure is claimed.
+
+The [bounded worst-outlier mechanism tests](2026_10_23_ds23_worst_mechanism_tests/README.md)
+execute that plan on0081/0326:120 synthetic fits and exact replays,58590
+cross-owner/following-orbit diagnostics, a matched0326 unit-power control and
+conservative native recovery. Correct-label0326 simulation can reach18km error
+with passing gates. Following elements barely change58590 after phase alignment.
+Unit weights worsen0326 fitted-c error to17.712km; eight recovered same-family
+points raise coverage13.17→14.66% but worsen error to14.991km. No ALGO release
+or population improvement is claimed. Preserve these failures and move the next
+general-method iteration beyond this bounded pair unless independent evidence emerges.
