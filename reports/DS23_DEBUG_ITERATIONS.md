@@ -69,3 +69,11 @@ audits and404 exact fallbacks; it is not a new410-scan fitting campaign.
 Its70.1508% association and1.453353/1.161472km fitted-c mean/median do not
 override the reference. One regression exceeds500m, temporal intervals include
 zero, and no new-location generalization is established.
+
+The [matched candidate error distributions](2026_10_23_ds23_algo_candidate_distributions/README.md)
+compare the reference, grouped-family prediction, paired RF guard and completed-
+candidate retention on the exact same410 scans. They include fitted-c and c=0
+empirical CDFs, full error tails, fast/adaptive breakdowns and quantile tables.
+This is a presentation of frozen separate policies, not a combined candidate
+or new inference run. Completed retention improves mean/median/maximum while
+worsening P95; retain distributional tradeoffs alongside aggregate gains.
