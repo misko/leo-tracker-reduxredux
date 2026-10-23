@@ -1,5 +1,7 @@
 # ALGO04 candidate: exploratory outlier review
 
+The proposed bounded experiments are now documented in the [controlled recovery tests](../2026_10_23_algo04_controlled_recovery_tests/README.md), including matched c arms, rerun native recovery, failed physical hypotheses and positive controls. No new ALGO version was promoted.
+
 **Exploratory diagnostic review, not an ALGO release.** The [full DS23 evaluation](../2026_10_23_algo04_candidate_full_ds23/README.md) failed promotion. The published reference remains the default. This review reads saved results only: no new fits, RF collection, gate changes, or fixes were tested or adopted. GPS errors select retrospective examples for display; GPS does not enter inference.
 
 Across 410 scans, the fitted-c candidate increases association from 70.08% to 75.08%, while mean position error increases from 1.4695 to 1.5907 km. The c=0 arm also worsens. Association and frequency-fit diagnostics must therefore be assessed separately from position accuracy.

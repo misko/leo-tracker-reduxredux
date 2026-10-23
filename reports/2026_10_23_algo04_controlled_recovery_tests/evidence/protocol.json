@@ -1,0 +1,46 @@
+{
+  "cases": [
+    "DS23-0344",
+    "DS23-0256",
+    "DS23-0404",
+    "DS23-0041",
+    "DS23-0272"
+  ],
+  "development": [
+    "DS23-0344",
+    "DS23-0256",
+    "DS23-0404"
+  ],
+  "positive_controls": [
+    "DS23-0041",
+    "DS23-0272"
+  ],
+  "predeclared_same_site_cases_not_blind_validation": true,
+  "causal_catalogue_only": true,
+  "regional_center": [
+    37.906,
+    -122.545
+  ],
+  "region_width_km": 25,
+  "cold_start": [
+    0,
+    0
+  ],
+  "base_budget": "5 phase rounds x48 iterations",
+  "extra_budget": "5 rounds x40; same near-feasible -.25 trigger; ordinary SLSQP without residual constraints",
+  "hypothesis_bank": "all archived default and support whole-curve trials; no new satellites",
+  "ranking": "three largest reference curved families by original point count; fixed held IDs; conditional full covariance; .95 family signal + .05 uniform clutter",
+  "ranking_selection": "same branch improves both c arms by >2log(number of branches); c0 composite score tie-break",
+  "caveat": "full-fit position is reused for held-family nuisance prediction; not full cross-validation",
+  "no_GPS_in_inference": true,
+  "no_new_RF": true,
+  "no_ALGO_release": true,
+  "source_sha256": "ddf57518c356ad8706395c5e1a391be17d47d9b7e569b58bd1181a897c499eb1",
+  "inputs": {
+    "DS23-0344": "25f1dd759fb28615d256a5335edd8bff85d8805f9e9fbd8cb7217c55f77491cd",
+    "DS23-0256": "692ddd6ccd6a9d525a0d887a3e459e424f678984570e8f501b5d1ba00898ae99",
+    "DS23-0404": "cc513151c29b664efcd2ab0a41cecc8c2461f1d7326ad36b21643a521e805aa1",
+    "DS23-0041": "a26d8ec3a6560205b090811ceee5372a45a0dbd553347b21714e274f0777eec7",
+    "DS23-0272": "b6f3c1d7e6f308a645a7fdcc7d22924d057f038e90293c33a44f67c238614c4e"
+  }
+}

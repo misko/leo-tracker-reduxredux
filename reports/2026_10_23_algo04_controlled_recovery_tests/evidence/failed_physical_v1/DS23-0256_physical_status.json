@@ -1,0 +1,7 @@
+{
+  "case": "DS23-0256",
+  "status": "failed",
+  "error": "ValueError('duplicate physical association ownership')",
+  "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/algo04-controlled-tests-20261023/source/followup.py\", line 148, in worker\n    globals()[stage](case);record=dict(case=case,status='complete',seconds=time.monotonic()-start)\n    ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/algo04-controlled-tests-20261023/source/followup.py\", line 129, in physical\n    cov={a:event_coverage(dd,a,s,events) for a,s in pair.items()}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/algo04-controlled-tests-20261023/source/followup.py\", line 77, in event_coverage\n    ids=ownership(rows);allids={o['observation_id'] for o in d['observations']};assert ids<=allids\n        ^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/dbg01_unassociated.py\", line 15, in ownership\n    raise ValueError('duplicate physical association ownership')\nValueError: duplicate physical association ownership\n",
+  "seconds": 9.160114272031933
+}

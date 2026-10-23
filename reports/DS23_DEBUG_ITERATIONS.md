@@ -53,6 +53,16 @@ scans and use comparable baselines; do not select a release using only the
 inspected difficult cases. This replaces the earlier positive-only iteration
 publication policy, while retaining a higher bar for an algorithm release.
 
+The [bounded ALGO04 recovery controls](2026_10_23_algo04_controlled_recovery_tests/README.md)
+test graph rescue, common-family predictive ranking and receiver/family frequency
+steps on 0344/0256/0404, with 0041/0272 positive controls. Ordinary graph fitting
+plus rerun native recovery improves five-case fitted-c mean 3.029→2.507 km versus
+the reference and coverage 66.50%→71.75%, but loses the beneficial 0272 graph
+recovery. The new ranking rejects useful controls; no step model meets all
+support and selection requirements. Eight tests pass and 38 endpoints replay
+exactly. This is a bounded development result, not a full-DS23 rerun or ALGO
+promotion. The report preserves negative controls and failed adapter receipts.
+
 Current full-population reference:
 [410-scan family-replacement assessment](2026_10_22_ds23_family_cavity_full_assessment/README.md),
 fitted-c mean **1.469461 km**, median **1.178102 km**. The mean-and-median
