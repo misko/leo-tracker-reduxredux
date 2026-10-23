@@ -19,7 +19,24 @@ and evaluate frozen outcomes. Keep c=0 and fitted-c observations, candidates,
 other priors and search budgets matched. A moving trajectory and stationary
 history pooling are outside the current work.
 
-The latest [full-DS23 ordinary graph assessment](2026_10_23_algo04_ordinary_full_ds23/README.md)
+The [native-path qualification follow-up](2026_10_23_ds23_native_qualification/README.md)
+tests the general one-pass exclusion rule on all 29 RF-eligible native-rescue
+cases, plus three unchanged controls. Only 0232 and 0365 retain qualifying
+recovery; the other 27 fall back because their failures concern protected
+original evidence. In the assembled 410-scan comparison, fitted-c mean changes
+1.425987→1.428901 km and coverage 74.4145→74.1575% versus the prior ordinary
+candidate. The 0365 improvement 2.707→0.671 km is offset by losses elsewhere,
+including 0353 at 0.537→1.929 km. The postfit extension can re-admit a path
+excluded from fitting: nine 0232 IDs do so in fitted c, explicitly audited with
+a stricter coverage sensitivity. A 1,338-entry causal screen finds no better
+qualified refined replacement for 0259's influential paths; 12 RF holdout units
+do not support a blanket wider native-offset prior. Neither proves the current
+identity or prior correct. No ALGO promotion; retain the published reference.
+Next test family-level predictive conflict with symmetric withheld-family
+calibration and an explicit postfit rejection ledger, including a positive
+rescue control. This is a closed bounded batch, not 410 new pipeline runs.
+
+The [full-DS23 ordinary graph assessment](2026_10_23_algo04_ordinary_full_ds23/README.md)
 completes 408 searches plus the two predeclared inherited carries, with no new
 execution failures. Across all 410 positions, fitted-c association rises
 70.08%→74.41% (+44,925 points), mean error improves 1.469→1.426 km, and median
