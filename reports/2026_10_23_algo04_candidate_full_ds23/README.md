@@ -15,6 +15,8 @@ The candidate combines whole-curve graph recovery, the existing support-aware co
 
 Numeric promotion criteria: **FAIL — do not promote this candidate**.
 
+An [exploratory saved-result outlier review](../2026_10_23_algo04_candidate_outlier_review/README.md) examines graph refinement, recovered sources and conditional gate margins. It proposes controlled tests; no fix or release is adopted.
+
 ![Position-error distributions](figures/error_distributions.png)
 
 The fitted-c candidate adds **51,821 associations**, but mean error increases by **121 m**, median by **71 m**, and p95 by **316 m**. Both mean-error moving-block intervals are positive, supporting degradation under these dependence checks. Median-change intervals include zero for fitted c. The worst error improves from 16.980 to 15.314 km, but 53 scans regress by more than 500 m; tail improvement in one extreme does not compensate for the broader losses.
