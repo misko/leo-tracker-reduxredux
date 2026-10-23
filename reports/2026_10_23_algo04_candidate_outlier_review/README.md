@@ -39,7 +39,7 @@ Some conditional step statistics are near 3.96 against a threshold of 4. The [co
 
 ![Recovered conditional gate usage](figures/recovered_gate_usage.png)
 
-The largest final fitted-c errors remain DS23-0081 at 15.314 km and DS23-0326 at 10.010 km. Earlier bounded mechanism tests indicate ambiguity or weak information; this review supplies no new diagnosis or successful repair for them. [Stage changes](tables/stage_changes.csv) keeps the reference, graph and final errors, frequency RMS and association changes separate for both c arms.
+The largest final fitted-c errors remain DS23-0081 at 15.314 km and DS23-0326 at 10.010 km. The earlier [worst-outlier review](../2026_10_23_ds23_worst_outlier_review/README.md) and [bounded mechanism tests](../2026_10_23_ds23_worst_mechanism_tests/README.md) indicate ambiguity or weak information; this review supplies no new diagnosis or successful repair for them. [Stage changes](tables/stage_changes.csv) keeps the reference, graph and final errors, frequency RMS and association changes separate for both c arms.
 
 ## Saved single-source versus joint trials
 
@@ -66,6 +66,8 @@ These examples motivate testing both gate-driven rescue and hypothesis ranking. 
 ## Proposed controlled tests
 
 These are proposed follow-up experiments, not changes selected or validated by this review.
+
+First bound mechanism debugging to DS23-0344's single 25-point source, DS23-0256's passing versus rescued sources, and DS23-0404's favorable rescued single versus inaccurate joint result, retaining DS23-0041/0272 as positive controls. Freeze any resulting rule before a full-population ablation. No new campaign is launched in this review.
 
 1. Run a frozen full-population ablation disabling gate-driven constrained rescue while retaining the unconstrained graph hypotheses. Preserve observations, candidate identities, priors, full search budgets and all evidence; recompute the native stage from the chosen parent in both c arms. Compare c=0 and fitted c with matched controls and report frequency fit separately from position accuracy. Separately test replacing maximal-point-count ranking with model-compatibility comparisons across common original observations and a background/null model; the favorable rescued single-source result in DS23-0404 precludes treating rescue removal alone as a demonstrated solution.
 2. Test conditional prediction across independent families/owners and time blocks before promoting recovered evidence into calibration corrections; require independent witnesses. Carry correlated nuisance and phase uncertainty. Count predictive-only evidence separately, while recognizing that predictive-only evidence can still move position.
