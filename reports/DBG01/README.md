@@ -1061,3 +1061,29 @@ nomination with89 additional owner points still ranks63865 first. The strongest
 alternative67119 worsens RF evidence and fails five source gates. Reject it
 despite a lower geographic error. Keep incomplete identities unresolved, publish
 the negative control, and continue to0273/0049 without GPS-selected deletions.
+
+### Iteration015: guarded native recovery and nonlinear nomination controls
+
+[Iteration015](../2026_10_23_ds23_dbg01_iteration_015/README.md) closes0273/0049.
+0273's59651→57955 replacement gains0.337 in c=0 but loses1.397 with fitted c.
+Reuse the published011 paired-positive guard; do not call its parent gain new.
+Native recovery initially moves an original62115 slope from2.983 to3.017.
+The existing−0.25 trigger and five-round/40-step constrained solver restore all
+original gates and IDs with the same28 new predictive points. Coverage becomes
+69.90%, fitted-c error2.419km; c=0 worsens relative to the guard alone while
+remaining better than the published incumbent. Report both comparisons.
+
+0049's37-point69500 recovery improves2.858→2.123km fitted c. More native points
+raise coverage but worsen fitted-c error. Two individually valid additions also
+fail jointly. A shared event nominated only from the failed union, with original
+curved witnesses excluding all new families, loses RF evidence and is rejected.
+
+The remaining29-point RX2 curve is smooth, with one cubic and distributed
+curvature that survives every single-point deletion. Do not assume that a
+clean polynomial implies a unique supported satellite. Test every causal
+candidate over121 nonlinear phases, proposing aliases jointly with phase and
+retaining the original phase prior and final gates. Compare against the old
+linearized screen at exactly the same graph parent and radio posterior.
+The best refined nominee changes56030→62563, but its joint fit still has large
+smooth residual structure and rejects. Preserve the unresolved identity and
+the negative search control; continue to0386/0409 without forcing a match.
