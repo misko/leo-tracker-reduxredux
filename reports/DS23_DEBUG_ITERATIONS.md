@@ -174,3 +174,13 @@ regressions above 500 m. The c=0 arm also worsens. Most degradation enters at
 graph recovery. **Reject promotion; retain the current reference.** This report
 includes five figures, complete numerical tables, audit receipts and source
 snapshots; it is not an ALGO04 release. The next debug pair remains 0338/0185.
+
+The [DS23 opportunity review](2026_10_23_ds23_opportunity_review/README.md)
+recomputes frozen 410-scan stage summaries and exactly factors the native
+Gaussian score at eight saved endpoints on 0259/0353, with matched c arms.
+Conditional path levels reverse the preference relative to curved-plus-contrast
+scores at all four endpoint comparisons. This is exploratory evidence for a
+bounded alternative-objective experiment, not a refit or achieved accuracy gain.
+It separates association coverage from position information, preserves prior
+negative results, and includes two figures, tables, four passing component tests
+and posthoc provenance hashes. No production change or ALGO promotion is made.
