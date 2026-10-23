@@ -96,3 +96,15 @@ Unit weights worsen0326 fitted-c error to17.712km; eight recovered same-family
 points raise coverage13.17→14.66% but worsen error to14.991km. No ALGO release
 or population improvement is claimed. Preserve these failures and move the next
 general-method iteration beyond this bounded pair unless independent evidence emerges.
+
+The [full-DS23 ALGO04 candidate assessment](2026_10_23_algo04_candidate_full_ds23/README.md)
+tests frozen graph recovery plus persistent native-point recovery against the
+published reference on all 410 available scans, with matched c=0/fitted-c arms.
+There are 408 completed searches, one deadline fallback (0004), and one inherited
+unqualified reference (0068); all remain in the population metrics. Fitted-c
+association increases 70.08%→75.08% (+51,821 points), but mean error worsens
+1.469→1.591 km, median 1.178→1.249 km, and p95 3.157→3.473 km. There are 53
+regressions above 500 m. The c=0 arm also worsens. Most degradation enters at
+graph recovery. **Reject promotion; retain the current reference.** This report
+includes five figures, complete numerical tables, audit receipts and source
+snapshots; it is not an ALGO04 release. The next debug pair remains 0338/0185.
