@@ -989,3 +989,32 @@ arms and the physical-mode control pass, but error worsens3.032→3.171km. Do no
 select or reject an identity using evaluation GPS, or promote an association
 fix as a position fix. Preserve this negative accuracy result and continue to
 0234/0064. Full-DS23 ALGO releases remain separate from debug publications.
+
+### Iteration013: compose shared RF events with active-owner support
+
+[Iteration013](../2026_10_23_ds23_dbg01_iteration_013/README.md) closes0234/0064.
+On0234, isolate a source whose conditional failure is a step, nominate its RF
+split, then examine original-parent curved sources from other families. An
+RX1 CH6 source supports the sign near158.38s. Test the existing300Hz shared
+band/receiver event prior on identical masks, with Gaussian complexity and a
+fixed time/model penalty in both c arms. Do not give each source its own jump.
+
+Correct residuals can still fail the two-owner orbital gate. Compose the
+existing support-aware base with the event: protect incumbent modes and remove
+unsupported new one-owner shape modes. The gate stays unchanged. This admits
+111 curved points and reaches2.363km fitted-c,68.59% associated. The exact
+hardware cause is unresolved; this is a local RF-supported event model.
+
+On0064,35 curved points as63403 improve2.930→1.235km. The original near-feasible
+solver admits115 additional predictive points while preserving the source ACF
+gate and every parent ID, reaching79.09% and1.235km. It supplies coverage rather
+than another material position gain. Extra point-rich source controls fail.
+
+Inspect deadline behavior as well as numerical gates. Archived searches on
+both scans completed a candidate with saved passing gates but exceeded400s
+while evaluating later alternatives and returned the baseline. A partial
+candidate can improve or worsen geography. Before an anytime rescue policy,
+freeze RF-only selection, verify model/observation compatibility, independently
+replay completed candidates, preserve failures and evaluate all available DS23
+scans. Do not choose a partial fit using GPS or silently call an incomplete
+search exhaustive. No new ALGO release follows from the two local successes.
