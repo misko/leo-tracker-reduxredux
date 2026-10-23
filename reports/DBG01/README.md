@@ -1111,3 +1111,31 @@ noise, so it is not a pure calibration-feedback ablation. On random20, fitted-c
 mean worsens1.0645→1.0885km, median is unchanged, and one passing case loses420m.
 Reject promotion despite24 additional associations. Publish all outcomes,
 retain the full-DS23 reference and continue to0075/0087 without retuning GPS.
+
+### Iteration017: new owner evidence and residual concentration
+
+[Iteration017](../2026_10_23_ds23_dbg01_iteration_017/README.md) closes0075/0087.
+Existing persistent recovery admits69/40 predictive points and improves fitted-c
+errors2.827→2.720km and2.826→2.373km. In0087 the independent variant associates
+more points but gives worse position than persistent recovery. Record calibration,
+predictive likelihood and post-fit-only associations separately.
+
+When a family deletion improves GPS error, use it as an influence diagnostic.
+Test identity using independently calibrated RF evidence. A new bounded rule
+selects the existing curved family with the most newly recovered persistent
+points, excludes the entire family's original calibration evidence, and compares
+its original+native data across the full causal catalogue.58084 and68562 remain
+preferred. Alternatives67866/54831 lose>500 RF score units and fail gates and
+ID retention. Do not delete an influential family because of its GPS ablation.
+
+Add a descriptive residual-concentration inventory to DBG01: raw and RF-sigma-
+standardized squared energy fraction carried by the largest single point,
+its original ID/time, group precision and diagnostic RMS of the other residuals
+at the unchanged endpoint. This is not a deletion, acceptance gate or proof of
+bad data.0087's33-point68562 source has76.5% raw energy in its endpoint while
+all33 share precision0.1296.79/949≥12-point curves in an RF-only22-case inventory
+have≥50% standardized energy in one point, spanning all20 sampled scans.
+No pointwise noise model or accuracy improvement has been tested from this
+inventory. Preserve all observations and original raw gates in any future
+fragment-versus-point precision control; match marginal variance and c arms.
+Continue to0239/0261 with the unchanged full-DS23 reference.
