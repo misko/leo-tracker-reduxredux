@@ -1037,3 +1037,27 @@ Block-bootstrap intervals include zero. Preserve completed work without calling
 an incomplete search exhaustive or a passing fit a correct satellite identity.
 This policy remains provisional and separate from013's shared-event model and
 011's paired-positive replacement guard. No new ALGO release follows.
+
+### Iteration014: cross-band event support and augmented identity controls
+
+[Iteration014](../2026_10_23_ds23_dbg01_iteration_014/README.md) closes0202/0262.
+Two unused0202 curves jointly add71 calibration points as67335, but change
+position by only2.5m. Existing persistent prediction improves2.913→2.765km and
+reaches76.96%. Inspect unsupported polynomial curvature as well: a9.596s gap
+and0.999790 leverage allow one isolated endpoint to create a degree4 turn.
+Every-point-deletion curvature checks reject it as a calibration source.
+
+A receiver-wide event can have an original curved witness on the other band.
+That witness cannot justify a band-only event. In0262, a62151 low-band source
+supports the sign at the longest unused58840 source's RF split near116.403s.
+Keep the300Hz prior, fixed time/model penalty, same-mask null, matched c arms
+and every original gate and ID. One shared−365Hz receiver term recovers81
+points and improves2.886→2.760km. It is a local development result, with the
+hardware cause unresolved; independent confirmation is required before rollout.
+
+Family deletions can expose tension without identifying the cause.0262's63865
+ablation improves diagnostic position, but a full-causal, family-excluded
+nomination with89 additional owner points still ranks63865 first. The strongest
+alternative67119 worsens RF evidence and fails five source gates. Reject it
+despite a lower geographic error. Keep incomplete identities unresolved, publish
+the negative control, and continue to0273/0049 without GPS-selected deletions.
