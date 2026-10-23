@@ -962,3 +962,30 @@ objectives, coefficients and membership sets exactly; only failed0209 was
 resumed. Preserve the original failures and pre-fix sources. Both c arms and
 all final source gates remain mandatory. Continue to0215/0281 without dwelling
 on closed cases absent a transferable new hypothesis.
+
+### Iteration012: source-owned cores and singleton predictive families
+
+[Iteration012](../2026_10_23_ds23_dbg01_iteration_012/README.md) closes0215/0281.
+0215 support recovery gives2.637km, but76 additional temporal observations move
+it to2.939km despite76.12% association.0281 recovers32 whole short curved points
+and reaches2.813km. Prior negative20-case short-rule confirmation still applies;
+neither local coverage nor lower in-sample residual establishes a release.
+
+A frozen native path may include outside-source observations. Intersect it
+with exact original source IDs before applying the existing all-but-one-endpoint
+core rule. Retain the gap/cadence≥5, leverage≥0.9,12point/10s and250Hz/BIC10
+single-point-deletion requirements.0215's14-point CH3 core qualifies; its13-point
+CH2 core does not, and stays predictive. No new endpoint threshold is tuned.
+The qualified core improves relative to its matched predictive version but
+slightly worsens its graph parent. Report that parent comparison too.
+
+An active-family search can miss a new satellite even when one unused source
+has strong conditional evidence. Audit the existing grouped search before
+repeating it.0281's60316 candidate was absent from the active set, while all
+tested companion groups were incompatible. A bounded singleton proposal, with
+the original fixed-radio residual checks, candidate-gap and wrapped-polynomial
+null penalties, accepts29 points. It never calibrates receiver terms. Both c
+arms and the physical-mode control pass, but error worsens3.032→3.171km. Do not
+select or reject an identity using evaluation GPS, or promote an association
+fix as a position fix. Preserve this negative accuracy result and continue to
+0234/0064. Full-DS23 ALGO releases remain separate from debug publications.
