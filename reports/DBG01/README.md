@@ -1087,3 +1087,27 @@ linearized screen at exactly the same graph parent and radio posterior.
 The best refined nominee changes56030→62563, but its joint fit still has large
 smooth residual structure and rejects. Preserve the unresolved identity and
 the negative search control; continue to0386/0409 without forcing a match.
+
+### Iteration016: distributed curvature and original calibration roles
+
+[Iteration016](../2026_10_23_ds23_dbg01_iteration_016/README.md) closes0386/0409.
+0386 graph recovery adds77 curved points and improves fitted-c error2.850→2.425km,
+while c=0 worsens. Existing constrained73-point prediction reaches49.37%
+association but worsens fitted-c error to2.468km.0409 reaches76.53% and2.741km
+from70.66% and2.845km. Preserve failures caused by ACF and quadratic structure
+even when total RMS looks low.81 regional restarts per scan give no RF gain.
+
+A high-leverage endpoint alone does not establish a wrong join.0386's flagged
+28-point source and27-point core both retain degree4 curvature under every
+single-point deletion, although quadratic-only gain fails. Extend diagnostic
+support checks through degrees2–4 with a degree-search penalty, and distinguish
+fitted nonlinear amplitude from noisy linear residual RMS. No point is removed.
+
+The separate [RF-frozen22-case role control](../2026_10_23_ds23_distributed_calibration_roles_assessment/README.md)
+moves weak original calibration observations to prediction while retaining all
+likelihood IDs, identities, aliases and original coordinates. Preserve original
+power downweighting in predictive noise; this changes both role and predictive
+noise, so it is not a pure calibration-feedback ablation. On random20, fitted-c
+mean worsens1.0645→1.0885km, median is unchanged, and one passing case loses420m.
+Reject promotion despite24 additional associations. Publish all outcomes,
+retain the full-DS23 reference and continue to0075/0087 without retuning GPS.
