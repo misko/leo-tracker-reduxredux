@@ -1,0 +1,132 @@
+{
+  "recorded_UTC": "2026-10-22T04:02:39.479971+00:00",
+  "previous_goal_turn_classification": "progress",
+  "this_turn_classification": "progress",
+  "goal_achieved": false,
+  "previous_receipt": "reports/2026_10_20_algo03_iteration_audit/historical_phase_consensus_and_DBG01_interpretation_iteration_receipt.json",
+  "objective": "ALGO03 full DS23 mean AND median<=0.5km; causal TLE,25km regional cold initialization,no GPS inference; publish only positive generalizing results",
+  "work": "Independent Gaussian timing factors and nuisance-aware measurement design; quantified precision and count requirements rather than another unqualified prior change",
+  "earlier0405coherent66465repair_confirmed_already_tested_not_repeated": true,
+  "original_RF_likelihood_Student_phase_priors_and_Gamma_noise_priors_retained": true,
+  "no_new_RF_or_postscan_TLE_or_real_GPS_inference": true,
+  "diagnostic": {
+    "independent_templates": 20,
+    "coarse_variants": 8,
+    "finer_variants": 6,
+    "replication_settings": 2,
+    "replication_methods": 3,
+    "independent_timing_noise_draws": 3,
+    "conditional_known_label_simulations_not_a_real_position_gain": true,
+    "selection_uses_original_real_RF_geometry_before_phase_truth_or_timing_noise": true,
+    "equally_sized_random_and_point_count_controls": true,
+    "matched_c0_fitted_c": true,
+    "full25km_cold_start": true,
+    "original_paired_gates_and_exact_incumbent_fallback": true,
+    "linear_tracks_never_calibrate": true,
+    "fitted_c_noise_draw_results": [
+      {
+        "method": "information_6_sd0.1",
+        "draw": 0,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.42627877857160346,
+        "median_km": 0.3479770325748289,
+        "raw_mean_km": 0.42627877857160346,
+        "paired_valid": 20
+      },
+      {
+        "method": "information_3_sd002",
+        "draw": 0,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.4328223495153167,
+        "median_km": 0.3723304742627327,
+        "raw_mean_km": 0.3812337446291837,
+        "paired_valid": 19
+      },
+      {
+        "method": "six_sd01/information",
+        "draw": 1,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.48936742497150076,
+        "median_km": 0.48765766427699114,
+        "raw_mean_km": 0.48936742497150076,
+        "paired_valid": 20
+      },
+      {
+        "method": "three_sd002/information",
+        "draw": 1,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.32504706476286194,
+        "median_km": 0.2819080830412921,
+        "raw_mean_km": 0.32504706476286194,
+        "paired_valid": 20
+      },
+      {
+        "method": "six_sd01/information",
+        "draw": 2,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.5969879784477647,
+        "median_km": 0.49834926815654224,
+        "raw_mean_km": 0.5678108201737322,
+        "paired_valid": 19
+      },
+      {
+        "method": "three_sd002/information",
+        "draw": 2,
+        "arm": "fitted_c",
+        "n": 20,
+        "mean_km": 0.4087717768663274,
+        "median_km": 0.35453854971464277,
+        "raw_mean_km": 0.35736097647546267,
+        "paired_valid": 19
+      }
+    ]
+  },
+  "independent_audit": {
+    "path": "reports/2026_10_21_ds23_phase_measurement_design/independent_audit.json",
+    "endpoint_arms": 1040,
+    "maximum_objective_replay_difference": 0.0,
+    "maximum_expected_log_density_difference": 1.4551915228366852e-11,
+    "maximum_absolute_phase_mapping_difference_s": 0.0,
+    "all_checks_pass": true
+  },
+  "focused_tests_passed": 10,
+  "DBG01_extended": "section22",
+  "all_new_jobs_terminal": true,
+  "unchanged_full_DS23": {
+    "c0": {
+      "n": 410,
+      "mean_km": 1.5085072173344016,
+      "median_km": 1.2499845679166115
+    },
+    "fitted_c": {
+      "n": 410,
+      "mean_km": 1.4980020457420653,
+      "median_km": 1.1854524915944755
+    }
+  },
+  "remote_push": false,
+  "reason_no_publication": "Hypothetical timing measurements give conditional simulation gains, not an available causal measurement or demonstrated real-data generalization",
+  "figures": [
+    "reports/2026_10_21_ds23_phase_measurement_design/timing_precision_and_count.png",
+    "reports/2026_10_21_ds23_phase_measurement_design/timing_noise_replication.png",
+    "reports/2026_10_21_ds23_phase_measurement_design/timing_information_per_template.png"
+  ],
+  "next_work": [
+    "The20template timing-information diagnostic is complete and independently audited:1040endpoint arms. Do not repeat it as an untested hypothesis or claim hypothetical factors are real DS23 improvements.",
+    "Six0.1s timing factors do not reliably meet mean0.5km across noise draws; three information-selected0.02s factors do meet both conditional metrics across3draws with exact paired fallback, but those measurements are unavailable unvalidated inputs.",
+    "Investigate whether saved IQ or strictly causal ephemeris evidence can supply an independently validated orbital-timing constraint at20-100ms for informative families. Receiver waveform phase and LO frequency are different quantities; never substitute them without a physical relation.",
+    "Do not double count existing causal TLE history as a second independent factor or tighten its prior to simulated target precision. Any history-based improvement must replace the original prior and pass chronological and satellite-disjoint prediction controls.",
+    "Validate satellite identity before applying a strong timing constraint:0268information design prioritizes disputed53923, showing that conditional geometry is not identity evidence.",
+    "Require original gates, matched c0/fitted-c regional cold starts and scan-disjoint real-data mean and median gains before full410adoption or positive publication."
+  ],
+  "evidence_sha256": {
+    "reports/2026_10_21_ds23_phase_measurement_design/independent_audit.json": "2e27032785547ae13ee21106a07230d7bcd568b0e1b2c2dbed75192f043fc0db",
+    "reports/2026_10_21_ds23_phase_measurement_design/figure_and_benchmark_receipt.json": "4a20b711e14cd9f5b302e93ad49cffade869b183be84e1a200a966b3c473def8",
+    "reports/DBG01/README.md": "cee9dd605cbdf7ce8feb320b9388d3fbd97d9431d2854c599c70784abfc4f603"
+  }
+}

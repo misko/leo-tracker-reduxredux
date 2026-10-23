@@ -77,3 +77,11 @@ empirical CDFs, full error tails, fast/adaptive breakdowns and quantile tables.
 This is a presentation of frozen separate policies, not a combined candidate
 or new inference run. Completed retention improves mean/median/maximum while
 worsening P95; retain distributional tradeoffs alongside aggregate gains.
+
+The [two-worst-outlier review and next-experiment plan](2026_10_23_ds23_worst_outlier_review/README.md)
+revisits0081/0326 at the user's request. Eight saved evaluations replay exactly;
+new curved-data information diagnostics distinguish0081's strong displaced
+model preference from0326's sparse, late, single-receiver evidence. It reviews
+earlier failed position-cavity, partition, soft-identity and uncertainty controls
+and proposes bounded tests of physical bias and information. No new position
+fit, coverage change, candidate promotion or debug-queue closure is claimed.

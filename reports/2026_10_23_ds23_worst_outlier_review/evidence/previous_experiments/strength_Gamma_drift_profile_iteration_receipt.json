@@ -1,0 +1,274 @@
+{
+  "recorded_UTC": "2026-10-21T01:50:05.875983+00:00",
+  "previous_goal_turn_classification": "progress",
+  "this_turn_classification": "progress",
+  "goal_achieved": false,
+  "evidence": {
+    "linear_strength": {
+      "path": "reports/2026_10_21_ds23_linear_family_strength/development_independent_replay.json",
+      "sha256": "7b73c0bfdcb43bab9add90c124f67dfa57f7bc0b83c634f4270c38acc5f135dd"
+    },
+    "Gamma_gradient": {
+      "path": "reports/2026_10_21_ds23_exact_gamma_gradient/independent_replay_audit.json",
+      "sha256": "d31a6cfc7b1d84d52b4e6d1dc453eac1d4f94682b009a61705aa2251f90c4ea8"
+    },
+    "drift_development": {
+      "path": "reports/2026_10_21_ds23_band_drift_correlation/development_independent_replay.json",
+      "sha256": "afe6ab825a7c24e3f775b02b4b36e8079631603155faa7614990bead90fea8ed"
+    },
+    "drift_confirmation": {
+      "path": "reports/2026_10_21_ds23_band_drift_correlation/confirmation_independent_replay.json",
+      "sha256": "0bd933cd85d2cbfcbd09574d699f6f9ba37870729d2a8b02955f6f00d403d430"
+    },
+    "fixed_drift_followup": {
+      "path": "reports/2026_10_21_ds23_band_drift_correlation/fixed_prior_confirmation_workflow.json",
+      "sha256": "fe846b9085ec2abc45d74a15c1dc401a8b6ab5d0078593d3bb1162ae40433403"
+    },
+    "within_probe_profiles": {
+      "path": "reports/2026_10_21_ds23_frequency_profile/evaluation.json",
+      "sha256": "e5bf2d86887a851e1d1fbd4bfcd9441998af0ea7c79a8fac3e971df1c472a6b8"
+    },
+    "profile_validation": {
+      "path": "reports/2026_10_21_ds23_frequency_profile_validation/evaluation.json",
+      "sha256": "e09a7a3371fbd3d48f7d3c6dab15c9d254004fe383b8f6414cb779b849a27239"
+    },
+    "profile_confirmation": {
+      "path": "reports/2026_10_21_ds23_frequency_profile_confirmation/evaluation.json",
+      "sha256": "c253833e9b8851abee76430145618b94cfc00654a4ba279b5ab6a293ac1d647e"
+    },
+    "profile_RF_audit": {
+      "path": "reports/2026_10_21_ds23_frequency_profile_confirmation/independent_replay_audit.json",
+      "sha256": "839482b281735ee9a371ddafada47c5397957a74acb83b8dd0b067de12eb8780"
+    }
+  },
+  "linear_strength_seven_scan_statistics": {
+    "incumbent": {
+      "c0": {
+        "mean_km": 1.1759904098661003,
+        "median_km": 1.1753473036914919,
+        "accepted": 7
+      },
+      "fitted_c": {
+        "mean_km": 1.1677471800299948,
+        "median_km": 1.1606635585863592,
+        "accepted": 7
+      }
+    },
+    "unit_control": {
+      "c0": {
+        "mean_km": 1.1759904098661003,
+        "median_km": 1.1753473036914919,
+        "accepted": 7
+      },
+      "fitted_c": {
+        "mean_km": 1.1677471800299948,
+        "median_km": 1.1606635585863592,
+        "accepted": 7
+      }
+    },
+    "family_strength": {
+      "c0": {
+        "mean_km": 1.2240662965329128,
+        "median_km": 1.1665237958393135,
+        "accepted": 7
+      },
+      "fitted_c": {
+        "mean_km": 1.2127834197683254,
+        "median_km": 1.1230428027250807,
+        "accepted": 7
+      }
+    }
+  },
+  "linear_strength_fails_joint_mean_and_median_development": true,
+  "no_linear_strength_confirmation_run": true,
+  "Gamma_integration_diagnostic": {
+    "cases": 7,
+    "arms": [
+      "c0",
+      "fitted_c"
+    ],
+    "grid": "3x3 at.25km spacing per RF mode",
+    "integration_draws_per_node": [
+      512,
+      2048,
+      2048
+    ],
+    "independent_seed_controls": true,
+    "maximum_predicted_local_shift_km": 0.016525724945727276,
+    "maximum_independent_seed_disagreement_km": 0.0027033624852016054,
+    "all_importance_diagnostics_qualified": true,
+    "same_generalized_model_Gaussian_modes_integrated_exactly_Gamma_integrals_estimated": true,
+    "curved_calibration_moments_exclude_linear_data": true,
+    "phase_reference_fixed": true,
+    "no_position_refit_or_accuracy_claim": true,
+    "local_diagnostic_does_not_prove_global_or_full_dataset_equivalence": true
+  },
+  "band_drift_prior_control": {
+    "original_mean_sigma_hz_s": 10.0,
+    "original_contrast_sigma_hz_s": 0.5,
+    "original_cross_band_correlation": 0.9950124688279302,
+    "alternative_correlation": 0.0,
+    "each_band_marginal_variance_hz2_s2": 100.25,
+    "nuisance_count_unchanged": true,
+    "development": {
+      "incumbent": {
+        "c0": {
+          "mean_km": 1.1759904098661003,
+          "median_km": 1.1753473036914919,
+          "accepted": 7
+        },
+        "fitted_c": {
+          "mean_km": 1.1677471800299948,
+          "median_km": 1.1606635585863592,
+          "accepted": 7
+        }
+      },
+      "shared_drift_control": {
+        "c0": {
+          "mean_km": 1.1759904098661003,
+          "median_km": 1.1753473036914919,
+          "accepted": 7
+        },
+        "fitted_c": {
+          "mean_km": 1.1677471800299948,
+          "median_km": 1.1606635585863592,
+          "accepted": 7
+        }
+      },
+      "independent_band_drift": {
+        "c0": {
+          "mean_km": 1.165758912184122,
+          "median_km": 1.1763998250447454,
+          "accepted": 7
+        },
+        "fitted_c": {
+          "mean_km": 1.1549286947557673,
+          "median_km": 1.1559263370456816,
+          "accepted": 7
+        }
+      },
+      "RF_selected": {
+        "c0": {
+          "mean_km": 1.1759904098661003,
+          "median_km": 1.1753473036914919,
+          "accepted": 7
+        },
+        "fitted_c": {
+          "mean_km": 1.1677471800299948,
+          "median_km": 1.1606635585863592,
+          "accepted": 7
+        }
+      }
+    },
+    "confirmation": {
+      "incumbent": {
+        "c0": {
+          "mean_km": 1.0429915660152445,
+          "median_km": 0.9427077967984666,
+          "accepted": 20
+        },
+        "fitted_c": {
+          "mean_km": 0.9711416451469861,
+          "median_km": 0.919910027297336,
+          "accepted": 20
+        }
+      },
+      "shared_drift_control": {
+        "c0": {
+          "mean_km": 1.0429915660152445,
+          "median_km": 0.9427077967984666,
+          "accepted": 20
+        },
+        "fitted_c": {
+          "mean_km": 0.9711416451469861,
+          "median_km": 0.919910027297336,
+          "accepted": 20
+        }
+      },
+      "independent_band_drift": {
+        "c0": {
+          "mean_km": 1.0393004749710666,
+          "median_km": 0.9427077803475952,
+          "accepted": 20
+        },
+        "fitted_c": {
+          "mean_km": 0.968872839725357,
+          "median_km": 0.9270430520230588,
+          "accepted": 20
+        }
+      },
+      "RF_selected": {
+        "c0": {
+          "mean_km": 1.0429915660152445,
+          "median_km": 0.9427077967984666,
+          "accepted": 20
+        },
+        "fitted_c": {
+          "mean_km": 0.9711416451469861,
+          "median_km": 0.919910027297336,
+          "accepted": 20
+        }
+      }
+    },
+    "curved_RF_selector_did_not_qualify_fixed_alternative": true,
+    "fixed_alternative_confirmation_followup_disclosed_separately_from_failed_original_selector": true,
+    "fixed_alternative_fails_both_mean_and_median_in_confirmation": true,
+    "no_prior_promoted": true
+  },
+  "within_probe_RF": {
+    "development_probes": 46,
+    "same_scans": 23,
+    "median_absolute_common_non_affine_contrast_hz": 22.99584060000057,
+    "preliminary_probes_over_three_local_scales": 22,
+    "conditional_local_scales_not_calibrated_confidence": true,
+    "RF_prediction_summary": {
+      "development": {
+        "complete": 46,
+        "both_folds_predict_better": 28,
+        "RF_qualified": 9,
+        "median_heldout_profile_gain": 22.32708759065708
+      },
+      "point_disjoint_confirmation": {
+        "complete": 23,
+        "both_folds_predict_better": 11,
+        "RF_qualified": 5,
+        "median_heldout_profile_gain": 17.980898315987538
+      }
+    },
+    "one_native_raw_probe_per_cohort_independently_replayed": true,
+    "confirmation_probe_disjoint_not_scan_or_location_disjoint": true,
+    "code_and_timing_conditioned_on_whole_probe_fit_in_all_models": true,
+    "constant_and_piecewise_frequencies_and_channel_updates_training_symbols_only": true,
+    "hardware_origin_and_absolute_frequency_correction_not_established": true,
+    "no_CFO_measurement_or_localization_policy_modified": true
+  },
+  "preserved": [
+    "original observation values/masks/labels/aliases and residual gates in position trials",
+    "causal TLEs; report-only geographic truth; cold25x25km regional initialization",
+    "paired c0/fitted-c observations, priors other than explicit intervention, and5x48 search budgets",
+    "curved-only calibration; linear posterior prediction with full covariance",
+    "exact incumbent fallback on either arm failing original gates"
+  ],
+  "component_owned_tests_passed": 27,
+  "original_ALGO02_source_freeze_verified": true,
+  "all_experiments_terminal": true,
+  "active_experiment": null,
+  "no_new_RF_collection": true,
+  "current_full_DS23_benchmark_unchanged": {
+    "available": 410,
+    "population": 413,
+    "fitted_c_mean_km": 1.4980020457420653,
+    "fitted_c_median_km": 1.1854524915944755,
+    "c0_mean_km": 1.5085072173344016,
+    "c0_median_km": 1.2499845679166115
+  },
+  "new_position_generalization_gain": false,
+  "no_new_MD_report_or_remote_push": true,
+  "next_hypothesis": "Prototype a common within-probe receiver frequency perturbation fitted jointly to two simultaneous pilot components. First test the gauge-invariant component frequency difference and held-symbol/point-disjoint RF prediction. Do not assume the late frequency is settled, a zero-mean perturbation equals the physical LO, or inter-frame phase continuity measures Doppler. Establish the joint covariance with any reused original measurement before adding differential evidence to localization. This is unimplemented and unvalidated.",
+  "rejected_or_exhausted": [
+    "fixed support inflation of independent predictive linear noise fails mean on development",
+    "more exact Gaussian/Gamma integration predicts only1-17m local shifts in these7 scans",
+    "independent band linear drifts at fixed marginal variance fail median confirmation",
+    "per-band nonlinear covariance, converter-dependent smooth loading, spatial-score means and old fixed-position importance audits already exist; do not rebrand as new"
+  ]
+}

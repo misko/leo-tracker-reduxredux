@@ -1,0 +1,33 @@
+{
+  "previous_goal_turn_classification": "progress",
+  "this_turn_classification": "progress",
+  "goal_achieved": false,
+  "experiment": "reports/2026_10_20_ds23_synthetic_nuisance_v2/evaluation.json",
+  "independent_audit": "reports/2026_10_20_ds23_synthetic_nuisance_v2/independent_replay_audit.json",
+  "evaluation_sha256": "af6e82c994a1563f906d5850500256331151a3ef1bc8decbf9055c8717e45102",
+  "protocol_sha256": "391d0a655630f6f8556df865aecc6d319324da9c74ab7792807550c00d492df9",
+  "instances": 168,
+  "independently_replayed_instance_arms": 336,
+  "maximum_RF_objective_replay_difference": 0.0,
+  "all_true_synthetic_observations_above_horizon": true,
+  "random_validation_templates": 20,
+  "template_selection": "Fixed seed 882733, ten fast and ten adaptive, selected using manifest metadata before synthetic fits; previously analyzed real-data templates, not an untouched empirical holdout.",
+  "matched_c0_and_fitted_c": true,
+  "random_validation_mean_median_km": {
+    "noise_only": {"c0": [0.5047859416073919, 0.42471217914600456], "fitted_c": [0.505230373443483, 0.4238834194867793]},
+    "radio": {"c0": [0.5038196908877776, 0.46163691953575564], "fitted_c": [0.5042945390362423, 0.4650884377212253]},
+    "smooth": {"c0": [0.6187791318164625, 0.5377907189656139], "fitted_c": [0.6200146536316407, 0.5333980973231761]},
+    "orbit": {"c0": [0.5734880698767124, 0.4623107488335372], "fitted_c": [0.5752793390896792, 0.46666572600305917]},
+    "fragment": {"c0": [0.5868415565824145, 0.5143202043028539], "fitted_c": [0.5837282171616313, 0.5201837089071468]},
+    "phase": {"c0": [0.764391937711738, 0.6066327296377191], "fitted_c": [0.7669726735554427, 0.5942911163968434]},
+    "all": {"c0": [1.0059512128337311, 0.7265404572013126], "fitted_c": [1.0139710781996496, 0.7327261404203593]}
+  },
+  "phase_simulator_correction": "The v1 simulator incorrectly used a standard Student-t draw. The frozen prior is unit variance, requiring scale sqrt((nu-2)/nu). Invalid v1 phase/all controls are explicitly quarantined; v2 regenerates affected draws using the tested law. Real-data fits and noise-only controls were unaffected.",
+  "interpretation": "Known labels do not guarantee accurate position under modeled phase and nuisance uncertainty. Phase has the largest individual effect in this fixed cohort. Passing all original RF gates does not certify accurate position. This is neither an information-theoretic lower bound nor a full hierarchical prior-predictive experiment.",
+  "figure_visually_inspected": "reports/2026_10_20_ds23_synthetic_nuisance_v2/component_error_distributions.png",
+  "real_DS23_accuracy_gain": false,
+  "current_real_incumbent_fitted_c_mean_median_km": [1.4980020457420653, 1.1854524915944755],
+  "positive_generalization_report_published": false,
+  "active_experiment": null,
+  "next_action": "Use bounded synthetic known-nuisance controls to isolate what independent phase/calibration information can improve position, before proposing another real-data inference change. Preserve matched c arms and original gates; do not use synthetic truth in deployed inference."
+}
