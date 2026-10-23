@@ -1018,3 +1018,22 @@ freeze RF-only selection, verify model/observation compatibility, independently
 replay completed candidates, preserve failures and evaluate all available DS23
 scans. Do not choose a partial fit using GPS or silently call an incomplete
 search exhaustive. No new ALGO release follows from the two local successes.
+
+### Completed candidates and search deadlines: full-population follow-up
+
+The [410-scan deadline assessment](../2026_10_23_ds23_completed_deadline_assessment/README.md)
+finds24 expired searches and6 completed qualifying candidates in exactly the
+current incumbent RF context. Freeze eligibility before geography: preserve
+the original mask, require paired strict gates, use the first passing group
+and choose by c=0 RF evidence only within its completed same-mask alternatives.
+Independently replay model densities, predictive covariance, all residual gates
+and unique original observation IDs before accepting a saved candidate.
+
+All12 changed endpoint arms replay,606 curved likelihood points and729 total
+associations are recovered, and404 cases retain exact fallbacks. The cached
+decision comparison improves fitted-c mean/median1.469461/1.178102 to
+1.453353/1.161472km, but4 cases improve and2 worsen;0234 regresses by0.908km.
+Block-bootstrap intervals include zero. Preserve completed work without calling
+an incomplete search exhaustive or a passing fit a correct satellite identity.
+This policy remains provisional and separate from013's shared-event model and
+011's paired-positive replacement guard. No new ALGO release follows.

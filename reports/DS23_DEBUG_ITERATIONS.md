@@ -33,7 +33,7 @@ history pooling are outside the current work.
 | [010](2026_10_22_ds23_dbg01_iteration_010/README.md) | 0080, 0257 |0080 constrained temporal reaches80.83% association but fitted-c error remains3.291km, worse than3.236km incumbent.0257 short whole-curve recovery adds31 calibration points, error3.180→2.748km.20-case scan-disjoint confirmation adds394 calibration points and association69.89→71.08%, but fitted-c mean worsens1.548→1.555km despite median1.546→1.536km; c0 both regress. Retain incumbent; no ALGO release. |0163,0209|
 | [011](2026_10_22_ds23_dbg01_iteration_011/README.md) |0163,0209|Same-mask RF parent choice plus existing temporal recovery gives0163 association56.31→61.33%, error3.129→2.709km;0209 temporal gives68.13→72.19%,3.051→2.907km. Full410 saved-decision paired-RF guard changes only0080/0273: fitted-c mean/median1.469461/1.178102→1.462402/1.167197km, unchanged coverage, no regressions; temporal-block intervals reach zero. Provisional, no ALGO release. Native-time index repair preserves14 prior arms exactly. |0215,0281|
 | [012](2026_10_23_ds23_dbg01_iteration_012/README.md) |0215,0281|0215 support recovery adds27 calibration points,3.049→2.637km; persistent recovery reaches76.12% but worsens to2.939km.0281 whole-short32-point recovery gives73.78%,3.032→2.813km. Source-ID intersection recognizes a14-point high-leverage-endpoint core, but adds no graph-parent accuracy gain. A causal singleton60316 proposal explains29 previously unused0281 points,73.57%, yet worsens error to3.171km. No new ALGO release or full-DS23 policy adoption. |0234,0064|
-| [013](2026_10_23_ds23_dbg01_iteration_013/README.md) |0234,0064|0234 combines an RF-supported shared step near158.38s with existing active-owner mode simplification:111 new curved points,62.28→68.59% associated,2.965→2.363km.0064 whole35-point recovery gives2.930→1.235km; constrained115-point prediction reaches79.09% at unchanged1.235km. Archived400s searches discarded completed candidates with saved passing gates; full-population deadline-rescue audit is next. No ALGO release. |0202,0262|
+| [013](2026_10_23_ds23_dbg01_iteration_013/README.md) |0234,0064|0234 combines an RF-supported shared step near158.38s with existing active-owner mode simplification:111 new curved points,62.28→68.59% associated,2.965→2.363km.0064 whole35-point recovery gives2.930→1.235km; constrained115-point prediction reaches79.09% at unchanged1.235km. The separate [full410 deadline assessment](2026_10_23_ds23_completed_deadline_assessment/README.md) recovers6 completed candidates: fitted mean/median1.453353/1.161472km,729 more associations,4 improve/2 worsen; block intervals include zero. No ALGO release. |0202,0262|
 
 0405 remains in the full evaluation. It is skipped in the next **debug queue**
 because prior DBG01 and bounded recovery controls already document its stalled
@@ -58,3 +58,10 @@ Iteration011's full-population paired-evidence guard is a **provisional candidat
 not a replacement of this published reference. It changes two previously studied
 same-site cases and leaves GLRT coverage unchanged. Keep debug publications and
 ALGO-series release decisions separate.
+
+The completed-deadline candidate assessment is also provisional. It replays
+cached completed decisions across all410 scans, with12 fresh endpoint-arm
+audits and404 exact fallbacks; it is not a new410-scan fitting campaign.
+Its70.1508% association and1.453353/1.161472km fitted-c mean/median do not
+override the reference. One regression exceeds500m, temporal intervals include
+zero, and no new-location generalization is established.
