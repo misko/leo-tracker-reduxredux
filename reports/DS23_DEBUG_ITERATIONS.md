@@ -19,6 +19,17 @@ and evaluate frozen outcomes. Keep c=0 and fitted-c observations, candidates,
 other priors and search budgets matched. A moving trajectory and stationary
 history pooling are outside the current work.
 
+The latest [full-DS23 ordinary graph assessment](2026_10_23_algo04_ordinary_full_ds23/README.md)
+completes 408 searches plus the two predeclared inherited carries, with no new
+execution failures. Across all 410 positions, fitted-c association rises
+70.08%→74.41% (+44,925 points), mean error improves 1.469→1.426 km, and median
+improves 1.178→1.157 km. Promotion still fails: seven regressions exceed 0.5 km
+in each c arm, and fitted-c p95 increases 3.157→3.202 km. Both format-specific
+medians worsen slightly. Retain the published reference. The next bounded
+mechanism pair is **0259/0365**: the largest new regressions enter ordinary
+native fitting and constrained native rescue, respectively. Do not reopen the
+previously closed 0081/0326 pair without new evidence.
+
 | Iteration | Scans | Result and decision | Next batch |
 | --- | --- | --- | --- |
 | [001](2026_10_22_ds23_dbg01_iteration_001/README.md) | 0081, 0326 | Conditional calibration/support fixes recover 97 and 21 points; large boundary errors remain. No new ALGO release. | 0035, 0041 |

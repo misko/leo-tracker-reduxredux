@@ -2,6 +2,8 @@
 
 **The ordinary-fit variant avoids the three selected large regressions and improves the five-case mean, but loses the beneficial recovery on positive control 0272. No new ALGO version is promoted.** The common-family ranking is too conservative in this test. No tested frequency-step correction meets all the predeclared requirements.
 
+Follow-up: the [completed full-DS23 assessment](../2026_10_23_algo04_ordinary_full_ds23/README.md) finds a smaller fitted-c mean gain, 1.469→1.426 km, and association 70.08%→74.41%. Seven regressions above 0.5 km and a slightly worse fitted-c p95 prevent promotion. The five-case results below remain the original development evidence.
+
 This executes the bounded plan from the [outlier review](../2026_10_23_algo04_candidate_outlier_review/README.md), following the [failed full-DS23 candidate evaluation](../2026_10_23_algo04_candidate_full_ds23/README.md). Development cases are 0344, 0256 and 0404; positive controls are 0041 and 0272. They were declared before the new fits. They are deliberately selected same-site examples, not a random sample or new-location validation. Full DS23 was not rerun in this iteration; its published reference remains unchanged.
 
 ## Position and association results after native recovery
