@@ -1,0 +1,39 @@
+{
+  "primary_method": "fresh ALGO02 + qualified causal signed phase prior + equal-prior family cavity",
+  "secondary_method": "original ALGO02-v1",
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "region_center": [
+    37.906,
+    -122.545
+  ],
+  "box_width_km": 25,
+  "start_east_north_km": [
+    0,
+    0
+  ],
+  "same_observations_candidates_priors_budgets_between_c_arms": true,
+  "same_inference_pipeline_for_both_modes": true,
+  "existing_GLRT_only": true,
+  "no_stationary_position_pooling": true,
+  "no_post_scan_TLE": true,
+  "no_GPS_in_inference": true,
+  "sample_sha256": "sha256:8a5237c176d391679e0eae924a4c02933b93878ea4af61ee057d2703d2822182",
+  "dataset_manifest_sha256": "sha256:606620d06ebf49e9b9908585f39fc378a90f5d23d8da4b016506892e0c4a757f",
+  "temporal_sensitivity": "also compare shared occupied UTC 3-hour blocks",
+  "execution": {
+    "workers": 8,
+    "per_case_export_seconds": 180,
+    "prepare_seconds": 600,
+    "algo02_seconds": 900,
+    "cavity_seconds": 960
+  },
+  "inference_sources_sha256": {
+    "/srv/bulk/leo/research/ds25-20261024/engine/ds24_engine.py": "sha256:cef23695e6c70a1499ae9c95bca02ff61676a7510c67e564ea4d8caee23ef430",
+    "/srv/bulk/leo/research/ds25-20261024/engine/run_all.py": "sha256:a134e1d0a13b68087510e8efafac766e4d32f38457e8e13f8acbc983333decfb",
+    "/srv/bulk/leo/research/ds25-20261024/engine/run_baseline.py": "sha256:65eb75df9716afd2251fe3fcdea9088619e198e11f83003c5bc6666f58d9d24c",
+    "/srv/bulk/leo/research/ds25-20261024/engine/test_ds24_engine.py": "sha256:37fb58923e7395de72ce79b247239eba3e3945969e23c322c001aa04b164be4f"
+  }
+}
