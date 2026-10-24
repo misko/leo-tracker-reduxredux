@@ -1,0 +1,54 @@
+{
+  "dataset": "DS24 revision 2 fast only",
+  "cases": 34,
+  "primary": "fresh ALGO02 + causal signed prior + equal-assignment-prior family cavity",
+  "secondary": "original ALGO02",
+  "groups": [
+    "ch1_4",
+    "ch5_8",
+    "all_channels"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "cold_start_km": [
+    0,
+    0
+  ],
+  "search_center": [
+    37.906,
+    -122.545
+  ],
+  "box_width_km": 25,
+  "all_channel_reference": "/srv/bulk/leo/research/ds25-20261024",
+  "all_channel_inference_reused": true,
+  "same_physical_source_contracts": true,
+  "subset_filter_before_graph_noise_orbit_association_and_calibration": true,
+  "preserve_original_observation_ids_timing_and_CFO": true,
+  "full_causal_catalogue_search_no_inherited_satellite_identities": true,
+  "excluded_channel_points_not_used_for_calibration": true,
+  "no_GPS_in_inference": true,
+  "no_post_scan_TLE": true,
+  "workers": 8,
+  "stage_limits_seconds": {
+    "export": 180,
+    "prepare": 600,
+    "algo02": 900,
+    "cavity": 960
+  },
+  "primary_comparison": "common successful cases across all three groups; also report per-group success and all available results",
+  "missing_inputs": "keep frozen missing-input status for paired comparison; no IQ reprocessing campaign",
+  "sources_sha256": {
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/base_audit.py": "3e95860cbd2780b6c8c87432d1f9d5eac69591dc3ab00ec920e2e65109d3830b",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/ch1_4/engine/ds24_engine.py": "cef23695e6c70a1499ae9c95bca02ff61676a7510c67e564ea4d8caee23ef430",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/ch1_4/engine/run_baseline.py": "37b5ff6bb0b16558e905aabb48e0e862e847710eabec4aee7b53dd9d9de07647",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/ch5_8/engine/ds24_engine.py": "cef23695e6c70a1499ae9c95bca02ff61676a7510c67e564ea4d8caee23ef430",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/ch5_8/engine/run_baseline.py": "37b5ff6bb0b16558e905aabb48e0e862e847710eabec4aee7b53dd9d9de07647",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/filtered_prepare.py": "05039c487b73be2fb2c5a6527540673fb437803658e3244b3ecb27ff086e77e1",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/freeze.py": "7df6b881fc4d35a8f3207ae2a0b6737da12a91196aec79853e01fdad71c3a8aa",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/run.py": "f8eb059e342b79837a745beaf0c0c26dfc810f226512bea4c525fd860c498c56",
+    "/srv/bulk/leo/research/ds24-channel-halves-20261024/test_filter.py": "660bb4b0343fd4bf369ea5936b0be0a8ed8354b9a4077750c72b6a23bbdab4b6"
+  },
+  "previous_protocol_sha256": "16493ecb6c59507c575a7917d20fa7eb3d7044aaefc1edd81296801eea26f573"
+}
