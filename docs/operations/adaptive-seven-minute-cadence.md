@@ -1,5 +1,21 @@
 # Automatic adaptive capture cadence
 
+## October 23 shared-scan twenty-minute wait
+
+The shared scan timer waits twenty minutes after each five-minute capture.
+Its sequence remains fast lower, adaptive, fast upper, adaptive, giving roughly
+25 minutes between capture starts and 50 minutes between fast-scan starts.
+The existing backlog gate can defer another slot when three fast analyses
+remain unfinished.
+
+Both `leo-shared-scan.timer.conf` and `leo-fast-scan-timer-startup.conf` set
+`OnActiveSec=20min` and `OnUnitInactiveSec=20min` after clearing inherited
+triggers. The startup template installs as
+`leo-v052-adaptive.timer.d/zzzzz-fast-v16-startup.conf`, so it must retain the
+same wait as the shared timer template. The live timer was reloaded and
+verified with both triggers at twenty minutes; capture duration remains
+300 seconds.
+
 ## October 4 equal 2.5/10 MS/s policy
 
 Each scheduling slot now selects **2.5 MS/s with 50% probability** or **10 MS/s
