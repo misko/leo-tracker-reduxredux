@@ -1,5 +1,7 @@
 # DS24 fast channel-restricted results
 
+**Reporting correction (2026-10-24):** The RF evidence table below now includes predictive likelihood points previously omitted when their saved field was named `additional_predictive_points`. All fitted positions and error statistics are unchanged. The original [positions CSV](tables/positions.csv), [summary JSON](summary.json), and raw-fit archive are retained unchanged as legacy reporting artifacts. Corrected counts come from the [144 scan/group/arm ID audits](../2026_10_24_ds24_bottlenecks/evidence/likelihood_count_audit.csv); see the [bottleneck report](../2026_10_24_ds24_bottlenecks/README.md#reporting-correction-glrt-point-totals).
+
 All position errors are kilometres. The primary comparison uses the same successful scans across all three channel groups. All available results and failed/missing cases are retained separately.
 
 | Method | c arm | Channels | Localized / 34 | Common n | Mean | Median | P95 | Worst |
@@ -36,16 +38,16 @@ All position errors are kilometres. The primary comparison uses the same success
 
 ## RF evidence on the common cohort
 
-Association percentages use each subset’s own GLRT denominator. These are accepted model labels, not independently verified satellite identities. RMS measures retained curved calibration evidence; different channel groups use different observations.
+Association percentages use each subset’s own GLRT denominator and count the unique union of accepted curved calibration and explicit predictive position-likelihood IDs, excluding post-fit-only associations. These are accepted model labels, not independently verified satellite identities. RMS measures retained curved calibration evidence; different channel groups use different observations.
 
 | c arm | Channels | GLRT points | Associated points | Associated % | Mean curved RMS, Hz |
 |---|---|---:|---:|---:|---:|
-| c0 | CH1–8 | 108600 | 76403 | 70.35 | 71.42 |
-| c0 | CH1–4 only | 60059 | 41593 | 69.25 | 67.07 |
-| c0 | CH5–8 only | 48541 | 32560 | 67.08 | 75.75 |
-| fitted_c | CH1–8 | 108600 | 76403 | 70.35 | 71.38 |
-| fitted_c | CH1–4 only | 60059 | 41593 | 69.25 | 67.02 |
-| fitted_c | CH5–8 only | 48541 | 32560 | 67.08 | 75.71 |
+| c0 | CH1–8 | 108600 | 78067 | 71.88 | 71.42 |
+| c0 | CH1–4 only | 60059 | 42621 | 70.97 | 67.07 |
+| c0 | CH5–8 only | 48541 | 33339 | 68.68 | 75.75 |
+| fitted_c | CH1–8 | 108600 | 78067 | 71.88 | 71.38 |
+| fitted_c | CH1–4 only | 60059 | 42621 | 70.97 | 67.02 |
+| fitted_c | CH5–8 only | 48541 | 33339 | 68.68 | 75.71 |
 
 ![Both methods and both c controls](figures/error_cdf.png)
 

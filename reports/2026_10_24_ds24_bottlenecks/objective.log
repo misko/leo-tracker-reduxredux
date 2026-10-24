@@ -1,0 +1,43 @@
+{'case': 'DS24-0011', 'status': 'complete'}
+{'case': 'DS24-0010', 'status': 'complete'}
+{'case': 'DS24-0012', 'status': 'complete'}
+{'case': 'DS24-0013', 'status': 'complete'}
+{'case': 'DS24-0014', 'status': 'complete'}
+{'case': 'DS24-0015', 'status': 'complete'}
+{'case': 'DS24-0017', 'status': 'complete'}
+{'case': 'DS24-0016', 'status': 'complete'}
+{'case': 'DS24-0075', 'status': 'complete'}
+{'case': 'DS24-0018', 'status': 'complete'}
+{'case': 'DS24-0019', 'status': 'complete'}
+{'case': 'DS24-0077', 'status': 'complete'}
+{'case': 'DS24-0081', 'status': 'complete'}
+{'case': 'DS24-0079', 'status': 'complete'}
+{'case': 'DS24-0085', 'status': 'complete'}
+{'case': 'DS24-0083', 'status': 'complete'}
+{'case': 'DS24-0087', 'status': 'complete'}
+{'case': 'DS24-0091', 'status': 'complete'}
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/concurrent/futures/process.py", line 264, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo/research/ds24-bottlenecks-20261024/cohort_review.py", line 95, in fixed_site
+    if abs(replay)>1e-5:raise ValueError(f'endpoint replay {case} {arm}: {replay}')
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: endpoint replay DS24-0095 c0: 2.780144495773129e-05
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/srv/bulk/leo/research/ds24-bottlenecks-20261024/cohort_review.py", line 133, in <module>
+    for f in as_completed({pool.submit(fixed_site,c):c for c in pending}):print(f.result(),flush=True)
+                                                                                ^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+ValueError: endpoint replay DS24-0095 c0: 2.780144495773129e-05
+{'case': 'DS24-0095', 'status': 'complete'}

@@ -1,0 +1,54 @@
+{
+  "cases": [
+    "DS24-0010",
+    "DS24-0011",
+    "DS24-0012",
+    "DS24-0013",
+    "DS24-0014",
+    "DS24-0015",
+    "DS24-0016",
+    "DS24-0017",
+    "DS24-0018",
+    "DS24-0019",
+    "DS24-0075",
+    "DS24-0077",
+    "DS24-0079",
+    "DS24-0081",
+    "DS24-0083",
+    "DS24-0085",
+    "DS24-0087",
+    "DS24-0089",
+    "DS24-0091",
+    "DS24-0093",
+    "DS24-0095",
+    "DS24-0097",
+    "DS24-0099",
+    "DS24-0101"
+  ],
+  "all_channel_root": "/srv/bulk/leo/research/ds25-20261024",
+  "channel_half_root": "/srv/bulk/leo/research/ds24-channel-halves-20261024",
+  "primary": "same all-channel endpoint, masks, identities, Gamma precisions and nuisance priors",
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "finite_difference_steps_km": [
+    0.02,
+    0.04
+  ],
+  "actual_objective_Hessian_steps_km": [
+    0.1,
+    0.2
+  ],
+  "workers": 4,
+  "no_GPS_in_inference_or_information": true,
+  "no_post_scan_TLE": true,
+  "all_freezing_controls_are_unavailable_information_oracles": true,
+  "predictive_surrogate": "joint Gaussian marginal with fixed curved Gamma/prior precisions, original conditional linear noise sqrt(2), and 300 Hz independent fragment biases",
+  "no_claim_of_calibrated_uncertainty": true,
+  "BLAS_threads": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  }
+}

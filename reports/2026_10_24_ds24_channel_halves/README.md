@@ -1,5 +1,7 @@
 # DS24 fast scans: independent CH1–4 and CH5–8 localization
 
+**Reporting correction (2026-10-24):** The original association-count summary omitted some predictive likelihood points stored as `additional_predictive_points`. The corrected unique position-likelihood totals are **78,067/108,600 (71.88%)** for CH1–8, **42,621/60,059 (70.97%)** for CH1–4, and **33,339/48,541 (68.68%)** for CH5–8 in both c arms. All fitted positions and geographic-error statistics are unchanged. The original [positions CSV](tables/positions.csv), [summary JSON](summary.json), and compressed raw fits remain unchanged as legacy reporting artifacts; use the [new per-scan count audit](../2026_10_24_ds24_bottlenecks/evidence/likelihood_count_audit.csv) and [bottleneck investigation](../2026_10_24_ds24_bottlenecks/README.md) for corrected counts and interpretation.
+
 This study reruns **all 34 fast 10 MS/s members of DS24 revision 2** with **CH1–4 only** and **CH5–8 only**, and compares them with the existing CH1–8 results from the same recordings. It preserves the DS24 interval, **[2026-10-21 23:42:37 UTC, 2026-10-24 14:38:14 UTC)**, ending October 24 at 7:38:14 a.m. PDT. Adaptive scans are outside this study.
 
 The final tables, per-scan plots, error distributions and missing-run accounting are in [RESULTS.md](RESULTS.md). No new ALGO version is promoted by this ablation.
@@ -16,7 +18,7 @@ All three channel selections localize the **same 24 scans**. The other ten lack 
 
 **Keeping all eight channels gives the best observed mean and tail accuracy.** Restricting to CH1–4 raises fitted-c mean error by **0.337 km**, improving nine scans and worsening fifteen. Restricting to CH5–8 raises it by **0.820 km**, improving seven and worsening seventeen. The mean-error ranking is identical with c=0. These are fixed-policy results, not an oracle that chooses the best channel subset using GPS.
 
-CH1–4 provides **60,059 GLRT points**, whereas CH5–8 provides **48,541**, compared with **108,600** using all channels. The accepted association percentages are **69.25%, 67.08%, and 70.35%**, respectively. CH1–4's mean curved residual RMS is lower than the full-channel result (**67.02 vs 71.38 Hz**, fitted c), even though its position error is higher. This directly illustrates why a lower in-sample CFO residual is insufficient evidence of better localization.
+CH1–4 provides **60,059 GLRT points**, whereas CH5–8 provides **48,541**, compared with **108,600** using all channels. The corrected accepted position-likelihood percentages are **70.97%, 68.68%, and 71.88%**, respectively, counting the unique union of accepted curved and explicit predictive IDs. CH1–4's mean curved residual RMS is lower than the full-channel result (**67.02 vs 71.38 Hz**, fitted c), even though its position error is higher. This directly illustrates why a lower in-sample CFO residual is insufficient evidence of better localization.
 
 The strongest CH5–8 outliers are **DS24-0015 at 6.190 km** and **DS24-0097 at 4.228 km**. CH1–4's worst result is **DS24-0089 at 3.687 km**. These are useful targets for a follow-up ambiguity/geometry investigation; this channel ablation alone does not determine whether each error comes from satellite identity, nuisance freedom or weak geometry.
 
@@ -48,7 +50,7 @@ The CH1–8 reference reuses the completed prior results; both channel-restricte
 
 The primary error table uses the **intersection of successful scans across CH1–8, CH1–4 and CH5–8**, separately for each method. Within a method, success requires a paired c=0/fitted-c result. This prevents different missing-case selections from producing a misleading mean comparison. `summary.json` also preserves all-available per-group statistics and failure counts. Per-scan error changes compare each subset with the full-channel result on the same scan; there is no GPS-driven best-subset policy.
 
-Association fractions use each group's own GLRT denominator, so a larger fraction can still represent fewer physical observations. These are model-accepted associations, not independent identity ground truth. Frequency RMS describes retained curved calibration evidence; comparing RMS across channel groups is not a matched-observation likelihood comparison.
+Association fractions use each group's own GLRT denominator, so a larger fraction can still represent fewer physical observations. The corrected counts include accepted curved calibration and explicit predictive position-likelihood IDs, excluding post-fit-only extensions. These are model-accepted associations, not independent identity ground truth. Frequency RMS describes retained curved calibration evidence; comparing RMS across channel groups is not a matched-observation likelihood comparison.
 
 ## Execution and reproducibility
 
