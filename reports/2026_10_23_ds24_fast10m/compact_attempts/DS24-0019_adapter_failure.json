@@ -1,0 +1,94 @@
+{
+  "case": "DS24-0019",
+  "status": "failed",
+  "error": "KeyError('linear_gates')",
+  "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-20261023/engine/variants.py\", line 45, in one\n    result['methods']['algo02_historical']=dict(arms=historical['arms'],coverage={a:paths.coverage(historical,'default',a,s) for a,s in historical['arms'].items()},accepted=True,status='complete',fallback=None)\n                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/probe_ds23_graph_seeded_paths.py\", line 114, in coverage\n    explicit=[dict(e,compatible=g['compatible'],association_source='graph_seeded_predictive_path') for e,g in zip(d['entries'],saved['linear_gates'],strict=True)]\n                                                                                                                               ~~~~~^^^^^^^^^^^^^^^^\nKeyError: 'linear_gates'\n",
+  "seconds": 13.82009896589443,
+  "methods": {
+    "baseline": {
+      "accepted": true,
+      "status": "complete",
+      "fallback": null,
+      "arms": {
+        "c0": {
+          "endpoint_east_north_km": [
+            5.03211667381886,
+            -7.485837370689536
+          ],
+          "endpoint_latlon": [
+            37.83856002368748,
+            -122.48770857445064
+          ],
+          "negative_twice_elbo": 25311.65929854857,
+          "curved_negative_twice_elbo": 25311.65929854857,
+          "RMS_hz": 98.90589589333972,
+          "active_points": 2756,
+          "predictive_points": 0,
+          "linear_calibration_max_difference": 0.0,
+          "final_phase_change_s": 2.8140058414005686e-07,
+          "curved_gates": {
+            "total": 66,
+            "compatible": 66,
+            "failed": []
+          },
+          "linear_gates": {
+            "total": 0,
+            "compatible": 0,
+            "failed": []
+          }
+        },
+        "fitted_c": {
+          "endpoint_east_north_km": [
+            4.986934781579204,
+            -7.521365464338998
+          ],
+          "endpoint_latlon": [
+            37.83823995077172,
+            -122.4882229772722
+          ],
+          "negative_twice_elbo": 25316.474152502415,
+          "curved_negative_twice_elbo": 25316.474152502415,
+          "RMS_hz": 98.70252937198933,
+          "active_points": 2756,
+          "predictive_points": 0,
+          "linear_calibration_max_difference": 0.0,
+          "final_phase_change_s": 1.0552449836026545e-06,
+          "curved_gates": {
+            "total": 66,
+            "compatible": 66,
+            "failed": []
+          },
+          "linear_gates": {
+            "total": 0,
+            "compatible": 0,
+            "failed": []
+          }
+        }
+      },
+      "candidate_arms": {},
+      "coverage": {
+        "c0": {
+          "associated": 3595,
+          "total_GLRT": 5169,
+          "percent": 69.54923582898046,
+          "associated_tracks": 111,
+          "active_curved_points": 2756,
+          "predictive_points": 0,
+          "accepted_observation_ids_count": 3595,
+          "accepted_observation_ids_sha256": "sha256:cab4d9d3b60ef25076c7d5f7040f995cbe6e02badf35576d6f6b85a3cf9decc0"
+        },
+        "fitted_c": {
+          "associated": 3595,
+          "total_GLRT": 5169,
+          "percent": 69.54923582898046,
+          "associated_tracks": 111,
+          "active_curved_points": 2756,
+          "predictive_points": 0,
+          "accepted_observation_ids_count": 3595,
+          "accepted_observation_ids_sha256": "sha256:cab4d9d3b60ef25076c7d5f7040f995cbe6e02badf35576d6f6b85a3cf9decc0"
+        }
+      },
+      "candidate_coverage": {}
+    }
+  }
+}
