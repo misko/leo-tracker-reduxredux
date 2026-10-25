@@ -1,0 +1,57 @@
+independent recovery replay complete DS24-0095
+independent recovery replay complete DS24-0087
+{
+  "status": "passed",
+  "GPS_used": false,
+  "no_position_fits": true,
+  "source_sha256": "5b70bd3bed9ede824ab930cf786e246358d5a7df0d29fe118697ffb475db541e",
+  "scientific_seals": {
+    "": "747d695da38ba5c91d0d40ca157d7e6d0cf3aa44c8a9e4b19161ed534e9232e5",
+    "repair01": "196b2b0780a39763b6c39b5dc555d596e2d919e2b6cdd0f121b918e7c09de6b2",
+    "eligibility02": "64ea8c3c8ca070d3f5e55bda27eafaea4bf1994f33e9ea7ca829897842a1e447"
+  },
+  "cases": [
+    {
+      "case": "DS24-0095",
+      "graph_trials": 7,
+      "support_trials": 2,
+      "graph_selected": false,
+      "support_active_incumbent_selected": true,
+      "strict_support_selected": false,
+      "support_nominees": [
+        {
+          "component": "DS24-0095-RX1-CH5-T003-RF11709687500.000000",
+          "candidate_index": 1026,
+          "norad": 65500,
+          "alias": 1
+        }
+      ]
+    },
+    {
+      "case": "DS24-0087",
+      "graph_trials": 7,
+      "support_trials": 2,
+      "graph_selected": false,
+      "support_active_incumbent_selected": true,
+      "strict_support_selected": false,
+      "support_nominees": [
+        {
+          "component": "DS24-0087-RX2-CH7-T000-RF12209687500.000000",
+          "candidate_index": 450,
+          "norad": 57752,
+          "alias": 0
+        }
+      ]
+    }
+  ],
+  "all_saved_original_and_rescued_graph_endpoints_replayed": true,
+  "all_support_trials_symmetrically_replayed": true,
+  "immutable_original_parent_protection": true,
+  "maximum_objective_difference": 0.0,
+  "no_geography_opened_before_scientific_seals": true,
+  "limitations": [
+    "Original preflight missed augmented-context support reconstruction; original stages failed closed and were preserved.",
+    "Repair01 repeats only previously frozen support proposals whose first fitted pair was not persisted before failure, charging remaining original budgets.",
+    "Eligibility02 reinterprets incumbent mode preservation as the original active curved/predictive set, with no refit and symmetric checks of all sealed support trials."
+  ]
+}

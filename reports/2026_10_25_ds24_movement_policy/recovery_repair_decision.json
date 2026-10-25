@@ -1,0 +1,12 @@
+{
+  "approved": true,
+  "scope": "Separately versioned technical repair of support-control endpoint reconstruction only",
+  "original_protocol_sha256": "290e6320ddec49db07831c117b2c0cd3452753f004d6d0f261d25dae99aee7d3",
+  "cause": "Post-fit membership reconstruction computed protected incumbent families from the augmented trial mask rather than the original parent. The support fit itself used the original parent correctly.",
+  "comparability": "Graph outputs remain valid and immutable. Preserve original support technical failures. Repair must reproduce original fit model and protected coordinates; no scientific rule changes.",
+  "allowed_fits": "Only exact previously frozen support proposals, because first failed-stage fit pairs were not persisted before replay failure. No graph reruns or new proposals.",
+  "budget": "Use exact saved original execution seconds; subtract prior support time from each original 240-second case allowance and total prior pilot time from the original 1800-second pilot allowance.",
+  "required_before_launch": "Independent review of repair source, explicit parent protection, regression test and versioned source/input/budget seal",
+  "required_output": "Checkpoint fit pair before replay; verify original protected set, objective and native-ID parent preservation",
+  "GPS_opened": false
+}

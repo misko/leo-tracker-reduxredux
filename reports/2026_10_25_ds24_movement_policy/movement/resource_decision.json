@@ -1,0 +1,25 @@
+{
+  "smoke_jobs": [
+    {
+      "case": "DS24-0010",
+      "seed": 2026102504,
+      "fold": 0
+    },
+    {
+      "case": "DS24-0010",
+      "seed": 2026102504,
+      "fold": 1
+    }
+  ],
+  "peak_rss_kib": [
+    1069164,
+    1138776
+  ],
+  "workers": 6,
+  "rule": "six times max smoke peak RSS < half preflight memory_available_bytes; allocated_cpu_capacity>=8",
+  "preflight": {
+    "path": "/srv/bulk/leo/research/ds24-movement-policy-r01/preflight.json",
+    "sha256": "ae60ff4777fc084f1ff11dbfe3573e71520ee0d8b50fa40c1c8fe9f6a4e3a19a"
+  },
+  "scientific_outcomes_used": false
+}
