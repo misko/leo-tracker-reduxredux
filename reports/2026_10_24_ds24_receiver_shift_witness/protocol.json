@@ -1,0 +1,30 @@
+{
+  "study": "Independent family support for shared receiver induced position shifts",
+  "cases": ["DS24-0017", "DS24-0095"],
+  "case_selection": "Post-hoc opposing position effects in the previous 24-case development study, not a fresh accuracy cohort",
+  "models": ["original baseline", "previously RF-qualified shared RX1 RF-scaled 50 Hz coefficient model"],
+  "c_arms": ["c0", "fitted_c"],
+  "source_study": "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025",
+  "heldout_design": "Three seeded random whole-family folds; all curved and predictive owners across receivers and channels assigned together",
+  "heldout_seed": 2026102503,
+  "train_fits": "Both models and c arms use cold regional center, five phase rounds and 48 steps; held families contribute neither calibration nor position observations",
+  "maximum_train_position_fits": 24,
+  "heldout_primary": "Normalized Gaussian moment predictive reference, using original per-ID sigma times sqrt(2), full train-only nuisance covariance and untouched held phase/orbit/fragment priors",
+  "heldout_noise_sensitivity": "Original per-ID sigma factors 1 and 2; no model selected from this sensitivity",
+  "heldout_position_comparison": "Same predictor evaluated at both train-only baseline and receiver-model endpoints, with train-only nuisance refresh at each; no additional position optimization",
+  "score_limits": [
+    "Conditional on inherited all-RF graph, assignments, support and noise map",
+    "Conditional on a trained point position; training position uncertainty not integrated",
+    "Gaussian moment matching for held Student phase and Gamma noise, not the exact original heavy-tailed predictive density",
+    "Held phase linearization uses causal prior means, never held fitted phase",
+    "All folds and failures retained; no rejection by geographic error"
+  ],
+  "geometry_design": "Both models at 11 common locations along each full-data baseline-to-receiver endpoint segment, five fixed-position phase refreshes, full objective decomposition and local nuisance information diagnostics",
+  "geometry_limits": "Full-data conditional mechanism test; neither independent family validation nor proof of incorrect satellite identity",
+  "interpretation": "No GPS-based model/gate/scale/assignment selection; geographic truth only for final descriptive reporting",
+  "region": {"center_latlon": [37.906, -122.545], "width_km": 25},
+  "no_new_RF_or_IQ_reprocessing": true,
+  "no_post_scan_TLE": true,
+  "no_new_ALGO_promotion_in_this_two_case_study": true,
+  "publication": "Complete MD report, figures, sources, negative results and audits to remote main after checks"
+}
