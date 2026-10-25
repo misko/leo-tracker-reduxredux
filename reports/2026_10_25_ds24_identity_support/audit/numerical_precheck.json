@@ -1,0 +1,62 @@
+{
+  "all_passed": true,
+  "source_hashes": {
+    "/srv/bulk/leo/research/ds24-identity-support-r01/audit/numerical_checks.py": "15af67908266ba8736d0d26e911df520b27ad919751634ab03bd4d9ca7a7400e",
+    "/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_bounds.py": "722938a6e3491fbfaae0c74382545e9a274fd3a395fd80a42011a5b8cae30283",
+    "/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_geometry.py": "a6b7cf196156dc8e35a62bf362676d81925bc7def7e7d3b1b9318587fd67d148",
+    "/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py": "30f42ef2ef498298bc66fa8f07a6677ab4b58d0df648024bf089df807b21ffba"
+  },
+  "sources_unchanged": true,
+  "checks": [
+    {
+      "name": "certificate agrees with original paired interpolation/rotation",
+      "passed": true,
+      "maximum_height_error_km": 9.094947017729282e-13
+    },
+    {
+      "name": "analytic frequency and physical-mode derivative bounds cover direct finite differences",
+      "passed": true,
+      "maximum_frequency_ratio": 0.8670886036665663,
+      "maximum_mode_ratio": 0.6789973427914023
+    },
+    {
+      "name": "full observation-space Gaussian/alias/prior integrals lie within physical enclosures",
+      "passed": true,
+      "lower_log_integrals": [
+        -32.14221066377013,
+        -42.8997134903856
+      ],
+      "oracle_log_integrals": [
+        -30.834483029080964,
+        -40.799765540595
+      ],
+      "upper_log_integrals": [
+        -28.543796401603704,
+        -34.84918835075549
+      ]
+    },
+    {
+      "name": "off-grid mixture cannot be certified by tiny quadrature errors",
+      "passed": true,
+      "interval_width_s": 0.01,
+      "objective_enclosure_width": 128456.78900090954
+    },
+    {
+      "name": "off-grid mixture cannot be certified by tiny quadrature errors",
+      "passed": true,
+      "interval_width_s": 0.1,
+      "objective_enclosure_width": 1734567.8900009093
+    },
+    {
+      "name": "off-grid mixture cannot be certified by tiny quadrature errors",
+      "passed": true,
+      "interval_width_s": 2.0,
+      "objective_enclosure_width": 224691357.8000009
+    }
+  ],
+  "numeric_seconds": 0.050350329373031855,
+  "corpus_propagation_calls": 0,
+  "position_fits": 0,
+  "synthetic_geometry_only": true,
+  "geographic_truth_read": false
+}

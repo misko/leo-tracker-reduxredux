@@ -1,0 +1,183 @@
+{
+  "cases": [
+    {
+      "case": "DS24-0011",
+      "trials": [
+        {
+          "case": "DS24-0011",
+          "trial": 0,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0011",
+          "trial": 1,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0011",
+          "trial": 2,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0011",
+          "trial": 3,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0011",
+          "trial": 4,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0011",
+          "trial": 5,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        }
+      ],
+      "scientific_worker_seconds": 176.754222700838,
+      "position_fits": 0,
+      "new_observations": 0,
+      "GPS_used": false
+    },
+    {
+      "case": "DS24-0010",
+      "trials": [
+        {
+          "case": "DS24-0010",
+          "trial": 0,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0010",
+          "trial": 1,
+          "status": "complete",
+          "arms": {
+            "c0": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            },
+            "fitted_c": {
+              "status": "complete",
+              "ordering_numerically_qualified": false
+            }
+          }
+        },
+        {
+          "case": "DS24-0010",
+          "trial": 2,
+          "status": "budget_or_context_failed",
+          "error": "TimeoutError('frozen scientific deadline')",
+          "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 223, in case_job\n    cd=candidates[norad];row,fun,ip,bp=score_candidate(cd,comp,support_cache[norad],exclusion_threshold)\n                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 116, in score_candidate\n    main=sm.log_integrate(fun,inner_pieces);brackets=sm.log_integrate(fun,bracket_pieces)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 44, in log_integrate\n    result=tanhsinh(wrapped,pieces[:,0],pieces[:,1],log=True,minlevel=0,maxlevel=6,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/integrate/_tanhsinh.py\", line 491, in tanhsinh\n    res = eim._loop(work, callback, shape, maxiter, f, args, dtype, pre_func_eval,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/_lib/_elementwise_iterative_method.py\", line 254, in _loop\n    f = func(x, *work.args)\n        ^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 42, in wrapped\n    for start in range(0,len(flat),CHUNK):values.append(fun(flat[start:start+CHUNK]))\n                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 109, in paired_frequency_modes\n    derivative = np.einsum(\"nd,nkd->nk\", position_gradient, dp) + np.einsum(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py\", line 1608, in einsum\n    return c_einsum(*operands, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n"
+        },
+        {
+          "case": "DS24-0010",
+          "trial": 3,
+          "status": "budget_or_context_failed",
+          "error": "TimeoutError('frozen scientific deadline')",
+          "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 223, in case_job\n    cd=candidates[norad];row,fun,ip,bp=score_candidate(cd,comp,support_cache[norad],exclusion_threshold)\n                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 116, in score_candidate\n    main=sm.log_integrate(fun,inner_pieces);brackets=sm.log_integrate(fun,bracket_pieces)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 44, in log_integrate\n    result=tanhsinh(wrapped,pieces[:,0],pieces[:,1],log=True,minlevel=0,maxlevel=6,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/integrate/_tanhsinh.py\", line 491, in tanhsinh\n    res = eim._loop(work, callback, shape, maxiter, f, args, dtype, pre_func_eval,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/_lib/_elementwise_iterative_method.py\", line 254, in _loop\n    f = func(x, *work.args)\n        ^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 42, in wrapped\n    for start in range(0,len(flat),CHUNK):values.append(fun(flat[start:start+CHUNK]))\n                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 109, in paired_frequency_modes\n    derivative = np.einsum(\"nd,nkd->nk\", position_gradient, dp) + np.einsum(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py\", line 1608, in einsum\n    return c_einsum(*operands, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n"
+        },
+        {
+          "case": "DS24-0010",
+          "trial": 4,
+          "status": "budget_or_context_failed",
+          "error": "TimeoutError('frozen scientific deadline')",
+          "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 223, in case_job\n    cd=candidates[norad];row,fun,ip,bp=score_candidate(cd,comp,support_cache[norad],exclusion_threshold)\n                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 116, in score_candidate\n    main=sm.log_integrate(fun,inner_pieces);brackets=sm.log_integrate(fun,bracket_pieces)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 44, in log_integrate\n    result=tanhsinh(wrapped,pieces[:,0],pieces[:,1],log=True,minlevel=0,maxlevel=6,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/integrate/_tanhsinh.py\", line 491, in tanhsinh\n    res = eim._loop(work, callback, shape, maxiter, f, args, dtype, pre_func_eval,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/_lib/_elementwise_iterative_method.py\", line 254, in _loop\n    f = func(x, *work.args)\n        ^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 42, in wrapped\n    for start in range(0,len(flat),CHUNK):values.append(fun(flat[start:start+CHUNK]))\n                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 109, in paired_frequency_modes\n    derivative = np.einsum(\"nd,nkd->nk\", position_gradient, dp) + np.einsum(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py\", line 1608, in einsum\n    return c_einsum(*operands, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n"
+        },
+        {
+          "case": "DS24-0010",
+          "trial": 5,
+          "status": "budget_or_context_failed",
+          "error": "TimeoutError('frozen scientific deadline')",
+          "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 223, in case_job\n    cd=candidates[norad];row,fun,ip,bp=score_candidate(cd,comp,support_cache[norad],exclusion_threshold)\n                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 116, in score_candidate\n    main=sm.log_integrate(fun,inner_pieces);brackets=sm.log_integrate(fun,bracket_pieces)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 44, in log_integrate\n    result=tanhsinh(wrapped,pieces[:,0],pieces[:,1],log=True,minlevel=0,maxlevel=6,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/integrate/_tanhsinh.py\", line 491, in tanhsinh\n    res = eim._loop(work, callback, shape, maxiter, f, args, dtype, pre_func_eval,\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/algo03-feasible-deps/scipy/_lib/_elementwise_iterative_method.py\", line 254, in _loop\n    f = func(x, *work.args)\n        ^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 42, in wrapped\n    for start in range(0,len(flat),CHUNK):values.append(fun(flat[start:start+CHUNK]))\n                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 109, in paired_frequency_modes\n    derivative = np.einsum(\"nd,nkd->nk\", position_gradient, dp) + np.einsum(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py\", line 1608, in einsum\n    return c_einsum(*operands, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n"
+        }
+      ],
+      "scientific_worker_seconds": 299.72769891796634,
+      "position_fits": 0,
+      "new_observations": 0,
+      "GPS_used": false
+    }
+  ],
+  "wall_seconds": 299.839315506164,
+  "total_scientific_seconds": 477.0128214000128,
+  "cap_seconds": 600,
+  "protocol_sha256": "2e44e6ae48873c4b0423f0ed57faa67a2e2a65109c5a759eb7e1a580b2486c07",
+  "all_selected_terminal": true,
+  "selected_trials": 12,
+  "selected_arm_rows": 24,
+  "maximum_candidate_contexts": 192,
+  "observations_regenerated": false,
+  "parent_relearned": false,
+  "position_fits": 0,
+  "GPS_used": false,
+  "identity_qualified": false
+}
