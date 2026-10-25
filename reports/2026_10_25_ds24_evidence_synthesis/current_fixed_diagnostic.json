@@ -1,0 +1,119 @@
+{
+  "scope": "Saved RF endpoints; local model-change proxies, not position-error gains",
+  "rows": [
+    {
+      "case": "DS24-0010",
+      "arm": "c0",
+      "status": "complete",
+      "movement_proxy_m": 130.45769929255755,
+      "weak_variance_change_pct": 19.88226356140195,
+      "objective_change": 3.0689368293242296,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0010",
+      "arm": "fitted_c",
+      "status": "complete",
+      "movement_proxy_m": 140.3357981226623,
+      "weak_variance_change_pct": 19.931460034366765,
+      "objective_change": 3.1808708444295917,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "c0",
+      "status": "complete",
+      "movement_proxy_m": 19.023504848687228,
+      "weak_variance_change_pct": 1.5235650332995787,
+      "objective_change": 0.6581369144914788,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "fitted_c",
+      "status": "complete",
+      "movement_proxy_m": 10.356643604815547,
+      "weak_variance_change_pct": 1.6627525304656166,
+      "objective_change": 0.7587248212803388,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0012",
+      "arm": "c0",
+      "status": "complete",
+      "movement_proxy_m": 41.243950812826874,
+      "weak_variance_change_pct": 24.98716111945136,
+      "objective_change": 1.8443001457926584,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0012",
+      "arm": "fitted_c",
+      "status": "complete",
+      "movement_proxy_m": 24.17664540666708,
+      "weak_variance_change_pct": 24.983350162148234,
+      "objective_change": 1.4027034583632485,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0013",
+      "arm": "c0",
+      "status": "complete",
+      "movement_proxy_m": 83.30270204854592,
+      "weak_variance_change_pct": 3.939043005248699,
+      "objective_change": -3.467722508532461,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    },
+    {
+      "case": "DS24-0013",
+      "arm": "fitted_c",
+      "status": "complete",
+      "movement_proxy_m": 79.60241479496356,
+      "weak_variance_change_pct": 3.987789291334143,
+      "objective_change": -1.6417203832606901,
+      "controls_pass": true,
+      "gradient_checks_pass": true,
+      "information_PSD_loss": true
+    }
+  ],
+  "position_fits_at_checkpoint": 0,
+  "GPS_used": false,
+  "protocol_sha256": "f9e4231d4552e1f19b0db627735424f7b7a1da2ed0dc6a69f1968ae6e7b6f3c6",
+  "fixed_seal_sha256": "e56e93a2ae554294cfaa7963b87825e5eb608d3214c29068cf7812272ea2576e",
+  "source_summary_sha256": "355010c210601f41abacb27a1aeba454a27e32fa66b7354073282125d2c95ba0",
+  "triage": {
+    "proceed_all_four_cases": true,
+    "triggers": [
+      {
+        "case": "DS24-0010",
+        "both_arms_movement": true,
+        "both_arms_variance": true
+      },
+      {
+        "case": "DS24-0012",
+        "both_arms_movement": false,
+        "both_arms_variance": true
+      },
+      {
+        "case": "DS24-0013",
+        "both_arms_movement": true,
+        "both_arms_variance": false
+      }
+    ],
+    "rule": "any case: BOTH arms movement>=.05km OR BOTH arms weak variance fractional increase>=.05"
+  }
+}
