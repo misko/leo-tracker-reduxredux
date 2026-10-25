@@ -1,0 +1,50 @@
+{
+  "cases": [
+    "DS23-0268",
+    "DS23-0405",
+    "DS23-0314",
+    "DS23-0153",
+    "DS23-0166"
+  ],
+  "engineering_cases": [
+    "DS23-0268",
+    "DS23-0405"
+  ],
+  "preexisting_random_pilots": [
+    "DS23-0314",
+    "DS23-0153",
+    "DS23-0166"
+  ],
+  "cohort_sha256": "0a6d700895ab0627a50b8b6e6f4e768009e7b9fb0fc4c22f653163185119b9a4",
+  "step_km": 0.25,
+  "local_grid": "3x3 around current RF-selected endpoint; no evaluation coordinate",
+  "rules": [
+    {
+      "samples": 512,
+      "seed": 2026102191
+    },
+    {
+      "samples": 2048,
+      "seed": 2026102191
+    },
+    {
+      "samples": 2048,
+      "seed": 2026102192
+    }
+  ],
+  "workers": 5,
+  "per_case_seconds": 240,
+  "exact_nonlinear_nominal_phase_Doppler_same_causal_bank": true,
+  "frozen_Gamma_precisions_at_each_original_VB_point": true,
+  "physical_shape_design_conditioned_at_existing_phase_reference": true,
+  "other_Gaussian_modes_integrated_analytically": true,
+  "curved_and_joint_predictive_evidence_compared": true,
+  "joint_phase_draws_only_score_evidence_and_never_update_curved_calibration": true,
+  "same_observations_labels_aliases_priors_and_c0_fitted_c": true,
+  "local_Newton_shift_is_diagnostic_not_a_new_regional_position_estimate": true,
+  "no_GPS_future_TLE_new_RF_or_position_adoption": true,
+  "source_tools": {
+    "probe_ds23_nonlinear_phase_integral.py": "2083aeec81394af1bde241eeca37794fe4a03215cb33861069b0d3368ef4675e",
+    "ds23_nonlinear_phase_integral.py": "dcaa9e36e2eb75bcb587740076ea07d2f6860d847003688a296e92b12822cc06"
+  }
+}
