@@ -1,0 +1,318 @@
+{
+  "arm": "c0",
+  "status": "complete",
+  "classes": [
+    {
+      "family": "whole_physical",
+      "status": "bounded",
+      "lower_log_evidence": -2495.9384060859943,
+      "upper_log_evidence": -714.1702009436353,
+      "window_upper_log_evidence": -2059.9539888888025,
+      "window_log_evidence": -2491.656471876268,
+      "window_objective": 4983.312943752536,
+      "normalized_cells": 1,
+      "class_prior": 0.25,
+      "within_class_window_weights": {
+        "whole_physical": 1.0
+      }
+    },
+    {
+      "family": "whole_polynomial",
+      "status": "bounded",
+      "lower_log_evidence": -630.728153557588,
+      "upper_log_evidence": -627.1140798343408,
+      "window_upper_log_evidence": -627.1140798343408,
+      "window_log_evidence": -629.8851483090843,
+      "window_objective": 1259.7702966181687,
+      "normalized_cells": 1,
+      "class_prior": 0.25,
+      "within_class_window_weights": {
+        "whole_polynomial": 1.0
+      }
+    },
+    {
+      "family": "split",
+      "status": "bounded",
+      "lower_log_evidence": -624.1448183663887,
+      "upper_log_evidence": -623.5882274651103,
+      "window_upper_log_evidence": -623.5882274651103,
+      "window_log_evidence": -623.8953754724814,
+      "window_objective": 1247.7907509449628,
+      "normalized_cells": 6,
+      "class_prior": 0.25,
+      "within_class_window_weights": {
+        "cut14_prefix": 0.5634794363070095,
+        "cut14_suffix": 0.0,
+        "cut21_prefix": 0.4365205636930102,
+        "cut21_suffix": 0.0,
+        "cut29_prefix": 2.3573282097928623e-112,
+        "cut29_suffix": 2.1587526258265944e-120
+      }
+    },
+    {
+      "family": "piecewise_polynomial",
+      "status": "bounded",
+      "lower_log_evidence": -659.4789317831652,
+      "upper_log_evidence": -629.5927000078265,
+      "window_upper_log_evidence": -629.5927000078265,
+      "window_log_evidence": -657.9893923248312,
+      "window_objective": 1315.9787846496624,
+      "normalized_cells": 3,
+      "class_prior": 0.25,
+      "within_class_window_weights": {
+        "cut14_polynomial": 0.4074121371119995,
+        "cut21_polynomial": 0.5877648387182608,
+        "cut29_polynomial": 0.00482302416976684
+      }
+    }
+  ],
+  "models": [
+    {
+      "name": "whole_polynomial",
+      "family": "whole_polynomial",
+      "cut": null,
+      "allocation": "whole",
+      "log_within_prior": 0.0,
+      "log_integral32": -629.8851483090845,
+      "log_integral64": -629.8851483090843,
+      "quadrature_difference_objective": 2.2737367544323206e-13,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -630.728153557588,
+        "upper_log_integral": -627.1140798343408,
+        "objective_width": 7.228147446494404,
+        "panels": 383,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut14_polynomial",
+      "family": "piecewise_polynomial",
+      "cut": 14,
+      "allocation": "both_unresolved",
+      "log_within_prior": -1.0986122886681098,
+      "log_integral32": -657.7887100201615,
+      "log_integral64": -657.7887100201615,
+      "quadrature_difference_objective": 0.0,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -659.3005859648822,
+        "upper_log_integral": -629.4041956098359,
+        "objective_width": 59.79278071009253,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut21_polynomial",
+      "family": "piecewise_polynomial",
+      "cut": 21,
+      "allocation": "both_unresolved",
+      "log_within_prior": -1.0986122886681098,
+      "log_integral32": -657.4222083813943,
+      "log_integral64": -657.4222083813942,
+      "quadrature_difference_objective": 2.2737367544323206e-13,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -658.8950629976182,
+        "upper_log_integral": -629.8068898072818,
+        "objective_width": 58.17634638067284,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut29_polynomial",
+      "family": "piecewise_polynomial",
+      "cut": 29,
+      "allocation": "both_unresolved",
+      "log_within_prior": -1.0986122886681098,
+      "log_integral32": -662.2251341627156,
+      "log_integral64": -662.2251341627156,
+      "quadrature_difference_objective": 0.0,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -663.9186044008339,
+        "upper_log_integral": -629.6074457524797,
+        "objective_width": 68.62231729670839,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut14_prefix",
+      "family": "split",
+      "cut": 14,
+      "allocation": "prefix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -622.6772404422219,
+      "log_integral64": -622.6772404422219,
+      "quadrature_difference_objective": 0.0,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -622.9139043930342,
+        "upper_log_integral": -622.3893904037171,
+        "objective_width": 1.049027978634058,
+        "panels": 512,
+        "absolute_precision": false,
+        "stopped_for_exclusion": false
+      }
+    },
+    {
+      "name": "cut14_suffix",
+      "family": "split",
+      "cut": 14,
+      "allocation": "suffix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -2326.827355044962,
+      "log_integral64": -2326.827355044955,
+      "quadrature_difference_objective": 1.4551915228366852e-11,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -2330.9452883020044,
+        "upper_log_integral": -1957.9183339236358,
+        "objective_width": 746.0539087567372,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut21_prefix",
+      "family": "split",
+      "cut": 21,
+      "allocation": "prefix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -622.9325357976579,
+      "log_integral64": -622.9325357976577,
+      "quadrature_difference_objective": 4.547473508864641e-13,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -623.1987194957167,
+        "upper_log_integral": -622.6010154036882,
+        "objective_width": 1.195408184056987,
+        "panels": 512,
+        "absolute_precision": false,
+        "stopped_for_exclusion": false
+      }
+    },
+    {
+      "name": "cut21_suffix",
+      "family": "split",
+      "cut": 21,
+      "allocation": "suffix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -1595.9294643576727,
+      "log_integral64": -1595.9294643576616,
+      "quadrature_difference_objective": 2.2282620193436742e-11,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -1599.6914560271043,
+        "upper_log_integral": -1336.6826263642122,
+        "objective_width": 526.0176593257843,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut29_prefix",
+      "family": "split",
+      "cut": 29,
+      "allocation": "prefix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -879.1356175553701,
+      "log_integral64": -879.1356175553692,
+      "quadrature_difference_objective": 1.8189894035458565e-12,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -882.3472103446927,
+        "upper_log_integral": -727.3185232234191,
+        "objective_width": 310.0573742425472,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "cut29_suffix",
+      "family": "split",
+      "cut": 29,
+      "allocation": "suffix",
+      "log_within_prior": -1.791759469228055,
+      "log_integral32": -897.6442965956974,
+      "log_integral64": -897.6442965956965,
+      "quadrature_difference_objective": 1.8189894035458565e-12,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -900.8876468149508,
+        "upper_log_integral": -764.3546474529348,
+        "objective_width": 273.06599872403194,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    },
+    {
+      "name": "whole_physical",
+      "family": "whole_physical",
+      "cut": null,
+      "allocation": "whole",
+      "log_within_prior": 0.0,
+      "log_integral32": -2491.6564718762747,
+      "log_integral64": -2491.656471876268,
+      "quadrature_difference_objective": 1.3642420526593924e-11,
+      "independent_quadrature_passed": true,
+      "window_only": true,
+      "bounds": {
+        "resolved": true,
+        "lower_log_integral": -2495.9384060859943,
+        "upper_log_integral": -2059.9539888888025,
+        "objective_width": 871.9688343943835,
+        "panels": 255,
+        "absolute_precision": false,
+        "stopped_for_exclusion": true
+      }
+    }
+  ],
+  "ordering": {
+    "proved": true,
+    "winner": "split",
+    "minimum_log_evidence_margin": 2.969261467952151,
+    "identity_assignment": false,
+    "portion_adoption": false,
+    "absolute_precision_implied": false
+  },
+  "remote_guard": -714.1702009436353,
+  "geometry_propagated_nodes": 25592,
+  "scientific_worker_seconds": 21.729818067979068,
+  "all100IDs_scored": true,
+  "portion_adopted": false,
+  "identity_assignment": false,
+  "position_fits": 0,
+  "GPS_used": false
+}
