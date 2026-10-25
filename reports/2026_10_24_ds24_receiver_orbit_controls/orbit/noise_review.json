@@ -1,0 +1,53 @@
+{
+  "review": "Independent read-only noise control audit",
+  "cases": 24,
+  "folds": 72,
+  "all_saved_group_partitions_disjoint": true,
+  "training_only_law_call_paths_reviewed": true,
+  "maximum_saved_fold_gain_replay_gap": 0.0,
+  "positive_folds": 67,
+  "algebra_direct_vs_Cholesky_difference": 0.0,
+  "no_GPS_or_position_predictions_used_in_noise_law_fit": true,
+  "adapter_applies_per_ID_noise_to_curved_and_predictive_rows": true,
+  "adapter_copies_scan_and_noise_dictionary": true,
+  "blocking_implementation_issues_found": false,
+  "findings": [
+    {
+      "severity": "scope",
+      "file": "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/noise_controls.py",
+      "line": 62,
+      "title": "Heldout validation is conditional on the frozen graph",
+      "detail": "Curvature screening, piece membership/degrees and nominated-family grouping were determined from the complete frozen graph. Their selection is not retrained inside folds. The protocol already discloses this, so claims should remain a conditional noise-law comparison rather than independent pipeline/noise-truth validation."
+    },
+    {
+      "severity": "scope",
+      "file": "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/noise_controls.py",
+      "line": 88,
+      "title": "Whole-family holdouts do not establish time-block transfer",
+      "detail": "The seeded folds group nominated families and unmatched tracks, not time blocks. Shared receiver disturbances can span held families at the same times; unknown shared emitters can also be undergrouped. This is not a flaw in the stated family-only protocol, but the result should not be presented as randomized time-block or temporal-transfer validation."
+    },
+    {
+      "severity": "nonblocking_numerical_limitation",
+      "file": "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/noise_controls.py",
+      "line": 32,
+      "title": "Training noise fit is a plug-in surrogate",
+      "detail": "Leverage-corrected residual squares are correlated and mix neighboring variances under heteroscedasticity. The inherited fit_variance optimizer profiles an unclipped law, while learn/variance score and apply its clipped version. Thus the training BIC quantity is a selection heuristic, not an exact likelihood/BIC for independent raw errors. The heldout full-contrast covariance and its determinant are algebraically correct and protect the stated model comparison."
+    },
+    {
+      "severity": "scope",
+      "file": "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/adapter.py",
+      "line": 21,
+      "title": "Predictive-point noise transfer is not separately validated",
+      "detail": "Noise laws are estimated and cross-validated on curved graph pieces, then applied by receiver/margin to predictive-only points as well. This matches the inherited plug-in architecture but does not independently establish those points' true frequency-error variance."
+    }
+  ],
+  "sibling_noise_files_changed": false,
+  "no_refits_or_model_tuning": true,
+  "sha256": {
+    "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/noise_controls.py": "d54bce28938e5bd35bf33488dc4212e28c52d2c53c5600236dbca2490506fbc2",
+    "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/adapter.py": "c4a9588a39c755a8d6cb43e9635bd365efed91ade7855b5a1db28f167dba6c0a",
+    "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/protocol.json": "b730b2469889c7fbe3c7dbc156f7acbb4dcf232899be1db1554c9c9234be9dab",
+    "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/summary.json": "43b7f0accec67b2043b415b3093ccfc00ad5d551a16fded6696948591a1baebc",
+    "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/noise/test_noise_controls.py": "8d7007f843a9dd5a86eed55254fbeef0131ab9c6aa0df81752deaf181bd025c8"
+  }
+}

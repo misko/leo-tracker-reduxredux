@@ -1,0 +1,23 @@
+{
+  "seed": 2026102501,
+  "sample_satellites": 1024,
+  "alternatives": 1,
+  "alternative": "Four-coordinate phase/shape correlation with fixed 0.5 shrinkage toward identity; all marginal scales unchanged",
+  "workers": 4,
+  "group_folds": 4,
+  "publication_block_seconds": 21600.0,
+  "randomized_satellite_and_time_block_groups": true,
+  "chronological_split_is_not_primary_validation": true,
+  "each_prediction_uses_only_earlier_training_blocks": true,
+  "shared_TLE_endpoint_purging": true,
+  "all_preprocessing_and_baseline_phase_location_fitted_on_training_only": true,
+  "minimum_training_rows": 300,
+  "minimum_training_satellites": 60,
+  "minimum_test_rows": 10,
+  "qualification": "Both random grouping schemes: gain>6logN and satellite/time-block 95% descriptive cluster-bootstrap lower gain>0; native-basis compatibility and remainder checks also required",
+  "representation_gate": "median unexplained state energy fraction<0.1 and p90<0.5; no rank deficiency",
+  "input_window": "Frozen per-scan causal histories, deduplicated TLE byte triples; target window ends before source scan cutoff",
+  "no_RF_IQ_GPS_postscan_TLE_or_DS23_frozen_banks": true,
+  "no_position_fits_in_this_script": true,
+  "TLE_updates_are_correlated_prediction_proxies_not_orbit_truth": true
+}

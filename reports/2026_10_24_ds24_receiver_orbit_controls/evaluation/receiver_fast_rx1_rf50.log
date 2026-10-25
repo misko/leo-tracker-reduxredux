@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/evaluation/run_cohort.py", line 30, in <module>
+    a=p.parse_args();main(a.protocol,a.workers)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/evaluation/run_cohort.py", line 12, in main
+    protocol,_=load_protocol(protocol_path);began=time.monotonic();rows=[]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/evaluation/matched_controls.py", line 135, in load_protocol
+    raise ValueError('frozen proposal dependency changed: '+item['path'])
+ValueError: frozen proposal dependency changed: /srv/bulk/leo/research/ds24-receiver-orbit-controls-20261025/receiver/adapter.py
