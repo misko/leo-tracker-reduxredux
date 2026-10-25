@@ -1,0 +1,101 @@
+{
+  "version": "uncertain new-family nonlinear execution03 technical preflight repair",
+  "cases": [
+    "DS24-0095",
+    "DS24-0087"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "branches": [
+    "predictive_shape_zero",
+    "predictive_shape_prior"
+  ],
+  "target_bindings_sha256": "ada4d89ea59ea07f9db71812a8e499cc2187847cac4398e2567a88b8852d935d",
+  "preparation01_sha256": "3a355a09dc44060a0f918b90fe02a0c76844532cdaf02e3b669436f6c974bbcd",
+  "preparation02_protocol_sha256": "4146773ca2b2785a486f0b5008b184de4390321342d8e5f630dd390a35cae4ce",
+  "preparation02_result_sha256": "7da033afd7b8bc8a217209724d471d9c96758bc2f77dc2749e4c687c33937a96",
+  "amendment_sha256": "939fec1c5867f02006cc2c9bfabfa9eda776412adb2f04b45bad88e5b583d987",
+  "source_sha256": {
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/adapter.py": "7dcd0fa598fa67a02de1c429ab9765554e6b926884e12070b161e9848f42d02d",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py": "b44358372a9ce2a4a0e143342e6f2cbbf934ae632cc19afead00be2a1ce34b07",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/prepare02.py": "774e92b804ca2f6446f5856b2426f1d9a735bebd71d0f25e0e62abf3157340c7",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/test_adapter.py": "e180c86f1c7dcf352332cf029cac542cbe8c95729a950dcb183c867888b21fbd",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/test_quadrature02.py": "60e0002fcc00c17a23cf95d69c14945fa31df3324f02d34096958fb061afd9b9",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/execution03.py": "5806c3e381aff13d6b2605be372736b1f5aba68a6efe59b47da3fa4177e9d1d1",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/test_execution03.py": "2a6034a0d877679f5ec6c5c98caf9512350d3a7f02b940ad144514163723b6b9"
+  },
+  "superseded_execution02_protocol_sha256": "fcda70e70c70a2bb29b86a8847564b1aa9ec3b3a1fdf7cd9927f3cd25694d158",
+  "superseded_execution02_source_sha256": "4bd152abeb7aeba4d3bdfd0968dd87bbac451bea961c21e83c44ab4ba9be9404",
+  "repair": "original single-arm validity predicates and explicit declared-file seal checks; likelihood/quadrature/fit budgets unchanged",
+  "fixed_common_phase_nodes": 1281,
+  "quadrature": "phase-space Gauss-Legendre with analytic conditioned Student prior; no per-position rule changes",
+  "phase_domain_s": [
+    -15.0,
+    15.0
+  ],
+  "phase_prior": "original causal location, unit-marginal-variance Student scale, nu3 conditioned[-15,+15]; no recenter/shrink",
+  "phase_posterior": "diagnostic inference under marginalization; no optimized/calibration target phase coordinate and no target Gamma learning",
+  "covariance": "p(E|C)*integral p(T|E,C,phi)p(phi|domain)dphi; one shared parent posterior, target radio-only shared design, no dormant doublecount",
+  "shape_only_branch_difference": true,
+  "target_constant_sigma_hz": 300.0,
+  "target_noise": "existing predictive fixed-window sigma times sqrt2 unseen-Gamma convention; no target power or variance fitting",
+  "profile_positions_per_case_arm": 11,
+  "maximum_profile_branch_evaluations": 88,
+  "profile_phase_reference": "saved original parent arm reference fixed across segment; parent nuisance/Gamma recomputed at every fixed position",
+  "profile_segment": "saved baseline to saved phase-only support, equal fractions0..1; no global-minimum or profile-CI claim",
+  "maximum_position_fits": 8,
+  "numerical_workers": 2,
+  "BLAS_threads_per_worker": 1,
+  "per_arm_seconds": 180.0,
+  "global_seconds": 1200.0,
+  "start_east_north_km": [
+    0.0,
+    0.0
+  ],
+  "regional_center_latlon": [
+    37.906,
+    -122.545
+  ],
+  "regional_width_km": 25.0,
+  "phase_rounds": 5,
+  "position_iterations_per_round": 48,
+  "solver": "unchanged bounded_gauss_newton through existing fit helper; scalar target mixture residual changes GN curvature, exact objective retained",
+  "initial_parent_phase_reference": "zero, as original ordinary cold fit",
+  "parent_phase_refresh": "parent curved posterior only; clip original parent phase references to[-15,+15] between fixed five rounds",
+  "target_phase_reference_refresh": false,
+  "multistart": false,
+  "constrained_rescue": false,
+  "unexpected_failure": "visible failure/timeout row; no retry, new proposal, budget extension or alternative optimizer",
+  "optimizer_scalar": "original parent residual squared + complete normalized target conditional mixture NLL + original parent visibility; target NLL appended once as sqrt(score)",
+  "target_density_positivity": "fixed sigmas>1Hz and covariance>=diag(sigma^2), normalized conditioned prior; unexpected negative score raises, never clipped",
+  "phase_visibility": "all frozen quadrature nodes and both domain endpoints directly propagated; any negative elevation/invalid propagation fails arm, no dropped nodes or visibility truncation",
+  "parent_gates": "exact original r.valid on single-arm summary duplicated for both arm keys: nonempty compatible retained/predictive tracks, finite2D endpoint within +/-12.5km, final phase change<=.01s, max absolute posterior phase<=15.000001s; original support/visibility plus Gamma logchange<=1e-5",
+  "parent_IDs": "original accepted and likelihood IDs protected; postfit compatibility evaluated by original parent-only construction; explicitly exclude all targetIDs from accepted coverage",
+  "target_gate": "no calibrated experimental target association gate; target remains unqualified even if parents and numerical checks pass",
+  "target_likelihood_membership": "49/43 additional experimental predictive inputs, never new accepted associations or calibrated orbit family",
+  "operational_policy": "saved_baseline for every outcome",
+  "endpoint_numerical_qualification": {
+    "final_parent_phase_reference": true,
+    "center_and_axis_offsets": 5,
+    "central_difference_step_km": 0.01,
+    "frozen_nodes": 1281,
+    "strictly_denser_nodes": 2561,
+    "independent_reference": "adaptive phase-space QUADPACK over full domain with direct propagation",
+    "score_absolute_tolerance": 0.001,
+    "gradient_absolute_tolerance_per_km": 0.001,
+    "prior_mass_absolute_tolerance": 1e-08,
+    "budget": "all time charged to same180s/arm and1200s global; raw fitted endpoint checkpoint precedes qualification",
+    "failure": "numerically unqualified diagnostic endpoint, no refinement/retry, saved baseline fallback"
+  },
+  "diagnostic_edge_mass": "posterior quadrature mass for abs(phi)>14s, no prior-domain tuning",
+  "RF_seal_precedes_GPS": true,
+  "no_GPS": true,
+  "no_new_IQ_RF_catalogue_or_candidates": true,
+  "required_receipts": [
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/math_audit/preflight02.json",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/audit/preflight02.json",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/coordinator_go.json"
+  ]
+}

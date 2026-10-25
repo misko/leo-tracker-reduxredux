@@ -1,0 +1,753 @@
+{
+  "stage": "pre_fit_phase_linearization",
+  "new_position_fits": 0,
+  "GPS_used": false,
+  "projection": "native-sigma weighted removal of target constant and local causal-phase derivative",
+  "source_sha256": "71c11bf9ba334de4b0414f8a2cc64c743d9a875f8609fb5086d8173ecd91c0a5",
+  "cases": [
+    {
+      "case": "DS24-0095",
+      "target": {
+        "component": "DS24-0095-RX1-CH5-T003-RF11709687500.000000",
+        "candidate_index": 1026,
+        "norad": 65500,
+        "alias": 1
+      },
+      "track_index": 72,
+      "points": 49,
+      "target_ids_sha256": "384459abd7bf4fded3e07225027591745290fb54b2d34e77a862596c671b2c1a",
+      "prior_probability_outside_15s_domain": 0.028463804497526925,
+      "phase_prior_note": "unit-variance Student marginal is unbounded; truncation would be a new explicit prior-conditioning choice",
+      "original_selected_binding": {
+        "path": "/srv/bulk/leo/research/ds24-movement-policy-r01/recovery/eligibility02/DS24-0095/result.json",
+        "sha256": "4cd8062481992f8f80bdebf1e9464600b70ce8255ab3bc9e4fc59bbb23a26a38"
+      },
+      "evaluations": [
+        {
+          "case": "DS24-0095",
+          "arm": "c0",
+          "endpoint": "baseline",
+          "position_east_north_km": [
+            5.564320769498729,
+            -6.3095152789436835
+          ],
+          "target_points": 49,
+          "phase_mean_s": -2.2967739971729824,
+          "phase_marginal_sd_s": 6.28213994635593,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 65500,
+            "previous_available": true,
+            "radial_sigma_km": 1.953152109154484,
+            "cross_sigma_km": 0.23543072296219814,
+            "old_alignment_s": 5.612893748871608,
+            "mean_motion_sigma_rev_day": 0.006577551318272192,
+            "inclination_sigma_deg": 0.0019737105308516,
+            "raan_sigma_deg": 0.002466141093312147
+          },
+          "shape_RMS_marginal_hz": 219.21794812450878,
+          "projected_shape_RMS_marginal_hz": 34.13358669911523,
+          "projected_shape_RMS_native_sigma_units": 0.6282182793827661,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -14.861053889884843,
+              "offset_s": -12.56427989271186,
+              "raw_RMS_error_hz": 3435.96264192234,
+              "raw_max_error_hz": 3936.8009768637203,
+              "projected_RMS_error_hz": 425.6386917358003,
+              "projected_max_error_hz": 983.0388982881478,
+              "projected_RMS_error_native_sigma_units": 7.8361731602758375
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -8.578913943528914,
+              "offset_s": -6.28213994635593,
+              "raw_RMS_error_hz": 838.3590543506011,
+              "raw_max_error_hz": 989.5506339715466,
+              "projected_RMS_error_hz": 115.56823439945543,
+              "projected_max_error_hz": 271.19440247652375,
+              "projected_RMS_error_native_sigma_units": 2.1275958847548706
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 3.985365949182948,
+              "offset_s": 6.28213994635593,
+              "raw_RMS_error_hz": 775.4758391572499,
+              "raw_max_error_hz": 990.724695214336,
+              "projected_RMS_error_hz": 128.5721692934568,
+              "projected_max_error_hz": 312.5014653888041,
+              "projected_RMS_error_native_sigma_units": 2.3669140983938446
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 10.267505895538878,
+              "offset_s": 12.56427989271186,
+              "raw_RMS_error_hz": 2934.964413876828,
+              "raw_max_error_hz": 3951.50299446204,
+              "projected_RMS_error_hz": 524.7297009175672,
+              "projected_max_error_hz": 1303.600738531188,
+              "projected_RMS_error_native_sigma_units": 9.65889790774921
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -13.839491436055383,
+              "offset_s": -11.5427174388824,
+              "raw_RMS_error_hz": 2890.331123345165,
+              "raw_max_error_hz": 3325.9863322156816,
+              "projected_RMS_error_hz": 364.4664665976678,
+              "projected_max_error_hz": 843.7912553595809,
+              "projected_RMS_error_native_sigma_units": 6.709949635068067
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 9.245943441709416,
+              "offset_s": 11.542717438882399,
+              "raw_RMS_error_hz": 2501.3247145725445,
+              "raw_max_error_hz": 3336.3319186381013,
+              "projected_RMS_error_hz": 442.19232349959043,
+              "projected_max_error_hz": 1094.6185983249184,
+              "projected_RMS_error_native_sigma_units": 8.139742335581891
+            }
+          ]
+        },
+        {
+          "case": "DS24-0095",
+          "arm": "c0",
+          "endpoint": "support",
+          "position_east_north_km": [
+            6.650534449246762,
+            -6.215691397801347
+          ],
+          "target_points": 49,
+          "phase_mean_s": -2.2967739971729824,
+          "phase_marginal_sd_s": 6.28213994635593,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 65500,
+            "previous_available": true,
+            "radial_sigma_km": 1.953152109154484,
+            "cross_sigma_km": 0.23543072296219814,
+            "old_alignment_s": 5.612893748871608,
+            "mean_motion_sigma_rev_day": 0.006577551318272192,
+            "inclination_sigma_deg": 0.0019737105308516,
+            "raan_sigma_deg": 0.002466141093312147
+          },
+          "shape_RMS_marginal_hz": 219.26126280775708,
+          "projected_shape_RMS_marginal_hz": 33.90888393889399,
+          "projected_shape_RMS_native_sigma_units": 0.6240744455649064,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -14.861053889884843,
+              "offset_s": -12.56427989271186,
+              "raw_RMS_error_hz": 3435.35419369406,
+              "raw_max_error_hz": 3931.78461560046,
+              "projected_RMS_error_hz": 422.70816230619505,
+              "projected_max_error_hz": 976.9347665587536,
+              "projected_RMS_error_native_sigma_units": 7.78212712750478
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -8.578913943528914,
+              "offset_s": -6.28213994635593,
+              "raw_RMS_error_hz": 838.420720890128,
+              "raw_max_error_hz": 988.2717052744265,
+              "projected_RMS_error_hz": 114.8014431633028,
+              "projected_max_error_hz": 269.5681460318075,
+              "projected_RMS_error_native_sigma_units": 2.1134535534858974
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 3.985365949182948,
+              "offset_s": 6.28213994635593,
+              "raw_RMS_error_hz": 775.969294569757,
+              "raw_max_error_hz": 989.4557271961166,
+              "projected_RMS_error_hz": 127.80353606432227,
+              "projected_max_error_hz": 310.80569342065246,
+              "projected_RMS_error_native_sigma_units": 2.3527361386353633
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 10.267505895538878,
+              "offset_s": 12.56427989271186,
+              "raw_RMS_error_hz": 2937.6963511632252,
+              "raw_max_error_hz": 3945.726546527836,
+              "projected_RMS_error_hz": 521.8033565856025,
+              "projected_max_error_hz": 1297.0280874751568,
+              "projected_RMS_error_native_sigma_units": 9.60491705036644
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -13.839491436055383,
+              "offset_s": -11.5427174388824,
+              "raw_RMS_error_hz": 2889.931952168321,
+              "raw_max_error_hz": 3321.145730670898,
+              "projected_RMS_error_hz": 361.97049879950947,
+              "projected_max_error_hz": 838.5776819507871,
+              "projected_RMS_error_native_sigma_units": 6.663917503230768
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 9.245943441709416,
+              "offset_s": 11.542717438882399,
+              "raw_RMS_error_hz": 2503.534020075761,
+              "raw_max_error_hz": 3331.3301223640374,
+              "projected_RMS_error_hz": 439.6963317733917,
+              "projected_max_error_hz": 1089.0276382057395,
+              "projected_RMS_error_native_sigma_units": 8.093700312627439
+            }
+          ]
+        },
+        {
+          "case": "DS24-0095",
+          "arm": "fitted_c",
+          "endpoint": "baseline",
+          "position_east_north_km": [
+            5.642851401601418,
+            -6.3104588469912075
+          ],
+          "target_points": 49,
+          "phase_mean_s": -2.2967739971729824,
+          "phase_marginal_sd_s": 6.28213994635593,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 65500,
+            "previous_available": true,
+            "radial_sigma_km": 1.953152109154484,
+            "cross_sigma_km": 0.23543072296219814,
+            "old_alignment_s": 5.612893748871608,
+            "mean_motion_sigma_rev_day": 0.006577551318272192,
+            "inclination_sigma_deg": 0.0019737105308516,
+            "raan_sigma_deg": 0.002466141093312147
+          },
+          "shape_RMS_marginal_hz": 219.22819943271662,
+          "projected_shape_RMS_marginal_hz": 34.116521999898076,
+          "projected_shape_RMS_native_sigma_units": 0.6279035410465839,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -14.861053889884843,
+              "offset_s": -12.56427989271186,
+              "raw_RMS_error_hz": 3435.9890568458495,
+              "raw_max_error_hz": 3936.4804502153493,
+              "projected_RMS_error_hz": 425.41432062666615,
+              "projected_max_error_hz": 982.5718216780657,
+              "projected_RMS_error_native_sigma_units": 7.832034853109427
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -8.578913943528914,
+              "offset_s": -6.28213994635593,
+              "raw_RMS_error_hz": 838.382703811491,
+              "raw_max_error_hz": 989.46861700714,
+              "projected_RMS_error_hz": 115.50982856746784,
+              "projected_max_error_hz": 271.07070047147295,
+              "projected_RMS_error_native_sigma_units": 2.1265185686452783
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 3.985365949182948,
+              "offset_s": 6.28213994635593,
+              "raw_RMS_error_hz": 775.5331250633781,
+              "raw_max_error_hz": 990.6434527785823,
+              "projected_RMS_error_hz": 128.5143030524385,
+              "projected_max_error_hz": 312.3742464740111,
+              "projected_RMS_error_native_sigma_units": 2.3658465777883064
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 10.267505895538878,
+              "offset_s": 12.56427989271186,
+              "raw_RMS_error_hz": 2935.2507931223554,
+              "raw_max_error_hz": 3951.1178928509034,
+              "projected_RMS_error_hz": 524.5107909114936,
+              "projected_max_error_hz": 1303.1117646364305,
+              "projected_RMS_error_native_sigma_units": 9.654859155427765
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -13.839491436055383,
+              "offset_s": -11.5427174388824,
+              "raw_RMS_error_hz": 2890.3625933813873,
+              "raw_max_error_hz": 3325.6646859494285,
+              "projected_RMS_error_hz": 364.27552087619927,
+              "projected_max_error_hz": 843.3926877250775,
+              "projected_RMS_error_native_sigma_units": 6.706427785221354
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 9.245943441709416,
+              "offset_s": 11.542717438882399,
+              "raw_RMS_error_hz": 2501.559225202677,
+              "raw_max_error_hz": 3335.99630770614,
+              "projected_RMS_error_hz": 442.005410302753,
+              "projected_max_error_hz": 1094.2020643359242,
+              "projected_RMS_error_native_sigma_units": 8.136293944491321
+            }
+          ]
+        },
+        {
+          "case": "DS24-0095",
+          "arm": "fitted_c",
+          "endpoint": "support",
+          "position_east_north_km": [
+            6.832237187661498,
+            -6.220876626581878
+          ],
+          "target_points": 49,
+          "phase_mean_s": -2.2967739971729824,
+          "phase_marginal_sd_s": 6.28213994635593,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 65500,
+            "previous_available": true,
+            "radial_sigma_km": 1.953152109154484,
+            "cross_sigma_km": 0.23543072296219814,
+            "old_alignment_s": 5.612893748871608,
+            "mean_motion_sigma_rev_day": 0.006577551318272192,
+            "inclination_sigma_deg": 0.0019737105308516,
+            "raan_sigma_deg": 0.002466141093312147
+          },
+          "shape_RMS_marginal_hz": 219.28743678008223,
+          "projected_shape_RMS_marginal_hz": 33.86944245028877,
+          "projected_shape_RMS_native_sigma_units": 0.62334699848766,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -14.861053889884843,
+              "offset_s": -12.56427989271186,
+              "raw_RMS_error_hz": 3435.4316808060807,
+              "raw_max_error_hz": 3931.05018418502,
+              "projected_RMS_error_hz": 422.1884246987878,
+              "projected_max_error_hz": 975.8503380656517,
+              "projected_RMS_error_native_sigma_units": 7.772541212843704
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -8.578913943528914,
+              "offset_s": -6.28213994635593,
+              "raw_RMS_error_hz": 838.4800792840477,
+              "raw_max_error_hz": 988.0837064260086,
+              "projected_RMS_error_hz": 114.66620156581531,
+              "projected_max_error_hz": 269.28107239588394,
+              "projected_RMS_error_native_sigma_units": 2.1109590102605895
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 3.985365949182948,
+              "offset_s": 6.28213994635593,
+              "raw_RMS_error_hz": 776.1075985169757,
+              "raw_max_error_hz": 989.2695107281688,
+              "projected_RMS_error_hz": 127.66965716157625,
+              "projected_max_error_hz": 310.510739021185,
+              "projected_RMS_error_native_sigma_units": 2.3502663609609007
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 10.267505895538878,
+              "offset_s": 12.56427989271186,
+              "raw_RMS_error_hz": 2938.3841373409614,
+              "raw_max_error_hz": 3944.8405299731494,
+              "projected_RMS_error_hz": 521.2971472373197,
+              "projected_max_error_hz": 1295.8950635757426,
+              "projected_RMS_error_native_sigma_units": 9.595577902423997
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -13.839491436055383,
+              "offset_s": -11.5427174388824,
+              "raw_RMS_error_hz": 2890.0188773388622,
+              "raw_max_error_hz": 3320.406057268985,
+              "projected_RMS_error_hz": 361.5282149661709,
+              "projected_max_error_hz": 837.6523801940125,
+              "projected_RMS_error_native_sigma_units": 6.655760030644647
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 9.245943441709416,
+              "offset_s": 11.542717438882399,
+              "raw_RMS_error_hz": 2504.0975815064676,
+              "raw_max_error_hz": 3330.557536889879,
+              "projected_RMS_error_hz": 439.2640731041057,
+              "projected_max_error_hz": 1088.0623718409342,
+              "projected_RMS_error_native_sigma_units": 8.085725589707966
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "DS24-0087",
+      "target": {
+        "component": "DS24-0087-RX2-CH7-T000-RF12209687500.000000",
+        "candidate_index": 450,
+        "norad": 57752,
+        "alias": 0
+      },
+      "track_index": 110,
+      "points": 43,
+      "target_ids_sha256": "8baac9fbb9df1251d189e17e1c55c6559e0c94ed50289f7255dc0531913d593e",
+      "prior_probability_outside_15s_domain": 4.9429974137642354e-05,
+      "phase_prior_note": "unit-variance Student marginal is unbounded; truncation would be a new explicit prior-conditioning choice",
+      "original_selected_binding": {
+        "path": "/srv/bulk/leo/research/ds24-movement-policy-r01/recovery/eligibility02/DS24-0087/result.json",
+        "sha256": "7364a15b71e7c372c6f611d43264fc99039456782674025558aaca5af98c50f8"
+      },
+      "evaluations": [
+        {
+          "case": "DS24-0087",
+          "arm": "c0",
+          "endpoint": "baseline",
+          "position_east_north_km": [
+            4.68061007171052,
+            -4.916728084043125
+          ],
+          "target_points": 43,
+          "phase_mean_s": -0.35918964676393517,
+          "phase_marginal_sd_s": 0.7323909850222212,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 57752,
+            "previous_available": true,
+            "radial_sigma_km": 0.05,
+            "cross_sigma_km": 0.11027219119359168,
+            "old_alignment_s": 0.11185246875397349,
+            "mean_motion_sigma_rev_day": 0.00016710167258048717,
+            "inclination_sigma_deg": 0.0009215219993226133,
+            "raan_sigma_deg": 0.0013512186427090973
+          },
+          "shape_RMS_marginal_hz": 59.04698253467474,
+          "projected_shape_RMS_marginal_hz": 0.8550173861244075,
+          "projected_shape_RMS_native_sigma_units": 0.01334153896429266,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -1.8239716168083775,
+              "offset_s": -1.4647819700444424,
+              "raw_RMS_error_hz": 43.42255151572911,
+              "raw_max_error_hz": 59.132109569895874,
+              "projected_RMS_error_hz": 5.6283323317496095,
+              "projected_max_error_hz": 13.435989280064097,
+              "projected_RMS_error_native_sigma_units": 0.08783001974445612
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -1.0915806317861563,
+              "offset_s": -0.7323909850222212,
+              "raw_RMS_error_hz": 10.950974118666895,
+              "raw_max_error_hz": 15.028337361022295,
+              "projected_RMS_error_hz": 1.4171953071579182,
+              "projected_max_error_hz": 3.3836885472225853,
+              "projected_RMS_error_native_sigma_units": 0.022113384770785102
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 0.37320133825828605,
+              "offset_s": 0.7323909850222212,
+              "raw_RMS_error_hz": 11.089717496870968,
+              "raw_max_error_hz": 15.00972413346517,
+              "projected_RMS_error_hz": 1.4186192205758146,
+              "projected_max_error_hz": 3.27978531378894,
+              "projected_RMS_error_native_sigma_units": 0.02214589806470692
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 1.1055923232805074,
+              "offset_s": 1.4647819700444424,
+              "raw_RMS_error_hz": 44.70154979992202,
+              "raw_max_error_hz": 59.34082317753746,
+              "projected_RMS_error_hz": 5.579523143326745,
+              "projected_max_error_hz": 13.160321351696563,
+              "projected_RMS_error_native_sigma_units": 0.08708339605870564
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -1.704874758379448,
+              "offset_s": -1.3456851116155129,
+              "raw_RMS_error_hz": 36.696003512105094,
+              "raw_max_error_hz": 49.940924934384384,
+              "projected_RMS_error_hz": 4.749242891462792,
+              "projected_max_error_hz": 11.343982856905823,
+              "projected_RMS_error_native_sigma_units": 0.07411109631254
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 0.9864954648515772,
+              "offset_s": 1.3456851116155124,
+              "raw_RMS_error_hz": 37.68452536167709,
+              "raw_max_error_hz": 50.11772609301897,
+              "projected_RMS_error_hz": 4.714710639758457,
+              "projected_max_error_hz": 11.107614469488489,
+              "projected_RMS_error_native_sigma_units": 0.07358534367392507
+            }
+          ]
+        },
+        {
+          "case": "DS24-0087",
+          "arm": "c0",
+          "endpoint": "support",
+          "position_east_north_km": [
+            4.63400822412202,
+            -5.014548672071909
+          ],
+          "target_points": 43,
+          "phase_mean_s": -0.35918964676393517,
+          "phase_marginal_sd_s": 0.7323909850222212,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 57752,
+            "previous_available": true,
+            "radial_sigma_km": 0.05,
+            "cross_sigma_km": 0.11027219119359168,
+            "old_alignment_s": 0.11185246875397349,
+            "mean_motion_sigma_rev_day": 0.00016710167258048717,
+            "inclination_sigma_deg": 0.0009215219993226133,
+            "raan_sigma_deg": 0.0013512186427090973
+          },
+          "shape_RMS_marginal_hz": 59.04243785781871,
+          "projected_shape_RMS_marginal_hz": 0.8543848209985722,
+          "projected_shape_RMS_native_sigma_units": 0.013331674226685282,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -1.8239716168083775,
+              "offset_s": -1.4647819700444424,
+              "raw_RMS_error_hz": 43.44086349231693,
+              "raw_max_error_hz": 59.138373472495005,
+              "projected_RMS_error_hz": 5.6252750425379805,
+              "projected_max_error_hz": 13.42839643325244,
+              "projected_RMS_error_native_sigma_units": 0.08778233321571878
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -1.0915806317861563,
+              "offset_s": -0.7323909850222212,
+              "raw_RMS_error_hz": 10.955517712710776,
+              "raw_max_error_hz": 15.029887131859141,
+              "projected_RMS_error_hz": 1.416452704450933,
+              "projected_max_error_hz": 3.3819146392018093,
+              "projected_RMS_error_native_sigma_units": 0.022101800703911753
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 0.37320133825828605,
+              "offset_s": 0.7323909850222212,
+              "raw_RMS_error_hz": 11.094186742596378,
+              "raw_max_error_hz": 15.01133392717793,
+              "projected_RMS_error_hz": 1.4178623421897312,
+              "projected_max_error_hz": 3.277561334873208,
+              "projected_RMS_error_native_sigma_units": 0.022134100128075578
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 1.1055923232805074,
+              "offset_s": 1.4647819700444424,
+              "raw_RMS_error_hz": 44.71926180136999,
+              "raw_max_error_hz": 59.346776710271115,
+              "projected_RMS_error_hz": 5.576383414286884,
+              "projected_max_error_hz": 13.151749986361892,
+              "projected_RMS_error_native_sigma_units": 0.08703443696870719
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -1.704874758379448,
+              "offset_s": -1.3456851116155129,
+              "raw_RMS_error_hz": 36.71143925142443,
+              "raw_max_error_hz": 49.946176376078256,
+              "projected_RMS_error_hz": 4.746661493252649,
+              "projected_max_error_hz": 11.337591252931247,
+              "projected_RMS_error_native_sigma_units": 0.07407083200151926
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 0.9864954648515772,
+              "offset_s": 1.3456851116155124,
+              "raw_RMS_error_hz": 37.69949653639188,
+              "raw_max_error_hz": 50.122801496169814,
+              "projected_RMS_error_hz": 4.7120662533091595,
+              "projected_max_error_hz": 11.100361615895844,
+              "projected_RMS_error_native_sigma_units": 0.07354410861049811
+            }
+          ]
+        },
+        {
+          "case": "DS24-0087",
+          "arm": "fitted_c",
+          "endpoint": "baseline",
+          "position_east_north_km": [
+            5.001611163171574,
+            -4.622004544059072
+          ],
+          "target_points": 43,
+          "phase_mean_s": -0.35918964676393517,
+          "phase_marginal_sd_s": 0.7323909850222212,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 57752,
+            "previous_available": true,
+            "radial_sigma_km": 0.05,
+            "cross_sigma_km": 0.11027219119359168,
+            "old_alignment_s": 0.11185246875397349,
+            "mean_motion_sigma_rev_day": 0.00016710167258048717,
+            "inclination_sigma_deg": 0.0009215219993226133,
+            "raan_sigma_deg": 0.0013512186427090973
+          },
+          "shape_RMS_marginal_hz": 59.07770851056658,
+          "projected_shape_RMS_marginal_hz": 0.8581312298995729,
+          "projected_shape_RMS_native_sigma_units": 0.013390097972470982,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -1.8239716168083775,
+              "offset_s": -1.4647819700444424,
+              "raw_RMS_error_hz": 43.33730369023494,
+              "raw_max_error_hz": 59.108290574120474,
+              "projected_RMS_error_hz": 5.644724882414783,
+              "projected_max_error_hz": 13.476637592790494,
+              "projected_RMS_error_native_sigma_units": 0.08808571198785535
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -1.0915806317861563,
+              "offset_s": -0.7323909850222212,
+              "raw_RMS_error_hz": 10.929845748613717,
+              "raw_max_error_hz": 15.02250374682626,
+              "projected_RMS_error_hz": 1.4211875040670798,
+              "projected_max_error_hz": 3.3932360916334057,
+              "projected_RMS_error_native_sigma_units": 0.022175661154426624
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 0.37320133825828605,
+              "offset_s": 0.7323909850222212,
+              "raw_RMS_error_hz": 11.068973646098572,
+              "raw_max_error_hz": 15.003597476511459,
+              "projected_RMS_error_hz": 1.4226820534726592,
+              "projected_max_error_hz": 3.291552109325551,
+              "projected_RMS_error_native_sigma_units": 0.02220923412408836
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 1.1055923232805074,
+              "offset_s": 1.4647819700444424,
+              "raw_RMS_error_hz": 44.619436163600064,
+              "raw_max_error_hz": 59.31856631375376,
+              "projected_RMS_error_hz": 5.596309299639188,
+              "projected_max_error_hz": 13.205777366487467,
+              "projected_RMS_error_native_sigma_units": 0.0873451634280251
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -1.704874758379448,
+              "offset_s": -1.3456851116155129,
+              "raw_RMS_error_hz": 36.62415749623919,
+              "raw_max_error_hz": 49.92099973740278,
+              "projected_RMS_error_hz": 4.763083004105312,
+              "projected_max_error_hz": 11.378207202958695,
+              "projected_RMS_error_native_sigma_units": 0.07432697808326466
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 0.9864954648515772,
+              "offset_s": 1.3456851116155124,
+              "raw_RMS_error_hz": 37.61510575181489,
+              "raw_max_error_hz": 50.098700195667334,
+              "projected_RMS_error_hz": 4.728852060094991,
+              "projected_max_error_hz": 11.14607262677104,
+              "projected_RMS_error_native_sigma_units": 0.07380586863907351
+            }
+          ]
+        },
+        {
+          "case": "DS24-0087",
+          "arm": "fitted_c",
+          "endpoint": "support",
+          "position_east_north_km": [
+            4.922732729662724,
+            -4.721851982089174
+          ],
+          "target_points": 43,
+          "phase_mean_s": -0.35918964676393517,
+          "phase_marginal_sd_s": 0.7323909850222212,
+          "phase_nu": 3.0,
+          "physical_shape_prior": {
+            "norad": 57752,
+            "previous_available": true,
+            "radial_sigma_km": 0.05,
+            "cross_sigma_km": 0.11027219119359168,
+            "old_alignment_s": 0.11185246875397349,
+            "mean_motion_sigma_rev_day": 0.00016710167258048717,
+            "inclination_sigma_deg": 0.0009215219993226133,
+            "raan_sigma_deg": 0.0013512186427090973
+          },
+          "shape_RMS_marginal_hz": 59.070128467993165,
+          "projected_shape_RMS_marginal_hz": 0.8572730963370853,
+          "projected_shape_RMS_native_sigma_units": 0.013376715721573784,
+          "offsets": [
+            {
+              "name": "minus2sd",
+              "phase_s": -1.8239716168083775,
+              "offset_s": -1.4647819700444424,
+              "raw_RMS_error_hz": 43.36123832023326,
+              "raw_max_error_hz": 59.11560147858472,
+              "projected_RMS_error_hz": 5.640345970570323,
+              "projected_max_error_hz": 13.465765363332267,
+              "projected_RMS_error_native_sigma_units": 0.08801741037060717
+            },
+            {
+              "name": "minus1sd",
+              "phase_s": -1.0915806317861563,
+              "offset_s": -0.7323909850222212,
+              "raw_RMS_error_hz": 10.935780695789154,
+              "raw_max_error_hz": 15.02430243710296,
+              "projected_RMS_error_hz": 1.420121872412093,
+              "projected_max_error_hz": 3.3906865255711027,
+              "projected_RMS_error_native_sigma_units": 0.022159037971201383
+            },
+            {
+              "name": "plus1sd",
+              "phase_s": 0.37320133825828605,
+              "offset_s": 0.7323909850222212,
+              "raw_RMS_error_hz": 11.074805271619097,
+              "raw_max_error_hz": 15.005476977346007,
+              "projected_RMS_error_hz": 1.421597073926745,
+              "projected_max_error_hz": 3.288393529150605,
+              "projected_RMS_error_native_sigma_units": 0.022192320872785658
+            },
+            {
+              "name": "plus2sd",
+              "phase_s": 1.1055923232805074,
+              "offset_s": 1.4647819700444424,
+              "raw_RMS_error_hz": 44.64253194957872,
+              "raw_max_error_hz": 59.325451204664205,
+              "projected_RMS_error_hz": 5.591821031185787,
+              "projected_max_error_hz": 13.193584104144023,
+              "projected_RMS_error_native_sigma_units": 0.08727517391229037
+            },
+            {
+              "name": "unconditioned_quantile_0.025",
+              "phase_s": -1.704874758379448,
+              "offset_s": -1.3456851116155129,
+              "raw_RMS_error_hz": 36.6443308245245,
+              "raw_max_error_hz": 49.92712163656233,
+              "projected_RMS_error_hz": 4.759385839325997,
+              "projected_max_error_hz": 11.369053756191184,
+              "projected_RMS_error_native_sigma_units": 0.0742693095137025
+            },
+            {
+              "name": "unconditioned_quantile_0.975",
+              "phase_s": 0.9864954648515772,
+              "offset_s": 1.3456851116155124,
+              "raw_RMS_error_hz": 37.63462962793789,
+              "raw_max_error_hz": 50.104578171294634,
+              "projected_RMS_error_hz": 4.725071247969984,
+              "projected_max_error_hz": 11.135756065199605,
+              "projected_RMS_error_native_sigma_units": 0.07374691104246059
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

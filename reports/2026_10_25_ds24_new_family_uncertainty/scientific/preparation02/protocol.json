@@ -1,0 +1,61 @@
+{
+  "version": "nonlinear phase preparation02",
+  "no_position_fits": true,
+  "cases": [
+    "DS24-0095",
+    "DS24-0087"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "branches": [
+    "predictive_shape_zero",
+    "predictive_shape_prior"
+  ],
+  "domain_s": [
+    -15.0,
+    15.0
+  ],
+  "prior": "original causal unit-marginal-variance Student nu3 conditioned on domain, no recenter/rescale",
+  "quadrature": "global phase-space Gauss-Legendre; analytic truncated CDF normalization; no numerical renormalization",
+  "candidate_counts": [
+    81,
+    161,
+    321,
+    641,
+    1281,
+    2561
+  ],
+  "hard_node_cap": 2561,
+  "score_absolute_tolerance": 0.001,
+  "position_gradient_absolute_tolerance_per_km": 0.001,
+  "central_difference_step_km": 0.01,
+  "prior_mass_absolute_tolerance": 1e-08,
+  "centers": "saved baseline, saved phase-only support, their midpoint, cold regional [0,0]; each c arm independently",
+  "offsets": "center and +/-0.01km each east/north axis, all covariance branches",
+  "selection": "ONE smallest count meeting score and FD-gradient tolerances against2561 and independent adaptive reference at every point; fixed before profiles/fits",
+  "independent_reference": "adaptive scipy QUADPACK phase-space integration with denseuniform641point mode discovery and direct propagation, includes whole domain",
+  "preparation_seconds_cap": 600.0,
+  "preparation_single_worker": true,
+  "visibility": "propagate domain endpoints and all nodes; no invalid node dropped/clipped; any unseen node aborts future fit instead of truncating density",
+  "target_association_gate": "no newly calibrated gate; target is unqualified experimental predictive evidence, baseline operational",
+  "parent_gates": "original parent curved/predictive/visibility/support gates unchanged",
+  "target_phase_refresh": false,
+  "target_noise_learning": false,
+  "optimizer_residual": "original parent residual vector plus one sqrt(complete normalized target conditional mixture NLL); no average node NLL and no x-dependent clipping",
+  "optimizer_scalar": "parent residual squared + target mixture NLL + original parent visibility; reported full objective differs only by original fixed parent normalization/noise offset",
+  "GN_curvature_limitation": "new scalar mixture residual has different Gauss-Newton curvature from per-observation Gaussian factors; same bounded original solver is only an approximate optimizer of exact scalar",
+  "target_cost_positivity": "target covariance >= diagonal fixed sigma^2; fixed predictive sigmas exceed1Hz and normalized prior implies positive complete density NLL; reject unexpected negative numerical cost",
+  "fit_launch_authorized": false,
+  "coordinator_plan_sha256": "ed16f5e6a6797d41b00750546d031bddacbb02f00502161327f62c5006fd7a00",
+  "amendment_sha256": "939fec1c5867f02006cc2c9bfabfa9eda776412adb2f04b45bad88e5b583d987",
+  "preparation01_seal_sha256": "3a355a09dc44060a0f918b90fe02a0c76844532cdaf02e3b669436f6c974bbcd",
+  "source_sha256": {
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/adapter.py": "7dcd0fa598fa67a02de1c429ab9765554e6b926884e12070b161e9848f42d02d",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py": "b44358372a9ce2a4a0e143342e6f2cbbf934ae632cc19afead00be2a1ce34b07",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/test_adapter.py": "e180c86f1c7dcf352332cf029cac542cbe8c95729a950dcb183c867888b21fbd",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/test_quadrature02.py": "60e0002fcc00c17a23cf95d69c14945fa31df3324f02d34096958fb061afd9b9",
+    "/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/prepare02.py": "774e92b804ca2f6446f5856b2426f1d9a735bebd71d0f25e0e62abf3157340c7"
+  }
+}
