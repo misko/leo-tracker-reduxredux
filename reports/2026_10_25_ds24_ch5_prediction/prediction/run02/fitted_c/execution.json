@@ -1,0 +1,41 @@
+{
+  "arm": "fitted_c",
+  "pairs": [
+    {
+      "witness": "CH3",
+      "status": "complete",
+      "comparison": {
+        "proved": true,
+        "winner": "unresolved_witness",
+        "joint_log_evidence_odds_bounds": [
+          -1192.9397849119973,
+          -838.0521147362123
+        ],
+        "raw_conditional_same_minus_mixed_objective": 2376.070232207589,
+        "discovery_denominator_cancels": true,
+        "absolute_precision_implied": false,
+        "identity_acceptance": false,
+        "same_conditional_log_evidence_bounds": [
+          -1369.615825173467,
+          -1014.7330964961745
+        ],
+        "mixed_conditional_log_evidence_bounds": [
+          -176.69628074747823,
+          -176.66074127395376
+        ],
+        "same_raw_conditional_objective": 2729.4272912477973,
+        "mixed_raw_conditional_objective": 353.35705904020824
+      }
+    },
+    {
+      "arm": "fitted_c",
+      "witness": "CH4",
+      "status": "budget_or_context_failed",
+      "error": "TimeoutError('frozen scientific deadline')",
+      "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-ch5-prediction-r01/prediction/prediction02.py\", line 293, in arm_job\n    a=evidence(cd,same,Path(arm)/(label+'_same'),deadline,threshold)\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-ch5-prediction-r01/prediction/prediction02.py\", line 120, in evidence\n    reference,root_reference=sr.sm.reference(fun,inner),sr.sm.reference(fun,brackets)\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 68, in reference\n    first=composite(fun,pieces,32);second=composite(fun,pieces,64)\n                                          ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 63, in composite\n    for start in range(0,len(flat),CHUNK):logs.append(fun(flat[start:start+CHUNK]))\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 100, in paired_frequency_modes\n    dp, dv = paired_phase_states(\n             ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/continuous_curve_fit.py\", line 43, in paired_phase_states\n    states.append(values)\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n"
+    }
+  ],
+  "scientific_worker_seconds": 296.3318357351236,
+  "position_fits": 0,
+  "GPS_used": false
+}

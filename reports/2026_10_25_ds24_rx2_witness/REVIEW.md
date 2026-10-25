@@ -1,5 +1,14 @@
 # Review of fast-scan localization and the next decisions
 
+> **Correction (2026-10-25):** The 2,442.510 Hz archived residual below was
+> carried unchanged when the CH5 row was relabeled; it is **not a verified
+> 57450 fit residual**. See the [provenance correction](../2026_10_25_ds24_ch5_prediction/mechanism/FINDINGS.md)
+> and [exact original files and annotation hashes](../2026_10_25_ds24_ch5_prediction/correction/annotation_receipt.json).
+> The new catalogue/evidence results are unaffected. The original review is
+> preserved at [commit 392faed8](https://github.com/misko/leo-tracker-reduxredux/blob/392faed8c5119279c832a56443aae77d76eb090e/reports/2026_10_25_ds24_rx2_witness/REVIEW.md).
+> This report's original publication manifest and scientific seals bind that
+> immutable commit's bytes, not these subsequently annotated Markdown files.
+
 Review date: 2026-10-25. The user's current question is what the accumulated
 experiments justify trying next. This synthesis accompanies the bounded
 three-source RX2 investigation. It does not promote an algorithm or change

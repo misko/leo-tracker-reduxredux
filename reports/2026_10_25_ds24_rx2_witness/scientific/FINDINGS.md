@@ -1,5 +1,14 @@
 # Whole-scan RX2 nomination: one conditional physical preference, two nulls
 
+> **Correction (2026-10-25):** The 2,442.510 Hz archived residual below was
+> carried unchanged when the CH5 row was relabeled; it is **not a verified
+> 57450 fit residual**. See the [provenance correction](../../2026_10_25_ds24_ch5_prediction/mechanism/FINDINGS.md)
+> and [exact original files and annotation hashes](../../2026_10_25_ds24_ch5_prediction/correction/annotation_receipt.json).
+> The new catalogue/evidence results are unaffected. The original findings are
+> preserved at [commit 392faed8](https://github.com/misko/leo-tracker-reduxredux/blob/392faed8c5119279c832a56443aae77d76eb090e/reports/2026_10_25_ds24_rx2_witness/scientific/FINDINGS.md).
+> This report's original publication manifest and scientific seals bind that
+> immutable commit's bytes, not these subsequently annotated Markdown files.
+
 All three frozen complete DS24-0013 RX2 owners were tested. The ordinary causal
 catalogue does **not** nominate 60108 for any of them. It ranks 87th for CH3,
 197th for CH5, and 143rd/145th for CH4 in c0/fitted-c. It was never backfilled
