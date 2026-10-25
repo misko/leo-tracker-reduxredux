@@ -1,0 +1,4871 @@
+{
+  "all_terminal": true,
+  "cases": 24,
+  "qualified": 0,
+  "rows": [
+    {
+      "case": "DS23-0044",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.5068814479616688,
+          "nu": 3.0,
+          "cost": 11482.912189120365,
+          "baseline_cost": 57597.69762993767,
+          "transitions": 2898,
+          "penalty": 23.915328368641884,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.03179904770127082,
+          "cost": 11457.761436063325,
+          "criterion": 11468.50681208788,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 11482.912189120365,
+              "criterion": 11482.912189120365
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.02045177775983081,
+              "cost": 11480.268917617203,
+              "criterion": 11491.013700737536
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.04080827391834299,
+              "cost": 11472.053391759591,
+              "criterion": 11482.799421919932
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.029674913733119465,
+              "cost": 11473.132366343065,
+              "criterion": 11483.87761178869
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.03179904770127082,
+              "cost": 11457.761436063325,
+              "criterion": 11468.50681208788
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.0,
+          "cost": 18979.034771930616,
+          "criterion": 18979.034771930616,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 18979.034771930616,
+              "criterion": 18979.034771930616
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 18977.287534714185,
+              "criterion": 18986.645605198184
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 18980.829705887903,
+              "criterion": 18990.187776371902
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 18988.778551118336,
+              "criterion": 18998.136621602334
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 19001.506287583034,
+              "criterion": 19010.864358067032
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 19017.312303817806,
+              "criterion": 19026.670374301804
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 19032.22996769346,
+              "criterion": 19041.58803817746
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 18979.034771930616,
+              "criterion": 18979.034771930616
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 18975.234570576817,
+              "criterion": 18984.592641060815
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 18982.408438397153,
+              "criterion": 18991.766508881152
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 18997.696901055442,
+              "criterion": 19007.05497153944
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 19020.6531779498,
+              "criterion": 19030.0112484338
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 19047.132280891026,
+              "criterion": 19056.490351375025
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 19070.71602399047,
+              "criterion": 19080.07409447447
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 8405.640519990466
+          },
+          "global_model": {
+            "rho": 0.0,
+            "cost": 18979.034771930616
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 2898,
+            "events": 3,
+            "model_cost": 18979.034771930616,
+            "control_costs": {
+              "independent": 8405.640519990466,
+              "common_Gamma_identity": 18979.034771930616,
+              "old_publication": 8405.640519990466,
+              "common_Gamma_global": 18979.034771930616
+            },
+            "gains": {
+              "independent": -10573.39425194015,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -10573.39425194015,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.358070484000518
+          },
+          "chronological": {
+            "count": 2111,
+            "events": 2,
+            "model_cost": 12413.273780279413,
+            "control_costs": {
+              "independent": 6539.618267029688,
+              "common_Gamma_identity": 12413.273780279413,
+              "old_publication": 6539.618267029688,
+              "common_Gamma_global": 12413.273780279413
+            },
+            "gains": {
+              "independent": -5873.655513249725,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -5873.655513249725,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.041211408968211
+          },
+          "satellite_disjoint": {
+            "count": 405,
+            "events": 2,
+            "model_cost": 2553.4586413874304,
+            "control_costs": {
+              "independent": 1330.8683558224873,
+              "common_Gamma_identity": 2553.4586413874304,
+              "old_publication": 1330.8683558224873,
+              "common_Gamma_global": 2553.4586413874304
+            },
+            "gains": {
+              "independent": -1222.590285564943,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -1222.590285564943,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 7.3901814282264295
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0080",
+      "selection": {
+        "qualified": false,
+        "reason": "fewer than three training or two later whole events",
+        "event_counts": {
+          "training": 4,
+          "chronological": 1,
+          "disjoint": 1
+        }
+      }
+    },
+    {
+      "case": "DS23-0023",
+      "selection": {
+        "qualified": false,
+        "reason": "fewer than three training or two later whole events",
+        "event_counts": {
+          "training": 5,
+          "chronological": 1,
+          "disjoint": 1
+        }
+      }
+    },
+    {
+      "case": "DS23-0041",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.7891391598736295,
+          "nu": 3.0,
+          "cost": 16053.582704351447,
+          "baseline_cost": 101823.60203489798,
+          "transitions": 3120,
+          "penalty": 24.136764842410585,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.17774724352284904,
+          "cost": 15636.021604886182,
+          "criterion": 15646.871375971807,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 16053.582704351447,
+              "criterion": 16053.582704351447
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.3154682945757134,
+              "cost": 15847.45977266564,
+              "criterion": 15858.377469913567
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.16984991783409437,
+              "cost": 15852.081579813896,
+              "criterion": 15862.928605811529
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.2827601402917522,
+              "cost": 15724.694377413145,
+              "criterion": 15735.592507713127
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.17774724352284904,
+              "cost": 15636.021604886182,
+              "criterion": 15646.871375971807
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.0,
+          "cost": 20003.464911013085,
+          "criterion": 20003.464911013085,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 20003.464911013085,
+              "criterion": 20003.464911013085
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 19997.49109847141,
+              "criterion": 20006.92041371783
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 20000.390665146148,
+              "criterion": 20009.819980392567
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 20008.255526734385,
+              "criterion": 20017.684841980805
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 20021.059063326138,
+              "criterion": 20030.488378572558
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 20036.90633870195,
+              "criterion": 20046.33565394837
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 20051.8397600493,
+              "criterion": 20061.26907529572
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 20003.464911013085,
+              "criterion": 20003.464911013085
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 19996.199932650066,
+              "criterion": 20005.629247896486
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 20002.76652907207,
+              "criterion": 20012.19584431849
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 20016.874721868262,
+              "criterion": 20026.30403711468
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 20038.790969302085,
+              "criterion": 20048.220284548504
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 20064.840134430728,
+              "criterion": 20074.269449677147
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 20088.30092326064,
+              "criterion": 20097.730238507058
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 8575.729524922956
+          },
+          "global_model": {
+            "rho": 0.0,
+            "cost": 20003.464911013085
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3112,
+            "events": 3,
+            "model_cost": 20003.464911013085,
+            "control_costs": {
+              "independent": 9019.143208982838,
+              "common_Gamma_identity": 20003.464911013085,
+              "old_publication": 8575.729524922956,
+              "common_Gamma_global": 20003.464911013085
+            },
+            "gains": {
+              "independent": -10984.321702030247,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -11427.73538609013,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.429315246418174
+          },
+          "chronological": {
+            "count": 3234,
+            "events": 3,
+            "model_cost": 19572.196695550923,
+            "control_costs": {
+              "independent": 8073.95128596056,
+              "common_Gamma_identity": 19572.196695550923,
+              "old_publication": 8061.541009787259,
+              "common_Gamma_global": 19572.196695550923
+            },
+            "gains": {
+              "independent": -11498.245409590363,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -11510.655685763664,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.467769401256943
+          },
+          "satellite_disjoint": {
+            "count": 627,
+            "events": 3,
+            "model_cost": 4047.9014952738917,
+            "control_costs": {
+              "independent": 1572.666056691689,
+              "common_Gamma_identity": 4047.9014952738917,
+              "old_publication": 1633.59104069081,
+              "common_Gamma_global": 4047.9014952738917
+            },
+            "gains": {
+              "independent": -2475.2354385822027,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -2414.310454583082,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 7.827240901752812
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0013",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.733014212511519,
+          "nu": 3.0,
+          "cost": 19006.323196874793,
+          "baseline_cost": 70502.90716119207,
+          "transitions": 3946,
+          "penalty": 24.84137305974768,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.17006979239505954,
+          "cost": 18494.591939182454,
+          "criterion": 18505.67390932556,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 19006.323196874793,
+              "criterion": 19006.323196874793
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.1698587752441662,
+              "cost": 18899.189405753787,
+              "criterion": 18910.271304166137
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.14226689843045373,
+              "cost": 18826.62913780967,
+              "criterion": 18837.70242408888
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.19957566973713667,
+              "cost": 18754.21922496167,
+              "criterion": 18765.312101818443
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.17006979239505954,
+              "cost": 18494.591939182454,
+              "criterion": 18505.67390932556
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.03,
+          "cost": 20035.172708622154,
+          "criterion": 20044.839460669857,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 20122.136941822282,
+              "criterion": 20122.136941822282
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 20061.314717230696,
+              "criterion": 20070.9814692784
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 20060.9442588204,
+              "criterion": 20070.611010868102
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 20070.83305880677,
+              "criterion": 20080.49981085447
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 20087.839827744298,
+              "criterion": 20097.506579792
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 20108.759794495105,
+              "criterion": 20118.426546542807
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 20128.509702234413,
+              "criterion": 20138.176454282115
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 20122.136941822282,
+              "criterion": 20122.136941822282
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 20037.244860732517,
+              "criterion": 20046.91161278022
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 20035.172708622154,
+              "criterion": 20044.839460669857
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 20050.196007667117,
+              "criterion": 20059.86275971482
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 20078.832410005707,
+              "criterion": 20088.49916205341
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 20113.395479121442,
+              "criterion": 20123.062231169144
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 20144.545698515554,
+              "criterion": 20154.212450563256
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 10690.569378396853
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 20038.873439633808
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3946,
+            "events": 4,
+            "model_cost": 20035.172708622154,
+            "control_costs": {
+              "independent": 11227.468279940604,
+              "common_Gamma_identity": 20122.136941822282,
+              "old_publication": 10690.569378396853,
+              "common_Gamma_global": 20038.873439633808
+            },
+            "gains": {
+              "independent": -8807.70442868155,
+              "common_Gamma_identity": 86.96423320012764,
+              "old_publication": -9344.603330225302,
+              "common_Gamma_global": 3.700731011653261
+            },
+            "penalty": 9.66675204770245
+          },
+          "chronological": {
+            "count": 2070,
+            "events": 2,
+            "model_cost": 12630.987927223572,
+            "control_costs": {
+              "independent": 5535.127676085185,
+              "common_Gamma_identity": 12619.184240161714,
+              "old_publication": 5455.8751849049295,
+              "common_Gamma_global": 12623.787481326332
+            },
+            "gains": {
+              "independent": -7095.860251138387,
+              "common_Gamma_identity": -11.803687061858,
+              "old_publication": -7175.112742318643,
+              "common_Gamma_global": -7.20044589724057
+            },
+            "penalty": 9.021598247379305
+          },
+          "satellite_disjoint": {
+            "count": 405,
+            "events": 2,
+            "model_cost": 2236.2541737488173,
+            "control_costs": {
+              "independent": 1035.2701800772606,
+              "common_Gamma_identity": 2235.465571237757,
+              "old_publication": 1043.7042432457115,
+              "common_Gamma_global": 2237.1708523121415
+            },
+            "gains": {
+              "independent": -1200.9839936715566,
+              "common_Gamma_identity": -0.7886025110601622,
+              "old_publication": -1192.5499305031058,
+              "common_Gamma_global": 0.9166785633242398
+            },
+            "penalty": 7.3901814282264295
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0268",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 14159.207679019044,
+          "baseline_cost": 19154.329978296682,
+          "transitions": 3789,
+          "penalty": 24.719572233055803,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.06449232561098035,
+          "cost": 13990.890419268688,
+          "criterion": 14001.90702466201,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 14159.207679019044,
+              "criterion": 14159.207679019044
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.12927516083304696,
+              "cost": 14054.883796974187,
+              "criterion": 14065.912955174656
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.11983687138028491,
+              "cost": 14045.952816167044,
+              "criterion": 14056.979623176047
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.10424980818268109,
+              "cost": 14013.804078331632,
+              "criterion": 14024.827392487397
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.06449232561098035,
+              "cost": 13990.890419268688,
+              "criterion": 14001.90702466201
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 14120.335663980062,
+          "criterion": 14129.960230965815,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 14167.758465174327,
+              "criterion": 14167.758465174327
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 14121.688682875018,
+              "criterion": 14131.31324986077
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 14120.335663980062,
+              "criterion": 14129.960230965815
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 14130.265991765067,
+              "criterion": 14139.89055875082
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 14150.060960516475,
+              "criterion": 14159.685527502228
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 14175.5086097557,
+              "criterion": 14185.133176741452
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 14199.879977879616,
+              "criterion": 14209.50454486537
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 14167.758465174327,
+              "criterion": 14167.758465174327
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 14133.918695687064,
+              "criterion": 14143.543262672816
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 14134.335970958498,
+              "criterion": 14143.960537944251
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 14146.899418941011,
+              "criterion": 14156.523985926764
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 14174.903212212703,
+              "criterion": 14184.527779198455
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 14214.305301807764,
+              "criterion": 14223.929868793517
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 14251.972388985503,
+              "criterion": 14261.596955971256
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 9964.592036370392
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 14118.9132019852
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3783,
+            "events": 5,
+            "model_cost": 14120.335663980062,
+            "control_costs": {
+              "independent": 9964.592036370392,
+              "common_Gamma_identity": 14167.758465174327,
+              "old_publication": 9964.592036370392,
+              "common_Gamma_global": 14118.9132019852
+            },
+            "gains": {
+              "independent": -4155.7436276096705,
+              "common_Gamma_identity": 47.42280119426505,
+              "old_publication": -4155.7436276096705,
+              "common_Gamma_global": -1.4224619948618056
+            },
+            "penalty": 9.62456698575292
+          },
+          "chronological": {
+            "count": 1883,
+            "events": 5,
+            "model_cost": 6140.15306853628,
+            "control_costs": {
+              "independent": 4805.461902013562,
+              "common_Gamma_identity": 6202.4672431083945,
+              "old_publication": 4805.461902013562,
+              "common_Gamma_global": 6143.942802090539
+            },
+            "gains": {
+              "independent": -1334.691166522718,
+              "common_Gamma_identity": 62.3141745721141,
+              "old_publication": -1334.691166522718,
+              "common_Gamma_global": 3.7897335542584187
+            },
+            "penalty": 8.926915889777042
+          },
+          "satellite_disjoint": {
+            "count": 361,
+            "events": 5,
+            "model_cost": 1044.7264771371356,
+            "control_costs": {
+              "independent": 889.9326010574356,
+              "common_Gamma_identity": 1059.5229020699703,
+              "old_publication": 889.9326010574356,
+              "common_Gamma_global": 1049.0613892520253
+            },
+            "gains": {
+              "independent": -154.7938760797,
+              "common_Gamma_identity": 14.796424932834725,
+              "old_publication": -154.7938760797,
+              "common_Gamma_global": 4.334912114889676
+            },
+            "penalty": 7.275172319452771
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0405",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 15663.72210173674,
+          "baseline_cost": 21293.53903301034,
+          "transitions": 4386,
+          "penalty": 25.1585187869335,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.09778264437277676,
+          "cost": 15297.054615667206,
+          "criterion": 15308.222938763965,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 15663.72210173674,
+              "criterion": 15663.72210173674
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.14443755013704518,
+              "cost": 15480.879092488824,
+              "criterion": 15492.058716345931
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.13619619073248676,
+              "cost": 15492.07985869142,
+              "criterion": 15503.25716974501
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.1459750349708083,
+              "cost": 15356.982416301626,
+              "criterion": 15368.16248666368
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.09778264437277676,
+              "cost": 15297.054615667206,
+              "criterion": 15308.222938763965
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 16332.219721099149,
+          "criterion": 16341.991275980425,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 16385.208952313635,
+              "criterion": 16385.208952313635
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 16335.957866151544,
+              "criterion": 16345.72942103282
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 16332.219721099149,
+              "criterion": 16341.991275980425
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 16348.393348136928,
+              "criterion": 16358.164903018203
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 16387.463408975796,
+              "criterion": 16397.23496385707
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 16441.63242001726,
+              "criterion": 16451.403974898534
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 16494.662968642013,
+              "criterion": 16504.434523523287
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 16385.208952313635,
+              "criterion": 16385.208952313635
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 16351.185225789917,
+              "criterion": 16360.956780671193
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 16353.328375205207,
+              "criterion": 16363.099930086482
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 16377.529926641018,
+              "criterion": 16387.301481522292
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 16432.114603048823,
+              "criterion": 16441.886157930097
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 16512.041409482415,
+              "criterion": 16521.81296436369
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 16591.823119188346,
+              "criterion": 16601.59467406962
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 11407.8264378332
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 16341.118165996382
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4382,
+            "events": 11,
+            "model_cost": 16332.219721099149,
+            "control_costs": {
+              "independent": 11480.845753414764,
+              "common_Gamma_identity": 16385.208952313635,
+              "old_publication": 11407.8264378332,
+              "common_Gamma_global": 16341.118165996382
+            },
+            "gains": {
+              "independent": -4851.373967684385,
+              "common_Gamma_identity": 52.9892312144857,
+              "old_publication": -4924.393283265948,
+              "common_Gamma_global": 8.898444897233276
+            },
+            "penalty": 9.771554881275303
+          },
+          "chronological": {
+            "count": 1966,
+            "events": 5,
+            "model_cost": 9281.26184090614,
+            "control_costs": {
+              "independent": 5510.615877529901,
+              "common_Gamma_identity": 9290.394385977706,
+              "old_publication": 5539.009801214602,
+              "common_Gamma_global": 9289.316073676038
+            },
+            "gains": {
+              "independent": -3770.645963376239,
+              "common_Gamma_identity": 9.13254507156671,
+              "old_publication": -3742.252039691538,
+              "common_Gamma_global": 8.05423276989859
+            },
+            "penalty": 8.970050661827003
+          },
+          "satellite_disjoint": {
+            "count": 404,
+            "events": 5,
+            "model_cost": 1749.0189317791553,
+            "control_costs": {
+              "independent": 1127.3293582841918,
+              "common_Gamma_identity": 1755.6508402145928,
+              "old_publication": 1127.8297701644958,
+              "common_Gamma_global": 1752.642881488844
+            },
+            "gains": {
+              "independent": -621.6895734949635,
+              "common_Gamma_identity": 6.631908435437481,
+              "old_publication": -621.1891616146595,
+              "common_Gamma_global": 3.623949709688759
+            },
+            "penalty": 7.387709239081041
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0240",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.6808809688647632,
+          "nu": 3.0,
+          "cost": 18974.09377171241,
+          "baseline_cost": 23943.04252153579,
+          "transitions": 4719,
+          "penalty": 25.37805657517916,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.07139404473437445,
+          "cost": 18662.742726624652,
+          "criterion": 18673.979764648244,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 18974.09377171241,
+              "criterion": 18974.09377171241
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.18146390008958557,
+              "cost": 18784.617608374498,
+              "criterion": 18795.882478435502
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.12532900671624458,
+              "cost": 18816.917830179118,
+              "criterion": 18828.16547845301
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.1280461972244275,
+              "cost": 18708.81831360154,
+              "criterion": 18720.06665034413
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.07139404473437445,
+              "cost": 18662.742726624652,
+              "criterion": 18673.979764648244
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.03,
+          "cost": 16809.17358448714,
+          "criterion": 16819.019231039987,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 16886.956967336737,
+              "criterion": 16886.956967336737
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 16846.436257879956,
+              "criterion": 16856.281904432803
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 16849.486106586213,
+              "criterion": 16859.33175313906
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 16862.530205728865,
+              "criterion": 16872.37585228171
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 16883.587287563114,
+              "criterion": 16893.43293411596
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 16909.343190132604,
+              "criterion": 16919.18883668545
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 16933.768077343066,
+              "criterion": 16943.613723895913
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 16886.956967336737,
+              "criterion": 16886.956967336737
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 16814.545087873692,
+              "criterion": 16824.39073442654
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 16809.17358448714,
+              "criterion": 16819.019231039987
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 16822.844589065873,
+              "criterion": 16832.69023561872
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 16855.931830240475,
+              "criterion": 16865.777476793322
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 16898.039062166066,
+              "criterion": 16907.884708718913
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 16936.532223902464,
+              "criterion": 16946.37787045531
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 12214.014369306653
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 16843.092934934393
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4719,
+            "events": 5,
+            "model_cost": 16809.17358448714,
+            "control_costs": {
+              "independent": 12214.014369306653,
+              "common_Gamma_identity": 16886.956967336737,
+              "old_publication": 12214.014369306653,
+              "common_Gamma_global": 16843.092934934393
+            },
+            "gains": {
+              "independent": -4595.159215180487,
+              "common_Gamma_identity": 77.78338284959682,
+              "old_publication": -4595.159215180487,
+              "common_Gamma_global": 33.91935044725324
+            },
+            "penalty": 9.845646552846278
+          },
+          "chronological": {
+            "count": 1615,
+            "events": 3,
+            "model_cost": 5241.27797533696,
+            "control_costs": {
+              "independent": 4331.947734248023,
+              "common_Gamma_identity": 5341.156791350463,
+              "old_publication": 4331.947734248023,
+              "common_Gamma_global": 5244.015332232111
+            },
+            "gains": {
+              "independent": -909.3302410889364,
+              "common_Gamma_identity": 99.87881601350364,
+              "old_publication": -909.3302410889364,
+              "common_Gamma_global": 2.7373568951516063
+            },
+            "penalty": 8.773384596776648
+          },
+          "satellite_disjoint": {
+            "count": 330,
+            "events": 3,
+            "model_cost": 1117.1541301808463,
+            "control_costs": {
+              "independent": 900.011136304728,
+              "common_Gamma_identity": 1134.0154384035557,
+              "old_publication": 900.0111363047281,
+              "common_Gamma_global": 1116.0806972950168
+            },
+            "gains": {
+              "independent": -217.14299387611834,
+              "common_Gamma_identity": 16.86130822270934,
+              "old_publication": -217.14299387611823,
+              "common_Gamma_global": -1.0734328858295612
+            },
+            "penalty": 7.1853870155804165
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0082",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.5068814479616688,
+          "nu": 3.0,
+          "cost": 8266.934134158633,
+          "baseline_cost": 248328.02329586475,
+          "transitions": 2155,
+          "penalty": 23.026638007613542,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": 0.04703897120377287,
+          "cost": 8213.714740169147,
+          "criterion": 8224.165087558738,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 8266.934134158633,
+              "criterion": 8266.934134158633
+            },
+            {
+              "kind": "seconds",
+              "coefficient": 0.07247180445425366,
+              "cost": 8231.635680148289,
+              "criterion": 8242.089067035507
+            },
+            {
+              "kind": "standardized",
+              "coefficient": 0.06306809222444423,
+              "cost": 8247.670518350646,
+              "criterion": 8258.12263065968
+            },
+            {
+              "kind": "age",
+              "coefficient": 0.061175347519861874,
+              "cost": 8223.342926077428,
+              "criterion": 8233.794803225352
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": 0.04703897120377287,
+              "cost": 8213.714740169147,
+              "criterion": 8224.165087558738
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.0,
+          "cost": 17921.76975534197,
+          "criterion": 17921.76975534197,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 17921.76975534197,
+              "criterion": 17921.76975534197
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 17922.86776752756,
+              "criterion": 17931.92960789122
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 17928.15412042631,
+              "criterion": 17937.215960789967
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 17937.59060945516,
+              "criterion": 17946.65244981882
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 17950.97116580352,
+              "criterion": 17960.033006167178
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 17966.991285830605,
+              "criterion": 17976.053126194263
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 17981.979277726346,
+              "criterion": 17991.041118090005
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 17921.76975534197,
+              "criterion": 17921.76975534197
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 17916.5728631101,
+              "criterion": 17925.63470347376
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 17920.625660713227,
+              "criterion": 17929.687501076885
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 17932.711148465547,
+              "criterion": 17941.772988829205
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 17953.59052668371,
+              "criterion": 17962.65236704737
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 17979.25526226633,
+              "criterion": 17988.31710262999
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 18002.60863080785,
+              "criterion": 18011.670471171507
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 6970.3303456413305
+          },
+          "global_model": {
+            "rho": 0.0,
+            "cost": 17921.76975534197
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 2155,
+            "events": 3,
+            "model_cost": 17921.76975534197,
+            "control_costs": {
+              "independent": 6970.3303456413305,
+              "common_Gamma_identity": 17921.76975534197,
+              "old_publication": 6970.3303456413305,
+              "common_Gamma_global": 17921.76975534197
+            },
+            "gains": {
+              "independent": -10951.43940970064,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -10951.43940970064,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.061840363657739
+          },
+          "chronological": {
+            "count": 1898,
+            "events": 2,
+            "model_cost": 10648.386914330997,
+            "control_costs": {
+              "independent": 7287.892558512576,
+              "common_Gamma_identity": 10648.386914330997,
+              "old_publication": 7287.892558512575,
+              "common_Gamma_global": 10648.386914330997
+            },
+            "gains": {
+              "independent": -3360.4943558184204,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -3360.4943558184214,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 8.934850340289763
+          },
+          "satellite_disjoint": {
+            "count": 418,
+            "events": 2,
+            "model_cost": 2305.5409866173754,
+            "control_costs": {
+              "independent": 1667.00440235935,
+              "common_Gamma_identity": 2305.5409866173754,
+              "old_publication": 1667.0044023593498,
+              "common_Gamma_global": 2305.5409866173754
+            },
+            "gains": {
+              "independent": -638.5365842580254,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -638.5365842580256,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 7.421775793644647
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0062",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.5068814479616688,
+          "nu": 3.0,
+          "cost": 13997.93681536999,
+          "baseline_cost": 65084.43979814421,
+          "transitions": 3535,
+          "penalty": 24.51140573499202,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": null,
+          "coefficient": 0.0,
+          "cost": 13997.93681536999,
+          "criterion": 13997.93681536999,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 13997.93681536999,
+              "criterion": 13997.93681536999
+            },
+            {
+              "kind": "seconds",
+              "coefficient": 0.01693522173642794,
+              "cost": 13995.797111297154,
+              "criterion": 14006.74045539946
+            },
+            {
+              "kind": "standardized",
+              "coefficient": 0.002761591530328798,
+              "cost": 13997.87738375768,
+              "criterion": 14008.820448684639
+            },
+            {
+              "kind": "age",
+              "coefficient": 0.0044127948308297,
+              "cost": 13997.673729911163,
+              "criterion": 14008.616806684493
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.004671952847132665,
+              "cost": 13997.294955660289,
+              "criterion": 14008.238034788004
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.0,
+          "cost": 22815.59087812981,
+          "criterion": 22815.59087812981,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 22815.59087812981,
+              "criterion": 22815.59087812981
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 22812.157378820924,
+              "criterion": 22821.714141760374
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 22818.38049257392,
+              "criterion": 22827.93725551337
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 22830.921010054946,
+              "criterion": 22840.477772994396
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 22848.871394334576,
+              "criterion": 22858.428157274026
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 22870.253684899817,
+              "criterion": 22879.810447839267
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 22890.231791077218,
+              "criterion": 22899.788554016668
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 22815.59087812981,
+              "criterion": 22815.59087812981
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 22813.79189145783,
+              "criterion": 22823.34865439728
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 22822.42318417635,
+              "criterion": 22831.9799471158
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 22842.01345170826,
+              "criterion": 22851.57021464771
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 22872.346967233283,
+              "criterion": 22881.903730172733
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 22907.602729531216,
+              "criterion": 22917.159492470666
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 22939.04363545468,
+              "criterion": 22948.60039839413
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 10283.58882360676
+          },
+          "global_model": {
+            "rho": 0.0,
+            "cost": 22815.59087812981
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3535,
+            "events": 4,
+            "model_cost": 22815.59087812981,
+            "control_costs": {
+              "independent": 10283.588823606762,
+              "common_Gamma_identity": 22815.59087812981,
+              "old_publication": 10283.58882360676,
+              "common_Gamma_global": 22815.59087812981
+            },
+            "gains": {
+              "independent": -12532.002054523047,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -12532.002054523049,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.556762939450564
+          },
+          "chronological": {
+            "count": 2446,
+            "events": 2,
+            "model_cost": 15709.396341814183,
+            "control_costs": {
+              "independent": 8618.08683348657,
+              "common_Gamma_identity": 15709.396341814183,
+              "old_publication": 8618.086833486572,
+              "common_Gamma_global": 15709.396341814183
+            },
+            "gains": {
+              "independent": -7091.309508327613,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -7091.309508327611,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.188503677367008
+          },
+          "satellite_disjoint": {
+            "count": 478,
+            "events": 2,
+            "model_cost": 3367.3025428650026,
+            "control_costs": {
+              "independent": 1664.7027160205994,
+              "common_Gamma_identity": 3367.3025428650026,
+              "old_publication": 1664.702716020599,
+              "common_Gamma_global": 3367.3025428650026
+            },
+            "gains": {
+              "independent": -1702.5998268444032,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -1702.5998268444037,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 7.555905093611347
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0114",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.5456920113860881,
+          "nu": 3.0,
+          "cost": 12454.83718184266,
+          "baseline_cost": 116939.81179493727,
+          "transitions": 3299,
+          "penalty": 24.304124013685744,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": null,
+          "coefficient": 0.0,
+          "cost": 12454.83718184266,
+          "criterion": 12454.83718184266,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 12454.83718184266,
+              "criterion": 12454.83718184266
+            },
+            {
+              "kind": "seconds",
+              "coefficient": 0.02005803252092571,
+              "cost": 12451.835668447588,
+              "criterion": 12462.710034165726
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.02489513104348833,
+              "cost": 12450.255745911496,
+              "criterion": 12461.130329072515
+            },
+            {
+              "kind": "age",
+              "coefficient": 0.010345007506735598,
+              "cost": 12453.364535252924,
+              "criterion": 12464.238605665574
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": 0.0038556374816348365,
+              "cost": 12454.370769860641,
+              "criterion": 12465.24474812005
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.0,
+          "cost": 23337.66769993121,
+          "criterion": 23337.66769993121,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 23337.66769993121,
+              "criterion": 23337.66769993121
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 23340.5578768378,
+              "criterion": 23350.040684116422
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 23348.2241189134,
+              "criterion": 23357.706926192022
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 23361.363789628842,
+              "criterion": 23370.846596907464
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 23379.480507901557,
+              "criterion": 23388.96331518018
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 23400.912603513985,
+              "criterion": 23410.395410792607
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 23420.908464996563,
+              "criterion": 23430.391272275185
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 23337.66769993121,
+              "criterion": 23337.66769993121
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 23341.584883681084,
+              "criterion": 23351.067690959706
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 23350.232729886382,
+              "criterion": 23359.715537165004
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 23367.77204665698,
+              "criterion": 23377.254853935603
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 23395.846042727164,
+              "criterion": 23405.328850005786
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 23430.138236627135,
+              "criterion": 23439.621043905758
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 23461.300322568502,
+              "criterion": 23470.783129847125
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 9542.36547817713
+          },
+          "global_model": {
+            "rho": 0.0,
+            "cost": 23337.66769993121
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3283,
+            "events": 4,
+            "model_cost": 23337.66769993121,
+            "control_costs": {
+              "independent": 9542.365478177127,
+              "common_Gamma_identity": 23337.66769993121,
+              "old_publication": 9542.36547817713,
+              "common_Gamma_global": 23337.66769993121
+            },
+            "gains": {
+              "independent": -13795.302221754084,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -13795.302221754082,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.482807278621484
+          },
+          "chronological": {
+            "count": 3318,
+            "events": 3,
+            "model_cost": 17426.575573874143,
+            "control_costs": {
+              "independent": 12004.713790586855,
+              "common_Gamma_identity": 17426.575573874143,
+              "old_publication": 12004.713790586855,
+              "common_Gamma_global": 17426.575573874143
+            },
+            "gains": {
+              "independent": -5421.861783287288,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -5421.861783287288,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 9.493411831870281
+          },
+          "satellite_disjoint": {
+            "count": 703,
+            "events": 3,
+            "model_cost": 3378.528574645953,
+            "control_costs": {
+              "independent": 2567.9278685063227,
+              "common_Gamma_identity": 3378.528574645953,
+              "old_publication": 2567.9278685063227,
+              "common_Gamma_global": 3378.528574645953
+            },
+            "gains": {
+              "independent": -810.6007061396303,
+              "common_Gamma_identity": 0.0,
+              "old_publication": -810.6007061396303,
+              "common_Gamma_global": 0.0
+            },
+            "penalty": 7.941651252930556
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0156",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.5874741963590528,
+          "nu": 3.0,
+          "cost": 12425.805697961361,
+          "baseline_cost": 59513.553471771746,
+          "transitions": 3208,
+          "penalty": 24.220208906959215,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "standardized",
+          "coefficient": -0.12585928423103238,
+          "cost": 12316.497165739442,
+          "criterion": 12327.358997990095,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 12425.805697961361,
+              "criterion": 12425.805697961361
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.07179982563068045,
+              "cost": 12393.652689281895,
+              "criterion": 12404.503836188082
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.12585928423103238,
+              "cost": 12316.497165739442,
+              "criterion": 12327.358997990095
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.05585632723420436,
+              "cost": 12379.878237023775,
+              "criterion": 12390.727348644294
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.03464462761611505,
+              "cost": 12369.7052091101,
+              "criterion": 12380.55240105155
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 17703.64278391533,
+          "criterion": 17713.10092142606,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 17734.39756035709,
+              "criterion": 17734.39756035709
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 17706.35931204526,
+              "criterion": 17715.81744955599
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 17703.64278391533,
+              "criterion": 17713.10092142606
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 17710.0065178245,
+              "criterion": 17719.46465533523
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 17725.447054721255,
+              "criterion": 17734.905192231985
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 17746.028541512886,
+              "criterion": 17755.486679023616
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 17765.74869415511,
+              "criterion": 17775.20683166584
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 17734.39756035709,
+              "criterion": 17734.39756035709
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 17715.94560744541,
+              "criterion": 17725.40374495614
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 17716.206161172973,
+              "criterion": 17725.664298683703
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 17727.799255010195,
+              "criterion": 17737.257392520925
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 17753.621350784473,
+              "criterion": 17763.079488295203
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 17787.268977352214,
+              "criterion": 17796.727114862944
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 17818.22069117112,
+              "criterion": 17827.67882868185
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 9013.460634719362
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 17685.59338507064
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3203,
+            "events": 4,
+            "model_cost": 17703.64278391533,
+            "control_costs": {
+              "independent": 9013.460634719362,
+              "common_Gamma_identity": 17734.39756035709,
+              "old_publication": 9013.460634719362,
+              "common_Gamma_global": 17685.59338507064
+            },
+            "gains": {
+              "independent": -8690.182149195967,
+              "common_Gamma_identity": 30.75477644176135,
+              "old_publication": -8690.182149195967,
+              "common_Gamma_global": -18.049398844690586
+            },
+            "penalty": 9.458137510729049
+          },
+          "chronological": {
+            "count": 3428,
+            "events": 3,
+            "model_cost": 15474.151728707611,
+            "control_costs": {
+              "independent": 10129.800392831014,
+              "common_Gamma_identity": 15528.029576401026,
+              "old_publication": 10129.800392831014,
+              "common_Gamma_global": 15425.208426336945
+            },
+            "gains": {
+              "independent": -5344.351335876598,
+              "common_Gamma_identity": 53.87784769341488,
+              "old_publication": -5344.351335876598,
+              "common_Gamma_global": -48.94330237066606
+            },
+            "penalty": 9.52602664083756
+          },
+          "satellite_disjoint": {
+            "count": 667,
+            "events": 3,
+            "model_cost": 2474.8643945950826,
+            "control_costs": {
+              "independent": 1956.6143016345159,
+              "common_Gamma_identity": 2482.4486875079947,
+              "old_publication": 1956.6143016345159,
+              "common_Gamma_global": 2463.8300604551578
+            },
+            "gains": {
+              "independent": -518.2500929605667,
+              "common_Gamma_identity": 7.584292912912133,
+              "old_publication": -518.2500929605667,
+              "common_Gamma_global": -11.034334139924795
+            },
+            "penalty": 7.889084407035514
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0208",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.733014212511519,
+          "nu": 3.0,
+          "cost": 14052.429728614927,
+          "baseline_cost": 21709.898491363252,
+          "transitions": 3042,
+          "penalty": 24.060811418457714,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.07801352876001492,
+          "cost": 13856.015478604608,
+          "criterion": 13866.814423910339,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 14052.429728614927,
+              "criterion": 14052.429728614927
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.19034939190527736,
+              "cost": 13947.036196529021,
+              "criterion": 13957.865288615081
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.16110411542760347,
+              "cost": 13887.071258701631,
+              "criterion": 13897.8900724327
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.14280669456604844,
+              "cost": 13885.83643316295,
+              "criterion": 13896.649686110022
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.07801352876001492,
+              "cost": 13856.015478604608,
+              "criterion": 13866.814423910339
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 12251.13906312692,
+          "criterion": 12260.543324191534,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 12276.825143933655,
+              "criterion": 12276.825143933655
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 12252.724427580444,
+              "criterion": 12262.128688645058
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 12251.13906312692,
+              "criterion": 12260.543324191534
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 12258.242645618,
+              "criterion": 12267.646906682614
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 12273.80341484752,
+              "criterion": 12283.207675912134
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 12294.203912183197,
+              "criterion": 12303.60817324781
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 12313.771619431238,
+              "criterion": 12323.175880495852
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 12276.825143933655,
+              "criterion": 12276.825143933655
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 12263.387748042793,
+              "criterion": 12272.792009107407
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 12261.9220828018,
+              "criterion": 12271.326343866414
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 12270.294031994817,
+              "criterion": 12279.698293059431
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 12294.125816563184,
+              "criterion": 12303.530077627798
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 12326.95880573049,
+              "criterion": 12336.363066795104
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 12357.592214724358,
+              "criterion": 12366.996475788972
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 8282.901056952862
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 12243.923324198577
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3035,
+            "events": 4,
+            "model_cost": 12251.13906312692,
+            "control_costs": {
+              "independent": 8282.901056952862,
+              "common_Gamma_identity": 12276.825143933655,
+              "old_publication": 8282.901056952862,
+              "common_Gamma_global": 12243.923324198577
+            },
+            "gains": {
+              "independent": -3968.2380061740587,
+              "common_Gamma_identity": 25.686080806734026,
+              "old_publication": -3968.2380061740587,
+              "common_Gamma_global": -7.215738928343853
+            },
+            "penalty": 9.40426106461349
+          },
+          "chronological": {
+            "count": 3002,
+            "events": 3,
+            "model_cost": 11428.288886509887,
+            "control_costs": {
+              "independent": 7160.205989328538,
+              "common_Gamma_identity": 11459.27515969125,
+              "old_publication": 7160.205989328538,
+              "common_Gamma_global": 11410.969886573894
+            },
+            "gains": {
+              "independent": -4268.082897181349,
+              "common_Gamma_identity": 30.986273181362776,
+              "old_publication": -4268.082897181349,
+              "common_Gamma_global": -17.318999935992906
+            },
+            "penalty": 9.393328373313299
+          },
+          "satellite_disjoint": {
+            "count": 599,
+            "events": 3,
+            "model_cost": 1784.2226801348233,
+            "control_costs": {
+              "independent": 1371.6037192229865,
+              "common_Gamma_identity": 1789.809231327428,
+              "old_publication": 1371.6037192229867,
+              "common_Gamma_global": 1785.0307805312004
+            },
+            "gains": {
+              "independent": -412.6189609118369,
+              "common_Gamma_identity": 5.586551192604702,
+              "old_publication": -412.61896091183667,
+              "common_Gamma_global": 0.8081003963770854
+            },
+            "penalty": 7.78155595923534
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0162",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 11848.371532598047,
+          "baseline_cost": 128928.74655693304,
+          "transitions": 2931,
+          "penalty": 23.949296822132677,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "standardized",
+          "coefficient": -0.11282522493267486,
+          "cost": 11766.022918809264,
+          "criterion": 11776.791336003596,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 11848.371532598047,
+              "criterion": 11848.371532598047
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.048864752778541645,
+              "cost": 11836.525618580827,
+              "criterion": 11847.283694007841
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.11282522493267486,
+              "cost": 11766.022918809264,
+              "criterion": 11776.791336003596
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.04040484638954519,
+              "cost": 11829.55507449788,
+              "criterion": 11840.312394712442
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.025790990169012568,
+              "cost": 11824.122307644622,
+              "criterion": 11834.878660482747
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 15687.117921458548,
+          "criterion": 15696.485607401248,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 15753.678288818322,
+              "criterion": 15753.678288818322
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 15692.509649496224,
+              "criterion": 15701.877335438923
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 15687.117921458548,
+              "criterion": 15696.485607401248
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 15693.2827631828,
+              "criterion": 15702.6504491255
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 15708.7947151622,
+              "criterion": 15718.162401104899
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 15729.311427506651,
+              "criterion": 15738.67911344935
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 15748.965240215335,
+              "criterion": 15758.332926158035
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 15753.678288818322,
+              "criterion": 15753.678288818322
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 15713.571605921657,
+              "criterion": 15722.939291864357
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 15708.429424771452,
+              "criterion": 15717.797110714151
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 15717.45923790948,
+              "criterion": 15726.826923852179
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 15742.41436825001,
+              "criterion": 15751.78205419271
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 15775.732297973731,
+              "criterion": 15785.09998391643
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 15806.54902600621,
+              "criterion": 15815.91671194891
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 8206.825252047263
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 15682.545090971933
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 2926,
+            "events": 4,
+            "model_cost": 15687.117921458548,
+            "control_costs": {
+              "independent": 8206.825252047263,
+              "common_Gamma_identity": 15753.678288818322,
+              "old_publication": 8206.825252047263,
+              "common_Gamma_global": 15682.545090971933
+            },
+            "gains": {
+              "independent": -7480.292669411285,
+              "common_Gamma_identity": 66.56036735977432,
+              "old_publication": -7480.292669411285,
+              "common_Gamma_global": -4.572830486615203
+            },
+            "penalty": 9.36768594269996
+          },
+          "chronological": {
+            "count": 3215,
+            "events": 3,
+            "model_cost": 13915.619784194634,
+            "control_costs": {
+              "independent": 8843.531782911952,
+              "common_Gamma_identity": 13990.850785402457,
+              "old_publication": 8843.53178291195,
+              "common_Gamma_global": 13882.713868746256
+            },
+            "gains": {
+              "independent": -5072.088001282682,
+              "common_Gamma_identity": 75.23100120782328,
+              "old_publication": -5072.088001282684,
+              "common_Gamma_global": -32.90591544837844
+            },
+            "penalty": 9.461876997791611
+          },
+          "satellite_disjoint": {
+            "count": 631,
+            "events": 3,
+            "model_cost": 1902.5695511148383,
+            "control_costs": {
+              "independent": 1705.6990922154243,
+              "common_Gamma_identity": 1925.8018843977634,
+              "old_publication": 1705.6990922154243,
+              "common_Gamma_global": 1886.7690764317606
+            },
+            "gains": {
+              "independent": -196.87045889941396,
+              "common_Gamma_identity": 23.232333282925083,
+              "old_publication": -196.87045889941396,
+              "common_Gamma_global": -15.80047468307771
+            },
+            "penalty": 7.8336002236611035
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0262",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 14553.072003165827,
+          "baseline_cost": 18121.9560781873,
+          "transitions": 3678,
+          "penalty": 24.630373215492803,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.053558867061802046,
+          "cost": 14415.553869569583,
+          "criterion": 14426.53945124923,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 14553.072003165827,
+              "criterion": 14553.072003165827
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.11618024146118086,
+              "cost": 14482.491610733177,
+              "criterion": 14493.487821709088
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.0983153309424898,
+              "cost": 14480.074781955635,
+              "criterion": 14491.067160987337
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.09103527064110334,
+              "cost": 14441.89527958622,
+              "criterion": 14452.886280134126
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.053558867061802046,
+              "cost": 14415.553869569583,
+              "criterion": 14426.53945124923
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 12681.260070462842,
+          "criterion": 12690.854584207458,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 12765.4788639754,
+              "criterion": 12765.4788639754
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 12685.732531703476,
+              "criterion": 12695.327045448092
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 12681.260070462842,
+              "criterion": 12690.854584207458
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 12689.877827295175,
+              "criterion": 12699.472341039791
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 12709.125821720963,
+              "criterion": 12718.72033546558
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 12734.23361920655,
+              "criterion": 12743.828132951166
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 12758.419377678078,
+              "criterion": 12768.013891422694
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 12765.4788639754,
+              "criterion": 12765.4788639754
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 12690.14873935379,
+              "criterion": 12699.743253098406
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 12686.860304500056,
+              "criterion": 12696.454818244672
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 12699.228996880156,
+              "criterion": 12708.823510624772
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 12727.649473349251,
+              "criterion": 12737.243987093867
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 12766.955413615098,
+              "criterion": 12776.549927359714
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 12804.479712584596,
+              "criterion": 12814.074226329212
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 9824.105743925462
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 12681.831982119595
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3671,
+            "events": 5,
+            "model_cost": 12681.260070462842,
+            "control_costs": {
+              "independent": 9835.540182554863,
+              "common_Gamma_identity": 12765.4788639754,
+              "old_publication": 9824.105743925462,
+              "common_Gamma_global": 12681.831982119595
+            },
+            "gains": {
+              "independent": -2845.719887907979,
+              "common_Gamma_identity": 84.21879351255848,
+              "old_publication": -2857.1543265373803,
+              "common_Gamma_global": 0.5719116567524907
+            },
+            "penalty": 9.594513744616725
+          },
+          "chronological": {
+            "count": 2117,
+            "events": 5,
+            "model_cost": 7686.41606090407,
+            "control_costs": {
+              "independent": 5770.365376270365,
+              "common_Gamma_identity": 7736.27810385599,
+              "old_publication": 5733.259939226351,
+              "common_Gamma_global": 7677.253029651375
+            },
+            "gains": {
+              "independent": -1916.0506846337048,
+              "common_Gamma_identity": 49.86204295191965,
+              "old_publication": -1953.156121677719,
+              "common_Gamma_global": -9.163031252694964
+            },
+            "penalty": 9.044049632254756
+          },
+          "satellite_disjoint": {
+            "count": 427,
+            "events": 5,
+            "model_cost": 1281.6248717992064,
+            "control_costs": {
+              "independent": 1124.1461553596023,
+              "common_Gamma_identity": 1293.745989825558,
+              "old_publication": 1120.9609458407267,
+              "common_Gamma_global": 1279.2432438283263
+            },
+            "gains": {
+              "independent": -157.4787164396041,
+              "common_Gamma_identity": 12.121118026351496,
+              "old_publication": -160.6639259584797,
+              "common_Gamma_global": -2.3816279708801176
+            },
+            "penalty": 7.443078374348516
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0229",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.6808809688647632,
+          "nu": 3.0,
+          "cost": 18985.36201113672,
+          "baseline_cost": 30161.513622840823,
+          "transitions": 4877,
+          "penalty": 25.476856667130157,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.06142668339633455,
+          "cost": 18752.296897520413,
+          "criterion": 18763.565545035795,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 18985.36201113672,
+              "criterion": 18985.36201113672
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.12372007833730961,
+              "cost": 18882.76258233562,
+              "criterion": 18894.042763271354
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.0984275763188227,
+              "cost": 18885.065294488006,
+              "criterion": 18896.339856753733
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.10022445268004859,
+              "cost": 18813.43410811964,
+              "criterion": 18824.709027338504
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.06142668339633455,
+              "cost": 18752.296897520413,
+              "criterion": 18763.565545035795
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.03,
+          "cost": 19480.813375096594,
+          "criterion": 19490.691955013423,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 19535.810808845366,
+              "criterion": 19535.810808845366
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 19481.78234482528,
+              "criterion": 19491.660924742107
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 19480.813375096594,
+              "criterion": 19490.691955013423
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 19493.55888526923,
+              "criterion": 19503.43746518606
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 19517.7248393091,
+              "criterion": 19527.60341922593
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 19548.328497193485,
+              "criterion": 19558.207077110314
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 19577.560643461635,
+              "criterion": 19587.439223378464
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 19535.810808845366,
+              "criterion": 19535.810808845366
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 19489.228098448442,
+              "criterion": 19499.10667836527
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 19483.370230993016,
+              "criterion": 19493.248810909845
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 19494.521984828432,
+              "criterion": 19504.40056474526
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 19529.514553839846,
+              "criterion": 19539.393133756676
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 19578.199715219987,
+              "criterion": 19588.078295136816
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 19623.86407609583,
+              "criterion": 19633.74265601266
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 12664.98716770214
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 19508.765038768095
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4877,
+            "events": 6,
+            "model_cost": 19480.813375096594,
+            "control_costs": {
+              "independent": 12664.987167702142,
+              "common_Gamma_identity": 19535.810808845366,
+              "old_publication": 12664.98716770214,
+              "common_Gamma_global": 19508.765038768095
+            },
+            "gains": {
+              "independent": -6815.826207394452,
+              "common_Gamma_identity": 54.99743374877289,
+              "old_publication": -6815.826207394453,
+              "common_Gamma_global": 27.951663671501592
+            },
+            "penalty": 9.878579916829944
+          },
+          "chronological": {
+            "count": 1539,
+            "events": 3,
+            "model_cost": 5333.7149722282575,
+            "control_costs": {
+              "independent": 4232.375511633959,
+              "common_Gamma_identity": 5401.49187502719,
+              "old_publication": 4232.375511633959,
+              "common_Gamma_global": 5313.85649286782
+            },
+            "gains": {
+              "independent": -1101.3394605942985,
+              "common_Gamma_identity": 67.7769027989325,
+              "old_publication": -1101.3394605942985,
+              "common_Gamma_global": -19.85847936043774
+            },
+            "penalty": 8.72518249495877
+          },
+          "satellite_disjoint": {
+            "count": 305,
+            "events": 3,
+            "model_cost": 1077.5547018272973,
+            "control_costs": {
+              "independent": 824.9440661865658,
+              "common_Gamma_identity": 1082.5939952446593,
+              "old_publication": 824.9440661865659,
+              "common_Gamma_global": 1074.1370797001055
+            },
+            "gains": {
+              "independent": -252.61063564073152,
+              "common_Gamma_identity": 5.039293417361932,
+              "old_publication": -252.6106356407314,
+              "common_Gamma_global": -3.417622127191862
+            },
+            "penalty": 7.106606137727303
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0226",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.6808809688647632,
+          "nu": 3.0,
+          "cost": 15817.069234254268,
+          "baseline_cost": 31141.921621400532,
+          "transitions": 3795,
+          "penalty": 24.72431906948919,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "standardized",
+          "coefficient": -0.21904653348678602,
+          "cost": 15410.950068130143,
+          "criterion": 15422.012077926045,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 15817.069234254268,
+              "criterion": 15817.069234254268
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.20206432695487037,
+              "cost": 15630.336605152384,
+              "criterion": 15641.391463556682
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.21904653348678602,
+              "cost": 15410.950068130143,
+              "criterion": 15422.012077926045
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.1456860728077281,
+              "cost": 15559.232657262139,
+              "criterion": 15570.267910106018
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.08066294578370872,
+              "cost": 15522.583376597584,
+              "criterion": 15533.603911520477
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.01,
+          "cost": 18129.142418607033,
+          "criterion": 18138.76909808367,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 18146.75105212709,
+              "criterion": 18146.75105212709
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 18129.142418607033,
+              "criterion": 18138.76909808367
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 18134.789284942133,
+              "criterion": 18144.41596441877
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 18148.731826807227,
+              "criterion": 18158.358506283865
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 18170.230709162326,
+              "criterion": 18179.857388638964
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 18196.50133246236,
+              "criterion": 18206.128011939
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 18221.265424118326,
+              "criterion": 18230.892103594964
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 18146.75105212709,
+              "criterion": 18146.75105212709
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 18131.40957349259,
+              "criterion": 18141.03625296923
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 18138.61250834929,
+              "criterion": 18148.23918782593
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 18158.137268548184,
+              "criterion": 18167.76394802482
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 18191.76859770514,
+              "criterion": 18201.39527718178
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 18233.89175732179,
+              "criterion": 18243.51843679843
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 18272.53736171261,
+              "criterion": 18282.164041189248
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 9988.507892257581
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 18118.998505389016
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3791,
+            "events": 5,
+            "model_cost": 18129.142418607033,
+            "control_costs": {
+              "independent": 9988.507892257581,
+              "common_Gamma_identity": 18146.75105212709,
+              "old_publication": 9988.507892257581,
+              "common_Gamma_global": 18118.998505389016
+            },
+            "gains": {
+              "independent": -8140.634526349451,
+              "common_Gamma_identity": 17.608633520056173,
+              "old_publication": -8140.634526349451,
+              "common_Gamma_global": -10.143913218016678
+            },
+            "penalty": 9.626679476636225
+          },
+          "chronological": {
+            "count": 2378,
+            "events": 3,
+            "model_cost": 7924.058317880213,
+            "control_costs": {
+              "independent": 5831.444112946441,
+              "common_Gamma_identity": 7964.0212718824005,
+              "old_publication": 5831.444112946441,
+              "common_Gamma_global": 7899.62714861688
+            },
+            "gains": {
+              "independent": -2092.6142049337714,
+              "common_Gamma_identity": 39.96295400218787,
+              "old_publication": -2092.6142049337714,
+              "common_Gamma_global": -24.431169263332777
+            },
+            "penalty": 9.160309438370618
+          },
+          "satellite_disjoint": {
+            "count": 466,
+            "events": 3,
+            "model_cost": 1327.4184030548006,
+            "control_costs": {
+              "independent": 1160.5173459486534,
+              "common_Gamma_identity": 1332.878068160983,
+              "old_publication": 1160.5173459486537,
+              "common_Gamma_global": 1321.7723884211512
+            },
+            "gains": {
+              "independent": -166.90105710614716,
+              "common_Gamma_identity": 5.459665106182456,
+              "old_publication": -166.90105710614694,
+              "common_Gamma_global": -5.646014633649429
+            },
+            "penalty": 7.530479995245536
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0278",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.6808809688647632,
+          "nu": 3.0,
+          "cost": 15019.434822764022,
+          "baseline_cost": 19748.368010524948,
+          "transitions": 3914,
+          "penalty": 24.816945443868065,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.08925576073743019,
+          "cost": 14729.783520273533,
+          "criterion": 14740.836390734556,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 15019.434822764022,
+              "criterion": 15019.434822764022
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.17517764033173408,
+              "cost": 14849.936917083993,
+              "criterion": 14861.012508159862
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.13256012201585024,
+              "cost": 14876.895127300953,
+              "criterion": 14887.9576033571
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.1420015365032953,
+              "cost": 14775.666435599334,
+              "criterion": 14786.731503905901
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.08925576073743019,
+              "cost": 14729.783520273533,
+              "criterion": 14740.836390734556
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.01,
+          "cost": 14632.436593073662,
+          "criterion": 14642.092131955966,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 14655.202890359562,
+              "criterion": 14655.202890359562
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 14635.71862114086,
+              "criterion": 14645.374160023164
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 14641.751707216807,
+              "criterion": 14651.40724609911
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 14656.629683961513,
+              "criterion": 14666.285222843817
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 14678.472240040823,
+              "criterion": 14688.127778923126
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 14704.571681230027,
+              "criterion": 14714.22722011233
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 14729.148884867502,
+              "criterion": 14738.804423749805
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 14655.202890359562,
+              "criterion": 14655.202890359562
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 14632.436593073662,
+              "criterion": 14642.092131955966
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 14634.201655388146,
+              "criterion": 14643.85719427045
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 14651.509680269919,
+              "criterion": 14661.165219152223
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 14685.549201039941,
+              "criterion": 14695.204739922245
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 14727.906949634445,
+              "criterion": 14737.562488516749
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 14766.514520420056,
+              "criterion": 14776.17005930236
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 10032.332779298307
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 14625.380382543686
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 3902,
+            "events": 5,
+            "model_cost": 14632.436593073662,
+            "control_costs": {
+              "independent": 10032.332779298307,
+              "common_Gamma_identity": 14655.202890359562,
+              "old_publication": 10032.332779298307,
+              "common_Gamma_global": 14625.380382543686
+            },
+            "gains": {
+              "independent": -4600.103813775355,
+              "common_Gamma_identity": 22.766297285899782,
+              "old_publication": -4600.103813775355,
+              "common_Gamma_global": -7.056210529975942
+            },
+            "penalty": 9.655538882302947
+          },
+          "chronological": {
+            "count": 2570,
+            "events": 6,
+            "model_cost": 7770.188859313941,
+            "control_costs": {
+              "independent": 6186.846008534594,
+              "common_Gamma_identity": 7844.849484143726,
+              "old_publication": 6186.846008534595,
+              "common_Gamma_global": 7761.987383547613
+            },
+            "gains": {
+              "independent": -1583.342850779347,
+              "common_Gamma_identity": 74.66062482978487,
+              "old_publication": -1583.342850779346,
+              "common_Gamma_global": -8.201475766328258
+            },
+            "penalty": 9.237955539009155
+          },
+          "satellite_disjoint": {
+            "count": 524,
+            "events": 6,
+            "model_cost": 1597.973814398955,
+            "control_costs": {
+              "independent": 1343.3703608573262,
+              "common_Gamma_identity": 1609.2597780327512,
+              "old_publication": 1343.3703608573257,
+              "common_Gamma_global": 1593.3736348454397
+            },
+            "gains": {
+              "independent": -254.60345354162882,
+              "common_Gamma_identity": 11.2859636337962,
+              "old_publication": -254.60345354162928,
+              "common_Gamma_global": -4.600179553515318
+            },
+            "penalty": 7.647786045440933
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0254",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.6808809688647632,
+          "nu": 3.0,
+          "cost": 18772.341527185577,
+          "baseline_cost": 25469.179568195792,
+          "transitions": 4806,
+          "penalty": 25.432861248889242,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.058045254867256556,
+          "cost": 18590.04568279673,
+          "criterion": 18601.299261186876,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 18772.341527185577,
+              "criterion": 18772.341527185577
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.14451222591349114,
+              "cost": 18635.1861304517,
+              "criterion": 18646.457223373676
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.10857173497549129,
+              "cost": 18651.136199090048,
+              "criterion": 18662.39819605022
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.10375057926519651,
+              "cost": 18601.273852736213,
+              "criterion": 18612.534826057446
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.058045254867256556,
+              "cost": 18590.04568279673,
+              "criterion": 18601.299261186876
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.03,
+          "cost": 17641.35890778975,
+          "criterion": 17651.222822567164,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 17705.175034361917,
+              "criterion": 17705.175034361917
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 17665.472968465052,
+              "criterion": 17675.336883242468
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 17664.79154734442,
+              "criterion": 17674.655462121835
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 17677.049553598372,
+              "criterion": 17686.913468375787
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 17700.942652708378,
+              "criterion": 17710.806567485793
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 17731.42530283862,
+              "criterion": 17741.289217616035
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 17760.604002816908,
+              "criterion": 17770.467917594324
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 17705.175034361917,
+              "criterion": 17705.175034361917
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 17650.9751752474,
+              "criterion": 17660.839090024816
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 17641.35890778975,
+              "criterion": 17651.222822567164
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 17649.367599204077,
+              "criterion": 17659.231513981493
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 17682.742908308755,
+              "criterion": 17692.60682308617
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 17730.86381558134,
+              "criterion": 17740.727730358754
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 17776.350142115713,
+              "criterion": 17786.214056893128
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 12427.833901266524
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 17646.000698595788
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4806,
+            "events": 6,
+            "model_cost": 17641.35890778975,
+            "control_costs": {
+              "independent": 12427.833901266526,
+              "common_Gamma_identity": 17705.175034361917,
+              "old_publication": 12427.833901266524,
+              "common_Gamma_global": 17646.000698595788
+            },
+            "gains": {
+              "independent": -5213.525006523223,
+              "common_Gamma_identity": 63.81612657216829,
+              "old_publication": -5213.525006523225,
+              "common_Gamma_global": 4.641790806039353
+            },
+            "penalty": 9.863914777416305
+          },
+          "chronological": {
+            "count": 872,
+            "events": 3,
+            "model_cost": 3372.5908661048416,
+            "control_costs": {
+              "independent": 2208.836780280201,
+              "common_Gamma_identity": 3409.417321614503,
+              "old_publication": 2208.836780280201,
+              "common_Gamma_global": 3377.6340743142546
+            },
+            "gains": {
+              "independent": -1163.7540858246407,
+              "common_Gamma_identity": 36.82645550966163,
+              "old_publication": -1163.7540858246407,
+              "common_Gamma_global": 5.043208209413024
+            },
+            "penalty": 8.15708378502887
+          },
+          "satellite_disjoint": {
+            "count": 176,
+            "events": 3,
+            "model_cost": 438.80301210024777,
+            "control_costs": {
+              "independent": 377.6189224297401,
+              "common_Gamma_identity": 443.12020839303005,
+              "old_publication": 377.61892242974005,
+              "common_Gamma_global": 439.9120194278875
+            },
+            "gains": {
+              "independent": -61.18408967050766,
+              "common_Gamma_identity": 4.317196292782285,
+              "old_publication": -61.18408967050772,
+              "common_Gamma_global": 1.1090073276397447
+            },
+            "penalty": 6.556778356158042
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0339",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 14909.0267053345,
+          "baseline_cost": 19242.020766315327,
+          "transitions": 4412,
+          "penalty": 25.17625014112018,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.10108031529505786,
+          "cost": 14488.381636769203,
+          "criterion": 14499.556526101956,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 14909.0267053345,
+              "criterion": 14909.0267053345
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.1961151833345383,
+              "cost": 14601.328793951096,
+              "criterion": 14612.531927218844
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.1471339664623833,
+              "cost": 14706.850555301648,
+              "criterion": 14718.036875808348
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.16111064585772808,
+              "cost": 14517.529630062967,
+              "criterion": 14528.72025880579
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.10108031529505786,
+              "cost": 14488.381636769203,
+              "criterion": 14499.556526101956
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.03,
+          "cost": 14914.206436014443,
+          "criterion": 14923.984133560922,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 14973.426981896988,
+              "criterion": 14973.426981896988
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 14943.58885661389,
+              "criterion": 14953.366554160368
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 14948.154188401375,
+              "criterion": 14957.931885947854
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 14965.627259826433,
+              "criterion": 14975.404957372912
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 14996.208019178428,
+              "criterion": 15005.985716724907
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 15035.793553248634,
+              "criterion": 15045.571250795112
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 15074.204598883178,
+              "criterion": 15083.982296429656
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 14973.426981896988,
+              "criterion": 14973.426981896988
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 14926.027097365688,
+              "criterion": 14935.804794912166
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 14914.206436014443,
+              "criterion": 14923.984133560922
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 14922.704746714913,
+              "criterion": 14932.482444261392
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 14963.716707659725,
+              "criterion": 14973.494405206204
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 15025.495426574389,
+              "criterion": 15035.273124120868
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 15085.150377507474,
+              "criterion": 15094.928075053953
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 10876.66216219342
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 14931.96122108903
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4409,
+            "events": 8,
+            "model_cost": 14914.206436014443,
+            "control_costs": {
+              "independent": 10915.264901071509,
+              "common_Gamma_identity": 14973.426981896988,
+              "old_publication": 10876.66216219342,
+              "common_Gamma_global": 14931.96122108903
+            },
+            "gains": {
+              "independent": -3998.9415349429346,
+              "common_Gamma_identity": 59.220545882544684,
+              "old_publication": -4037.544273821024,
+              "common_Gamma_global": 17.754785074586835
+            },
+            "penalty": 9.777697546477828
+          },
+          "chronological": {
+            "count": 2737,
+            "events": 5,
+            "model_cost": 10956.75579007492,
+            "control_costs": {
+              "independent": 6671.086160640414,
+              "common_Gamma_identity": 10957.052863132432,
+              "old_publication": 6672.5590124479095,
+              "common_Gamma_global": 10952.852624211344
+            },
+            "gains": {
+              "independent": -4285.669629434506,
+              "common_Gamma_identity": 0.29707305751253443,
+              "old_publication": -4284.19677762701,
+              "common_Gamma_global": -3.9031658635758504
+            },
+            "penalty": 9.30091207016057
+          },
+          "satellite_disjoint": {
+            "count": 571,
+            "events": 5,
+            "model_cost": 2644.436277308948,
+            "control_costs": {
+              "independent": 1470.4267020632824,
+              "common_Gamma_identity": 2648.2678156698616,
+              "old_publication": 1471.0221835064021,
+              "common_Gamma_global": 2642.166842230218
+            },
+            "gains": {
+              "independent": -1174.0095752456655,
+              "common_Gamma_identity": 3.8315383609137825,
+              "old_publication": -1173.4140938025457,
+              "common_Gamma_global": -2.269435078729657
+            },
+            "penalty": 7.733683570775901
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0357",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 17191.489757278403,
+          "baseline_cost": 26169.93844679915,
+          "transitions": 4847,
+          "penalty": 25.458345707536132,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.08794500632890417,
+          "cost": 16867.38457299082,
+          "criterion": 16878.651011273047,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 17191.489757278403,
+              "criterion": 17191.489757278403
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.14948794778222746,
+              "cost": 16989.857540277633,
+              "criterion": 17001.138590882252
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.13602196399267064,
+              "cost": 17007.85475049087,
+              "criterion": 17019.131956423647
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.13393332366951102,
+              "cost": 16907.953962224863,
+              "criterion": 16919.230604318138
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.08794500632890417,
+              "cost": 16867.38457299082,
+              "criterion": 16878.651011273047
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.01,
+          "cost": 18985.428725618665,
+          "criterion": 18995.30051608446,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 19025.39835623272,
+              "criterion": 19025.39835623272
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 18985.428725618665,
+              "criterion": 18995.30051608446
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 18986.679668211113,
+              "criterion": 18996.551458676906
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 19005.93803708913,
+              "criterion": 19015.809827554924
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 19044.004191750806,
+              "criterion": 19053.8759822166
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 19094.088345575638,
+              "criterion": 19103.96013604143
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 19142.52647568971,
+              "criterion": 19152.398266155502
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 19025.39835623272,
+              "criterion": 19025.39835623272
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 19009.279336826083,
+              "criterion": 19019.151127291876
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 19016.28738965147,
+              "criterion": 19026.15918011726
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 19041.82570003894,
+              "criterion": 19051.697490504732
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 19094.889713695084,
+              "criterion": 19104.761504160877
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 19170.16812060153,
+              "criterion": 19180.039911067324
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 19243.76211989558,
+              "criterion": 19253.63391036137
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 12748.637585645409
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 18988.758559386435
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4844,
+            "events": 10,
+            "model_cost": 18985.428725618665,
+            "control_costs": {
+              "independent": 12761.165240059237,
+              "common_Gamma_identity": 19025.39835623272,
+              "old_publication": 12748.637585645409,
+              "common_Gamma_global": 18988.758559386435
+            },
+            "gains": {
+              "independent": -6224.263485559428,
+              "common_Gamma_identity": 39.96963061405404,
+              "old_publication": -6236.791139973257,
+              "common_Gamma_global": 3.329833767769742
+            },
+            "penalty": 9.871790465792873
+          },
+          "chronological": {
+            "count": 1958,
+            "events": 5,
+            "model_cost": 7880.669850148174,
+            "control_costs": {
+              "independent": 4824.002710562564,
+              "common_Gamma_identity": 7890.3012633914805,
+              "old_publication": 4826.038988928532,
+              "common_Gamma_global": 7879.968339004848
+            },
+            "gains": {
+              "independent": -3056.66713958561,
+              "common_Gamma_identity": 9.63141324330627,
+              "old_publication": -3054.6308612196426,
+              "common_Gamma_global": -0.7015111433265702
+            },
+            "penalty": 8.965973184210347
+          },
+          "satellite_disjoint": {
+            "count": 394,
+            "events": 5,
+            "model_cost": 1196.9102887465824,
+            "control_costs": {
+              "independent": 947.9923063268548,
+              "common_Gamma_identity": 1197.7863220519039,
+              "old_publication": 950.035711488708,
+              "common_Gamma_global": 1196.8638993730242
+            },
+            "gains": {
+              "independent": -248.91798241972765,
+              "common_Gamma_identity": 0.8760333053214708,
+              "old_publication": -246.87457725787442,
+              "common_Gamma_global": -0.046389373558213265
+            },
+            "penalty": 7.362645270417825
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0385",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 14377.573877300285,
+          "baseline_cost": 19151.849578513647,
+          "transitions": 4313,
+          "penalty": 25.108166989943527,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.13871426935095796,
+          "cost": 13866.443093732309,
+          "criterion": 13877.604313099719,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 14377.573877300285,
+              "criterion": 14377.573877300285
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.19316667932973816,
+              "cost": 14057.991878560642,
+              "criterion": 14069.171169645533
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.1700609875817396,
+              "cost": 14109.705966057603,
+              "criterion": 14120.876864515989
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.18709109100735163,
+              "cost": 13931.74014476696,
+              "criterion": 13942.917125562182
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.13871426935095796,
+              "cost": 13866.443093732309,
+              "criterion": 13877.604313099719
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "normal",
+          "rho": 0.01,
+          "cost": 15429.085353953033,
+          "criterion": 15438.838948415994,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 15447.946567280156,
+              "criterion": 15447.946567280156
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 15429.085353953033,
+              "criterion": 15438.838948415994
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 15433.389907701578,
+              "criterion": 15443.14350216454
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 15453.620588898917,
+              "criterion": 15463.374183361879
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 15491.938336731311,
+              "criterion": 15501.691931194273
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 15542.028236777587,
+              "criterion": 15551.781831240549
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 15590.420706504798,
+              "criterion": 15600.17430096776
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 15447.946567280156,
+              "criterion": 15447.946567280156
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 15430.577232039896,
+              "criterion": 15440.330826502857
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 15432.436123303252,
+              "criterion": 15442.189717766214
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 15454.038658024463,
+              "criterion": 15463.792252487425
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 15506.287965589161,
+              "criterion": 15516.041560052123
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 15582.16478904925,
+              "criterion": 15591.918383512211
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 15656.234944828957,
+              "criterion": 15665.988539291919
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 10643.244200793044
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 15429.8644540454
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4304,
+            "events": 10,
+            "model_cost": 15429.085353953033,
+            "control_costs": {
+              "independent": 10643.244200793046,
+              "common_Gamma_identity": 15447.946567280156,
+              "old_publication": 10643.244200793044,
+              "common_Gamma_global": 15429.8644540454
+            },
+            "gains": {
+              "independent": -4785.841153159987,
+              "common_Gamma_identity": 18.86121332712355,
+              "old_publication": -4785.841153159989,
+              "common_Gamma_global": 0.7791000923680258
+            },
+            "penalty": 9.75359446296151
+          },
+          "chronological": {
+            "count": 2714,
+            "events": 5,
+            "model_cost": 11195.202216887468,
+            "control_costs": {
+              "independent": 6901.894065826969,
+              "common_Gamma_identity": 11217.85631841629,
+              "old_publication": 6901.894065826969,
+              "common_Gamma_global": 11220.36844695181
+            },
+            "gains": {
+              "independent": -4293.308151060499,
+              "common_Gamma_identity": 22.65410152882214,
+              "old_publication": -4293.308151060499,
+              "common_Gamma_global": 25.166230064342017
+            },
+            "penalty": 9.292473201514705
+          },
+          "satellite_disjoint": {
+            "count": 576,
+            "events": 5,
+            "model_cost": 1796.1442903726645,
+            "control_costs": {
+              "independent": 1423.8720093004777,
+              "common_Gamma_identity": 1801.2741524583475,
+              "old_publication": 1423.8720093004777,
+              "common_Gamma_global": 1801.2706860040635
+            },
+            "gains": {
+              "independent": -372.27228107218684,
+              "common_Gamma_identity": 5.129862085683044,
+              "old_publication": -372.27228107218684,
+              "common_Gamma_global": 5.126395631398964
+            },
+            "penalty": 7.742402021815782
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0340",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.25,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 15089.899145233263,
+          "baseline_cost": 20912.979893331303,
+          "transitions": 4405,
+          "penalty": 25.171486615110837,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "age_squared",
+          "coefficient": -0.09352027123168503,
+          "cost": 14720.511696083224,
+          "criterion": 14731.683526384964,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 15089.899145233263,
+              "criterion": 15089.899145233263
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.18644622005496572,
+              "cost": 14812.65293546682,
+              "criterion": 14823.850781920402
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.1352914768143445,
+              "cost": 14917.42916418565,
+              "criterion": 14928.610552229959
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.15192502411022266,
+              "cost": 14737.050918582663,
+              "criterion": 14748.237084056223
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.09352027123168503,
+              "cost": 14720.511696083224,
+              "criterion": 14731.683526384964
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.1,
+          "cost": 15973.52355804702,
+          "criterion": 15983.299666670226,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 16035.773068557126,
+              "criterion": 16035.773068557126
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 16013.09461357767,
+              "criterion": 16022.870722200876
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 16017.771155537264,
+              "criterion": 16027.54726416047
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 16034.656460713042,
+              "criterion": 16044.432569336248
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 16064.097042567895,
+              "criterion": 16073.873151191101
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 16102.949110723946,
+              "criterion": 16112.725219347152
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 16141.135062741718,
+              "criterion": 16150.911171364924
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 16035.773068557126,
+              "criterion": 16035.773068557126
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 15993.580432506707,
+              "criterion": 16003.356541129913
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 15974.46943387896,
+              "criterion": 15984.245542502165
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 15973.52355804702,
+              "criterion": 15983.299666670226
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 16008.50945383748,
+              "criterion": 16018.285562460685
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 16068.002192588543,
+              "criterion": 16077.778301211749
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 16126.992924533415,
+              "criterion": 16136.769033156621
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.0,
+            "cost": 10980.678873627548
+          },
+          "global_model": {
+            "rho": 0.03,
+            "cost": 16003.039286607724
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4402,
+            "events": 8,
+            "model_cost": 15973.52355804702,
+            "control_costs": {
+              "independent": 10980.678873627548,
+              "common_Gamma_identity": 16035.773068557126,
+              "old_publication": 10980.678873627548,
+              "common_Gamma_global": 16003.039286607724
+            },
+            "gains": {
+              "independent": -4992.844684419471,
+              "common_Gamma_identity": 62.24951051010612,
+              "old_publication": -4992.844684419471,
+              "common_Gamma_global": 29.515728560703792
+            },
+            "penalty": 9.776108623206298
+          },
+          "chronological": {
+            "count": 2799,
+            "events": 5,
+            "model_cost": 13010.345820515544,
+            "control_costs": {
+              "independent": 7235.087289538889,
+              "common_Gamma_identity": 12997.646996925629,
+              "old_publication": 7235.087289538888,
+              "common_Gamma_global": 13007.738478867208
+            },
+            "gains": {
+              "independent": -5775.258530976655,
+              "common_Gamma_identity": -12.698823589915264,
+              "old_publication": -5775.2585309766555,
+              "common_Gamma_global": -2.6073416483359324
+            },
+            "penalty": 9.323311850635344
+          },
+          "satellite_disjoint": {
+            "count": 543,
+            "events": 5,
+            "model_cost": 1924.7033456078352,
+            "control_costs": {
+              "independent": 1375.6122848847676,
+              "common_Gamma_identity": 1930.423856637307,
+              "old_publication": 1375.6122848847676,
+              "common_Gamma_global": 1930.6832764854869
+            },
+            "gains": {
+              "independent": -549.0910607230676,
+              "common_Gamma_identity": 5.720511029471709,
+              "old_publication": -549.0910607230676,
+              "common_Gamma_global": 5.979930877651668
+            },
+            "penalty": 7.683403681053826
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    },
+    {
+      "case": "DS23-0406",
+      "selection": {
+        "qualified": false,
+        "prefix_model": {
+          "shrinkage": 0.0,
+          "multiplier": 0.632455532033676,
+          "nu": 3.0,
+          "cost": 15568.019248731562,
+          "baseline_cost": 24565.387961401026,
+          "transitions": 4396,
+          "penalty": 25.165350946570534,
+          "fallback": false
+        },
+        "prefix_location": {
+          "kind": "standardized",
+          "coefficient": -0.26349485812628914,
+          "cost": 14877.943565258562,
+          "criterion": 14889.174033836585,
+          "choices": [
+            {
+              "kind": null,
+              "coefficient": 0.0,
+              "cost": 15568.019248731562,
+              "criterion": 15568.019248731562
+            },
+            {
+              "kind": "seconds",
+              "coefficient": -0.21182576377060125,
+              "cost": 15161.069351119537,
+              "criterion": 15172.275260311499
+            },
+            {
+              "kind": "standardized",
+              "coefficient": -0.26349485812628914,
+              "cost": 14877.943565258562,
+              "criterion": 14889.174033836585
+            },
+            {
+              "kind": "age",
+              "coefficient": -0.20141128955629317,
+              "cost": 14978.29426771346,
+              "criterion": 14989.495873258786
+            },
+            {
+              "kind": "age_squared",
+              "coefficient": -0.1327067931646882,
+              "cost": 14917.705468877408,
+              "criterion": 14928.884119008124
+            }
+          ]
+        },
+        "prefix_selection": {
+          "kind": "radial_velocity",
+          "rho": 0.03,
+          "cost": 17500.25970913801,
+          "criterion": 17510.034226309246,
+          "choices": [
+            {
+              "kind": "normal",
+              "rho": 0.0,
+              "cost": 17553.291538910402,
+              "criterion": 17553.291538910402
+            },
+            {
+              "kind": "normal",
+              "rho": 0.01,
+              "cost": 17508.241291030554,
+              "criterion": 17518.01580820179
+            },
+            {
+              "kind": "normal",
+              "rho": 0.03,
+              "cost": 17508.872281132746,
+              "criterion": 17518.646798303984
+            },
+            {
+              "kind": "normal",
+              "rho": 0.1,
+              "cost": 17529.26700840315,
+              "criterion": 17539.041525574386
+            },
+            {
+              "kind": "normal",
+              "rho": 0.3,
+              "cost": 17570.343115624575,
+              "criterion": 17580.117632795813
+            },
+            {
+              "kind": "normal",
+              "rho": 0.6,
+              "cost": 17625.058560050133,
+              "criterion": 17634.83307722137
+            },
+            {
+              "kind": "normal",
+              "rho": 0.8,
+              "cost": 17678.229936705713,
+              "criterion": 17688.00445387695
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.0,
+              "cost": 17553.291538910402,
+              "criterion": 17553.291538910402
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.01,
+              "cost": 17503.730796487827,
+              "criterion": 17513.505313659065
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.03,
+              "cost": 17500.25970913801,
+              "criterion": 17510.034226309246
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.1,
+              "cost": 17519.97645767962,
+              "criterion": 17529.750974850856
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.3,
+              "cost": 17570.96120587549,
+              "criterion": 17580.735723046728
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.6,
+              "cost": 17647.365567840825,
+              "criterion": 17657.140085012063
+            },
+            {
+              "kind": "radial_velocity",
+              "rho": 0.8,
+              "cost": 17725.19223656249,
+              "criterion": 17734.966753733726
+            }
+          ]
+        },
+        "controls": {
+          "publication": {
+            "rho": 0.01,
+            "cost": 11192.132181770607
+          },
+          "global_model": {
+            "rho": 0.01,
+            "cost": 17503.116588725963
+          }
+        },
+        "validation": {
+          "training": {
+            "count": 4395,
+            "events": 11,
+            "model_cost": 17500.25970913801,
+            "control_costs": {
+              "independent": 11279.297884449908,
+              "common_Gamma_identity": 17553.291538910402,
+              "old_publication": 11192.132181770607,
+              "common_Gamma_global": 17503.116588725963
+            },
+            "gains": {
+              "independent": -6220.9618246881,
+              "common_Gamma_identity": 53.031829772393394,
+              "old_publication": -6308.127527367402,
+              "common_Gamma_global": 2.8568795879546087
+            },
+            "penalty": 9.774517171239168
+          },
+          "chronological": {
+            "count": 2026,
+            "events": 5,
+            "model_cost": 8571.143779277585,
+            "control_costs": {
+              "independent": 5389.404857831815,
+              "common_Gamma_identity": 8577.559829705857,
+              "old_publication": 5364.94422007119,
+              "common_Gamma_global": 8569.124429515843
+            },
+            "gains": {
+              "independent": -3181.73892144577,
+              "common_Gamma_identity": 6.416050428271774,
+              "old_publication": -3206.199559206395,
+              "common_Gamma_global": -2.019349761741978
+            },
+            "penalty": 9.000113045928519
+          },
+          "satellite_disjoint": {
+            "count": 406,
+            "events": 5,
+            "model_cost": 1446.0179912955978,
+            "control_costs": {
+              "independent": 1054.8404463828033,
+              "common_Gamma_identity": 1442.6939424889677,
+              "old_publication": 1053.3422249203645,
+              "common_Gamma_global": 1443.6705051391255
+            },
+            "gains": {
+              "independent": -391.1775449127945,
+              "common_Gamma_identity": -3.324048806630117,
+              "old_publication": -392.67576637523325,
+              "common_Gamma_global": -2.347486156472314
+            },
+            "penalty": 7.392647520721623
+          }
+        },
+        "all_past": null,
+        "selected_kind": null,
+        "selected_rho": 0.0,
+        "train_and_validation_update_batches_disjoint": true,
+        "held_satellites_excluded_from_marginal_location_and_covariance_training": true,
+        "univariate_Student_marginals_unchanged": true,
+        "common_Gamma_tail_dependence_control_explicit": true,
+        "no_RF_GPS_or_future_elements_input": true
+      }
+    }
+  ]
+}
