@@ -1,0 +1,190 @@
+DS24 high-band pipeline audit, 2026-10-26
+
+The audited localization code does not contain a demonstrated CH5-8 sign,
+frequency-unit, offset-index, or missing-CH1-4 gauge defect. Channel-label flips
+on actual saved problems preserve both objectives and predictions. The strongest
+concrete preparation discrepancy is that the two channel subsets do not always
+receive the same candidate bank. This affects cases0014/0093 and cannot explain
+the two worst highlighted high-band cases0015/0019, whose banks and complete
+historical forecast documents are identical between subsets.
+
+Scope: read-only saved-data inspection, twelve fixed-position problem replays,
+48 additional fixed-position invariance evaluations per label view, four seed
+generation checks per problem, no position refit, no engine.context call, no
+truth coordinate, no new RF, no production changes. Executable checks and JSON
+evidence are beside this report. check_pipeline_invariants.py ran in27.81s.
+The source checksums in candidate_differences.json bind the current audited
+implementation. Common dependencies are live tools imported by the frozen
+engine; they are not a complete historical source snapshot. Exact reproduction
+of saved objective values in the twelve tested problems supports this replay.
+
+1. Actual units, RF authority, sign, and aliases
+
+All24 available low/high pairs were checked back to their frozen tracking.json.
+The selected observation IDs equal exactly the max-margin gate-passing winners
+in the relevant channels. Each observation's CFO equals the original
+fractional_tracking_cfo_hz, with no sign or nominal-frequency subtraction; its
+RF equals actual_rf_hz, receiver index follows the sorted original receiver IDs,
+and time equals counter displacement/sample_rate plus half the probe duration.
+Across these pairs low contains60059 winning observations and54186 graph points;
+high contains48541 and43241. Every graph value differs from its source CFO by
+an integer multiple of1/4.4us; maximum noninteger alias error2.23e-16. RF/time/
+channel identity is unchanged for every graph point. Source:
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds22_merged_tracks.py:46-79
+  /home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/glrt_frequency_input.py:36-60
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds22_public_tracks.py:16-31
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds22_merged_tracks.py:123-140
+
+Actual RF values vary with the frozen lower/upper slice; CH1 has10.7096875/
+10.9403125GHz and CH5 has11.7096875/11.9403125GHz, with250MHz increments per
+channel within each half. CH4 reaches11.6903125GHz; treating all CH1-4 as below
+11.5GHz would be wrong. Both halves carry their correct original actual RF.
+
+paired_phase_frequency returns -11.5e9*range_rate/299792.458, with rate inkm/s;
+JointMarginal multiplies byq=actual_RF/11.5e9, exactly -RF*rate/c. The sign and
+reference cancel identically for both halves, and phase/orbit derivative columns
+receive the sameq. No high-only frequency conversion branch was found. Source:
+  /home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/continuous_curve_fit.py:53-64
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/dsx01_joint_marginal.py:80-85,133-158
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/ds23_height_problem.py:18-41
+This verifies the localization transfer of the stored GLRT contract; it does not
+independently validate upstream raw-IQ RF metadata or detector sign calibration.
+
+2. High-only gauge, offsets, drift, state decoding, and discovery seeds
+
+Group index is2*(receiver-1)+int(channel>4), consistently in hardware prediction,
+curved features, predictive features, and band-event design. Low-only offsets
+use columns0,2; high-only offsets use1,3. Other offset columns are exactly zero,
+and their proper independent Gaussian priors introduce no asymmetric data cost.
+The drift features are receiver mean10*(t-150) and signed contrast0.5*(t-150).
+Changing CHk toCHk+4 or vice versa permutes offsets and reverses contrast signs.
+With symmetric Gaussian priors this preserves the covariance and objective.
+The observed one-band drift SD is sqrt(10^2+.5^2)=10.012492Hz/s for either half.
+Keep the two coefficients or rotate to an equivalent single observed direction;
+do not impose an additional low-band gauge or constrain the absent band's rate.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/analyze_dsx01_fixed_site.py:44-45
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/dsx01_joint_marginal.py:89-103,156-158,176-199
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/compare_dsx01_retention_localization.py:147-152
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/ds23_predictive_linear.py:29-53
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/ds23_frequency_events.py:19-36
+
+Actual saved low/high cases0010,0015,0019, bothc arms, replayed with exactly zero
+saved-objective difference. Holding RF, times, values, aliases, identities,
+priors, and position fixed and swapping channel labels by4 gave maximum loss
+change1.78e-9 at saved endpoints and4.72e-9 across four arbitrary positions.
+Maximum conditional prediction change was2.15e-7Hz. Hardware predicted from
+decoded state beta agrees with direct feature prediction to2.92e-11Hz; smooth
+state agrees to2.28e-13Hz. These tests also exercise predictive observations.
+
+First-seed construction was tested separately through the exact statistics,
+phase proposal, first four seed_calibrations proposals, and project_radio_state
+path. Raw seed beta and projected beta are exactly equal after group
+permutation. Absent-group defaultq=1 and mean/contrast drift projection therefore
+do not favor low labels in these tested cases. This is not a rerun of the full
+finite identity-search procedure, whose branches can change with actual data.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/run_dsx01_clean_region.py:69-118
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/analyze_dsx01_fixed_site.py:366-412
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/prototype_dsx01_calibration_modes.py:27-38
+
+3. Confirmed subset-dependent candidate construction
+
+Filtering happens before graph construction and calibration as promised:
+  /srv/bulk/leo/research/ds24-channel-halves-20261024/filtered_prepare.py:8-22
+But prepare_bank derives duration from the last retained graph observation,
+then uses coarse arange(0,duration+5,5) for candidate visibility. A tiny retained
+tail beyond300s adds305s to the visibility grid and one bank interpolation knot:
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds23_phase_refreshed.py:74-83
+DS24-0014: low max299.283088s, high max300.0364403s;1532 vs1538 candidates,
+335 vs336 interpolation knots. High-only NORADs51864,60912,63386,65462,65801,
+69346. DS24-0093:299.2591831 vs300.0119514s;1400 vs1403 candidates; high-only
+NORADs60262,62147,68387. Common candidates have exactly identical states at
+common knots. Neither case retains an extra candidate in the active/predictive
+final labels or the refined cavity candidate pools. Their whole historical
+forecast documents also differ because the candidate history population differs;
+the inference hyperparameters shrinkage,multiplier,nu are nevertheless identical.
+
+All22 other pairs have numerically identical banks and byte-structure-equal
+historical forecast JSON documents, including0015 and0019. The discrepancy is
+real and means this is not universally a matched-candidate-bank channel
+comparison. It has no direct selected-extra explanation for the current gap.
+The signed-phase qualification was subsequently recomputed using the supplied
+dependency directory /tmp/algo03-feasible-deps. Case 0014 qualifies the age mean
+correction in both halves, but its coefficient changes from -0.124530654 low to
+-0.125661909 high (about 0.9%). Case 0093 is unqualified in both halves and uses
+no signed correction. Thus the duration-dependent history population does also
+slightly change a signed-prior coefficient in case 0014. The original objective
+replays used the exact stored selected means. See signed_qualification.json.
+Small matched settlement: freeze one common candidate list, common time grid,
+causal history population, and cutoff before applying the channel filters; replay
+only0014/0093 with the original c0/fitted-c budgets. Avoid silently clipping or
+discarding the >300s observations to make the banks match.
+
+4. Remaining modeling/search assumptions worth controlled tests
+
+The c feature is200000*(RF_GHz-11.5), a global200kHz/GHz Gaussian scale, while
+receiver-band offsets have SD PERIOD/sqrt(12). In a single half, c is strongly
+correlated with the band offsets and track constants. Changing the11.5GHz pivot
+without transforming the joint offset/c prior covariance changes the model.
+The successful label-flip tests disprove a channel-index sign defect in this
+column. The provided c0 comparison already shows high worse, so fittedc alone
+cannot cause the high gap. A matched c0/fitted-c analysis must still report
+score/frequency effects separately from localization accuracy.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/dsx01_joint_marginal.py:95-103
+
+Phase/orbit/smooth features scale withRF; radio noise is learned in nativeHz,
+track constants use native300Hz, raw curvature uses native250Hz, retained gates
+use native450Hz RMS and3000Hz bias, and fixed alias spacing is nativeHz. This is
+physically interpretable but not an RF-normalized comparison. Native noise means
+over the24 cases are69.016Hz low and75.595Hz high. The supplied normalized
+residual summary reduces the low/high residual discrepancy; it does not establish
+equal geometry or matched likelihood weighting. Test with fixed IDs and matched
+families/times/point budgets, report position information and effective weights,
+and use held-out frequency prediction rather than choosing scales by GPS error.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/localize_merged_track_catalogue.py:86-92
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/ds23_radio_noise.py:13-61
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/probe_ds23_history_calibrated_phase.py:29-48
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds23_phase_refreshed.py:275-282
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/ds23_predictive_linear.py:73-76
+
+Orbital support is granted by at least two distinct(receiver,channel) owners in
+the original model rows, not necessarily two channels or two active retained
+owners. Support remains when later masks reject a row. Family likelihood powers
+are1/.6/.2 from cross-receiver support and confidence; they are learned on the
+initial mask and retained through subsequent gate deletion. Channel halves can
+therefore change physical nuisance support and information even at similar
+membership fractions. This is a frozen-support modeling policy, not an index
+mistake. A matched diagnostic should hold mode support/powers fixed when testing
+channel information, then separately ablate active-only support with bothc arms.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/dsx01_joint_marginal.py:104-118
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds23_family_weighting.py:24-43
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/algo02_scan.py:110-133,170-178
+
+Identity discovery is bounded: four radio seeds; proposal phases/aliases are
+heuristic; a best-center parent generates four corner proposals; only the best
+three branches receive full fits. Cavity offers are limited to seven coarse
+alternatives plus incumbent per family and at most four families' best offers.
+High data can choose worse identities or have weaker geometry without a code
+sign error. Settling search error needs a bounded high-only restart using
+predeclared low/all-channel positions purely as diagnostic starts and identical
+high observations/IDs/priors/c arms; settling identity errors needs matched
+candidate nominations and held-out frequency evidence. Better score alone
+cannot establish better location.
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/evaluate_ds23_phase_refreshed.py:312-343
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/probe_ds23_family_cavity_nominations.py:133-151
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/probe_ds23_family_cavity_position.py:104-124
+  /srv/bulk/leo/research/ds24-channel-halves-20261024/ch5_8/engine/ds24_engine.py:84-95
+
+The frozen engine uses empty event lists for these baseline/cavity fits;
+receiver/band/family event discovery code is imported but not activated. It must
+not be blamed for the observed channel difference merely because it contains a
+band branch. Historical tools do contain an explicitrange(1,5) diagnostic channel
+influence loop, but that loop is outside the imported problem path used here:
+  /home/mouse9911/gits/leo-tracker-reduxredux/tools/investigate_ds23_adaptive_failures.py:133-137
+  /srv/bulk/leo/research/ds24-channel-halves-20261024/ch5_8/engine/ds24_engine.py:52,64
+
+Executable artifacts:
+  check_pipeline_invariants.py -> pipeline_invariants.json
+  check_candidate_differences.py -> candidate_differences.json
+  check_signed_qualification.py -> signed_qualification.json
+Run with repository .venv/bin/python, PYTHONPATH=src:tools, and BLAS/OMP threads1.
+The qualification check also requires the supplied dependency path in its docstring.
