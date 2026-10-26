@@ -1,0 +1,164 @@
+{
+  "target_slots": 16,
+  "complete_primary_slots": 16,
+  "complete_received_rate_slots": 16,
+  "physical_windows_read": 14,
+  "full_paired_detector_calls": 14,
+  "all_paired_candidate_parity_passed": true,
+  "physical_failures": [],
+  "primary_failures": [],
+  "received_rate_failures": [],
+  "recorded_job_seconds": 59.277945190668106,
+  "control_job_seconds": 4.225302652921528,
+  "response_supported": 0,
+  "response_held_SSE_positive": 2,
+  "response_held_SSE_improvement_percent_range": [
+    -0.16259747412725734,
+    0.006706279752377586
+  ],
+  "response_median_held_SSE_improvement_percent_by_role": {
+    "passed": -0.041963894194407825,
+    "failed_near_gate": -0.1302423536270969
+  },
+  "all_in_sample_scores_increase": true,
+  "correct_sequence_predictive_lower_positive_by_role": {
+    "passed": 8,
+    "failed_near_gate": 0
+  },
+  "received_rate_positive_lower_interval": 0,
+  "received_rate_boundary_slots": 9,
+  "received_rate_nonconverged_slots": 6,
+  "received_rate_maximum_held_SSE_improvement_percent": 0.004738178282104322,
+  "control_summary": {
+    "channel": {
+      "n": 32,
+      "response_supported": 32,
+      "exact_binomial_95_interval": [
+        0.8911188393206471,
+        1.0
+      ],
+      "median_held_SSE_improvement_percent": 62.44624701518027
+    },
+    "flat": {
+      "n": 32,
+      "response_supported": 0,
+      "exact_binomial_95_interval": [
+        0.0,
+        0.10888116067935288
+      ],
+      "median_held_SSE_improvement_percent": -0.4353917831898757
+    },
+    "wrong_sequence": {
+      "n": 32,
+      "response_supported": 0,
+      "exact_binomial_95_interval": [
+        0.0,
+        0.10888116067935288
+      ],
+      "median_held_SSE_improvement_percent": -0.2790123413040302
+    },
+    "noise": {
+      "n": 32,
+      "response_supported": 0,
+      "exact_binomial_95_interval": [
+        0.0,
+        0.10888116067935288
+      ],
+      "median_held_SSE_improvement_percent": -0.4353917831898646
+    }
+  },
+  "known_rate_control": {
+    "mode": "received_rate",
+    "injected_residual_cfo_hz": 23.4,
+    "injected_received_rate_ppm": 37.0,
+    "independent_channel_per_tone_and_frame": true,
+    "independent_noise": true,
+    "analytic_waveform_includes_scaled_symbol_boundaries": true,
+    "models": {
+      "no_rate": {
+        "fits": [
+          {
+            "coordinates": [
+              0.047477079788463106,
+              0.0
+            ],
+            "residual_cfo_hz": 23.738539894231554,
+            "received_symbol_rate_ppm": 0.0,
+            "normalized_residual": 0.013462130968533945,
+            "evaluations": 9,
+            "converged": true,
+            "boundary": false
+          },
+          {
+            "coordinates": [
+              0.0475965604872822,
+              0.0
+            ],
+            "residual_cfo_hz": 23.7982802436411,
+            "received_symbol_rate_ppm": 0.0,
+            "normalized_residual": 0.013137433061257541,
+            "evaluations": 9,
+            "converged": true,
+            "boundary": false
+          }
+        ],
+        "frame_squared_errors": [
+          33.437734785293436,
+          28.905647117974716,
+          30.517338201369938,
+          32.505040173961206,
+          33.04049053634987,
+          33.957992947775615
+        ]
+      },
+      "received_rate": {
+        "fits": [
+          {
+            "coordinates": [
+              0.046613769730907334,
+              0.7510332630599137
+            ],
+            "residual_cfo_hz": 23.306884865453668,
+            "received_symbol_rate_ppm": 37.55166315299569,
+            "normalized_residual": 0.011194144079683223,
+            "evaluations": 20,
+            "converged": true,
+            "boundary": false
+          },
+          {
+            "coordinates": [
+              0.04675489736494247,
+              0.7329097333821156
+            ],
+            "residual_cfo_hz": 23.377448682471233,
+            "received_symbol_rate_ppm": 36.64548666910578,
+            "normalized_residual": 0.011033559371314988,
+            "evaluations": 20,
+            "converged": true,
+            "boundary": false
+          }
+        ],
+        "frame_squared_errors": [
+          28.099235337975824,
+          26.58532797170281,
+          26.28711424804564,
+          27.46556974286625,
+          25.732701617729646,
+          26.85919125493454
+        ]
+      }
+    },
+    "held_symbol_relative_SSE_improvement": 0.16289463663590686,
+    "descriptive_frame_bootstrap_95_interval": [
+      0.12705890719497484,
+      0.1954308785021189
+    ]
+  },
+  "conclusion": "No predictive channel-response or received-rate correction qualifies on the frozen panel.",
+  "inference_and_admission_unchanged": true,
+  "raw_IQ_copied": false,
+  "new_RF_collection": false,
+  "original_full_window_acquisition_exposure": true,
+  "pipeline_GLRT_FPR_calibrated": false,
+  "absolute_CFO_or_localization_gain_established": false
+}

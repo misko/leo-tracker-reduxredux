@@ -1,0 +1,36 @@
+{
+  "total_tests_passed": 13,
+  "nomination_tests": 3,
+  "reused_native_delta_full_packet_tests": 8,
+  "channel_partition_tests": 2,
+  "scientific_retries": 0,
+  "all_24_fits_complete": true,
+  "raw_IQ_reads": 357,
+  "new_RF": false,
+  "QNAP_writes": false,
+  "expected_eight_owner_nomination_failure_preserved": "failed_expected_eight_nomination.json",
+  "implementation_failures": [
+    {
+      "stage": "test_collection",
+      "reason": "tools PYTHONPATH omitted",
+      "repair": "correct environment; no scientific execution repeated"
+    },
+    {
+      "stage": "saved_RF_reporting",
+      "reason": "corrected_margin looked up at outer record instead of refinement dictionary",
+      "repair": "fixed mechanism_report.py before summary artifacts existed; no detector or optimizer repeated"
+    }
+  ],
+  "source_hashes": {
+    "prepare.py": "6ac27edd028f1fa7001a565381d66f95524229e68a6843a7cd006cad848a3644",
+    "run_rf.py": "2b5f5b1e298177ce6ba3dfc2b6055991fa69c19b411c7155deef95b7408cec49",
+    "test_cfo.py": "941c7402749d4ed1dd35a75a90b8e45fe6721f8bf8e5ab8829e3b38182935691",
+    "localize.py": "fc8fbc24dfe21519b863189584eb45aed5cddba9262508434e39d6605e02691c",
+    "report.py": "23956686d3cbc3b93d68283e75626994a3b6a2d9b09d798725b06ec61d9f6322",
+    "channel_diagnostic.py": "fe0b1a214a9de7c60b8c00bcd7ee685bd4131ec6f5e81cf71f4248f48fb998de",
+    "test_channels.py": "04a7c423a025b7d2c94a171d0cd34739eca6144116b1269018d06abdbb0e9db1",
+    "mechanism_report.py": "e09327f28156956edca5bfaa4e709211f9c3e139cd541f18e39293a249ba679c"
+  },
+  "all_primary_measurement_and_inference_seals_verified_after_channel_fits": true,
+  "geography_owned_by_parent": true
+}
