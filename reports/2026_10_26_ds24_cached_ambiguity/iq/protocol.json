@@ -1,0 +1,161 @@
+{
+  "files": {
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/PROTOCOL.md": "a55faffc56d8a4659e1013b5bab95919ebf60932324e7b5fdabe1712db31550c",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/AMENDMENT02.md": "152c0d60c15ca0fba06e376ca3b4e79bbf937fc85f57a1d240ac826fd59b19b7",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/control.py": "fd0b86bb7ca825efb8c13c1960cc92843fb65b2eb6adee8aa03280e2ebd3b248",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/test_control.py": "a925d3916f4111d4082e878a317f619a829550cb9bec624036777d8531a884a2",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/test_control02.py": "846c73e5241ec505dc5c0c133b94fdb4408ae11e0ddca26b95febb134a6b309d",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/construction_mismatch.json": "ae404066a45e96cfd83d7c534584e7fab7158f90e477a639cd986a85232e40b6",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/iq/preparation_tests.json": "44f9d5df6308d5213d1abd04b3ed186494d2332315b3e2ae85634f91438dd140",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/tests/fixtures/qin_edge_pilots_appendix_a_v1.json": "725ea559a6880615f42befc7f6778f637d05c14997e6307e32deca6dc76816ad",
+    "/srv/bulk/leo/research/ds24-ambiguity-policy-r01/replay_metadata.json": "b5d1761d711b08d8747c23affff3b214e1a991db2507a456ed6b09de11e1ef64",
+    "/srv/bulk/leo/research/ds24-ambiguity-policy-r01/replay_one_window.json": "d22620a197cfaf0b350b99f6caee738c59da2c8c6cd80eac73d19513eaac7b76",
+    "/srv/bulk/leo/research/ds24-cached-ambiguity-r01/COORDINATOR_PLAN.md": "29bc6596b105cbccb0647971e58b8d198b3dc9a2d6e860fb8e37f199026d24d9"
+  },
+  "scenarios": [
+    [
+      "noise",
+      []
+    ],
+    [
+      "strong",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "weak",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 75.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "coincident_500",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        },
+        {
+          "cfo_hz": 100500.0,
+          "amplitude": 600.0,
+          "epoch_samples": 127.25,
+          "phase_radians": -0.8,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "coincident_3000",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        },
+        {
+          "cfo_hz": 103000.0,
+          "amplitude": 600.0,
+          "epoch_samples": 127.25,
+          "phase_radians": -0.8,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "separated_500",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        },
+        {
+          "cfo_hz": 100500.0,
+          "amplitude": 600.0,
+          "epoch_samples": 811.75,
+          "phase_radians": -0.8,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "separated_3000",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 0.0
+        },
+        {
+          "cfo_hz": 103000.0,
+          "amplitude": 600.0,
+          "epoch_samples": 811.75,
+          "phase_radians": -0.8,
+          "rate_hz_s": 0.0
+        }
+      ]
+    ],
+    [
+      "chirp",
+      [
+        {
+          "cfo_hz": 100000.0,
+          "amplitude": 1000.0,
+          "epoch_samples": 127.25,
+          "phase_radians": 0.3,
+          "rate_hz_s": 10000.0
+        }
+      ]
+    ]
+  ],
+  "seeds": [
+    20261026,
+    20261027
+  ],
+  "code_digest": "sha256:124afbbc81870a4079b272bd828d4a99f716e54624a073d9cb13acc2a1b7fe16",
+  "environment_digest": "sha256:8ccb220369bccb42b7bea5dcd3bfa546e132d2250a674e6eac7388a2a425e3b9",
+  "input_mapping": {
+    "band": null,
+    "channel": 1,
+    "edge": "upper",
+    "if_center_hz": 1190312500,
+    "lnb_lo_hz": 9750000000,
+    "polarization": null,
+    "profile_id": null,
+    "rf_center_hz": 10940312500,
+    "rf_mapping_authority": "hypothesis",
+    "target_id": "ch1-upper-lo9750000000"
+  },
+  "actual_IF_hz": 1190312500,
+  "synthetic": true,
+  "known_template_boundary_mismatch": true,
+  "original_construction_check_passed": false,
+  "amended_construction_checks_passed": true,
+  "detector_calls_before_freeze": 0,
+  "position_fits": 0,
+  "original_IQ_read": false,
+  "wall_cap_seconds": 120,
+  "slot_cap_seconds": 20
+}
