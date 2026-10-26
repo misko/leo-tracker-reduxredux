@@ -1,0 +1,65 @@
+{
+  "all_passed": false,
+  "rows": [
+    {
+      "case": "LATER4-0001",
+      "passed": true,
+      "curved_mask_length": 2767,
+      "active_curved_points": 2607,
+      "allocated_family_labels": 25,
+      "phase_reference_lengths": {
+        "c0": 25,
+        "fitted_c": 25
+      },
+      "predictive_entries": 40,
+      "predictive_IDs": 597,
+      "whole_predictive_joins_exact": true,
+      "original_GLRT_count": 4315,
+      "saved_parent_sha256": "5bc1dbbe7a8d260f323761d6e7ebca4df9afbceb5d92b53b1c3628e44eac2ab9"
+    },
+    {
+      "case": "LATER4-0002",
+      "passed": true,
+      "curved_mask_length": 3710,
+      "active_curved_points": 3441,
+      "allocated_family_labels": 27,
+      "phase_reference_lengths": {
+        "c0": 27,
+        "fitted_c": 27
+      },
+      "predictive_entries": 0,
+      "predictive_IDs": 0,
+      "whole_predictive_joins_exact": true,
+      "original_GLRT_count": 4892,
+      "saved_parent_sha256": "bcedb752ffa100c1ba51bca36f415242539661632d4e41f469d1d9aed5188bb7"
+    },
+    {
+      "case": "LATER4-0003",
+      "passed": true,
+      "curved_mask_length": 1856,
+      "active_curved_points": 1692,
+      "allocated_family_labels": 21,
+      "phase_reference_lengths": {
+        "c0": 21,
+        "fitted_c": 21
+      },
+      "predictive_entries": 26,
+      "predictive_IDs": 396,
+      "whole_predictive_joins_exact": true,
+      "original_GLRT_count": 2996,
+      "saved_parent_sha256": "8d41512dbe231a53c707a3c2a3030b0f4cbf0c2f6fd4fdb40d47500920c25616"
+    }
+  ],
+  "failure": {
+    "error": "ValueError('retained paired reference unqualified')",
+    "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-later-four-preparation-r01/baseline/nomination/actual_smoke.py\", line 18, in main\n    d=context(case);tracks={t['key']:t for t in d['scan'].tracks}\n      ^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-later-four-preparation-r01/baseline/nomination/nominate.py\", line 46, in context\n    if set(saved['policy_arms'])!=set(ARMS) or not r.valid(saved['policy_arms']):raise ValueError('retained paired reference unqualified')\n                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: retained paired reference unqualified\n"
+  },
+  "seconds": 5.145405025221407,
+  "cumulative_baseline_preparation_seconds": 7.3362487428635355,
+  "preparation_cap_pass": true,
+  "baseline_RF_seal_sha256": "2a23c4104485b4176afdc5fcfb146b74a4f4f4e1d964616397e0be7a7f04cec4",
+  "nomination_protocol_sha256": "3e32a21bbd75d2046cb47b9af2d75814dbf2afaa7001c84a8ef6415fa593249f",
+  "source_sha256": "1df9f958f79dc0960889b1e9add580009fced3cecbeac837888950f4512ff43f",
+  "J_or_ranking_or_score_or_optimizer_calls": 0,
+  "GPS_read": false
+}

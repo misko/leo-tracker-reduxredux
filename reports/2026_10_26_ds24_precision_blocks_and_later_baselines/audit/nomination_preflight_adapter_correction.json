@@ -1,0 +1,15 @@
+{
+  "all_passed": true,
+  "failed_receipt": "nomination_preflight01_failed.json",
+  "passing_receipt": "nomination_preflight02.json",
+  "canonical_gate": "nomination_preflight.json",
+  "cause": "Both smoke receipts source_sha256 fields hash their own executable scripts via sha(__file__); audit incorrectly compared loader hashes.",
+  "correction": "Compare receipt source_sha256 to actual_smoke.py / actual_smoke02.py; nominee loader hashes remain checked through immutable protocol source_bindings.",
+  "scientific_sources_inputs_thresholds_or_results_changed": false,
+  "new_scientific_evaluations": 0,
+  "files": {
+    "/srv/bulk/leo/research/ds24-precision-block-transfer-r01/audit/nomination_preflight01_failed.json": "59614db36928fd78d728b447509270d28e741253dfd9b194b33c9d42b5b783c8",
+    "/srv/bulk/leo/research/ds24-precision-block-transfer-r01/audit/nomination_preflight.json": "bec276c5ac13883a64bee54974e063cacb1f43f9e591c2d5693ae67ed34eb19c",
+    "/srv/bulk/leo/research/ds24-precision-block-transfer-r01/audit/nomination_preflight02.json": "bec276c5ac13883a64bee54974e063cacb1f43f9e591c2d5693ae67ed34eb19c"
+  }
+}
