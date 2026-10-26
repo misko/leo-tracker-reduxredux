@@ -26,7 +26,7 @@ The [prediction report](prediction/REPORT.md), [timing protocol](timing/PROTOCOL
 
 These counts concern sampled **receiver-window pilot detections**, not satellite-associated GLRT percentages. Original acquisition uses the full20ms window. Point and search share the same random-frame confirmation exposure. The useful additions-only policy keeps every original detection and adds only genuinely absent native owners; it does not replace a valid original frequency merely because a new score passed.
 
-| Channel | Requested cells | Original full-window detections | Point confirmations | Timing-search confirmations | New search detections absent originally | Original plus additions |
+| Channel | Requested cells | Original full-window detections | Point admissions | Timing-search admissions | New search detections absent originally | Original plus additions |
 |---|---:|---:|---:|---:|---:|---:|
 | CH1 |96|47|13|47|3|50|
 | CH4 |96|49|14|49|4|53|
@@ -38,6 +38,8 @@ These counts concern sampled **receiver-window pilot detections**, not satellite
 | CH5–8 only |384|69|18|86|23|92|
 
 CH5–8 coverage in this fixed panel rises from69/384=17.97% to92/384=23.96% when additions are retained: a33.3% relative increase in detected owners. This is a development-panel acquisition result, not a dataset-wide association or localization gain. Point prediction alone finds only one originally absent owner. Timing search loses thirteen original detections when used as a replacement; retaining the original acquisition avoids those losses.
+
+An admission requires both pilot confirmation and compatibility with the earlier frequency prediction. There are 61 point and 190 timing-search pilot confirmations before that compatibility check, versus 45 and 182 admissions in the table. Pilot confirmation alone does not establish continuity or satellite identity.
 
 ![Same-window channel results](timing/natural_paired_channel_results.png)
 
@@ -57,7 +59,7 @@ Earlier donors themselves support curvature:347/362 primary histories with at le
 
 ![Earlier-donor timing curvature](prediction/earlier_donor_curvature.png)
 
-The empirical timing-curvature/CFO-slope ratio is suggestive, but its physical sign is unresolved across the RF/IQ/LO conventions. It is not installed as a physical correction. A common20ms origin/midpoint convention shift cannot explain the several-sample survey bias because donor and target shifts cancel. The scorer's constant epoch and effective sample weighting remain approximations that the next round keeps explicit.
+The empirical timing-curvature/CFO-slope ratio is suggestive, but its physical sign is unresolved across the RF/IQ/LO conventions. It is not installed as a physical correction. A common 10 ms origin-to-midpoint shift for equal 20 ms donor and target windows cannot explain the several-sample survey bias because the shifts cancel. R01's adapter additionally advances timing by its estimated rate times 10 ms; R02 preserves that legacy convention as a separate control alongside the consistent reference. The scorer's constant epoch and effective sample weighting remain approximations that the next round keeps explicit.
 
 ## Controls separate timing error from lost detection power
 
