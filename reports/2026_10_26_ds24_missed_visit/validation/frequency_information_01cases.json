@@ -1,0 +1,995 @@
+{
+  "schema": "missed-visit-frequency-information-audit-v1",
+  "FFT_bin_spacing_hz": 443.89204545454544,
+  "idealized_uniform_bin_sigma_hz": 128.1405959671577,
+  "uniform_bin_sigma_is_calibrated": false,
+  "strong_all": {
+    "n": 80,
+    "before_mean_absolute_error_hz": 464.0,
+    "after_mean_absolute_error_hz": 137.66477272727207,
+    "zero_residual_bins": 28,
+    "after_error_regression_slope_on_donor_error": 0.11221590909091901,
+    "mean_frequency_update_hz": 33.29190340909091
+  },
+  "strong_by_forecast": {
+    "zero_rate_fallback": {
+      "n": 40,
+      "before_mean_absolute_error_hz": 728.0,
+      "after_mean_absolute_error_hz": 62.16193181817653,
+      "zero_residual_bins": 0,
+      "after_error_regression_slope_on_donor_error": -0.10973011363632396,
+      "mean_frequency_update_hz": 0.0
+    },
+    "rate_propagated": {
+      "n": 40,
+      "before_mean_absolute_error_hz": 200.0,
+      "after_mean_absolute_error_hz": 213.1676136363676,
+      "zero_residual_bins": 28,
+      "after_error_regression_slope_on_donor_error": 0.33416193181816195,
+      "mean_frequency_update_hz": 66.58380681818181
+    }
+  },
+  "strong_strata": {
+    "zero_rate_fallback/rate-2000/donor-200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 528.0,
+      "after_mean_absolute_error_hz": 84.10795454544132,
+      "zero_residual_bins": 0,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": -443.8920454545454
+    },
+    "zero_rate_fallback/rate-2000/donor200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 928.0,
+      "after_mean_absolute_error_hz": 40.21590909091174,
+      "zero_residual_bins": 0,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": -887.7840909090908
+    },
+    "zero_rate_fallback/rate2000/donor-200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 928.0,
+      "after_mean_absolute_error_hz": 40.21590909091174,
+      "zero_residual_bins": 0,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": 887.7840909090908
+    },
+    "zero_rate_fallback/rate2000/donor200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 528.0,
+      "after_mean_absolute_error_hz": 84.10795454544132,
+      "zero_residual_bins": 0,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": 443.8920454545454
+    },
+    "rate_propagated/rate-2000/donor-200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 200.0,
+      "after_mean_absolute_error_hz": 221.94602272727934,
+      "zero_residual_bins": 5,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": 221.9460227272727
+    },
+    "rate_propagated/rate-2000/donor200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 200.0,
+      "after_mean_absolute_error_hz": 208.77840909091174,
+      "zero_residual_bins": 8,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": -88.7784090909091
+    },
+    "rate_propagated/rate2000/donor-200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 200.0,
+      "after_mean_absolute_error_hz": 217.55681818182347,
+      "zero_residual_bins": 6,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": 177.5568181818182
+    },
+    "rate_propagated/rate2000/donor200": {
+      "n": 10,
+      "before_mean_absolute_error_hz": 200.0,
+      "after_mean_absolute_error_hz": 204.38920454545587,
+      "zero_residual_bins": 9,
+      "after_error_regression_slope_on_donor_error": null,
+      "mean_frequency_update_hz": -44.38920454545455
+    }
+  },
+  "strong_rows": [
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 200.0,
+      "after_error_hz": -243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": -97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 200.0,
+      "after_error_hz": -243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 0,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 200.0,
+      "after_error_hz": -243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 97,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 528.0,
+      "after_error_hz": 84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": -443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -200.0,
+      "after_error_hz": 243.89204545455868,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 928.0,
+      "after_error_hz": 40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": -887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": -2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -928.0,
+      "after_error_hz": -40.21590909091174,
+      "zero_bin": false,
+      "frequency_update_hz": 887.7840909090909
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": -200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -200.0,
+      "after_error_hz": -200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    },
+    {
+      "forecast": "zero_rate_fallback",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": -528.0,
+      "after_error_hz": -84.10795454544132,
+      "zero_bin": false,
+      "frequency_update_hz": 443.89204545454544
+    },
+    {
+      "forecast": "rate_propagated",
+      "true_rate_hz_s": 2000.0,
+      "donor_error_hz": 200.0,
+      "timing_offset_samples": 256,
+      "before_error_hz": 200.0,
+      "after_error_hz": 200.0,
+      "zero_bin": true,
+      "frequency_update_hz": 0.0
+    }
+  ],
+  "natural_cases": {
+    "DS24-0010": {
+      "new_native": 5,
+      "zero_residual_bin": 1,
+      "updated_residual_bin": 4
+    }
+  },
+  "natural_new_native": 5,
+  "natural_zero_bins": 1,
+  "natural_rows": [
+    {
+      "case": "DS24-0010",
+      "target_observation_id": "sha256:ddf86b6dc8f9ed92fe7338a34cb561f567ed802d32b930f7c330d7271e34b052",
+      "channel": 1,
+      "receiver": 2,
+      "predicted_CFO_hz": 326878.5868183652,
+      "measured_CFO_hz": 326878.5868183652,
+      "residual_bin_hz": 0.0,
+      "zero_bin": true,
+      "earlier_width_hz": 2860.6607945785045,
+      "donor_count": 2,
+      "same_donor_origin_reused_as_scalar": true,
+      "raw_target_support_is_new": true,
+      "independent_scalar_frequency_claim": false
+    },
+    {
+      "case": "DS24-0010",
+      "target_observation_id": "sha256:a10c6a8cc369c43a5fe95c112e188a6d2f046eabbaf0e95cceaea0a194afe02c",
+      "channel": 5,
+      "receiver": 1,
+      "predicted_CFO_hz": -124560.06627126306,
+      "measured_CFO_hz": -129442.87877126306,
+      "residual_bin_hz": -4882.8125,
+      "zero_bin": false,
+      "earlier_width_hz": 23678.362182849007,
+      "donor_count": 1,
+      "same_donor_origin_reused_as_scalar": false,
+      "raw_target_support_is_new": true,
+      "independent_scalar_frequency_claim": false
+    },
+    {
+      "case": "DS24-0010",
+      "target_observation_id": "sha256:6db3d30152471989a8d27a441f8ccd751ab68c69a85ffff09aea0c83efb4abd8",
+      "channel": 6,
+      "receiver": 1,
+      "predicted_CFO_hz": -126809.72616300435,
+      "measured_CFO_hz": -127253.6182084589,
+      "residual_bin_hz": -443.89204545454544,
+      "zero_bin": false,
+      "earlier_width_hz": 2872.4563949299595,
+      "donor_count": 2,
+      "same_donor_origin_reused_as_scalar": false,
+      "raw_target_support_is_new": true,
+      "independent_scalar_frequency_claim": false
+    },
+    {
+      "case": "DS24-0010",
+      "target_observation_id": "sha256:f72f2e16617936f966b69e2be14b6367c032582f1bb8e0fb7e805add89f22089",
+      "channel": 6,
+      "receiver": 1,
+      "predicted_CFO_hz": -201279.8689153675,
+      "measured_CFO_hz": -213264.95414264023,
+      "residual_bin_hz": -11985.085227272726,
+      "zero_bin": false,
+      "earlier_width_hz": 45928.55657379473,
+      "donor_count": 1,
+      "same_donor_origin_reused_as_scalar": false,
+      "raw_target_support_is_new": true,
+      "independent_scalar_frequency_claim": false
+    },
+    {
+      "case": "DS24-0010",
+      "target_observation_id": "sha256:7755029a10b3930f4b2bd546eb4aca435d76fb03701de3af99d929092afbbdc8",
+      "channel": 8,
+      "receiver": 1,
+      "predicted_CFO_hz": -431987.28750705026,
+      "measured_CFO_hz": -433762.85568886844,
+      "residual_bin_hz": -1775.5681818181818,
+      "zero_bin": false,
+      "earlier_width_hz": 4361.088563049466,
+      "donor_count": 1,
+      "same_donor_origin_reused_as_scalar": false,
+      "raw_target_support_is_new": true,
+      "independent_scalar_frequency_claim": false
+    }
+  ],
+  "source_hashes": {
+    "/srv/bulk/leo/research/ds24-missed-visit-r01/timing/outcomes/signal.json.gz": "7138190662b33c2316284701cd768017e500bc7e73829cd8ec3a0b013d89521d",
+    "/srv/bulk/leo/research/ds24-missed-visit-r01/validation/DS24-0010_additions.json": "47a7df74083dde6050350869450d77a006cae7f851eebf79743b0a142ad0daa9",
+    "/srv/bulk/leo/research/ds24-missed-visit-r01/timing/outcomes/DS24-0010.json.gz": "43fd134321e3c3eb818d0cad728017d3f0313941527b760ac00da1056809a406"
+  },
+  "limitation": "A later FFT supports a conditional frequency bin whose origin depends on donors. Zero-bin output numerically equals its earlier prediction. Native sample disjointness does not establish independent scalar frequency errors or precision below the bin.",
+  "position_requirement": "Explain donor-origin quantization dependence and measurement weight. Existing radio-noise proxy may be below an idealized bin scale; graph exploration remains useful but does not qualify independent precise Doppler factors.",
+  "no_scorer_or_parameters_changed": true,
+  "no_geography_read": true
+}

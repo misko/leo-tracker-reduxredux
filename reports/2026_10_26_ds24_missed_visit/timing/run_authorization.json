@@ -1,0 +1,12 @@
+{
+  "schema": "root-bounded-stage-authorization/v1",
+  "protocol_sha256": "e10105c1a7b6c653d1b0c476f8fc5df18768bf276775d7edd9b7ce1101787d77",
+  "authorized_actions": ["signal", "boundary", "null", "wrong", "recorded"],
+  "maximum_processes": 2,
+  "per_process_seconds": 580,
+  "BLAS_threads": 1,
+  "development_recorded_replay_authorized": true,
+  "held_validation_outcomes_authorized": false,
+  "position_execution_authorized": false,
+  "note": "Root reviewed eight scorer tests, four independent boundary checks, and completed signal/null controls: search 80/80 strong signals admitted within500Hz, zero admitted >1kHz; zero confirmation on128independent nulls,32per edge/exposure. Complete remaining boundary/wrong controls and run the frozen12development recording shards, at most two processes. Retain all failures and full per-window checkpoints; no outcome-based replacement or policy changes. Half-cell timing-grid coverage and synthetic-to-recorded limitations remain explicit. No validation or position execution is authorized. This is internal stage coordination under existing user authorization."
+}
