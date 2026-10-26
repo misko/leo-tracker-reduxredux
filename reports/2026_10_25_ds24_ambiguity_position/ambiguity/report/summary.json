@@ -1,0 +1,1065 @@
+{
+  "execution": {
+    "cases": [
+      {
+        "case": "DS24-0011",
+        "status": "complete",
+        "contrasts": [
+          {
+            "delta_finite_difference_per_km": 1.6038402884538527,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.3048835973004559,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              1.1785217246064406,
+              2.0290664958699267
+            ],
+            "proxy_interval_km": [
+              -0.3857173914860499,
+              -0.22403224652819742
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "c0",
+            "weight": 0.25,
+            "all_point_quadratures_stable": true
+          },
+          {
+            "delta_finite_difference_per_km": 1.6038402884538527,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.3048835973004559,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              1.1785217246058721,
+              2.0290664958696425
+            ],
+            "proxy_interval_km": [
+              -0.3857173914859959,
+              -0.22403224652808937
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "c0",
+            "weight": 0.5,
+            "all_point_quadratures_stable": true
+          },
+          {
+            "delta_finite_difference_per_km": 1.6038402884537106,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.3048835973004289,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              1.1785217246058721,
+              2.0290664958696425
+            ],
+            "proxy_interval_km": [
+              -0.3857173914859959,
+              -0.22403224652808937
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "c0",
+            "weight": 0.75,
+            "all_point_quadratures_stable": true
+          },
+          {
+            "delta_finite_difference_per_km": 1.3362543724831255,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.2540165893848855,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              0.9251510536559238,
+              1.7473305471514777
+            ],
+            "proxy_interval_km": [
+              -0.3321605191761865,
+              -0.17586749959800685
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "fitted_c",
+            "weight": 0.25,
+            "all_point_quadratures_stable": true
+          },
+          {
+            "delta_finite_difference_per_km": 1.3362543724831255,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.2540165893848855,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              0.9251510536556395,
+              1.7473305471514777
+            ],
+            "proxy_interval_km": [
+              -0.3321605191761865,
+              -0.1758674995979528
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "fitted_c",
+            "weight": 0.5,
+            "all_point_quadratures_stable": true
+          },
+          {
+            "delta_finite_difference_per_km": 1.3362543724828413,
+            "archived_c0_curvature_scaled_secant_proxy_km": -0.25401658938483146,
+            "true_derivative_claimed": false,
+            "achieved_displacement_claimed": false,
+            "bounds_available": true,
+            "delta_finite_difference_interval": [
+              0.9251510536556395,
+              1.7473305471513356
+            ],
+            "proxy_interval_km": [
+              -0.33216051917615946,
+              -0.1758674995979528
+            ],
+            "interval_supports_material_25m": true,
+            "arm": "fitted_c",
+            "weight": 0.75,
+            "all_point_quadratures_stable": true
+          }
+        ],
+        "scientific_seconds": 138.50418321602046,
+        "target_currently_unaccepted": true,
+        "potential_added_factor_only": true,
+        "position_fits": 0,
+        "GPS_used": false
+      },
+      {
+        "case": "DS24-0012",
+        "status": "failed_or_budget_limited",
+        "error": "TimeoutError('frozen scientific deadline')",
+        "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-ambiguity-position-r01/ambiguity/pilot02.py\", line 219, in job\n    reference=sr.sm.reference(fun,inner)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 68, in reference\n    first=composite(fun,pieces,32);second=composite(fun,pieces,64)\n                                          ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_math.py\", line 63, in composite\n    for start in range(0,len(flat),CHUNK):logs.append(fun(flat[start:start+CHUNK]))\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 102, in logdensity\n    geo=geometry(phases)\n        ^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 96, in <lambda>\n    return lambda phases:k.m.q.phase_geometry(d,x,np.asarray(phases))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 78, in phase_geometry\n    b = paired_frequency_modes(sky, bank, flat_times, labels, phases, *coordinates)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/orbit_uncertainty.py\", line 100, in paired_frequency_modes\n    dp, dv = paired_phase_states(\n             ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/continuous_curve_fit.py\", line 36, in paired_phase_states\n    cosine, sine = np.cos(angle), np.sin(angle)\n                                  ^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n",
+        "scientific_seconds": 293.21683187317103,
+        "complete_probe_arm_summaries": [],
+        "position_fits": 0,
+        "GPS_used": false
+      }
+    ],
+    "all108_slots": [
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 58175,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 63312,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 63676,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 58601,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 65886,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 63808,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 62288,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 59730,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0011",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 57743,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 66259,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 65103,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 57749,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 62146,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 56519,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 66890,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": 62529,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 57743,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 66259,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 65103,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 57749,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 62146,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 56519,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 66890,
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": 62529,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "center",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "complete"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 57743,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 66259,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 65103,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 57749,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 62146,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 56519,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 66890,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": 62529,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 57743,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 66259,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 65103,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 57749,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 62146,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 56519,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 66890,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": 62529,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "minus",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 57743,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 66259,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 65103,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 57749,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 62146,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 56519,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 66890,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": 62529,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "c0",
+        "identity": "unknown",
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 57743,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 66259,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 65103,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 57749,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 62146,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 56519,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 66890,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": 62529,
+        "status": "failed_or_missing"
+      },
+      {
+        "case": "DS24-0012",
+        "probe": "plus",
+        "arm": "fitted_c",
+        "identity": "unknown",
+        "status": "failed_or_missing"
+      }
+    ],
+    "cumulative_scientific_seconds": 445.2895150863938,
+    "cap_seconds": 600,
+    "all_cases_terminal": true,
+    "position_fits": 0,
+    "GPS_used": false,
+    "operational_adoption": false
+  },
+  "triage": [
+    {
+      "case": "DS24-0011",
+      "physical_class_weight": 0.25,
+      "interval_material_in_both_arms": true,
+      "point_abs25m_in_both_arms": true,
+      "point_estimate_is_qualified_policy": false
+    },
+    {
+      "case": "DS24-0011",
+      "physical_class_weight": 0.5,
+      "interval_material_in_both_arms": true,
+      "point_abs25m_in_both_arms": true,
+      "point_estimate_is_qualified_policy": false
+    },
+    {
+      "case": "DS24-0011",
+      "physical_class_weight": 0.75,
+      "interval_material_in_both_arms": true,
+      "point_abs25m_in_both_arms": true,
+      "point_estimate_is_qualified_policy": false
+    },
+    {
+      "case": "DS24-0012",
+      "physical_class_weight": 0.25,
+      "interval_material_in_both_arms": false,
+      "point_abs25m_in_both_arms": false,
+      "point_estimate_is_qualified_policy": false
+    },
+    {
+      "case": "DS24-0012",
+      "physical_class_weight": 0.5,
+      "interval_material_in_both_arms": false,
+      "point_abs25m_in_both_arms": false,
+      "point_estimate_is_qualified_policy": false
+    },
+    {
+      "case": "DS24-0012",
+      "physical_class_weight": 0.75,
+      "interval_material_in_both_arms": false,
+      "point_abs25m_in_both_arms": false,
+      "point_estimate_is_qualified_policy": false
+    }
+  ],
+  "sources": [
+    {
+      "case": "DS24-0011",
+      "component": "DS24-0011-RX1-CH1-T006-RF10940312500.000000",
+      "points": 20,
+      "original_nomination_compatible": true,
+      "original_full_parent_mask_rejects_whole_source": true,
+      "complete_source_active_curvature_flag": true,
+      "RX_channel_owners": 1,
+      "independently_qualified_association": false,
+      "operational_adoption": false
+    },
+    {
+      "case": "DS24-0012",
+      "component": "DS24-0012-RX1-CH2-T001-RF10959687500.000000",
+      "points": 59,
+      "original_nomination_compatible": false,
+      "original_full_parent_mask_rejects_whole_source": true,
+      "complete_source_active_curvature_flag": true,
+      "RX_channel_owners": 1,
+      "independently_qualified_association": false,
+      "operational_adoption": false
+    }
+  ],
+  "secants": [
+    {
+      "case": "DS24-0011",
+      "arm": "c0",
+      "physical_class_weight": 0.25,
+      "delta_secant_objective_per_km": 1.6038402884538527,
+      "point_proxy_m": -304.8835973004559,
+      "bounds_available": true,
+      "proxy_lower_m": -385.7173914860499,
+      "proxy_upper_m": -224.03224652819742,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "c0",
+      "physical_class_weight": 0.5,
+      "delta_secant_objective_per_km": 1.6038402884538527,
+      "point_proxy_m": -304.8835973004559,
+      "bounds_available": true,
+      "proxy_lower_m": -385.71739148599585,
+      "proxy_upper_m": -224.03224652808936,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "c0",
+      "physical_class_weight": 0.75,
+      "delta_secant_objective_per_km": 1.6038402884537106,
+      "point_proxy_m": -304.8835973004289,
+      "bounds_available": true,
+      "proxy_lower_m": -385.71739148599585,
+      "proxy_upper_m": -224.03224652808936,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "fitted_c",
+      "physical_class_weight": 0.25,
+      "delta_secant_objective_per_km": 1.3362543724831255,
+      "point_proxy_m": -254.01658938488552,
+      "bounds_available": true,
+      "proxy_lower_m": -332.1605191761865,
+      "proxy_upper_m": -175.86749959800684,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "fitted_c",
+      "physical_class_weight": 0.5,
+      "delta_secant_objective_per_km": 1.3362543724831255,
+      "point_proxy_m": -254.01658938488552,
+      "bounds_available": true,
+      "proxy_lower_m": -332.1605191761865,
+      "proxy_upper_m": -175.86749959795281,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    },
+    {
+      "case": "DS24-0011",
+      "arm": "fitted_c",
+      "physical_class_weight": 0.75,
+      "delta_secant_objective_per_km": 1.3362543724828413,
+      "point_proxy_m": -254.01658938483146,
+      "bounds_available": true,
+      "proxy_lower_m": -332.1605191761595,
+      "proxy_upper_m": -175.86749959795281,
+      "interval_supports_abs25m": true,
+      "point_quadratures_stable": true,
+      "true_derivative": false,
+      "achieved_movement": false
+    }
+  ],
+  "completed_component_slots": 71,
+  "declared_component_slots": 108,
+  "absolute_objective_precision_qualified": 0,
+  "points_are_potential_added_factor_effects": true,
+  "current_reference_changed": false,
+  "new_inference": false
+}
