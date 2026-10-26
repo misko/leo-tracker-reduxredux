@@ -1,0 +1,60 @@
+{
+  "arm": "fitted_c",
+  "status": "terminal",
+  "rows": [
+    {
+      "arm": "fitted_c",
+      "method": "no_addition",
+      "status": "complete",
+      "numerically_stable": true,
+      "endpoint_east_north_km": [
+        6.735111309712466,
+        -5.983782775647723
+      ],
+      "parent_valid": true,
+      "Gamma_converged": true,
+      "full_original_IDs_preserved": true,
+      "source_growth_supported": false,
+      "original_reference_reproduction": {
+        "passed": true,
+        "endpoint_difference_km": 0.0,
+        "full_parent_ELBO_difference": 0.0,
+        "relative_ELBO_difference": 0.0,
+        "saved_same_reference_objective_difference": 0.0,
+        "endpoint_tolerance_km": 0.001,
+        "objective_absolute_tolerance": 0.001,
+        "objective_relative_tolerance": 1e-08,
+        "same_reference_tolerance": 1e-08
+      },
+      "operational_policy": "original_reference",
+      "seconds": 2.2043867018073797
+    },
+    {
+      "arm": "fitted_c",
+      "method": "hard",
+      "status": "complete",
+      "numerically_stable": true,
+      "endpoint_east_north_km": [
+        6.509377049338724,
+        -6.189562782431156
+      ],
+      "parent_valid": true,
+      "Gamma_converged": true,
+      "full_original_IDs_preserved": true,
+      "source_growth_supported": false,
+      "original_reference_reproduction": null,
+      "operational_policy": "original_reference",
+      "seconds": 20.925530694425106
+    },
+    {
+      "arm": "fitted_c",
+      "method": "mixture",
+      "status": "failed_or_budget_limited",
+      "error": "TimeoutError('frozen scientific deadline')",
+      "traceback": "Traceback (most recent call last):\n  File \"/srv/bulk/leo/research/ds24-ambiguity-policy-r01/position/policy.py\", line 382, in arm_job\n    result=fit_method(d,entry,models,arm,method,deadline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-ambiguity-policy-r01/position/policy.py\", line 333, in fit_method\n    result=fit(problem,x,iterations=48);x=np.asarray(result['parameters'])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/investigate_dsx01_localization_failures.py\", line 166, in fit\n    result = bounded_gauss_newton(problem.residual, start, problem.lower, problem.upper,\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/src/leo/analysis/research/continuous_curve_fit.py\", line 116, in bounded_gauss_newton\n    columns.append((residual(b) - residual(a)) / (b[k] - a[k]))\n                    ^^^^^^^^^^^\n  File \"/home/mouse9911/gits/leo-tracker-reduxredux/tools/investigate_dsx01_localization_failures.py\", line 161, in residual\n    result = self.calculate(x)\n             ^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-ambiguity-policy-r01/position/policy.py\", line 172, in augmented\n    prediction = target.score(tuple(np.asarray(x)), method)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-ambiguity-policy-r01/position/policy.py\", line 158, in score\n    rows = [physical(self.models[j], comp, *self.rules[(j, order)]) for j in chosen]\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-ambiguity-policy-r01/position/policy.py\", line 87, in physical\n    geometry = k.m.q.phase_geometry(candidate, comp['x'], phases)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-uncertain-new-family-r01/scientific/quadrature02.py\", line 73, in phase_geometry\n    bank[key] = np.broadcast_to(source[None], (n, *source.shape)).reshape(n*3, *source.shape[1:])\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <lambda>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\n                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/srv/bulk/leo/research/ds24-identity-support-r01/scientific/support_replay.py\", line 35, in <genexpr>\n    signal.signal(signal.SIGALRM,lambda *_:(_ for _ in ()).throw(TimeoutError('frozen scientific deadline')))\nTimeoutError: frozen scientific deadline\n",
+      "raw_endpoint_available": false,
+      "operational_policy": "original_reference"
+    }
+  ],
+  "seconds": 113.99323073914275
+}
