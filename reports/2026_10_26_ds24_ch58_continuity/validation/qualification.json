@@ -1,0 +1,32 @@
+{
+  "schema": "ch58-independent-qualification-v1",
+  "decision": "do_not_advance",
+  "protocol_sha256": "cb4c4c4d76b721cd097478483a40f35a8fc41aac0bd178026383bece06996d5e",
+  "gates": {
+    "measurement_accuracy": "development_controls_only",
+    "uncertainty_calibration": "fail_for_natural_RF",
+    "natural_target_support": "fail_in_frozen_screen",
+    "multiplicity_and_nulls": "insufficient_for_natural_batch",
+    "ownership_and_dependence": "requires_target_only_likelihood"
+  },
+  "admitted_corrections": 0,
+  "admitted_new_native_detections": 0,
+  "candidate_manifest": [],
+  "localization_dependency_ready": false,
+  "new_regional_position_execution": false,
+  "baseline_fixed_endpoint_replay_only": true,
+  "geographic_accuracy_evaluation_performed": false,
+  "blockers": [
+    "All eight complete natural modes fail the frozen two-half support screen (five eligible cells of 96).",
+    "Natural conditional null exposure is absent; synthetic 64-trial strata cannot certify the requested 96-cell family.",
+    "Natural complex-noise likelihood/uncertainty remains uncalibrated.",
+    "Conditioned posterior grids reuse donor information; target-only profile or joint covariance required.",
+    "Causal donor mode compatibility does not establish signal/satellite identity."
+  ],
+  "limits": [
+    "A negative guided screen does not establish physical absence of target signals.",
+    "Four exposed scans cannot establish transfer to another location.",
+    "No claim of improved geographic accuracy follows fixed-endpoint replay or better synthetic CFO."
+  ],
+  "handoff": "Primary may publish the bounded negative result and adapter; no candidate is approved for localization."
+}

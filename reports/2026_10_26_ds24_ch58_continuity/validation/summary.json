@@ -1,0 +1,121 @@
+{
+  "decision": "do_not_advance",
+  "protocol_sha256": "cb4c4c4d76b721cd097478483a40f35a8fc41aac0bd178026383bece06996d5e",
+  "baseline_algorithm": "ALGO02-v1 + qualified causal signed phase prior + equal-prior family cavity",
+  "baseline_cases": 4,
+  "replayed_c_arms": 8,
+  "objective_replay_differences": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "new_regional_inference": false,
+  "geographic_accuracy_evaluated": false,
+  "matched_c_inputs": true,
+  "natural_requested_cells": 96,
+  "natural_eligible_cells": 5,
+  "natural_supported_modes": {
+    "constant": 0,
+    "linear": 0
+  },
+  "admitted_corrections": 0,
+  "admitted_new_native_detections": 0,
+  "target_role_counts": {
+    "c0": {
+      "curved": 17,
+      "predictive": 2,
+      "postfit_only": 0,
+      "unowned_existing": 7,
+      "no_existing_winner": 70
+    },
+    "fitted_c": {
+      "curved": 17,
+      "predictive": 2,
+      "postfit_only": 0,
+      "unowned_existing": 7,
+      "no_existing_winner": 70
+    }
+  },
+  "eligible_targets_all_have_no_existing_winner": true,
+  "natural_packet_mapping_checks": 192,
+  "synthetic_stratum": {
+    "definition": "strong, donor error 0, zero-rate forecast, nonzero evolution",
+    "independent_targets": 16,
+    "accurate_proposals_100hz": 14,
+    "slope_definition": "through-origin regression of proposal-minus-carry against truth-minus-carry including within-window midpoint evolution",
+    "slope": 0.994516016713092,
+    "methods": {
+      "unchanged": {
+        "median_absolute_error_hz": 169.78409090911737,
+        "p95_absolute_error_hz": 195.86505681819835,
+        "accurate_100hz": 0
+      },
+      "carry": {
+        "median_absolute_error_hz": 718.0,
+        "p95_absolute_error_hz": 718.0,
+        "accurate_100hz": 0
+      },
+      "proposal": {
+        "median_absolute_error_hz": 32.0,
+        "p95_absolute_error_hz": 109.75,
+        "accurate_100hz": 14
+      }
+    }
+  },
+  "interval_reporting_sensitivity": {
+    "synthetic": {
+      "n": 288,
+      "covered": {
+        "frozen_v1": 267,
+        "discrete_mass": 267,
+        "bin_density": 262
+      }
+    },
+    "recorded": {
+      "n": 15,
+      "covered": {
+        "frozen_v1": 11,
+        "discrete_mass": 10,
+        "bin_density": 10
+      }
+    }
+  },
+  "uncertainty_qualified": false,
+  "null_exposure": {
+    "1": {
+      "independent_later_trials": 64,
+      "false_confirmations": 0,
+      "one_sided95_upper": 0.045729702330762456,
+      "conservative_96cell_family_upper": 1.0
+    },
+    "3": {
+      "independent_later_trials": 64,
+      "false_confirmations": 0,
+      "one_sided95_upper": 0.045729702330762456,
+      "conservative_96cell_family_upper": 1.0
+    }
+  },
+  "blockers": [
+    "All eight complete natural modes fail the frozen two-half support screen (five eligible cells of 96).",
+    "Natural conditional null exposure is absent; synthetic 64-trial strata cannot certify the requested 96-cell family.",
+    "Natural complex-noise likelihood/uncertainty remains uncalibrated.",
+    "Conditioned posterior grids reuse donor information; target-only profile or joint covariance required.",
+    "Causal donor mode compatibility does not establish signal/satellite identity."
+  ],
+  "limits": [
+    "A negative guided screen does not establish physical absence of target signals.",
+    "Four exposed scans cannot establish transfer to another location.",
+    "No claim of improved geographic accuracy follows fixed-endpoint replay or better synthetic CFO."
+  ],
+  "local_only_large_packets": {
+    "DS24-0010_baseline.json": "0dcd65ebb8158940632a90eb1c1988b47d15e5d3dc8f5f622a6c1491ee02e75e",
+    "DS24-0011_baseline.json": "5cc80f1d2734525f8505dac5f3b94468594a8671d4ea2fd5094be8f28e77be87",
+    "DS24-0012_baseline.json": "bfe1e810593fb1e0478308b5a1c22498383e4f08106bed1e5cbc589869f2cae9",
+    "DS24-0013_baseline.json": "f78185513ab17dcac8b868cb5f9b552cccdb396308e0a0f7f78e74cba29ef134"
+  }
+}

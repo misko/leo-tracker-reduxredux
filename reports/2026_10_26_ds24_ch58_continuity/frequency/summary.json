@@ -1,0 +1,104 @@
+{
+  "schema": "frequency-continuity-summary/v1",
+  "status": "RF_NOT_QUALIFIED",
+  "reason": "Recorded accuracy does not improve, RF scale is uncalibrated, and every eligible natural history fails later support",
+  "synthetic_accuracy": {
+    "-12": {
+      "n": 144,
+      "accurate": {
+        "unchanged": 96,
+        "carry": 16,
+        "proposal": 136
+      }
+    },
+    "-24": {
+      "n": 144,
+      "accurate": {
+        "unchanged": 78,
+        "carry": 16,
+        "proposal": 75
+      }
+    }
+  },
+  "synthetic_conditional_screen": {
+    "strong_evolution_accuracy": true,
+    "evolution_slope": true,
+    "conditional_interval_coverage": true,
+    "primary_and_three_proposal_null_upper95": true
+  },
+  "synthetic_screen_pass": true,
+  "independent_synthetic_later_noise_vectors": 48,
+  "synthetic_conditional_comparisons": 288,
+  "evolution": {
+    "n": 16,
+    "accurate": 14,
+    "slope": 1.0085628531073447
+  },
+  "interval_reporting_audit": {
+    "synthetic": {
+      "n": 288,
+      "covered": {
+        "frozen_v1": 267,
+        "bin_density": 262,
+        "discrete_mass": 267
+      }
+    },
+    "recorded": {
+      "n": 15,
+      "covered": {
+        "frozen_v1": 11,
+        "bin_density": 10,
+        "discrete_mass": 10
+      }
+    }
+  },
+  "conditional_null": [
+    {
+      "proposals": 1,
+      "n": 64,
+      "false_confirmations": 0,
+      "upper95": 0.045729702330762456
+    },
+    {
+      "proposals": 3,
+      "n": 64,
+      "false_confirmations": 0,
+      "upper95": 0.045729702330762456
+    }
+  ],
+  "recorded": {
+    "n": 16,
+    "correct_primary_donors": 11,
+    "accurate": {
+      "unchanged": 4,
+      "carry": 11,
+      "proposal": 3
+    },
+    "correct_donor_CFO_RMSE_hz": {
+      "unchanged": 350.1206535380321,
+      "carry": 16.348314385673767,
+      "proposal": 179.21543239526397
+    },
+    "no_donor": 1,
+    "unchanged_round3_scores_equal": true
+  },
+  "natural": {
+    "receiver_cells": 96,
+    "eligible_cells": 5,
+    "eligible_modes": 8,
+    "supported_modes": 0,
+    "IQ_reads": 0,
+    "frequency_calls": 0,
+    "position_calls": 0
+  },
+  "seconds": {
+    "synthetic": 4.402238364331424,
+    "null": 3.975910961162299,
+    "recorded": 13.430057710036635,
+    "natural_metadata": 0.6515558678656816,
+    "interval_offline": 0.09793586609885097
+  },
+  "later_profile_is_separate_from_donor_posterior": true,
+  "uncertainty_weights_qualified": false,
+  "independent_added_Doppler_points": 0
+}

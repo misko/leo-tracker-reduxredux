@@ -1,0 +1,32 @@
+# CH5–8 temporal continuity: delegated implementation plan
+
+User authorization: make and execute a plan using SOL xhigh agents to exploit CH5–8 signals and reduce position error. This is a bounded research iteration over existing recordings; no new RF or production changes. Standing authorization covers a Markdown report with figures/results pushed to remote main.
+
+## Owners and order
+
+1. **SOL xhigh real-revisit guidance**, `revisit/`: freeze metadata-only target windows and use only earlier same-channel/RX/edge detections to forecast timing, CFO and rate. Keep absent/ambiguous donors. Establish historical runtime/source authority and full paired candidate parity for opened windows. Initial panel DS24-0010..13, CH1/4 controls plus CH5..8, two consecutive midpoint targets per case/channel: 48 paired windows,96 receiver cells. Three earlier visits supply hypotheses; actual revisit is about0.354s. Natural identity is not supplied by a full-scan fitted graph or GPS.
+2. **SOL xhigh frequency continuity**, `frequency/`: implement one frozen frequency estimator incorporating a donor prediction and uncertainty, compared with unchanged final-bin selection and explicitly labeled donor carry. Preserve multiple modes if needed. Demonstrate nonzero Doppler evolution, donor errors, absent signals and uncertainty behavior in known-truth controls. No truth in estimator. Avoid treating an uncalibrated GLRT margin as a physical likelihood. First deliver an adapter and controlled tests; then evaluate the sealed natural-revisit prediction packets where feasible. Any conditioning uses earlier measurements only; it does not manufacture additional independent observations.
+3. **SOL xhigh qualification and integration**, `validation/`: review estimator/ownership/FAR and prepare a baseline-bound observation adapter and position evaluation. Reject donor reuse as a new independent likelihood point. Separate previously absent detections from corrected existing winners; preserve aliases and actual RF units. Freeze acceptance rules before candidate outcome review. Replay unchanged baselines and both c arms. Only propagate an RF-qualified candidate to track/association/position evaluation, using causal catalogues and regional starts, without preselected recovery identities. Do not force a position run from an unqualified synthetic-only result.
+4. **Primary agent**: coordinate interfaces, audit assumptions, enforce bounds, inspect every result and failure, integrate conclusions, and publish report/source/figures. No other worker publishes or edits common frozen files.
+
+Initial branches run in parallel. A candidate passes sequentially through measurement tests, natural raw-sample support, and localization evaluation. If a prerequisite fails, preserve the failed result and end that branch; do not tune indefinitely or bypass the gate. A truthful negative screen completes this bounded iteration without an ALGO promotion.
+
+## Immutable handoff
+
+Each owner freezes its protocol and source/input hashes before numerical outcomes, and writes a concise `STATUS.md` when its interface is ready or blocked. Keep public persisted contracts unchanged. Research adapters may use local versioned JSON without pretending to amend a production contract.
+
+Revisit output must include case/channel/RX, target native sample support, edge/actual RF/sample rate, original target visit and source authority, donor IDs/counters/estimates, elapsed time, rank-limited hypotheses and predictive uncertainty assumptions. Include a no-donor/ambiguous state; never silently replace a cell. Target outcomes remain separate from earlier-only forecasts.
+
+Frequency estimator input: later samples plus native rate/edge and the earlier-only prediction packet. Output: proposed frequency modes/weights or uncalibrated scores explicitly labeled, estimated uncertainty/qualification status, gate statistic, and exact support/donor provenance. Known-truth evaluation is outside the estimator. Donor information is conditioning, not a second fresh observation. The unchanged winner and carry-only controls have the same targets and budgets.
+
+Validation must distinguish observation IDs, raw native support and candidate alternatives: multiple candidates from one target are not multiple independent points. Track admission requires coherent support, residual diagnostics and causal association. Cross-channel sharing initially occurs through existing physical calibration/model constraints, not copied pilot epochs or assumed identical CFO.
+
+## Success criteria and limits
+
+Report detection/admission, accurate known-truth CFO recovery, uncertainty calibration, conditional null false confirmations, natural predictive evidence, runtime and geographic accuracy separately. Never accept on a higher training GLRT margin alone. Preserve multiple-testing exposure and correlated donor/family/receiver information. Existing injected results are development evidence; the same-site four-scan panel cannot establish new-location transfer or500m performance.
+
+Every localization comparison uses matched c=0/fitted-c observations, candidate sets, other priors and search budgets. Original25×25km region center37.906,-122.545. GPS37.849061591561885,-122.48574968092912 enters final evaluation only after RF/inference sealing. No post-scan TLE; no forced satellite identity or GPS-selected subset. Larger association does not imply smaller position error. Position propagation should retain ordinary all-channel baseline, CH5–8 effect, tails, unavailable cases and frequency-fit differences; an isolated improved development scan cannot promote a new ALGO.
+
+All numerical workers capped at600s, BLAS1, modest independent worker counts (initially <=2 per branch, <=6 total). No multi-hour campaigns or new RF; QNAP readonly. Use exact historical runtime/public reader authority, preserve dirty repository work, and apply_patch handwritten files. Original tracked diff hash: add0a0f9598b5045dbf6dd6eb05b744b856715c01a9cb3101f6890b999029a4b. Dedicated publication worktree is owned by primary agent only.
+
+Relevant sources: previous round `/srv/bulk/leo/research/ds24-ch78-diagnosis-r03`, earlier injection `/srv/bulk/leo/research/ds24-ch78-diagnosis-r02/detection`, causal scan inventory `/srv/bulk/leo/research/ds25-20261024`, public historical runtime `/opt/leo-shared-scans/native-scope64-v2-3460060352b364a9/worker/src`. Repository `.venv/bin/python`; auxiliary scientific deps may be in `/tmp/algo03-feasible-deps`. No raw IQ publication.
