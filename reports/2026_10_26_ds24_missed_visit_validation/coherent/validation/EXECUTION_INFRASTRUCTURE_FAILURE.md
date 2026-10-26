@@ -1,0 +1,9 @@
+# Position stage infrastructure failure; no numerical restart authorized
+
+Protocol1149c3dd40288873607e43bf9a4e1f873e28e60cb284c39a11c19c51c3ab1b0c launched four jobs using the unchanged sealed run function. Validation/preparation had needed elevated reads of original input manifests; execution was also launched elevated. On this host root cannot traverse another user's symlink in sticky `/tmp` (`fs.protected_symlinks`), so `/tmp/algo03-feasible-deps` does not resolve for Python imports under that process. The actual dependency tree and all1172 bound scientific files are unchanged.
+
+DS24-0011 floor completed fresh ALGO02 in110.57seconds, then engine import stopped in0.87seconds with `ModuleNotFoundError: No module named 'scipy'`, no readguard denial. Proxy likewise completed ALGO02 and engine import failed at154.37seconds total. No signed-prior/cavity numerical inference occurred in these failed stages. Their outputs and read receipts are preserved. No GPS was opened.
+
+The two already dispatched DS24-0097 jobs retain the original shared240second limits and are not retried. No continuation or restart is performed automatically. A potential infrastructure-only repair would point the scientific-library path at its identical resolved directory or execute under the owning user, then continue only the unstarted engine stage from existing ALGO02 outputs with remaining per-job numerical budget. This requires a root decision because the sealed protocol forbids retries; no new parameter/seed/ALGO02 initialization or geographic selection is justified.
+
+This is an execution-environment issue, not failed scientific qualification. Root should decide the bounded continuation policy before additional numerical work. Position results remain unavailable until a final audited terminal state.
