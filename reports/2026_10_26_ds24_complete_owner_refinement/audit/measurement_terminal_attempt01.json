@@ -1,0 +1,9 @@
+{
+  "all_passed": false,
+  "failure": "Auditor initially compared exported midpoint time to window start, omitting half the 20 ms window.",
+  "classification": "Audit assertion defect; no scientific source, input, output, threshold or timestamp changed.",
+  "source_evidence": "Original influence/panel.py:107 and :117 explicitly join midpoint observation time and start-counter acquisition separately.",
+  "repair": "Check time_s=(start-origin+duration_samples/2)/sample_rate_hz. All 159 archived offsets are exactly 10 ms to floating precision.",
+  "conservative_failed_attempt_audit_seconds": 25,
+  "scientific_reruns": 0
+}
