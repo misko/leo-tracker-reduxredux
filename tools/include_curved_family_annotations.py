@@ -1,6 +1,7 @@
 """Matched original-model single/combined recovery of separately nominated curves."""
 import argparse
 import copy
+import hashlib
 from pathlib import Path
 import time
 import numpy as np
@@ -27,6 +28,16 @@ def configuration(node,keep,slices,targets):
     return result,mask
 
 
+def fit_variants(targets,joint_only=False):
+    if not targets:raise ValueError('at least one target required')
+    if joint_only:
+        if len(targets)<2:raise ValueError('joint-only requires at least two targets')
+        return [('control',[]),('combined',targets)]
+    variants=[('control',[])]+[(f'target_{k}',[t]) for k,t in enumerate(targets)]
+    if len(targets)>1:variants.append(('combined',targets))
+    return variants
+
+
 def run(args):
     began=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False);inv=read(args.inventory);d=context(inv);base,_=d['problems']['c0']
     targets=[];receipts=[]
@@ -48,8 +59,9 @@ def run(args):
         orbital_policy='original support rule; family has one shared phase and supported three-mode physical correction',
         curved_targets_calibrate_receiver=True,noncurved_targets_rejected=True,phase_rounds=5,iterations=48,start=[0,0],box_width_km=25,
         GPS_used=False,future_TLE=False,identities_and_aliases_frozen_after_individual_randomized_nomination=True,
-        no_pruning_or_residual_gate_relaxation=True,combined_is_not_independent_identity_validation=True))
-    variants=[('control',[])]+[(f'target_{k}',[t]) for k,t in enumerate(targets)]+[('combined',targets)]
+        no_pruning_or_residual_gate_relaxation=True,combined_is_not_independent_identity_validation=True,
+        joint_only=getattr(args,'joint_only',False)))
+    variants=fit_variants(targets,getattr(args,'joint_only',False))
     for name,extras in variants:
         node,keep=configuration(d['node'],d['keep'],base.slices,extras);means,new_prior_receipts=prior_means(d,node);pair={}
         for arm in ('c0','fitted_c'):
@@ -73,9 +85,13 @@ def run(args):
         valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 for v in pair.values())
         write(out/(name+'.json'),dict(job=inv['job'],arms=pair,paired_valid=valid,target_entries=extras,no_production_change=True,seconds=time.monotonic()-began))
         print(inv['job']['label'],name,'valid',valid,'seconds',round(time.monotonic()-began,1),flush=True)
+    if len(targets)==1:
+        source=out/'target_0.json';write(out/'combined.json',read(source))
+        write(out/'single_combined_reuse.json',dict(source='target_0.json',source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+              reason='Single-target combined configuration is identical; reuse exact completed fit',independent_fit=False))
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for key in ['inventory','output']:p.add_argument('--'+key,type=Path,required=True)
-    p.add_argument('--validation',type=Path,nargs='+',required=True);run(p.parse_args())
+    p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--joint-only',action='store_true');run(p.parse_args())

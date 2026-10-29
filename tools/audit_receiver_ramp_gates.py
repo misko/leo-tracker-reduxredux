@@ -13,17 +13,21 @@ from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_s
 from leo.analysis.research.orbital_support import requires_multiple_orbital_owners
 
 
+def target_paths(directory,graph=False):
+    return sorted(directory.glob('target_*.json' if graph else '*_target.json'))
+
+
 def run(args):
     results=[];protocol=read(args.ramps/'protocol.json')
     for job in protocol['jobs']:
         tid=job['track_id'];d=context(read(Path(job['inventory'])));base,_=d['problems']['c0']
-        for path in sorted((args.ramps/tid).glob('*_target.json')):
+        for path in target_paths(args.ramps/tid,args.graph):
             result=read(path)
             if result['paired_valid']:continue
             extras=result['target_entries'];node,keep=configuration(d['node'],d['keep'],base.slices,extras);means,_=prior_means(d,node)
             for arm,v in result['arms'].items():
                 kw={'base_problem_factory':d['problem_factory']} if 'problem_factory' in d else {}
-                p=make_event_problem(d['scan'],node,keep,arm,np.array(v['phase_reference']),d['powers'],means,d['model'],result['events'],**kw)
+                p=make_event_problem(d['scan'],node,keep,arm,np.array(v['phase_reference']),d['powers'],means,d['model'],result.get('events',[]),**kw)
                 attach_event_predictive(p,d['entries'],d['powers']);cached(p);x=np.array(v['endpoint_east_north_km']);calc=p.calculate(x)
                 if abs(calc['negative_twice_elbo']-v['negative_twice_elbo'])>1e-5:raise ValueError('rejection endpoint does not replay')
                 state=p.state(x);frequency,elevation=p.conditional_frequency(x)
@@ -63,7 +67,7 @@ def run(args):
                     if calc['linear_elevation'][sl].min()<0:causes.append('predictive_elevation')
                     linear.append(dict(component=entry['component'],norad=entry['norad'],compatible=not causes,failures=causes,
                         RMS_hz=float(terms['rms'][0]),profile_noise={key:float(value[0]) for key,value in noise.items()}))
-                results.append(dict(scan=job['label'],track_id=tid,model=result['model'],arm=arm,source=str(path),rows=rows,linear_rows=linear))
+                results.append(dict(scan=job['label'],track_id=tid,model=result.get('model','original'),arm=arm,source=str(path),rows=rows,linear_rows=linear))
     write(args.output,dict(results=results,no_acceptance_changes=True))
     for r in results:
         if r['arm']=='fitted_c' and r['model']!='original':
@@ -72,4 +76,4 @@ def run(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--ramps',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);run(p.parse_args())
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--graph',action='store_true');run(p.parse_args())

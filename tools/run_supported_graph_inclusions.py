@@ -25,20 +25,36 @@ def supported_jobs(rows, results):
     return jobs
 
 
+def completed_rows(queue, attempts):
+    completed=[];excluded=[];sources=[];seen=set()
+    for attempt in attempts:
+        for row in read(queue/attempt/'selected.json'):
+            tid=row['track_id']
+            if tid in seen:raise ValueError('repeated track in frozen attempts')
+            seen.add(tid);path=queue/attempt/(tid+'-terminal.json')
+            if not path.exists():raise ValueError('annotation attempt is not terminal')
+            receipt=read(path);sources.append(path)
+            if receipt['status']=='complete':completed.append(row)
+            else:excluded.append(dict(track_id=tid,label=row['label'],execution=receipt['status'],reason=receipt.get('reason')))
+    return completed,excluded,sources
+
+
 def run(args):
     if not 1 <= args.workers <= 16:
         raise ValueError('worker bound is 1..16')
-    rows = [r for attempt in args.attempts for r in read(args.queue / attempt / 'selected.json')]
-    if len(rows) > 32:
+    rows,excluded,terminal_sources=completed_rows(args.queue,args.attempts)
+    if len(rows)+len(excluded) > 32:
         raise ValueError('one bounded iteration contains at most 32 annotations')
     results = {r['track_id']: read(args.queue / r['track_id'] / 'result.json') for r in rows}
     jobs = supported_jobs(rows, results)
     args.output.mkdir(parents=True, exist_ok=False)
     sources = {str(args.queue / r['track_id'] / 'result.json'):
                hashlib.sha256((args.queue / r['track_id'] / 'result.json').read_bytes()).hexdigest() for r in rows}
+    sources.update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in terminal_sources})
     write(args.output / 'protocol.json', dict(jobs=jobs, annotation_sources=sources, attempts=args.attempts,
+          incomplete_annotation_exclusions=excluded,
           queue=str(args.queue), workers=args.workers, seconds_per_case=600,
-          selection='Every supported engine-member identity in these complete frozen attempts',
+          selection='Every supported engine-member identity with a complete annotation; incomplete executions recorded separately',
           original_model_and_noise=True, GPS_used=False, future_TLE=False, matched_c_arms=True))
 
     def work(job):
