@@ -19,6 +19,8 @@ from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_s
 
 
 def noise_diagnostics(z, times):
+    if len(z)<4 or np.ptp(times)<=0:
+        return dict(noise_screen_pass=False,status='insufficient_points',points=len(z))
     # Existing screen has a 75 Hz floor: express unit innovations on its
     # nominal 150 Hz scale rather than accidentally applying that floor to z.
     result = batch_noise_screen(np.asarray(z)[None, :]*150., np.asarray(times))
@@ -29,12 +31,15 @@ def calibrate(d, targets, excluded):
     p, x = d['problems']['c0']; c = p.calculate(x); scan = d['scan']
     lo = min(scan.tracks[p.members[k]]['times'].min() for k in targets)-12
     hi = max(scan.tracks[p.members[k]]['times'].max() for k in targets)+12
+    receiver = scan.tracks[p.members[targets[0]]]['receiver']
+    if any(scan.tracks[p.members[k]]['receiver'] != receiver for k in targets):
+        raise ValueError('covariance training requires one receiver per proposal')
     rows = []
     n = len(p.members)
     without_constants = c['conditional_residual_hz'] + c['features'][:, -n:] @ c['coefficient'][-n:]
     for k, (row, i, sl) in enumerate(zip(p.rows, p.members, p.slices, strict=True)):
         t = scan.tracks[i]
-        if t['receiver'] != 1 or row['candidate_norad'] in excluded: continue
+        if t['receiver'] != receiver or row['candidate_norad'] in excluded: continue
         mask = p.keep[sl] & (t['times'] >= lo) & (t['times'] <= hi)
         if mask.sum() < 10: continue
         rows.append(dict(component=t['key'], norad=row['candidate_norad'],
@@ -148,6 +153,8 @@ def validation(d, extras, model, seed=20261029):
         held['RMS_hz']=float(np.sqrt(np.mean(held['residual_hz']**2)))
         joint=gaussian(raw,cov)
         joint['noise']=noise_diagnostics(joint['whitened'],times)
+        joint['per_track_noise']={e['component']:noise_diagnostics(joint['whitened'][owner==k],
+            times[owner==k]) for k,e in enumerate(extras)}
         records[arm]=dict(split=split, order=order,training_points=int(training.sum()),
             withheld_points=int((~training).sum()), times_s=times, raw_hz=raw,
             training_sorted=training,held=held,joint=joint)
@@ -164,7 +171,7 @@ def position_trial(d, extras, model):
         reference=np.zeros(len(d['means'])); x=np.zeros(2); history=[]
         for epoch in range(5):
             p=make_event_problem(d['scan'],d['node'],d['keep'],arm,reference,d['powers'],d['means'],d['model'],[],
-                base_problem_factory=partial(make_problem,support_policy='active'))
+                base_problem_factory=partial(make_problem,support_policy=d.get('support_policy','active')))
             base=p.calculate
             evaluate,view,slices,order,base_count=prediction_geometry(p,d['entries'],d['powers'],extras,model)
             def calculate(z):
