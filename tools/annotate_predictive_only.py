@@ -83,7 +83,11 @@ def check_predictive_role(p,track_index,allow_inactive_member=False):
 def run(args):
     began=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False)
     inv=read(args.inventory);d=context(inv);p0,_=d['problems']['c0']
-    target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large']);i=target['track_index'];t=d['scan'].tracks[i]
+    if getattr(args,'native_branches',None):
+        from native_predictive_branch import native_context
+        d,target=native_context(d,inv,args.native_branches,args.track)
+    else:target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large'])
+    i=target['track_index'];t=d['scan'].tracks[i]
     check_predictive_role(p0,i,getattr(args,'predictive_member',False))
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
     from annotation_partition_plan import selected_seeds
@@ -145,5 +149,6 @@ if __name__=='__main__':
     p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true')
     p.add_argument('--predictive-member',action='store_true',help='Allow a wholly inactive curved member as predictive-only evidence')
     p.add_argument('--partition-audit',type=Path)
+    p.add_argument('--native-branches',type=Path,help='Validated omitted-branch discovery JSON; append only to predictive geometry')
     p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
     run(p.parse_args())

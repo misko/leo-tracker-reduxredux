@@ -1,5 +1,6 @@
 """Matched position trials without target-driven receiver calibration."""
 import argparse
+import copy
 from pathlib import Path
 import numpy as np
 from annotate_predictive_only import context
@@ -12,22 +13,34 @@ from ds23_frequency_events import make_event_problem,attach_event_predictive
 from probe_ds23_frequency_events import cached,summary
 from investigate_dsx01_localization_failures import fit
 from algo02_scan import pair_passes
+from leo.analysis.research.retained_track_likelihood import profile
 
 
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);inv=read(args.inventory);d=context(inv);p0,x0=d['problems']['c0']
-    targets=[];receipts=[];used={o for e in d['entries'] for o in e['observation_ids']}
+    original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];used={o for e in d['entries'] for o in e['observation_ids']}
     used.update(o for i,sl in zip(p0.members,p0.slices,strict=True) for o,k in zip(d['scan'].tracks[i]['observation_ids'],d['keep'][sl],strict=True) if k)
     for folder in args.validation:
         r=read(folder/'result.json');annotation=identity_consensus(r['folds'],score_name=r['identity_score_name'])
         if annotation['status']!='conditionally_supported_identity':raise ValueError('annotation not conditionally supported')
-        t=next(t for t in inv['tracks'] if t['track_id']==r['track_id']);i=t['track_index'];track=d['scan'].tracks[i]
+        if args.native_branches:
+            from native_predictive_branch import native_context
+            d,t=native_context(d,inv,args.native_branches,r['track_id'])
+        else:t=next(t for t in inv['tracks'] if t['track_id']==r['track_id'])
+        i=t['track_index'];track=d['scan'].tracks[i]
         if i in p0.members:raise ValueError('this trial is for outside-calibration targets')
         if used.intersection(track['observation_ids']):raise ValueError('target duplicates calibration or predictive observations')
         used.update(track['observation_ids']);j=int(np.flatnonzero(d['scan'].norads==annotation['norad'])[0])
         if j not in p0.labels:raise ValueError('new-family phase-mixture inclusion requires its separate implementation')
-        f,_=family_frequency(p0,x0,j,times=track['times'])
-        alias=int(profile_rate(corrected(p0,x0,i),track['rf_hz']/11.5e9*f,track['times'])['alias'][0])
+        if args.native_branches:
+            if not any(row['candidate_index']==j and d['keep'][sl].any() for row,sl in zip(p0.rows,p0.slices,strict=True)):
+                raise ValueError('native branch needs an active shared family; use a new-family mixture otherwise')
+            aliases={q['alias'] for f in r['folds'] for q in f['proposals'] if q['norad']==annotation['norad']}
+            if len(aliases)!=1:raise ValueError('native branch alias unstable across partitions')
+            alias=next(iter(aliases))
+        else:
+            f,_=family_frequency(p0,x0,j,times=track['times'])
+            alias=int(profile_rate(corrected(p0,x0,i),track['rf_hz']/11.5e9*f,track['times'])['alias'][0])
         targets.append(dict(track_index=i,component=track['key'],candidate_index=j,norad=annotation['norad'],alias=alias,
             points=len(track['times']),observation_ids=track['observation_ids']))
         receipts.append(dict(path=str(folder),annotation=annotation))
@@ -35,7 +48,8 @@ def run(args):
         phase_rounds=5,steps=48,start=[0,0],box_width_km=25,target_calibrates_receiver=False,
         target_updates_unobserved_satellite_parameters=args.orphan_phase_refresh,
         original_noise_weights_and_priors=True,orphan_phase_refresh=args.orphan_phase_refresh,
-        orphan_orbit_prior=args.orphan_orbit_prior,GPS_used=False,future_TLE=False))
+        orphan_orbit_prior=args.orphan_orbit_prior,GPS_used=False,future_TLE=False,
+        native_branches=str(args.native_branches) if args.native_branches else None,original_graph_count=original_graph_count))
     variants=[('control',[])]+[(f'target_{k}',[t]) for k,t in enumerate(targets)]
     if len(targets)>1:variants.append(('combined',targets))
     for name,extras in variants:
@@ -62,10 +76,21 @@ def run(args):
                 cached(p);fit_result=fit(p,x,iterations=48);x=np.asarray(fit_result['parameters'])
                 phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
                 history.append(dict(endpoint_east_north_km=x,phase_change_s=delta))
-            row=summary(p,x,entries);_,_,ids,_=memberships(p,x,entries);old=set(inv['policy'][arm]['proposed_associated_ids'])
+            row=summary(p,x,entries)
+            membership_view=copy.copy(p);membership_view.scan=copy.copy(p.scan);membership_view.scan.tracks=p.scan.tracks[:original_graph_count]
+            _,_,ids,_=memberships(membership_view,x,entries);old=set(inv['policy'][arm]['proposed_associated_ids'])
             if row['linear_calibration_max_difference']>1e-10:raise ValueError('predictive data changed calibration at fixed position')
             row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),
                 added_points=len(ids-old),lost_points=len(old-ids),targets=[g for g in row['linear_gates'] if g['component'] in {e['component'] for e in extras}])
+            if args.native_branches and extras:
+                calc=p.calculate(x);diagnostics=[]
+                for entry,sl in zip(p.linear_entries,p.linear_slices,strict=True):
+                    if entry not in extras:continue
+                    track=p.scan.tracks[entry['track_index']];raw=calc['linear_raw_prediction_residual_hz'][sl]
+                    terms=profile(raw,np.zeros(len(raw)),*p.scan.white[entry['track_index']],bias_sigma=300.)
+                    diagnostics.append(dict(component=entry['component'],norad=entry['norad'],times_s=track['times'],CFO_hz=track['values'],
+                        predicted_CFO_hz=track['values']-raw,residual_hz=terms['residual'][0],RMS_hz=float(terms['rms'][0]),bias_hz=float(terms['bias'][0])))
+                row['native_target_diagnostics']=diagnostics
             if args.orphan_phase_refresh:
                 from predictive_orphan_phase import exact_phase_replay
                 row['orphan_phase_replay']=exact_phase_replay(p,x,entries)
@@ -84,6 +109,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['inventory','output']:p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--orphan-phase-refresh',action='store_true')
-    p.add_argument('--orphan-orbit-prior',action='store_true');a=p.parse_args()
+    p.add_argument('--orphan-orbit-prior',action='store_true')
+    p.add_argument('--native-branches',type=Path);a=p.parse_args()
     if a.orphan_orbit_prior and not a.orphan_phase_refresh:p.error('orbit prior requires phase refresh')
     run(a)
