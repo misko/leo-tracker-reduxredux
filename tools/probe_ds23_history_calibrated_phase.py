@@ -22,8 +22,13 @@ HISTORY=ROOT/'reports/2026_10_18_ds23_causal_phase_mean/history'
 ARMS=('c0','fitted_c')
 
 
-def make_problem(scan,node,keep,arm,reference,weights,means,multiplier,nu):
+def make_problem(scan,node,keep,arm,reference,weights,means,multiplier,nu,*,support_policy="nominal"):
+    if support_policy not in ("nominal", "active"):
+        raise ValueError("unknown physical orbital support policy")
     p=problem(scan,node,arm,keep,reference)
+    if support_policy == "active":
+        from leo.analysis.research.orbital_support import restrict_to_active_orbital_support
+        restrict_to_active_orbital_support(p)
     p.phase_sigma*=multiplier
     begin=p.hardware.shape[1]+p.smooth.shape[1]
     width=begin+len(p.labels)+3*len(p.supported)+len(p.members)

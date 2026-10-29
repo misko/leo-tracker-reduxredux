@@ -45,3 +45,34 @@ def test_zero_mean_gaussian_fallback_exactly_matches_fragment300_control(monkeyp
     b=controls.controlled_problem(None,None,keep,'c0',np.zeros(2),weights,'fragment300').calculate([0,0])
     assert a['coefficient']==pytest.approx(b['coefficient'])
     assert a['negative_twice_elbo']==pytest.approx(b['negative_twice_elbo'])
+
+
+def test_active_support_changes_design_width_before_posterior_is_built(monkeypatch):
+    def factory(*args, **kwargs):
+        p = fake_problem()
+        p.supported = [0]
+        p.supported_local = [0]
+        p.rows = [dict(candidate_index=0), dict(candidate_index=0)]
+        p.slices = [slice(0, 2), slice(2, 4)]
+        p.keep = np.array([True, True, False, False])
+        p.scan = SimpleNamespace(tracks=[dict(receiver=1, channel=1), dict(receiver=1, channel=3)])
+        return p
+
+    def geometry(p, x):
+        width = 6 + 3*len(p.supported)
+        features = np.zeros((4, width))
+        features[:2, -2] = 1000
+        features[2:, -1] = 1000
+        return dict(features=features, intercept=np.zeros(4))
+
+    monkeypatch.setattr(learned, 'problem', factory)
+    monkeypatch.setattr(learned.JointMarginal, 'calculate', geometry)
+    args = (None, None, np.array([True, True, False, False]), 'c0',
+            np.zeros(2), np.ones(2), np.zeros(2), 1., None)
+    nominal = learned.make_problem(*args)
+    simpler = learned.make_problem(*args, support_policy='active')
+    assert nominal.calculate([0, 0])['coefficient'].shape == (9,)
+    assert simpler.calculate([0, 0])['coefficient'].shape == (6,)
+    assert nominal.supported == [0] and simpler.supported == []
+    with pytest.raises(ValueError, match='support policy'):
+        learned.make_problem(*args, support_policy='unknown')

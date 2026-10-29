@@ -1,0 +1,38 @@
+{
+  "artifacts": {
+    "README.md": {
+      "bytes": 10217,
+      "sha256": "766eaa6d1fdb4089d299d6346dd227ae7dcc0f7fae31d6f5708623ff066ca914"
+    },
+    "protocol.json": {
+      "bytes": 1516,
+      "sha256": "5cdba7cda4f3f7a5e7e16d01e97e5636ac65d0d164e7dc442efb10650f9366f6"
+    },
+    "results.json": {
+      "bytes": 4539025,
+      "sha256": "fe107a007746d475912f865b1d0a7543bce26ca7f77df938c8dbb53e80fd0a4e"
+    },
+    "target_backoff.pdf": {
+      "bytes": 36127,
+      "sha256": "de85e7fdea63234a7323a57887200cb6da0ca40ba84ad6c83538ad825e755b30"
+    },
+    "target_backoff.png": {
+      "bytes": 330948,
+      "sha256": "4364a03b75697cecacb4801249fbb20245981c632b84d8b8a5cdfc180d2b2683"
+    },
+    "validation.json": {
+      "bytes": 7189,
+      "sha256": "4ad6488ac3372d973a1f6e2e20f61e9e7f10b1d1a45c692ea37a42d5057a952c"
+    }
+  },
+  "source_sha256": {
+    "tools/probe_graph_orbital_support_backoff.py": "aa375c240965b074961fbfce22d6015e806ddcb1447013438ed1f14eb0890667",
+    "tools/probe_ds23_history_calibrated_phase.py": "fa7e8bcfb0e5a8196e3986d17d7dc76b12941835d4f97350438b0bbdc7842150",
+    "src/leo/analysis/research/orbital_support.py": "899a4f1819b1d3e359811eaa0aff668afe2d12bba04ddb9fd524122043a9c5e2"
+  },
+  "focused_tests": {
+    "passed": 16,
+    "command": "PYTHONPATH=src:tools OPENBLAS_NUM_THREADS=1 .venv/bin/python -m pytest tests/analysis/test_orbital_support.py tests/analysis/test_ds23_history_calibrated_phase_tool.py tests/analysis/test_algo02_scan_tool.py tests/analysis/test_ds23_family_cavity_configuration.py -q"
+  },
+  "production_release_unchanged": true
+}
