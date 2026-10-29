@@ -168,10 +168,10 @@ def position_trial(d, extras, model):
     from investigate_dsx01_localization_failures import fit
     pair={}
     for arm in ('c0','fitted_c'):
-        reference=np.zeros(len(d['means'])); x=np.zeros(2); history=[]
+        reference=np.zeros(len(d['means'])); x=np.asarray(d.get('start',(0.,0.)),float).copy(); history=[]
         for epoch in range(5):
             p=make_event_problem(d['scan'],d['node'],d['keep'],arm,reference,d['powers'],d['means'],d['model'],[],
-                base_problem_factory=partial(make_problem,support_policy=d.get('support_policy','active')))
+                base_problem_factory=d.get('problem_factory',partial(make_problem,support_policy=d.get('support_policy','active'))))
             base=p.calculate
             evaluate,view,slices,order,base_count=prediction_geometry(p,d['entries'],d['powers'],extras,model)
             def calculate(z):
@@ -219,6 +219,9 @@ def position_trial(d, extras, model):
             physical_target_checks=physical,curved_points=len(curved),predictive_points=len(predictive),
             proposed_associated_points=len(associated),proposed_associated_ids=sorted(associated),
             postfit_only_points=len(associated-curved-predictive))
+        if d.get('capture_target_covariance'):
+            row.update(target_covariance_hz2=c['prediction_covariance'][np.ix_(order_target,order_target)],
+                target_owners=owners)
         pair[arm]=row
         print('Position',model['scope'],arm,x,diagnostic['noise'],'movement',row['displacement_from_CH1_m'],flush=True)
     return pair
