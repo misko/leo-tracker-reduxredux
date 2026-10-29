@@ -69,9 +69,10 @@ def old_pass(v):
     return v['noise']['noise_screen_pass'] and all(r['noise_screen_pass'] for r in v.get('per_track_noise',{}).values())
 
 
-def case(args):
+def case(args, *, supplied_context=None):
     start=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False)
-    d,baseline=context(args.root,args.case,args.source);targets=nominate(d,baseline)
+    d,baseline=context(args.root,args.case,args.source) if supplied_context is None else supplied_context
+    targets=nominate(d,baseline)
     result=dict(case=args.case,status='running',baseline=baseline,variants={},targets=targets)
     write(out/'fallback.json',result)
     if not targets:result.update(status='no_eligible_high_channel',seconds=time.monotonic()-start);write(out/'result.json',result);return
