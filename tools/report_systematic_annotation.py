@@ -191,7 +191,9 @@ def run(args):
                 for j,norad in enumerate(candidates):
                     if norad in values:matrix[k,j]=values[norad]-best
             ax.imshow(np.log1p(matrix),aspect='auto',cmap='Blues')
-            for (i,j),value in np.ndenumerate(matrix):ax.text(j,i,'absent' if not np.isfinite(value) else f'{value:.1f}',ha='center',va='center',fontsize=8,color='red' if value==0 else 'black')
+            for (i,j),value in np.ndenumerate(matrix):
+                color='red' if value==0 else 'white' if value>20 else 'black'
+                ax.text(j,i,'absent' if not np.isfinite(value) else f'{value:.1f}',ha='center',va='center',fontsize=8,color=color)
             ax.set(xticks=range(len(candidates)),xticklabels=candidates,yticks=range(len(rr)),
                 yticklabels=[str(f['seed']) for f in rr],title=row['label']+'\n'+row['component'].split('-RF')[0],xlabel='Satellite NORAD')
             ax.tick_params(axis='x',labelrotation=45)
