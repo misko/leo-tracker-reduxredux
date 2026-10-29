@@ -10,7 +10,7 @@ from leo.analysis.research.grouped_prediction import identity_consensus
 from ds23_frequency_events import make_event_problem,attach_event_predictive
 from probe_ds23_frequency_events import cached,summary
 from algo02_scan import pair_passes
-from predictive_new_family import NewFamily
+from predictive_new_family import NewFamily,resolution_audit
 
 
 def run(args):
@@ -22,16 +22,22 @@ def run(args):
         if a['status']!='conditionally_supported_identity':raise ValueError('identity not supported under supplied validation')
         t=next(t for t in inv['tracks'] if t['track_id']==r['track_id']);track=d['scan'].tracks[t['track_index']]
         j=int(np.flatnonzero(d['scan'].norads==a['norad'])[0])
-        if j in p0.labels:raise ValueError('use existing-family inclusion for an existing label')
+        if j in p0.labels:
+            if not args.uncalibrated_label:raise ValueError('use existing-family inclusion for an existing label')
+            if any(row['candidate_index']==j and d['keep'][sl].any() for row,sl in zip(p0.rows,p0.slices,strict=True)):
+                raise ValueError('target family has active calibration observations')
+        if any(e['candidate_index']==j for e in d['entries']):raise ValueError('target family already has predictive observations; shared conditioning required')
         aliases={q['alias'] for f in r['folds'] for q in f['proposals'] if q['norad']==a['norad']}
         if len(aliases)!=1:raise ValueError('alias not stable across randomized partitions')
         if used.intersection(track['observation_ids']):raise ValueError('target duplicates retained observations')
         used.update(track['observation_ids'])
         targets.append(dict(track_index=t['track_index'],component=track['key'],candidate_index=j,norad=a['norad'],alias=next(iter(aliases)),points=len(track['times']),observation_ids=track['observation_ids']))
-    family=NewFamily(d['scan'],targets,d['model'],phase_step=args.phase_step)
+    family=NewFamily(d['scan'],targets,d['model'],phase_step=args.phase_step,allow_uncalibrated_label=args.uncalibrated_label)
     write(out/'protocol.json',dict(job=inv['job'],targets=targets,validation=[str(p) for p in args.validation],family_prior=family.receipt,
-        optimizer='L-BFGS-B normalized joint objective',maxiter=48,maxfun=240,phase_rounds=5,start=[0,0],box_width_km=25,
-        control_uses_same_optimizer=True,c0_vs_fitted_c=True,GPS_used=False,future_TLE=False,phase_step_s=args.phase_step))
+        optimizer=args.optimizer+' normalized joint objective',maxiter=48,maxfun=240,phase_rounds=5,start=[0,0],box_width_km=25,
+        control_uses_same_optimizer=True,c0_vs_fitted_c=True,GPS_used=False,future_TLE=False,phase_step_s=args.phase_step,
+        uncalibrated_label=args.uncalibrated_label,phase_resolution_audit=not args.skip_phase_audit,
+        postfit_audit_evaluations_per_arm=0 if args.skip_phase_audit else 15))
     for variant,include in [('control',False),('new_family',True)]:
         pair={}
         for arm in ('c0','fitted_c'):
@@ -43,8 +49,12 @@ def run(args):
                 def objective(z):
                     c=p.calculate(z);penalty=float(np.sum(np.minimum(0,c['elevation'][p.keep])**2)/4)
                     return c['negative_twice_elbo']+penalty+(family.evaluate(p,z,d['powers'],d['entries']) if include else 0.)
-                opt=minimize(objective,x,method='L-BFGS-B',bounds=[(-12.5,12.5)]*2,
-                    options=dict(maxiter=48,maxfun=240,eps=.001,ftol=1e-10,gtol=1e-4,maxls=20))
+                if args.optimizer=='lbfgsb':
+                    opt=minimize(objective,x,method='L-BFGS-B',bounds=[(-12.5,12.5)]*2,
+                        options=dict(maxiter=48,maxfun=240,eps=.001,ftol=1e-10,gtol=1e-4,maxls=20))
+                else:
+                    opt=minimize(objective,x,method='Powell',bounds=[(-12.5,12.5)]*2,
+                        options=dict(maxiter=48,maxfev=240,ftol=1e-10,xtol=1e-5))
                 x=np.asarray(opt.x);phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
                 history.append(dict(endpoint_east_north_km=x,objective=float(opt.fun),success=bool(opt.success),message=str(opt.message),nfev=opt.nfev,phase_change_s=delta))
             row=summary(p,x,d['entries']);_,_,ids,_=memberships(p,x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
@@ -52,16 +62,23 @@ def run(args):
                 detail=family.evaluate(p,x,d['powers'],d['entries'],details=True);row['family']=detail
                 row['incumbent_objective']=row['negative_twice_elbo'];row['negative_twice_elbo']+=detail['negative_twice_log_density']
                 row['linear_gates']+=detail['gates'];ids.update(o for e in targets for o in e['observation_ids'])
+                if not args.skip_phase_audit:
+                    row['phase_resolution_audit']=resolution_audit(family,p,x,d['powers'],d['entries'],d['model'])
             row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),added_points=len(ids-old),lost_points=len(old-ids))
             pair[arm]=row
             print(inv['job']['label'],variant,arm,'endpoint',x,'seconds',round(time.monotonic()-began,1),flush=True)
         valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 and v['history'][-1]['success'] for v in pair.values())
         if include:valid=valid and all(v['family']['phase_boundary_mass']<.01 for v in pair.values())
+        if include and not args.skip_phase_audit:valid=valid and all(v['phase_resolution_audit']['local_agreement'] for v in pair.values())
         write(out/(variant+'.json'),dict(job=inv['job'],arms=pair,baseline=inv['policy'],paired_valid=valid,target_entries=targets if include else [],
-            no_production_change=True,receiver_calibration_from_target=False,shared_predictive_uncertainty=True,seconds=time.monotonic()-began))
+            no_production_change=True,receiver_calibration_from_target=False,shared_predictive_uncertainty=True,
+            phase_resolution_checked=bool(include and not args.skip_phase_audit),seconds=time.monotonic()-began))
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for key in ['inventory','output']:p.add_argument('--'+key,type=Path,required=True)
-    p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--phase-step',type=float,default=.1);run(p.parse_args())
+    p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--phase-step',type=float,default=.1)
+    p.add_argument('--uncalibrated-label',action='store_true')
+    p.add_argument('--skip-phase-audit',action='store_true',help='Historical replay only; results lack the numerical inclusion guard')
+    p.add_argument('--optimizer',choices=['lbfgsb','powell'],default='lbfgsb');run(p.parse_args())

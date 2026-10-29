@@ -73,14 +73,22 @@ def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False
     return means,covariance,logprior,phases,elevations,receipt
 
 
+def check_predictive_role(p,track_index,allow_inactive_member=False):
+    if track_index not in p.members:return
+    if not allow_inactive_member:raise ValueError('use curved annotation for a calibration member')
+    k=p.members.index(track_index)
+    if p.keep[p.slices[k]].any():raise ValueError('predictive-role target already has active calibration observations')
+
+
 def run(args):
     began=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False)
     inv=read(args.inventory);d=context(inv);p0,_=d['problems']['c0']
     target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large']);i=target['track_index'];t=d['scan'].tracks[i]
-    if i in p0.members:raise ValueError('use curved annotation for a calibration member')
+    check_predictive_role(p0,i,getattr(args,'predictive_member',False))
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
     write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=SEEDS,block_s=12,guard_s=2,
         target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,
+        inactive_curved_member_as_predictive=bool(i in p0.members),
         fixed_noise_hz=150,unseen_noise_variance_multiplier=2,track_bias_sigma_hz=300,
         phase_box_s=[-15,15],phase_step_s=args.phase_step,uncalibrated_phase_mixture=args.uncalibrated_phase_mixture,phase_rounds=5,position_steps=48,
         identity_score_name='conditional_target',position_uncertainty_integrated=False,
@@ -130,4 +138,6 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['inventory','output']:p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--track',required=True);p.add_argument('--candidates',type=int,default=3);p.add_argument('--folds',type=int,default=3)
-    p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true');run(p.parse_args())
+    p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true')
+    p.add_argument('--predictive-member',action='store_true',help='Allow a wholly inactive curved member as predictive-only evidence')
+    run(p.parse_args())

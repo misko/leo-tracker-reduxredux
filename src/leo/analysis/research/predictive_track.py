@@ -122,3 +122,23 @@ def mixture_prediction(observed,means,covariances,log_prior,training,held):
         rms_hz=float(np.sqrt(np.mean(residual**2))),held_mean_hz=mu,held_residual_hz=residual,
         prediction_sigma_hz=np.sqrt(np.diag(variance)),held_covariance_hz2=variance,training_mixture_weights=weights,
         no_calibration_refit=True)
+def phase_resolution_agreement(scores, *, spacing_km=.025, score_tolerance=.001, gradient_tolerance=.01):
+    """Local quadrature sensitivity, not a global optimum or error bound.
+
+    Rows: center, east+, east-, north+, north-. Columns: original, half-step,
+    quarter-step integration. The position fit itself is not rerun here.
+    """
+    a=np.asarray(scores,float)
+    tolerances=np.asarray([spacing_km,score_tolerance,gradient_tolerance],float)
+    if a.shape!=(5,3) or not np.isfinite(a).all() or not np.isfinite(tolerances).all() or np.any(tolerances<=0):
+        raise ValueError('finite 5-by-3 stencil scores and positive finite spacing/tolerances required')
+    gradients=np.stack(((a[1]-a[2])/(2*spacing_km),(a[3]-a[4])/(2*spacing_km)))
+    original_error=float(np.max(abs(a[:,0]-a[:,2])))
+    refined_error=float(np.max(abs(a[:,1]-a[:,2])))
+    gradient_error=float(np.linalg.norm(gradients[:,0]-gradients[:,2]))
+    refined_gradient_error=float(np.linalg.norm(gradients[:,1]-gradients[:,2]))
+    return dict(local_agreement=bool(original_error<=score_tolerance and refined_error<=score_tolerance/4
+        and gradient_error<=gradient_tolerance and refined_gradient_error<=gradient_tolerance/4),
+        maximum_score_change=original_error,refined_maximum_score_change=refined_error,
+        gradient_change_per_km=gradient_error,refined_gradient_change_per_km=refined_gradient_error,
+        score_tolerance=score_tolerance,gradient_tolerance_per_km=gradient_tolerance,spacing_km=spacing_km)

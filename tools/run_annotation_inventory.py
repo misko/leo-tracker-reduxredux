@@ -32,13 +32,14 @@ def freeze(args):
           'predictive-only required',sum(r['state']=='needs_predictive_only_model' for r in rows),flush=True)
 
 
-def pending_jobs(protocol,output,limit,predictive_only=False):
+def pending_jobs(protocol,output,limit,predictive_only=False,scope=None):
     if limit<1:raise ValueError('positive job limit required')
     # A selected attempt can still be queued or running without a terminal
     # receipt. Preserve every claim; an incomplete attempt needs diagnosis.
     claimed={r['track_id'] for p in output.glob('attempt-*/selected.json') for r in read(p)}
     jobs=[]
     for r in protocol['rows']:
+        if scope is not None and scope not in r.get('scopes',[]):continue
         eligible='needs_predictive_only_model' if predictive_only else 'queued'
         if r['state']!=eligible or r['track_id'] in claimed or (output/r['track_id']).exists():continue
         if list(output.glob('attempt-*/'+r['track_id']+'-terminal.json')):continue
@@ -50,10 +51,10 @@ def pending_jobs(protocol,output,limit,predictive_only=False):
 def run(args):
     if args.workers<1:raise ValueError('positive worker count required')
     protocol=read(args.output/'protocol.json');attempt=args.output/f'attempt-{len(list(args.output.glob("attempt-*")))+1}'
-    jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only);attempt.mkdir()
+    jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only,args.scope);attempt.mkdir()
     write(attempt/'selected.json',jobs)
     write(attempt/'protocol.json',dict(workers=args.workers,seconds_per_case=600,predictive_only=args.predictive_only,
-        selected_tracks=len(jobs),preserves_existing_attempt_claims=True))
+        selected_tracks=len(jobs),preserves_existing_attempt_claims=True,scope=args.scope))
     def work(r):
         script='annotate_predictive_only.py' if args.predictive_only else 'annotate_track_predictively.py'
         cmd=[sys.executable,str(Path(__file__).with_name(script)),
@@ -72,4 +73,5 @@ if __name__=='__main__':
     for key in ('study','inventory','diagnostics','output'):p.add_argument('--'+key,type=Path,required=key=='output')
     p.add_argument('--limit',type=int,default=16);p.add_argument('--predictive-only',action='store_true')
     p.add_argument('--workers',type=int,default=8)
+    p.add_argument('--scope',help='Process pending tracks in this recorded scope without altering the full queue')
     a=p.parse_args();freeze(a) if a.mode=='freeze' else run(a)

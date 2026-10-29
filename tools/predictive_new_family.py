@@ -16,7 +16,7 @@ from ds23_predictive_linear import linear_geometry
 from ds23_height_problem import geometry_features
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
-from leo.analysis.research.predictive_track import condition_coefficients,phase_mixture_evidence
+from leo.analysis.research.predictive_track import condition_coefficients,phase_mixture_evidence,phase_resolution_agreement
 from leo.analysis.research.retained_track_likelihood import PERIOD,profile
 from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_screen
 from prototype_dsx01_continuous_position import latlon
@@ -113,3 +113,16 @@ class NewFamily:
             phase_weights=weights,phase_grid_s=self.phases,phase_boundary_mass=float(weights[abs(self.phases)>=14.9].sum()),
             orbital_posterior_mean=orbital,visible_prior_mass=result['visible_prior_mass'],gates=gates,diagnostics=diagnostics,
             receiver_calibration_change=float(np.max(abs(before-after['coefficient']))))
+
+
+def resolution_audit(family,p,x,powers,entries,model):
+    """Post-fit local quadrature check, without changing data or fitted position."""
+    x=np.asarray(x);step=family.receipt['phase_step_s'];steps=[step,step/2,step/4]
+    if np.max(abs(x))+.025>12.5:
+        return dict(local_agreement=False,reason='centered local audit unavailable at regional boundary',steps_s=steps)
+    predictors=[family]+[NewFamily(family.scan,family.entries,model,phase_step=h,
+        allow_uncalibrated_label=family.allow_uncalibrated_label) for h in steps[1:]]
+    offsets=np.array([[0,0],[.025,0],[-.025,0],[0,.025],[0,-.025]])
+    scores=np.array([[f.evaluate(p,x+offset,powers,entries) for f in predictors] for offset in offsets])
+    return dict(steps_s=steps,offsets_km=offsets,scores=scores,incumbent_phase_reference_fixed_locally=True,
+        position_refitted=False,**phase_resolution_agreement(scores))
