@@ -105,8 +105,10 @@ def run(args):
                             final_phase_change_s=r['final_phase_change_s'],minimum_elevation_deg=r['minimum_target_elevation_deg']))
         else:
             receipts=list(queue.glob('attempt-*/'+row['track_id']+'-terminal.json'))
-            if receipts:entry['state']='execution_'+read(receipts[-1])['status']
+            if receipts:
+                entry['execution']=read(receipts[-1]);entry['state']='execution_'+entry['execution']['status']
         ledger.append(entry)
+    write(out/'execution_receipts.json',[read(p) for p in sorted(queue.glob('attempt-*/*-terminal.json'))])
     with (out/'annotation_ledger.csv').open('x') as f:
         keys=['track_id','label','component','points','state','norad','minimum_margin','engine_member']
         w=csv.DictWriter(f,fieldnames=keys,lineterminator='\n');w.writeheader();w.writerows({k:r.get(k) for k in keys} for r in ledger)
@@ -217,7 +219,9 @@ The [preceding inventory](../2026_10_29_all_large_track_inventory/README.md) fou
 
 {chr(10).join(table)}
 
-The [complete ledger](annotation_ledger.csv) includes every track. The 274 tracks absent from the curved calibration design need a predictive-only implementation; they are not silently dropped or used to calibrate receivers. Queued tracks have not passed validation. Counts are a snapshot, not a promise that an unobserved process is still running.
+The [complete ledger](annotation_ledger.csv) includes every available inventoried track across 277 recordings. DS24 revision 2 contains 103 members: nine lack the exports needed for a GLRT inventory, and DS24-0056 / DS25-0037 has no active curvature (its four graph tracks also fail the large-track size threshold). These limitations are retained from the preceding inventory. Coherent points outside existing graph tracks remain a separate task.
+
+The 274 tracks absent from the curved calibration design need a predictive-only implementation; they are not silently dropped or used to calibrate receivers. Queued tracks have not passed validation. [Execution receipts](execution_receipts.json) distinguish completed, failed and timed-out attempts. Counts are a snapshot, not a promise that an unobserved process is still running.
 
 ## Reproducible annotation procedure
 
