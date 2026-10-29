@@ -121,7 +121,8 @@ def run(args):
     else:target=max(eligible.values(),key=lambda r:len(r['observation_ids']))
     k=p0.members.index(target['track_index']);sl=p0.slices[k];track=d['scan'].tracks[target['track_index']]
     from annotation_partition_plan import selected_seeds
-    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],p0.flat_times,track['times'],SEEDS)
+    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],p0.flat_times,track['times'],SEEDS,
+        distinct=getattr(args,'distinct_partitions',False))
     write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
         common_scan_wide_split=True,fixed_noise_hz=150,RF_family_weights='all one',phase_rounds=5,steps=48,
         GPS_used=False,future_TLE=False,conditional_on_frozen_graph_and_incumbent_identities=True,
@@ -166,7 +167,8 @@ def run(args):
             print(inv['job']['label'],seed,norad,[(a,round(v['scores']['joint']['negative_twice_log_density'],1),round(v['scores']['target']['rms_hz'],1)) for a,v in arms.items()],flush=True)
         result=dict(seed=seed,split=split,proposals=proposals);all_results.append(result);write(out/f'seed-{seed}.json',result)
     write(out/'result.json',dict(job=inv['job'],component=track['key'],track_id=target['track_id'],folds=all_results,
-        seconds=time.monotonic()-started,annotation_prototype=True,no_accepted_associations=True))
+        seconds=time.monotonic()-started,annotation_prototype=True,no_accepted_associations=True,
+        geometry_only_early_exit=bool(partition_plan and partition_plan.get('geometry_only_early_exit'))))
 
 
 def full(args):
@@ -226,6 +228,7 @@ if __name__=='__main__':
     p.add_argument('--track');p.add_argument('--candidates',type=int,default=3);p.add_argument('--folds',type=int,default=3)
     p.add_argument('--validation',type=Path)
     p.add_argument('--partition-audit',type=Path)
+    p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
     p.add_argument('--control',action='store_true')
     p.add_argument('--orbital-policy',choices=['active_uncertainty','target_uncertainty'])
     a=p.parse_args();controls(a) if a.control else full(a) if a.validation else run(a)

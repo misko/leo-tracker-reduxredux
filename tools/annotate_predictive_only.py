@@ -87,7 +87,8 @@ def run(args):
     check_predictive_role(p0,i,getattr(args,'predictive_member',False))
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
     from annotation_partition_plan import selected_seeds
-    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],full_times,t['times'],SEEDS)
+    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],full_times,t['times'],SEEDS,
+        distinct=getattr(args,'distinct_partitions',False))
     write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
         target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,
         inactive_curved_member_as_predictive=bool(i in p0.members),
@@ -132,7 +133,8 @@ def run(args):
     annotation=identity_consensus(results,score_name='conditional_target')
     write(out/'result.json',dict(job=inv['job'],component=t['key'],track_id=target['track_id'],folds=results,annotation=annotation,
         identity_score_name='conditional_target',inclusion_mode='predictive_only',seconds=time.monotonic()-began,
-        annotation_prototype=True,no_accepted_associations=True))
+        annotation_prototype=True,no_accepted_associations=True,
+        geometry_only_early_exit=bool(partition_plan and partition_plan.get('geometry_only_early_exit'))))
     print(inv['job']['label'],annotation['status'],annotation['norad'],flush=True)
 
 
@@ -143,4 +145,5 @@ if __name__=='__main__':
     p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true')
     p.add_argument('--predictive-member',action='store_true',help='Allow a wholly inactive curved member as predictive-only evidence')
     p.add_argument('--partition-audit',type=Path)
+    p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
     run(p.parse_args())

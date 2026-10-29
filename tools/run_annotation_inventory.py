@@ -54,11 +54,13 @@ def run(args):
     jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only,args.scope);attempt.mkdir()
     write(attempt/'selected.json',jobs)
     write(attempt/'protocol.json',dict(workers=args.workers,seconds_per_case=600,predictive_only=args.predictive_only,
-        selected_tracks=len(jobs),preserves_existing_attempt_claims=True,scope=args.scope))
+        selected_tracks=len(jobs),preserves_existing_attempt_claims=True,scope=args.scope,
+        distinct_partitions=args.distinct_partitions,partition_policy='timestamp-only distinct schedule' if args.distinct_partitions else 'original three seeds'))
     def work(r):
         script='annotate_predictive_only.py' if args.predictive_only else 'annotate_track_predictively.py'
         cmd=[sys.executable,str(Path(__file__).with_name(script)),
              '--inventory',r['inventory'],'--track',r['track_id'],'--output',str(args.output/r['track_id'])]
+        if args.distinct_partitions:cmd.append('--distinct-partitions')
         result=dict(track_id=r['track_id'],label=r['label'],**supervise(cmd,attempt/(r['track_id']+'.log'),600))
         write(attempt/(r['track_id']+'-terminal.json'),result);return result
     results=[]
@@ -74,4 +76,5 @@ if __name__=='__main__':
     p.add_argument('--limit',type=int,default=16);p.add_argument('--predictive-only',action='store_true')
     p.add_argument('--workers',type=int,default=8)
     p.add_argument('--scope',help='Process pending tracks in this recorded scope without altering the full queue')
+    p.add_argument('--distinct-partitions',action='store_true')
     a=p.parse_args();freeze(a) if a.mode=='freeze' else run(a)
