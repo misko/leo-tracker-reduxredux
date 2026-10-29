@@ -41,3 +41,12 @@ def test_entire_target_family_exclusion_and_timestamp_only_grid():
     ramps=receiver_ramps(2,25.,'receiver')
     assert [r['time_s'] for r in ramps]==[0.,10.,20.]
     assert all(r['receiver']==2 and r['sigma_hz']==50 for r in ramps)
+
+
+def test_competing_candidate_families_are_all_excluded_symmetrically():
+    from probe_ramp_candidate_competition import exclude_candidates
+    rows=[dict(candidate_norad=n) for n in (10,20,10,30,40)]
+    slices=[slice(2*i,2*i+2) for i in range(5)];original=np.ones(10,bool)
+    got=exclude_candidates(rows,slices,original,{10,20},3)
+    np.testing.assert_array_equal(got,[False]*8+[True]*2)
+    assert original.all()

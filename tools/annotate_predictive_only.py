@@ -42,7 +42,7 @@ def prediction_design(p,track,label,base,width):
     return result
 
 
-def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False):
+def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False,return_frozen_covariance=False):
     """Mean/covariance mixture with original calibration coefficients untouched."""
     from ds23_predictive_linear import linear_geometry
     from ds23_height_problem import geometry_features
@@ -56,6 +56,7 @@ def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False
     fixed=np.eye(n)*150.**2*2+300.**2
     active=any(r['candidate_index']==j and p.keep[sl].any() for r,sl in zip(p.rows,p.slices,strict=True))
     if j in p.labels and not (uncalibrated_phase_mixture and not active):
+        if return_frozen_covariance:raise ValueError('frozen receiver decomposition requires an uncalibrated satellite family')
         view,*_=linear_geometry(p,[dict(track_index=i,candidate_index=j,alias=0)])
         geometry=geometry_features(view,x,0.);h=prediction_design(p,track,j,geometry['features'],len(before))
         means=(q*geometry['intercept']+h@c['coefficient'])[None]
@@ -65,7 +66,7 @@ def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False
     else:
         receiver=receiver_design(times,track['rf_hz'],track['receiver'],track['channel'],d['scan'].rx_basis[i],fitted_c=p.fitted_c)
         h=prediction_design(p,track,j,receiver,len(before))
-        calibration_mean=h@before;fixed+=h@covcoef@h.T
+        calibration_mean=h@before;frozen_covariance=h@covcoef@h.T;fixed+=frozen_covariance
         widths,history=phase_widths(d['scan'],[j]);mean=float(forecast_phase_mean(history,d['model']['shrinkage'])[0])
         sigma=float(widths[0]*d['model']['multiplier']);nu=d['model']['nu']
         phases=np.linspace(-15,15,int(round(30/phase_step))+1)
@@ -84,7 +85,8 @@ def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False
             phase_step_s=float(phases[1]-phases[0]),history=history,orbital_prior=metadata)
     logprior[elevations<0]=-np.inf
     np.testing.assert_array_equal(before,p.calculate(x)['coefficient'])
-    return means,covariance,logprior,phases,elevations,receipt
+    result=(means,covariance,logprior,phases,elevations,receipt)
+    return result+(frozen_covariance,) if return_frozen_covariance else result
 
 
 def check_predictive_role(p,track_index,allow_inactive_member=False):
