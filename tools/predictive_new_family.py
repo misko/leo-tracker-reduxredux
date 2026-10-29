@@ -23,10 +23,11 @@ from prototype_dsx01_continuous_position import latlon
 
 
 class NewFamily:
-    def __init__(self,scan,entries,model,*,phase_step=.1):
+    def __init__(self,scan,entries,model,*,phase_step=.1,allow_uncalibrated_label=False):
         families={e['candidate_index'] for e in entries}
         if len(families)!=1:raise ValueError('one shared new family per exact integration required')
         self.j=next(iter(families));self.entries=entries;self.scan=scan
+        self.allow_uncalibrated_label=allow_uncalibrated_label
         self.tracks=[scan.tracks[e['track_index']] for e in entries];counts=[len(t['times']) for t in self.tracks]
         boundaries=np.r_[0,np.cumsum(counts)];self.slices=[slice(a,b) for a,b in zip(boundaries[:-1],boundaries[1:],strict=True)]
         self.times=np.concatenate([t['times'] for t in self.tracks]);self.q=np.concatenate([np.full(n,t['rf_hz']/11.5e9) for n,t in zip(counts,self.tracks,strict=True)])
@@ -53,7 +54,10 @@ class NewFamily:
             history=history,target_updates_receiver_calibration=False,conditions_on_incumbent_predictive_uncertainty=True)
 
     def evaluate(self,p,x,powers,old_entries,*,details=False,refine_phase=False):
-        if self.j in p.labels:raise ValueError('new family already present in calibration model')
+        if self.j in p.labels:
+            if not self.allow_uncalibrated_label or any(r['candidate_index']==self.j and p.keep[sl].any() for r,sl in zip(p.rows,p.slices,strict=True)):
+                raise ValueError('family has active calibration evidence or uncalibrated-label use is disabled')
+        if any(e['candidate_index']==self.j for e in old_entries):raise ValueError('family also present in conditioning observations')
         c=p.curved_calculate(x) if old_entries else p.calculate(x)
         coef=c['coefficient'];before=coef.copy();u=c['features'][p.keep];groups=p.noise_groups[p.keep]
         w=np.asarray(powers)[groups]*c['noise_precision'][groups]/p.point_noise[p.keep]**2

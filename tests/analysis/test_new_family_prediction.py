@@ -43,3 +43,11 @@ def test_joint_two_track_family_matches_dense_phase_oracle_and_preserves_calibra
     expected=-2*logsumexp(family.logprior-logsumexp(family.logprior)+density)
     assert actual==pytest.approx(expected,rel=1e-10)
     np.testing.assert_array_equal(coef,before)
+    p.labels=[0,1];p.rows=[dict(candidate_index=1)];p.slices=[slice(0,17)]
+    with pytest.raises(ValueError,match='disabled'):family.evaluate(p,np.zeros(2),np.ones(1),[])
+    family.allow_uncalibrated_label=True
+    assert family.evaluate(p,np.zeros(2),np.ones(1),[])==pytest.approx(actual)
+    p.rows=[dict(candidate_index=0)]
+    with pytest.raises(ValueError,match='active calibration'):family.evaluate(p,np.zeros(2),np.ones(1),[])
+    p.labels=[1]
+    with pytest.raises(ValueError,match='conditioning'):family.evaluate(p,np.zeros(2),np.ones(1),[dict(candidate_index=0)])

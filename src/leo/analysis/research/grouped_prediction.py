@@ -3,6 +3,21 @@ import numpy as np
 from scipy.linalg import cho_solve, solve_triangular
 
 
+def family_folds(labels,eligible,*,seed,folds=3):
+    """Random whole-family folds, retaining every receiver/channel together."""
+    j=np.asarray(labels);use=np.asarray(eligible,bool)
+    if j.ndim!=1 or use.shape!=j.shape or not np.issubdtype(j.dtype,np.integer) or folds<2:
+        raise ValueError('integer family labels, matching mask and at least two folds required')
+    families=np.unique(j[use])
+    if len(families)<folds:raise ValueError('not enough independently grouped families')
+    shuffled=np.random.default_rng(seed).permutation(families);result=[]
+    for k in range(folds):
+        withheld=np.sort(shuffled[k::folds]);held=use&np.isin(j,withheld);train=use&~held
+        result.append((train,held,dict(seed=int(seed),fold=k,held_families=withheld.tolist(),
+            training_families=np.unique(j[train]).tolist(),held_points=int(held.sum()),training_points=int(train.sum()))))
+    return result
+
+
 def grouped_split(times, focus_times, *, seed, block_s=12., guard_s=2.):
     """One scan-wide partition; target groups guarantee a useful validation set.
 
