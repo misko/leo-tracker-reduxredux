@@ -108,3 +108,21 @@ def test_read_guard_denies_historical_results(tmp_path):
     assert child.returncode != 0 and "unrelated data read" in child.stderr
     receipt = json.loads(next((run / "read_receipts").glob("*.json")).read_text())
     assert "/srv/bulk/leo/research/other/result.json" in receipt["denied_paths"]
+
+
+def test_read_guard_resolves_descriptor_relative_archive_reads(tmp_path):
+    import os
+    guard = Path(__file__).resolve().parents[2] / "deploy/fast_graph_guard"
+    run, archive = tmp_path / "run", tmp_path / "archive"
+    run.mkdir()
+    archive.mkdir()
+    (archive / "record.tle").write_text("causal elements")
+    env = dict(os.environ, PYTHONPATH=str(guard), LEO_FAST_GRAPH_RUN_ROOT=str(run),
+               LEO_FAST_GRAPH_SOURCE_ROOT=str(guard.parents[1]),
+               LEO_FAST_GRAPH_INPUT=str(tmp_path / "tracking.json"), LEO_FAST_GRAPH_TLE_ROOT=str(archive))
+    code = ("import os; d=os.open(" + repr(str(archive)) + ",os.O_RDONLY|os.O_DIRECTORY); "
+            "f=os.open('record.tle',os.O_RDONLY,dir_fd=d); assert os.read(f,100)==b'causal elements'")
+    child = subprocess.run([sys.executable, "-B", "-c", code], env=env, capture_output=True, text=True)
+    assert child.returncode == 0, child.stderr
+    receipt = json.loads(next((run / "read_receipts").glob("*.json")).read_text())
+    assert str(archive / "record.tle") in receipt["read_paths"]

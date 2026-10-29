@@ -1,6 +1,7 @@
 """Per-process read receipts: production inference can read only its own data."""
 
 import atexit
+from contextvars import ContextVar
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,21 @@ archive = Path(os.environ["LEO_FAST_GRAPH_TLE_ROOT"]).resolve()
 release = Path(os.environ["LEO_FAST_GRAPH_SOURCE_ROOT"]).resolve()
 reads, denied = set(), set()
 python_spawns = []
+fd_target = ContextVar("fast_graph_fd_target", default=None)
+original_open = os.open
+
+
+def confined_open(path, flags, mode=0o777, *, dir_fd=None):
+    # CPython's open audit event omits dir_fd. Preserve the actual target of
+    # descriptor-relative public archive reads rather than guessing from cwd.
+    target = None
+    if dir_fd is not None:
+        target = Path(os.readlink(f"/proc/self/fd/{dir_fd}")) / os.fsdecode(path)
+    token = fd_target.set(target)
+    try:
+        return original_open(path, flags, mode, dir_fd=dir_fd)
+    finally:
+        fd_target.reset(token)
 
 
 def audit(event, args):
@@ -23,10 +39,12 @@ def audit(event, args):
     if event != "open" or not isinstance(args[0], (str, bytes, os.PathLike)):
         return
     path, mode, flags = args
+    if flags & os.O_DIRECTORY:
+        return  # Directory traversal exposes metadata, not file contents.
     reading = ("r" in mode or "+" in mode) if mode is not None else flags & os.O_ACCMODE != os.O_WRONLY
     if not reading:
         return
-    path = Path(os.fsdecode(path)).resolve()
+    path = Path(fd_target.get() or os.fsdecode(path)).resolve()
     if path.is_relative_to(archive):
         reads.add(str(path))
         return
@@ -58,4 +76,5 @@ def receipt():
 
 
 sys.addaudithook(audit)
+os.open = confined_open
 atexit.register(receipt)
