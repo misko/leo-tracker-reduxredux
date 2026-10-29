@@ -30,6 +30,47 @@ def gaussian_log_density(residual,covariance):
     return float(-.5*(r@cho_solve((root,True),r)+2*np.log(np.diag(root)).sum()+len(r)*np.log(2*np.pi)))
 
 
+def condition_coefficients(mean,covariance,design,residual,noise_covariance):
+    """Conditional predictive moments; never mutate calibration inputs."""
+    a,c,h,r,n=(np.asarray(v,float) for v in (mean,covariance,design,residual,noise_covariance))
+    if a.ndim!=1 or c.shape!=(len(a),len(a)) or r.ndim!=1 or h.shape!=(len(r),len(a)) or n.shape!=(len(r),len(r)):
+        raise ValueError('matching coefficient and observation geometry required')
+    if not len(r):return a.copy(),c.copy()
+    total=n+h@c@h.T;cross=c@h.T
+    root=np.linalg.cholesky((total+total.T)/2)
+    posterior=c-cross@cho_solve((root,True),cross.T)
+    return a+cross@cho_solve((root,True),r),(posterior+posterior.T)/2
+
+
+def phase_mixture_evidence(observed,means,base_covariance,orbital_modes,log_prior,visible):
+    """Normalized exact phase-grid evidence with Gaussian orbital integration.
+
+    Woodbury solves only a small orbital matrix per phase. Invisible components
+    have zero likelihood without renormalizing their prior mass away.
+    """
+    y,m,b,u,lp=(np.asarray(v,float) for v in (observed,means,base_covariance,orbital_modes,log_prior))
+    visible=np.asarray(visible,bool)
+    if y.ndim!=1 or not len(y) or m.ndim!=2 or m.shape[1:]!=y.shape or b.shape!=(len(y),len(y)) or u.ndim!=3 or u.shape[:2]!=m.shape or lp.shape!=(len(m),) or visible.shape!=lp.shape:
+        raise ValueError('matching phase mixture geometry required')
+    if not all(np.isfinite(v).all() for v in (y,m,b,u)) or not np.isfinite(lp).any() or np.isnan(lp).any() or np.isposinf(lp).any():
+        raise ValueError('finite geometry and a finite phase prior required')
+    if not np.allclose(b,b.T,rtol=1e-10,atol=1e-8):raise ValueError('symmetric covariance required')
+    root=np.linalg.cholesky((b+b.T)/2);count,n,width=u.shape
+    raw=np.linalg.solve(root,(y-m).T).T
+    whitened=np.linalg.solve(root,u.transpose(1,0,2).reshape(n,-1)).reshape(n,count,width).transpose(1,0,2)
+    gram=np.eye(width)+np.einsum('mni,mnj->mij',whitened,whitened)
+    rhs=np.einsum('mni,mn->mi',whitened,raw)
+    coefficients=np.linalg.solve(gram,rhs[...,None])[...,0]
+    quadratic=np.sum(raw*raw,axis=1)-np.sum(rhs*coefficients,axis=1)
+    logdet=2*np.log(np.diag(root)).sum()+np.linalg.slogdet(gram)[1]
+    component=-.5*(quadratic+logdet+n*np.log(2*np.pi));prior=lp-logsumexp(lp)
+    joint=np.where(visible,prior+component,-np.inf);evidence=float(logsumexp(joint))
+    weights=np.exp(joint-evidence) if np.isfinite(evidence) else np.zeros(count)
+    return dict(negative_twice_log_density=-2*evidence,phase_weights=weights,
+        orbital_posterior_mean=coefficients,component_log_density=component,
+        visible_prior_mass=float(np.exp(prior[visible]).sum()))
+
+
 def selected_predictive_coordinates(mean,covariance,design,residual,noise_covariance,allowed):
     """Expose selected posterior moments without changing calibration outputs.
 
