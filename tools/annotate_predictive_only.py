@@ -86,7 +86,9 @@ def run(args):
     target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large']);i=target['track_index'];t=d['scan'].tracks[i]
     check_predictive_role(p0,i,getattr(args,'predictive_member',False))
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
-    write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=SEEDS,block_s=12,guard_s=2,
+    from annotation_partition_plan import selected_seeds
+    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],full_times,t['times'],SEEDS)
+    write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
         target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,
         inactive_curved_member_as_predictive=bool(i in p0.members),
         fixed_noise_hz=150,unseen_noise_variance_multiplier=2,track_bias_sigma_hz=300,
@@ -94,7 +96,7 @@ def run(args):
         identity_score_name='conditional_target',position_uncertainty_integrated=False,
         learned_noise_precision_uncertainty_integrated=False,GPS_used=False,future_TLE=False))
     results=[]
-    for seed in SEEDS[:args.folds]:
+    for seed in seeds[:args.folds]:
         if len(np.unique(np.floor(t['times']/12)))<3:
             write(out/f'seed-{seed}.json',dict(status='insufficient_group_support',seed=seed));continue
         train,held,split=grouped_split(full_times,t['times'],seed=seed);train_target,held_target=train[n:],held[n:]
@@ -140,4 +142,5 @@ if __name__=='__main__':
     p.add_argument('--track',required=True);p.add_argument('--candidates',type=int,default=3);p.add_argument('--folds',type=int,default=3)
     p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true')
     p.add_argument('--predictive-member',action='store_true',help='Allow a wholly inactive curved member as predictive-only evidence')
+    p.add_argument('--partition-audit',type=Path)
     run(p.parse_args())

@@ -94,6 +94,30 @@ def replay_split(times, receipt):
     return train,held
 
 
+def geometry_partition_schedule(times,focus_times,*,seeds,required=3):
+    """Select usable, distinct target holdouts using timestamps only.
+
+    Preserve 12 s blocks, 2 s guards and 25% block selection. Do not inspect
+    observed frequencies, candidate identities, scores or evaluation position.
+    """
+    t=np.asarray(times,float);focus=np.asarray(focus_times,float)
+    if required<1 or not len(focus) or not np.isfinite(focus).all():raise ValueError('finite focus timestamps and positive required count needed')
+    groups=set(np.floor(focus/12).astype(int).tolist());selected=[];attempts=[];seen=set()
+    if len(groups)<3:return dict(selected=[],attempts=[],ready=False,reason='fewer_than_three_target_blocks',target_blocks=sorted(groups))
+    for seed in seeds:
+        _,_,receipt=grouped_split(t,focus,seed=int(seed));train,held=replay_split(focus,receipt)
+        target_blocks=tuple(sorted(groups&set(receipt['held_blocks'])))
+        reason=('insufficient_target_points' if train.sum()<8 or held.sum()<4 else
+                'duplicate_target_holdout' if target_blocks in seen else 'selected')
+        receipt=dict(receipt,target_training_points=int(train.sum()),target_held_points=int(held.sum()),
+            target_held_blocks=list(target_blocks),selection_reason=reason)
+        attempts.append(receipt)
+        if reason=='selected':selected.append(receipt);seen.add(target_blocks)
+        if len(selected)==required:break
+    return dict(selected=selected,attempts=attempts,ready=len(selected)==required,
+        reason='ready' if len(selected)==required else 'insufficient_distinct_usable_partitions',target_blocks=sorted(groups))
+
+
 def identity_consensus(folds, *, minimum_folds=3, minimum_margin=10., score_name='joint'):
     """Conservative identity annotation; never authorizes a position update.
 

@@ -120,14 +120,16 @@ def run(args):
     if args.track:target=eligible[args.track]
     else:target=max(eligible.values(),key=lambda r:len(r['observation_ids']))
     k=p0.members.index(target['track_index']);sl=p0.slices[k];track=d['scan'].tracks[target['track_index']]
-    write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=SEEDS,block_s=12,guard_s=2,
+    from annotation_partition_plan import selected_seeds
+    seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],p0.flat_times,track['times'],SEEDS)
+    write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
         common_scan_wide_split=True,fixed_noise_hz=150,RF_family_weights='all one',phase_rounds=5,steps=48,
         GPS_used=False,future_TLE=False,conditional_on_frozen_graph_and_incumbent_identities=True,
         predictive_linear_rows_in_training=False,nomination='training-only full causal bank; shared candidate union across c arms',
         candidate_limit=args.candidates,incumbent_nominee_always_added=True,
         position_uncertainty_integrated=False,learned_noise_uncertainty_integrated=False))
     all_results=[]
-    for seed in SEEDS[:args.folds]:
+    for seed in seeds[:args.folds]:
         if len(np.unique(np.floor(np.asarray(track['times'])/12)))<3:
             write(out/f'seed-{seed}.json',dict(status='insufficient_group_support',
                 reason='fewer than three 12-second target blocks',seed=seed))
@@ -223,6 +225,7 @@ if __name__=='__main__':
     p.add_argument('--inventory',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--track');p.add_argument('--candidates',type=int,default=3);p.add_argument('--folds',type=int,default=3)
     p.add_argument('--validation',type=Path)
+    p.add_argument('--partition-audit',type=Path)
     p.add_argument('--control',action='store_true')
     p.add_argument('--orbital-policy',choices=['active_uncertainty','target_uncertainty'])
     a=p.parse_args();controls(a) if a.control else full(a) if a.validation else run(a)
