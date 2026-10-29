@@ -48,7 +48,7 @@ def training_factory(d,orbital_policy=None,target_family=None):
     return factory
 
 
-def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy=None,target_family=None):
+def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy=None,target_family=None,events=None):
     from ds23_frequency_events import make_event_problem,attach_event_predictive
     from probe_ds23_frequency_events import cached
     from investigate_dsx01_localization_failures import fit
@@ -56,7 +56,7 @@ def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy
     factory=training_factory(d,orbital_policy,target_family)
     powers=np.ones(len(d['powers']))
     for epoch in range(5):
-        p=make_event_problem(d['scan'],node,keep,arm,reference,powers,means,d['model'],[],base_problem_factory=factory)
+        p=make_event_problem(d['scan'],node,keep,arm,reference,powers,means,d['model'],events or [],base_problem_factory=factory)
         if predictive:attach_event_predictive(p,d['entries'],powers)
         cached(p);f=fit(p,x,iterations=48);x=np.asarray(f['parameters'])
         phase=np.clip(p.state(x)['phases'][p.labels],-15,15)

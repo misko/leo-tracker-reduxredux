@@ -28,6 +28,20 @@ def calibration_covariance(p,x):
     return c,cho_solve((np.linalg.cholesky(gram),True),np.eye(len(gram)))
 
 
+def prediction_design(p,track,label,base,width):
+    """Include receiver events in predictive means and their full covariance."""
+    from ds23_frequency_events import track_events
+    base=np.asarray(base,float);events=getattr(p,'events',[])
+    boundary=p.event_start if events else width
+    if base.ndim!=2 or base.shape[0]!=len(track['times']) or base.shape[1]>boundary:
+        raise ValueError('predictive base overlaps event coordinates')
+    result=np.zeros((len(track['times']),width));result[:,:base.shape[1]]=base
+    if events:
+        if boundary+len(events)!=width:raise ValueError('event posterior width mismatch')
+        result[:,boundary:]=track_events(track,label,events)
+    return result
+
+
 def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False):
     """Mean/covariance mixture with original calibration coefficients untouched."""
     from ds23_predictive_linear import linear_geometry
@@ -43,14 +57,14 @@ def prediction_models(d,p,x,i,j,*,phase_step=.1,uncalibrated_phase_mixture=False
     active=any(r['candidate_index']==j and p.keep[sl].any() for r,sl in zip(p.rows,p.slices,strict=True))
     if j in p.labels and not (uncalibrated_phase_mixture and not active):
         view,*_=linear_geometry(p,[dict(track_index=i,candidate_index=j,alias=0)])
-        geometry=geometry_features(view,x,0.);h=geometry['features']
+        geometry=geometry_features(view,x,0.);h=prediction_design(p,track,j,geometry['features'],len(before))
         means=(q*geometry['intercept']+h@c['coefficient'])[None]
         covariance=(fixed+h@covcoef@h.T)[None]
         phases=np.array([p.state(x)['phases'][j]]);logprior=np.zeros(1)
         elevations=np.array([geometry['elevation'].min()]);receipt=dict(kind='existing_shared_posterior',candidate_index=j,active_curved_family=active)
     else:
         receiver=receiver_design(times,track['rf_hz'],track['receiver'],track['channel'],d['scan'].rx_basis[i],fitted_c=p.fitted_c)
-        h=np.zeros((n,len(before)));h[:,:receiver.shape[1]]=receiver
+        h=prediction_design(p,track,j,receiver,len(before))
         calibration_mean=h@before;fixed+=h@covcoef@h.T
         widths,history=phase_widths(d['scan'],[j]);mean=float(forecast_phase_mean(history,d['model']['shrinkage'])[0])
         sigma=float(widths[0]*d['model']['multiplier']);nu=d['model']['nu']

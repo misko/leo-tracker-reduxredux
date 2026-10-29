@@ -27,7 +27,10 @@ def event_design(times, receivers, channels, rf_hz, labels, events):
             raise ValueError('unknown event kind')
         if not np.isfinite(event['time_s']) or not np.isfinite(event['sigma_hz']) or event['sigma_hz']<0:
             raise ValueError('finite event time and nonnegative prior SD required')
-        use=(t>=event['time_s']).astype(float)
+        transition=float(event.get('transition_s',0.))
+        if not np.isfinite(transition) or transition<0:
+            raise ValueError('finite nonnegative event transition required')
+        use=(t>=event['time_s']).astype(float) if transition==0 else np.clip((t-event['time_s'])/transition,0.,1.)
         if event['kind']=='family':use*=j==event['candidate_index']
         else:use*=rx==event['receiver']
         if event['kind']=='band':use*=(ch>4)==bool(event['band'])
