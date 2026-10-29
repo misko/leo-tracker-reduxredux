@@ -54,3 +54,20 @@ def requires_multiple_orbital_owners(problem, family):
     """Existing learned-mode qualification, distinct from added prior variance."""
     return family in problem.supported and family in getattr(
         problem,'orbital_owner_gate_families',problem.supported)
+
+
+def include_predictive_orbital_uncertainty(problem,bank_builder,families):
+    """Supply prior-only orbit variance to explicitly named predictive families.
+
+    These families need not have active curved rows. No observation mask or
+    calibration mean is changed, and incumbent owner qualifications remain.
+    """
+    requested=set(families)
+    if not requested<=set(problem.labels):raise ValueError('predictive family missing from causal design')
+    supported=[j for j in problem.labels if j in set(problem.supported)|requested]
+    bank,metadata=bank_builder(supported)
+    owner_gate=set(getattr(problem,'orbital_owner_gate_families',problem.supported))
+    problem.supported=supported;problem.supported_local=[problem.labels.index(j) for j in supported]
+    problem.mode_bank=bank;problem.mode_metadata=metadata;problem.orbital_owner_gate_families=owner_gate
+    problem.predictive_orbital_prior_families=sorted(requested)
+    return problem

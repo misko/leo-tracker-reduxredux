@@ -32,18 +32,28 @@ def freeze(args):
           'predictive-only required',sum(r['state']=='needs_predictive_only_model' for r in rows),flush=True)
 
 
+def pending_jobs(protocol,output,limit,predictive_only=False):
+    if limit<1:raise ValueError('positive job limit required')
+    # A selected attempt can still be queued or running without a terminal
+    # receipt. Preserve every claim; an incomplete attempt needs diagnosis.
+    claimed={r['track_id'] for p in output.glob('attempt-*/selected.json') for r in read(p)}
+    jobs=[]
+    for r in protocol['rows']:
+        eligible='needs_predictive_only_model' if predictive_only else 'queued'
+        if r['state']!=eligible or r['track_id'] in claimed or (output/r['track_id']).exists():continue
+        if list(output.glob('attempt-*/'+r['track_id']+'-terminal.json')):continue
+        jobs.append(r)
+        if len(jobs)>=limit:break
+    return jobs
+
+
 def run(args):
     protocol=read(args.output/'protocol.json');attempt=args.output/f'attempt-{len(list(args.output.glob("attempt-*")))+1}'
-    attempt.mkdir();jobs=[]
-    for r in protocol['rows']:
-        if r['state']!='queued' or (args.output/r['track_id']/'result.json').exists():continue
-        # Any prior terminal is visible and needs diagnosis before another try.
-        if list(args.output.glob('attempt-*/'+r['track_id']+'-terminal.json')):continue
-        jobs.append(r)
-        if len(jobs)>=args.limit:break
+    jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only);attempt.mkdir()
     write(attempt/'selected.json',jobs)
     def work(r):
-        cmd=[sys.executable,str(Path(__file__).with_name('annotate_track_predictively.py')),
+        script='annotate_predictive_only.py' if args.predictive_only else 'annotate_track_predictively.py'
+        cmd=[sys.executable,str(Path(__file__).with_name(script)),
              '--inventory',r['inventory'],'--track',r['track_id'],'--output',str(args.output/r['track_id'])]
         result=dict(track_id=r['track_id'],label=r['label'],**supervise(cmd,attempt/(r['track_id']+'.log'),600))
         write(attempt/(r['track_id']+'-terminal.json'),result);return result
@@ -57,4 +67,5 @@ def run(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['freeze','run'])
     for key in ('study','inventory','diagnostics','output'):p.add_argument('--'+key,type=Path,required=key=='output')
-    p.add_argument('--limit',type=int,default=16);a=p.parse_args();freeze(a) if a.mode=='freeze' else run(a)
+    p.add_argument('--limit',type=int,default=16);p.add_argument('--predictive-only',action='store_true')
+    a=p.parse_args();freeze(a) if a.mode=='freeze' else run(a)

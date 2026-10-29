@@ -53,3 +53,8 @@ def test_consensus_requires_competitors_both_arms_and_predictive_adequacy():
     changed=copy.deepcopy(folds);changed[0]['proposals'][0]['arms']['c0']['scores']['target']['rms_hz']=500
     assert identity_consensus(changed)['status']=='prediction_mismatch'
     assert identity_consensus(folds[:1])['status']=='insufficient_partitions'
+    conditional=copy.deepcopy(folds)
+    for f in conditional:
+        for p in f['proposals']:
+            for v in p['arms'].values():v['scores']['conditional_target']=v['scores'].pop('joint')
+    assert identity_consensus(conditional,score_name='conditional_target')['status']=='conditionally_supported_identity'

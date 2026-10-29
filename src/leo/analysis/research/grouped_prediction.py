@@ -79,7 +79,7 @@ def replay_split(times, receipt):
     return train,held
 
 
-def identity_consensus(folds, *, minimum_folds=3, minimum_margin=10.):
+def identity_consensus(folds, *, minimum_folds=3, minimum_margin=10., score_name='joint'):
     """Conservative identity annotation; never authorizes a position update.
 
     Margins compare the same held observations under competing joint models.
@@ -91,10 +91,10 @@ def identity_consensus(folds, *, minimum_folds=3, minimum_margin=10.):
         proposals=fold.get('proposals',[])
         if len({p['norad'] for p in proposals})<2:return dict(status='insufficient_competitors',norad=None,votes=votes)
         for arm in ('c0','fitted_c'):
-            ordered=sorted(proposals,key=lambda q:q['arms'][arm]['scores']['joint']['negative_twice_log_density'])
+            ordered=sorted(proposals,key=lambda q:q['arms'][arm]['scores'][score_name]['negative_twice_log_density'])
             best,second=ordered[:2];v=best['arms'][arm]
-            score=v['scores']['joint']['negative_twice_log_density']
-            margin=second['arms'][arm]['scores']['joint']['negative_twice_log_density']-score
+            score=v['scores'][score_name]['negative_twice_log_density']
+            margin=second['arms'][arm]['scores'][score_name]['negative_twice_log_density']-score
             finite=np.isfinite([score,margin,v['scores']['target']['rms_hz'],v['final_phase_change_s'],v['minimum_target_elevation_deg']]).all()
             adequate=bool(finite and v['scores']['target']['rms_hz']<=450 and v['final_phase_change_s']<=.01 and v['minimum_target_elevation_deg']>=0)
             votes.append(dict(seed=fold['seed'],arm=arm,norad=best['norad'],runner_up=second['norad'],margin=float(margin),adequate=adequate))

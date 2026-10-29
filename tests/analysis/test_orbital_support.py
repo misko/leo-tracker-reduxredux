@@ -102,3 +102,13 @@ def test_actual_retention_keeps_prior_only_curve_but_rejects_structured_residual
     assert retained_metrics(p,[0,0])['tracks'][0]['compatible']
     track['values']=values+300*(times>=50)
     assert not retained_metrics(p,[0,0])['tracks'][0]['compatible']
+
+
+def test_predictive_family_prior_does_not_require_calibration_observations():
+    from leo.analysis.research.orbital_support import include_predictive_orbital_uncertainty
+    p=model([1]*6+[0]*4);p.supported=[10];p.supported_local=[0];before=p.keep.copy()
+    include_predictive_orbital_uncertainty(p,lambda labels:(tuple(labels),{}),[20])
+    assert p.supported==[10,20] and p.mode_bank==(10,20)
+    assert requires_multiple_orbital_owners(p,10)
+    assert not requires_multiple_orbital_owners(p,20)
+    np.testing.assert_array_equal(p.keep,before)
