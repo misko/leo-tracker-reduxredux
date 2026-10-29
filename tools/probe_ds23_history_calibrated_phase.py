@@ -22,13 +22,21 @@ HISTORY=ROOT/'reports/2026_10_18_ds23_causal_phase_mean/history'
 ARMS=('c0','fitted_c')
 
 
-def make_problem(scan,node,keep,arm,reference,weights,means,multiplier,nu,*,support_policy="nominal"):
-    if support_policy not in ("nominal", "active"):
+def make_problem(scan,node,keep,arm,reference,weights,means,multiplier,nu,*,support_policy="nominal",extra_orbital_families=()):
+    if support_policy not in ("nominal", "active", "active_uncertainty"):
         raise ValueError("unknown physical orbital support policy")
     p=problem(scan,node,arm,keep,reference)
     if support_policy == "active":
         from leo.analysis.research.orbital_support import restrict_to_active_orbital_support
         restrict_to_active_orbital_support(p)
+    elif support_policy == "active_uncertainty":
+        from leo.analysis.research.orbital_support import include_active_orbital_uncertainty
+        from build_dsx01_orbit_modes import build_modes
+        include_active_orbital_uncertainty(p,lambda supported:build_modes(scan,p.labels,supported,'physical'))
+    if extra_orbital_families:
+        from leo.analysis.research.orbital_support import include_active_orbital_uncertainty
+        from build_dsx01_orbit_modes import build_modes
+        include_active_orbital_uncertainty(p,lambda supported:build_modes(scan,p.labels,supported,'physical'),families=extra_orbital_families)
     p.phase_sigma*=multiplier
     begin=p.hardware.shape[1]+p.smooth.shape[1]
     width=begin+len(p.labels)+3*len(p.supported)+len(p.members)

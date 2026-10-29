@@ -24,3 +24,33 @@ def restrict_to_active_orbital_support(problem):
         "active_owners": {j: sorted(owners.get(j, ())) for j in problem.labels},
     }
     return problem
+
+
+def include_active_orbital_uncertainty(problem, bank_builder, *, families=None):
+    """Retain causal orbital prior variance even for a single active owner.
+
+    Unidentified coefficients retain their prior uncertainty under integration;
+    lack of multiple owners is not evidence that the orbit is exact. The caller
+    must provide a causal bank builder and call before posterior construction.
+    """
+    active={r['candidate_index'] for r,sl in zip(problem.rows,problem.slices,strict=True) if problem.keep[sl].any()}
+    if not active<=set(problem.labels):raise ValueError('active family absent from parameter labels')
+    wanted=active if families is None else set(problem.supported)|(set(families)&active)
+    supported=[j for j in problem.labels if j in wanted]
+    bank,metadata=bank_builder(supported)
+    # Preserve the incumbent multi-owner qualification rule. New prior-only
+    # coordinates must not acquire that rule merely by existing in the design.
+    owner_gate=set(getattr(problem,'orbital_owner_gate_families',problem.supported))
+    problem.supported=supported
+    problem.supported_local=[problem.labels.index(j) for j in supported]
+    problem.mode_bank=bank;problem.mode_metadata=metadata
+    problem.orbital_owner_gate_families=owner_gate
+    problem.orbital_uncertainty_policy=('causal prior for every active family' if families is None
+                                       else 'causal prior for requested active families')
+    return problem
+
+
+def requires_multiple_orbital_owners(problem, family):
+    """Existing learned-mode qualification, distinct from added prior variance."""
+    return family in problem.supported and family in getattr(
+        problem,'orbital_owner_gate_families',problem.supported)

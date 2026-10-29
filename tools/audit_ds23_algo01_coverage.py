@@ -57,6 +57,7 @@ def retained_metrics(p, x):
     The 36-point salvage retains the original nuisance design. Masked prefix
     points must neither fail the suffix gate nor be counted as accepted suffix.
     """
+    from leo.analysis.research.orbital_support import requires_multiple_orbital_owners
     scan, state = p.scan, p.state(x)
     result = p.calculate(x)
     frequency, elevation = p.conditional_frequency(x)
@@ -105,7 +106,7 @@ def retained_metrics(p, x):
         for row in rows:
             if (
                 row["compatible"]
-                and row["candidate_index"] in p.supported
+                and requires_multiple_orbital_owners(p,row["candidate_index"])
                 and len(owners[row["candidate_index"]]) < 2
             ):
                 row["compatible"] = False
