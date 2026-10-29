@@ -42,21 +42,23 @@ def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);inv=read(args.inventory);d=context(inv);p0,x0=d['problems']['c0']
     noise_policy=getattr(args,'noise_policy','original')
     if noise_policy=='annotation_fixed':d=annotation_noise_context(d)
+    native=bool(args.native_branches or getattr(args,'native_from_validation',False));native_sources=[]
     original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];used={o for e in d['entries'] for o in e['observation_ids']}
     used.update(o for i,sl in zip(p0.members,p0.slices,strict=True) for o,k in zip(d['scan'].tracks[i]['observation_ids'],d['keep'][sl],strict=True) if k)
     for folder in args.validation:
         r=read(folder/'result.json');annotation=identity_consensus(r['folds'],score_name=r['identity_score_name'])
         if annotation['status']!='conditionally_supported_identity':raise ValueError('annotation not conditionally supported')
-        if args.native_branches:
-            from native_predictive_branch import native_context
-            d,t=native_context(d,inv,args.native_branches,r['track_id'])
+        if native:
+            from native_predictive_branch import native_context,validated_native_source
+            source=validated_native_source(folder,args.native_branches)
+            d,t=native_context(d,inv,source,r['track_id']);native_sources.append(str(source))
         else:t=next(t for t in inv['tracks'] if t['track_id']==r['track_id'])
         i=t['track_index'];track=d['scan'].tracks[i]
         if i in p0.members:raise ValueError('this trial is for outside-calibration targets')
         if used.intersection(track['observation_ids']):raise ValueError('target duplicates calibration or predictive observations')
         used.update(track['observation_ids']);j=int(np.flatnonzero(d['scan'].norads==annotation['norad'])[0])
         if j not in p0.labels:raise ValueError('new-family phase-mixture inclusion requires its separate implementation')
-        if args.native_branches:
+        if native:
             if not any(row['candidate_index']==j and d['keep'][sl].any() for row,sl in zip(p0.rows,p0.slices,strict=True)):
                 raise ValueError('native branch needs an active shared family; use a new-family mixture otherwise')
             aliases={q['alias'] for f in r['folds'] for q in f['proposals'] if q['norad']==annotation['norad']}
@@ -79,9 +81,13 @@ def run(args):
         orphan_orbit_prior=args.orphan_orbit_prior,GPS_used=False,future_TLE=False,
         target_orbit_prior=target_orbit_prior,
         shared_satellite_refresh=shared_satellite_refresh,
-        native_branches=str(args.native_branches) if args.native_branches else None,original_graph_count=original_graph_count))
+        native_branches=str(args.native_branches) if args.native_branches else None,
+        native_sources=native_sources,original_graph_count=original_graph_count))
     variants=[('control',[])]+[(f'target_{k}',[t]) for k,t in enumerate(targets)]
     if len(targets)>1:variants.append(('combined',targets))
+    if getattr(args,'joint_only',False):
+        if len(targets)<2:raise ValueError('joint-only requires at least two targets')
+        variants=[('control',[]),('combined',targets)]
     for name,extras in variants:
         entries=d['entries']+extras;pair={}
         for arm in ['c0','fitted_c']:
@@ -116,7 +122,7 @@ def run(args):
             if receiver_change>1e-10:raise ValueError('predictive data changed receiver calibration at fixed position')
             row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),
                 added_points=len(ids-old),lost_points=len(old-ids),targets=[g for g in row['linear_gates'] if g['component'] in {e['component'] for e in extras}])
-            if args.native_branches and extras:
+            if native and extras:
                 calc=p.calculate(x);diagnostics=[]
                 for entry,sl in zip(p.linear_entries,p.linear_slices,strict=True):
                     if entry not in extras:continue
@@ -153,7 +159,11 @@ if __name__=='__main__':
     p.add_argument('--noise-policy',choices=['original','annotation_fixed'],default='original')
     p.add_argument('--target-orbit-prior',action='store_true',help='Causal three-mode prior for active target families, using only original curved calibration')
     p.add_argument('--shared-satellite-refresh',action='store_true',help='Expose requested satellite predictive posterior means; preserve receiver means and all acceptance gates')
-    p.add_argument('--native-branches',type=Path);a=p.parse_args()
+    p.add_argument('--joint-only',action='store_true',help='Run matched control and combined trial; singles have separate frozen receipts')
+    native_group=p.add_mutually_exclusive_group()
+    native_group.add_argument('--native-branches',type=Path)
+    native_group.add_argument('--native-from-validation',action='store_true',help='Use each annotation\'s hashed native discovery source for joint inclusion')
+    a=p.parse_args()
     if a.orphan_orbit_prior and not a.orphan_phase_refresh:p.error('orbit prior requires phase refresh')
     if a.shared_satellite_refresh and a.orphan_phase_refresh:p.error('shared and orphan refresh are separate experiments')
     run(a)

@@ -9,6 +9,7 @@ def test_preserves_claims_and_prioritizes_unseen_scans_without_position_inputs()
     jobs=[old,alternative,b,b2,c]
     assert select_jobs(jobs,[old],2)==[b,c]
     assert select_jobs(jobs,[old],3)==[b,c,alternative]
+    assert select_jobs(jobs,[old],3,allow_same_scan=True)==[b,b2,c]
     # An incomplete attempt is still a claim, irrespective of its outcome.
     assert select_jobs(jobs,[old,b,c,alternative],8)==[b2]
     with pytest.raises(ValueError):select_jobs(jobs,[],9)

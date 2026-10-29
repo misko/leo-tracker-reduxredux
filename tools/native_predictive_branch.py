@@ -7,6 +7,17 @@ from debug_fast_graph_unassociated import read
 from leo.analysis.research.retained_track_likelihood import whitening,projected_receiver_basis,PERIOD
 
 
+def validated_native_source(validation, explicit=None):
+    """Bind a new inclusion to the exact discovery file used for its annotation."""
+    receipt=read(Path(validation)/'protocol.json')['target']
+    if not receipt.get('native_branch_source') or not receipt.get('native_branch_sha256'):
+        raise ValueError('annotation lacks native discovery provenance')
+    path=Path(explicit) if explicit is not None else Path(receipt['native_branch_source'])
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=receipt['native_branch_sha256']:
+        raise ValueError('native discovery differs from annotated source')
+    return path
+
+
 def append_branch(scan,branch,observations,occupied):
     ids=branch['observation_ids'];lookup={o['observation_id']:o for o in observations}
     if len(ids)!=len(set(ids)) or set(ids)&set(occupied):raise ValueError('native branch repeats or overlaps existing graph/associations')

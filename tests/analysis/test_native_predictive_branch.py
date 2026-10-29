@@ -17,3 +17,14 @@ def test_append_preserves_original_calibration_and_native_alias_identity():
     with pytest.raises(ValueError,match='overlap'):append_branch(scan,b,obs,{'0'})
     with pytest.raises(ValueError,match='measured CFO'):append_branch(scan,dict(b,values_hz=np.array(b['values_hz'])+1),obs,set())
     with pytest.raises(ValueError,match='lanes'):append_branch(scan,dict(b,rf_hz=12e9),obs,set())
+
+
+def test_inclusion_requires_exact_annotated_native_source(tmp_path):
+    import hashlib,json
+    from native_predictive_branch import validated_native_source
+    source=tmp_path/'branches.json';source.write_text('{"branches": []}')
+    (tmp_path/'protocol.json').write_text(json.dumps(dict(target=dict(native_branch_source=str(source),
+        native_branch_sha256=hashlib.sha256(source.read_bytes()).hexdigest()))))
+    assert validated_native_source(tmp_path)==source
+    source.write_text('{"branches": [1]}')
+    with pytest.raises(ValueError,match='differs'):validated_native_source(tmp_path)
