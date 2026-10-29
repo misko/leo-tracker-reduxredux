@@ -77,7 +77,15 @@ def exact(scan,track,y,guess,position,model):
 
 def one(args):
     began=time.monotonic();inv=read(args.inventory);out=args.output;out.mkdir(parents=True,exist_ok=False)
-    d=context(inv);scan=d['scan'];rows={r['track_id']:r for r in inv['tracks'] if r['current_large']}
+    d=context(inv)
+    if getattr(args,'native_branches',None):
+        from native_predictive_branch import native_context
+        d,target=native_context(d,inv,args.native_branches,args.track);rows={target['track_id']:target}
+        write(out/'native_protocol.json',dict(target=target,native_branches=str(args.native_branches),
+            phase_grid=PHASES,regional_grid_km=[-10,0,10],models=MODELS,GPS_used=False,future_TLE=False,
+            frozen_receiver_calibration=True,diagnostic_only=True))
+    else:rows={r['track_id']:r for r in inv['tracks'] if r['current_large']}
+    scan=d['scan']
     if not rows:write(out/'result.json',dict(status='no_large_tracks',tracks=[]));return
     targets=list(rows.values());observed={};initial={};positions={}
     for arm,(p,x) in d['problems'].items():
@@ -164,4 +172,7 @@ def run(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=('one','run'))
     p.add_argument('--inventory',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();one(a) if a.mode=='one' else run(a)
+    p.add_argument('--native-branches',type=Path);p.add_argument('--track')
+    a=p.parse_args()
+    if a.native_branches and (a.mode!='one' or not a.track):p.error('native discovery requires one mode and --track')
+    one(a) if a.mode=='one' else run(a)
