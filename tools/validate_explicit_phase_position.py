@@ -22,6 +22,7 @@ from probe_shared_phase_feasibility import fixed_alias_constant
 from leo.analysis.research.grouped_prediction import replay_split
 from ds23_predictive_linear import linear_geometry
 from ds23_height_problem import geometry_features
+from phase_reference_checks import phase_refresh
 
 
 def held_predictions(p,z,d,target,split,held_old):
@@ -69,10 +70,11 @@ def run(args):
     if len(predictive_ids)!=len(set(predictive_ids)) or calibration_ids&set(predictive_ids):raise ValueError('training observations double counted')
     training=dict(d,scan=scan,entries=entries,powers=np.ones(len(d['powers'])))
     factory=training_factory(training);powers=np.ones(len(d['powers']));arms={}
+    weight_policy=getattr(args,'weight_policy','unit')
     write(out/'protocol.json',dict(source_protocol=pr,job=inv['job'],seed=args.seed,split=split,matched_c=True,
         GPS_used=False,future_TLE=False,scanwide_held_blocks_excluded_from_all_fits=True,
         original_graph_identities_and_prior_choices_fixed=True,independent_identity_validation=False,
-        fixed_training_noise_hz=150,training_curve_powers='all one',predictive_variance_multiplier=2,
+        fixed_training_noise_hz=150,training_curve_powers=weight_policy,predictive_variance_multiplier=2,
         training_entry_receipts=receipts,excluded_small_curved_training_groups=excluded,
         held_values_never_fit_constants=True,phase_rounds=5,iterations=48,phase_start_grid_points=81,
         start='training-only curved fit from regional center; same start for control and native',
@@ -80,6 +82,9 @@ def run(args):
         no_accepted_associations=True))
     for arm in ('c0','fitted_c'):
         base,x,meta=fit_training(training,d['node'],keep,arm);start_reference=base.reference.copy()
+        if arm=='c0' and weight_policy=='training_support':
+            from training_curve_confidence import learn
+            powers,weight_receipt=learn(base,x,d['powers']);write(out/'curve_weights.json',weight_receipt)
         initial_phase=float(base.state(x)['phases'][target['candidate_index']]);results={}
         for role,extra in [('control',[]),('target',[native])]:
             selected=entries+extra;z=np.r_[x,initial_phase/PHASE_UNIT_S];reference=start_reference.copy();history=[]
@@ -94,12 +99,12 @@ def run(args):
                     pick=min(feasible,key=lambda q:q['score']) if feasible else min(grid,key=lambda q:q['score'])
                     z=np.asarray(pick['parameters']);write(out/f'{arm}-{role}-initial.json',dict(candidates=grid,selected=pick))
                 fitted=feasible_fit(lambda q:p.calculate(q)['negative_twice_elbo'],lambda q:list(gate_slacks(p,q,selected).values()),z,p.lower,p.upper,iterations=48)
-                z=np.asarray(fitted['parameters']);phase=np.clip(p.state(z)['phases'][p.labels],-15,15)
-                change=float(np.max(abs(phase-reference)));reference=phase;history.append(dict(fit=fitted,phase_change_s=change))
+                z=np.asarray(fitted['parameters']);phase,check=phase_refresh(p.state(z)['phases'][p.labels],reference)
+                change=check['phase_change_s'];reference=phase;history.append(dict(fit=fitted,**check))
             audit=exact_gate_replay(p,z,selected);c=p.calculate(z)
             results[role]=dict(endpoint_east_north_km=z[:2],optimizer_parameters=z,history=history,
                 phase_reference=p.reference.copy(),phase_state=p.state(z)['phases'],
-                final_phase_change_s=change,training_objective=c['negative_twice_elbo'],
+                final_phase_change_s=change,phase_reference_check=check,training_objective=c['negative_twice_elbo'],
                 training_gates=audit,training_qualified=bool(audit['all_pass'] and change<=.01),
                 receiver_change=c['shared_satellite_receiver_change'],held_predictions=held_predictions(p,z,d,target,split,held_old))
             write(out/f'{arm}-{role}.json',results[role])
@@ -110,4 +115,5 @@ def run(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--diagnostic',type=Path,required=True)
-    p.add_argument('--seed',type=int,required=True);p.add_argument('--output',type=Path,required=True);run(p.parse_args())
+    p.add_argument('--seed',type=int,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--weight-policy',choices=['unit','training_support'],default='unit');run(p.parse_args())

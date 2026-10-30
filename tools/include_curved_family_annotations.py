@@ -13,6 +13,7 @@ from ds23_frequency_events import make_event_problem,attach_event_predictive
 from probe_ds23_frequency_events import cached,summary
 from investigate_dsx01_localization_failures import fit
 from algo02_scan import pair_passes
+from phase_reference_checks import phase_refresh
 
 
 def configuration(node,keep,slices,targets):
@@ -70,8 +71,8 @@ def run(args):
                 kw={'base_problem_factory':d['problem_factory']} if 'problem_factory' in d else {}
                 p=make_event_problem(d['scan'],node,keep,arm,reference,d['powers'],means,d['model'],[],**kw)
                 attach_event_predictive(p,d['entries'],d['powers']);cached(p);f=fit(p,x,iterations=48);x=np.asarray(f['parameters'])
-                phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
-                history.append(dict(fit=f,phase_change_s=delta))
+                phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference);delta=check['phase_change_s'];reference=phase
+                history.append(dict(fit=f,**check))
             row=summary(p,x,d['entries']);_,_,ids,_=memberships(p,x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
             calc=p.calculate(x);diagnostics=[]
             for t in extras:
@@ -79,10 +80,10 @@ def run(args):
                 diagnostics.append(dict(component=t['component'],norad=t['norad'],times_s=track['times'],CFO_hz=track['values'],
                     predicted_CFO_hz=track['values']-raw,residual_hz=raw,original_kept_mask=d['keep'][sl],
                     gate=next(g for g in row['gates']['tracks'] if g['component']==t['component'])))
-            row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),added_points=len(ids-old),lost_points=len(old-ids),
+            row.update(history=history,final_phase_change_s=delta,phase_reference_check=check,proposed_associated_ids=sorted(ids),added_points=len(ids-old),lost_points=len(old-ids),
                 targets=diagnostics,new_prior_receipts=new_prior_receipts,active_orbit_families=[int(d['scan'].norads[j]) for j in p.supported])
             pair[arm]=row
-        valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 for v in pair.values())
+        valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 and v['final_phase_change_s']<=.01 for v in pair.values())
         write(out/(name+'.json'),dict(job=inv['job'],arms=pair,paired_valid=valid,target_entries=extras,no_production_change=True,seconds=time.monotonic()-began))
         print(inv['job']['label'],name,'valid',valid,'seconds',round(time.monotonic()-began,1),flush=True)
     if len(targets)==1:

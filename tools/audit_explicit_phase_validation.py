@@ -12,6 +12,7 @@ from explicit_shared_phase import attach_explicit_phase
 from probe_ds23_frequency_events import cached
 from validate_explicit_phase_position import held_predictions
 from leo.analysis.research.grouped_prediction import replay_split
+from phase_reference_checks import phase_refresh
 
 
 def run(args):
@@ -29,12 +30,13 @@ def run(args):
             if 0<keep[sl].sum()<4:keep[sl]=False
         scan,all_entries,_=predictive_training_views(d['scan'],d['entries']+[target],split)
         native=next(e for e in all_entries if e['component']==target['component']+'-TRAIN')
-        entries=[e for e in all_entries if e is not native];powers=np.ones(len(d['powers']))
+        entries=[e for e in all_entries if e is not native];unit=np.ones(len(d['powers']))
+        weights=root/'curve_weights.json';powers=np.asarray(read(weights)['powers']) if weights.exists() else unit
         training=dict(d,scan=scan,entries=entries,powers=powers);factory=training_factory(training)
         for arm,a in saved['arms'].items():
             means,_=prior_means(training,d['node']);ref=np.zeros(len(means))
             for step in a['start_training']['history']:
-                p=make_event_problem(scan,d['node'],keep,arm,ref,powers,means,d['model'],[],base_problem_factory=factory)
+                p=make_event_problem(scan,d['node'],keep,arm,ref,unit,means,d['model'],[],base_problem_factory=factory)
                 x=np.array(step['endpoint']);ref=np.clip(p.state(x)['phases'][p.labels],-15,15)
             initial_ref=p.reference.copy()
             start_delta=p.calculate(x)['negative_twice_elbo']-a['start_training']['training_objective']
@@ -57,10 +59,12 @@ def run(args):
                 attach_event_predictive(q,selected,powers);attach_explicit_phase(q,selected,powers,target['candidate_index']);cached(q)
                 poison_delta=q.calculate(z)['negative_twice_elbo']-p.calculate(z)['negative_twice_elbo']
                 if abs(poison_delta)>1e-5:raise ValueError('excluded values influence fitted objective')
+                _,check=phase_refresh(p.state(z)['phases'][p.labels],p.reference)
                 rows.append(dict(scan=job['scan'],seed=job['seed'],arm=arm,role=role,
                     start_objective_difference=start_delta,objective_difference=delta,maximum_held_residual_difference_hz=difference,
                     excluded_curved_values_perturbation_hz=1e6,perturbed_objective_difference=poison_delta,
                     phase_reference=p.reference,phase_state=p.state(z)['phases'],
+                    phase_reference_check=check,raw_training_qualified=bool(v['training_gates']['all_pass'] and check['phase_change_s']<=.01),
                     conditional_on_frozen_graph_identities_and_priors=True))
         print(job['name'],'replayed',flush=True)
     write(args.output,dict(rows=rows,executions=executions,no_optimization=True,no_acceptance_changes=True))

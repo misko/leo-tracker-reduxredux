@@ -15,6 +15,7 @@ from leo.analysis.research.track_recovery_diagnostics import shortlist,profile_r
 from leo.analysis.research.orbit_phase_geometry import phase_frequency_grid
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 from prototype_dsx01_continuous_position import latlon
+from phase_reference_checks import phase_refresh
 
 SEEDS=(20261029,94721,4081)
 
@@ -59,10 +60,10 @@ def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy
         p=make_event_problem(d['scan'],node,keep,arm,reference,powers,means,d['model'],events or [],base_problem_factory=factory)
         if predictive:attach_event_predictive(p,d['entries'],powers)
         cached(p);f=fit(p,x,iterations=48);x=np.asarray(f['parameters'])
-        phase=np.clip(p.state(x)['phases'][p.labels],-15,15)
-        delta=float(np.max(abs(phase-reference)));history.append(dict(endpoint=x,phase_change_s=delta));reference=phase
+        phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference)
+        delta=check['phase_change_s'];history.append(dict(endpoint=x,**check));reference=phase
     return p,x,dict(history=history,new_prior_receipts=receipts,training_objective=p.calculate(x)['negative_twice_elbo'],
-                    final_phase_change_s=delta,endpoint_east_north_km=x)
+                    final_phase_change_s=delta,phase_reference_check=check,endpoint_east_north_km=x)
 
 
 def corrected(p,x,i):
