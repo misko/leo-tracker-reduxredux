@@ -15,7 +15,7 @@ from leo.analysis.research.track_recovery_diagnostics import shortlist,profile_r
 from leo.analysis.research.orbit_phase_geometry import phase_frequency_grid
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 from prototype_dsx01_continuous_position import latlon
-from phase_reference_checks import phase_refresh
+from phase_reference_checks import phase_refresh,reference_domain
 
 SEEDS=(20261029,94721,4081)
 
@@ -49,7 +49,8 @@ def training_factory(d,orbital_policy=None,target_family=None):
     return factory
 
 
-def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy=None,target_family=None,events=None):
+def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy=None,target_family=None,events=None,reference_limit_s=15.):
+    if not 15<=reference_limit_s<=30:raise ValueError('reference-limit experiment is bounded to 15..30 seconds')
     from ds23_frequency_events import make_event_problem,attach_event_predictive
     from probe_ds23_frequency_events import cached
     from investigate_dsx01_localization_failures import fit
@@ -60,7 +61,15 @@ def fit_training(d,node,keep,arm,*,start=(0.,0.),predictive=False,orbital_policy
         p=make_event_problem(d['scan'],node,keep,arm,reference,powers,means,d['model'],events or [],base_problem_factory=factory)
         if predictive:attach_event_predictive(p,d['entries'],powers)
         cached(p);f=fit(p,x,iterations=48);x=np.asarray(f['parameters'])
-        phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference)
+        phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference,limit_s=reference_limit_s)
+        if reference_limit_s>15:
+            domain=reference_domain(p.sky['time_s'],p.flat_times,p.flat_labels,phase)
+            if not domain['in_domain']:raise ValueError('training reference leaves existing orbit bank')
+            if predictive and d['entries']:
+                from ds23_predictive_linear import linear_geometry
+                view,*_=linear_geometry(p,d['entries']);domain['predictive']=reference_domain(p.sky['time_s'],view.flat_times,view.flat_labels,phase)
+                if not domain['predictive']['in_domain']:raise ValueError('predictive training reference leaves existing orbit bank')
+            check['next_reference_domain']=domain
         delta=check['phase_change_s'];history.append(dict(endpoint=x,**check));reference=phase
     return p,x,dict(history=history,new_prior_receipts=receipts,training_objective=p.calculate(x)['negative_twice_elbo'],
                     final_phase_change_s=delta,phase_reference_check=check,endpoint_east_north_km=x)

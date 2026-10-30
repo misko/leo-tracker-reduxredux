@@ -28,7 +28,8 @@ def run(args):
                     reference=np.zeros(len(means))
                     for step in v['history']:
                         p=make_event_problem(d['scan'],node,keep,arm,reference,power,means,d['model'],[],base_problem_factory=factory)
-                        x=np.asarray(step['endpoint']);phase=p.state(x)['phases'][p.labels];reference=np.clip(phase,-15,15)
+                        x=np.asarray(step['endpoint']);phase=p.state(x)['phases'][p.labels];limit=pr.get('reference_limit_s',15.)
+                        reference=np.clip(phase,-limit,limit)
                     c=p.calculate(x);delta=c['negative_twice_elbo']-v['training_objective']
                     if abs(delta)>1e-5:raise ValueError('annotation endpoint replay mismatch')
                     t=p.scan.tracks[i];approx,_=p.conditional_frequency(x);linear=c['conditional_residual_hz'][sl]
@@ -38,13 +39,13 @@ def run(args):
                         f,e=family_frequency(p,x,j,times=t['times']);difference=p.q[sl]*(f-approx[sl]);exact=linear-difference
                     else:exact=None
                     target_held=held[sl];target_train=keep[sl];rms=lambda y,m:float(np.sqrt(np.mean(y[m]**2)))
-                    _,check=phase_refresh(p.state(x)['phases'][p.labels],p.reference)
+                    _,check=phase_refresh(p.state(x)['phases'][p.labels],p.reference,limit_s=limit)
                     mismatches=[dict(norad=int(p.scan.norads[label]),phase_s=float(value),reference_s=float(anchor),target=label==j)
                         for label,value,anchor in zip(p.labels,p.state(x)['phases'][p.labels],p.reference,strict=True) if abs(value-anchor)>.01]
                     results.append(dict(scan=job['label'],track_id=r['track_id'],component=r['component'],seed=fold['seed'],arm=arm,norad=proposal['norad'],
                         nominated=proposal['norad']==vote['norad'],objective_replay_difference=delta,
                         phase_s=target_phase,reference_s=ref,unclipped_reference_change_s=abs(target_phase-ref),
-                        recorded_final_phase_change_s=v['final_phase_change_s'],phase_outside_reference_window=abs(target_phase)>15,
+                        recorded_final_phase_change_s=v['final_phase_change_s'],phase_outside_reference_window=abs(target_phase)>limit,reference_limit_s=limit,
                         maximum_unclipped_phase_change_s=check['phase_change_s'],
                         phase_reference_mismatches=mismatches,exact_orbit_domain=domain,exact_orbit_available=domain['in_domain'],
                         maximum_linearization_error_hz=float(np.max(abs(difference))) if exact is not None else None,

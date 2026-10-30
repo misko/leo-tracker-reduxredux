@@ -19,12 +19,13 @@ def exact_gate_replay(p,z,entries):
     """Keep every fitted coefficient; replace only the selected family's orbit."""
     c=p.calculate(z);j=p.explicit_phase_family;frequency,elevation=p.conditional_frequency(z)
     frequency=frequency.copy();elevation=elevation.copy();conditional=c['conditional_residual_hz'].copy()
-    linear=c['linear_raw_prediction_residual_hz'].copy();le=c['linear_elevation'].copy();maximum=0.
+    linear=c['linear_raw_prediction_residual_hz'].copy() if entries else np.empty(0)
+    le=c['linear_elevation'].copy() if entries else np.empty(0);maximum=0.
     for row,i,sl in zip(p.rows,p.members,p.slices,strict=True):
         if row['candidate_index']!=j:continue
         t=p.scan.tracks[i];f,e=family_frequency(p,z,j,times=t['times']);difference=p.q[sl]*(f-frequency[sl])
         maximum=max(maximum,float(np.max(abs(difference))));conditional[sl]-=difference;frequency[sl]=f;elevation[sl]=e
-    for entry,sl in zip(entries,p.linear_slices,strict=True):
+    for entry,sl in zip(entries,getattr(p,'linear_slices',[]),strict=True):
         if entry['candidate_index']!=j:continue
         view,*_=linear_geometry(p,[entry]);g=geometry_features(view,z,0.);t=p.scan.tracks[entry['track_index']]
         begin=p.hardware.shape[1]+p.smooth.shape[1];stop=begin+len(p.labels)+3*len(p.supported)

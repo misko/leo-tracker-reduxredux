@@ -1,5 +1,7 @@
 # Retrospective phase audit and bounded exact-orbit repair
 
+Follow-up: [residual witnesses and recovery transfer](../2026_10_30_residual_witness_recovery/README.md) extends the audit, repairs a V08 background-phase failure, and tests four new graph additions through position and held-family prediction.
+
 The wider audit confirms a specific numerical failure, not a general reason to discard large curves. Of **64 additional historical annotations, 62 retain conditional support and two are downgraded**. Of **12 previously paired-passing graph inclusion candidates in the audited batch directories, 10 pass the new exact-orbit/convergence/ownership checks and two fail**. One rejected candidate was identified in the previous report; AUTO-bed86935 is newly rejected here. No production or retained cohort policy changes.
 
 This continues the [training-confidence and phase audit](../2026_10_30_training_confidence_phase_audit/README.md). Earlier provisional success for AUTO-bed86935, track `792ab1d56e2d2054283a`, is superseded by this exact-orbit failure. It must not be counted as a verified recovery.
