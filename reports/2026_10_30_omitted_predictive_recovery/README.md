@@ -1,5 +1,7 @@
 # Recovering predictive curves omitted by the calibration-engine queue
 
+**Capture-mode correction:** the all-adaptive interpretation below is superseded by the [acquisition-provenance audit](../2026_10_30_predictive_role_reassessment/README.md). Fast compatibility exports encode `capture_mode=adaptive`; this is not acquisition provenance. Across the full 53-curve queue, verified acquisition evidence gives 49 fast and four adaptive recordings. The linked 69-row provenance table supersedes this report's capture-mode fields. Scientific trial outputs and position errors are unchanged.
+
 **Later review:** the [second batch's joint-family audit](../2026_10_30_omitted_predictive_second_batch/README.md) found common residual structure across AUTO-afec5a1f's two 67653 tracks. The 45-point individual pass below remains a historical result, but that recovery is now withheld from inclusion pending explanation of the common structure. Other first-batch results are unchanged by that audit.
 
 The source reconciliation exposed a routing error: the predictive inclusion batch reused a selector requiring `engine_member=True`. That excludes curves omitted from the calibration engine even when they have a supported predictive-only identity. We removed this requirement for the predictive queue while preserving it for the calibration-participating route. An omitted curve still has to pass identity, physical residual, ownership, phase and numerical checks.

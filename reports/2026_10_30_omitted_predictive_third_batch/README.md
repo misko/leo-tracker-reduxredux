@@ -1,5 +1,7 @@
 # Continuing omitted-track predictive recovery
 
+**Capture-mode correction:** the all-adaptive interpretation below is superseded by the [acquisition-provenance audit](../2026_10_30_predictive_role_reassessment/README.md). Fast compatibility exports encode `capture_mode=adaptive`; this is not acquisition provenance. Across the full 53-curve queue, verified acquisition evidence gives 49 fast and four adaptive recordings. The linked 69-row provenance table supersedes this report's capture-mode fields. Scientific trial outputs and position errors are unchanged.
+
 This batch processes **16** candidates from the previous immutable remaining manifest. **2 tracks / 65 distinct points** qualify under the current predictive checks; **65 points** are additional to the prior reviewed set. **13 candidates remain** in this omitted-curve queue. The full 1,630-curve objective and the larger calibration-participating annotation backlog remain unfinished.
 
 ## Validation, scope and model

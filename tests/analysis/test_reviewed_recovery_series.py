@@ -13,4 +13,5 @@ def test_capture_mode_comes_from_native_metadata_in_both_saved_layouts():
     native=dict(capture_mode='adaptive',sample_rate_hz=2500000)
     assert capture_metadata(native)==native
     assert capture_metadata(dict(source=native,label='DS24-fast'))==native
+    assert capture_metadata(dict(source=native,provenance=dict(run_id='run')))['capture_mode']=='fast_adapter_unverified'
     with pytest.raises(KeyError):capture_metadata(dict(label='DS24-fast'))

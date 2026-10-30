@@ -1,5 +1,7 @@
 # Second omitted-curve batch and simultaneous same-satellite inclusion
 
+**Capture-mode correction:** the all-adaptive interpretation below is superseded by the [acquisition-provenance audit](../2026_10_30_predictive_role_reassessment/README.md). Fast compatibility exports encode `capture_mode=adaptive`; this is not acquisition provenance. Across the full 53-curve queue, verified acquisition evidence gives 49 fast and four adaptive recordings. The linked 69-row provenance table supersedes this report's capture-mode fields. Scientific trial outputs and position errors are unchanged.
+
 This iteration assesses the next **16 of 45** pending omitted curves. **10 pass individual inclusion gates (367 points)**, but joint residual review reveals a common discrepancy in one family. After withholding that family's current 39-point curve, **9 current candidates remain (328 points)**. Its earlier 45-point recovery is also flagged for review; neither is presently counted as ready for inclusion. Across the two omitted-curve batches, **578 points remain research candidates after this review**. **29 candidates remain** in the pending queue. The full 1,630-curve objective is incomplete.
 
 ## Validation and coverage of the work

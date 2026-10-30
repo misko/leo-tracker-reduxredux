@@ -21,12 +21,17 @@ def numerical_only(control,addition,replay):
 
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);jobs=[];hashes={}
+    source_protocol=read(args.trials/'protocol.json')
+    for name in ('protocol.json','execution.json'):
+        p=args.trials/name;hashes[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest()
     for row in read(args.trials/'execution.json'):
-        if row['shared_family'] or row['status']!='inclusion_rejected':continue
+        if row['shared_family'] or row['status'] not in ('inclusion_rejected','complete'):continue
         j=row['job'];root=args.trials/j['track_id'];trial=root/'trial';paths=[trial/n for n in ('control.json','new_family.json','exact_owner_replay.json')]
         c,a,replay=[read(p) for p in paths]
         if not numerical_only(c,a,replay):continue
-        validation=root/'annotation';require_distinct_annotation(read(validation/'result.json'),read(validation/'protocol.json'))
+        validation=root/'annotation'
+        if not validation.exists():validation=Path(source_protocol['annotation_root'])/j['track_id']
+        require_distinct_annotation(read(validation/'result.json'),read(validation/'protocol.json'))
         jobs.append(dict(job=j,source_trial=str(trial),validation=str(validation)))
         for p in paths:hashes[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest()
     if len(jobs)>8:raise ValueError('at most eight numerical followups per bounded iteration')

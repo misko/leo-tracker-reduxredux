@@ -14,6 +14,11 @@ def require_predictive_result(result):
         raise ValueError('position routing requires an annotation in the predictive-only likelihood role')
 
 
+def inclusion_options(shared,phase_step):
+    if not 0<phase_step<=.1:raise ValueError('phase spacing must be positive and at most 0.1 s')
+    return ['--predictive-member'] if shared else ['--uncalibrated-label','--phase-step',str(phase_step)]
+
+
 def reassessment_rows(root):
     """Require a terminal separate reassessment, never substitute old partial trials."""
     execution=read(root/'execution.json')
@@ -32,10 +37,11 @@ def reassessment_rows(root):
 
 def run(args):
     if not 1<=args.workers<=8:raise ValueError('one to eight workers required')
+    if args.reassessment and getattr(args,'annotation_root',None):raise ValueError('annotation-root applies only to frozen attempts')
     if args.reassessment:
         q=args.reassessment;rows,excluded,receipts=reassessment_rows(q)
     else:
-        q=args.study/'systematic-annotation-v1';rows,excluded,receipts=completed_rows(q,args.attempts)
+        q=getattr(args,'annotation_root',None) or args.study/'systematic-annotation-v1';rows,excluded,receipts=completed_rows(q,args.attempts)
     if len(rows)+len(excluded)>128:raise ValueError('at most 128 frozen annotations per bounded iteration')
     results={r['track_id']:read(q/r['track_id']/'result.json') for r in rows}
     for r in results.values():require_predictive_result(r)
@@ -43,7 +49,7 @@ def run(args):
     # engine. Identity/ownership checks, not engine membership, authorize a trial.
     jobs=supported_jobs(rows,results,require_engine_member=False)
     for job in jobs:
-        if not job['engine_member']:
+        if not job['engine_member'] or getattr(args,'require_distinct_all',False):
             require_distinct_annotation(results[job['track_id']],read(q/job['track_id']/'protocol.json'))
     if len(jobs)>32:raise ValueError('at most 32 position cases per bounded iteration')
     out=args.output;out.mkdir(parents=True,exist_ok=False)
@@ -53,6 +59,8 @@ def run(args):
         workers=args.workers,seconds_per_stage=600,selection='all supported predictive-role identities in specified complete attempts; no GPS selection',
         omitted_engine_curves_eligible=True,
         omitted_engine_curves_require_distinct_holdouts=True,
+        annotation_root=str(q),new_family_phase_step_s=getattr(args,'phase_step',.1),
+        all_targets_require_distinct_holdouts=getattr(args,'require_distinct_all',False),
         matched_c_arms=True,causal_only=True,no_production_change=True))
     def work(job):
         folder=out/job['track_id'];folder.mkdir();validation=q/job['track_id'];r=results[job['track_id']]
@@ -63,7 +71,7 @@ def run(args):
             write(folder/(name+'-terminal.json'),result);stages.append(result);return result['status']=='complete'
         ok=stage('inclusion','include_predictive_annotations.py' if shared else 'include_new_predictive_family.py',
             ['--inventory',job['inventory'],'--validation',str(validation),'--output',str(folder/'trial'),
-             '--predictive-member' if shared else '--uncalibrated-label'])
+             *inclusion_options(shared,getattr(args,'phase_step',.1))])
         if ok:ok=stage('replay','audit_shared_predictive_inclusion.py' if shared else 'audit_predictive_family_inclusion.py',
             ['--study',str(args.study),'--trial',str(folder/'trial'),'--output',str(folder/'trial/exact_owner_replay.json')])
         result=dict(job=job,shared_family=shared,stages=stages,status='complete' if ok else 'execution_failed')
@@ -78,4 +86,7 @@ if __name__=='__main__':
     source=p.add_mutually_exclusive_group(required=True)
     source.add_argument('--attempts',nargs='+');source.add_argument('--reassessment',type=Path)
     p.add_argument('--workers',type=int,default=4)
+    p.add_argument('--annotation-root',type=Path,help='Explicit frozen queue for --attempts')
+    p.add_argument('--phase-step',type=float,default=.1)
+    p.add_argument('--require-distinct-all',action='store_true')
     run(p.parse_args())

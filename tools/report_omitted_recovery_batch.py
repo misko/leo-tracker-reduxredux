@@ -29,9 +29,10 @@ def reviewed_points(series):
 
 
 def capture_metadata(document):
-    """Both saved tracking layouts carry capture provenance, never infer from labels."""
+    """Do not interpret a fast compatibility export as an acquisition mode."""
     source=document.get('source',document)
-    return dict(capture_mode=source['capture_mode'],sample_rate_hz=source['sample_rate_hz'])
+    mode='fast_adapter_unverified' if document.get('provenance',{}).get('run_id') else source['capture_mode']
+    return dict(capture_mode=mode,sample_rate_hz=source['sample_rate_hz'])
 
 
 def run(args):
