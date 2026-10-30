@@ -28,6 +28,12 @@ def reviewed_points(series):
     return set(owners)
 
 
+def capture_metadata(document):
+    """Both saved tracking layouts carry capture provenance, never infer from labels."""
+    source=document.get('source',document)
+    return dict(capture_mode=source['capture_mode'],sample_rate_hz=source['sample_rate_hz'])
+
+
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir();hashes={};evidence={}
     def load(path,compact=True):
@@ -50,7 +56,7 @@ def run(args):
     for job in pr['jobs']:
         tid=job['track_id'];rec=results[tid];root=args.retry if tid in followups else args.batch;last=followups.get(tid,rec)
         inv=load(Path(job['inventory']));target=next(t for t in inv['tracks'] if t['track_id']==tid);source=Path(inv['job']['root'])/inv['job']['case']
-        track=load(source/'tracks.json',False)[target['track_index']];metadata=load(source/'tracking.json',False)['source'];times=np.asarray(track['times'])
+        track=load(source/'tracks.json',False)[target['track_index']];metadata=capture_metadata(load(source/'tracking.json',False));times=np.asarray(track['times'])
         validation=args.batch/tid/'annotation';ann=load(validation/'result.json');annpr=load(validation/'protocol.json');a=ann['annotation'];supported=a['status']=='conditionally_supported_identity'
         signatures=[]
         for f in ann['folds']:
