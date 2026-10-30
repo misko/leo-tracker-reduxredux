@@ -52,12 +52,12 @@ class FastPilotWorkspace(PilotWorkspace):
         return dict(score=float(explained/max(raw, 1e-20)), normal=normal, rhs=rhs,
             gradient_score=2*rhs/max(raw, 1e-20), raw_energy=raw)
 
-    def optimize(self, start, center, radius=800., iterations=16):
+    def optimize(self, start, center, radius=800., iterations=16, *, subset='all', epoch_radius=.75):
         parameters = np.asarray(start, float).copy()
-        lower = np.array([center-radius, -.75, -40.])
-        upper = np.array([center+radius, .75, 40.])
+        lower = np.array([center-radius, -epoch_radius, -40.])
+        upper = np.array([center+radius, epoch_radius, 40.])
         parameters = np.clip(parameters, lower, upper)
-        current = self.statistics(parameters)
+        current = self.statistics(parameters,subset=subset)
         damping, calls, accepted = 1e-3, 1, 0
         history = [dict(parameters=parameters.copy(), score=current['score'])]
         for _ in range(iterations):
@@ -76,7 +76,7 @@ class FastPilotWorkspace(PilotWorkspace):
                 # precision being qualified; avoid chasing interpolation knots.
                 if np.max(abs((proposed-parameters)/self.parameter_scale)) < 1e-3:
                     break
-                candidate = self.statistics(proposed)
+                candidate = self.statistics(proposed,subset=subset)
                 calls += 1
                 if candidate['score'] > current['score']+1e-12:
                     parameters, current = proposed, candidate
@@ -91,29 +91,31 @@ class FastPilotWorkspace(PilotWorkspace):
         return dict(parameters=parameters, score=current['score'], calls=calls,
             accepted_steps=accepted, history=history)
 
-    def fast_joint_fit(self, center, *, starts=1, iterations=16, radius=800., scout_radius=600.):
+    def fast_joint_fit(self, center, *, starts=1, iterations=16, radius=800., scout_radius=600., subset='all', epoch_radius=.75):
         if starts < 1 or iterations < 1 or not 0 < scout_radius <= radius:
             raise ValueError('positive bounded local search required')
         frequencies = center+np.arange(-scout_radius, scout_radius+.1, 100.)
-        score = self.evaluate(frequencies)
+        if subset not in ('all','odd','even'):raise ValueError('named frame subset required')
+        if not np.isfinite(epoch_radius) or epoch_radius<.5:raise ValueError('finite epoch radius of at least half a sample required')
+        score = self.evaluate(frequencies,subset=subset)
         f = float(frequencies[int(np.argmax(score))])
         seeds = []
         # Adjacent seeds differ by at most one sample over the full probe.
         rate_step = min(20., 1e6/len(self.y))
         for ppm in np.linspace(-40, 40, int(np.ceil(80/rate_step))+1):
             for offset in (-.5, 0., .5):
-                seeds.append((float(self.evaluate([f], offset, ppm)[0]), f, offset, float(ppm)))
+                seeds.append((float(self.evaluate([f], offset, ppm,subset=subset)[0]), f, offset, float(ppm)))
         chosen = sorted(seeds, reverse=True)[:starts]
-        trials = [self.optimize([f, offset, ppm], center, radius, iterations) for _, f, offset, ppm in chosen]
+        trials = [self.optimize([f, offset, ppm], center, radius, iterations,subset=subset,epoch_radius=epoch_radius) for _, f, offset, ppm in chosen]
         best = max(trials, key=lambda r:r['score'])
         f, offset, ppm = best['parameters']
         # Re-evaluate through the reference scorer, independently of the Jacobian.
-        exact = float(self.evaluate([f], offset, ppm)[0])
-        control = float(self.evaluate([f], offset, ppm, control=True)[0])
+        exact = float(self.evaluate([f], offset, ppm,subset=subset)[0])
+        control = float(self.evaluate([f], offset, ppm,subset=subset, control=True)[0])
         return dict(CFO_hz=float(f), offset_samples=float(offset), modulation_ppm=float(ppm),
             score=exact, control_score=control, margin=exact-control,
             frequency_search_boundary=abs(f-center) >= radius-.5,
-            epoch_search_boundary=abs(offset) >= .75-1e-5,
+            epoch_search_boundary=abs(offset) >= epoch_radius-1e-5,
             code_rate_search_boundary=abs(ppm) >= 40-1e-4,
-            subset='all', optimizer_calls=sum(t['calls'] for t in trials), seed_count=len(trials),
+            subset=subset, optimizer_calls=sum(t['calls'] for t in trials), seed_count=len(trials),
             optimizer_score_difference=float(best['score']-exact), selected_history=best['history'])
