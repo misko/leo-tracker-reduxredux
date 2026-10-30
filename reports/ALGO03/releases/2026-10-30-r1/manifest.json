@@ -1,0 +1,84 @@
+{
+  "release_id": "ALGO03-2026-10-30-r1",
+  "name": "Causal predictive track recovery",
+  "status": "frozen_research_candidate",
+  "authorized_by": "User request: Lets promote our new candidate to ALGO03",
+  "production_deployed": false,
+  "production_reference": "algo02-causal-family-v1",
+  "production_source_commit": "1b63f5908785fc940446086aa4ef5de1a1539003",
+  "source_parent_commit": "c21542e4e0e69fa5caa7b73cca3126fec0c2b980",
+  "source_pin": "Git commit containing this manifest; all paths repository-relative",
+  "public_contracts_changed": false,
+  "GPS_used_for_inference": false,
+  "TLE_policy": "causal at observation cutoff",
+  "regional_box": {
+    "center_latlon": [
+      37.906,
+      -122.545
+    ],
+    "width_km": 25,
+    "start_east_north_km": [
+      0,
+      0
+    ]
+  },
+  "matched_c_arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "qualification": {
+    "full_candidate_cohort_evaluated": false,
+    "joint_cases": 1,
+    "joint_points": 58,
+    "latest_batch_annotations": 32,
+    "latest_batch_individual_qualified_curves": 15,
+    "latest_batch_individual_qualified_points": 399,
+    "focused_tests_passed": 19,
+    "remaining_shifted_assessments": 274,
+    "remaining_older_role_assessments": 821,
+    "remaining_queues_overlap": true
+  },
+  "evidence_reports": [
+    "reports/2026_10_30_joint_family_likelihood",
+    "reports/2026_10_30_shifted_annotation_batch5"
+  ],
+  "limitations": [
+    "Existing graph and incumbent policy are conditioning assumptions",
+    "Causal shortlist is bounded, not exhaustive catalogue likelihood integration",
+    "Three randomized held sets overlap",
+    "Exact multi-new-family implementation currently supports two families",
+    "Individual recoveries cannot be summed into joint scan accuracy",
+    "Latest qualification is same-site; production and full-cohort promotion remain outstanding"
+  ],
+  "sha256": {
+    "src/leo/analysis/research/joint_predictive_families.py": "dbf7f397753cf91f764c75630e208bb2162a5ce9e2c69305537ce8ba53385065",
+    "src/leo/analysis/research/predictive_track.py": "d3ba1d436166cb9d293551d50d7b0b88e7136c78f3db7c6a826b4661a7050a19",
+    "src/leo/analysis/research/grouped_prediction.py": "e4b744112a2082dec1a47716b678db149892c379fd2a0978ee2a6241da96382f",
+    "tools/annotate_predictive_only.py": "1ec7902da2d98edeb5850057aa785cb6420d1716116027d825584f590270bd81",
+    "tools/annotation_partition_plan.py": "09ae2e2fe23e4e5add3ee13477fbd59dcff1064ee8c9ca49755599e2268fb366",
+    "tools/run_annotation_inventory.py": "c444dae23c95f0d6f0ef635c451d61c7e726ef55f205295dd1f0cca31275f408",
+    "tools/review_annotation_competition.py": "b512210269cb4dad264f505cc7e2690c4ad036dafb560b8267f63b25d7c22145",
+    "tools/run_predictive_queue_inclusions.py": "5d375cbf49ee44905507f90760c5d2c05e3a48324536852a9f4114bd2a9d704a",
+    "tools/predictive_new_family.py": "3abcdb1857545b7dfdd4423228c0ae0470f15fc349322ba2e089e769251aea23",
+    "tools/include_new_predictive_family.py": "70dd8a01a2557d50076170cc651c6abf8d20ddce034e21c536d560b4615fa702",
+    "tools/include_predictive_annotations.py": "f100e6624f2c5a80a62f61218e34a44befc798aa130bbb052fe5d86a5199c20d",
+    "tools/audit_predictive_family_inclusion.py": "2ce79107b8619e6de27585e5caedd2d900bc5a16648fd677a2c54044720be072",
+    "tools/audit_shared_predictive_inclusion.py": "dbc7a83c82ac083e859d119471a53db32e43fcbe102c6d5677a4e127817f965b",
+    "tools/audit_target_membership_scope.py": "3d51b4db98403da4d605ac5ed71b8a61077aac41829ff31228c955b3fbbf678d",
+    "tools/retry_predictive_numerical_failures.py": "52a1b6607cd9c417ec7d872471fde43ce0eaff9370a74bfabb77145918efc42f",
+    "tools/probe_joint_predictive_families.py": "d27b2b2824cc808cca0990be9c068bce04a3022abe9da2fd8327511f46286d80",
+    "tools/fit_two_predictive_families.py": "ece0c51eaa095017cb07d4e80d31cc3e2bf575c3de41b3a99d5d6b543e423180",
+    "tools/audit_two_predictive_families.py": "5bfca1dfbdc5ba860f1302079cd20f0481358b5543847b3baf4d62ee7a8957bf",
+    "tools/retry_two_family_positions.py": "ec7fe528b84704b869d05e94a2327c7a5567f29bb24a4a336931709bec447845",
+    "tools/report_two_predictive_families.py": "df9f2dd6c7f2f236b220296e82386f99fb2b7916347c39cd3bb7d1116bea480a",
+    "tests/analysis/test_joint_predictive_families.py": "150d62fbf032b420d32aab0dfa0791d8ddd078dd8d4257bc265d042fbc0e5b62",
+    "tests/analysis/test_joint_family_phase_projection.py": "a0565fb31aac60bbe4cb956ea3d41dbdc8333eafe721ee835e12c9751d79af10",
+    "tests/analysis/test_predictive_track.py": "7d977f996039a79b33262b8d307c64245442fb30a86565b56fb37c030fadd500",
+    "tests/analysis/test_annotation_competition.py": "a67505d17d064287b99f93f0c704c6e89ba9b0497b362f238391e5340e5ef2bb",
+    "tests/analysis/test_annotation_phase_resolution.py": "f2b35ad67c9b051697623a78734d871b583194073b20b03d9dc8b61e686a54a9",
+    "tests/analysis/test_target_membership_scope.py": "c888552a80e089b37af1994ff9f1163ad8dd60746d9018d6bf70da97e6f2546f",
+    "reports/ALGO03/README.md": "e393d8a6f2a9ac99657d3e06f8702c496edf2992592f6697758add77b7df6c5c",
+    "reports/2026_10_30_joint_family_likelihood/README.md": "335d391be2241eb67ae9af5da635034e2925f14f6e6575755c77e4a30ebf8b9c",
+    "reports/2026_10_30_shifted_annotation_batch5/README.md": "58d88097c921e402a2d6cac8bd5e7ea6e7ee4286338fbcd7f2034534d318bdbb"
+  }
+}

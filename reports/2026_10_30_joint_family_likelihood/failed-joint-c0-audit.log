@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/audit_two_predictive_families.py", line 183, in <module>
+    run(parser.parse_args())
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/audit_two_predictive_families.py", line 133, in run
+    target = joint_diagnostics(families, p, x, d)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/audit_two_predictive_families.py", line 58, in joint_diagnostics
+    point = two_family_phase_evidence(*joint_inputs(fs, p, x, d['powers'], d['entries']))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/probe_joint_predictive_families.py", line 37, in joint_inputs
+    modes.append(uu.reshape(len(family.phases),len(family.times),3)*family.q[None,:,None])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot reshape array of size 41847 into shape (1,29,3)

@@ -1,0 +1,14 @@
+c0 [0.0, 0.0] 0.201 -0.001093
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/probe_joint_predictive_families.py", line 102, in <module>
+    run(p.parse_args())
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/probe_joint_predictive_families.py", line 88, in run
+    rows.append(row);write(out/'partial.json',rows)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/fast-algo02-production-v1/tools/debug_fast_graph_unassociated.py", line 36, in write
+    with Path(path).open("x") as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileExistsError: [Errno 17] File exists: '/srv/bulk/leo/research/ch78-qualified-cohort-20261029/two-new-family-likelihood-v1/probe/partial.json'
