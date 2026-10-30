@@ -23,6 +23,9 @@ def run(args):
     for source in pr.get('inactive_fragment_sources',[]):
         from inactive_graph_fragment import validated_inactive_context
         d,_=validated_inactive_context(d,inv,Path(source))
+    for source in pr.get('graph_bundle_sources',[]):
+        from predictive_graph_bundle import validated_bundle_context
+        d,_=validated_bundle_context(d,inv,Path(source))
     old={};controls={};rows=[];hashes={}
     for arm,(p,x) in d['problems'].items():
         _,_,ids,old[arm]=memberships(p,x,d['entries'])

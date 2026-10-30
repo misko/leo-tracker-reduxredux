@@ -24,6 +24,9 @@ def run(args):
     for source in pr.get('inactive_fragment_sources',[]):
         from inactive_graph_fragment import validated_inactive_context
         d,_=validated_inactive_context(d,inv,Path(source))
+    for source in pr.get('graph_bundle_sources',[]):
+        from predictive_graph_bundle import validated_bundle_context
+        d,_=validated_bundle_context(d,inv,Path(source))
     family = NewFamily(d['scan'], pr['targets'], d['model'], phase_step=pr['phase_step_s'],
                        allow_uncalibrated_label=pr.get('uncalibrated_label', False),
                        integrate_orbit_uncertainty=pr['family_prior'].get('integrate_orbit_uncertainty', True),

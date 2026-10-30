@@ -17,12 +17,15 @@ from phase_reference_checks import phase_refresh
 def run(args):
     began=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False);inv=read(args.inventory);d=context(inv);p0,_=d['problems']['c0']
     original_graph_count=len(d['scan'].tracks)
-    targets=[];inactive_sources=[];used={o for entry in d['entries'] for o in entry['observation_ids']}
+    targets=[];inactive_sources=[];bundle_sources=[];used={o for entry in d['entries'] for o in entry['observation_ids']}
     used.update(o for i,sl in zip(p0.members,p0.slices,strict=True) for o,k in zip(d['scan'].tracks[i]['observation_ids'],d['keep'][sl],strict=True) if k)
     for folder in args.validation:
         r=read(folder/'result.json');a=identity_consensus(r['folds'],score_name='conditional_target')
         if a['status']!='conditionally_supported_identity':raise ValueError('identity not supported under supplied validation')
-        if r.get('inactive_graph_fragment'):
+        if r.get('graph_bundle'):
+            from predictive_graph_bundle import validated_bundle_context
+            d,t=validated_bundle_context(d,inv,folder);bundle_sources.append(str(folder))
+        elif r.get('inactive_graph_fragment'):
             from inactive_graph_fragment import validated_inactive_context
             d,t=validated_inactive_context(d,inv,folder);inactive_sources.append(str(folder))
         else:t=next(t for t in inv['tracks'] if t['track_id']==r['track_id'])
@@ -42,6 +45,7 @@ def run(args):
         integrate_orbit_uncertainty=not args.omit_orbit_uncertainty,integrate_receiver_uncertainty=not args.omit_receiver_uncertainty)
     write(out/'protocol.json',dict(job=inv['job'],targets=targets,validation=[str(p) for p in args.validation],family_prior=family.receipt,
         inactive_fragment_sources=inactive_sources,
+        graph_bundle_sources=bundle_sources,
         original_graph_count=original_graph_count,
         optimizer=args.optimizer+' normalized joint objective',maxiter=48,maxfun=240,phase_rounds=5,start=[0,0],box_width_km=25,
         control_uses_same_optimizer=True,c0_vs_fitted_c=True,GPS_used=False,future_TLE=False,phase_step_s=args.phase_step,

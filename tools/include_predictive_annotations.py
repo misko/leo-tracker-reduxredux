@@ -69,12 +69,16 @@ def run(args):
     position_fit=getattr(args,'position_fit','regional_unconstrained')
     if noise_policy=='annotation_fixed':d=annotation_noise_context(d)
     native=bool(args.native_branches or getattr(args,'native_from_validation',False));native_sources=[]
-    original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];inactive_sources=[];used={o for e in d['entries'] for o in e['observation_ids']}
+    original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];inactive_sources=[];bundle_sources=[];used={o for e in d['entries'] for o in e['observation_ids']}
     used.update(o for i,sl in zip(p0.members,p0.slices,strict=True) for o,k in zip(d['scan'].tracks[i]['observation_ids'],d['keep'][sl],strict=True) if k)
     for folder in args.validation:
         r=read(folder/'result.json');annotation=identity_consensus(r['folds'],score_name=r['identity_score_name'])
         if annotation['status']!='conditionally_supported_identity':raise ValueError('annotation not conditionally supported')
-        if r.get('inactive_graph_fragment'):
+        if r.get('graph_bundle'):
+            if native:raise ValueError('cannot mix native and graph bundle routes')
+            from predictive_graph_bundle import validated_bundle_context
+            d,t=validated_bundle_context(d,inv,folder);bundle_sources.append(str(folder))
+        elif r.get('inactive_graph_fragment'):
             if native:raise ValueError('cannot mix native and inactive fragment routes')
             from inactive_graph_fragment import validated_inactive_context
             d,t=validated_inactive_context(d,inv,folder);inactive_sources.append(str(folder))
@@ -116,6 +120,7 @@ def run(args):
         conditional_satellite_refresh=conditional_satellite_refresh,
         inactive_graph_member_as_predictive=getattr(args,'predictive_member',False),
         inactive_fragment_sources=inactive_sources,
+        graph_bundle_sources=bundle_sources,
         excluded_predictive_parameter_uncertainty_conditioned_away=conditional_satellite_refresh,
         native_branches=str(args.native_branches) if args.native_branches else None,
         native_sources=native_sources,original_graph_count=original_graph_count))
