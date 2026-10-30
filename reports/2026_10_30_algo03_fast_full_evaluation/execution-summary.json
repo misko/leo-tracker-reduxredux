@@ -1,0 +1,314 @@
+{
+  "schema": "algo03-final-execution-summary/v1",
+  "created_utc_ns": 1793388879647096597,
+  "full_member_denominator": 400,
+  "arm_rows": 800,
+  "complete_paired_positions": 377,
+  "unavailable": 23,
+  "unavailable_reasons": {
+    "no_existing_public_GLRT_input": 13,
+    "baseline_no_qualified_ALGO02_pair": 1,
+    "baseline_failed": 9
+  },
+  "failed_candidate_receipts": 0,
+  "promotion_passed": false,
+  "failed_promotion_gates": [
+    "all: total runtime P95 exceeds 2x baseline P95 plus 60s"
+  ],
+  "runtime": {
+    "baseline_seconds": 79936.5252674506,
+    "candidate_seconds": 293656.69021860603,
+    "baseline_p95_seconds": 492.72408478364787,
+    "candidate_p95_seconds": 1360.9176576142665,
+    "recovery_p95_seconds": 1170.1444009222555
+  },
+  "total_runtime_p95_limit_seconds": 1045.4481695672957,
+  "association": {
+    "all": {
+      "c0": {
+        "baseline": {
+          "verified_export_cases": 377,
+          "associated_points": 1051906,
+          "available_GLRT_observations": 1490555,
+          "weighted_associated_percent": 70.5714314466759
+        },
+        "candidate": {
+          "verified_export_cases": 377,
+          "associated_points": 1058760,
+          "available_GLRT_observations": 1490555,
+          "weighted_associated_percent": 71.03126016819239
+        }
+      },
+      "fitted_c": {
+        "baseline": {
+          "verified_export_cases": 377,
+          "associated_points": 1051906,
+          "available_GLRT_observations": 1490555,
+          "weighted_associated_percent": 70.5714314466759
+        },
+        "candidate": {
+          "verified_export_cases": 377,
+          "associated_points": 1058760,
+          "available_GLRT_observations": 1490555,
+          "weighted_associated_percent": 71.03126016819239
+        }
+      }
+    },
+    "DS23": {
+      "c0": {
+        "baseline": {
+          "verified_export_cases": 204,
+          "associated_points": 511018,
+          "available_GLRT_observations": 726924,
+          "weighted_associated_percent": 70.29868321860332
+        },
+        "candidate": {
+          "verified_export_cases": 204,
+          "associated_points": 514871,
+          "available_GLRT_observations": 726924,
+          "weighted_associated_percent": 70.82872487357687
+        }
+      },
+      "fitted_c": {
+        "baseline": {
+          "verified_export_cases": 204,
+          "associated_points": 511018,
+          "available_GLRT_observations": 726924,
+          "weighted_associated_percent": 70.29868321860332
+        },
+        "candidate": {
+          "verified_export_cases": 204,
+          "associated_points": 514871,
+          "available_GLRT_observations": 726924,
+          "weighted_associated_percent": 70.82872487357687
+        }
+      }
+    },
+    "DS24": {
+      "c0": {
+        "baseline": {
+          "verified_export_cases": 25,
+          "associated_points": 81604,
+          "available_GLRT_observations": 113227,
+          "weighted_associated_percent": 72.07114910754503
+        },
+        "candidate": {
+          "verified_export_cases": 25,
+          "associated_points": 82181,
+          "available_GLRT_observations": 113227,
+          "weighted_associated_percent": 72.58074487533892
+        }
+      },
+      "fitted_c": {
+        "baseline": {
+          "verified_export_cases": 25,
+          "associated_points": 81604,
+          "available_GLRT_observations": 113227,
+          "weighted_associated_percent": 72.07114910754503
+        },
+        "candidate": {
+          "verified_export_cases": 25,
+          "associated_points": 82181,
+          "available_GLRT_observations": 113227,
+          "weighted_associated_percent": 72.58074487533892
+        }
+      }
+    },
+    "DS26": {
+      "c0": {
+        "baseline": {
+          "verified_export_cases": 148,
+          "associated_points": 459284,
+          "available_GLRT_observations": 650404,
+          "weighted_associated_percent": 70.61518686846945
+        },
+        "candidate": {
+          "verified_export_cases": 148,
+          "associated_points": 461708,
+          "available_GLRT_observations": 650404,
+          "weighted_associated_percent": 70.98787830333147
+        }
+      },
+      "fitted_c": {
+        "baseline": {
+          "verified_export_cases": 148,
+          "associated_points": 459284,
+          "available_GLRT_observations": 650404,
+          "weighted_associated_percent": 70.61518686846945
+        },
+        "candidate": {
+          "verified_export_cases": 148,
+          "associated_points": 461708,
+          "available_GLRT_observations": 650404,
+          "weighted_associated_percent": 70.98787830333147
+        }
+      }
+    }
+  },
+  "optional_failed_scientific_stages": [
+    {
+      "case": "DS23-0056",
+      "stage": "retry-control-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0056/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0056/candidate-v2/recovery/joint-retry/control-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0056/candidate-v2/recovery/joint-retry/control-fitted_c/audit.json']' timed out after 6.036516790278256 seconds",
+      "budget_seconds": 6.036516790278256
+    },
+    {
+      "case": "DS23-0058",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0058/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0058/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0058/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 82.14571978198364 seconds",
+      "budget_seconds": 82.14571978198364
+    },
+    {
+      "case": "DS23-0062",
+      "stage": "retry-control-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/retry_two_family_positions.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0062/candidate-v2/recovery', '--source', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0062/candidate-v2/recovery/joint', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0062/candidate-v2/recovery/joint-retry/control-c0', '--method', 'control', '--arm', 'c0']' timed out after 16.416624289005995 seconds",
+      "budget_seconds": 16.416624289005995
+    },
+    {
+      "case": "DS23-0146",
+      "stage": "joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0146/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0146/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0146/candidate-v2/recovery/joint/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 125.20806357683614 seconds",
+      "budget_seconds": 125.20806357683614
+    },
+    {
+      "case": "DS23-0154",
+      "stage": "joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0154/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0154/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0154/candidate-v2/recovery/joint/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 135.30694631161168 seconds",
+      "budget_seconds": 135.30694631161168
+    },
+    {
+      "case": "DS23-0164",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0164/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0164/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0164/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 38.40720973722637 seconds",
+      "budget_seconds": 38.40720973722637
+    },
+    {
+      "case": "DS23-0234",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0234/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0234/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0234/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 58.592563580255955 seconds",
+      "budget_seconds": 58.592563580255955
+    },
+    {
+      "case": "DS23-0282",
+      "stage": "retry-joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/retry_two_family_positions.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0282/candidate-v2/recovery', '--source', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0282/candidate-v2/recovery/joint', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0282/candidate-v2/recovery/joint-retry/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 11.92926259431988 seconds",
+      "budget_seconds": 11.92926259431988
+    },
+    {
+      "case": "DS23-0291",
+      "stage": "factorized-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0291/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0291/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS23-0291/candidate-v2/recovery/joint/factorized-c0', '--method', 'factorized', '--arm', 'c0']' timed out after 24.808910773601383 seconds",
+      "budget_seconds": 24.808910773601383
+    },
+    {
+      "case": "DS24-0017",
+      "stage": "control-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0017/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0017/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0017/candidate-v2/recovery/joint/control-fitted_c', '--method', 'control', '--arm', 'fitted_c']' timed out after 14.17612559394911 seconds",
+      "budget_seconds": 14.17612559394911
+    },
+    {
+      "case": "DS24-0091",
+      "stage": "joint-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0091/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0091/candidate-v2/recovery/joint/joint-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0091/candidate-v2/recovery/joint/joint-fitted_c/audit.json']' timed out after 9.599549181293696 seconds",
+      "budget_seconds": 9.599549181293696
+    },
+    {
+      "case": "DS24-0095",
+      "stage": "joint-c0-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0095/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0095/candidate-v2/recovery/joint/joint-c0', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS24-0095/candidate-v2/recovery/joint/joint-c0/audit.json']' timed out after 45.68187193386257 seconds",
+      "budget_seconds": 45.68187193386257
+    },
+    {
+      "case": "DS26-0020",
+      "stage": "joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0020/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0020/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0020/candidate-v2/recovery/joint/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 41.12006556196138 seconds",
+      "budget_seconds": 41.12006556196138
+    },
+    {
+      "case": "DS26-0028",
+      "stage": "factorized-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0028/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0028/candidate-v2/recovery/joint/factorized-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0028/candidate-v2/recovery/joint/factorized-fitted_c/audit.json']' timed out after 10.417432819958776 seconds",
+      "budget_seconds": 10.417432819958776
+    },
+    {
+      "case": "DS26-0052",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0052/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0052/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0052/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 6.305517558008432 seconds",
+      "budget_seconds": 6.305517558008432
+    },
+    {
+      "case": "DS26-0114",
+      "stage": "joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0114/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0114/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0114/candidate-v2/recovery/joint/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 157.7196619012393 seconds",
+      "budget_seconds": 157.7196619012393
+    },
+    {
+      "case": "DS26-0118",
+      "stage": "joint-c0-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0118/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0118/candidate-v2/recovery/joint/joint-c0', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0118/candidate-v2/recovery/joint/joint-c0/audit.json']' timed out after 42.978118241298944 seconds",
+      "budget_seconds": 42.978118241298944
+    },
+    {
+      "case": "DS26-0120",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0120/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0120/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0120/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 151.84774703299627 seconds",
+      "budget_seconds": 151.84774703299627
+    },
+    {
+      "case": "DS26-0130",
+      "stage": "joint-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0130/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0130/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0130/candidate-v2/recovery/joint/joint-fitted_c', '--method', 'joint', '--arm', 'fitted_c']' timed out after 74.41787451179698 seconds",
+      "budget_seconds": 74.41787451179698
+    },
+    {
+      "case": "DS26-0162",
+      "stage": "target-7-retry",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/include_new_predictive_family.py', '--inventory', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0162/candidate-v2/recovery/all-large-track-recovery/8ac016ecf69cc810efdc42708af6d464/inventory.json', '--validation', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0162/candidate-v2/recovery/06ba1c42a1dcdbd3b542/annotation', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0162/candidate-v2/recovery/06ba1c42a1dcdbd3b542/numerical-retry', '--uncalibrated-label', '--phase-step', '.025', '--optimizer', 'powell']' timed out after 277.37381099769846 seconds",
+      "budget_seconds": 277.37381099769846
+    },
+    {
+      "case": "DS26-0185",
+      "stage": "joint-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0185/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0185/candidate-v2/recovery/joint/joint-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0185/candidate-v2/recovery/joint/joint-fitted_c/audit.json']' timed out after 24.092532091774046 seconds",
+      "budget_seconds": 24.092532091774046
+    },
+    {
+      "case": "DS26-0221",
+      "stage": "joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0221/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0221/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0221/candidate-v2/recovery/joint/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 80.49309827806428 seconds",
+      "budget_seconds": 80.49309827806428
+    },
+    {
+      "case": "DS26-0287",
+      "stage": "retry-control-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/retry_two_family_positions.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0287/candidate-v2/recovery', '--source', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0287/candidate-v2/recovery/joint', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0287/candidate-v2/recovery/joint-retry/control-c0', '--method', 'control', '--arm', 'c0']' timed out after 3.2865189621225 seconds",
+      "budget_seconds": 3.2865189621225
+    },
+    {
+      "case": "DS26-0295",
+      "stage": "joint-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0295/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0295/candidate-v2/recovery/joint/joint-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0295/candidate-v2/recovery/joint/joint-fitted_c/audit.json']' timed out after 9.295696049928665 seconds",
+      "budget_seconds": 9.295696049928665
+    },
+    {
+      "case": "DS26-0297",
+      "stage": "factorized-fitted_c",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/fit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0297/candidate-v2/recovery', '--probe', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0297/candidate-v2/recovery/joint-probe', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0297/candidate-v2/recovery/joint/factorized-fitted_c', '--method', 'factorized', '--arm', 'fitted_c']' timed out after 12.793159395921975 seconds",
+      "budget_seconds": 12.793159395921975
+    },
+    {
+      "case": "DS26-0301",
+      "stage": "retry-joint-c0",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/retry_two_family_positions.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0301/candidate-v2/recovery', '--source', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0301/candidate-v2/recovery/joint', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0301/candidate-v2/recovery/joint-retry/joint-c0', '--method', 'joint', '--arm', 'c0']' timed out after 1.3352194866165519 seconds",
+      "budget_seconds": 1.3352194866165519
+    },
+    {
+      "case": "DS26-0305",
+      "stage": "joint-fitted_c-audit",
+      "error": "TimeoutExpired: Command '['/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python', '-B', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/runtime-candidate/tools/audit_two_predictive_families.py', '--study', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0305/candidate-v2/recovery', '--trial', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0305/candidate-v2/recovery/joint/joint-fitted_c', '--output', '/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0305/candidate-v2/recovery/joint/joint-fitted_c/audit.json']' timed out after 42.852642306126654 seconds",
+      "budget_seconds": 42.852642306126654
+    }
+  ],
+  "optional_stage_timeout_count": 27,
+  "interpretation": "Optional trial-stage failures are retained separately from published endpoint qualification; baseline fallbacks preserve the exact qualified ALGO02 endpoint."
+}
