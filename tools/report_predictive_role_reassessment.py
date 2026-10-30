@@ -17,6 +17,21 @@ from annotation_partition_plan import require_distinct_annotation
 from leo.analysis.research.grouped_prediction import replay_split
 
 
+def complete_replay_slacks(row):
+    """Include new-family target screens as well as incumbent/shared screens."""
+    slacks=replay_slacks(row)
+    for kind in ('target','continuous_target'):
+        for d in (row.get(kind) or {}).get('diagnostics',[]):
+            n=d['noise'];prefix=d['component']+'/'+kind+'/'
+            ratios=dict(rms=d['profile_RMS_hz']/450,bias=abs(d['profile_bias_hz'])/3000,
+                mean=abs(n['mean_z'])/3,slope=abs(n['slope_z'])/3,
+                quadratic=n['quadratic_bic_gain']/10,step=n['maximum_step_z']/4,
+                lag1=abs(n['lag1_acf'])/(4/np.sqrt(len(d['times_s']))))
+            slacks.update({prefix+k:1-v for k,v in ratios.items()})
+            slacks[prefix+'elevation']=d['minimum_elevation_deg']
+    return slacks
+
+
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir()
     iteration=getattr(args,'iteration',1)
@@ -83,8 +98,9 @@ def run(args):
                     optimizer_success=z['history'][-1].get('success'),phase_change_s=z['final_phase_change_s'],exact_replay_pass=audit['all_verified']))
                 if final:plots[tid,arm]=d
             for arow in audit['rows']:
-                for gate,slack in replay_slacks(arow).items():
-                    if slack<0:failures.append(dict(scan=job['label'],variant=label,role=arow['role'],arm=arow['arm'],gate=gate,slack=slack))
+                for gate,slack in complete_replay_slacks(arow).items():
+                    if slack<0:failures.append(dict(scan=job['label'],variant=label,role=arow['role'],arm=arow['arm'],gate=gate,slack=slack,
+                        evidence_role='target' if gate.split('/',1)[0] in {t['component'] for t in pr['targets']} else 'incumbent'))
             comparisons.append(row)
             if final:byid[tid].update(predictive_inclusion_source=str(p),predictive_research_inclusion='RF_verified_research_candidate' if qualified else 'inclusion_rejected')
     final=[r for r in comparisons if r['final_variant']]; remaining=[r for r in pending if r['track_id'] not in {j['track_id'] for j in selected}]
@@ -185,7 +201,7 @@ Outcomes: **{summary['annotation_states']}**. Every supported identity has three
 
 **{summary['qualified_curves']} individual curves / {summary['qualified_points']} points** pass the current RF checks. These are separate research trials, not a simultaneous solution or a production change. Controls/additions and c=0/fitted-c arms use matched observations, candidate sets, priors and budgets; additions differ only by their specified targets. New-family phase integration uses 0.025-second spacing. Numerical retries, if any, preserve the physical gates. All original and retry outputs, including regressions and rejections, remain in [comparisons.csv](comparisons.csv) and [position_trials.csv](position_trials.csv). Exact replay failures are in [failed_replay_gates.csv](failed_replay_gates.csv).
 
-Two V06 curves independently nominate the same satellite. Their individual outcomes do not establish joint consistency; consult the linked joint audit before combining them. No union of individual position improvements is claimed.
+Individual outcomes do not establish joint consistency. The earlier V06 joint audit illustrates this limitation; no union of individual position improvements is claimed. The failed-gate table distinguishes target from incumbent evidence and includes both nominal and continuously refined new-family target screens.
 
 {chr(10).join(pages)}
 
