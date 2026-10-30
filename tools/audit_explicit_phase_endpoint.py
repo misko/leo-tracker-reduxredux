@@ -6,7 +6,7 @@ from debug_fast_graph_unassociated import read,write,memberships
 from diagnose_all_large_tracks import context
 from native_predictive_branch import native_context,validated_native_source
 from ds23_frequency_events import make_event_problem,attach_event_predictive
-from explicit_shared_phase import attach_explicit_phase
+from explicit_shared_phase import attach_explicit_phase,evidence_context
 from probe_ds23_frequency_events import cached
 from probe_algo03_feasible_recovery import gate_slacks
 from ds23_predictive_linear import linear_geometry
@@ -57,6 +57,7 @@ def run(args):
             if ids!=set(inv['policy'][arm]['proposed_associated_ids']):raise ValueError('incumbent membership failed replay')
             incumbent_owners[arm]=owners
         control=read(root/'control.json')
+        d=evidence_context(d,protocol.get('noise_policy','original'))
         source=validated_native_source(Path(pr['validation']));target=pr['target']
         d,_=native_context(d,inv,source,target['component'].split('-NATIVE-')[-1])
         for role in ('control','target'):

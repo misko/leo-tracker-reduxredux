@@ -39,3 +39,18 @@ def test_predictive_constants_only_keep_cross_point_covariance():
 def test_invalid_phase_or_bias_coordinates_are_rejected():
     for biases in ([1],[0,0],[3]):
         with pytest.raises(ValueError):conditional_phase(np.zeros(3),np.eye(3),1,biases,0.)
+
+
+def test_noise_and_power_ablation_factors_are_isolated_without_mutation():
+    from types import SimpleNamespace
+    from explicit_shared_phase import evidence_context
+    scan=SimpleNamespace(fixed_window_noise={'extra_parameter_BIC_gain':12.},radio_sigma_hz=61.)
+    d=dict(scan=scan,powers=np.array([.2,1.]))
+    original=evidence_context(d,'original');weights=evidence_context(d,'unit_weights_only')
+    noise=evidence_context(d,'fixed_noise_only');both=evidence_context(d,'annotation_fixed')
+    assert original is d and weights['scan'] is scan
+    np.testing.assert_array_equal(weights['powers'],[1.,1.]);np.testing.assert_array_equal(noise['powers'],[.2,1.])
+    for q in (noise,both):assert q['scan'].radio_sigma_hz==150. and q['scan'].fixed_window_noise['extra_parameter_BIC_gain']==0.
+    np.testing.assert_array_equal(both['powers'],[1.,1.])
+    assert scan.radio_sigma_hz==61. and scan.fixed_window_noise['extra_parameter_BIC_gain']==12.
+    np.testing.assert_array_equal(d['powers'],[.2,1.])

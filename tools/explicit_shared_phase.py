@@ -12,6 +12,17 @@ from ds23_height_problem import geometry_features
 PHASE_UNIT_S=.1
 
 
+def evidence_context(d,policy):
+    """Isolate fixed measurement noise and unit curve powers in matched trials."""
+    if policy=='original':return d
+    if policy=='unit_weights_only':return dict(d,powers=np.ones(len(d['powers'])))
+    if policy not in ('annotation_fixed','fixed_noise_only'):raise ValueError('unknown evidence weighting policy')
+    from include_predictive_annotations import annotation_noise_context
+    changed=annotation_noise_context(d)
+    if policy=='fixed_noise_only':changed['powers']=np.asarray(d['powers']).copy()
+    return changed
+
+
 def conditional_phase(mean, precision, phase_index, bias_indices, value):
     """Marginal phase density after conditioning others and eliminating biases."""
     a,g=np.asarray(mean,float),np.asarray(precision,float);b=np.asarray(bias_indices,dtype=int)
