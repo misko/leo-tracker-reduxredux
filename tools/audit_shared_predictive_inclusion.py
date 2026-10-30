@@ -20,6 +20,9 @@ def run(args):
         raise ValueError('one shared posterior variant at a time required')
     if pr['noise_policy']!='original':raise ValueError('original noise required')
     inv=read(args.study/'all-large-track-recovery'/pr['job']['job_id']/'inventory.json');d=context(inv)
+    for source in pr.get('inactive_fragment_sources',[]):
+        from inactive_graph_fragment import validated_inactive_context
+        d,_=validated_inactive_context(d,inv,Path(source))
     old={};controls={};rows=[];hashes={}
     for arm,(p,x) in d['problems'].items():
         _,_,ids,old[arm]=memberships(p,x,d['entries'])
@@ -39,7 +42,8 @@ def run(args):
                 attach_conditional_satellite_refresh(p,entries,d['powers'],[t['candidate_index'] for t in pr['targets']])
             cached(p);x=np.array(v['endpoint_east_north_km'])
             difference=p.calculate(x)['negative_twice_elbo']-v['negative_twice_elbo']
-            _,_,ids,owners=memberships(p,x,entries)
+            from inactive_graph_fragment import original_graph_view
+            _,_,ids,owners=memberships(original_graph_view(p,pr.get('original_graph_count',len(p.scan.tracks))),x,entries)
             if abs(difference)>1e-5 or ids!=set(v['proposed_associated_ids']) or owners!=v['proposed_owners']:
                 raise ValueError('objective, membership or owners failed replay')
             if role=='control':controls[arm]=owners

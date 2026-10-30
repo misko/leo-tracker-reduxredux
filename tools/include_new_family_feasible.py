@@ -31,6 +31,9 @@ def run(args):
     source=args.source;pr=read(source/'protocol.json');control=read(source/'control.json');audit=read(source/'exact_owner_replay.json')
     require_qualified_control(control,audit)
     inv=read(args.study/'all-large-track-recovery'/pr['job']['job_id']/'inventory.json');d=context(inv);out=args.output;out.mkdir(parents=True,exist_ok=False)
+    for validation in pr.get('inactive_fragment_sources',[]):
+        from inactive_graph_fragment import validated_inactive_context
+        d,_=validated_inactive_context(d,inv,Path(validation))
     family=NewFamily(d['scan'],pr['targets'],d['model'],phase_step=pr['phase_step_s'],allow_uncalibrated_label=pr.get('uncalibrated_label',False),
         integrate_orbit_uncertainty=pr['family_prior']['integrate_orbit_uncertainty'],integrate_receiver_uncertainty=pr['family_prior']['integrate_receiver_uncertainty'])
     protocol=dict(pr,optimizer='RF-feasible SLSQP continuation',start='matched exact-RF-qualified regional control',maxiter=48,phase_rounds=5,
@@ -54,7 +57,8 @@ def run(args):
                 x=np.array(fit['parameters']);reference,check=phase_refresh(p.state(x)['phases'][p.labels],reference)
                 history.append(dict(epoch=epoch,endpoint_east_north_km=x,objective_before=before,objective=fit['score'],fit=fit,
                     success=bool(fit['feasible']),message='best RF-feasible visited point; solver status recorded separately',**check))
-            row=summary(p,x,d['entries']);_,_,ids,_=memberships(p,x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
+            from inactive_graph_fragment import original_graph_view
+            row=summary(p,x,d['entries']);_,_,ids,_=memberships(original_graph_view(p,pr.get('original_graph_count',len(p.scan.tracks))),x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
             if include:
                 detail=family.evaluate(p,x,d['powers'],d['entries'],details=True);row['family']=detail
                 row['incumbent_objective']=row['negative_twice_elbo'];row['negative_twice_elbo']+=detail['negative_twice_log_density'];row['linear_gates']+=detail['gates']

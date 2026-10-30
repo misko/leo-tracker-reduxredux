@@ -97,11 +97,16 @@ def check_predictive_role(p,track_index,allow_inactive_member=False):
 
 
 def run(args):
+    if getattr(args,'inactive_fragment',False) and getattr(args,'native_branches',None):
+        raise ValueError('choose an inactive graph fragment or an omitted native branch')
     began=time.monotonic();out=args.output;out.mkdir(parents=True,exist_ok=False)
     inv=read(args.inventory);d=context(inv);p0,_=d['problems']['c0']
     if getattr(args,'native_branches',None):
         from native_predictive_branch import native_context
         d,target=native_context(d,inv,args.native_branches,args.track)
+    elif getattr(args,'inactive_fragment',False):
+        from inactive_graph_fragment import inactive_fragment_context
+        d,target=inactive_fragment_context(d,inv,args.track)
     else:target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large'])
     i=target['track_index'];t=d['scan'].tracks[i]
     check_predictive_role(p0,i,getattr(args,'predictive_member',False))
@@ -152,6 +157,7 @@ def run(args):
         fold=dict(seed=seed,split=split,proposals=proposals);results.append(fold);write(out/f'seed-{seed}.json',fold)
     annotation=identity_consensus(results,score_name='conditional_target')
     write(out/'result.json',dict(job=inv['job'],component=t['key'],track_id=target['track_id'],folds=results,annotation=annotation,
+        inactive_graph_fragment=target.get('inactive_graph_fragment',False),
         identity_score_name='conditional_target',inclusion_mode='predictive_only',seconds=time.monotonic()-began,
         annotation_prototype=True,no_accepted_associations=True,
         geometry_only_early_exit=bool(partition_plan and partition_plan.get('geometry_only_early_exit'))))
@@ -164,6 +170,7 @@ if __name__=='__main__':
     p.add_argument('--track',required=True);p.add_argument('--candidates',type=int,default=3);p.add_argument('--folds',type=int,default=3)
     p.add_argument('--phase-step',type=float,default=.1);p.add_argument('--uncalibrated-phase-mixture',action='store_true')
     p.add_argument('--predictive-member',action='store_true',help='Allow a wholly inactive curved member as predictive-only evidence')
+    p.add_argument('--inactive-fragment',action='store_true',help='Assess only parent graph observations unused by both c arms; no position inclusion authorization')
     p.add_argument('--partition-audit',type=Path)
     p.add_argument('--native-branches',type=Path,help='Validated omitted-branch discovery JSON; append only to predictive geometry')
     p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
