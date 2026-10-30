@@ -18,7 +18,7 @@ from report_systematic_annotation import compact_evidence
 
 
 def run(args):
-    s=args.study;out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir();hashes={};evidence={}
+    s=args.study;iteration=getattr(args,'batch',1);out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir();hashes={};evidence={}
     def load(p):
         hashes[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest();r=read(p);evidence[str(p)]=compact_replays(compact_evidence(r));return r
     def csvout(name,rows):
@@ -29,9 +29,9 @@ def run(args):
         for path,digest in record.get('source_hashes',{}).items():
             if hashlib.sha256(Path(path).read_bytes()).hexdigest()!=digest:raise ValueError('source changed: '+path)
     q=s/'shifted-annotation-inventory-v1';frozen=load(q/'protocol.json');verify_sources(frozen)
-    attempt=q/'attempt-1';jobs=load(attempt/'selected.json');load(attempt/'protocol.json');load(attempt/'execution.json')
+    attempt=q/f'attempt-{iteration}';jobs=load(attempt/'selected.json');load(attempt/'protocol.json');load(attempt/'execution.json')
     previous=args.previous/'annotation_ledger.csv';hashes[str(previous)]=hashlib.sha256(previous.read_bytes()).hexdigest();ledger=list(csv.DictReader(previous.open()));byid={r['track_id']:r for r in ledger}
-    provenance=s/'shifted-capture-provenance-v1';cap=load(provenance/'summary.json');verify_sources(cap);capture={r['track_id']:r for r in load(provenance/'rows.json')}
+    provenance=s/f'shifted-capture-provenance-v{iteration}';cap=load(provenance/'summary.json');verify_sources(cap);capture={r['track_id']:r for r in load(provenance/'rows.json')}
     shutil.copyfile(provenance/'capture_provenance.csv',out/'capture_provenance.csv')
     annotations=[];partitions=[];terminals=[];gallery=[];plots={};comparisons=[];positions=[];failures=[]
     for job in jobs:
@@ -47,7 +47,7 @@ def run(args):
             tr,he=replay_split(t['times'],f['split']);partitions.append(dict(track_id=tid,seed=f['seed'],origin_s=f['split']['block_origin_s'],training=int(tr.sum()),held=int(he.sum()),held_indices=' '.join(map(str,np.flatnonzero(he)))))
         byid[tid].update(predictive_recheck_source=str(q/tid/'result.json'),predictive_recheck_state=a['status'],predictive_recheck_minimum_margin=a.get('minimum_margin'),annotation_likelihood_role='predictive_only; shifted_origin_v1')
         gallery.append((job,t,a,label))
-    root=s/'shifted-annotation-inclusion-v1';retry=s/'shifted-annotation-numerical-followup-v1';execution=load(root/'execution.json');verify_sources(load(root/'protocol.json'))
+    root=s/f'shifted-annotation-inclusion-v{iteration}';retry=s/f'shifted-annotation-numerical-followup-v{iteration}';execution=load(root/'execution.json');verify_sources(load(root/'protocol.json'))
     followup={r['job']['track_id']:r for r in load(retry/'execution.json')};verify_sources(load(retry/'protocol.json'))
     for rec in execution:
         job=rec['job'];tid=job['track_id'];variants=[('initial',root,rec)]
@@ -57,23 +57,33 @@ def run(args):
             if run['status']=='execution_failed':raise ValueError('inclusion incomplete')
             trial=folder/tid/'trial';p=load(trial/'protocol.json');control=load(trial/'control.json');v=load(trial/('target_0.json' if run['shared_family'] else 'new_family.json'));audit=load(trial/'exact_owner_replay.json');verify_sources(audit)
             qualified=bool(control['paired_valid'] and v['paired_valid'] and audit['all_verified']);final=variant==variants[-1][0]
+            scope=None;scope_dir=getattr(args,'membership_scopes',None);scope_path=scope_dir/(tid+'.json') if scope_dir else None
+            if final and scope_path and scope_path.exists():
+                scope=load(scope_path);verify_sources(scope)
+                if not scope['RF_qualified_target_only'] or str(trial/'new_family.json') not in scope['source_hashes']:raise ValueError('membership scope belongs to another trial')
+                (out/'membership_scopes').mkdir(exist_ok=True);shutil.copyfile(scope_path,out/'membership_scopes'/scope_path.name)
             target_ids={o for t in p['targets'] for o in t['observation_ids']};inv=load(Path(job['inventory']));label=next(a['scan'] for a in annotations if a['track_id']==tid)
             row=dict(scan=label,inventory_alias=job['label'],track_id=tid,norad=job['annotation']['norad'],points=len(target_ids),qualified=qualified,variant=variant,final_variant=final,source_trial=str(trial))
             for arm,z in v['arms'].items():
-                b=control['arms'][arm];before=set(b['proposed_associated_ids']);after=set(z['proposed_associated_ids']);d=target_diagnostic(z)
+                b=control['arms'][arm];before=set(b['proposed_associated_ids']);raw_after=set(z['proposed_associated_ids']);after=set(scope['arms'][arm]['reviewed_associated_ids']) if scope else raw_after;d=target_diagnostic(z)
                 if qualified and (after-before!=target_ids or before-after):raise ValueError('unreviewed incidental membership or lost incumbent')
                 row[arm+'_before_km']=error(b);row[arm+'_after_km']=error(z)
                 positions.append(dict(scan=label,track_id=tid,variant=variant,arm=arm,qualified=qualified,before_km=error(b),after_km=error(z),
                     before_percent=100*len(before)/inv['summary'][0]['total_GLRT'],after_percent=100*len(after)/inv['summary'][0]['total_GLRT'],
+                    raw_proposed_points=len(raw_after),reviewed_proposed_points=len(after),unvalidated_extension_points=len(raw_after-after),
                     added_points=len(after-before),lost_points=len(before-after),target_RMS_hz=d['RMS_hz'],control_objective=b['negative_twice_elbo'],addition_objective=z['negative_twice_elbo']))
                 if final:plots[tid,arm]=d
             comparisons.append(row)
             for r in audit['rows']:
                 for gate,slack in complete_replay_slacks(r).items():
                     if slack<0:failures.append(dict(scan=label,variant=variant,arm=r['arm'],role=r['role'],gate=gate,slack=slack))
-            if final:byid[tid].update(predictive_inclusion_source=str(trial),predictive_research_inclusion='RF_verified_research_candidate' if qualified else 'inclusion_rejected')
+            if final:
+                byid[tid].update(predictive_inclusion_source=str(trial),predictive_research_inclusion='RF_verified_research_candidate' if qualified else 'inclusion_rejected')
+                if scope:byid[tid]['membership_scope_audit']=str(scope_path)
     final=[r for r in comparisons if r['final_variant']];processed={j['track_id'] for j in jobs}
-    shifted_remaining=[r for r in frozen['rows'] if r['track_id'] not in processed]
+    shifted_pending=load(args.previous/'remaining_shifted_candidates.json') if iteration>1 else frozen['rows']
+    if not processed<={r['track_id'] for r in shifted_pending}:raise ValueError('batch repeats a completed shifted assessment')
+    shifted_remaining=[r for r in shifted_pending if r['track_id'] not in processed]
     older_remaining=[r for r in load(args.previous/'remaining_role_candidates.json') if r['track_id'] not in processed]
     write(out/'remaining_shifted_candidates.json',shifted_remaining);write(out/'remaining_role_candidates.json',older_remaining)
     for name,rows in [('annotations.csv',annotations),('partitions.csv',partitions),('comparisons.csv',comparisons),('position_trials.csv',positions),('failed_gates.csv',failures),('executions.csv',terminals)]:csvout(name,rows)
@@ -94,6 +104,46 @@ def run(args):
             else:bx.text(.5,.5,a['status'].replace('_',' '),ha='center',transform=bx.transAxes)
             for axis in (ax,bx):axis.set_xlabel('Scan time (s)');axis.grid(alpha=.2)
         name=f'curves_{page}.png';save(fig,name);pages.append(f'![Curves {page}](figures/{name})')
+    if iteration>1:
+        csvout('annotation_ledger.csv',ledger)
+        summary=dict(batch=iteration,annotations=len(jobs),annotation_states=dict(Counter(r['status'] for r in annotations)),position_trials=len(final),
+            qualified_curves=sum(r['qualified'] for r in final),qualified_points=sum(r['points'] for r in final if r['qualified']),
+            remaining_shifted=len(shifted_remaining),remaining_older_role=len(older_remaining),capture_modes=cap['modes'],numerical_followups=len(followup),production_changed=False,goal_complete=False)
+        write(out/'summary.json',summary);write(out/'sources.json',hashes)
+        with gzip.open(out/'evidence.json.gz','wt') as f:json.dump(evidence,f,separators=(',',':'))
+        (out/'README.md').write_text(f'''# Shifted-origin annotation batch {iteration}
+
+The next **{len(jobs)}** wholly unowned curves from the frozen timestamp-selected queue have complete predictive-only assessments. Outcomes: **{summary['annotation_states']}**. There are **{len(final)} full position trials**, with **{summary['qualified_curves']} RF-qualified curves / {summary['qualified_points']} points** in separate trials. This is not a combined recovery or a production change.
+
+## Scope, validation and capture provenance
+
+Selection follows native point count and immutable track ID without GPS ranking. The reconciled remaining-candidate file prevents repeating assessments completed in other queues. Every target has three distinct timestamp-selected physical holdout sets, with seeded block origins, 12-second blocks, two-second guards, at least eight training points and four held points. Sets overlap and are not independent replications. No target calibrates the receiver during annotation; the graph and incumbent identities remain conditioning assumptions.
+
+Capture modes are **{cap['modes']}**. Adaptive records use their authoritative source case in tables, retaining historical inventory aliases separately. Direct scanner contracts and digest-verified acquisition manifests establish capture provenance; the fast adapter compatibility label does not. Canonical source identities prevent an adaptive recovery from being reported as a fast-scan result.
+
+{table(annotations,['scan','inventory_alias','capture_mode','points','status','norad','margin'])}
+
+## Matched position inclusion
+
+All supported identities receive matched controls/additions and c=0/fitted-c tests using causal candidates, existing physical priors and the same regional initialization. New-family phase quadrature is 0.025 seconds. The numerical-only retry selector produces **{len(followup)}** follow-ups, with matched Powell controls/additions and unchanged physical gates. Original and follow-up outputs remain in [comparisons.csv](comparisons.csv).
+
+{table(final,['scan','norad','points','qualified','c0_before_km','c0_after_km','fitted_c_before_km','fitted_c_after_km'])}
+
+![Matched position comparison](figures/position_comparison.png)
+
+Qualification requires acceptable residual structure, unchanged incumbent ownership, exact orbital/objective replay and numerical convergence. Qualified membership gains must equal exactly the independently tested target observations. [position_trials.csv](position_trials.csv) reports coverage percentages, point gains, target RMS, objectives and evaluation errors separately. Controls and additions contain different observations; lower raw objectives or more associated points do not prove improved position accuracy. [failed_gates.csv](failed_gates.csv) retains rejected results even if their position errors improve.
+
+Any unscored automatic extension discoveries are excluded from the reviewed association gains using an explicit source-hashed membership audit. The raw membership remains unchanged, and raw versus reviewed counts are recorded separately. Such an audit must prove that incidental points never entered the position objective and that old owners and the tested target are preserved. It does not validate the incidental points themselves.
+
+{chr(10).join(pages)}
+
+## Remaining work
+
+**{len(shifted_remaining)} shifted-origin candidates and {len(older_remaining)} older-role reassessments remain. These queues overlap and must not be added.** The [updated 1,630-row ledger](annotation_ledger.csv) preserves earlier ambiguity, rejections, native-IQ withholdings and joint-family results. Pass the corresponding `remaining_*_candidates.json` file to the next queue invocation using `--remaining-candidates`.
+
+Continue bounded annotation/inclusion batches and independently supported model challenges. Research recoveries require joint consistency and cohort evaluation before promotion. Evaluation GPS never selects satellites or partitions; causal TLEs and physical gates remain unchanged. No new RF or production changes occurred. Source hashes, terminal receipts, physical partition assignments, compact scientific evidence and all figures accompany this report. The complete annotation-and-inclusion objective is unfinished.
+''')
+        return
     family_results=[]
     for version in (1,2):
         folder=s/f'58528-bidirectional-family-validation-v{version}';terminal=load(folder/'execution.json')
@@ -190,4 +240,6 @@ Nineteen focused tests pass, covering queue claims and cross-queue exclusions, p
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('study','previous','output'):p.add_argument('--'+n,type=Path,required=True)
+    p.add_argument('--batch',type=int,default=1)
+    p.add_argument('--membership-scopes',type=Path)
     run(p.parse_args())

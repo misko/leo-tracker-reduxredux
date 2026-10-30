@@ -1,11 +1,25 @@
-"""Export a complete native target through the verified short-window reader."""
-import argparse,hashlib,inspect
+"""Export a complete native target through the verified short-window reader.
+
+For schema-v2 recordings, run this measurement-only exporter with the pinned
+deployed multirate reader on PYTHONPATH. No analysis implementation is imported.
+The chosen reader source is hashed in the output; recording contracts are not
+modified to accommodate a different sample rate.
+"""
+import argparse,hashlib,inspect,json
 from pathlib import Path
 import numpy as np
-from debug_fast_graph_unassociated import read,write
-from evaluate_ds22_merged_tracks import digest
 from leo.contracts.digests import canonical_digest
 from leo.storage.short_window import ShortWindowReader
+
+
+def read(path):return json.loads(Path(path).read_text())
+
+
+def write(path,value):
+    with Path(path).open('x') as f:json.dump(value,f,indent=2,allow_nan=False);f.write('\n')
+
+
+def digest(payload):return 'sha256:'+hashlib.sha256(payload).hexdigest()
 
 
 def measurement_point(track,probe,candidate,k,receiver_id):
@@ -32,9 +46,10 @@ def run(args):
         c=max(eligible,key=lambda c:(c['fractional_margin'],-c['candidate_rank']))
         if p['visit_index'] in selected:raise ValueError('duplicate target visit')
         selected[p['visit_index']]=measurement_point(track,p,c,k,p['receiver_id'])
-    hashes=[];points=[];exported=[];manifests=[];count=0
+    hashes=[];points=[];exported=[];manifests=[];contracts={};count=0
     for entry in inventory['segments']:
         reader=ShortWindowReader(Path(entry['path']))
+        contract=Path(inspect.getfile(type(reader.manifest)));contracts[str(contract)]=hashlib.sha256(contract.read_bytes()).hexdigest()
         if canonical_digest(reader.manifest.model_dump(mode='json'))!=entry['manifest_digest']:
             raise ValueError('recording manifest differs')
         if reader.manifest.sample_rate_hz!=source['sample_rate_hz']:raise ValueError('sample rate differs')
@@ -68,7 +83,7 @@ def run(args):
         plan_sha256=hashlib.sha256((args.output/'plan.json').read_bytes()).hexdigest(),raw_recording_authority_digest=authority,
         raw_authority_matches_tracking=True,recording_manifests=manifests,
         source_hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [args.inventory,args.trial/'protocol.json',invpath,root/'tracking.json',root/'tracks.json',Path(__file__),Path(inspect.getfile(ShortWindowReader))]},
-        all_selected_windows_hash_verified=True,no_new_RF=True))
+        reader_contract_sources=contracts,all_selected_windows_hash_verified=True,no_new_RF=True))
 
 
 if __name__=='__main__':

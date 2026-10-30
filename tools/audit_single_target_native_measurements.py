@@ -21,6 +21,21 @@ def polynomial_measurements(track):
     return np.asarray(track['values'])-prediction,rate
 
 
+def target_residual(row,times):
+    """Replay the already bias-profiled target on either inclusion route."""
+    if 'family' in row:
+        ds=row['family']['diagnostics']
+        if len(ds)!=1:raise ValueError('single target required')
+        diag=ds[0];residual=physical_residual(diag)
+    else:
+        ds=row['target_diagnostics']
+        if len(ds)!=1:raise ValueError('single target required')
+        diag=ds[0];residual=np.asarray(diag['residual_hz'])
+    np.testing.assert_array_equal(times,diag['times_s'])
+    if np.shape(residual)!=np.shape(times):raise ValueError('target residual point scope changed')
+    return residual
+
+
 def run(args):
     args.output.mkdir(parents=True,exist_ok=False)
     pr=read(args.trial/'protocol.json');target=pr['targets'][0]
@@ -50,10 +65,10 @@ def run(args):
             candidates=p['candidates'],pilot_support=support,
             uniform_timing_shift_hz=rate[k]*(support['uniform_centroid_s']-support['probe_midpoint_s']),
             maximum_support_timing_shift_hz=abs(rate[k])*max(abs(support['support_start_s']-support['probe_midpoint_s']),abs(support['support_end_s']-support['probe_midpoint_s']))))
-    saved=read(args.trial/'new_family.json');arms={}
+    saved_path=args.trial/('new_family.json' if (args.trial/'new_family.json').exists() else 'target_0.json')
+    saved=read(saved_path);arms={}
     for arm,v in saved['arms'].items():
-        diag=v['family']['diagnostics'][0];np.testing.assert_array_equal(times,diag['times_s'])
-        r=physical_residual(diag)
+        r=target_residual(v,times)
         arms[arm]=dict(residual_hz=r,polynomial_orbital_correlation=float(np.corrcoef(residual,r)[0,1]),
             original_polynomial_RMS_hz=float(np.sqrt(np.mean(residual**2))),orbital_RMS_hz=float(np.sqrt(np.mean(r*r))))
     witnesses=[]
@@ -67,7 +82,7 @@ def run(args):
             target_residual_hz=residual[a],witness_residual_hz=wr[b],
             normalized_residual_hz=wr[b]*track['rf_hz']/t['rf_hz'],
             polynomial_residual_correlation=float(np.corrcoef(residual[a],wr[b])[0,1])))
-    paths=[ip,args.trial/'protocol.json',args.trial/'new_family.json',*[root/n for n in ('tracks.json','tracking.json','observations.json')]]
+    paths=[ip,args.trial/'protocol.json',saved_path,*[root/n for n in ('tracks.json','tracking.json','observations.json')]]
     write(args.output/'result.json',dict(job=inv['job'],target=target,points=rows,arms=arms,witnesses=witnesses,
         graph_quality_status=track['quality_status'],graph_diagnostics=track['diagnostics'],
         source_hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
