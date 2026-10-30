@@ -16,6 +16,30 @@ from algo02_scan import pair_passes
 from leo.analysis.research.retained_track_likelihood import profile
 
 
+def position_initialization(policy, arm, width, mode):
+    """Keep regional trials unchanged; explicitly label incumbent continuations."""
+    if mode == 'regional_unconstrained':
+        return np.zeros(2), np.zeros(width)
+    if mode not in ('incumbent_unconstrained', 'incumbent_elbo_unconstrained', 'incumbent_feasible'):
+        raise ValueError('unknown position fit mode')
+    row = policy[arm]
+    x = np.asarray(row['endpoint_east_north_km'], float).copy()
+    reference = np.asarray(row['phase_reference'], float).copy()
+    if x.shape != (2,) or reference.shape != (width,) or not np.isfinite(np.r_[x, reference]).all():
+        raise ValueError('invalid incumbent position or phase reference')
+    return x, reference
+
+
+def position_step(p, x, entries, mode):
+    if mode in ('incumbent_feasible', 'incumbent_elbo_unconstrained'):
+        from ds23_feasible_position import feasible_fit
+        from probe_algo03_feasible_recovery import gate_slacks
+        slacks = (lambda z: list(gate_slacks(p, z, entries).values())) if mode == 'incumbent_feasible' else (lambda z: [1.])
+        return feasible_fit(lambda z: p.calculate(z)['negative_twice_elbo'], slacks,
+            x, p.lower, p.upper, iterations=48)
+    return fit(p, x, iterations=48)
+
+
 def annotation_noise_context(d):
     """Match the fixed noise policy used for identity validation, without mutation."""
     from annotate_track_predictively import training_factory
@@ -41,6 +65,7 @@ def target_orbit_context(d,families):
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);inv=read(args.inventory);d=context(inv);p0,x0=d['problems']['c0']
     noise_policy=getattr(args,'noise_policy','original')
+    position_fit=getattr(args,'position_fit','regional_unconstrained')
     if noise_policy=='annotation_fixed':d=annotation_noise_context(d)
     native=bool(args.native_branches or getattr(args,'native_from_validation',False));native_sources=[]
     original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];used={o for e in d['entries'] for o in e['observation_ids']}
@@ -74,7 +99,8 @@ def run(args):
     shared_satellite_refresh=getattr(args,'shared_satellite_refresh',False)
     if target_orbit_prior:d=target_orbit_context(d,sorted({t['candidate_index'] for t in targets}))
     write(out/'protocol.json',dict(job=inv['job'],targets=targets,annotation_receipts=receipts,matched_c_arms=True,
-        phase_rounds=5,steps=48,start=[0,0],box_width_km=25,target_calibrates_receiver=False,
+        phase_rounds=5,steps=48,start=[0,0] if position_fit=='regional_unconstrained' else 'accepted RF incumbent',
+        position_fit=position_fit,box_width_km=25,target_calibrates_receiver=False,
         target_updates_unobserved_satellite_parameters=args.orphan_phase_refresh,
         original_noise_weights_and_priors=noise_policy=='original' and not target_orbit_prior,
         original_noise_weights=noise_policy=='original',noise_policy=noise_policy,orphan_phase_refresh=args.orphan_phase_refresh,
@@ -91,7 +117,7 @@ def run(args):
     for name,extras in variants:
         entries=d['entries']+extras;pair={}
         for arm in ['c0','fitted_c']:
-            reference=np.zeros(len(d['means']));x=np.zeros(2);history=[]
+            x,reference=position_initialization(inv['policy'],arm,len(d['means']),position_fit);history=[]
             for _ in range(5):
                 kw={'base_problem_factory':d['problem_factory']} if 'problem_factory' in d else {}
                 if args.orphan_orbit_prior:
@@ -112,9 +138,9 @@ def run(args):
                 if args.orphan_phase_refresh:
                     from predictive_orphan_phase import attach_orphan_phase
                     attach_orphan_phase(p,entries,d['powers'],orbital=args.orphan_orbit_prior)
-                cached(p);fit_result=fit(p,x,iterations=48);x=np.asarray(fit_result['parameters'])
+                cached(p);fit_result=position_step(p,x,entries,position_fit);x=np.asarray(fit_result['parameters'])
                 phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
-                history.append(dict(endpoint_east_north_km=x,phase_change_s=delta))
+                history.append(dict(endpoint_east_north_km=x,phase_change_s=delta,fit=fit_result))
             row=summary(p,x,entries)
             membership_view=copy.copy(p);membership_view.scan=copy.copy(p.scan);membership_view.scan.tracks=p.scan.tracks[:original_graph_count]
             _,_,ids,_=memberships(membership_view,x,entries);old=set(inv['policy'][arm]['proposed_associated_ids'])
@@ -147,7 +173,7 @@ def run(args):
             target_entries=extras,original_calibration_mask=d['keep'],target_calibrates_receiver=False,
             target_updates_unobserved_satellite_parameters=args.orphan_phase_refresh,
             orphan_phase_refresh=args.orphan_phase_refresh,orphan_orbit_prior=args.orphan_orbit_prior,
-            noise_policy=noise_policy,target_orbit_prior=target_orbit_prior,shared_satellite_refresh=shared_satellite_refresh,no_production_change=True))
+            noise_policy=noise_policy,position_fit=position_fit,target_orbit_prior=target_orbit_prior,shared_satellite_refresh=shared_satellite_refresh,no_production_change=True))
         print(inv['job']['label'],name,valid,[(a,r['added_points'],r['lost_points']) for a,r in pair.items()],flush=True)
 
 
@@ -160,6 +186,8 @@ if __name__=='__main__':
     p.add_argument('--target-orbit-prior',action='store_true',help='Causal three-mode prior for active target families, using only original curved calibration')
     p.add_argument('--shared-satellite-refresh',action='store_true',help='Expose requested satellite predictive posterior means; preserve receiver means and all acceptance gates')
     p.add_argument('--joint-only',action='store_true',help='Run matched control and combined trial; singles have separate frozen receipts')
+    p.add_argument('--position-fit',choices=['regional_unconstrained','incumbent_unconstrained','incumbent_elbo_unconstrained','incumbent_feasible'],
+        default='regional_unconstrained',help='Research-only matched continuation from accepted RF incumbent, with optional unchanged gate constraints')
     native_group=p.add_mutually_exclusive_group()
     native_group.add_argument('--native-branches',type=Path)
     native_group.add_argument('--native-from-validation',action='store_true',help='Use each annotation\'s hashed native discovery source for joint inclusion')

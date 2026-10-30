@@ -44,7 +44,7 @@ These are individual hypotheses, not a combined recovery policy. Proposals can o
 
 The subsequent [bounded joint policy and 93-scan comparison](joint_policy.md) resolves overlaps for the selected configurations and reports actual net coverage and position changes. It preserves all previously associated point IDs and prior native satellite owners.
 
-The rejected native trials expose two distinct problems: some targets retain residual slopes or steps, while three DS24-0089 proposals pass their own checks but make the existing RX1 CH1 T005 fail and lose old points. Their satellite hypotheses therefore warrant further investigation, but candidate scoring alone does not repair the joint receiver/orbit model. The old curve's assignment and calibration should be tested before discarding the new evidence.
+The rejected native trials expose two distinct problems: some targets retain residual slopes or steps, while three DS24-0089 proposals pass their own checks but the trial fails on existing RX1 CH1 T005 and loses old points. **Correction from the [matched optimizer investigation](../2026_10_30_native_feasible_refit/README.md): the no-addition control already fails.** The recovery refit had dropped the accepted incumbent's gate constraints. Retaining those constraints recovers 89 distinct points jointly without old-point losses; this supersedes the earlier interpretation that the recovered curves caused the conflict. Satellite identity and localization quality still require separate validation.
 
 ## Original graph inventory and inclusions
 
