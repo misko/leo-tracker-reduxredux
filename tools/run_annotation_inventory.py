@@ -1,5 +1,6 @@
 """Frozen, resumable coverage ledger for every large unassociated graph track."""
 import argparse
+import hashlib
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from pathlib import Path
 import sys
@@ -32,13 +33,14 @@ def freeze(args):
           'predictive-only required',sum(r['state']=='needs_predictive_only_model' for r in rows),flush=True)
 
 
-def pending_jobs(protocol,output,limit,predictive_only=False,scope=None):
+def pending_jobs(protocol,output,limit,predictive_only=False,scope=None,remaining_ids=None):
     if limit<1:raise ValueError('positive job limit required')
     # A selected attempt can still be queued or running without a terminal
     # receipt. Preserve every claim; an incomplete attempt needs diagnosis.
     claimed={r['track_id'] for p in output.glob('attempt-*/selected.json') for r in read(p)}
     jobs=[]
     for r in protocol['rows']:
+        if remaining_ids is not None and r['track_id'] not in remaining_ids:continue
         if scope is not None and scope not in r.get('scopes',[]):continue
         eligible='needs_predictive_only_model' if predictive_only else 'queued'
         if r['state']!=eligible or r['track_id'] in claimed or (output/r['track_id']).exists():continue
@@ -48,15 +50,18 @@ def pending_jobs(protocol,output,limit,predictive_only=False,scope=None):
     return jobs
 
 
-def annotation_command(row,output,*,predictive_only=False,predictive_member=False,distinct_partitions=False,inactive_fragment=False):
+def annotation_command(row,output,*,predictive_only=False,predictive_member=False,distinct_partitions=False,inactive_fragment=False,shifted_block_origin=False):
     if predictive_only and predictive_member:
         raise ValueError('choose omitted-track or graph-member predictive queue')
     if inactive_fragment and not predictive_member:raise ValueError('inactive fragments require the graph-member predictive queue')
+    if shifted_block_origin and not(distinct_partitions and (predictive_only or predictive_member)):
+        raise ValueError('shifted origins require distinct predictive-only validation')
     script='annotate_predictive_only.py' if predictive_only or predictive_member else 'annotate_track_predictively.py'
     cmd=[sys.executable,str(Path(__file__).with_name(script)),
          '--inventory',row['inventory'],'--track',row['track_id'],'--output',str(output/row['track_id'])]
     if predictive_member:cmd+=['--inactive-fragment' if inactive_fragment else '--predictive-member','--uncalibrated-phase-mixture']
     if distinct_partitions:cmd.append('--distinct-partitions')
+    if shifted_block_origin:cmd.append('--shifted-block-origin')
     return cmd
 
 
@@ -64,11 +69,20 @@ def run(args):
     if args.workers<1:raise ValueError('positive worker count required')
     if args.predictive_only and args.predictive_member:raise ValueError('choose omitted-track or graph-member predictive queue')
     if args.split_inactive_fragments and not args.predictive_member:raise ValueError('fragment routing requires predictive-member mode')
+    if getattr(args,'shifted_block_origin',False) and not(args.distinct_partitions and (args.predictive_only or args.predictive_member)):
+        raise ValueError('shifted origins require distinct predictive-only validation')
     protocol=read(args.output/'protocol.json');attempt=args.output/f'attempt-{len(list(args.output.glob("attempt-*")))+1}'
-    jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only,args.scope);attempt.mkdir()
+    remaining_path=getattr(args,'remaining_candidates',None);remaining_ids=None;remaining_receipt=None
+    if remaining_path:
+        remaining_ids={r['track_id'] for r in read(remaining_path)}
+        if not remaining_ids<={r['track_id'] for r in protocol['rows']}:raise ValueError('remaining candidates leave the frozen queue')
+        remaining_receipt=dict(path=str(remaining_path),sha256=hashlib.sha256(remaining_path.read_bytes()).hexdigest())
+    jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only,args.scope,remaining_ids);attempt.mkdir()
     write(attempt/'selected.json',jobs)
     write(attempt/'protocol.json',dict(workers=args.workers,seconds_per_case=600,predictive_only=args.predictive_only,
         predictive_member=args.predictive_member,
+        shifted_block_origin=getattr(args,'shifted_block_origin',False),
+        remaining_candidates_source=remaining_receipt,
         split_inactive_fragments=args.split_inactive_fragments,
         likelihood_role='predictive_only' if args.predictive_only or args.predictive_member else 'calibration_participating',
         selected_tracks=len(jobs),preserves_existing_attempt_claims=True,scope=args.scope,
@@ -80,7 +94,8 @@ def run(args):
             target=next(t for t in inventory['tracks'] if t['track_id']==r['track_id'])
             fragment=not target['current']['wholly_unassociated']
         cmd=annotation_command(r,args.output,predictive_only=args.predictive_only,
-            predictive_member=args.predictive_member,distinct_partitions=args.distinct_partitions,inactive_fragment=fragment)
+            predictive_member=args.predictive_member,distinct_partitions=args.distinct_partitions,inactive_fragment=fragment,
+            shifted_block_origin=getattr(args,'shifted_block_origin',False))
         result=dict(track_id=r['track_id'],label=r['label'],command=cmd,inactive_fragment=fragment,**supervise(cmd,attempt/(r['track_id']+'.log'),600))
         write(attempt/(r['track_id']+'-terminal.json'),result);return result
     results=[]
@@ -99,4 +114,6 @@ if __name__=='__main__':
     p.add_argument('--workers',type=int,default=8)
     p.add_argument('--scope',help='Process pending tracks in this recorded scope without altering the full queue')
     p.add_argument('--distinct-partitions',action='store_true')
+    p.add_argument('--shifted-block-origin',action='store_true',help='Opt-in seeded block origins with unchanged guards and support requirements')
+    p.add_argument('--remaining-candidates',type=Path,help='Reconciled remaining IDs, excluding work completed through other annotation queues')
     a=p.parse_args();freeze(a) if a.mode=='freeze' else run(a)
