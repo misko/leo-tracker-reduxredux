@@ -22,9 +22,18 @@ from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_s
 from prototype_dsx01_continuous_position import latlon
 
 
+def integration_grid(times,bank_times,phase_step,phase_limit_s=15.):
+    if not np.isfinite([phase_step,phase_limit_s]).all() or not 15<=phase_limit_s<=30 or not 0<phase_step<=2*phase_limit_s:
+        raise ValueError('positive phase spacing and bounded 15..30 second integration range required')
+    if phase_limit_s>15:
+        if min(times)-phase_limit_s<min(bank_times) or max(times)+phase_limit_s>max(bank_times):
+            raise ValueError('expanded phase integration leaves the existing causal orbit bank')
+    return np.linspace(-phase_limit_s,phase_limit_s,int(round(2*phase_limit_s/phase_step))+1)
+
+
 class NewFamily:
     def __init__(self,scan,entries,model,*,phase_step=.1,allow_uncalibrated_label=False,
-                 integrate_orbit_uncertainty=True,integrate_receiver_uncertainty=True):
+                 integrate_orbit_uncertainty=True,integrate_receiver_uncertainty=True,phase_limit_s=15.):
         families={e['candidate_index'] for e in entries}
         if len(families)!=1:raise ValueError('one shared new family per exact integration required')
         self.j=next(iter(families));self.entries=entries;self.scan=scan
@@ -43,7 +52,8 @@ class NewFamily:
         meta=scan.fixed_window_noise
         sigma=np.array([meta['per_observation_noise_sigma_hz'][o] if meta['extra_parameter_BIC_gain']>0 else scan.radio_sigma_hz for o in ids])
         groups=np.repeat(np.arange(len(entries)),counts);self.noise=np.diag(2*sigma*sigma)+300.**2*(groups[:,None]==groups[None,:])
-        self.phases=np.linspace(-15,15,int(round(30/phase_step))+1);count=len(self.phases);n=len(self.times)
+        self.phase_limit_s=phase_limit_s
+        self.phases=integration_grid(self.times,scan.sky['time_s'],phase_step,phase_limit_s);count=len(self.phases);n=len(self.times)
         self.grid_times=np.tile(self.times,count);self.grid_labels=np.repeat(np.arange(count),n)
         modes,metadata=build_modes(scan,[self.j],[self.j],'physical')
         self.bank={'time_s':scan.sky['time_s']};self.modes={'time_s':modes['time_s']}
@@ -55,8 +65,9 @@ class NewFamily:
         self.distribution=distribution
         self.logprior=distribution.logpdf(self.phases);self.logprior[[0,-1]]-=np.log(2)
         self.receipt=dict(candidate_index=self.j,norad=int(scan.norads[self.j]),phase_step_s=phase_step,
+            phase_limit_s=phase_limit_s,
             phase_prior_mean_s=mean,phase_prior_sigma_s=sigma_phase,phase_prior_nu=model['nu'],
-            prior_mass_in_phase_box=float(distribution.cdf(15)-distribution.cdf(-15)),orbital_prior=metadata,
+            prior_mass_in_phase_box=float(distribution.cdf(phase_limit_s)-distribution.cdf(-phase_limit_s)),orbital_prior=metadata,
             history=history,target_updates_receiver_calibration=False,conditions_on_incumbent_predictive_uncertainty=True,
             integrate_orbit_uncertainty=integrate_orbit_uncertainty,integrate_receiver_uncertainty=integrate_receiver_uncertainty)
 
@@ -102,7 +113,7 @@ class NewFamily:
                 return value,ff,uu,ee
             step=float(self.phases[1]-self.phases[0]);opt=minimize_scalar(
                 lambda phi:at_phase(phi)[0]['negative_twice_log_density']-2*self.distribution.logpdf(phi),
-                bounds=(max(-15,phase_map-step),min(15,phase_map+step)),method='bounded',options=dict(xatol=1e-7,maxiter=40))
+                bounds=(max(-self.phase_limit_s,phase_map-step),min(self.phase_limit_s,phase_map+step)),method='bounded',options=dict(xatol=1e-7,maxiter=40))
             phase_map=float(opt.x);value,frequency,mode,elevation=at_phase(phase_map);orbital=value['orbital_posterior_mean'][0]
         # Gate the physical prediction with the original receiver mean. The
         # likelihood integrates receiver uncertainty, but does not expose a
@@ -120,7 +131,7 @@ class NewFamily:
         return dict(negative_twice_log_density=result['negative_twice_log_density'],phase_map_s=phase_map,grid_phase_map_s=float(self.phases[k]),
             continuous_phase_gate=refine_phase,
             phase_mean_s=phase_mean,phase_sigma_s=float(np.sqrt(weights@((self.phases-phase_mean)**2))),
-            phase_weights=weights,phase_grid_s=self.phases,phase_boundary_mass=float(weights[abs(self.phases)>=14.9].sum()),
+            phase_weights=weights,phase_grid_s=self.phases,phase_boundary_mass=float(weights[abs(self.phases)>=self.phase_limit_s-.1].sum()),
             orbital_posterior_mean=orbital,visible_prior_mass=result['visible_prior_mass'],gates=gates,diagnostics=diagnostics,
             receiver_calibration_change=float(np.max(abs(before-after['coefficient']))))
 
@@ -131,6 +142,7 @@ def resolution_audit(family,p,x,powers,entries,model):
     if np.max(abs(x))+.025>12.5:
         return dict(local_agreement=False,reason='centered local audit unavailable at regional boundary',steps_s=steps)
     predictors=[family]+[NewFamily(family.scan,family.entries,model,phase_step=h,
+        phase_limit_s=family.phase_limit_s,
         allow_uncalibrated_label=family.allow_uncalibrated_label,
         integrate_orbit_uncertainty=family.integrate_orbit_uncertainty,
         integrate_receiver_uncertainty=family.integrate_receiver_uncertainty) for h in steps[1:]]
