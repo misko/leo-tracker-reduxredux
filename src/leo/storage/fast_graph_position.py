@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import time
 import uuid
 
@@ -86,3 +87,51 @@ class FastGraphPositionStore:
         if value.get("session_id") != source["source"]["session_id"]:
             raise ValueError("Terminal belongs to another recording")
         return value, dict(path=str(path), sha256=sha(path))
+
+    def export_analysis(self, job, destination):
+        """Export a verified, isolated analysis snapshot for downstream replay.
+
+        Consumers receive a descriptor, never construct this store's paths.
+        A partial export is deliberately retained on failure for diagnosis.
+        """
+        status = self.status(job["job_id"])
+        if status is None or status["state"] != "complete":
+            raise ValueError("Only completed graph analyses can be exported")
+        terminal, receipt = self.terminal(job)
+        if terminal["state"] != "complete":
+            raise ValueError("Qualified graph terminal required")
+        destination = Path(destination).resolve()
+        if destination.is_relative_to(self.namespace.resolve()):
+            raise ValueError("Export must not modify the production namespace")
+        source = Path(receipt["path"]).parent / "inference"
+        source = confined_path(self.root, source, must_exist=True)
+        destination.mkdir(parents=True, exist_ok=False)
+        hashes = {}
+        for path in sorted(source.rglob("*")):
+            if path.is_symlink():
+                raise ValueError("Analysis snapshots cannot contain symbolic links")
+            if not path.is_file():
+                continue
+            path = confined_path(self.root, path, must_exist=True)
+            relative = path.relative_to(source)
+            target = destination / "inference" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            before = sha(path)
+            shutil.copyfile(path, target)
+            if sha(path) != before or sha(target) != before:
+                raise ValueError("Analysis changed while exporting")
+            hashes[str(relative)] = before
+        if sha(destination / "inference/SCAN/tracking.json") != job["input_sha256"]:
+            raise ValueError("Analysis snapshot differs from public tracking input")
+        again, current_receipt = self.terminal(job)
+        if current_receipt != receipt or again != terminal:
+            raise ValueError("Terminal changed while exporting")
+        descriptor = dict(schema_version=1, model_version=MODEL_VERSION,
+                          job_id=job["job_id"], input_sha256=job["input_sha256"],
+                          session_id=terminal["session_id"], case="SCAN",
+                          root=str(destination / "inference"),
+                          terminal=terminal, terminal_receipt=receipt, files=hashes)
+        with (destination / "descriptor.json").open("x") as stream:
+            json.dump(descriptor, stream, indent=2, allow_nan=False)
+            stream.write("\n")
+        return descriptor
