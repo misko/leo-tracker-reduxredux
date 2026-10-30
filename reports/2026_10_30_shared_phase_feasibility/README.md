@@ -1,5 +1,7 @@
 # Shared-phase feasibility: DS24-0093 and the next inventory batch
 
+**Subsequent correction:** The [retrospective exact-orbit audit](../2026_10_30_phase_reference_retrospective/README.md) rejects the provisional 52-point AUTO-bed86935 graph recovery reported below. Phase-reference clipping concealed nonconvergence and a large orbit-approximation error. The historical tables are preserved; the two-candidate/104-point graph total is not a verified recovery total. This correction does not alter the separate DS24-0093 feasibility experiment.
+
 DS24-0093's 49-point RX1 CH4 native curve can coexist with all old associations under the existing residual, alias, elevation and owner gates. At both previously saved RF endpoints, a narrow interval of shared NORAD **58189** phase values satisfies every gate in both c arms. Position, receiver coefficients, orbit coefficients, observations and identities remain fixed. This disproves the narrower hypothesis that the old and new curves necessarily conflict at these endpoints; it does not prove the satellite identity or improve position by itself.
 
 This follows the [parameter consistency report](../2026_10_30_native_parameter_consistency/README.md). No native points from this experiment enter the accepted research-policy totals and production is unchanged. Separately, two of 16 original-model graph trials pass and add 104 points across two automatic recordings, with no old points lost. These are a separate cohort, not additions to DS24's native-recovery percentage.

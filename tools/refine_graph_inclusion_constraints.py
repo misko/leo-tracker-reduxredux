@@ -13,7 +13,7 @@ from probe_algo03_feasible_recovery import gate_slacks
 from ds23_feasible_position import feasible_fit
 from algo02_scan import pair_passes
 from stress_joint_attachment import supervise
-from phase_reference_checks import phase_refresh
+from phase_reference_checks import phase_refresh,reference_domain
 
 
 def residual_only_jobs(jobs,audit):
@@ -28,7 +28,9 @@ def one(args):
     source=read(args.source/'protocol.json');inv=read(args.inventory);d=context(inv);base,_=d['problems']['c0']
     if source['job']['job_id']!=inv['job']['job_id']:raise ValueError('source scan mismatch')
     args.output.mkdir(parents=True,exist_ok=False)
-    write(args.output/'protocol.json',dict(source,constrained_source=str(args.source),
+    limit=getattr(args,'reference_limit_s',15.)
+    if not 15<=limit<=30:raise ValueError('reference-limit experiment is bounded to 15..30 seconds')
+    write(args.output/'protocol.json',dict(source,constrained_source=str(args.source),reference_limit_s=limit,
         source_hashes={name:hashlib.sha256((args.source/name).read_bytes()).hexdigest() for name in ('control.json','target_0.json')},
         start='corresponding unconstrained endpoint; same additional budget for control and target',
         phase_rounds=5,iterations=40,gate_margin=.01,unchanged_model_priors_noise_weights_and_observations=True))
@@ -43,7 +45,15 @@ def one(args):
                 attach_event_predictive(p,d['entries'],d['powers']);cached(p)
                 f=feasible_fit(lambda z:p.calculate(z)['negative_twice_elbo'],
                     lambda z:np.asarray(list(gate_slacks(p,z,d['entries']).values()))-.01,x,p.lower,p.upper,iterations=40)
-                x=np.asarray(f['parameters']);phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference)
+                x=np.asarray(f['parameters']);phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference,limit_s=limit)
+                domain=reference_domain(p.sky['time_s'],p.flat_times,p.flat_labels,phase)
+                if not domain['in_domain']:raise ValueError('updated curved phase reference leaves orbit bank')
+                if d['entries']:
+                    from ds23_predictive_linear import linear_geometry
+                    view,*_=linear_geometry(p,d['entries']);linear_domain=reference_domain(p.sky['time_s'],view.flat_times,view.flat_labels,phase)
+                    if not linear_domain['in_domain']:raise ValueError('updated predictive phase reference leaves orbit bank')
+                    domain['predictive']=linear_domain
+                check['next_reference_domain']=domain
                 change=check['phase_change_s'];reference=phase;history.append(dict(fit=f,**check))
             v=summary(p,x,d['entries']);_,_,ids,owners=memberships(p,x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
             c=p.calculate(x);diagnostics=[]
@@ -62,15 +72,17 @@ def one(args):
 
 
 def run(args):
+    if not 15<=args.reference_limit_s<=30:raise ValueError('reference-limit experiment is bounded to 15..30 seconds')
     protocol=read(args.batch/'protocol.json');audit=read(args.batch/'gate_audit.json');jobs=residual_only_jobs(protocol['jobs'],audit)
     if len(jobs)>12 or not 1<=args.workers<=8:raise ValueError('bounded to twelve jobs and eight workers')
     args.output.mkdir(parents=True,exist_ok=False)
     write(args.output/'protocol.json',dict(jobs=jobs,source_batch=str(args.batch),workers=args.workers,seconds_per_job=360,
         selection='all failing paired trials with residual failures and no orbital-owner requirement failure',
-        GPS_used=False,future_TLE=False,matched_c=True,unchanged_model=True,
+        GPS_used=False,future_TLE=False,matched_c=True,unchanged_model=True,reference_limit_s=args.reference_limit_s,
         gate_audit_sha256=hashlib.sha256((args.batch/'gate_audit.json').read_bytes()).hexdigest()))
     def work(j):
-        cmd=[sys.executable,__file__,'one','--source',str(args.batch/j['track_id']),'--inventory',j['inventory'],'--output',str(args.output/j['track_id'])]
+        cmd=[sys.executable,__file__,'one','--source',str(args.batch/j['track_id']),'--inventory',j['inventory'],'--output',str(args.output/j['track_id']),
+            '--reference-limit-s',str(args.reference_limit_s)]
         r=dict(track_id=j['track_id'],label=j['label'],command=cmd,**supervise(cmd,args.output/(j['track_id']+'.log'),360))
         write(args.output/(j['track_id']+'-terminal.json'),r);return r
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
@@ -80,4 +92,5 @@ def run(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('mode',choices=['run','one'])
     for name in ('source','inventory','batch','output'):p.add_argument('--'+name,type=Path,required=name=='output')
-    p.add_argument('--workers',type=int,default=8);a=p.parse_args();run(a) if a.mode=='run' else one(a)
+    p.add_argument('--workers',type=int,default=8);p.add_argument('--reference-limit-s',type=float,default=15.)
+    a=p.parse_args();run(a) if a.mode=='run' else one(a)

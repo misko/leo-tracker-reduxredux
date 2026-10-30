@@ -1,5 +1,7 @@
 # Training-derived confidence and constrained graph recovery
 
+Follow-up: the [expanded retrospective audit](../2026_10_30_phase_reference_retrospective/README.md) checks 64 additional annotations and all 12 previously paired-passing graph candidates in the audited batch directories, and tests a wider phase reference without changing the physical prior.
+
 This iteration finds and fixes a concrete false-convergence bug: measuring phase-reference change **after clipping** can report convergence even when the fitted satellite phase remains several seconds beyond the reference. Exact orbit replay rejects one apparently successful recovery and invalidates its earlier conditional identity annotation. A different 46-point recovery passes exact replay and improves both position-error arms. Refreshing the old confidence heuristic is not a general solution.
 
 The experiments test whether old confidence weights are stale and whether constrained fitting can retain supported curves in the original model. They continue the [cross-family prediction study](../2026_10_30_cross_family_prediction/README.md). Production and retained cohort policy remain unchanged; no result is selected using GPS error.
