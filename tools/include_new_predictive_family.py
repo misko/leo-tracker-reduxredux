@@ -11,6 +11,7 @@ from ds23_frequency_events import make_event_problem,attach_event_predictive
 from probe_ds23_frequency_events import cached,summary
 from algo02_scan import pair_passes
 from predictive_new_family import NewFamily,resolution_audit
+from phase_reference_checks import phase_refresh
 
 
 def run(args):
@@ -55,8 +56,8 @@ def run(args):
                 else:
                     opt=minimize(objective,x,method='Powell',bounds=[(-12.5,12.5)]*2,
                         options=dict(maxiter=48,maxfev=240,ftol=1e-10,xtol=1e-5))
-                x=np.asarray(opt.x);phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
-                history.append(dict(endpoint_east_north_km=x,objective=float(opt.fun),success=bool(opt.success),message=str(opt.message),nfev=opt.nfev,phase_change_s=delta))
+                x=np.asarray(opt.x);phase,check=phase_refresh(p.state(x)['phases'][p.labels],reference);delta=check['phase_change_s'];reference=phase
+                history.append(dict(endpoint_east_north_km=x,objective=float(opt.fun),success=bool(opt.success),message=str(opt.message),nfev=opt.nfev,**check))
             row=summary(p,x,d['entries']);_,_,ids,_=memberships(p,x,d['entries']);old=set(inv['policy'][arm]['proposed_associated_ids'])
             if include:
                 detail=family.evaluate(p,x,d['powers'],d['entries'],details=True);row['family']=detail
@@ -67,7 +68,7 @@ def run(args):
             row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),added_points=len(ids-old),lost_points=len(old-ids))
             pair[arm]=row
             print(inv['job']['label'],variant,arm,'endpoint',x,'seconds',round(time.monotonic()-began,1),flush=True)
-        valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 and v['history'][-1]['success'] for v in pair.values())
+        valid=pair_passes(pair,include_linear=True) and all(v['lost_points']==0 and v['history'][-1]['success'] and v['final_phase_change_s']<=.01 for v in pair.values())
         if include:valid=valid and all(v['family']['phase_boundary_mass']<.01 for v in pair.values())
         if include and not args.skip_phase_audit:valid=valid and all(v['phase_resolution_audit']['local_agreement'] for v in pair.values())
         write(out/(variant+'.json'),dict(job=inv['job'],arms=pair,baseline=inv['policy'],paired_valid=valid,target_entries=targets if include else [],
