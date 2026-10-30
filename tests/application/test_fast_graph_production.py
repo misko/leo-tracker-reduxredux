@@ -13,6 +13,38 @@ from leo.contracts.fast_graph_position import KIND, MODEL_VERSION, CENTER, valid
 from leo.storage.fast_graph_position import FastGraphPositionStore, sha
 
 
+def test_public_adaptive_adapter_preserves_observations():
+    from fast_graph_worker import tracking_adapter
+    bare = dict(session_id='scan', capture_mode='adaptive', sample_rate_hz=10000000,
+                probes=[dict(time_s=123, peaks=[1, 2])])
+    source, adapter = tracking_adapter(bare)
+    assert source is bare
+    assert adapter == 'ScannerTrackingInputStore.load'
+    wrapped = dict(source=bare, points=[1, 2])
+    assert tracking_adapter(wrapped) == (bare, 'fast_tracking_contract')
+    with pytest.raises(ValueError, match='shape'):
+        tracking_adapter(dict(session_id='unknown'))
+
+
+def test_isolated_worker_export_needs_no_production_status(tmp_path):
+    from leo.storage.fast_graph_position import export_completed_worker_analysis
+    input_path = tmp_path / 'tracking.json'
+    input_path.write_text(json.dumps(dict(session_id='session', capture_mode='adaptive', probes=[])))
+    out = tmp_path / 'worker'
+    copied = out / 'inference/SCAN/tracking.json'
+    copied.parent.mkdir(parents=True)
+    copied.write_bytes(input_path.read_bytes())
+    doc = terminal(sha(input_path))
+    (out / 'terminal.json').write_text(json.dumps(doc))
+    result = export_completed_worker_analysis(input_path, out, tmp_path / 'snapshot')
+    assert result['session_id'] == 'session'
+    assert result['terminal'] == doc
+    doc['session_id'] = 'other'
+    (out / 'terminal.json').write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match='another recording'):
+        export_completed_worker_analysis(input_path, out, tmp_path / 'bad-snapshot')
+
+
 def terminal(digest):
     saved = dict(endpoint_latlon=list(CENTER), endpoint_east_north_km=[0., 0.],
                  gates=dict(tracks=[dict(component="track", points=12, compatible=True)]), linear_gates=[],

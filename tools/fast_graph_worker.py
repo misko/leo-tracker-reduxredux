@@ -76,6 +76,15 @@ class Deadline(BaseException):
     pass
 
 
+def tracking_adapter(document):
+    """Select the public input adapter without changing any GLRT observation."""
+    if "source" in document:
+        return document["source"], "fast_tracking_contract"
+    if document.get("capture_mode") == "adaptive" and "probes" in document:
+        return document, "ScannerTrackingInputStore.load"
+    raise ValueError("Unsupported public tracking input shape")
+
+
 def run(input_path, output, *, maximum_seconds=1200, tle_root=Path("/var/lib/leo/tle")):
     input_path, output = Path(input_path).resolve(), Path(output).resolve()
     if not 1 <= maximum_seconds <= 1200:
@@ -98,8 +107,6 @@ def run(input_path, output, *, maximum_seconds=1200, tle_root=Path("/var/lib/leo
     directory = workspace / case
     directory.mkdir(parents=True)
     (directory / "tracking.json").write_bytes(payload)
-    persist(directory / "input_receipt.json", dict(status="exported",
-            adapter="fast_tracking_contract", tracking_sha256=input_hash.split(":")[1]))
     stages = [("prepare", [sys.executable, "-B", str(Path(__file__)), "--prepare",
                "--root", str(workspace), "--case", case, "--tle-root", str(tle_root)]),
               ("algo02", [sys.executable, "-B", str(ROOT / "tools/algo02_scan.py"),
@@ -109,7 +116,9 @@ def run(input_path, output, *, maximum_seconds=1200, tle_root=Path("/var/lib/leo
     terminal["stages"] = []
     try:
         document = json.loads(payload)
-        source = document["source"]
+        source, adapter = tracking_adapter(document)
+        persist(directory / "input_receipt.json", dict(status="exported",
+                adapter=adapter, tracking_sha256=input_hash.split(":")[1]))
         terminal["session_id"] = source["session_id"]
         if source["sample_rate_hz"] not in (2_500_000, 5_000_000, 10_000_000):
             raise ValueError("Unsupported fast-scan capture rate")

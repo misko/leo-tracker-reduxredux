@@ -15,14 +15,18 @@ from algo03_shadow_worker import POLICY, read, write
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def check_read_audit(output, pid):
+def check_read_audit(output, pid, *, supervisor_pid=None):
+    supervisor_pid = os.getpid() if supervisor_pid is None else supervisor_pid
     receipts = [read(p) for p in (output / 'read_receipts').glob('*.json')]
     observed = {r['pid'] for r in receipts}
     expected = 1 + sum(len(r['python_spawns']) for r in receipts)
     valid = (pid in observed and len(receipts) == len(observed) == expected
              and not any(r['denied_paths'] for r in receipts)
-             and all(r['parent_pid'] in observed | {os.getpid()} for r in receipts))
+             and all(r['parent_pid'] in observed | {supervisor_pid} for r in receipts)
+             and [r['pid'] for r in receipts if r['parent_pid'] == supervisor_pid] == [pid])
     return dict(verified=valid, receipts=len(receipts), expected=expected,
+                root_process_id=pid, supervisor_process_id=supervisor_pid,
+                all_launched_processes_accounted=valid,
                 denied_paths=sorted({p for r in receipts for p in r['denied_paths']}),
                 source_scope='isolated ALGO02 export and current recovery artifacts only')
 
@@ -85,6 +89,11 @@ def run(args):
                       baseline=descriptor['terminal'])
     if not audit['verified']:
         result.update(decision='ALGO02_fallback', selected=None, failure='Incomplete or denied read audit')
+    if result.get('selected'):
+        for path, expected in result['selected']['source_receipts'].items():
+            if hashlib.sha256(Path(path).read_bytes()).hexdigest() != expected:
+                result.update(decision='ALGO02_fallback', selected=None, failure='Scientific receipt changed')
+                break
     result.update(read_audit=audit, total_seconds=time.monotonic() - began,
                   production_changed=False, shadow_only=True, job_id=args.job)
     write(output / 'terminal.json', result)

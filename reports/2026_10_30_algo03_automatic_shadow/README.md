@@ -4,11 +4,13 @@ This is an integration qualification of `algo03-shadow-top2-v1`, built on frozen
 
 Mean fitted-c error is **0.836 → 0.832 km** across all four selected scans. The exact decisions, failures and rejected targets are retained below. Additional associated observations are not evidence of better localization by themselves.
 
+**Accounting correction, October 30:** the first publication (`acba7b65a`) counted 29 unreported post-fit extrapolations in C3's baseline and unchanged shadow output. The corrected published-support count is 3,790 / 5,298 = 71.54%, rather than 3,819 = 72.08%. This correction changes neither position error nor recovery gains (C3 retains ALGO02); C2's 69-point gain is unchanged. The original sealed execution evidence is preserved. Future production comparisons use terminal-qualified IDs plus explicitly scored recovered targets.
+
 | Canary | Shadow decision | Associated GLRT | Associated % | Fitted-c error, km | Added runtime, s |
 | --- | --- | --- | --- | --- | --- |
 | C1 | ALGO02_fallback | 3451 → 3451 | 82.09 → 82.09% | 0.752 → 0.752 | 6.9 |
 | C2 | ALGO03_single | 2963 → 3032 | 70.99 → 72.64% | 1.019 → 1.001 | 245.4 |
-| C3 | ALGO02_fallback | 3819 → 3819 | 72.08 → 72.08% | 0.732 → 0.732 | 171.0 |
+| C3 | ALGO02_fallback | 3790 → 3790 | 71.54 → 71.54% | 0.732 → 0.732 | 171.0 |
 | C4 | ALGO02_fallback | 3672 → 3672 | 76.96 → 76.96% | 0.843 → 0.843 | 92.9 |
 
 ![Matched canary comparisons](figures/canary_comparison.png)

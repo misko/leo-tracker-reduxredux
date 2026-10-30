@@ -15,6 +15,7 @@ from leo.api.adaptive_tle_position import adaptive_tle_position_router
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.blind_regional import blind_regional_router
 from leo.api.fast_scan_orbits import fast_scan_orbit_router
+from leo.api.graph_position import graph_position_router
 from leo.api.native_recordings import native_recording_router
 from leo.api.partial_band import partial_band_router
 from leo.api.position_methods import position_methods_router
@@ -69,6 +70,7 @@ from leo.contracts.sky import (
 )
 from leo.operations.tle_archive import PROVIDERS, TleArchiveError
 from leo.presentation.fast_scan import FastScanReports
+from leo.presentation.graph_position import GraphPositions
 from leo.presentation.models import (
     AcquisitionQueueV1,
     ActiveQueueV1,
@@ -258,6 +260,7 @@ def create_app(
     adaptive_hop_analysis: AdaptiveHopAnalysisPresentationReader | None = None,
     partial_band_analysis: PartialBandReader | None = None,
     fast_scans: FastScanReports | None = None,
+    graph_positions: GraphPositions | None = None,
     shared_fast_scans: SharedFastScanReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
     native_recordings: NativeRecordingReader | None = None,
@@ -299,6 +302,7 @@ def create_app(
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     app.include_router(fast_scan_orbit_router(fast_scans, shared_fast_scans))
+    app.include_router(graph_position_router(graph_positions))
     v2_router = APIRouter(prefix="/api/v2")
     v3_router = APIRouter(prefix="/api/v3")
     v4_router = APIRouter(prefix="/api/v4")

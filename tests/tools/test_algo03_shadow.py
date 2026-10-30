@@ -6,8 +6,9 @@ import sys
 
 import pytest
 
-from algo03_shadow_worker import select_targets, scoped_pair, run
+from algo03_shadow_worker import select_targets, scoped_pair, run, joint_pair
 from run_algo03_shadow import check_read_audit
+from algo03_inventory import publication_support
 
 
 def test_ranking_ignores_position_error_and_requires_both_arms():
@@ -17,14 +18,30 @@ def test_ranking_ignores_position_error_and_requires_both_arms():
             ids = [tid + str(i) for i in range(n)]
             rows.append(dict(arm=arm, track_id=tid, current_large=True,
                              current=dict(wholly_unassociated=tid != 'partial'),
-                             observation_ids=ids, all_track_observation_ids=ids,
+                             observation_ids=ids, all_track_observation_ids=ids + (['already_owned'] if tid == 'partial' else []),
                              evaluation_error_km=0 if tid == 'partial' else 10))
-    chosen, total = select_targets(dict(tracks=rows))
-    assert total == 3
-    assert [r['track_id'] for r in chosen] == ['z', 'a']
+    chosen, total = select_targets(dict(tracks=rows), limit=2)
+    assert total == 4
+    assert [r['track_id'] for r in chosen] == ['partial', 'z']
+    assert chosen[0]['inactive_fragment'] is True
     rows[-3]['observation_ids'] = ['mismatched-arm']
     chosen, total = select_targets(dict(tracks=rows))
-    assert total == 2
+    assert total == 3
+
+
+def test_joint_selection_excludes_partial_shared_same_family_and_overlap():
+    def candidate(norad, ids, **kw):
+        return dict(kind='new_family', targets=[dict(norad=norad, observation_ids=ids)], **kw)
+    a = candidate(1, ['a', 'b'])
+    b = candidate(2, ['c'])
+    overlap = candidate(3, ['a', 'x'])
+    partial = candidate(4, list('defghi'), inactive_fragment=True)
+    same = candidate(1, ['j'])
+    pair = joint_pair([a, b, overlap, partial, same])
+    assert sum(len(t['observation_ids']) for q in pair for t in q['targets']) == 3
+    assert len({q['targets'][0]['norad'] for q in pair}) == 2
+    assert partial not in pair
+    assert not (a in pair and overlap in pair)
 
 
 def test_only_scored_targets_count_and_ownership_must_match():
@@ -45,6 +62,19 @@ def test_only_scored_targets_count_and_ownership_must_match():
     del broken['c0']['old']
     with pytest.raises(ValueError, match='Lost'):
         scoped_pair(inv, arms, broken, [target])
+
+
+def test_published_baseline_uses_replayed_owners_and_excludes_unreported_extensions():
+    baseline = dict(arms={a: dict(gates=dict(tracks=[dict(observation_ids=['old'])]),
+                                 linear_gates=[dict(observation_ids=['linear'], norad=2)])
+                         for a in ('c0', 'fitted_c')})
+    replayed = {a: dict(old=1, linear=2, incidental=3) for a in baseline['arms']}
+    support = publication_support(baseline, replayed)
+    assert support['c0']['owners'] == dict(old=1, linear=2)
+    assert support['c0']['unreported_postfit_ids'] == ['incidental']
+    replayed['fitted_c']['linear'] = 5
+    with pytest.raises(ValueError, match='original ownership'):
+        publication_support(baseline, replayed)
 
 
 def test_corrupt_snapshot_falls_back_without_launching_science(tmp_path):

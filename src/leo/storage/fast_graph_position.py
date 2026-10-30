@@ -19,6 +19,63 @@ def sha(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _copy_analysis(source, destination, terminal, receipt, job):
+    source, destination = Path(source).resolve(strict=True), Path(destination).resolve()
+    if destination == source or destination.is_relative_to(source) or source.is_relative_to(destination):
+        raise ValueError("Export overlaps source analysis")
+    destination.mkdir(parents=True, exist_ok=False)
+    hashes = {}
+    for path in sorted(source.rglob("*")):
+        if path.is_symlink():
+            raise ValueError("Analysis snapshots cannot contain symbolic links")
+        if not path.is_file():
+            continue
+        relative = path.relative_to(source)
+        target = destination / "inference" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        before = sha(path)
+        shutil.copyfile(path, target)
+        if sha(path) != before or sha(target) != before:
+            raise ValueError("Analysis changed while exporting")
+        hashes[str(relative)] = before
+    if sha(destination / "inference/SCAN/tracking.json") != job["input_sha256"]:
+        raise ValueError("Analysis snapshot differs from public tracking input")
+    return dict(schema_version=1, model_version=MODEL_VERSION,
+                job_id=job["job_id"], input_sha256=job["input_sha256"],
+                session_id=terminal["session_id"], case="SCAN",
+                root=str(destination / "inference"), terminal=terminal,
+                terminal_receipt=receipt, files=hashes)
+
+
+def _publish_descriptor(destination, descriptor):
+    with (Path(destination) / "descriptor.json").open("x") as stream:
+        json.dump(descriptor, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+    return descriptor
+
+
+def export_completed_worker_analysis(input_path, output, destination):
+    """Export an isolated worker result without fabricating production job state."""
+    input_path, output = Path(input_path).resolve(strict=True), Path(output).resolve(strict=True)
+    input_hash = sha(input_path)
+    path = output / "terminal.json"
+    terminal = json.loads(path.read_text())
+    validate_terminal(terminal, input_sha256=input_hash)
+    if terminal["state"] != "complete":
+        raise ValueError("Qualified graph terminal required")
+    document = json.loads(input_path.read_text())
+    source = document.get("source", document)
+    if terminal["session_id"] != source["session_id"]:
+        raise ValueError("Terminal belongs to another recording")
+    receipt = dict(path=str(path), sha256=sha(path))
+    job = dict(input_sha256=input_hash, job_id=hashlib.sha256(
+        (MODEL_VERSION + ":" + input_hash).encode()).hexdigest()[:32])
+    descriptor = _copy_analysis(output / "inference", destination, terminal, receipt, job)
+    if sha(input_path) != input_hash or sha(path) != receipt["sha256"]:
+        raise ValueError("Worker input or terminal changed while exporting")
+    return _publish_descriptor(destination, descriptor)
+
+
 class FastGraphPositionStore:
     def __init__(self, root):
         self.root = Path(root).resolve()
@@ -84,7 +141,7 @@ class FastGraphPositionStore:
         validate_terminal(value, input_sha256=job["input_sha256"])
         self.verify_input(job)
         source = json.loads(Path(job["input_path"]).read_text())
-        if value.get("session_id") != source["source"]["session_id"]:
+        if value.get("session_id") != source.get("source", source)["session_id"]:
             raise ValueError("Terminal belongs to another recording")
         return value, dict(path=str(path), sha256=sha(path))
 
@@ -105,33 +162,8 @@ class FastGraphPositionStore:
             raise ValueError("Export must not modify the production namespace")
         source = Path(receipt["path"]).parent / "inference"
         source = confined_path(self.root, source, must_exist=True)
-        destination.mkdir(parents=True, exist_ok=False)
-        hashes = {}
-        for path in sorted(source.rglob("*")):
-            if path.is_symlink():
-                raise ValueError("Analysis snapshots cannot contain symbolic links")
-            if not path.is_file():
-                continue
-            path = confined_path(self.root, path, must_exist=True)
-            relative = path.relative_to(source)
-            target = destination / "inference" / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            before = sha(path)
-            shutil.copyfile(path, target)
-            if sha(path) != before or sha(target) != before:
-                raise ValueError("Analysis changed while exporting")
-            hashes[str(relative)] = before
-        if sha(destination / "inference/SCAN/tracking.json") != job["input_sha256"]:
-            raise ValueError("Analysis snapshot differs from public tracking input")
+        descriptor = _copy_analysis(source, destination, terminal, receipt, job)
         again, current_receipt = self.terminal(job)
         if current_receipt != receipt or again != terminal:
             raise ValueError("Terminal changed while exporting")
-        descriptor = dict(schema_version=1, model_version=MODEL_VERSION,
-                          job_id=job["job_id"], input_sha256=job["input_sha256"],
-                          session_id=terminal["session_id"], case="SCAN",
-                          root=str(destination / "inference"),
-                          terminal=terminal, terminal_receipt=receipt, files=hashes)
-        with (destination / "descriptor.json").open("x") as stream:
-            json.dump(descriptor, stream, indent=2, allow_nan=False)
-            stream.write("\n")
-        return descriptor
+        return _publish_descriptor(destination, descriptor)

@@ -40,7 +40,8 @@ def run(args):
         for arm in ('c0', 'fitted_c'):
             baseline = terminal['baseline']['arms'][arm]
             after = selected['arms'][arm] if selected else baseline
-            ids = inv['policy'][arm]['proposed_associated_ids']
+            ids = {o for t in baseline['gates']['tracks'] + baseline.get('linear_gates', [])
+                   for o in t['observation_ids']}
             retained = after['associated_ids'] if selected else ids
             count = next(r['total_GLRT'] for r in inv['summary'] if r['arm'] == arm)
             rows.append(dict(case=f'C{n}', recording=job['recording_name'], job_id=job['job_id'],
@@ -67,7 +68,7 @@ def run(args):
     write(out / 'cohort.json', cohort)
     write(out / 'sources.json', hashes)
     with (out / 'results.csv').open('x') as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
         writer.writeheader()
         writer.writerows(rows)
     fig, axes = plt.subplots(2, 2, figsize=(12, 8), layout='constrained')
@@ -97,7 +98,9 @@ def run(args):
         obs = load(folder / 'snapshot/inference/SCAN/observations.json')
         track = next(t for t in load(folder / 'snapshot/inference/SCAN/tracks.json') if t['key'] == target['component'])
         inv = read(folder / 'all-large-track-recovery' / job['job_id'] / 'inventory.json')
-        old = set(inv['policy']['fitted_c']['proposed_associated_ids'])
+        baseline = evidence[int(target['case'][1:])-1]['terminal']['baseline']['arms']['fitted_c']
+        old = {o for t in baseline['gates']['tracks'] + baseline.get('linear_gates', [])
+               for o in t['observation_ids']}
         focus = set(track['observation_ids'])
         lo, hi = min(track['times'])-5, max(track['times'])+5
         nearby = [o for o in obs if o['receiver'] == track['receiver'] and o['channel'] == track['channel']
@@ -131,6 +134,8 @@ def run(args):
 This is an integration qualification of `algo03-shadow-top2-v1`, built on frozen `ALGO03-2026-10-30-r1`. It automatically discovers recovery targets in verified completed production ALGO02 analyses. Production still publishes `algo02-causal-family-v1`; no service default or public position contract changed. These four canaries do not establish full-cohort ALGO03 superiority.
 
 Mean fitted-c error is **{mean_before:.3f} → {mean_after:.3f} km** across all four selected scans. The exact decisions, failures and rejected targets are retained below. Additional associated observations are not evidence of better localization by themselves.
+
+**Accounting correction, October 30:** the first publication (`acba7b65a`) counted 29 unreported post-fit extrapolations in C3's baseline and unchanged shadow output. The corrected published-support count is 3,790 / 5,298 = 71.54%, rather than 3,819 = 72.08%. This correction changes neither position error nor recovery gains (C3 retains ALGO02); C2's 69-point gain is unchanged. The original sealed execution evidence is preserved. Future production comparisons use terminal-qualified IDs plus explicitly scored recovered targets.
 
 | Canary | Shadow decision | Associated GLRT | Associated % | Fitted-c error, km | Added runtime, s |
 | --- | --- | --- | --- | --- | --- |

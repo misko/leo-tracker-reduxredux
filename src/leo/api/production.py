@@ -65,6 +65,7 @@ from leo.storage.adaptive_tle_position import (
 )
 from leo.storage.blind_regional import BlindRegionalStore
 from leo.storage.fast_scan import FastScanStore
+from leo.storage.graph_position_view import GraphPositionView
 from leo.storage.partial_band import PartialBandStore
 from leo.storage.position_methods import PositionMethodsStore
 from leo.storage.regional_position import RegionalPositionStore
@@ -227,6 +228,10 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             sky_archive_root=configured.tle_root,
             research_reprocessor=research_reprocessor,
             fast_scans=FastScanStore(configured.bulk_root),
+            graph_positions=(
+                GraphPositionView(configured.bulk_root, os.environ["LEO_GRAPH_POSITION_MODEL"])
+                if os.environ.get("LEO_GRAPH_POSITION_MODEL") else None
+            ),
             shared_fast_scans=(
                 SharedFastScanStore(configured.bulk_root, os.environ["LEO_SHARED_FAST_MODEL"])
                 if os.environ.get("LEO_SHARED_FAST_MODEL") else None

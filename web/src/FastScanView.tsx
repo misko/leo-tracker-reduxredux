@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { GraphPositionPanel } from "./GraphPositionPanel";
 
 type Point = { channel: number; receiver_id: number; visit: number; time_s: number | null;
   score: number; margin: number; cfo_hz: number | null };
@@ -140,6 +141,7 @@ export function FastScanView({ renderTracking, recordingId }: {
           <img src={url} alt={label} loading="lazy" style={{ width: "100%" }} /></figure>;
       })}
     </section>}
+    {selectedRun && <GraphPositionPanel runId={selectedRun} />}
     {trackingId ? renderTracking?.(trackingId) : <section className="scanner-artifact-panel" aria-label="Shared analysis publication">
       <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Tracking and positioning</h3></div></header>
       <p>Shared analysis artifacts will appear automatically after GLRT publishes its tracking input.</p>

@@ -1,0 +1,25 @@
+{
+  "criteria_id": "algo03-promotion-2026-10-30-v1",
+  "declared_before": "Full DS23/DS24/new-DS26 automatic adapter trial results",
+  "required_datasets": ["DS23", "DS24", "DS26"],
+  "scope": "Finite frozen same-site cohort; no confidence or cross-site claim",
+  "primary": "Strictly lower aggregate and each dataset paired fitted-c mean position error",
+  "nonregression": {
+    "arms": ["c0", "fitted_c"],
+    "groups": ["all", "each dataset", "each acquisition mode", "each nonempty dataset/mode"],
+    "statistics": ["mean", "median", "linearly interpolated 95th percentile", "worst"],
+    "maximum_increase_km": "max(0.05, 0.05 * corresponding baseline statistic)",
+    "interpretation": "Predeclared operational materiality tolerance; not statistical uncertainty"
+  },
+  "coverage": "No baseline-complete input may lose its position; retain every frozen input and both arms including failures/missing results",
+  "runtime": {
+    "whole_candidate_job_maximum_seconds": 2400,
+    "recovery_P95_maximum_seconds": 1200,
+    "total_P95_maximum_seconds": "2 * baseline_P95_seconds + 60",
+    "includes_baseline_processing": true
+  },
+  "provenance": ["matched observations, candidate sets, priors and budgets between c arms", "causal TLE only", "no GPS in inference", "complete clean process read audit", "verified frozen release hashes", "authoritative acquisition mode rather than compatibility export label"],
+  "frequency_fit": "Report separately; changing observation sets invalidates direct raw-objective comparisons",
+  "accuracy_goal_500m": "Reported; not a prerequisite for an evidenced improvement",
+  "promotion": "All scientific, operational, contract, deployment staging and installed-canary gates must pass; a scientific pass alone does not activate services"
+}
