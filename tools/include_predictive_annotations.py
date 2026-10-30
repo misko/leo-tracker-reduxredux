@@ -72,6 +72,8 @@ def run(args):
     original_graph_count=len(d['scan'].tracks);targets=[];receipts=[];inactive_sources=[];bundle_sources=[];used={o for e in d['entries'] for o in e['observation_ids']}
     used.update(o for i,sl in zip(p0.members,p0.slices,strict=True) for o,k in zip(d['scan'].tracks[i]['observation_ids'],d['keep'][sl],strict=True) if k)
     for folder in args.validation:
+        from native_iq_refined_context import reject_unsupported_shared_refinement
+        reject_unsupported_shared_refinement(read(folder/'protocol.json'))
         r=read(folder/'result.json');annotation=identity_consensus(r['folds'],score_name=r['identity_score_name'])
         if annotation['status']!='conditionally_supported_identity':raise ValueError('annotation not conditionally supported')
         if r.get('graph_bundle'):

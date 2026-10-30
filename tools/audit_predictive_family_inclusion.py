@@ -27,6 +27,10 @@ def run(args):
     for source in pr.get('graph_bundle_sources',[]):
         from predictive_graph_bundle import validated_bundle_context
         d,_=validated_bundle_context(d,inv,Path(source))
+    for receipt in pr.get('measurement_refinements',[]):
+        from native_iq_refined_context import replay_refinement
+        target=next(t for t in pr['targets'] if t['track_index']==receipt['track_index'])
+        d=replay_refinement(d,target,receipt)
     family = NewFamily(d['scan'], pr['targets'], d['model'], phase_step=pr['phase_step_s'],
                        allow_uncalibrated_label=pr.get('uncalibrated_label', False),
                        integrate_orbit_uncertainty=pr['family_prior'].get('integrate_orbit_uncertainty', True),

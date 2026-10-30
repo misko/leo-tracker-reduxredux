@@ -1,5 +1,7 @@
 # Closing the 53-curve omitted-inclusion queue
 
+**Later measurement review:** the [complete native-IQ refinement](../2026_10_30_native_iq_recovery/README.md) corrects large CFO excursions in the 34-point 60342 curve, but exposes residual correlation that fails the unchanged gates. Its historical raw-target pass in the counts below is now withheld; these counts are not a current acceptance total. The new report contains the latest ledger and preserves this original trial.
+
 **Capture-mode correction:** the all-adaptive interpretation below is superseded by the [acquisition-provenance audit](../2026_10_30_predictive_role_reassessment/README.md). Fast compatibility exports encode `capture_mode=adaptive`; this is not acquisition provenance. The 53 curves comprise **27 fast at 10 MS/s, 22 fast at 2.5 MS/s, and four adaptive at 10 MS/s**. The linked provenance table supersedes the capture-mode columns and summary counts saved with this report. Scientific trial outputs and position errors are unchanged.
 
 All **53** frozen candidates now have terminal assessments and a linked review outcome. The original selector excluded these curves because they were absent from the calibration engine. The predictive route now assesses them without allowing them to calibrate receiver offsets or drift. This closes this particular queue; the full 1,630-curve annotation and inclusion objective remains incomplete.

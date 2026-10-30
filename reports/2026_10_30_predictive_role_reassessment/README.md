@@ -64,6 +64,8 @@ V02's 102-point target substantially reduces position error but still fails its 
 
 ## 60342: excursions are already present in the native curve
 
+Follow-up: the [native-IQ experiment](../2026_10_30_native_iq_recovery/README.md) has now remeasured all 34 points. It corrects the largest excursions but exposes structured residuals; the refined inclusion remains rejected. See that report for the latest ledger and matched position results.
+
 The previous 60342 inclusion passed RF checks but moved fitted-c position error from 0.090 to 0.937 km. This audit exactly replays all archived winning observations and verifies that graph values differ only by integer aliases. The original graph itself had an adjacent-residual-correlation flag; it was not a uniformly clean measurement curve.
 
 ![Native measurements, quality, timing and receiver witnesses](figures/native_audit.png)

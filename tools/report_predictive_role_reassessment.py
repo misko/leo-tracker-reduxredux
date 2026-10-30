@@ -19,7 +19,8 @@ from leo.analysis.research.grouped_prediction import replay_split
 
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir()
-    s=args.study;q=s/'predictive-annotation-source-registry-v1';tr=s/'reconciled-role-inclusion-v1';retry=s/'reconciled-role-numerical-followup-v1'
+    iteration=getattr(args,'iteration',1)
+    s=args.study;q=s/'predictive-annotation-source-registry-v1';tr=s/f'reconciled-role-inclusion-v{iteration}';retry=s/f'reconciled-role-numerical-followup-v{iteration}'
     hashes={};evidence={}
     def load(p):
         d=read(p);hashes[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest();evidence[str(p)]=compact_replays(compact_evidence(d));return d
@@ -29,16 +30,19 @@ def run(args):
             w=csv.DictWriter(f,fieldnames=keys,lineterminator='\n');w.writeheader();w.writerows(rows)
     def save(fig,name):fig.savefig(out/'figures'/name,dpi=140);plt.close(fig)
     previous=args.previous/'annotation_ledger.csv';ledger=list(csv.DictReader(previous.open()));byid={r['track_id']:r for r in ledger};hashes[str(previous)]=hashlib.sha256(previous.read_bytes()).hexdigest()
-    selected=load(q/'attempt-1/selected.json');load(q/'attempt-1/execution.json');load(q/'attempt-1/protocol.json')
-    registry=load(q/'summary.json');pending=load(q/'pending.json');execution=load(tr/'execution.json');load(tr/'protocol.json')
+    attempt=q/f'attempt-{iteration}'
+    selected=load(attempt/'selected.json');load(attempt/'execution.json');load(attempt/'protocol.json')
+    registry=load(q/'summary.json');pending=load(args.previous/'remaining_role_candidates.json') if (args.previous/'remaining_role_candidates.json').exists() else load(q/'pending.json')
+    if not {r['track_id'] for r in selected}<={r['track_id'] for r in pending}:raise ValueError('batch repeats or leaves pending role queue')
+    execution=load(tr/'execution.json');load(tr/'protocol.json')
     followup={r['job']['track_id']:r for r in load(retry/'execution.json')};load(retry/'protocol.json')
-    provenance=s/'capture-provenance-audit-v1';capture={r['track_id']:r for r in load(provenance/'rows.json')};cap_summary=load(provenance/'summary.json')
+    provenance=s/f'capture-provenance-audit-v{iteration}';capture={r['track_id']:r for r in load(provenance/'rows.json')};cap_summary=load(provenance/'summary.json')
     for p,digest in cap_summary['source_hashes'].items():
         if hashlib.sha256(Path(p).read_bytes()).hexdigest()!=digest:raise ValueError('changed capture provenance')
     shutil.copyfile(provenance/'capture_provenance.csv',out/'capture_provenance.csv');write(out/'capture_provenance_summary.json',cap_summary)
     annotations=[];partitions=[];gallery=[];terminals=[];plots={};positions=[];comparisons=[];failures=[]
     for job in selected:
-        tid=job['track_id'];terminal=load(q/'attempt-1'/(tid+'-terminal.json'));terminals.append(terminal)
+        tid=job['track_id'];terminal=load(attempt/(tid+'-terminal.json'));terminals.append(terminal)
         if terminal['status']!='complete':raise ValueError('annotation batch incomplete')
         r=load(q/tid/'result.json');p=load(q/tid/'protocol.json');a=r['annotation'];inv=load(Path(job['inventory']))
         track=read(Path(inv['job']['root'])/inv['job']['case']/'tracks.json')[job['track_index']]
@@ -162,9 +166,37 @@ Remeasure the complete 34-point 60342 target from existing IQ, with independent 
 
 [The updated 1,630-row ledger](annotation_ledger.csv), [remaining role candidates](remaining_role_candidates.json), [native evidence](native_measurements.json), [partition assignments](partitions.csv), [execution receipts](executions.csv), [source hashes](sources.json), and compressed scientific evidence accompany the report. No new RF was collected. Production and acceptance thresholds are unchanged.
 ''')
+    if iteration>1:
+        (out/'README.md').write_text(f'''# Predictive-role reassessment batch {iteration}
+
+The next **{len(selected)}** curves from the frozen older-role queue have terminal predictive-only assessments. **{len(remaining)} remain**. The full 1,630-curve goal is incomplete. Selection follows descending point count without GPS-based ranking; no supported label is forced into inclusion.
+
+## Identity and provenance
+
+{table(annotations,['scan','points','old_status','status','norad','margin'])}
+
+Outcomes: **{summary['annotation_states']}**. Every supported identity has three distinct randomized scanwide 12-second held block sets, with two-second guards. The report replays the physical point sets. Targets do not calibrate the receiver. Capture modes are **{summary['capture_modes']}**, verified from the acquisition provenance rather than the fast adapter's compatibility label; [capture_provenance.csv](capture_provenance.csv) retains the authorities and sample rates.
+
+## Position trials
+
+{table(final,['scan','norad','points','qualified','c0_before_km','c0_after_km','fitted_c_before_km','fitted_c_after_km'])}
+
+![Matched position comparisons](figures/position_comparison.png)
+
+**{summary['qualified_curves']} individual curves / {summary['qualified_points']} points** pass the current RF checks. These are separate research trials, not a simultaneous solution or a production change. Controls/additions and c=0/fitted-c arms use matched observations, candidate sets, priors and budgets; additions differ only by their specified targets. New-family phase integration uses 0.025-second spacing. Numerical retries, if any, preserve the physical gates. All original and retry outputs, including regressions and rejections, remain in [comparisons.csv](comparisons.csv) and [position_trials.csv](position_trials.csv). Exact replay failures are in [failed_replay_gates.csv](failed_replay_gates.csv).
+
+Two V06 curves independently nominate the same satellite. Their individual outcomes do not establish joint consistency; consult the linked joint audit before combining them. No union of individual position improvements is claimed.
+
+{chr(10).join(pages)}
+
+## Remaining work and evidence
+
+[The updated ledger](annotation_ledger.csv), [remaining candidates](remaining_role_candidates.json), [holdout point assignments](partitions.csv), [receipts](executions.csv), and source-hashed compact evidence preserve the next work. The separate [native IQ investigation](../2026_10_30_native_iq_recovery/README.md) reports the complete 60342 remeasurement and the V06 joint-family trial. No future TLE or evaluation GPS enters inference; GPS is used only for error reporting. Production is unchanged.
+''')
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('study','previous','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--iteration',type=int,default=1)
     run(p.parse_args())

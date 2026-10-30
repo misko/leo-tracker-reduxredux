@@ -115,12 +115,17 @@ def run(args):
     else:target=next(r for r in inv['tracks'] if r['track_id']==args.track and r['current_large'])
     i=target['track_index'];t=d['scan'].tracks[i]
     check_predictive_role(p0,i,getattr(args,'predictive_member',False))
+    refinement=None
+    if getattr(args,'measurement_refinement',None):
+        from native_iq_refined_context import refined_context
+        d,refinement=refined_context(d,target,args.measurement_refinement)
+        t=d['scan'].tracks[i]
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
     from annotation_partition_plan import selected_seeds
     seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],full_times,t['times'],SEEDS,
         distinct=getattr(args,'distinct_partitions',False))
     write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
-        target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,
+        target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,measurement_refinement=refinement,
         inactive_curved_member_as_predictive=bool(i in p0.members),
         fixed_noise_hz=150,unseen_noise_variance_multiplier=2,track_bias_sigma_hz=300,
         phase_box_s=[-15,15],phase_step_s=args.phase_step,uncalibrated_phase_mixture=args.uncalibrated_phase_mixture,phase_rounds=5,position_steps=48,
@@ -195,4 +200,5 @@ if __name__=='__main__':
     p.add_argument('--native-branches',type=Path,help='Validated omitted-branch discovery JSON; append only to predictive geometry')
     p.add_argument('--graph-bundle',type=Path,help='Frozen same-lane graph union; conditional hypothesis, not a new calibration curve')
     p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
+    p.add_argument('--measurement-refinement',type=Path,help='Verified complete native IQ frequency refinement; research only')
     run(p.parse_args())
