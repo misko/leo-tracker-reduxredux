@@ -29,6 +29,13 @@ def metrics(times,residual):
         noise={k:v[0].item() for k,v in batch_noise_screen(r[None],times).items()})
 
 
+def physical_residual(diag):
+    """Both trial routes expose the same residual after one shared bias."""
+    if 'raw_residual_hz' in diag:
+        return np.asarray(diag['raw_residual_hz'])-diag['profile_bias_hz']
+    return np.asarray(diag['residual_hz'])
+
+
 def run(args):
     args.output.mkdir(parents=True,exist_ok=False);pr=read(args.trial/'protocol.json');ann=read(args.validation/'protocol.json')
     target=ann['target'];inv=read(args.inventory);root=Path(inv['job']['root'])/inv['job']['case']
@@ -40,7 +47,8 @@ def run(args):
         oid=digest(f"{source['session_id']}:{probe['receiver_id']}:{probe['valid_start_counter']}".encode())
         eligible=[c for c in probe['candidates'] if c['passed_fractional_margin_gate']]
         if eligible:native[oid]=(probe,max(eligible,key=lambda c:(c['fractional_margin'],-c['candidate_rank'])))
-    saved=read(args.trial/'target_0.json');original_byid={};rows=[]
+    trial_path=args.trial/('new_family.json' if (args.trial/'new_family.json').exists() else 'target_0.json')
+    saved=read(trial_path);original_byid={};rows=[]
     for member_index,m in enumerate(target['members']):
         track=tracks[m['track_index']]
         if len(track['pieces'])!=1:raise ValueError('this diagnostic requires original single-piece fragments')
@@ -64,8 +72,9 @@ def run(args):
     if ordered_ids!=target['observation_ids']:raise ValueError('union identity order differs')
     member=np.array([r['member'] for r in rows]);times=np.array([r['time_s'] for r in rows]);arms=[]
     for arm,v in saved['arms'].items():
-        diag=v['target_diagnostics'][0]
-        np.testing.assert_array_equal(times,diag['times_s']);residual=np.array(diag['residual_hz']);member_rows=[]
+        diag=v['family']['diagnostics'][0] if 'family' in v else v['target_diagnostics'][0]
+        np.testing.assert_array_equal(times,diag['times_s'])
+        residual=physical_residual(diag);member_rows=[]
         for k in range(len(target['members'])):
             select=member==k;member_rows.append(dict(member=k,original_polynomial=metrics(times[select],np.array([r['original_polynomial_residual_hz'] for r in rows])[select]),
                 orbital_same_bundle_bias=metrics(times[select],residual[select]),times_s=times[select],residual_hz=residual[select]))
@@ -73,7 +82,7 @@ def run(args):
         paired=dict(points=len(pairs),tolerance_s=1.5,correlation=float(np.corrcoef(r0[pairs[:,0]],r1[pairs[:,1]])[0,1]) if len(pairs)>3 else None,
             difference_RMS_hz=float(np.sqrt(np.mean((r0[pairs[:,0]]-r1[pairs[:,1]])**2))) if len(pairs) else None)
         arms.append(dict(arm=arm,pooled=metrics(times,residual),members=member_rows,near_time_fragment_comparison=paired))
-    paths=[args.inventory,args.validation/'protocol.json',args.trial/'target_0.json',root/'tracking.json',root/'observations.json',root/'tracks.json']
+    paths=[args.inventory,args.validation/'protocol.json',trial_path,root/'tracking.json',root/'observations.json',root/'tracks.json']
     write(args.output/'result.json',dict(job=inv['job'],target=target,observations=rows,arms=arms,native_replay_exact=True,
         all_graph_values_native_plus_integer_alias=True,source_hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
         maximum_uniform_timing_shift_hz=max(abs(r['uniform_timing_shift_hz']) for r in rows),
