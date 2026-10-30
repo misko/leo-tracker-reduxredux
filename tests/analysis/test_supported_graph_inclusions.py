@@ -11,6 +11,7 @@ def test_only_supported_engine_rows_and_no_error_selection(monkeypatch):
                [('a', 'conditionally_supported_identity'), ('b', 'conditionally_supported_identity'),
                 ('c', 'ambiguous_identity')]}
     assert [j['track_id'] for j in runner.supported_jobs(rows, results)] == ['a']
+    assert [j['track_id'] for j in runner.supported_jobs(rows, results, require_engine_member=False)] == ['a','b']
     with pytest.raises(ValueError, match='repeated track'):
         runner.supported_jobs([rows[0], rows[0]], results)
 

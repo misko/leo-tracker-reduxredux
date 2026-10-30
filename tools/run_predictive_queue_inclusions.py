@@ -6,6 +6,7 @@ from debug_fast_graph_unassociated import read,write
 from run_supported_graph_inclusions import completed_rows,supported_jobs
 from test_predictive_graph_transfer import shared_family_route
 from stress_joint_attachment import supervise
+from annotation_partition_plan import require_distinct_annotation
 
 
 def require_predictive_result(result):
@@ -38,13 +39,20 @@ def run(args):
     if len(rows)+len(excluded)>128:raise ValueError('at most 128 frozen annotations per bounded iteration')
     results={r['track_id']:read(q/r['track_id']/'result.json') for r in rows}
     for r in results.values():require_predictive_result(r)
-    jobs=supported_jobs(rows,results)
+    # Predictive-only evidence may come from curves omitted by the calibration
+    # engine. Identity/ownership checks, not engine membership, authorize a trial.
+    jobs=supported_jobs(rows,results,require_engine_member=False)
+    for job in jobs:
+        if not job['engine_member']:
+            require_distinct_annotation(results[job['track_id']],read(q/job['track_id']/'protocol.json'))
     if len(jobs)>32:raise ValueError('at most 32 position cases per bounded iteration')
     out=args.output;out.mkdir(parents=True,exist_ok=False)
     sources=receipts+[q/j['track_id']/name for j in jobs for name in ('result.json','protocol.json')]
     write(out/'protocol.json',dict(jobs=jobs,attempts=args.attempts,reassessment_source=str(args.reassessment) if args.reassessment else None,excluded_annotation_executions=excluded,
         source_hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
         workers=args.workers,seconds_per_stage=600,selection='all supported predictive-role identities in specified complete attempts; no GPS selection',
+        omitted_engine_curves_eligible=True,
+        omitted_engine_curves_require_distinct_holdouts=True,
         matched_c_arms=True,causal_only=True,no_production_change=True))
     def work(job):
         folder=out/job['track_id'];folder.mkdir();validation=q/job['track_id'];r=results[job['track_id']]

@@ -10,7 +10,7 @@ from leo.analysis.research.grouped_prediction import identity_consensus
 from stress_joint_attachment import supervise
 
 
-def supported_jobs(rows, results):
+def supported_jobs(rows, results, *, require_engine_member=True):
     jobs = []
     seen = set()
     for row in rows:
@@ -20,7 +20,7 @@ def supported_jobs(rows, results):
         seen.add(tid)
         result = results[tid]
         annotation = identity_consensus(result['folds'], score_name=result.get('identity_score_name', 'joint'))
-        if row['engine_member'] and annotation['status'] == 'conditionally_supported_identity':
+        if (row['engine_member'] or not require_engine_member) and annotation['status'] == 'conditionally_supported_identity':
             jobs.append(dict(row, annotation=annotation))
     return jobs
 

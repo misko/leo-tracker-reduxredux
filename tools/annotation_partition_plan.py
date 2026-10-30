@@ -5,6 +5,16 @@ from debug_fast_graph_unassociated import read
 from leo.analysis.research.grouped_prediction import geometry_partition_schedule
 
 
+def require_distinct_annotation(result,protocol):
+    """Different seed labels alone do not establish distinct target holdouts."""
+    plan=protocol.get('partition_plan') or {};schedule=plan.get('schedule') or {}
+    selected=schedule.get('selected',[])
+    signatures={tuple(sorted(r['target_held_blocks'])) for r in selected}
+    if (not schedule.get('ready') or len(selected)!=3 or len(signatures)!=3
+            or [f['seed'] for f in result['folds']]!=[r['seed'] for r in selected]):
+        raise ValueError('three distinct timestamp-selected target holdouts required')
+
+
 def selected_seeds(path,track_id,times,focus,default,*,distinct=False):
     if distinct:
         if path is not None:raise ValueError('choose a saved audit or a new distinct schedule')
