@@ -1,5 +1,6 @@
 """Broaden supported predictive identities without changing their observations or splits."""
 import argparse
+import csv
 import hashlib
 import math
 import sys
@@ -9,6 +10,11 @@ from pathlib import Path
 from debug_fast_graph_unassociated import read, write
 from run_supported_graph_inclusions import completed_rows, supported_jobs
 from stress_joint_attachment import supervise
+
+
+def qualified_ids(rows):
+    """Use recorded RF qualification only, including position regressions."""
+    return {r['track_id'] for r in rows if r['qualified'] == 'True' and r['final_variant'] == 'True'}
 
 
 def matched_expansion(original, expanded):
@@ -42,15 +48,23 @@ def matched_expansion(original, expanded):
 
 def run(args):
     rows, excluded, receipts = completed_rows(args.queue, args.attempts)
-    if excluded or len(rows) > 32 or not 1 <= args.workers <= 8:
-        raise ValueError('requires at most 32 complete cases and one to eight workers')
+    reports = getattr(args, 'qualified_reports', None) or []
+    if reports:
+        ids = set().union(*(qualified_ids(list(csv.DictReader(p.open()))) for p in reports))
+        if not ids <= {r['track_id'] for r in rows}:
+            raise ValueError('qualified reports reference unavailable original annotations')
+        rows = [r for r in rows if r['track_id'] in ids]
+    if (excluded and not reports) or len(rows) > 32 or not 1 <= args.workers <= 8:
+        raise ValueError('requires at most 32 complete selected cases and one to eight workers')
     results = {r['track_id']: read(args.queue / r['track_id'] / 'result.json') for r in rows}
     jobs = supported_jobs(rows, results, require_engine_member=False)
+    if reports and len(jobs) != len(rows):
+        raise ValueError('qualified report contains an unsupported original identity')
     args.output.mkdir(parents=True, exist_ok=False)
-    sources = receipts + [args.queue / j['track_id'] / name for j in jobs for name in ('result.json', 'protocol.json')]
+    sources = receipts + reports + [args.queue / j['track_id'] / name for j in jobs for name in ('result.json', 'protocol.json')]
     write(args.output / 'protocol.json', dict(jobs=jobs, source_root=str(args.queue),
         source_hashes={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
-        candidate_cap=12, selection='all supported identities in the specified completed batch; no GPS selection',
+        candidate_cap=12, selection=('all RF-qualified final trials in supplied reports, including position regressions' if reports else 'all supported identities in the specified completed batch')+'; no GPS selection',
         seconds_per_case=600, workers=args.workers, causal_only=True, production_changed=False))
 
     def work(job):
@@ -82,4 +96,5 @@ if __name__ == '__main__':
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--attempts', nargs='+', required=True)
     p.add_argument('--workers', type=int, default=8)
+    p.add_argument('--qualified-reports', type=Path, nargs='+', help='Restrict to every RF-qualified final trial in these comparison CSVs')
     run(p.parse_args())

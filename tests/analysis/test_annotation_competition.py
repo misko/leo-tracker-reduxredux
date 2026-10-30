@@ -1,6 +1,6 @@
 import copy
 import pytest
-from review_annotation_competition import matched_expansion
+from review_annotation_competition import matched_expansion, qualified_ids
 
 
 def result():
@@ -25,3 +25,10 @@ def test_changed_controls_are_rejected(change):
     if change == 'missing': f['proposals'] = []
     if change == 'target': new['track_id'] = 'other'
     with pytest.raises(ValueError): matched_expansion(old, new)
+
+
+def test_qualified_selection_includes_regressions_and_ignores_superseded_trials():
+    rows = [dict(track_id='regression', qualified='True', final_variant='True', before_km=1., after_km=2.),
+            dict(track_id='rejected_improvement', qualified='False', final_variant='True', before_km=2., after_km=1.),
+            dict(track_id='superseded', qualified='True', final_variant='False')]
+    assert qualified_ids(rows) == {'regression'}
