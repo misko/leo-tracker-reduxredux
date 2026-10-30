@@ -48,13 +48,14 @@ def pending_jobs(protocol,output,limit,predictive_only=False,scope=None):
     return jobs
 
 
-def annotation_command(row,output,*,predictive_only=False,predictive_member=False,distinct_partitions=False):
+def annotation_command(row,output,*,predictive_only=False,predictive_member=False,distinct_partitions=False,inactive_fragment=False):
     if predictive_only and predictive_member:
         raise ValueError('choose omitted-track or graph-member predictive queue')
+    if inactive_fragment and not predictive_member:raise ValueError('inactive fragments require the graph-member predictive queue')
     script='annotate_predictive_only.py' if predictive_only or predictive_member else 'annotate_track_predictively.py'
     cmd=[sys.executable,str(Path(__file__).with_name(script)),
          '--inventory',row['inventory'],'--track',row['track_id'],'--output',str(output/row['track_id'])]
-    if predictive_member:cmd+=['--predictive-member','--uncalibrated-phase-mixture']
+    if predictive_member:cmd+=['--inactive-fragment' if inactive_fragment else '--predictive-member','--uncalibrated-phase-mixture']
     if distinct_partitions:cmd.append('--distinct-partitions')
     return cmd
 
@@ -62,23 +63,30 @@ def annotation_command(row,output,*,predictive_only=False,predictive_member=Fals
 def run(args):
     if args.workers<1:raise ValueError('positive worker count required')
     if args.predictive_only and args.predictive_member:raise ValueError('choose omitted-track or graph-member predictive queue')
+    if args.split_inactive_fragments and not args.predictive_member:raise ValueError('fragment routing requires predictive-member mode')
     protocol=read(args.output/'protocol.json');attempt=args.output/f'attempt-{len(list(args.output.glob("attempt-*")))+1}'
     jobs=pending_jobs(protocol,args.output,args.limit,args.predictive_only,args.scope);attempt.mkdir()
     write(attempt/'selected.json',jobs)
     write(attempt/'protocol.json',dict(workers=args.workers,seconds_per_case=600,predictive_only=args.predictive_only,
         predictive_member=args.predictive_member,
+        split_inactive_fragments=args.split_inactive_fragments,
         likelihood_role='predictive_only' if args.predictive_only or args.predictive_member else 'calibration_participating',
         selected_tracks=len(jobs),preserves_existing_attempt_claims=True,scope=args.scope,
         distinct_partitions=args.distinct_partitions,partition_policy='timestamp-only distinct schedule' if args.distinct_partitions else 'original three seeds'))
     def work(r):
+        fragment=False
+        if args.split_inactive_fragments:
+            inventory=read(Path(r['inventory']))
+            target=next(t for t in inventory['tracks'] if t['track_id']==r['track_id'])
+            fragment=not target['current']['wholly_unassociated']
         cmd=annotation_command(r,args.output,predictive_only=args.predictive_only,
-            predictive_member=args.predictive_member,distinct_partitions=args.distinct_partitions)
-        result=dict(track_id=r['track_id'],label=r['label'],**supervise(cmd,attempt/(r['track_id']+'.log'),600))
+            predictive_member=args.predictive_member,distinct_partitions=args.distinct_partitions,inactive_fragment=fragment)
+        result=dict(track_id=r['track_id'],label=r['label'],command=cmd,inactive_fragment=fragment,**supervise(cmd,attempt/(r['track_id']+'.log'),600))
         write(attempt/(r['track_id']+'-terminal.json'),result);return result
     results=[]
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         for f in as_completed([pool.submit(work,j) for j in jobs]):
-            r=f.result();results.append(r);print(r,flush=True)
+            r=f.result();results.append(r);print(r['label'],r['track_id'],r['status'],round(r['seconds'],2),flush=True)
     write(attempt/'execution.json',results)
 
 
@@ -87,6 +95,7 @@ if __name__=='__main__':
     for key in ('study','inventory','diagnostics','output'):p.add_argument('--'+key,type=Path,required=key=='output')
     p.add_argument('--limit',type=int,default=16);p.add_argument('--predictive-only',action='store_true')
     p.add_argument('--predictive-member',action='store_true',help='Assess pending graph curves in their intended predictive-only inclusion role')
+    p.add_argument('--split-inactive-fragments',action='store_true',help='Route partial graph curves to their disjoint unused observations')
     p.add_argument('--workers',type=int,default=8)
     p.add_argument('--scope',help='Process pending tracks in this recorded scope without altering the full queue')
     p.add_argument('--distinct-partitions',action='store_true')

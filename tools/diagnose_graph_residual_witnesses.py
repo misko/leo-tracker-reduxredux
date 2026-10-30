@@ -18,6 +18,9 @@ from leo.analysis.research.retained_track_likelihood import profile
 
 def run(args):
     inv=read(args.inventory);d=context(inv);base,_=d['problems']['c0'];addition=read(args.source/'target_0.json')
+    for validation in read(args.source/'protocol.json').get('inactive_fragment_sources',[]):
+        from inactive_graph_fragment import validated_inactive_context
+        d,_=validated_inactive_context(d,inv,Path(validation))
     if len(addition['target_entries'])!=1:raise ValueError('one target required')
     target=addition['target_entries'][0]
     shared=getattr(args,'shared_family',False)

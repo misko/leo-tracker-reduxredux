@@ -39,3 +39,12 @@ def test_predictive_member_queue_uses_actual_inclusion_role_and_causal_phase_mix
     assert '--predictive-member' not in default
     with pytest.raises(ValueError,match='choose'):
         annotation_command(row,tmp_path,predictive_only=True,predictive_member=True)
+
+
+def test_partial_graph_queue_uses_only_inactive_fragment():
+    from pathlib import Path
+    row=dict(track_id='a',inventory='/immutable/inventory.json')
+    cmd=annotation_command(row,Path('/output'),predictive_member=True,inactive_fragment=True,distinct_partitions=True)
+    assert '--inactive-fragment' in cmd and '--predictive-member' not in cmd
+    assert '--uncalibrated-phase-mixture' in cmd and '--distinct-partitions' in cmd
+    with pytest.raises(ValueError,match='require'):annotation_command(row,Path('/output'),inactive_fragment=True)
