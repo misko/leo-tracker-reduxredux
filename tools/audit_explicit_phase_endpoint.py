@@ -13,6 +13,7 @@ from ds23_predictive_linear import linear_geometry
 from ds23_height_problem import geometry_features
 from investigate_ds23_0268_remaining_tracks import family_frequency
 from leo.analysis.research.retained_track_likelihood import profile
+from ds23_frequency_events import family_event_frequency
 
 
 def exact_gate_replay(p,z,entries):
@@ -23,7 +24,9 @@ def exact_gate_replay(p,z,entries):
     le=c['linear_elevation'].copy() if entries else np.empty(0);maximum=0.
     for row,i,sl in zip(p.rows,p.members,p.slices,strict=True):
         if row['candidate_index']!=j:continue
-        t=p.scan.tracks[i];f,e=family_frequency(p,z,j,times=t['times']);difference=p.q[sl]*(f-frequency[sl])
+        t=p.scan.tracks[i];f,e=family_frequency(p,z,j,times=t['times'])
+        f+=family_event_frequency(p,z,t,j)
+        difference=p.q[sl]*(f-frequency[sl])
         maximum=max(maximum,float(np.max(abs(difference))));conditional[sl]-=difference;frequency[sl]=f;elevation[sl]=e
     for entry,sl in zip(entries,getattr(p,'linear_slices',[]),strict=True):
         if entry['candidate_index']!=j:continue

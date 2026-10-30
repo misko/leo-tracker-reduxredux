@@ -31,10 +31,15 @@ def event_design(times, receivers, channels, rf_hz, labels, events):
         if not np.isfinite(transition) or transition<0:
             raise ValueError('finite nonnegative event transition required')
         use=(t>=event['time_s']).astype(float) if transition==0 else np.clip((t-event['time_s'])/transition,0.,1.)
+        if 'end_s' in event:
+            if not np.isfinite(event['end_s']) or event['end_s']<=event['time_s']:
+                raise ValueError('finite event end after start required')
+            stop=(t>=event['end_s']).astype(float) if transition==0 else np.clip((t-event['end_s'])/transition,0.,1.)
+            use-=stop
         if event['kind']=='family':use*=j==event['candidate_index']
         else:use*=rx==event['receiver']
         if event['kind']=='band':use*=(ch>4)==bool(event['band'])
-        if event['kind'] in ('receiver_RF','family'):use*=rf/11.5e9
+        if event.get('rf_scaled',event['kind'] in ('receiver_RF','family')):use*=rf/11.5e9
         columns.append(use*event['sigma_hz'])
     return np.column_stack(columns) if columns else np.zeros((len(t),0))
 
@@ -43,6 +48,15 @@ def track_events(track,label,events):
     n=len(track['times'])
     return event_design(track['times'],np.full(n,track['receiver']),np.full(n,track['channel']),
                         np.full(n,track['rf_hz']),np.full(n,label),events)
+
+
+def family_event_frequency(p,x,track,label):
+    """Family event contribution in reference-frequency units for this track."""
+    selected=[k for k,e in enumerate(getattr(p,'events',[])) if e['kind']=='family']
+    if not selected:return np.zeros(len(track['times']))
+    design=track_events(track,label,[p.events[k] for k in selected])
+    coefficient=p.calculate(x)['coefficient'][p.event_start+np.asarray(selected)]
+    return design@coefficient/(track['rf_hz']/11.5e9)
 
 
 def make_event_problem(scan,node,keep,arm,reference,powers,means,model,events,*,base_problem_factory=None):
@@ -174,16 +188,15 @@ def extend_event_associations(p,x,metrics):
                        velocity_km_s=p.mode_bank['velocity_km_s'][3*local:3*local+3])
             derivative=paired_frequency_modes(bank,modes,scan.times,np.zeros(len(scan.times),int),phase,*latlon(x))
             f+=derivative@c['coefficient'][begin+3*k:begin+3*k+3]
-        for event,amplitude in zip(p.events,c['event_amplitudes_hz'],strict=True):
-            if event['kind']=='family' and event['candidate_index']==j:
-                f+=(scan.times>=event['time_s'])*amplitude
         predictions.append(f);elevations.append(e);available.append(j)
     frequencies,elevations=np.asarray(predictions),np.asarray(elevations)
     for i,t in enumerate(scan.tracks):
         if t['key'] in accepted or not available or (t['receiver'],int(t['channel']>4)) not in supported:continue
         q=t['rf_hz']/11.5e9;ix=scan.index[i]
         y=t['values']-scan.hardware(t,state['beta'])-q*scan.rx_basis[i]@state['smooth'][t['receiver']-1]
-        terms=profile(y,q*frequencies[:,ix],*scan.white[i]);noise=batch_noise_screen(terms['innovations'],t['times'])
+        expected=q*frequencies[:,ix]
+        for k,j in enumerate(available):expected[k]+=q*family_event_frequency(p,x,t,j)
+        terms=profile(y,expected,*scan.white[i]);noise=batch_noise_screen(terms['innovations'],t['times'])
         good=(terms['rms']<=450)&(abs(terms['bias'])<=3000)&noise['noise_screen_pass']&(elevations[:,ix].min(axis=1)>=0)
         if not good.any():continue
         k=int(np.argmin(np.where(good,terms['cost'],np.inf)));j=available[k]
