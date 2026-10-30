@@ -1,5 +1,13 @@
 import pytest
 from run_reconciled_predictive_inclusions import require_distinct_annotation
+from run_reconciled_predictive_inclusions import pending_subset
+
+
+def test_remaining_manifest_cannot_change_or_duplicate_candidates():
+    a=dict(track_id='a',points=40);b=dict(track_id='b',points=35)
+    assert pending_subset([a,b],[b])==[b]
+    for changed in ([dict(b,points=50)],[b,b],[dict(track_id='c',points=35)]):
+        with pytest.raises(ValueError):pending_subset([a,b],changed)
 
 
 def test_different_seeds_with_same_holdout_do_not_qualify():

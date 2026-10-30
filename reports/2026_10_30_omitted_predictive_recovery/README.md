@@ -1,5 +1,7 @@
 # Recovering predictive curves omitted by the calibration-engine queue
 
+**Later review:** the [second batch's joint-family audit](../2026_10_30_omitted_predictive_second_batch/README.md) found common residual structure across AUTO-afec5a1f's two 67653 tracks. The 45-point individual pass below remains a historical result, but that recovery is now withheld from inclusion pending explanation of the common structure. Other first-batch results are unchanged by that audit.
+
 The source reconciliation exposed a routing error: the predictive inclusion batch reused a selector requiring `engine_member=True`. That excludes curves omitted from the calibration engine even when they have a supported predictive-only identity. We removed this requirement for the predictive queue while preserving it for the calibration-participating route. An omitted curve still has to pass identity, physical residual, ownership, phase and numerical checks.
 
 Of the eight largest affected curves, **7 qualify**, recovering **295 distinct GLRT points** across separate scans. No curve is forced into receiver calibration, and no GPS position selects a candidate or retry. The full goal is incomplete; this report leaves **45 additional omitted curves** from this reconciliation queue for subsequent validation and position trials.
