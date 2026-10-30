@@ -1,0 +1,74 @@
+{
+  "evaluation_only_latlon": [
+    37.849061591561885,
+    -122.48574968092912
+  ],
+  "inference_uses_truth": false,
+  "full_cohort_claim": false,
+  "production_activated": false,
+  "source_revision_under_comparison": "e67f67484c4f54316b33dfd8e12f6e68d09d1e13",
+  "canary_predates_final_wrapper_metadata_fix": true,
+  "job_id": "05cfff53feb591b22673ec72e80f6d7b",
+  "input_sha256": "sha256:703bec768d15302a2cf9e0b648b7e3cc6c22b2df079daf469d6584a0ae5505ce",
+  "decision": "ALGO03_joint",
+  "rows": [
+    {
+      "arm": "c0",
+      "before_error_km": 0.9876240697681103,
+      "after_error_km": 1.0731559029486757,
+      "before_associated": 2963,
+      "after_associated": 3067,
+      "total_GLRT": 4174,
+      "before_percent": 70.98706276952564,
+      "after_percent": 73.47867752755151,
+      "before_negative_twice_elbo": 26658.213806319483,
+      "after_negative_twice_elbo": 27904.70094490328,
+      "baseline_frequency_RMS_hz": 72.80937540769906,
+      "selected_frequency_RMS_hz": null
+    },
+    {
+      "arm": "fitted_c",
+      "before_error_km": 1.0189260287206159,
+      "after_error_km": 1.1021437875777094,
+      "before_associated": 2963,
+      "after_associated": 3067,
+      "total_GLRT": 4174,
+      "before_percent": 70.98706276952564,
+      "after_percent": 73.47867752755151,
+      "before_negative_twice_elbo": 26662.60118130115,
+      "after_negative_twice_elbo": 27909.148634878646,
+      "baseline_frequency_RMS_hz": 72.73682672406491,
+      "selected_frequency_RMS_hz": null
+    }
+  ],
+  "baseline_seconds": 481.2691454621963,
+  "recovery_seconds": 973.3667053151876,
+  "total_seconds": 1454.635850777384,
+  "read_audit": {
+    "verified": true,
+    "receipts": 31,
+    "expected": 31,
+    "all_launched_processes_accounted": true,
+    "denied_paths": [],
+    "source_scope": "isolated ALGO02 export and current recovery artifacts only"
+  },
+  "report_only_read_tree_replay": {
+    "verified": true,
+    "receipts": 31,
+    "reconstructed_root_process_id": 4002675,
+    "reconstructed_supervisor_process_id": 4002616,
+    "original_terminal_modified": false
+  },
+  "recovered_targets": [
+    {
+      "component": "SCAN-RX2-CH1-T000-RF10940312500.000000",
+      "norad": 66803,
+      "points": 69
+    },
+    {
+      "component": "SCAN-RX1-CH3-T003-RF11440312500.000000",
+      "norad": 67053,
+      "points": 35
+    }
+  ]
+}
