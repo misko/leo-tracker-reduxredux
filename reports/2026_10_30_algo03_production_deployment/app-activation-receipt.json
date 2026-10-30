@@ -1,0 +1,69 @@
+{
+  "acquisition_services_changed": false,
+  "activated_utc": "2026-10-30T21:21:37+00:00",
+  "api_process_id": 4160789,
+  "api_url": "http://127.0.0.1:8090",
+  "checks": {
+    "canary_graph": {
+      "baseline_matches_original": true,
+      "baseline_model": "algo02-causal-family-v1",
+      "baseline_position": {
+        "latitude_deg": 37.85212686173554,
+        "longitude_deg": -122.47567919643072
+      },
+      "baseline_terminal_sha256": "sha256:6aef2b55202ee4043fb896a9a68575ccc35c3e60e74586c9648b8d15035a8445",
+      "decision": "ALGO03_single",
+      "http_status": 200,
+      "job_id": "f272ee7d0017e298c8824be9c54e9f97",
+      "position_matches_validated_terminal": true,
+      "request_seconds": 3.357538424897939,
+      "run_id": "fast-7e8ca5148a366c63d4a17fcf8bca228a",
+      "selected_endpoint_model": "algo03-causal-predictive-v1",
+      "selected_model": "algo03-causal-predictive-v1",
+      "selected_position": {
+        "latitude_deg": 37.853968972051476,
+        "longitude_deg": -122.47603792258818
+      },
+      "terminal_sha256": "sha256:8fe14dc0a8b1f57fa3e5a74b5b3353652e80862451d9a76bf95c2de251d37e24"
+    },
+    "fast_scans": 200,
+    "fast_scans_readiness": 200,
+    "graph_web_asset": 200,
+    "missing_v2_fallback": {
+      "decision": "ALGO02_fallback",
+      "http_status": 200,
+      "position_equals_validated_baseline": true,
+      "run_id": "fast-e5dc63d01c31d94be679a6393cb89afe",
+      "selected_endpoint_model": "algo02-causal-family-v1",
+      "selected_model": "algo03-causal-predictive-v1"
+    },
+    "static": 200
+  },
+  "database_schema_changed": false,
+  "dropin": "/etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-algo03.conf",
+  "dropin_sha256": "82a38441e4a3a1386873aadfff9430eb105df54cd08d6d8c4a00230488712513",
+  "health_note": "No dedicated health endpoint and OpenAPI disabled by production app. Existing fast-scans endpoint supplies HTTP readiness.",
+  "only_service_restarted": "leo-api.service",
+  "revision": "9b3be7f84fddeb1a1ca4dacb283edb65af24be0d",
+  "rollback": [
+    "sudo rm -- /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-algo03.conf",
+    "sudo systemctl daemon-reload",
+    "sudo systemctl restart leo-api.service"
+  ],
+  "rollback_performed": false,
+  "rollback_prior_api_selector": "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8",
+  "rollback_prior_web": "/opt/leo-shared-scans/v063-10m-0eab0c85fa2aac69/web/dist",
+  "schema": "leo-algo03-application-activation-v1",
+  "selected_environment": {
+    "LEO_API_PORT": "8090",
+    "LEO_GRAPH_POSITION_MODEL": "algo03-causal-predictive-v1",
+    "LEO_SHARED_FAST_MODEL": "shared-scan-q-v2",
+    "LEO_WEB_DIST": "/opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d/web/dist",
+    "PYTHONPATH": ""
+  },
+  "selectors_changed": false,
+  "service_start_timestamp": "Fri 2026-10-30 21:21:37 UTC",
+  "smoke_started_utc": "2026-10-30T21:22:49.309351+00:00",
+  "state": "active-smoke-passed",
+  "verified_utc": "2026-10-30T21:23:02.973820+00:00"
+}

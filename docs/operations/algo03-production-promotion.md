@@ -1,6 +1,12 @@
 # ALGO03 qualification and reversible production promotion
 
-ALGO03 remains conditional on the frozen DS23, DS24 and DS26 fast-only comparison.
+The frozen DS23, DS24 and DS26 fast-only comparison is complete. Accuracy,
+coverage and provenance checks passed; the combined-runtime P95 gate failed.
+On 2026-10-30 the user explicitly authorized production deployment despite that
+runtime result. This exception applies only to the aggregate runtime gate;
+the original criteria and failed gate record remain unchanged. See the
+[deployment record](../../reports/2026_10_30_algo03_production_deployment/README.md)
+for activation evidence and rollback instructions.
 DS26 is the user's name for the new dataset; historical DS25 overlaps DS24 and
 is not a separate primary denominator. No RF collection is part of this plan.
 
@@ -92,7 +98,7 @@ not establish installed service readiness.
 
 ## Activate and roll back
 
-Only after all gates pass, save the current complete `systemctl cat
+After qualification and any explicitly recorded promotion exception, save the current complete `systemctl cat
 leo-fast-shared-position.service`, its release drop-in, exact unit properties,
 and the current release SHA in a deployment receipt. The present rollback
 release is `/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003`.

@@ -1,0 +1,33 @@
+{
+  "schema": "leo-algo03-application-staging-v1",
+  "state": "staged-awaiting-coordinated-cutover",
+  "source_revision": "9b3be7f84fddeb1a1ca4dacb283edb65af24be0d",
+  "source_tree": "8d940df249d460dc959b82342e1a9becc907564f",
+  "release": "/opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d",
+  "publication_metadata": "/opt/leo-tracker/release-metadata/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d.txt",
+  "model_selection": "algo03-causal-predictive-v1",
+  "runtime_profile": "full application with locked hardware dependencies and metadata ABI 3",
+  "sealed_release_validation": "passed",
+  "api_production_storage_contract_tests": {"passed": 30, "failed": 0},
+  "isolated_staged_web_component_tests": {"passed": 10, "failed": 0},
+  "typescript_vite_build": "passed",
+  "production_root_read_only_probe": {
+    "run_id": "fast-e5dc63d01c31d94be679a6393cb89afe",
+    "static_status": 200,
+    "fast_scans_status": 200,
+    "graph_status": 200,
+    "selected_model": "algo03-causal-predictive-v1",
+    "decision": "ALGO02_fallback",
+    "selected_endpoint_model": "algo02-causal-family-v1",
+    "selected_equals_validated_baseline": true,
+    "postgres_connections": 0
+  },
+  "prior_api_selector": "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8",
+  "prior_effective_api_overlay": "/opt/leo-fast-auto/f141dbb30321bc8f9e8183576c511431ea60a6b3/api/src",
+  "prior_effective_web": "/opt/leo-shared-scans/v063-10m-0eab0c85fa2aac69/web/dist",
+  "preservation_review": "813 active API overlay files match main exactly; the two differing Python sources add graph wiring only; the native extension is rebuilt. Main descends from active web base e3710d09cfeafc5b5b8b5683f64ac7d40492da3a; web changes add the graph panel.",
+  "cutover_plan": "Install prepared final API drop-in, daemon-reload, restart leo-api only, and validate HTTP endpoints. Keep all component selectors and acquisition services unchanged.",
+  "rollback_plan": "Remove only the new ALGO03 API drop-in, daemon-reload, and restart leo-api. Prior selectors and drop-ins remain intact.",
+  "service_activation_performed": false,
+  "scope": "API/UI staging only; scientific promotion authority is a separate user decision and receipt"
+}

@@ -1,0 +1,34 @@
+[Unit]
+Description=ALGO03 bounded recovery from completed ALGO02 graph analyses
+After=local-fs.target leo-fast-shared-position.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+# Render both placeholders once, after qualification. The cutoff prevents backfill.
+WorkingDirectory=/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13
+Environment=PYTHONPATH=/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13/src:/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13/tools
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-graph-position-v2
+ExecStart=/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13/venv/bin/python -B -m leo.cli.fast_graph_position_v2 --bulk-root /srv/bulk/leo --minimum-completed-utc-ns 1793395227961750830 --maximum-seconds 1200
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target
