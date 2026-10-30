@@ -88,10 +88,38 @@ def polynomial_reference(times, values, training, held, *, max_order=4, noise_fl
 
 def replay_split(times, receipt):
     """Apply a recorded scan-wide assignment to a subset of original points."""
-    t=np.asarray(times,float);block=receipt['block_s'];guard=receipt['guard_s'];chosen=receipt['held_blocks']
+    t=np.asarray(times,float)-receipt.get('block_origin_s',0.);block=receipt['block_s'];guard=receipt['guard_s'];chosen=receipt['held_blocks']
     held=np.isin(np.floor(t/block).astype(int),chosen);train=~held
     for g in chosen:train&=~((t>=g*block-guard)&(t<=(g+1)*block+guard))
     return train,held
+
+
+def shifted_geometry_partition_schedule(times,focus_times,*,seeds,required=3):
+    """Opt-in timestamp-only schedule with seeded 12-second block origins.
+
+    Block length, guard and minimum support match the original schedule.
+    Distinctness is measured on physical target indices, not block labels.
+    Existing zero-origin receipts retain their original replay semantics.
+    """
+    t,focus=(np.asarray(a,float) for a in (times,focus_times))
+    if required<1 or t.ndim!=1 or focus.ndim!=1 or not len(focus) or not np.isfinite(t).all() or not np.isfinite(focus).all():
+        raise ValueError('finite times and positive required partition count needed')
+    selected=[];attempts=[];seen=set()
+    for seed in seeds:
+        origin=float(np.random.default_rng(int(seed)^0x5A17).uniform(0,12))
+        if len(np.unique(np.floor((focus-origin)/12)))<3:
+            attempts.append(dict(seed=int(seed),block_origin_s=origin,selection_reason='fewer_than_three_target_blocks'));continue
+        _,_,receipt=grouped_split(t-origin,focus-origin,seed=int(seed))
+        receipt=dict(receipt,block_origin_s=origin,partition_scheme='shifted_origin_v1')
+        train,held=replay_split(focus,receipt);signature=tuple(np.flatnonzero(held).tolist())
+        reason=('insufficient_target_points' if train.sum()<8 or held.sum()<4 else 'duplicate_target_holdout' if signature in seen else 'selected')
+        receipt.update(target_training_points=int(train.sum()),target_held_points=int(held.sum()),target_held_indices=list(signature),
+                       target_held_blocks=sorted(set(np.floor((focus[held]-origin)/12).astype(int).tolist())),selection_reason=reason)
+        attempts.append(receipt)
+        if reason=='selected':selected.append(receipt);seen.add(signature)
+        if len(selected)==required:break
+    return dict(selected=selected,attempts=attempts,ready=len(selected)==required,
+        reason='ready' if len(selected)==required else 'insufficient_distinct_usable_partitions',partition_scheme='shifted_origin_v1')
 
 
 def geometry_partition_schedule(times,focus_times,*,seeds,required=3):

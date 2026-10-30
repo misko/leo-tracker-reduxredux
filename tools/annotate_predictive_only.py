@@ -121,9 +121,9 @@ def run(args):
         d,refinement=refined_context(d,target,args.measurement_refinement)
         t=d['scan'].tracks[i]
     full_times=np.r_[p0.flat_times,t['times']];n=len(p0.flat_times)
-    from annotation_partition_plan import selected_seeds
+    from annotation_partition_plan import selected_seeds,planned_split
     seeds,partition_plan=selected_seeds(getattr(args,'partition_audit',None),target['track_id'],full_times,t['times'],SEEDS,
-        distinct=getattr(args,'distinct_partitions',False))
+        distinct=getattr(args,'distinct_partitions',False),shifted_origin=getattr(args,'shifted_block_origin',False))
     write(out/'protocol.json',dict(job=inv['job'],target=target,seed_list=seeds[:args.folds],partition_plan=partition_plan,block_s=12,guard_s=2,
         target_used_for_calibration=False,conditional_on_frozen_graph_and_incumbent_identities=True,measurement_refinement=refinement,
         inactive_curved_member_as_predictive=bool(i in p0.members),
@@ -133,9 +133,9 @@ def run(args):
         learned_noise_precision_uncertainty_integrated=False,GPS_used=False,future_TLE=False))
     results=[]
     for seed in seeds[:args.folds]:
-        if len(np.unique(np.floor(t['times']/12)))<3:
+        if not getattr(args,'shifted_block_origin',False) and len(np.unique(np.floor(t['times']/12)))<3:
             write(out/f'seed-{seed}.json',dict(status='insufficient_group_support',seed=seed));continue
-        train,held,split=grouped_split(full_times,t['times'],seed=seed);train_target,held_target=train[n:],held[n:]
+        train,held,split=planned_split(full_times,t['times'],seed,partition_plan);train_target,held_target=train[n:],held[n:]
         if train_target.sum()<8 or held_target.sum()<4:
             write(out/f'seed-{seed}.json',dict(status='insufficient_group_support',seed=seed,split=split));continue
         keep=d['keep']&train[:n];base={a:fit_training(d,d['node'],keep,a) for a in ARMS}
@@ -201,4 +201,5 @@ if __name__=='__main__':
     p.add_argument('--graph-bundle',type=Path,help='Frozen same-lane graph union; conditional hypothesis, not a new calibration curve')
     p.add_argument('--distinct-partitions',action='store_true',help='Select three distinct target holdouts by timestamps; skip RF fits if unavailable')
     p.add_argument('--measurement-refinement',type=Path,help='Verified complete native IQ frequency refinement; research only')
+    p.add_argument('--shifted-block-origin',action='store_true',help='Research schedule with seeded block origins; retain 12-second blocks and 2-second guards')
     run(p.parse_args())

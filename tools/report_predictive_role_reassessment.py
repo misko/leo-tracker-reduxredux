@@ -35,7 +35,7 @@ def complete_replay_slacks(row):
 def run(args):
     out=args.output;out.mkdir(parents=True,exist_ok=False);(out/'figures').mkdir()
     iteration=getattr(args,'iteration',1)
-    s=args.study;q=s/'predictive-annotation-source-registry-v1';tr=s/f'reconciled-role-inclusion-v{iteration}';retry=s/f'reconciled-role-numerical-followup-v{iteration}'
+    s=args.study;q=s/'predictive-annotation-source-registry-v1';tr=s/f'reconciled-role-inclusion-v{iteration}';retry=getattr(args,'numerical_followup',None) or s/f'reconciled-role-numerical-followup-v{iteration}'
     hashes={};evidence={}
     def load(p):
         d=read(p);hashes[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest();evidence[str(p)]=compact_replays(compact_evidence(d));return d
@@ -56,6 +56,12 @@ def run(args):
         if hashlib.sha256(Path(p).read_bytes()).hexdigest()!=digest:raise ValueError('changed capture provenance')
     shutil.copyfile(provenance/'capture_provenance.csv',out/'capture_provenance.csv');write(out/'capture_provenance_summary.json',cap_summary)
     annotations=[];partitions=[];gallery=[];terminals=[];plots={};positions=[];comparisons=[];failures=[];scope_links=[]
+    interrupted=getattr(args,'interrupted_followup',None)
+    if interrupted:
+        load(interrupted/'protocol.json')
+        for rec in load(interrupted/'execution.json'):
+            if rec['status']!='execution_failed':raise ValueError('interrupted run must retain terminal failure')
+            for stage in rec['stages']:terminals.append(dict(scan=rec['job']['label'],variant='interrupted_thread_oversubscription',**stage))
     for job in selected:
         tid=job['track_id'];terminal=load(attempt/(tid+'-terminal.json'));terminals.append(terminal)
         if terminal['status']!='complete':raise ValueError('annotation batch incomplete')
@@ -219,6 +225,8 @@ Outcomes: **{summary['annotation_states']}**. Every supported identity has three
 
 Individual outcomes do not establish joint consistency. The earlier V06 joint audit illustrates this limitation; no union of individual position improvements is claimed. The failed-gate table distinguishes target from incumbent evidence and includes both nominal and continuously refined new-family target screens.
 
+{('The first numerical follow-up was interrupted because excessive BLAS threading made it inefficient. Its terminal failure and protocol remain in executions.csv and hashed evidence. A fresh output repeats the same scientific settings and stage cap with OPENBLAS_NUM_THREADS=1 and OMP_NUM_THREADS=1; no gate or data changes.') if interrupted else ''}
+
 {('Scoped membership: reported association percentages count the matched control plus the independently validated target. Unscored automatic extension discoveries remain separate and unvalidated; raw and reviewed counts are both recorded in position_trials.csv. Audits: '+', '.join(scope_links)+'.') if scope_links else ''}
 
 {chr(10).join(pages)}
@@ -234,4 +242,6 @@ if __name__=='__main__':
     for name in ('study','previous','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--iteration',type=int,default=1)
     p.add_argument('--membership-scopes',type=Path,help='Optional explicit audits of unscored incidental extension discoveries')
+    p.add_argument('--numerical-followup',type=Path,help='Explicit preserved follow-up output, if different from the iteration default')
+    p.add_argument('--interrupted-followup',type=Path,help='Preserve a terminal execution failure preceding a fresh run')
     run(p.parse_args())
