@@ -23,11 +23,17 @@ from prototype_dsx01_continuous_position import latlon
 
 
 class NewFamily:
-    def __init__(self,scan,entries,model,*,phase_step=.1,allow_uncalibrated_label=False):
+    def __init__(self,scan,entries,model,*,phase_step=.1,allow_uncalibrated_label=False,
+                 integrate_orbit_uncertainty=True,integrate_receiver_uncertainty=True):
         families={e['candidate_index'] for e in entries}
         if len(families)!=1:raise ValueError('one shared new family per exact integration required')
         self.j=next(iter(families));self.entries=entries;self.scan=scan
         self.allow_uncalibrated_label=allow_uncalibrated_label
+        # Research-only binary ablations; defaults preserve the full likelihood.
+        if type(integrate_orbit_uncertainty) is not bool or type(integrate_receiver_uncertainty) is not bool:
+            raise ValueError('uncertainty integration switches must be boolean')
+        self.integrate_orbit_uncertainty=integrate_orbit_uncertainty
+        self.integrate_receiver_uncertainty=integrate_receiver_uncertainty
         self.tracks=[scan.tracks[e['track_index']] for e in entries];counts=[len(t['times']) for t in self.tracks]
         boundaries=np.r_[0,np.cumsum(counts)];self.slices=[slice(a,b) for a,b in zip(boundaries[:-1],boundaries[1:],strict=True)]
         self.times=np.concatenate([t['times'] for t in self.tracks]);self.q=np.concatenate([np.full(n,t['rf_hz']/11.5e9) for n,t in zip(counts,self.tracks,strict=True)])
@@ -51,7 +57,8 @@ class NewFamily:
         self.receipt=dict(candidate_index=self.j,norad=int(scan.norads[self.j]),phase_step_s=phase_step,
             phase_prior_mean_s=mean,phase_prior_sigma_s=sigma_phase,phase_prior_nu=model['nu'],
             prior_mass_in_phase_box=float(distribution.cdf(15)-distribution.cdf(-15)),orbital_prior=metadata,
-            history=history,target_updates_receiver_calibration=False,conditions_on_incumbent_predictive_uncertainty=True)
+            history=history,target_updates_receiver_calibration=False,conditions_on_incumbent_predictive_uncertainty=True,
+            integrate_orbit_uncertainty=integrate_orbit_uncertainty,integrate_receiver_uncertainty=integrate_receiver_uncertainty)
 
     def evaluate(self,p,x,powers,old_entries,*,details=False,refine_phase=False):
         if self.j in p.labels:
@@ -76,7 +83,9 @@ class NewFamily:
         modes=paired_frequency_modes(self.bank,self.modes,self.grid_times,self.grid_labels,self.phases,*latlon(x))
         f=f.reshape(len(self.phases),-1)*self.q;e=e.reshape(len(self.phases),-1)
         modes=modes.reshape(len(self.phases),len(self.times),3)*self.q[None,:,None]
-        conditional_mean=h@mean+f;cov=self.noise+h@posterior@h.T
+        if not self.integrate_orbit_uncertainty:modes=np.zeros_like(modes)
+        conditional_mean=h@mean+f
+        cov=self.noise+(h@posterior@h.T if self.integrate_receiver_uncertainty else 0.)
         result=phase_mixture_evidence(self.values,conditional_mean,cov,modes,self.logprior,e.min(axis=1)>=0)
         if not details:return result['negative_twice_log_density']
         weights=result['phase_weights'];k=int(np.argmax(weights));phase_mean=float(weights@self.phases)
@@ -87,6 +96,7 @@ class NewFamily:
             def at_phase(phase):
                 ff,ee=paired_phase_frequency(bank,self.times,np.zeros(len(self.times),int),np.array([phase]),*latlon(x))
                 uu=paired_frequency_modes(bank,mode_bank,self.times,np.zeros(len(self.times),int),np.array([phase]),*latlon(x))*self.q[:,None]
+                if not self.integrate_orbit_uncertainty:uu=np.zeros_like(uu)
                 ff=ff*self.q
                 value=phase_mixture_evidence(self.values,(h@mean+ff)[None],cov,uu[None],np.zeros(1),np.array([ee.min()>=0]))
                 return value,ff,uu,ee
@@ -121,7 +131,9 @@ def resolution_audit(family,p,x,powers,entries,model):
     if np.max(abs(x))+.025>12.5:
         return dict(local_agreement=False,reason='centered local audit unavailable at regional boundary',steps_s=steps)
     predictors=[family]+[NewFamily(family.scan,family.entries,model,phase_step=h,
-        allow_uncalibrated_label=family.allow_uncalibrated_label) for h in steps[1:]]
+        allow_uncalibrated_label=family.allow_uncalibrated_label,
+        integrate_orbit_uncertainty=family.integrate_orbit_uncertainty,
+        integrate_receiver_uncertainty=family.integrate_receiver_uncertainty) for h in steps[1:]]
     offsets=np.array([[0,0],[.025,0],[-.025,0],[0,.025],[0,-.025]])
     scores=np.array([[f.evaluate(p,x+offset,powers,entries) for f in predictors] for offset in offsets])
     return dict(steps_s=steps,offsets_km=offsets,scores=scores,incumbent_phase_reference_fixed_locally=True,

@@ -10,7 +10,8 @@ from leo.analysis.research.predictive_track import gaussian_log_density,receiver
 from leo.sky.frames import geodetic_to_ecef_km
 
 
-def test_joint_two_track_family_matches_dense_phase_oracle_and_preserves_calibration(monkeypatch):
+@pytest.mark.parametrize('orbit,receiver',[(True,True),(True,False),(False,True),(False,False)])
+def test_joint_two_track_family_matches_dense_phase_oracle_and_preserves_calibration(monkeypatch,orbit,receiver):
     rng=np.random.default_rng(827);knots=np.arange(-20.,321.,5);coordinates=module.latlon([0.,0.])
     site=geodetic_to_ecef_km(*coordinates,0.);up=site/np.linalg.norm(site)
     position=site+up*600+(knots[:,None]-150)*[0.,2.,0.]
@@ -29,7 +30,8 @@ def test_joint_two_track_family_matches_dense_phase_oracle_and_preserves_calibra
         entries.append(dict(track_index=i,candidate_index=0,norad=42,alias=0,points=8,component=str(i),observation_ids=tracks[-1]['observation_ids']))
     scan=SimpleNamespace(tracks=tracks,rx_basis=basis,sky=bank,norads=np.array([42]),radio_sigma_hz=150.,
                          fixed_window_noise=dict(extra_parameter_BIC_gain=0,per_observation_noise_sigma_hz={}))
-    family=module.NewFamily(scan,entries,dict(shrinkage=0,multiplier=1,nu=None),phase_step=15.)
+    family=module.NewFamily(scan,entries,dict(shrinkage=0,multiplier=1,nu=None),phase_step=15.,
+        integrate_orbit_uncertainty=orbit,integrate_receiver_uncertainty=receiver)
     features=rng.normal(size=(17,10));coef=rng.normal(size=10)*.001
     calculated=dict(coefficient=coef,features=features,noise_precision=np.ones(1),coefficient_prior_precision=np.ones(10))
     p=SimpleNamespace(labels=[1],fitted_c=False,keep=np.ones(17,bool),noise_groups=np.zeros(17,int),point_noise=np.full(17,150.),calculate=lambda x:calculated)
@@ -39,7 +41,8 @@ def test_joint_two_track_family_matches_dense_phase_oracle_and_preserves_calibra
     for phase in family.phases:
         f,e=paired_phase_frequency(bank,family.times,np.zeros(16,int),np.array([phase]),*coordinates)
         u=paired_frequency_modes(bank,modes,family.times,np.zeros(16,int),np.array([phase]),*coordinates)*family.q[:,None]
-        density.append(gaussian_log_density(family.values-h@coef-family.q*f,family.noise+h@covariance@h.T+u@u.T) if e.min()>=0 else -np.inf)
+        density.append(gaussian_log_density(family.values-h@coef-family.q*f,
+            family.noise+(h@covariance@h.T if receiver else 0.)+(u@u.T if orbit else 0.)) if e.min()>=0 else -np.inf)
     expected=-2*logsumexp(family.logprior-logsumexp(family.logprior)+density)
     assert actual==pytest.approx(expected,rel=1e-10)
     np.testing.assert_array_equal(coef,before)

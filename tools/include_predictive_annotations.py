@@ -3,7 +3,8 @@ import argparse
 import copy
 from pathlib import Path
 import numpy as np
-from annotate_predictive_only import context
+from annotate_predictive_only import context,check_predictive_role
+from phase_reference_checks import phase_refresh
 from debug_fast_graph_unassociated import read,write,memberships
 from leo.analysis.research.grouped_prediction import identity_consensus
 from leo.analysis.research.track_recovery_diagnostics import profile_rate
@@ -79,11 +80,11 @@ def run(args):
             d,t=native_context(d,inv,source,r['track_id']);native_sources.append(str(source))
         else:t=next(t for t in inv['tracks'] if t['track_id']==r['track_id'])
         i=t['track_index'];track=d['scan'].tracks[i]
-        if i in p0.members:raise ValueError('this trial is for outside-calibration targets')
+        check_predictive_role(p0,i,getattr(args,'predictive_member',False))
         if used.intersection(track['observation_ids']):raise ValueError('target duplicates calibration or predictive observations')
         used.update(track['observation_ids']);j=int(np.flatnonzero(d['scan'].norads==annotation['norad'])[0])
         if j not in p0.labels:raise ValueError('new-family phase-mixture inclusion requires its separate implementation')
-        if native:
+        if native or getattr(args,'predictive_member',False):
             if not any(row['candidate_index']==j and d['keep'][sl].any() for row,sl in zip(p0.rows,p0.slices,strict=True)):
                 raise ValueError('native branch needs an active shared family; use a new-family mixture otherwise')
             aliases={q['alias'] for f in r['folds'] for q in f['proposals'] if q['norad']==annotation['norad']}
@@ -109,6 +110,7 @@ def run(args):
         target_orbit_prior=target_orbit_prior,
         shared_satellite_refresh=shared_satellite_refresh,
         conditional_satellite_refresh=conditional_satellite_refresh,
+        inactive_graph_member_as_predictive=getattr(args,'predictive_member',False),
         excluded_predictive_parameter_uncertainty_conditioned_away=conditional_satellite_refresh,
         native_branches=str(args.native_branches) if args.native_branches else None,
         native_sources=native_sources,original_graph_count=original_graph_count))
@@ -145,16 +147,17 @@ def run(args):
                     from predictive_orphan_phase import attach_orphan_phase
                     attach_orphan_phase(p,entries,d['powers'],orbital=args.orphan_orbit_prior)
                 cached(p);fit_result=position_step(p,x,entries,position_fit);x=np.asarray(fit_result['parameters'])
-                phase=np.clip(p.state(x)['phases'][p.labels],-15,15);delta=float(np.max(abs(phase-reference)));reference=phase
-                history.append(dict(endpoint_east_north_km=x,phase_change_s=delta,fit=fit_result))
+                reference,check=phase_refresh(p.state(x)['phases'][p.labels],reference);delta=check['phase_change_s']
+                history.append(dict(endpoint_east_north_km=x,fit=fit_result,**check))
             row=summary(p,x,entries)
             membership_view=copy.copy(p);membership_view.scan=copy.copy(p.scan);membership_view.scan.tracks=p.scan.tracks[:original_graph_count]
-            _,_,ids,_=memberships(membership_view,x,entries);old=set(inv['policy'][arm]['proposed_associated_ids'])
+            _,_,ids,owners=memberships(membership_view,x,entries);old=set(inv['policy'][arm]['proposed_associated_ids'])
             receiver_change=p.calculate(x).get('shared_satellite_receiver_change',row['linear_calibration_max_difference'])
             if receiver_change>1e-10:raise ValueError('predictive data changed receiver calibration at fixed position')
             row.update(history=history,final_phase_change_s=delta,proposed_associated_ids=sorted(ids),
+                proposed_owners=owners,
                 added_points=len(ids-old),lost_points=len(old-ids),targets=[g for g in row['linear_gates'] if g['component'] in {e['component'] for e in extras}])
-            if native and extras:
+            if extras:
                 calc=p.calculate(x);diagnostics=[]
                 for entry,sl in zip(p.linear_entries,p.linear_slices,strict=True):
                     if entry not in extras:continue
@@ -162,7 +165,8 @@ def run(args):
                     terms=profile(raw,np.zeros(len(raw)),*p.scan.white[entry['track_index']],bias_sigma=300.)
                     diagnostics.append(dict(component=entry['component'],norad=entry['norad'],times_s=track['times'],CFO_hz=track['values'],
                         predicted_CFO_hz=track['values']-raw,residual_hz=terms['residual'][0],RMS_hz=float(terms['rms'][0]),bias_hz=float(terms['bias'][0])))
-                row['native_target_diagnostics']=diagnostics
+                row['target_diagnostics']=diagnostics
+                if native:row['native_target_diagnostics']=diagnostics
             if args.orphan_phase_refresh:
                 from predictive_orphan_phase import exact_phase_replay
                 row['orphan_phase_replay']=exact_phase_replay(p,x,entries)
@@ -170,7 +174,7 @@ def run(args):
                 from shared_satellite_refresh import exact_shared_replay
                 row['shared_satellite_replay']=exact_shared_replay(p,x,entries)
             pair[arm]=row
-        valid=pair_passes(pair,include_linear=True) and all(r['lost_points']==0 for r in pair.values())
+        valid=pair_passes(pair,include_linear=True) and all(r['lost_points']==0 and r['final_phase_change_s']<=.01 for r in pair.values())
         if args.orphan_phase_refresh:
             valid=valid and all(r['orphan_phase_replay']['phases_in_bounds'] and r['orphan_phase_replay']['maximum_phase_linearization_error_hz']<=1 for r in pair.values())
         if shared_satellite_refresh or conditional_satellite_refresh:
@@ -188,6 +192,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['inventory','output']:p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--orphan-phase-refresh',action='store_true')
+    p.add_argument('--predictive-member',action='store_true',help='Allow inactive graph members; require active shared family and validated stable alias')
     p.add_argument('--orphan-orbit-prior',action='store_true')
     p.add_argument('--noise-policy',choices=['original','annotation_fixed'],default='original')
     p.add_argument('--target-orbit-prior',action='store_true',help='Causal three-mode prior for active target families, using only original curved calibration')

@@ -22,7 +22,9 @@ def run(args):
     inv = read(args.study / 'all-large-track-recovery' / pr['job']['job_id'] / 'inventory.json')
     d = context(inv)
     family = NewFamily(d['scan'], pr['targets'], d['model'], phase_step=pr['phase_step_s'],
-                       allow_uncalibrated_label=pr.get('uncalibrated_label', False))
+                       allow_uncalibrated_label=pr.get('uncalibrated_label', False),
+                       integrate_orbit_uncertainty=pr['family_prior'].get('integrate_orbit_uncertainty', True),
+                       integrate_receiver_uncertainty=pr['family_prior'].get('integrate_receiver_uncertainty', True))
     incumbent = {}; controls = {}; rows = []; hashes = {}
     for arm, (p, x) in d['problems'].items():
         _, _, ids, incumbent[arm] = memberships(p, x, d['entries'])

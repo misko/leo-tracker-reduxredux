@@ -33,7 +33,8 @@ def run(args):
         if used.intersection(track['observation_ids']):raise ValueError('target duplicates retained observations')
         used.update(track['observation_ids'])
         targets.append(dict(track_index=t['track_index'],component=track['key'],candidate_index=j,norad=a['norad'],alias=next(iter(aliases)),points=len(track['times']),observation_ids=track['observation_ids']))
-    family=NewFamily(d['scan'],targets,d['model'],phase_step=args.phase_step,allow_uncalibrated_label=args.uncalibrated_label)
+    family=NewFamily(d['scan'],targets,d['model'],phase_step=args.phase_step,allow_uncalibrated_label=args.uncalibrated_label,
+        integrate_orbit_uncertainty=not args.omit_orbit_uncertainty,integrate_receiver_uncertainty=not args.omit_receiver_uncertainty)
     write(out/'protocol.json',dict(job=inv['job'],targets=targets,validation=[str(p) for p in args.validation],family_prior=family.receipt,
         optimizer=args.optimizer+' normalized joint objective',maxiter=48,maxfun=240,phase_rounds=5,start=[0,0],box_width_km=25,
         control_uses_same_optimizer=True,c0_vs_fitted_c=True,GPS_used=False,future_TLE=False,phase_step_s=args.phase_step,
@@ -81,5 +82,7 @@ if __name__=='__main__':
     for key in ['inventory','output']:p.add_argument('--'+key,type=Path,required=True)
     p.add_argument('--validation',type=Path,nargs='+',required=True);p.add_argument('--phase-step',type=float,default=.1)
     p.add_argument('--uncalibrated-label',action='store_true')
+    p.add_argument('--omit-orbit-uncertainty',action='store_true',help='Diagnostic ablation only; removes physical mode covariance')
+    p.add_argument('--omit-receiver-uncertainty',action='store_true',help='Diagnostic ablation only; keeps conditional receiver mean, removes its covariance')
     p.add_argument('--skip-phase-audit',action='store_true',help='Historical replay only; results lack the numerical inclusion guard')
     p.add_argument('--optimizer',choices=['lbfgsb','powell'],default='lbfgsb');run(p.parse_args())
