@@ -15,6 +15,7 @@ from report_predictive_role_reassessment import complete_replay_slacks
 from report_omitted_predictive_recovery import target_diagnostic
 from report_predictive_covariance_transfer import compact_replays
 from report_systematic_annotation import compact_evidence
+from review_annotation_competition import matched_expansion
 
 
 def run(args):
@@ -33,11 +34,25 @@ def run(args):
     previous=args.previous/'annotation_ledger.csv';hashes[str(previous)]=hashlib.sha256(previous.read_bytes()).hexdigest();ledger=list(csv.DictReader(previous.open()));byid={r['track_id']:r for r in ledger}
     provenance=s/f'shifted-capture-provenance-v{iteration}';cap=load(provenance/'summary.json');verify_sources(cap);capture={r['track_id']:r for r in load(provenance/'rows.json')}
     shutil.copyfile(provenance/'capture_provenance.csv',out/'capture_provenance.csv')
-    annotations=[];partitions=[];terminals=[];gallery=[];plots={};comparisons=[];positions=[];failures=[]
+    annotations=[];partitions=[];terminals=[];gallery=[];plots={};comparisons=[];positions=[];failures=[];competition=[]
+    review=getattr(args,'competition_review',None);review_ids=set()
+    if review:
+        review_protocol=load(review/'protocol.json');verify_sources(review_protocol)
+        review_ids={j['track_id'] for j in review_protocol['jobs']}
+        review_execution=load(review/'execution.json')
+        if {r['job']['track_id'] for r in review_execution}!=review_ids or any(r['status']!='complete' for r in review_execution):raise ValueError('competition review incomplete')
+        expected={j['track_id'] for j in jobs if read(q/j['track_id']/'result.json')['annotation']['status']=='conditionally_supported_identity'}
+        if review_ids!=expected:raise ValueError('competition review must cover every initially supported identity')
     for job in jobs:
         tid=job['track_id'];terminal=load(attempt/(tid+'-terminal.json'));terminals.append(terminal)
         if terminal['status']!='complete':raise ValueError('annotation not terminal complete')
-        r=load(q/tid/'result.json');p=load(q/tid/'protocol.json');a=r['annotation'];inv=load(Path(job['inventory']))
+        annotation_root=q;r=load(q/tid/'result.json');p=load(q/tid/'protocol.json')
+        if tid in review_ids:
+            expanded=load(review/tid/'result.json');counts=matched_expansion(r,expanded)
+            competition.append(dict(track_id=tid,scan=job['label'],before_status=r['annotation']['status'],after_status=expanded['annotation']['status'],before_norad=r['annotation']['norad'],after_norad=expanded['annotation']['norad'],before_margin=r['annotation']['minimum_margin'],after_margin=expanded['annotation']['minimum_margin'],expanded_counts=' '.join(str(c['expanded']) for c in counts)))
+            r=expanded;p=load(review/tid/'protocol.json');annotation_root=review
+            terminals.append(load(review/(tid+'-terminal.json')))
+        a=r['annotation'];inv=load(Path(job['inventory']))
         t=read(Path(inv['job']['root'])/inv['job']['case']/'tracks.json')[job['track_index']]
         require_distinct_annotation(r,p)
         if not p['partition_plan']['schedule']['partition_scheme']=='shifted_origin_v1':raise ValueError('not shifted validation')
@@ -45,9 +60,10 @@ def run(args):
         annotations.append(dict(scan=label,inventory_alias=job['label'],track_id=tid,points=job['points'],status=a['status'],norad=a['norad'],margin=a.get('minimum_margin'),capture_mode=capture[tid]['capture_mode']))
         for f in r['folds']:
             tr,he=replay_split(t['times'],f['split']);partitions.append(dict(track_id=tid,seed=f['seed'],origin_s=f['split']['block_origin_s'],training=int(tr.sum()),held=int(he.sum()),held_indices=' '.join(map(str,np.flatnonzero(he)))))
-        byid[tid].update(predictive_recheck_source=str(q/tid/'result.json'),predictive_recheck_state=a['status'],predictive_recheck_minimum_margin=a.get('minimum_margin'),annotation_likelihood_role='predictive_only; shifted_origin_v1')
+        byid[tid].update(predictive_recheck_source=str(annotation_root/tid/'result.json'),predictive_recheck_state=a['status'],predictive_recheck_minimum_margin=a.get('minimum_margin'),annotation_likelihood_role='predictive_only; shifted_origin_v1')
         gallery.append((job,t,a,label))
     root=s/f'shifted-annotation-inclusion-v{iteration}';retry=s/f'shifted-annotation-numerical-followup-v{iteration}';execution=load(root/'execution.json');verify_sources(load(root/'protocol.json'))
+    if review and {r['job']['track_id'] for r in execution}!={a['track_id'] for a in annotations if a['status']=='conditionally_supported_identity'}:raise ValueError('inclusions must follow reviewed identities')
     followup={r['job']['track_id']:r for r in load(retry/'execution.json')};verify_sources(load(retry/'protocol.json'))
     for rec in execution:
         job=rec['job'];tid=job['track_id'];variants=[('initial',root,rec)]
@@ -87,6 +103,7 @@ def run(args):
     older_remaining=[r for r in load(args.previous/'remaining_role_candidates.json') if r['track_id'] not in processed]
     write(out/'remaining_shifted_candidates.json',shifted_remaining);write(out/'remaining_role_candidates.json',older_remaining)
     for name,rows in [('annotations.csv',annotations),('partitions.csv',partitions),('comparisons.csv',comparisons),('position_trials.csv',positions),('failed_gates.csv',failures),('executions.csv',terminals)]:csvout(name,rows)
+    if competition:csvout('candidate_competition.csv',competition)
     fig,axes=plt.subplots(1,2,figsize=(13,5),layout='constrained')
     for ax,arm in zip(axes,('c0','fitted_c'),strict=True):
         x=np.arange(len(final));ax.barh(x-.16,[r[arm+'_before_km'] for r in final],.32,color='#999',label='Matched control');ax.barh(x+.16,[r[arm+'_after_km'] for r in final],.32,color=['#009e73' if r['qualified'] else '#d55e00' for r in final],label='Addition: green passes RF checks');ax.set(yticks=x,yticklabels=[r['scan'] for r in final],xlabel='Evaluation position error (km)',title=arm);ax.invert_yaxis();ax.legend(fontsize=7)
@@ -108,12 +125,14 @@ def run(args):
         csvout('annotation_ledger.csv',ledger)
         summary=dict(batch=iteration,annotations=len(jobs),annotation_states=dict(Counter(r['status'] for r in annotations)),position_trials=len(final),
             qualified_curves=sum(r['qualified'] for r in final),qualified_points=sum(r['points'] for r in final if r['qualified']),
-            remaining_shifted=len(shifted_remaining),remaining_older_role=len(older_remaining),capture_modes=cap['modes'],numerical_followups=len(followup),production_changed=False,goal_complete=False)
+            remaining_shifted=len(shifted_remaining),remaining_older_role=len(older_remaining),capture_modes=cap['modes'],numerical_followups=len(followup),competition_reviews=len(competition),competition_downgrades=sum(r['after_status']!='conditionally_supported_identity' for r in competition),production_changed=False,goal_complete=False)
         write(out/'summary.json',summary);write(out/'sources.json',hashes)
         with gzip.open(out/'evidence.json.gz','wt') as f:json.dump(evidence,f,separators=(',',':'))
         (out/'README.md').write_text(f'''# Shifted-origin annotation batch {iteration}
 
 The next **{len(jobs)}** wholly unowned curves from the frozen timestamp-selected queue have complete predictive-only assessments. Outcomes: **{summary['annotation_states']}**. There are **{len(final)} full position trials**, with **{summary['qualified_curves']} RF-qualified curves / {summary['qualified_points']} points** in separate trials. This is not a combined recovery or a production change.
+
+{('All '+str(len(competition))+' initially supported identities were reassessed with a candidate cap of 12 before position inclusion. '+str(summary['competition_downgrades'])+' lost conditional support. The original scores, c arms, aliases and physical partitions replay unchanged; [candidate_competition.csv](candidate_competition.csv) records both outcomes and actual candidate counts. This expands the existing geometry nomination shortlist; it is not an exhaustive all-catalogue likelihood search.') if review else ''}
 
 ## Scope, validation and capture provenance
 
@@ -242,4 +261,5 @@ if __name__=='__main__':
     for n in ('study','previous','output'):p.add_argument('--'+n,type=Path,required=True)
     p.add_argument('--batch',type=int,default=1)
     p.add_argument('--membership-scopes',type=Path)
+    p.add_argument('--competition-review',type=Path)
     run(p.parse_args())
