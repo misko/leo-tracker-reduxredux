@@ -1,6 +1,6 @@
 import json
 import pytest
-from run_annotation_inventory import pending_jobs
+from run_annotation_inventory import pending_jobs,annotation_command
 
 
 def test_queued_running_and_incomplete_attempts_are_not_restarted(tmp_path):
@@ -25,3 +25,17 @@ def test_dataset_priority_keeps_global_claims_and_other_rows(tmp_path):
     attempt=tmp_path/'attempt-1';attempt.mkdir();(attempt/'selected.json').write_text(json.dumps(rows[:1]))
     assert pending_jobs({'rows':rows},tmp_path,3,scope='DS24')==[rows[1]]
     assert pending_jobs({'rows':rows},tmp_path,3)==rows[1:]
+
+
+def test_predictive_member_queue_uses_actual_inclusion_role_and_causal_phase_mixture(tmp_path):
+    row=dict(track_id='a',inventory='/immutable/inventory.json')
+    cmd=annotation_command(row,tmp_path,predictive_member=True,distinct_partitions=True)
+    assert cmd[1].endswith('annotate_predictive_only.py')
+    assert '--predictive-member' in cmd and '--uncalibrated-phase-mixture' in cmd
+    assert '--distinct-partitions' in cmd
+    assert cmd[cmd.index('--output')+1]==str(tmp_path/'a')
+    default=annotation_command(row,tmp_path)
+    assert default[1].endswith('annotate_track_predictively.py')
+    assert '--predictive-member' not in default
+    with pytest.raises(ValueError,match='choose'):
+        annotation_command(row,tmp_path,predictive_only=True,predictive_member=True)
