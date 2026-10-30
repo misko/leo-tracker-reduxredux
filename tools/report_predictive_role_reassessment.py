@@ -55,7 +55,7 @@ def run(args):
     for p,digest in cap_summary['source_hashes'].items():
         if hashlib.sha256(Path(p).read_bytes()).hexdigest()!=digest:raise ValueError('changed capture provenance')
     shutil.copyfile(provenance/'capture_provenance.csv',out/'capture_provenance.csv');write(out/'capture_provenance_summary.json',cap_summary)
-    annotations=[];partitions=[];gallery=[];terminals=[];plots={};positions=[];comparisons=[];failures=[]
+    annotations=[];partitions=[];gallery=[];terminals=[];plots={};positions=[];comparisons=[];failures=[];scope_links=[]
     for job in selected:
         tid=job['track_id'];terminal=load(attempt/(tid+'-terminal.json'));terminals.append(terminal)
         if terminal['status']!='complete':raise ValueError('annotation batch incomplete')
@@ -85,16 +85,30 @@ def run(args):
             for path,digest in audit['source_hashes'].items():
                 if hashlib.sha256(Path(path).read_bytes()).hexdigest()!=digest:raise ValueError('exact replay source changed')
             qualified=bool(control['paired_valid'] and v['paired_valid'] and audit['all_verified']);final=label==variants[-1][0]
+            scope=None
+            scope_path=args.membership_scopes/(tid+'.json') if getattr(args,'membership_scopes',None) else None
+            if final and scope_path is not None and scope_path.exists():
+                scope=load(scope_path)
+                if not scope['RF_qualified_target_only']:raise ValueError('invalid membership scope')
+                for source,digest in scope['source_hashes'].items():
+                    if hashlib.sha256(Path(source).read_bytes()).hexdigest()!=digest:raise ValueError('changed scoped trial')
+                if str(p/'new_family.json') not in scope['source_hashes']:raise ValueError('membership scope belongs to another trial')
+                (out/'membership_scopes').mkdir(exist_ok=True)
+                shutil.copyfile(scope_path,out/'membership_scopes'/scope_path.name)
+                scope_links.append(f'[{job["label"]} scope audit](membership_scopes/{scope_path.name})')
             inv=load(Path(job['inventory']));ids={o for t in pr['targets'] for o in t['observation_ids']}
             row=dict(scan=job['label'],track_id=tid,norad=job['annotation']['norad'],points=len(ids),qualified=qualified,variant=label,final_variant=final,source_trial=str(p))
             for arm,z in v['arms'].items():
                 row[arm+'_before_km']=error(control['arms'][arm]);row[arm+'_after_km']=error(z)
                 d=target_diagnostic(z);before=set(control['arms'][arm]['proposed_associated_ids']);after=set(z['proposed_associated_ids'])
+                raw_after=after.copy()
+                if scope is not None:after=set(scope['arms'][arm]['reviewed_associated_ids'])
                 if qualified and (after-before!=ids or before-after):raise ValueError('qualified ownership differs from target')
                 positions.append(dict(scan=job['label'],track_id=tid,variant=label,final_variant=final,arm=arm,qualified=qualified,
                     control_error_km=error(control['arms'][arm]),addition_error_km=error(z),target_RMS_hz=d['RMS_hz'],
                     control_objective=control['arms'][arm]['negative_twice_elbo'],addition_objective=z['negative_twice_elbo'],
                     baseline_percent=100*len(before)/inv['summary'][0]['total_GLRT'],proposed_percent=100*len(after)/inv['summary'][0]['total_GLRT'],
+                    raw_proposed_points=len(raw_after),reviewed_proposed_points=len(after),unvalidated_extension_points=len(raw_after-after),
                     optimizer_success=z['history'][-1].get('success'),phase_change_s=z['final_phase_change_s'],exact_replay_pass=audit['all_verified']))
                 if final:plots[tid,arm]=d
             for arow in audit['rows']:
@@ -102,7 +116,9 @@ def run(args):
                     if slack<0:failures.append(dict(scan=job['label'],variant=label,role=arow['role'],arm=arow['arm'],gate=gate,slack=slack,
                         evidence_role='target' if gate.split('/',1)[0] in {t['component'] for t in pr['targets']} else 'incumbent'))
             comparisons.append(row)
-            if final:byid[tid].update(predictive_inclusion_source=str(p),predictive_research_inclusion='RF_verified_research_candidate' if qualified else 'inclusion_rejected')
+            if final:
+                byid[tid].update(predictive_inclusion_source=str(p),predictive_research_inclusion='RF_verified_research_candidate' if qualified else 'inclusion_rejected')
+                if scope is not None:byid[tid]['membership_scope_audit']=str(scope_path)
     final=[r for r in comparisons if r['final_variant']]; remaining=[r for r in pending if r['track_id'] not in {j['track_id'] for j in selected}]
     for name,rows in [('annotation_ledger.csv',ledger),('annotations.csv',annotations),('partitions.csv',partitions),('position_trials.csv',positions),('comparisons.csv',comparisons),('failed_replay_gates.csv',failures),('executions.csv',terminals)]:csvout(name,rows)
     write(out/'remaining_role_candidates.json',remaining)
@@ -203,6 +219,8 @@ Outcomes: **{summary['annotation_states']}**. Every supported identity has three
 
 Individual outcomes do not establish joint consistency. The earlier V06 joint audit illustrates this limitation; no union of individual position improvements is claimed. The failed-gate table distinguishes target from incumbent evidence and includes both nominal and continuously refined new-family target screens.
 
+{('Scoped membership: reported association percentages count the matched control plus the independently validated target. Unscored automatic extension discoveries remain separate and unvalidated; raw and reviewed counts are both recorded in position_trials.csv. Audits: '+', '.join(scope_links)+'.') if scope_links else ''}
+
 {chr(10).join(pages)}
 
 ## Remaining work and evidence
@@ -215,4 +233,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('study','previous','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--iteration',type=int,default=1)
+    p.add_argument('--membership-scopes',type=Path,help='Optional explicit audits of unscored incidental extension discoveries')
     run(p.parse_args())
