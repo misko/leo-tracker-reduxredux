@@ -97,6 +97,7 @@ def run(args):
         receipts.append(dict(path=str(folder),annotation=annotation))
     target_orbit_prior=getattr(args,'target_orbit_prior',False)
     shared_satellite_refresh=getattr(args,'shared_satellite_refresh',False)
+    conditional_satellite_refresh=getattr(args,'conditional_satellite_refresh',False)
     if target_orbit_prior:d=target_orbit_context(d,sorted({t['candidate_index'] for t in targets}))
     write(out/'protocol.json',dict(job=inv['job'],targets=targets,annotation_receipts=receipts,matched_c_arms=True,
         phase_rounds=5,steps=48,start=[0,0] if position_fit=='regional_unconstrained' else 'accepted RF incumbent',
@@ -107,6 +108,8 @@ def run(args):
         orphan_orbit_prior=args.orphan_orbit_prior,GPS_used=False,future_TLE=False,
         target_orbit_prior=target_orbit_prior,
         shared_satellite_refresh=shared_satellite_refresh,
+        conditional_satellite_refresh=conditional_satellite_refresh,
+        excluded_predictive_parameter_uncertainty_conditioned_away=conditional_satellite_refresh,
         native_branches=str(args.native_branches) if args.native_branches else None,
         native_sources=native_sources,original_graph_count=original_graph_count))
     variants=[('control',[])]+[(f'target_{k}',[t]) for k,t in enumerate(targets)]
@@ -135,6 +138,9 @@ def run(args):
                 if shared_satellite_refresh:
                     from shared_satellite_refresh import attach_shared_satellite_refresh
                     attach_shared_satellite_refresh(p,entries,d['powers'],[t['candidate_index'] for t in targets])
+                if conditional_satellite_refresh:
+                    from conditional_satellite_refresh import attach_conditional_satellite_refresh
+                    attach_conditional_satellite_refresh(p,entries,d['powers'],[t['candidate_index'] for t in targets])
                 if args.orphan_phase_refresh:
                     from predictive_orphan_phase import attach_orphan_phase
                     attach_orphan_phase(p,entries,d['powers'],orbital=args.orphan_orbit_prior)
@@ -160,20 +166,21 @@ def run(args):
             if args.orphan_phase_refresh:
                 from predictive_orphan_phase import exact_phase_replay
                 row['orphan_phase_replay']=exact_phase_replay(p,x,entries)
-            if shared_satellite_refresh:
+            if shared_satellite_refresh or conditional_satellite_refresh:
                 from shared_satellite_refresh import exact_shared_replay
                 row['shared_satellite_replay']=exact_shared_replay(p,x,entries)
             pair[arm]=row
         valid=pair_passes(pair,include_linear=True) and all(r['lost_points']==0 for r in pair.values())
         if args.orphan_phase_refresh:
             valid=valid and all(r['orphan_phase_replay']['phases_in_bounds'] and r['orphan_phase_replay']['maximum_phase_linearization_error_hz']<=1 for r in pair.values())
-        if shared_satellite_refresh:
+        if shared_satellite_refresh or conditional_satellite_refresh:
             valid=valid and all(r['shared_satellite_replay']['phases_in_bounds'] and r['shared_satellite_replay']['maximum_phase_linearization_error_hz']<=1 for r in pair.values())
         write(out/f'{name}.json',dict(job=inv['job'],arms=pair,baseline=inv['policy'],paired_valid=valid,
             target_entries=extras,original_calibration_mask=d['keep'],target_calibrates_receiver=False,
             target_updates_unobserved_satellite_parameters=args.orphan_phase_refresh,
             orphan_phase_refresh=args.orphan_phase_refresh,orphan_orbit_prior=args.orphan_orbit_prior,
-            noise_policy=noise_policy,position_fit=position_fit,target_orbit_prior=target_orbit_prior,shared_satellite_refresh=shared_satellite_refresh,no_production_change=True))
+            noise_policy=noise_policy,position_fit=position_fit,target_orbit_prior=target_orbit_prior,shared_satellite_refresh=shared_satellite_refresh,
+            conditional_satellite_refresh=conditional_satellite_refresh,no_production_change=True))
         print(inv['job']['label'],name,valid,[(a,r['added_points'],r['lost_points']) for a,r in pair.items()],flush=True)
 
 
@@ -185,6 +192,7 @@ if __name__=='__main__':
     p.add_argument('--noise-policy',choices=['original','annotation_fixed'],default='original')
     p.add_argument('--target-orbit-prior',action='store_true',help='Causal three-mode prior for active target families, using only original curved calibration')
     p.add_argument('--shared-satellite-refresh',action='store_true',help='Expose requested satellite predictive posterior means; preserve receiver means and all acceptance gates')
+    p.add_argument('--conditional-satellite-refresh',action='store_true',help='Research conditional prediction: update satellite and fragment biases, holding other coefficients at their posterior means')
     p.add_argument('--joint-only',action='store_true',help='Run matched control and combined trial; singles have separate frozen receipts')
     p.add_argument('--position-fit',choices=['regional_unconstrained','incumbent_unconstrained','incumbent_elbo_unconstrained','incumbent_feasible'],
         default='regional_unconstrained',help='Research-only matched continuation from accepted RF incumbent, with optional unchanged gate constraints')
@@ -194,4 +202,5 @@ if __name__=='__main__':
     a=p.parse_args()
     if a.orphan_orbit_prior and not a.orphan_phase_refresh:p.error('orbit prior requires phase refresh')
     if a.shared_satellite_refresh and a.orphan_phase_refresh:p.error('shared and orphan refresh are separate experiments')
+    if a.conditional_satellite_refresh and (a.shared_satellite_refresh or a.orphan_phase_refresh):p.error('conditional, shared and orphan refresh are separate experiments')
     run(a)
