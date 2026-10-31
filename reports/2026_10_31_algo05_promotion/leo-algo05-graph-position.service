@@ -1,0 +1,33 @@
+[Unit]
+Description=ALGO05 conditional gap recovery preserving completed ALGO04 positions
+After=local-fs.target leo-algo04-graph-position.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-fast-graph/4675ec446f2889d92eeea902c234f3f91ab48007
+Environment=PYTHONPATH=/opt/leo-fast-graph/4675ec446f2889d92eeea902c234f3f91ab48007/src:/opt/leo-fast-graph/4675ec446f2889d92eeea902c234f3f91ab48007/tools
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-graph-position-v4
+ExecStart=/opt/leo-fast-graph/4675ec446f2889d92eeea902c234f3f91ab48007/venv/bin/python -B -m leo.cli.fast_graph_position_v4 --bulk-root /srv/bulk/leo --minimum-completed-utc-ns 1793467337560783600 --maximum-seconds 1200
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target
