@@ -1,0 +1,67 @@
+{
+  "schema": "algo04-api-ui-predeployment-review/v1",
+  "reviewed_utc": "2026-10-31T03:14:43.815473+00:00",
+  "state": "source-tested-not-deployed",
+  "production_mutated": false,
+  "default_selection_activated": false,
+  "live_api": {
+    "ActiveState": "active",
+    "FragmentPath": "/etc/systemd/system/leo-api.service",
+    "DropInPaths": "/etc/systemd/system/leo-api.service.d/zzzz-web-visit-table.conf /etc/systemd/system/leo-api.service.d/zzzzz-native-low-rate.conf /etc/systemd/system/leo-api.service.d/zzzzzz-glrt-track-overlay.conf /etc/systemd/system/leo-api.service.d/zzzzzzz-partial-band-analysis.conf /etc/systemd/system/leo-api.service.d/zzzzzzzz-adaptive-scan-links.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzz-adaptive-history-validation.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzz-top-glrt-candidate.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzz-adaptive-history-cache.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzz-sacramento-only.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzz-regional-position.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzz-hard60.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzz-hard60-bounded.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzz-hard60-b7.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzz-position-error-ui.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzz-fast-scans.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzz-shared-scans.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzz-fast-v16.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-fast-orbits.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-orbit-status-ui.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-shared-position.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-10m.conf /etc/systemd/system/leo-api.service.d/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-algo03.conf",
+    "MainPID": "4160789",
+    "ExecStart": "{ path=/usr/bin/env ; argv[]=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 LEO_WEB_DIST=/opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d/web/dist /opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d/.venv/bin/leo-api ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }",
+    "Environment": {
+      "PYTHONPATH": "",
+      "LEO_WEB_DIST": "/opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d/web/dist",
+      "LEO_SHARED_FAST_MODEL": "shared-scan-q-v2",
+      "LEO_GRAPH_POSITION_MODEL": "algo03-causal-predictive-v1"
+    },
+    "WorkingDirectory": "/opt/leo-tracker/releases/9b3be7f84fddeb1a1ca4dacb283edb65af24be0d",
+    "effective_final_override_sha256": "82a38441e4a3a1386873aadfff9430eb105df54cd08d6d8c4a00230488712513"
+  },
+  "selectors": {
+    "current": "/opt/leo-tracker/releases/029bb1bd655e00a2850d3454661da1cd2fa6ba40",
+    "current-api": "/opt/leo-tracker/releases/17484895464c225ebba977487aa36d3d81658bd8"
+  },
+  "source_root": "/srv/bulk/leo-dev/fast-algo02-production-v1",
+  "owned_source_sha256": {
+    "src/leo/storage/graph_position_view.py": "ceb9f207e475020ea4d12535ffd5e0691dea9b14a18b12aba37cdc2f2ab2f109",
+    "tests/storage/test_graph_position_view.py": "e288b7e7c36f2c20256295436c09b6483e009b41d89b7ca76ec2c7b56cf815c5",
+    "tests/api/test_graph_position.py": "0d679417968f27c98fb7ebe43d41b3bf8ece34a019d18eccd7e3235bc55c70d8",
+    "web/src/GraphPositionPanel.tsx": "d58efbf32d04b536fe56daa5ece42b822b27beafb1e1e183f326ba4350ed70d2",
+    "web/src/GraphPositionPanel.test.tsx": "0014d2db36f60b1f504cd6480e12c67ea7df3074e481f20b67237e69fee048a8"
+  },
+  "tests": {
+    "python_passed": 35,
+    "python_command": "PYTHONPATH=src:tools /home/mouse9911/gits/leo-tracker-reduxredux/.venv/bin/python -m pytest -q tests/api/test_graph_position.py tests/storage/test_graph_position_view.py tests/application/test_fast_graph_v2_production.py tests/api/test_production_entrypoint.py",
+    "web_panel_passed": 5,
+    "web_isolated_copy": "/tmp/algo04-graph-ui-089cfm47",
+    "web_dependency_source": "/home/mouse9911/gits/leo-tracker-reduxredux/web/node_modules",
+    "web_dependency_note": "Existing development dependency cache; final immutable application npm-ci/build remains separate deployment evidence",
+    "typescript_vite_build": "passed",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed"
+  },
+  "ports": {
+    "model_version": "algo04-causal-numerical-v1",
+    "store": "FastGraphPositionStoreV3(root, incumbent=v2store)",
+    "job": "v3store.job(v2store.job(v1source))",
+    "accepted_decision": "ALGO04_additive",
+    "accepted_endpoint": "terminal.candidate.selected.arms",
+    "fallback_decisions": [
+      "ALGO03_fallback",
+      "ALGO02_fallback"
+    ],
+    "v1_v2_presentation_preserved": true
+  },
+  "staging": {
+    "python": "/usr/bin/python3.14",
+    "python_observed": "3.14.4",
+    "python_3_12_at_usr_bin": "absent",
+    "uv": "/opt/leo-tracker/releases/029bb1bd655e00a2850d3454661da1cd2fa6ba40/.release-tools/uv",
+    "uv_executable_readonly_check": "passed",
+    "production_application_revision_must_be_committed_full_sha": true,
+    "selector_only_deploy_is_shadowed_by_live_override": true
+  },
+  "recipe": "api-ui-predeployment-review.md"
+}

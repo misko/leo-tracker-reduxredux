@@ -1,0 +1,33 @@
+[Unit]
+Description=ALGO04 numerical recovery preserving completed ALGO03 positions
+After=local-fs.target leo-algo03-graph-position.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef
+Environment=PYTHONPATH=/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/src:/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/tools
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-graph-position-v3
+ExecStart=/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/venv/bin/python -B -m leo.cli.fast_graph_position_v3 --bulk-root /srv/bulk/leo --minimum-completed-utc-ns 1793416793495348877 --maximum-seconds 1200
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target
