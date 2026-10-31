@@ -4,6 +4,26 @@ import { GraphPositionPanel } from "./GraphPositionPanel";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+it("shows ALGO05 gap recovery and the actual fallback model", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+    state: "complete", selected_model: "algo05-causal-gap-conditional-v1", decision: "ALGO05_additive", fallback: false,
+    selected: { model_version: "algo05-causal-gap-conditional-v1", position: { latitude_deg: 37.92, longitude_deg: -122.52 } },
+  }) })));
+  render(<GraphPositionPanel runId="scan" />);
+  expect(await screen.findByRole("heading", { name: "Graph localization · ALGO05" })).toBeInTheDocument();
+  expect(screen.getByText("ALGO05 conditional gap recovery")).toBeInTheDocument();
+  expect(screen.getByText("37.920000°, -122.520000°")).toBeInTheDocument();
+});
+
+it("labels the ALGO04 fallback while ALGO05 is pending", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+    state: "complete", selected_model: "algo05-causal-gap-conditional-v1", decision: "ALGO04_additive", fallback: true,
+    selected: { model_version: "algo04-causal-numerical-v1", position: null },
+  }) })));
+  render(<GraphPositionPanel runId="scan" />);
+  expect(await screen.findByText("ALGO04 fallback")).toBeInTheDocument();
+});
+
 it("shows selected ALGO03 and its original ALGO02 comparator", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
     state: "complete", selected_model: "algo03-causal-predictive-v1", decision: "ALGO03_single", fallback: false,
