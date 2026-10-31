@@ -1,0 +1,1433 @@
+{
+  "schema": "ds27-causal-initialization-audit/v1",
+  "dataset": "DS27",
+  "source_sha256": "sha256:d4edc2304f1fa68ca4aada2cfbdc94584bd269aa3f20c8211d9d87e8ba6c0d7a",
+  "manifest_sha256": "sha256:a0cf50e71336519b649677c91ae39ef2438a14b6e007ce2bc70da2b47211af32",
+  "evaluation_seal_sha256": "sha256:77a6dfe8b9cecaaf2b5db58482b7aec7bfb0d1ea2fb65379fd64794ea44b5c25",
+  "all_evaluation_terminal": true,
+  "GPS_truth_read": false,
+  "scientific_inference_rerun": false,
+  "scope": "All 15 frozen fast cases; available public ALGO02 snapshots used by ALGO03/04 recovery",
+  "counts": {
+    "pass": 13,
+    "fail": 0,
+    "error": 0,
+    "snapshot_unavailable": 2
+  },
+  "total_checks": 1053,
+  "limitations": [
+    "Hash agreement verifies frozen receipt consistency, not independent orbit accuracy.",
+    "Archive snapshot payloads were not reread; each recorded epoch/collection was checked.",
+    "Re-exported tracking JSON may have different formatting; original public-input byte hash and parsed content equivalence are checked separately.",
+    "The 250 km catalogue prefilter and 25 km localization search box are distinct."
+  ],
+  "cases": [
+    {
+      "case": "DS27-0001",
+      "status": "snapshot_unavailable",
+      "reason": "no_existing_public_GLRT_input",
+      "pipeline_sha256": "sha256:72ced40d4ae9fecaae233eb974e1b3112e4ceb8bff1c06152bbe752d34abecab",
+      "pipeline_state": "unavailable",
+      "pipeline_baseline_state": "unavailable"
+    },
+    {
+      "case": "DS27-0002",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0002/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:f88398c6a9a25ed081583cc59724c449a6fbb43889adb9dd05333f25f3275ddc",
+      "input_sha256": "sha256:695faa271a38e661350446a6b39fcd8f3eaa13c77bf74798cd1e4f519ccc4768",
+      "cutoff_utc_ns": 1793374478175845510,
+      "snapshot_tracking_byte_identical_to_public_input": true,
+      "candidate_count": 1700,
+      "latest_epoch": {
+        "count": 1700,
+        "minimum_utc_ns": 1793203207854911744,
+        "latest_utc_ns": 1793346284418047744,
+        "minimum_age_hours": 7.831599388268334,
+        "maximum_age_hours": 47.57508914826833
+      },
+      "latest_collection": {
+        "count": 1700,
+        "minimum_utc_ns": 1793372584012311398,
+        "latest_utc_ns": 1793372584012311398,
+        "minimum_age_hours": 0.5261565372533333,
+        "maximum_age_hours": 0.5261565372533333
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1700,
+            "minimum_utc_ns": 1793047946158944000,
+            "latest_utc_ns": 1793309602414176000,
+            "minimum_age_hours": 18.021044908197222,
+            "maximum_age_hours": 90.70333802819722
+          },
+          "collection": {
+            "count": 1700,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793354675408927643,
+            "minimum_age_hours": 5.500768588296389,
+            "maximum_age_hours": 30.497270521862223
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1700,
+            "minimum_utc_ns": 1793047946158944000,
+            "latest_utc_ns": 1793309602414176000,
+            "minimum_age_hours": 18.021044908197222,
+            "maximum_age_hours": 90.70333802819722
+          },
+          "collection": {
+            "count": 1700,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793354675408927643,
+            "minimum_age_hours": 5.500768588296389,
+            "maximum_age_hours": 30.497270521862223
+          },
+          "minimum_latest_previous_epoch_gap_s": 5615.529983744
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9048,
+          "minimum_utc_ns": 1792909359537696000,
+          "latest_utc_ns": 1793346284418047744,
+          "minimum_age_hours": 7.831599388268334,
+          "maximum_age_hours": 129.1996217081972
+        },
+        "collection": {
+          "count": 9048,
+          "minimum_utc_ns": 1793116933038177071,
+          "latest_utc_ns": 1793361802026459327,
+          "minimum_age_hours": 3.5211526072730557,
+          "maximum_age_hours": 71.54031601901083
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:db5d7c13aa8d7541a1d7a70947d7111d3aac94ecf3065eb3b51a1b79a7defd5e",
+        "SCAN/prepared.json": "sha256:dd5c5060610ef4663df3bda259cc1c04cc000f95392f4e9cb786bb6bbe75cccb",
+        "SCAN/tracking.json": "sha256:695faa271a38e661350446a6b39fcd8f3eaa13c77bf74798cd1e4f519ccc4768",
+        "frozen_public_input": "sha256:695faa271a38e661350446a6b39fcd8f3eaa13c77bf74798cd1e4f519ccc4768",
+        "SCAN/nominal_elements.json": "sha256:ed68062c4732524ea45b957238d950f317ed960f08458fc9727c1ec20c165c51",
+        "SCAN/selected.tle": "sha256:51fb4e1ac941b2fe38af8fe002891bb01f9021eeb7b1bd2a20e991455fe5278e",
+        "SCAN/bank.npz": "sha256:c1eb53e0eb37bde083cea13d89bc6213edbdec5df6e26a92bec544bb28f2a1e7",
+        "SCAN/previous_receipt.json": "sha256:d8905a5f3a98e07dc1533432b44e6fe78f1d2ed29082ae0f71e6d08fa519f915",
+        "SCAN/previous.tle": "sha256:0985fd02ea2b7d69a6bc546be38afc33dab006069cf5ad0bbc9a339285b3c0e5",
+        "causal_prior/SCAN/receipt.json": "sha256:a387dab29d35165f1af388af1759de304645d19784c6727386643afd68a856d0",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:88dd5ea57318937fd3deaa8ebb89a80e0d34815b27d2d79edde3ad47a5d41f71",
+        "causal_prior/SCAN/previous.tle": "sha256:51bcb735e240b6011b4e585e1b4413b6d4f710ee61becb527c66d5187e36961c",
+        "causal_phase_history/SCAN.json": "sha256:b8044435209ba1480fe905bb4b7eaca8da633db7e802e44ab57c62448bd7e0b4"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0004",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:b2759e488f5bca51b928a441ecb98c7a372ba453e1756d7ed398210c488f4221",
+      "input_sha256": "sha256:b6139d515d8a6a049bd506b8fd26e4db07be522b277a462ae419563035e6c454",
+      "cutoff_utc_ns": 1793383505258760598,
+      "snapshot_tracking_byte_identical_to_public_input": true,
+      "candidate_count": 1557,
+      "latest_epoch": {
+        "count": 1557,
+        "minimum_utc_ns": 1793212549404768000,
+        "latest_utc_ns": 1793376003000096000,
+        "minimum_age_hours": 2.0839607401661113,
+        "maximum_age_hours": 47.48773722016611
+      },
+      "latest_collection": {
+        "count": 1557,
+        "minimum_utc_ns": 1793383484214661252,
+        "latest_utc_ns": 1793383484214661252,
+        "minimum_age_hours": 0.005845583151666667,
+        "maximum_age_hours": 0.005845583151666667
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1557,
+            "minimum_utc_ns": 1793105795166624000,
+            "latest_utc_ns": 1793318402999808000,
+            "minimum_age_hours": 18.083960820166112,
+            "maximum_age_hours": 77.14169226016611
+          },
+          "collection": {
+            "count": 1557,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 2.0043829407491667,
+            "maximum_age_hours": 33.004793553831114
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.074304
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1557,
+            "minimum_utc_ns": 1793105795166624000,
+            "latest_utc_ns": 1793318402999808000,
+            "minimum_age_hours": 18.083960820166112,
+            "maximum_age_hours": 77.14169226016611
+          },
+          "collection": {
+            "count": 1557,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 2.0043829407491667,
+            "maximum_age_hours": 33.004793553831114
+          },
+          "minimum_latest_previous_epoch_gap_s": 3700.810944
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9457,
+          "minimum_utc_ns": 1792913980156128000,
+          "latest_utc_ns": 1793376003000096000,
+          "minimum_age_hours": 2.0839607401661113,
+          "maximum_age_hours": 130.4236396201661
+        },
+        "collection": {
+          "count": 9457,
+          "minimum_utc_ns": 1793127639880357773,
+          "latest_utc_ns": 1793383484214661252,
+          "minimum_age_hours": 0.005845583151666667,
+          "maximum_age_hours": 71.07371622300694
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:1619ca5ce00a7254507051dce18cc7496a528c76e2ef856dfb366f45f2c36856",
+        "SCAN/prepared.json": "sha256:024da35b38cee892f3ab44fb9a8a8b6e5474f43d5e25aec31b90afdc17d1bd2b",
+        "SCAN/tracking.json": "sha256:b6139d515d8a6a049bd506b8fd26e4db07be522b277a462ae419563035e6c454",
+        "frozen_public_input": "sha256:b6139d515d8a6a049bd506b8fd26e4db07be522b277a462ae419563035e6c454",
+        "SCAN/nominal_elements.json": "sha256:818a6116e7373213d0292cdef3fa79135e2cdf687ea5277066132a97247e4615",
+        "SCAN/selected.tle": "sha256:9605b9817c804841151d682d456877ba32628c4430c3383c62a309e953815319",
+        "SCAN/bank.npz": "sha256:60f53821ef1466d34a08eb8dda6955134d1cef3293877503c3b2a82a17fe96f5",
+        "SCAN/previous_receipt.json": "sha256:3d80f9e2b221c3430c49b4f3266878c5c5223030b8dc58de16a77703765bb05e",
+        "SCAN/previous.tle": "sha256:db362d652d8d5743167c870a8dbb0abf7b551172f5441119d5a3e96fcc354bd5",
+        "causal_prior/SCAN/receipt.json": "sha256:8ef5158203ac9ce9c7246434b181ffe51c24b8976b46dc665e6e4017757c8646",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:5a441684d0a62e7f0a4637697b83ad66422ce19347189a509f76d59bf82207aa",
+        "causal_prior/SCAN/previous.tle": "sha256:5e388e6f7a9deb1000c32ae0d1ca260c00ea5aa50b227e79807ff707da19cc2f",
+        "causal_phase_history/SCAN.json": "sha256:a0d9e8dc87baccd080c99c42fb6e74a7865b3d4a9b4326be09120b29eb36efb5"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0006",
+      "status": "snapshot_unavailable",
+      "reason": "no public completed snapshot descriptor",
+      "pipeline_sha256": "sha256:d8d4f3c3da59d00520316bcafd16dc203f497aef5c960aa4e91244a0d85c717d",
+      "pipeline_state": "unavailable",
+      "pipeline_baseline_state": "failed"
+    },
+    {
+      "case": "DS27-0008",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0008/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:e8e580ce87735a2adf7b57b65b61b770f92939ecf50050e4c8b1a2be79910a2e",
+      "input_sha256": "sha256:1f6b65d7db77a3aa6aeeab6b26270ea0c20bcf86d38b0eddc5a70e35f70c7254",
+      "cutoff_utc_ns": 1793398149983943794,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1361,
+      "latest_epoch": {
+        "count": 1361,
+        "minimum_utc_ns": 1793225530237536000,
+        "latest_utc_ns": 1793376003000096000,
+        "minimum_age_hours": 6.151939957720556,
+        "maximum_age_hours": 47.94992955772056
+      },
+      "latest_collection": {
+        "count": 1361,
+        "minimum_utc_ns": 1793394205666929477,
+        "latest_utc_ns": 1793394205666929477,
+        "minimum_age_hours": 1.0956436150880555,
+        "maximum_age_hours": 1.0956436150880555
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1361,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793318402999808000,
+            "minimum_age_hours": 22.151940037720557,
+            "maximum_age_hours": 94.86834267772056
+          },
+          "collection": {
+            "count": 1361,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 6.072362158303611,
+            "maximum_age_hours": 37.07277277138556
+          },
+          "minimum_latest_previous_epoch_gap_s": 5627.738304
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1361,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793318402999808000,
+            "minimum_age_hours": 22.151940037720557,
+            "maximum_age_hours": 94.86834267772056
+          },
+          "collection": {
+            "count": 1361,
+            "minimum_utc_ns": 1793264688001966806,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 6.072362158303611,
+            "maximum_age_hours": 37.07277277138556
+          },
+          "minimum_latest_previous_epoch_gap_s": 5627.738304
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 8355,
+          "minimum_utc_ns": 1792907735789664000,
+          "latest_utc_ns": 1793376003000096000,
+          "minimum_age_hours": 6.151939957720556,
+          "maximum_age_hours": 136.22616507772057
+        },
+        "collection": {
+          "count": 8355,
+          "minimum_utc_ns": 1793142237638636443,
+          "latest_utc_ns": 1793383484214661252,
+          "minimum_age_hours": 4.073824800706111,
+          "maximum_age_hours": 71.08676258537528
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:f43bb9f199eb09f0404232a1a69f329f556fad2b8880627e0f304c8a5676ec9b",
+        "SCAN/prepared.json": "sha256:82720b2d57c4b870a3162a1f315f8eafb197fe74ce43aa0565187ad0bb94825c",
+        "SCAN/tracking.json": "sha256:4ef21c27af8adaa64e1a9c6b4ecc01a7c76ea879c33357eaf91bcdb3ea79910e",
+        "frozen_public_input": "sha256:1f6b65d7db77a3aa6aeeab6b26270ea0c20bcf86d38b0eddc5a70e35f70c7254",
+        "SCAN/nominal_elements.json": "sha256:ff2d526840d2362bb7cc1f4f9052329dd2a6385df198987a309cb45166ad2c79",
+        "SCAN/selected.tle": "sha256:efd8f4b4078bfa14f445a1ac9390b7935eda3a10770dc4d6550c6b3f8056b46b",
+        "SCAN/bank.npz": "sha256:d4b92fcff3b76457cfc442417813e0a074b77b506541d4f53ebfded1560e5b82",
+        "SCAN/previous_receipt.json": "sha256:fbba0dcb826b9df62d187e1cd9903465a3762195805a3d7d094b266d5577c173",
+        "SCAN/previous.tle": "sha256:67c8163b085805c79f63c40587cf1581f9362052e1f9db1c241bf149b0872573",
+        "causal_prior/SCAN/receipt.json": "sha256:250507b2f9fe9a24c71f866689d920ead0b2694c52943814d36025c3f0ec5d5e",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:f13dbf766348c7f4573bc7489cc868bbbffb2773e30bd029b9e3825fd315b27b",
+        "causal_prior/SCAN/previous.tle": "sha256:67c8163b085805c79f63c40587cf1581f9362052e1f9db1c241bf149b0872573",
+        "causal_phase_history/SCAN.json": "sha256:1a934d8faabcff1c0e47358fc194e6f75d1564e72e6fb41b5ac0fc71408633d0"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0010",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0010/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:9b3558f9100643c4d1dc4ec160efaffed3b2efc6300f15e0dc5c9c7e758ff7a2",
+      "input_sha256": "sha256:099b7c2e88e4d8de9e555b0abaa18a58aef3e90214319927190a0579b4905267",
+      "cutoff_utc_ns": 1793403564049725301,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1410,
+      "latest_epoch": {
+        "count": 1410,
+        "minimum_utc_ns": 1793231657049888000,
+        "latest_utc_ns": 1793376003000096000,
+        "minimum_age_hours": 7.655847119250278,
+        "maximum_age_hours": 47.75194439925028
+      },
+      "latest_collection": {
+        "count": 1410,
+        "minimum_utc_ns": 1793401224775918491,
+        "latest_utc_ns": 1793401224775918491,
+        "minimum_age_hours": 0.6497982796694445,
+        "maximum_age_hours": 0.6497982796694445
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1410,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793343786913728000,
+            "minimum_age_hours": 16.604759999250277,
+            "maximum_age_hours": 96.37224983925027
+          },
+          "collection": {
+            "count": 1410,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 7.576269319833333,
+            "maximum_age_hours": 29.587966919836667
+          },
+          "minimum_latest_previous_epoch_gap_s": 7201.000224
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1410,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793343786913728000,
+            "minimum_age_hours": 16.604759999250277,
+            "maximum_age_hours": 96.37224983925027
+          },
+          "collection": {
+            "count": 1410,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793376289480173901,
+            "minimum_age_hours": 7.576269319833333,
+            "maximum_age_hours": 29.587966919836667
+          },
+          "minimum_latest_previous_epoch_gap_s": 7201.000224
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 8689,
+          "minimum_utc_ns": 1792475529093216000,
+          "latest_utc_ns": 1793376003000096000,
+          "minimum_age_hours": 7.655847119250278,
+          "maximum_age_hours": 257.7874879192503
+        },
+        "collection": {
+          "count": 8689,
+          "minimum_utc_ns": 1793145889111985070,
+          "latest_utc_ns": 1793383484214661252,
+          "minimum_age_hours": 5.577731962235833,
+          "maximum_age_hours": 71.57637159450861
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:e2c84d354b799fb33b92130cbaa5b8d98e723a062018eb6e1485d5d67f6aa815",
+        "SCAN/prepared.json": "sha256:053ddd824a0bfeb79270911b4c72ac983dc9cc87775d25d6d7cfe3a005a802dd",
+        "SCAN/tracking.json": "sha256:717442ecf0efbcfeea3da8f3e6581b16cab380a92c515309688e0e59608b81af",
+        "frozen_public_input": "sha256:099b7c2e88e4d8de9e555b0abaa18a58aef3e90214319927190a0579b4905267",
+        "SCAN/nominal_elements.json": "sha256:0dcb7292f0a207b1a9362e6d4463c5b0b3f2fe09f06be1a8bb3626e9f35fd264",
+        "SCAN/selected.tle": "sha256:68b9c2e5da6cc743e558c919182b24655197e72a7be6cea9da2f0d0921303496",
+        "SCAN/bank.npz": "sha256:d18688f3f388b7bb770a842f771db505f4144d6108b65cc4a040a839a48f0611",
+        "SCAN/previous_receipt.json": "sha256:643490ecfc84cfe0a9bb7574ea36e87a03395525f67cc4014fc26cc49a00d2a9",
+        "SCAN/previous.tle": "sha256:031e7e667edd45b51ac63d20cab15b6acadbef7e53da9a43dcf965c0a49706a5",
+        "causal_prior/SCAN/receipt.json": "sha256:491583d3bec814b6cbe352132b37580bd9df2aab5cd8c694f677d5b070a4e0a8",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:a9846aecaff7a30f77edf00175667ae683350b2a7906f2bcc9255aa1380cde88",
+        "causal_prior/SCAN/previous.tle": "sha256:031e7e667edd45b51ac63d20cab15b6acadbef7e53da9a43dcf965c0a49706a5",
+        "causal_phase_history/SCAN.json": "sha256:95a43941dfd2de18ae351452aef83d990ace595c63883ca0f3e5a9cf93ff9016"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0012",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0012/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:735a383859cae64dc55aa0766f41ace493e4e7fa3edabfdb620a76295dc4ec84",
+      "input_sha256": "sha256:0b420b6b6ee220c51f48c375c9ce13dbc4ceaa99b2c95e012c8c959c470a426c",
+      "cutoff_utc_ns": 1793408980943548087,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1467,
+      "latest_epoch": {
+        "count": 1467,
+        "minimum_utc_ns": 1793237331542688000,
+        "latest_utc_ns": 1793383202000160256,
+        "minimum_age_hours": 7.160817607730833,
+        "maximum_age_hours": 47.680389127801945
+      },
+      "latest_collection": {
+        "count": 1467,
+        "minimum_utc_ns": 1793404892674195055,
+        "latest_utc_ns": 1793404892674195055,
+        "minimum_age_hours": 1.1356303758422222,
+        "maximum_age_hours": 1.1356303758422222
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1467,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793368803000384000,
+            "minimum_age_hours": 11.160539767801945,
+            "maximum_age_hours": 97.87694256780195
+          },
+          "collection": {
+            "count": 1467,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793401224775918491,
+            "minimum_age_hours": 2.154491008221111,
+            "maximum_age_hours": 31.092659648388334
+          },
+          "minimum_latest_previous_epoch_gap_s": 7201.000224
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1467,
+            "minimum_utc_ns": 1793056623950304000,
+            "latest_utc_ns": 1793368803000384000,
+            "minimum_age_hours": 11.160539767801945,
+            "maximum_age_hours": 97.87694256780195
+          },
+          "collection": {
+            "count": 1467,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793401224775918491,
+            "minimum_age_hours": 2.154491008221111,
+            "maximum_age_hours": 31.092659648388334
+          },
+          "minimum_latest_previous_epoch_gap_s": 7201.000224
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9199,
+          "minimum_utc_ns": 1792475529093216000,
+          "latest_utc_ns": 1793383202000160256,
+          "minimum_age_hours": 7.160817607730833,
+          "maximum_age_hours": 259.29218064780196
+        },
+        "collection": {
+          "count": 9199,
+          "minimum_utc_ns": 1793152829100480888,
+          "latest_utc_ns": 1793404892674195055,
+          "minimum_age_hours": 1.1356303758422222,
+          "maximum_age_hours": 71.15328974088861
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:7c20d256f1f89afb589144b62dd51dc5e4bd250f441d115d33d508cb6f439b0e",
+        "SCAN/prepared.json": "sha256:ac861d32e932de50c4d23ec67f5caa5a369a05ac7b5ca6cc2fdd7357d8455f08",
+        "SCAN/tracking.json": "sha256:52606a0ea12ac2896d4917d5feb8cbf680d8472730ecd1faa620b28919e8cf1c",
+        "frozen_public_input": "sha256:0b420b6b6ee220c51f48c375c9ce13dbc4ceaa99b2c95e012c8c959c470a426c",
+        "SCAN/nominal_elements.json": "sha256:5d6d154e4557ae3869d82473ce1415111de874be096ee41a3d83a790f75c0505",
+        "SCAN/selected.tle": "sha256:5f0b19f60612d26fb79011d43efe49821aed9f7017e47324d95b728d813ef240",
+        "SCAN/bank.npz": "sha256:557d7b50227d28facedfedd2b8b7f51151d072f7c8732c06f3b6c1a1a1ad2c1d",
+        "SCAN/previous_receipt.json": "sha256:bdd1298a4fb2d7664c02f30e49715fcfe5d14bd3fe68ec716b88ed6a455b8127",
+        "SCAN/previous.tle": "sha256:2234d49c3238bd1daa665519cd45f2f010de7258916c6860fb9204fcf36e34f3",
+        "causal_prior/SCAN/receipt.json": "sha256:617ed22dec086dc9d117a41f7a82721080252812b51bf84e021332a238f7464a",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:6d1ea61871193bcebda0ddbd86eaedd1753e3ebd0bf7d0d35a3aaf322c92d9a8",
+        "causal_prior/SCAN/previous.tle": "sha256:2234d49c3238bd1daa665519cd45f2f010de7258916c6860fb9204fcf36e34f3",
+        "causal_phase_history/SCAN.json": "sha256:388d2b71b945223e362eb41da62709803ea20da5b16d8882a626f40b15b22246"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0014",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0014/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:b45fa8146b1520769a8ff269f5f4edc8fa29b3c1c9fec7d657c469decf1a7428",
+      "input_sha256": "sha256:d9a4f8bca14abb7e65b031df83372e9dae782cc5dd6ec77e5e119a3bc2d03cb9",
+      "cutoff_utc_ns": 1793415596905410657,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1633,
+      "latest_epoch": {
+        "count": 1633,
+        "minimum_utc_ns": 1793244985088832000,
+        "latest_utc_ns": 1793397601998720000,
+        "minimum_age_hours": 4.998585191849167,
+        "maximum_age_hours": 47.392171271849165
+      },
+      "latest_collection": {
+        "count": 1633,
+        "minimum_utc_ns": 1793412124807384843,
+        "latest_utc_ns": 1793412124807384843,
+        "minimum_age_hours": 0.9644716738372222,
+        "maximum_age_hours": 0.9644716738372222
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1633,
+            "minimum_utc_ns": 1793161277943552000,
+            "latest_utc_ns": 1793383202000160256,
+            "minimum_age_hours": 8.998584791778056,
+            "maximum_age_hours": 70.64415607184917
+          },
+          "collection": {
+            "count": 1633,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793404892674195055,
+            "minimum_age_hours": 2.9733975598894444,
+            "maximum_age_hours": 32.93042683243556
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.012096
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1633,
+            "minimum_utc_ns": 1793161277943552000,
+            "latest_utc_ns": 1793383202000160256,
+            "minimum_age_hours": 8.998584791778056,
+            "maximum_age_hours": 70.64415607184917
+          },
+          "collection": {
+            "count": 1633,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793404892674195055,
+            "minimum_age_hours": 2.9733975598894444,
+            "maximum_age_hours": 32.93042683243556
+          },
+          "minimum_latest_previous_epoch_gap_s": 3388.69008
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 10106,
+          "minimum_utc_ns": 1792475529093216000,
+          "latest_utc_ns": 1793397601998720000,
+          "minimum_age_hours": 4.998585191849167,
+          "maximum_age_hours": 261.12994783184917
+        },
+        "collection": {
+          "count": 10106,
+          "minimum_utc_ns": 1793156476490921440,
+          "latest_utc_ns": 1793412124807384843,
+          "minimum_age_hours": 0.9644716738372222,
+          "maximum_age_hours": 71.97789291367138
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:73317946fe3131bf7c7b37c113cb63769edf7b376ea9733bab54baa159788165",
+        "SCAN/prepared.json": "sha256:d9646746efc5b1e5015c46c37bafd7b265620afc32f5dc1fc6ae4db046d2c09f",
+        "SCAN/tracking.json": "sha256:e81a796130176c3d112100945f9890a811ffd779d3576dc37f81f9d57cdfe9df",
+        "frozen_public_input": "sha256:d9a4f8bca14abb7e65b031df83372e9dae782cc5dd6ec77e5e119a3bc2d03cb9",
+        "SCAN/nominal_elements.json": "sha256:dd91a38c6e6e1c6c4c96db9716e7eb4fbbdd4286a847c0ce4d285f337ca87a7e",
+        "SCAN/selected.tle": "sha256:98366bd62b0ae147e8279d0ec6dd823ec5488f173576f6a34eed42f9fe43b641",
+        "SCAN/bank.npz": "sha256:6a293d81b4d57a79b0b70adf4e19608bf81dad7c3a21e2cd07fca071673870bd",
+        "SCAN/previous_receipt.json": "sha256:b64d799f66596318336000c8ebb6e3aaf07674229535c30ec18edc74ee72454d",
+        "SCAN/previous.tle": "sha256:da2f9ed70c1be4af3bf972b5dcc60fa7d5003f25c942d456e8bd62d756fca272",
+        "causal_prior/SCAN/receipt.json": "sha256:192126956a73cace4a0a5e28f4697baa24b897302c6519d86c77648e5477949e",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:af4318d14c3420d4e87552657dcc1db7ee4608d16009317ba025541a54c9eb01",
+        "causal_prior/SCAN/previous.tle": "sha256:55d25b83a9254948b241f07fc127d88ccbe93122358c9fd64747ab5b8d9ded5c",
+        "causal_phase_history/SCAN.json": "sha256:e63c449820447f3708ea45028daa142ee22eb898d8984eda4febb59884b9a6f3"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0016",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0016/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:731b7a093ab7a0f2950217da4a42a8e0faf0aa699f9e699f9c80ab257984d9ce",
+      "input_sha256": "sha256:966ecf0d20cfd39963e00ccc6aa608be3967de2c3411e08a790e84adbf7bb1ce",
+      "cutoff_utc_ns": 1793422347727420147,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1582,
+      "latest_epoch": {
+        "count": 1582,
+        "minimum_utc_ns": 1793251566214847744,
+        "latest_utc_ns": 1793409862643424000,
+        "minimum_age_hours": 3.4680788878186113,
+        "maximum_age_hours": 47.43930904788972
+      },
+      "latest_collection": {
+        "count": 1582,
+        "minimum_utc_ns": 1793419395743429804,
+        "latest_utc_ns": 1793419395743429804,
+        "minimum_age_hours": 0.8199955528730556,
+        "maximum_age_hours": 0.8199955528730556
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1582,
+            "minimum_utc_ns": 1793161560125088000,
+            "latest_utc_ns": 1793397601998720000,
+            "minimum_age_hours": 6.873813527818611,
+            "maximum_age_hours": 72.44100064781861
+          },
+          "collection": {
+            "count": 1582,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793415790615773614,
+            "minimum_age_hours": 1.8214199018147221,
+            "maximum_age_hours": 34.805655168405
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1582,
+            "minimum_utc_ns": 1793161560125088000,
+            "latest_utc_ns": 1793391995579616000,
+            "minimum_age_hours": 8.431152167818611,
+            "maximum_age_hours": 72.44100064781861
+          },
+          "collection": {
+            "count": 1582,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793415790615773614,
+            "minimum_age_hours": 1.8214199018147221,
+            "maximum_age_hours": 34.805655168405
+          },
+          "minimum_latest_previous_epoch_gap_s": 5488.122816256
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 10400,
+          "minimum_utc_ns": 1792974412968768000,
+          "latest_utc_ns": 1793409862643424000,
+          "minimum_age_hours": 3.4680788878186113,
+          "maximum_age_hours": 124.42632184781861
+        },
+        "collection": {
+          "count": 10400,
+          "minimum_utc_ns": 1793163774147715560,
+          "latest_utc_ns": 1793419395743429804,
+          "minimum_age_hours": 0.8199955528730556,
+          "maximum_age_hours": 71.82599436238527
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:fd79fa322ba3ca6846b97cf14bd58710ee72827ddab180c1b6beb0b4a1d993be",
+        "SCAN/prepared.json": "sha256:13493272929245ceb1a33bceaa0d819815b4569c8f2c6f06cfc34610ceeb6c26",
+        "SCAN/tracking.json": "sha256:09175d976d2b97869327274691f373f1003a9eb1fe9b2d7ccc16c9f1ecbe39a4",
+        "frozen_public_input": "sha256:966ecf0d20cfd39963e00ccc6aa608be3967de2c3411e08a790e84adbf7bb1ce",
+        "SCAN/nominal_elements.json": "sha256:421fec42f95741d4370935567a04bcfbe35bf0fe42427e290c37bf94f11dc9d8",
+        "SCAN/selected.tle": "sha256:d4a5ef654e3165fa80afad4c5eb3b069337b092329635b67c24173c41e91e488",
+        "SCAN/bank.npz": "sha256:b6f05e06a1ed91e970d9f6d0c0b34d52a2c5723d26c5ce902f2e678d7c156ec9",
+        "SCAN/previous_receipt.json": "sha256:cb5b2f622e9ebcd5f9d5e1282bc45412924ab4a26e36c7d170f1272973f8d58d",
+        "SCAN/previous.tle": "sha256:f30c6c3be49288675d836034e171ae05917851993d080b14a13a4834c2eedcb3",
+        "causal_prior/SCAN/receipt.json": "sha256:2cf9c942ca1d7230adba84b49a19fb52eae2953e1dcd9bb4546bce1707726839",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:6da8a1a3da5ffb762de9633877c41dcb9fa5282075cd85d4f7f4443133472ffe",
+        "causal_prior/SCAN/previous.tle": "sha256:fcb59eede87b6bb3d6777575cad61cffc6bf9014ad376bff20c63163bc70a691",
+        "causal_phase_history/SCAN.json": "sha256:88ed7bba4b21c14852ed370f6bead0288d9d6c283aaed553a91e34182837ba65"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0018",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0018/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:60080877cb1cd7cbe35d22585bac719970f595da3e0f4a3a09b6f5dfc5a31489",
+      "input_sha256": "sha256:a0853df49f5730e105ddf626b11c9ddf0d3f354e81d4bcc07036acf57c383214",
+      "cutoff_utc_ns": 1793427762249137564,
+      "snapshot_tracking_byte_identical_to_public_input": true,
+      "candidate_count": 1530,
+      "latest_epoch": {
+        "count": 1530,
+        "minimum_utc_ns": 1793256553307520256,
+        "latest_utc_ns": 1793409862643424000,
+        "minimum_age_hours": 4.972112698212222,
+        "maximum_age_hours": 47.558039338141114
+      },
+      "latest_collection": {
+        "count": 1530,
+        "minimum_utc_ns": 1793426689408326693,
+        "latest_utc_ns": 1793426689408326693,
+        "minimum_age_hours": 0.29801133635305554,
+        "maximum_age_hours": 0.29801133635305554
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1530,
+            "minimum_utc_ns": 1793184539582304000,
+            "latest_utc_ns": 1793397601998720000,
+            "minimum_age_hours": 8.377847338212222,
+            "maximum_age_hours": 67.56185189821223
+          },
+          "collection": {
+            "count": 1530,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793419395743429804,
+            "minimum_age_hours": 2.324029363266667,
+            "maximum_age_hours": 36.30968897879861
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1530,
+            "minimum_utc_ns": 1793184539582304000,
+            "latest_utc_ns": 1793392625731967744,
+            "minimum_age_hours": 9.760143658283333,
+            "maximum_age_hours": 67.56185189821223
+          },
+          "collection": {
+            "count": 1530,
+            "minimum_utc_ns": 1793297047368813889,
+            "latest_utc_ns": 1793419395743429804,
+            "minimum_age_hours": 2.324029363266667,
+            "maximum_age_hours": 36.30968897879861
+          },
+          "minimum_latest_previous_epoch_gap_s": 5488.122816256
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9997,
+          "minimum_utc_ns": 1792991609209152000,
+          "latest_utc_ns": 1793409862643424000,
+          "minimum_age_hours": 4.972112698212222,
+          "maximum_age_hours": 121.15362221821222
+        },
+        "collection": {
+          "count": 9997,
+          "minimum_utc_ns": 1793170903124328877,
+          "latest_utc_ns": 1793426689408326693,
+          "minimum_age_hours": 0.29801133635305554,
+          "maximum_age_hours": 71.34975689130195
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:d6684d2dea922386a1afd5f13754887238e2231f0bc480c9e662dd90c1e62469",
+        "SCAN/prepared.json": "sha256:ab8207d400fb55e4de1019c385da65defad09f5f27c19fbc2042c25117f4a6da",
+        "SCAN/tracking.json": "sha256:a0853df49f5730e105ddf626b11c9ddf0d3f354e81d4bcc07036acf57c383214",
+        "frozen_public_input": "sha256:a0853df49f5730e105ddf626b11c9ddf0d3f354e81d4bcc07036acf57c383214",
+        "SCAN/nominal_elements.json": "sha256:f0c1424c72e8ce2859ca153eda59f8c701c54c39ee4e6917ad61b3d1adca994d",
+        "SCAN/selected.tle": "sha256:b36169e560ada70c38313ac7d5e890a07bd652e54961fbf48695e1e9d6685928",
+        "SCAN/bank.npz": "sha256:23c85b7b8fbe3ce2fc67e30f812c5b810e11ff9b2042a3ea20a4ba3cd4208b0e",
+        "SCAN/previous_receipt.json": "sha256:ce3fb6ae32e61c8a46accfe71a287d8748e1b3442326627387903bc575df45c0",
+        "SCAN/previous.tle": "sha256:d316088ade4c234e4bcc8fbe58e3b7e8c0cc9dab660207c27108dbb16dcd9d77",
+        "causal_prior/SCAN/receipt.json": "sha256:8edfaa5f26a34b406d500c92547cf3cf6abbe8df07fdb9e4948dbfecbc9dad23",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:5802215ebda9c49a64c8d188c2c31f848ed463038f0fc4a93f60c495ab97c221",
+        "causal_prior/SCAN/previous.tle": "sha256:b9584dbe73d53bc54d85e8de45b78068c4eab676b83f498e7c73db063d6fe141",
+        "causal_phase_history/SCAN.json": "sha256:28a6a0e1add7f14eeccfafa7cb4f8f4bc29f62276ccc0644dc035c47ae7746b2"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0020",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0020/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:7d1948ad96266c5cf212d5826a53b752ddaf0dd37a5dd47d3b3472c3d2a63bf7",
+      "input_sha256": "sha256:53fd955fbc3262c0af4bb09364eeb0b6df548c04489c9d985cdf69c2e505292b",
+      "cutoff_utc_ns": 1793433175624188549,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1452,
+      "latest_epoch": {
+        "count": 1452,
+        "minimum_utc_ns": 1793260553549760000,
+        "latest_utc_ns": 1793409862643424000,
+        "minimum_age_hours": 6.4758279901525,
+        "maximum_age_hours": 47.9505762301525
+      },
+      "latest_collection": {
+        "count": 1452,
+        "minimum_utc_ns": 1793426689408326693,
+        "latest_utc_ns": 1793426689408326693,
+        "minimum_age_hours": 1.8017266282933333,
+        "maximum_age_hours": 1.8017266282933333
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1452,
+            "minimum_utc_ns": 1793184539582304000,
+            "latest_utc_ns": 1793397601998720000,
+            "minimum_age_hours": 9.8815626301525,
+            "maximum_age_hours": 69.0655671901525
+          },
+          "collection": {
+            "count": 1452,
+            "minimum_utc_ns": 1793282553228345414,
+            "latest_utc_ns": 1793419395743429804,
+            "minimum_age_hours": 3.8277446552069443,
+            "maximum_age_hours": 41.83955440087083
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1452,
+            "minimum_utc_ns": 1793184539582304000,
+            "latest_utc_ns": 1793392625731967744,
+            "minimum_age_hours": 11.26385895022361,
+            "maximum_age_hours": 69.0655671901525
+          },
+          "collection": {
+            "count": 1452,
+            "minimum_utc_ns": 1793282553228345414,
+            "latest_utc_ns": 1793419395743429804,
+            "minimum_age_hours": 3.8277446552069443,
+            "maximum_age_hours": 41.83955440087083
+          },
+          "minimum_latest_previous_epoch_gap_s": 1729.182815744
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9343,
+          "minimum_utc_ns": 1792991609209152000,
+          "latest_utc_ns": 1793409862643424000,
+          "minimum_age_hours": 6.4758279901525,
+          "maximum_age_hours": 122.6573375101525
+        },
+        "collection": {
+          "count": 9343,
+          "minimum_utc_ns": 1793178185836435348,
+          "latest_utc_ns": 1793426689408326693,
+          "minimum_age_hours": 1.8017266282933333,
+          "maximum_age_hours": 70.8304965981114
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:0c4b1fb2a84ba527ca85c200f92573e0a56b27bb6a86c3658e6a593f3a047449",
+        "SCAN/prepared.json": "sha256:6bb89fdcd6be293b686d08bac0d09220abf7e8c01dd796d30b63b7777fad57bc",
+        "SCAN/tracking.json": "sha256:be2544102f7fdf817d4f191b2eff610b8047dbe1aa09be97846ad033740d8a02",
+        "frozen_public_input": "sha256:53fd955fbc3262c0af4bb09364eeb0b6df548c04489c9d985cdf69c2e505292b",
+        "SCAN/nominal_elements.json": "sha256:cf9059d7a9c1c941e5945c46c9ef358481478c433841c63992df4870c766dea2",
+        "SCAN/selected.tle": "sha256:1f9bc660b95ec39034fbec5b6ee59cfee0072bbceca941815aee2077771eb170",
+        "SCAN/bank.npz": "sha256:3df29d4378eaaa88d166e52fae0a6dc79650f4aa312e5707c0e73903111787a4",
+        "SCAN/previous_receipt.json": "sha256:b3ceb236acb356ed99c0249964dd595c158ff2b3a319ad9831f39053ad519f64",
+        "SCAN/previous.tle": "sha256:4ed072ff5d590c175e2875b379f772e36df5895ae71502b014bb0262b303feed",
+        "causal_prior/SCAN/receipt.json": "sha256:09f91934954ec76eb68b76b9096dd7c960b2abee3cb4b84d254941e6ad94a50b",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:5aeffe56dac08366a5fa608da61f1801d5b19e2e99484110474b13f3d1ae29a8",
+        "causal_prior/SCAN/previous.tle": "sha256:b3a52e21d8d5492af0c3e5b21c5cd91bb2e55f9541f2e07069af2e6f5789affe",
+        "causal_phase_history/SCAN.json": "sha256:1c2047f5cb35a4d58c475300d532c4433d5eaa9b4024fa387ad74f0fd8faf3bd"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0022",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:d54e9628d5722b5b3294bede56d3b7553efec68a27159a8d096c1d8cae719c31",
+      "input_sha256": "sha256:d5246b94708ea6aa756bb156dcc491c02f62c367840591d00c48bd65cfb2fd99",
+      "cutoff_utc_ns": 1793438589248893649,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1393,
+      "latest_epoch": {
+        "count": 1393,
+        "minimum_utc_ns": 1793268751370975744,
+        "latest_utc_ns": 1793415091142880000,
+        "minimum_age_hours": 6.527251670458056,
+        "maximum_age_hours": 47.17718831052917
+      },
+      "latest_collection": {
+        "count": 1393,
+        "minimum_utc_ns": 1793433803989450674,
+        "latest_utc_ns": 1793433803989450674,
+        "minimum_age_hours": 1.3292387341597223,
+        "maximum_age_hours": 1.3292387341597223
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1393,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793397601998720000,
+            "minimum_age_hours": 11.385347270458055,
+            "maximum_age_hours": 79.94977919045806
+          },
+          "collection": {
+            "count": 1393,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793426689408326693,
+            "minimum_age_hours": 3.305511268598889,
+            "maximum_age_hours": 32.317074835206945
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1393,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793391120728640000,
+            "minimum_age_hours": 13.185700070458056,
+            "maximum_age_hours": 79.94977919045806
+          },
+          "collection": {
+            "count": 1393,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793426689408326693,
+            "minimum_age_hours": 3.305511268598889,
+            "maximum_age_hours": 32.317074835206945
+          },
+          "minimum_latest_previous_epoch_gap_s": 1729.182815744
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 8858,
+          "minimum_utc_ns": 1792991609209152000,
+          "latest_utc_ns": 1793415091142880000,
+          "minimum_age_hours": 6.527251670458056,
+          "maximum_age_hours": 124.16112215045806
+        },
+        "collection": {
+          "count": 8858,
+          "minimum_utc_ns": 1793185228910602426,
+          "latest_utc_ns": 1793433803989450674,
+          "minimum_age_hours": 1.3292387341597223,
+          "maximum_age_hours": 70.37787174756194
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:a311b8c8b856fa6776c8b54b7e28163ce72bb9b0438c62237ecdc26e3bbe5e62",
+        "SCAN/prepared.json": "sha256:ebf78e3a95579cb4e0cede44d6a213e8ed29053cf0c2ae3f35b1865daa4b44a5",
+        "SCAN/tracking.json": "sha256:70e451e252ceaf5046b7d0130ccb5f3bc266731b6dc53d0f4a79685d2a10c699",
+        "frozen_public_input": "sha256:d5246b94708ea6aa756bb156dcc491c02f62c367840591d00c48bd65cfb2fd99",
+        "SCAN/nominal_elements.json": "sha256:bc08f4e153f3b0e69fcbf5e65f7fad8f60a6819a58229fec04be890a5b927878",
+        "SCAN/selected.tle": "sha256:0563388fde7107757f93b4795916513ec9d377103ec3fd068cfce54ceb34d81c",
+        "SCAN/bank.npz": "sha256:ddf479acb8b034929c1aee4390fcfa7dbad08470e79097f728093e8bb034ac3b",
+        "SCAN/previous_receipt.json": "sha256:143af965e7219071bbc338ffde95596ef71f087d04446f999c99ab439a09a1e7",
+        "SCAN/previous.tle": "sha256:94a1da92a50f3887a7d0ee88c207f38d031bd11b1e3a94f0b62f59b4fe42e744",
+        "causal_prior/SCAN/receipt.json": "sha256:2c5def54168e0ff228cd43eaa9e800a7f547a9880053bb6807656341531a5b2a",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:e76a011c571598adbe0b416d71500131081f75822a33083bb748492b241fcc7c",
+        "causal_prior/SCAN/previous.tle": "sha256:74853499844c05b8a631fb8d4adbd458b61f841e7ea2a1e51603bbba761eeea2",
+        "causal_phase_history/SCAN.json": "sha256:787bb29539e9b43aa239c5b5b23927fba6bd2cd82154a763c852c38cfa0ed935"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0024",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0024/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:12c52a2ec2fc9a37021b4e3622a7995b2a7925f7df2721e9132057b60bf61848",
+      "input_sha256": "sha256:77d5a61aa6e49c032dd84de3277a7c3228e8fbdb849d3655ac1bc83e64a0a70c",
+      "cutoff_utc_ns": 1793444002877164252,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1402,
+      "latest_epoch": {
+        "count": 1402,
+        "minimum_utc_ns": 1793280472515936256,
+        "latest_utc_ns": 1793426684035680000,
+        "minimum_age_hours": 4.810789301181111,
+        "maximum_age_hours": 45.42510034111
+      },
+      "latest_collection": {
+        "count": 1402,
+        "minimum_utc_ns": 1793433803989450674,
+        "latest_utc_ns": 1793440829584246727,
+        "minimum_age_hours": 0.8814702548680555,
+        "maximum_age_hours": 2.8330243648827778
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1402,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 12.889132661181112,
+            "maximum_age_hours": 81.45356482118112
+          },
+          "collection": {
+            "count": 1402,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793440829584246727,
+            "minimum_age_hours": 0.8814702548680555,
+            "maximum_age_hours": 33.82086046593
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1402,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 12.889132661181112,
+            "maximum_age_hours": 81.45356482118112
+          },
+          "collection": {
+            "count": 1402,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793433803989450674,
+            "minimum_age_hours": 2.8330243648827778,
+            "maximum_age_hours": 33.82086046593
+          },
+          "minimum_latest_previous_epoch_gap_s": 1729.182815744
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 9717,
+          "minimum_utc_ns": 1793020779214272000,
+          "latest_utc_ns": 1793426684035680000,
+          "minimum_age_hours": 4.810789301181111,
+          "maximum_age_hours": 117.56212858118111
+        },
+        "collection": {
+          "count": 9717,
+          "minimum_utc_ns": 1793185228910602426,
+          "latest_utc_ns": 1793440829584246727,
+          "minimum_age_hours": 0.8814702548680555,
+          "maximum_age_hours": 71.881657378285
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:0f0bf9afe4e6330ace50bb4f481d62dc85c2982139b2e922002e3c98cf267c65",
+        "SCAN/prepared.json": "sha256:482e3c64ca0505bf847e00d8dc3c83d80b47f2ed0bb974f3194949fffca30c5c",
+        "SCAN/tracking.json": "sha256:b165d76f13842a86339d75726a7952b7746f5ca557d01a5181bf41783f900316",
+        "frozen_public_input": "sha256:77d5a61aa6e49c032dd84de3277a7c3228e8fbdb849d3655ac1bc83e64a0a70c",
+        "SCAN/nominal_elements.json": "sha256:d0fc7a8b25cb8941dc31dffdbb0c43950b2029459bb45f1f75788bdee2530bcf",
+        "SCAN/selected.tle": "sha256:8022d3997d51be6c311eb1c61fe05e3196ed24ee025dccea9c3faffc9e404fc3",
+        "SCAN/bank.npz": "sha256:7d12928f14408865130090a91107ebebb6d5ab51fc647d701aea0cd064fbafc7",
+        "SCAN/previous_receipt.json": "sha256:e50c3681d97ef66abe7bb5a92212099cc1a97d23489fd2acaa817d641978b0e7",
+        "SCAN/previous.tle": "sha256:832aca8e206278ad54358c2a570d9ec46aac0d5eae7787e3fdc4053e79231700",
+        "causal_prior/SCAN/receipt.json": "sha256:5ff0a05fc02d71559f3e14a44dbd7ee5215fc08f17999f59e5c9cef0ac213dc0",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:cd8a0eebeb53ec33aba9b5ab9002b28b2860bdc09fb28023627ee768b216185f",
+        "causal_prior/SCAN/previous.tle": "sha256:23907ec1db43b81ee7b3b5850f5c101abe56b8358f4f4956a6751d57c95543be",
+        "causal_phase_history/SCAN.json": "sha256:c5e0498f7c05255ecfe2882e22c735c59006556ed7cfbdf28ffb7deacc85a10d"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0026",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0026/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:d433690ae4cd084594cdd0efea81351dac47a7754d8396a4364c404ac67b39c1",
+      "input_sha256": "sha256:cfd619488e9981366788261eec7f3c7681a6f3dfd0d4bd5518b61a42ba4d65cf",
+      "cutoff_utc_ns": 1793449415766250070,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1486,
+      "latest_epoch": {
+        "count": 1486,
+        "minimum_utc_ns": 1793284881621984000,
+        "latest_utc_ns": 1793426684035680000,
+        "minimum_age_hours": 6.314369602797222,
+        "maximum_age_hours": 45.70392896279722
+      },
+      "latest_collection": {
+        "count": 1486,
+        "minimum_utc_ns": 1793433803989450674,
+        "latest_utc_ns": 1793444695274707696,
+        "minimum_age_hours": 1.3112476506594444,
+        "maximum_age_hours": 4.336604666498889
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1486,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 14.392712962797223,
+            "maximum_age_hours": 82.95714512279723
+          },
+          "collection": {
+            "count": 1486,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793444695274707696,
+            "minimum_age_hours": 1.3112476506594444,
+            "maximum_age_hours": 35.32444076754611
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1486,
+            "minimum_utc_ns": 1793150770043808000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 14.392712962797223,
+            "maximum_age_hours": 82.95714512279723
+          },
+          "collection": {
+            "count": 1486,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793433803989450674,
+            "minimum_age_hours": 4.336604666498889,
+            "maximum_age_hours": 35.32444076754611
+          },
+          "minimum_latest_previous_epoch_gap_s": 1633.087872
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 10292,
+          "minimum_utc_ns": 1792922070648672000,
+          "latest_utc_ns": 1793426684035680000,
+          "minimum_age_hours": 6.314369602797222,
+          "maximum_age_hours": 146.48475488279723
+        },
+        "collection": {
+          "count": 10292,
+          "minimum_utc_ns": 1793192693669869138,
+          "latest_utc_ns": 1793440829584246727,
+          "minimum_age_hours": 2.385050556484167,
+          "maximum_age_hours": 71.31169343914777
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:3715f87c410d2ab87d9abe92271b3a0a38c781990637d893278720d319bf7000",
+        "SCAN/prepared.json": "sha256:a5df8894e70b62a2c7c4d994141d2e166c18c004b30b51c35fb05a58d3ad4c10",
+        "SCAN/tracking.json": "sha256:1e0e2243704b254b04b5f572fbd5d12a6f5b2c7576831d711ec164cc42206a71",
+        "frozen_public_input": "sha256:cfd619488e9981366788261eec7f3c7681a6f3dfd0d4bd5518b61a42ba4d65cf",
+        "SCAN/nominal_elements.json": "sha256:8d9fce1e458cca5b053df0def4813d2ac0c17cb09275fa5d077171e53b7e0ea8",
+        "SCAN/selected.tle": "sha256:ad22f7ca685db82e5850e82f7bad48048fa3ba739c30d45d5ff06de572cd0164",
+        "SCAN/bank.npz": "sha256:87b8ff534e9d29b5a2ffcd94ae562230b7338007d216412ff59a10a4a16bc571",
+        "SCAN/previous_receipt.json": "sha256:00d8996e8df0de4e4259f2496b956bd3a5b5ebba9c208f1ad4d00344b907cb7b",
+        "SCAN/previous.tle": "sha256:e3eae8c8139f8a98c14a4b83b2951a599eb54809ba8657ff07699fe95664b3b6",
+        "causal_prior/SCAN/receipt.json": "sha256:db8b52cef9c2212272d82c4b40bc9c2506c4720974cd437f409c77ecfff5befa",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:34c6a19a6228f8f0927d44b183a5a5b42ca6b6271753b1569a15baec9b633406",
+        "causal_prior/SCAN/previous.tle": "sha256:dd01d507be645978b1d1090db6c4799686fb6291c663948deeeb2f467969f50c",
+        "causal_phase_history/SCAN.json": "sha256:7f1d9b93e9311b8be6a3a1baea119ac153e9c3b2aeedde53a574e7ed734e3f16"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    },
+    {
+      "case": "DS27-0028",
+      "status": "pass",
+      "descriptor": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0028/candidate-v2/recovery/snapshot/descriptor.json",
+      "descriptor_sha256": "sha256:0fb76f0f715a95cc15471b321daa3b4d8424e5334e3f2ad0b1bebac01286af9d",
+      "input_sha256": "sha256:d8b1a3d858c80dea7e28b5f165ec3cc0969d1c432c48876da4dcba41ec8ca66c",
+      "cutoff_utc_ns": 1793454829467288491,
+      "snapshot_tracking_byte_identical_to_public_input": false,
+      "candidate_count": 1575,
+      "latest_epoch": {
+        "count": 1575,
+        "minimum_utc_ns": 1793283921322272000,
+        "latest_utc_ns": 1793426684035680000,
+        "minimum_age_hours": 7.818175446803056,
+        "maximum_age_hours": 47.474484726803055
+      },
+      "latest_collection": {
+        "count": 1575,
+        "minimum_utc_ns": 1793433803989450674,
+        "latest_utc_ns": 1793451610132304214,
+        "minimum_age_hours": 0.8942597178547222,
+        "maximum_age_hours": 5.840410510504722
+      },
+      "previous": {
+        "SCAN": {
+          "epoch": {
+            "count": 1575,
+            "minimum_utc_ns": 1793084437522944000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 15.896518806803055,
+            "maximum_age_hours": 102.88665120680305
+          },
+          "collection": {
+            "count": 1575,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793451610132304214,
+            "minimum_age_hours": 0.8942597178547222,
+            "maximum_age_hours": 36.82824661155195
+          },
+          "minimum_latest_previous_epoch_gap_s": 0.000863744
+        },
+        "causal_prior/SCAN": {
+          "epoch": {
+            "count": 1575,
+            "minimum_utc_ns": 1793084437522944000,
+            "latest_utc_ns": 1793397601999584000,
+            "minimum_age_hours": 15.896518806803055,
+            "maximum_age_hours": 102.88665120680305
+          },
+          "collection": {
+            "count": 1575,
+            "minimum_utc_ns": 1793322247779486904,
+            "latest_utc_ns": 1793433803989450674,
+            "minimum_age_hours": 5.840410510504722,
+            "maximum_age_hours": 36.82824661155195
+          },
+          "minimum_latest_previous_epoch_gap_s": 1633.087872
+        }
+      },
+      "phase_history": {
+        "epoch": {
+          "count": 10922,
+          "minimum_utc_ns": 1792863356749344000,
+          "latest_utc_ns": 1793426684035680000,
+          "minimum_age_hours": 7.818175446803056,
+          "maximum_age_hours": 164.29797720680307
+        },
+        "collection": {
+          "count": 10922,
+          "minimum_utc_ns": 1793199736060385959,
+          "latest_utc_ns": 1793440829584246727,
+          "minimum_age_hours": 3.88885640049,
+          "maximum_age_hours": 70.85927969514778
+        }
+      },
+      "initialization": {
+        "search_center": [
+          37.906,
+          -122.545
+        ],
+        "search_box_width_km": 25.0,
+        "reference_position_used": false,
+        "candidate_filter": "regional elevation >= -12deg; no whitelist",
+        "catalogue_regional_center": [
+          37.5,
+          -122.0
+        ],
+        "catalogue_radius_km": 250.0
+      },
+      "file_sha256": {
+        "SCAN/receipt.json": "sha256:b2c3159cd584159280a9f7bffee101c80903230e36a14412fdbe5ac7c8be40a4",
+        "SCAN/prepared.json": "sha256:55647b063bf0bfe879d66ece80100470e4e2f43835bcf89419b96fc96ce40ecd",
+        "SCAN/tracking.json": "sha256:fedaf4f97e53dda065732f8acc9261afc9b71b9cc2031306b00fb59837202a2b",
+        "frozen_public_input": "sha256:d8b1a3d858c80dea7e28b5f165ec3cc0969d1c432c48876da4dcba41ec8ca66c",
+        "SCAN/nominal_elements.json": "sha256:a463c78a56ee05983fe23352c4ef6afd83f153cd2f005251b4b5e7099e97a242",
+        "SCAN/selected.tle": "sha256:ec6b406c9f62337e0350c80ee6d8ac5f359ddf9e944849c7b4929e407dc9599f",
+        "SCAN/bank.npz": "sha256:548fc827bdd77a00fd87359fab41456c0573271186e790493bb6114fe5764e38",
+        "SCAN/previous_receipt.json": "sha256:02d11d2edc0f364ba3b9e3ed9167a66b71a4b42f87d94114d08e18d252a10660",
+        "SCAN/previous.tle": "sha256:84dc5fb108a6d5fcc2a125855397962683bb8fd6d79f10cc6de3f68f1cc2acd1",
+        "causal_prior/SCAN/receipt.json": "sha256:739dd38f8b33227a1f5af5ade6ca38f52a8f2f2d306a455994e7b8394e3788a3",
+        "causal_prior/SCAN/previous_receipt.json": "sha256:37e5bc877cb7be41ac0073535e26aa017158fcb0211f28e3f1bc00e6fe6afeae",
+        "causal_prior/SCAN/previous.tle": "sha256:6464faca397b34dd9bd3812961ef90ba5372dad50cb57dc70ca0b9ff3f1e1f0c",
+        "causal_phase_history/SCAN.json": "sha256:fd07c9658cbe373bb2730b8868c96693df23282b85ad7717e923f62c1bed1b0a"
+      },
+      "check_count": 81,
+      "failed_checks": []
+    }
+  ]
+}

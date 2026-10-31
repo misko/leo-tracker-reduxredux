@@ -1,0 +1,66 @@
+{
+  "association_ownership": "unknown; never assumed zero",
+  "excluded_from_main_top10": true,
+  "cases": [
+    {
+      "case": "DS27-0001",
+      "recording_id": "fast8-auto-20261030-150701-4dda0c4e-1-upper",
+      "run_id": null,
+      "input_sha256": null,
+      "state": "unavailable",
+      "method_states": {
+        "ALGO02": "unavailable",
+        "ALGO03": "unavailable",
+        "ALGO04": "unavailable"
+      },
+      "method_reasons": {
+        "ALGO02": "no_existing_public_GLRT_input",
+        "ALGO03": "baseline_unavailable",
+        "ALGO04": "FileNotFoundError: [Errno 2] No such file or directory: '/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0001/candidate-v2/terminal.json'"
+      },
+      "algo03_recovery_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0001/candidate-v2/recovery",
+      "algo04_recovery_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0001/candidate-v3/recovery",
+      "pipeline_receipt_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0001/pipeline-receipt.json",
+      "pipeline_receipt_sha256": "sha256:72ced40d4ae9fecaae233eb974e1b3112e4ceb8bff1c06152bbe752d34abecab",
+      "reason": "no_existing_public_GLRT_input",
+      "excluded_from_post_ALGO04_ranking": true,
+      "association_ownership": "unknown"
+    },
+    {
+      "case": "DS27-0006",
+      "recording_id": "fast8-auto-20261030-201521-beeabacf-1-upper",
+      "run_id": null,
+      "input_sha256": "sha256:c9a48d28701dbc91a232b878a96f8f5b06bf92680cd66664c22a552a689a8c68",
+      "state": "unavailable",
+      "method_states": {
+        "ALGO02": "failed",
+        "ALGO03": "unavailable",
+        "ALGO04": "unavailable"
+      },
+      "method_reasons": {
+        "ALGO02": "[Errno 2] No such file or directory: '/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/algo02/inference/family_cavity/position/SCAN.json'",
+        "ALGO03": "baseline_failed",
+        "ALGO04": "FileNotFoundError: [Errno 2] No such file or directory: '/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/candidate-v2/terminal.json'"
+      },
+      "algo03_recovery_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/candidate-v2/recovery",
+      "algo04_recovery_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/candidate-v3/recovery",
+      "pipeline_receipt_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/pipeline-receipt.json",
+      "pipeline_receipt_sha256": "sha256:d8d4f3c3da59d00520316bcafd16dc203f497aef5c960aa4e91244a0d85c717d",
+      "baseline_terminal_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/algo02/terminal.json",
+      "baseline_terminal_sha256": "sha256:20f0bfa47bf4f00a291dfe947c96d54bd9f08ab2b399de58b002e490d2787641",
+      "underlying_baseline_failures": [
+        "ValueError: family-excluded calibration phase did not converge"
+      ],
+      "baseline_failure_log_path": "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/algo02/family.log",
+      "baseline_failure_log_sha256": "sha256:b2d11f67d070c835d5f250dcafefec778f16972da33920bc352aae1578baec3d",
+      "underlying_baseline_gate": {
+        "maximum_phase_change_s": 0.01,
+        "criterion": "family-excluded calibration phase must converge before its position output exists"
+      },
+      "reason": "ValueError: family-excluded calibration phase did not converge",
+      "wrapper_failure": "[Errno 2] No such file or directory: '/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0006/algo02/inference/family_cavity/position/SCAN.json'",
+      "excluded_from_post_ALGO04_ranking": true,
+      "association_ownership": "unknown"
+    }
+  ]
+}

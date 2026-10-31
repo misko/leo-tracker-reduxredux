@@ -1,0 +1,59 @@
+{
+  "schema": "ds27-residual-ranking-protocol/v1",
+  "frozen_utc": "2026-10-31T14:41:48.463137+00:00",
+  "dataset": "DS27",
+  "selected_arm": "fitted_c",
+  "primary_maximum_adjacent_gap_s": 5,
+  "split_at_claimed_source_points": true,
+  "split_at_existing_polynomial_piece_boundaries": true,
+  "sensitivity_gap_s": [
+    2,
+    10
+  ],
+  "rank": "observed first-to-last fragment duration, then unique point count; stable source order tie break",
+  "aliases": "collapse identical lane/RF/physical-observation-ID graph aliases; partial overlaps block ranking rather than union unrelated curves",
+  "source_scope": "all native original GLRT winners; unassociated outside graph counted separately, not invented as tracks",
+  "owner_source": "chosen V3 candidate proof if ALGO04_additive, otherwise exact incumbent proof; trace ALGO02 fallback gates/linear IDs",
+  "no_new_fits": true,
+  "no_GPS_TLE_IQ_reads": true,
+  "context": "all original GLRT points in both receivers/all channels for every top10 parent scan; associated gray, residual graph crimson, residual untracked orange",
+  "zoom": "each top10 native fragment with existing polynomial and point-minus-polynomial residual if available; no new polynomial or satellite fitting",
+  "required_index_fields": [
+    "case",
+    "recording_id",
+    "run_id",
+    "state",
+    "terminal_path",
+    "terminal_sha256",
+    "tracks_path",
+    "tracks_sha256",
+    "observations_path",
+    "observations_sha256"
+  ],
+  "optional_index_fields": [
+    "identities"
+  ],
+  "test_result": "9 pure/source-binding tests passed",
+  "prior_fixture": {
+    "cases": [
+      "DS26-0265",
+      "DS26-0223",
+      "DS26-0050"
+    ],
+    "path": "fixture-ds26-ranking-v2",
+    "scope": "ALGO03 support only; explicitly fixture_only, not DS27 or post-ALGO04 evidence",
+    "fragments": 167,
+    "untracked_points": 1601,
+    "plot_pngs": 16,
+    "plot_pdfs": 10,
+    "wall_seconds": 7.89,
+    "visually_checked": [
+      "DS26-0265-RX1-context.png",
+      "01-DS26-0265-ab07ad1acf0c0681f15d.png"
+    ]
+  },
+  "source_sha256": {
+    "rank_native_residuals.py": "c859f4a2eea2ee24526c0895fd89b62aaf52ea416fb81e85b1a456d80f7eecd3",
+    "test_rank_native_residuals.py": "14c6df391e043f19699bd32c8c509a4f66940095b5e85e0eaf73a5fc1dcc15b0"
+  }
+}
