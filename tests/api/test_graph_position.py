@@ -49,3 +49,24 @@ def test_application_composes_graph_reader_without_database_access(tmp_path):
     response = TestClient(app).get("/api/v2/fast-scans/scan/graph-position")
     assert response.status_code == 200
     assert response.json() == dict(run_id="scan", selected_model="algo03-causal-predictive-v1")
+
+
+def test_v3_selection_preserves_actual_predecessor_model_at_the_existing_endpoint():
+    expected = dict(
+        selected_model="algo04-causal-numerical-v1",
+        decision="ALGO03_fallback",
+        fallback=True,
+        baseline=dict(model_version="algo02-causal-family-v1"),
+        selected=dict(model_version="algo03-causal-predictive-v1"),
+    )
+
+    class Reader:
+        def detail(self, run_id):
+            assert run_id == "scan"
+            return expected
+
+    app = FastAPI()
+    app.include_router(graph_position_router(Reader()))
+    response = TestClient(app).get("/api/v2/fast-scans/scan/graph-position")
+    assert response.status_code == 200
+    assert response.json() == expected
