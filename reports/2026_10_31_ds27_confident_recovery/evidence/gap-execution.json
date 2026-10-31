@@ -1,0 +1,322 @@
+[
+  [
+    {
+      "case": "DS27-0004",
+      "branch_id": "de986dcb32ca28bd4d0e",
+      "points": 35,
+      "annotation": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 35.72211877303198,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "annotate_predictive_only.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v3/recovery/all-large-track-recovery/97b4e22d47d286ff0a1e0bdd0ca2e295/inventory.json",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/annotation",
+          "--track",
+          "de986dcb32ca28bd4d0e",
+          "--native-branches",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-source/branches.json",
+          "--distinct-partitions",
+          "--candidates",
+          "3",
+          "--folds",
+          "3",
+          "--uncalibrated-phase-mixture"
+        ],
+        "timeout_s": 240
+      },
+      "identity": {
+        "status": "conditionally_supported_identity",
+        "norad": 67186,
+        "votes": [
+          {
+            "seed": 20261029,
+            "arm": "c0",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 2153.3867997536736,
+            "adequate": true
+          },
+          {
+            "seed": 20261029,
+            "arm": "fitted_c",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 2151.853478138224,
+            "adequate": true
+          },
+          {
+            "seed": 94721,
+            "arm": "c0",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 602.1410914716254,
+            "adequate": true
+          },
+          {
+            "seed": 94721,
+            "arm": "fitted_c",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 601.9231980234327,
+            "adequate": true
+          },
+          {
+            "seed": 2119777137,
+            "arm": "c0",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 311.34055073022523,
+            "adequate": true
+          },
+          {
+            "seed": 2119777137,
+            "arm": "fitted_c",
+            "norad": 67186,
+            "runner_up": 59041,
+            "margin": 309.6000473203419,
+            "adequate": true
+          }
+        ],
+        "minimum_margin": 309.6000473203419,
+        "position_inclusion_authorized": false,
+        "conditional_on_graph_and_competitor_search": true
+      },
+      "gap_default": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 29.511258997023106,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "include_predictive_annotations.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v3/recovery/all-large-track-recovery/97b4e22d47d286ff0a1e0bdd0ca2e295/inventory.json",
+          "--validation",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/annotation",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_default",
+          "--native-from-validation"
+        ],
+        "timeout_s": 240,
+        "audit": {
+          "returncode": 0,
+          "state": "complete",
+          "seconds": 10.909287428017706,
+          "command": [
+            "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+            "audit_shared_predictive_inclusion.py",
+            "--study",
+            "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v3/recovery",
+            "--trial",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_default",
+            "--output",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_default/exact_owner_replay.json"
+          ],
+          "timeout_s": 180
+        }
+      },
+      "gap_conditional": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 25.18066499987617,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "include_predictive_annotations.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v3/recovery/all-large-track-recovery/97b4e22d47d286ff0a1e0bdd0ca2e295/inventory.json",
+          "--validation",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/annotation",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_conditional",
+          "--native-from-validation",
+          "--conditional-satellite-refresh"
+        ],
+        "timeout_s": 240,
+        "audit": {
+          "returncode": 0,
+          "state": "complete",
+          "seconds": 7.835954917129129,
+          "command": [
+            "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+            "audit_shared_predictive_inclusion.py",
+            "--study",
+            "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0004/candidate-v3/recovery",
+            "--trial",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_conditional",
+            "--output",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0004/gap-de986dcb32ca28bd4d0e/gap_conditional/exact_owner_replay.json"
+          ],
+          "timeout_s": 180
+        }
+      }
+    }
+  ],
+  [
+    {
+      "case": "DS27-0022",
+      "branch_id": "c32d1c45713ce9eb0021",
+      "points": 60,
+      "annotation": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 25.382835001219064,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "annotate_predictive_only.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v3/recovery/all-large-track-recovery/7a3aea25c395b30c5afccad6f32e7630/inventory.json",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/annotation",
+          "--track",
+          "c32d1c45713ce9eb0021",
+          "--native-branches",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-source/branches.json",
+          "--distinct-partitions",
+          "--candidates",
+          "3",
+          "--folds",
+          "3",
+          "--uncalibrated-phase-mixture"
+        ],
+        "timeout_s": 240
+      },
+      "identity": {
+        "status": "conditionally_supported_identity",
+        "norad": 57914,
+        "votes": [
+          {
+            "seed": 20261029,
+            "arm": "c0",
+            "norad": 57914,
+            "runner_up": 52630,
+            "margin": 544.3252434457243,
+            "adequate": true
+          },
+          {
+            "seed": 20261029,
+            "arm": "fitted_c",
+            "norad": 57914,
+            "runner_up": 52630,
+            "margin": 541.5892373355271,
+            "adequate": true
+          },
+          {
+            "seed": 4081,
+            "arm": "c0",
+            "norad": 57914,
+            "runner_up": 58884,
+            "margin": 912.5097515917398,
+            "adequate": true
+          },
+          {
+            "seed": 4081,
+            "arm": "fitted_c",
+            "norad": 57914,
+            "runner_up": 58884,
+            "margin": 909.5138297946713,
+            "adequate": true
+          },
+          {
+            "seed": 434541565,
+            "arm": "c0",
+            "norad": 57914,
+            "runner_up": 58884,
+            "margin": 842.4008761038458,
+            "adequate": true
+          },
+          {
+            "seed": 434541565,
+            "arm": "fitted_c",
+            "norad": 57914,
+            "runner_up": 58884,
+            "margin": 827.9833378570919,
+            "adequate": true
+          }
+        ],
+        "minimum_margin": 541.5892373355271,
+        "position_inclusion_authorized": false,
+        "conditional_on_graph_and_competitor_search": true
+      },
+      "gap_default": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 18.716839699074626,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "include_predictive_annotations.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v3/recovery/all-large-track-recovery/7a3aea25c395b30c5afccad6f32e7630/inventory.json",
+          "--validation",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/annotation",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_default",
+          "--native-from-validation"
+        ],
+        "timeout_s": 240,
+        "audit": {
+          "returncode": 0,
+          "state": "complete",
+          "seconds": 8.692249558400363,
+          "command": [
+            "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+            "audit_shared_predictive_inclusion.py",
+            "--study",
+            "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v3/recovery",
+            "--trial",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_default",
+            "--output",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_default/exact_owner_replay.json"
+          ],
+          "timeout_s": 180
+        }
+      },
+      "gap_conditional": {
+        "returncode": 0,
+        "state": "complete",
+        "seconds": 18.571147573180497,
+        "command": [
+          "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+          "include_predictive_annotations.py",
+          "--inventory",
+          "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v3/recovery/all-large-track-recovery/7a3aea25c395b30c5afccad6f32e7630/inventory.json",
+          "--validation",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/annotation",
+          "--output",
+          "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_conditional",
+          "--native-from-validation",
+          "--conditional-satellite-refresh"
+        ],
+        "timeout_s": 240,
+        "audit": {
+          "returncode": 0,
+          "state": "complete",
+          "seconds": 7.9345691641792655,
+          "command": [
+            "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/gap_stage.py",
+            "audit_shared_predictive_inclusion.py",
+            "--study",
+            "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0022/candidate-v3/recovery",
+            "--trial",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_conditional",
+            "--output",
+            "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0022/gap-c32d1c45713ce9eb0021/gap_conditional/exact_owner_replay.json"
+          ],
+          "timeout_s": 180
+        }
+      }
+    }
+  ]
+]

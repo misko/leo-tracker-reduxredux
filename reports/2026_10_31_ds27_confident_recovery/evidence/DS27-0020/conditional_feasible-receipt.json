@@ -1,0 +1,53 @@
+{
+  "case": "DS27-0020",
+  "track_id": "e7ff72e43649ae9b3ab7",
+  "mode": "conditional_feasible",
+  "fit": {
+    "returncode": 0,
+    "state": "complete",
+    "seconds": 33.73530075373128,
+    "command": [
+      "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+      "/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/tools/algo04_numerical_stage.py",
+      "--reference-limit-s",
+      "30",
+      "--centered-lbfgsb",
+      "--receipt",
+      "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0020/conditional_feasible-numerics.json",
+      "/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/tools/include_predictive_annotations.py",
+      "--inventory",
+      "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0020/candidate-v3/recovery/all-large-track-recovery/8ce1b621e9b6a680075acc8bda6b244b/inventory.json",
+      "--validation",
+      "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0020/candidate-v3/recovery/e7ff72e43649ae9b3ab7/annotation",
+      "--output",
+      "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0020/conditional_feasible",
+      "--predictive-member",
+      "--conditional-satellite-refresh",
+      "--position-fit",
+      "incumbent_feasible"
+    ],
+    "timeout_s": 360
+  },
+  "audit": {
+    "returncode": 0,
+    "state": "complete",
+    "seconds": 10.788167503662407,
+    "command": [
+      "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+      "/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/tools/algo04_numerical_stage.py",
+      "--reference-limit-s",
+      "30",
+      "--centered-lbfgsb",
+      "--receipt",
+      "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0020/conditional_feasible-audit-numerics.json",
+      "/opt/leo-fast-graph/f9e262f96b6e2e75b397f69d50a0ea9104e293ef/tools/audit_shared_predictive_inclusion.py",
+      "--study",
+      "/srv/bulk/leo/research/ds27-algo04-20261031/cases/DS27-0020/candidate-v3/recovery",
+      "--trial",
+      "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0020/conditional_feasible",
+      "--output",
+      "/srv/bulk/leo/research/ds27-confident-recovery-20261031/DS27-0020/conditional_feasible/exact_owner_replay.json"
+    ],
+    "timeout_s": 180
+  }
+}
