@@ -1,0 +1,83 @@
+# /etc/systemd/system/leo-v052-adaptive.timer
+[Unit]
+Description=Run v0.52 RX0 adaptive scanner every ten minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/10:00 UTC
+Persistent=true
+AccuracySec=1s
+Unit=leo-v052-adaptive.service
+
+[Install]
+WantedBy=timers.target
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/80-dual-rx-description.conf
+[Unit]
+Description=Run v0.56 dual RX adaptive scanner on .20 at 2.5 MS/s every ten minutes
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/90-fixed-10msps.conf
+[Unit]
+Description=Run dual RX adaptive scanner on .20 at fixed 10 MS/s every ten minutes
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/99-v057-random-rate.conf
+[Unit]
+Description=Run v0.57 dual RX adaptive scanner on .20 with random 2.5/10 MS/s rate every ten minutes
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/99-v058-multirate-manual.conf
+[Unit]
+Description=Run v0.58 dual RX adaptive scanner on .20 with uniform 2.5/5/7.5/10 MS/s policy and manual gain every ten minutes
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/zz-seven-minute.conf
+[Unit]
+Description=Automatic dual RX adaptive scans: five-minute capture, three-minute gap
+
+[Timer]
+OnCalendar=
+OnBootSec=2min
+OnUnitInactiveSec=
+OnUnitInactiveSec=3min
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/zzz-ten-minute-gap.conf
+[Unit]
+Description=Automatic dual RX adaptive scans: ten-minute wait after capture completion
+
+[Timer]
+OnCalendar=
+OnBootSec=
+OnBootSec=10min
+OnUnitInactiveSec=
+OnUnitInactiveSec=10min
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/zzzz-shared-scans.conf
+[Unit]
+Description=Automatic adaptive and fast scans: ten-minute gap after each five-minute capture
+
+[Timer]
+OnCalendar=
+OnBootSec=
+OnBootSec=10min
+OnUnitInactiveSec=
+OnUnitInactiveSec=10min
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
+
+# /etc/systemd/system/leo-v052-adaptive.timer.d/zzzzz-fast-v16-startup.conf
+[Unit]
+Description=Automatic adaptive and fast scans: twenty-minute gap after each five-minute capture
+
+[Timer]
+OnCalendar=
+OnBootSec=
+# An empty monotonic assignment clears inherited triggers; set both after it.
+OnActiveSec=20min
+OnUnitInactiveSec=20min
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=false
