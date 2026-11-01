@@ -1,0 +1,56 @@
+{
+  "seed": 20261103,
+  "development": [
+    "DS26-0203",
+    "DS26-0070",
+    "DS26-0251",
+    "DS26-0034"
+  ],
+  "validation": [
+    "DS26-0271",
+    "DS26-0056",
+    "DS26-0267",
+    "DS26-0088",
+    "DS27-0022",
+    "DS27-0026",
+    "DS27-0028",
+    "DS27-0004"
+  ],
+  "source_sha256": "169fe8c0e6c83968dedde48491c6460f839323a4799239065be51c4462d35cff",
+  "input_sha256": {
+    "DS26-0203": "9e7f46156e19edd4c207a0e0f3686ff10be5a6a368f6ab5b9e51ec72d765c2b3",
+    "DS26-0070": "b6e36593add85f45ad445f9a54573a14e03d0855ab791c51fa4740761de76621",
+    "DS26-0251": "f9e78d65e17b758f9aba2fe76615bb91650f75fcb57f5c3d81633a99c093b8f0",
+    "DS26-0034": "a2d9240c6f08801bcf51cc991057292bde2c624888e02ebe7140fec356ae615e",
+    "DS26-0271": "9b7752f85af7d5581bb1a3c9e1e649a8940e71617924a071e65ddba7a7b30e40",
+    "DS26-0056": "6ffdea2ede0a4fb466d8fcbc4afa1c5e3cca34757750b38dc21055177b2a297a",
+    "DS26-0267": "0bae7c8569f69e5d95b72c69da65c967a05fa5fb3d8939d68fb150ab360d7fac",
+    "DS26-0088": "44344704816a1add3af4946d5ef8496e6b5bcfff864a7e7c079e342918d96db0",
+    "DS27-0022": "680f467e1c93b1983a34ee2d93bc8c7d6a56238adf7b8b1c0e8453506c59e043",
+    "DS27-0026": "85f362da38b31e63ea35bd88d0fe43e95b2105962e45230d6d002729b497277f",
+    "DS27-0028": "b35b952fa371be4400c7a770b500c5bd7eaf0757e66e0d778303df2c67ec9aca",
+    "DS27-0004": "2bf9cda33187a2510f8a407a5c4c7569b2ae7f98be63d6ff8bd0588a7afecaf8"
+  },
+  "trigger": "top two curved families by summed c-arm finite-difference local omission displacement; >=0.5 km; >=30 native fitted points and >=2 tracks",
+  "catalogue": "complete existing 72h causal regional bank, epoch and collection checked; latest per identity; no later TLEs",
+  "nomination": "two longest active family tracks; <=16 uniform samples, phase -30..30 by2s; top2 per track/arm, union with incumbent",
+  "family_model": "frozen family-omitted radio and position; native points; per-source offset300Hz, one shared rate0.5Hz/s, noise150Hz, phaseSD5s; phase grid0.4s",
+  "folds": 5,
+  "block_seconds": 5,
+  "guard_seconds": 5,
+  "held_fraction": 0.2,
+  "predictive_accept": "mean held score gain>0 and >=4/5 positive folds in each c arm; conditional on full-data nomination and graph tracks",
+  "proposals": "top two whole-family nominees by summed full RF scores plus an >=80%-stable whole-track partition; no hypothesis chosen by error",
+  "phase_rounds": 15,
+  "position_iterations": 40,
+  "starts": "same published fitted-c and fitted-c family-omitted endpoints in both arms",
+  "position_box_km": 25,
+  "center": [
+    37.906,
+    -122.545
+  ],
+  "acceptance": "paired RF improvement beyond 2log(number searched nominees), existing gates/exact orbit/phase closure/solver/no owners lost/no unintended reassignment + conditional predictive check",
+  "limit": "one family modification per scan; all nominated families tested from original baseline, no greedy chaining",
+  "validation_scope": "additional random scans, not previously untouched datasets; rule frozen before these outcomes",
+  "production_changed": false
+}
