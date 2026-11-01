@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/ds24/evaluate_ds24.py", line 191, in <module>
+    elif args.action=='preflight':preflight()
+                                  ^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/ds24/evaluate_ds24.py", line 144, in preflight
+    proof = runner.preflight(INPUT, OUTPUT)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/run_candidate.py", line 147, in preflight
+    for member in read(input_root/'roster.json')['rows']:
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/run_candidate.py", line 55, in read
+    def read(path):return json.loads(Path(path).read_text())
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/ds24/inputs/roster.json'
