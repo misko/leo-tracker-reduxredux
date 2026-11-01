@@ -1,0 +1,184 @@
+{
+  "case": "DS26-0203",
+  "whole_hypotheses": [
+    {
+      "name": "59360",
+      "norad": 59360
+    },
+    {
+      "name": "67935",
+      "norad": 67935
+    }
+  ],
+  "hypotheses": {
+    "08_fragment_partition": [
+      {
+        "name": "rf_fragment_partition",
+        "mapping": {
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 67935,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 67935,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 67935
+        },
+        "aliases": {
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 1,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 1,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 1
+        },
+        "phases": {
+          "67935": -5.799999999999997
+        },
+        "norad": 67935,
+        "allowed_families": [
+          59360,
+          67935
+        ],
+        "penalty": 0.0,
+        "proposal": "whole-track pooled RF costs; shared phase/rate nominee, no evaluation truth"
+      }
+    ],
+    "09_joint_families": [
+      {
+        "name": "67935_63377_to_68256",
+        "norad": 67935,
+        "mapping": {
+          "SCAN-RX2-CH1-T004-RF10940312500.000000": 68256,
+          "SCAN-RX2-CH2-T001-RF11190312500.000000": 68256,
+          "SCAN-RX2-CH4-T004-RF11690312500.000000": 68256,
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 67935,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 67935,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 67935
+        },
+        "aliases": {
+          "SCAN-RX2-CH1-T004-RF10940312500.000000": 1,
+          "SCAN-RX2-CH2-T001-RF11190312500.000000": 0,
+          "SCAN-RX2-CH4-T004-RF11690312500.000000": 0,
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 1,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 1,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 1
+        },
+        "phases": {
+          "67935": -5.843802174947881,
+          "68256": 14.800000000000004
+        },
+        "allowed_families": [
+          67935,
+          67935,
+          63377,
+          68256
+        ],
+        "penalty": 1.3862943611198906,
+        "proposal": "replace primary plus RF-conflicting secondary; causal shortlist from longest secondary source"
+      },
+      {
+        "name": "67935_63377_to_101023",
+        "norad": 67935,
+        "mapping": {
+          "SCAN-RX2-CH1-T004-RF10940312500.000000": 101023,
+          "SCAN-RX2-CH2-T001-RF11190312500.000000": 101023,
+          "SCAN-RX2-CH4-T004-RF11690312500.000000": 101023,
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 67935,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 67935,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 67935
+        },
+        "aliases": {
+          "SCAN-RX2-CH1-T004-RF10940312500.000000": 1,
+          "SCAN-RX2-CH2-T001-RF11190312500.000000": 0,
+          "SCAN-RX2-CH4-T004-RF11690312500.000000": 0,
+          "SCAN-RX1-CH8-T000-RF12690312500.000000": 1,
+          "SCAN-RX1-CH8-T001-RF12690312500.000000": 1,
+          "SCAN-RX2-CH8-T000-RF12690312500.000000": 1
+        },
+        "phases": {
+          "67935": -5.843802174947881,
+          "101023": 0.5
+        },
+        "allowed_families": [
+          67935,
+          67935,
+          63377,
+          101023
+        ],
+        "penalty": 1.3862943611198906,
+        "proposal": "replace primary plus RF-conflicting secondary; causal shortlist from longest secondary source"
+      }
+    ]
+  },
+  "partition_costs": [
+    {
+      "component": "SCAN-RX1-CH8-T000-RF12690312500.000000",
+      "paired_costs": {
+        "59360": 42.86439500774144,
+        "67935": 7.885862574432259
+      },
+      "winner": 67935
+    },
+    {
+      "component": "SCAN-RX1-CH8-T001-RF12690312500.000000",
+      "paired_costs": {
+        "59360": 90.04043057666604,
+        "67935": 31.990988525385717
+      },
+      "winner": 67935
+    },
+    {
+      "component": "SCAN-RX2-CH8-T000-RF12690312500.000000",
+      "paired_costs": {
+        "59360": 236.77121288191347,
+        "67935": 81.01804211728975
+      },
+      "winner": 67935
+    }
+  ],
+  "secondary_nomination": {
+    "primary": 67935,
+    "secondary": 63377,
+    "component": "SCAN-RX2-CH2-T001-RF11190312500.000000",
+    "catalogue_size": 11156,
+    "propagation_failures": [
+      48562,
+      48582
+    ],
+    "nominees": [
+      {
+        "model": "L3_phase",
+        "norad": 68256,
+        "score": 3524.136694331275,
+        "phase_s": 14.800000000000004,
+        "alias": 0,
+        "bias_hz": 2051.6602296010824,
+        "rate_hz_s": -9.718404450136019,
+        "minimum_elevation_deg": 56.43700402039853,
+        "physical_screen_pass": false,
+        "n": 57,
+        "span_s": 51.0262309,
+        "mean_hz": 8.998509778952275,
+        "rms_hz": 1103.570301246507,
+        "slope_hz_s": -77.86179696710806,
+        "lag1": 0.9985821770612633,
+        "free_affine_rms_hz": 151.686878220997,
+        "free_affine_rate_hz_s": -87.5802014172441
+      },
+      {
+        "model": "L3_phase",
+        "norad": 101023,
+        "score": 5555.815007997455,
+        "phase_s": 0.5,
+        "alias": 0,
+        "bias_hz": -7060.179306122609,
+        "rate_hz_s": 11.414190108112328,
+        "minimum_elevation_deg": 39.981875101157925,
+        "physical_screen_pass": false,
+        "n": 57,
+        "span_s": 51.0262309,
+        "mean_hz": -30.965698711063492,
+        "rms_hz": 1329.1181505465179,
+        "slope_hz_s": 91.44807229435538,
+        "lag1": 0.998597516839031,
+        "free_affine_rms_hz": 342.75639830869915,
+        "free_affine_rate_hz_s": 102.86226240246774
+      }
+    ]
+  },
+  "observations_preserved": true,
+  "GPS_used_for_proposals": false
+}

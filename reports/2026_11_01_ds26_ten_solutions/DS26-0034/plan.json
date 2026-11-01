@@ -1,0 +1,175 @@
+{
+  "case": "DS26-0034",
+  "whole_hypotheses": [
+    {
+      "name": "53852",
+      "norad": 53852
+    },
+    {
+      "name": "59188",
+      "norad": 59188
+    }
+  ],
+  "hypotheses": {
+    "08_fragment_partition": [
+      {
+        "name": "rf_fragment_partition",
+        "mapping": {
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 59188
+        },
+        "aliases": {
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 1,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 0,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 0
+        },
+        "phases": {
+          "59188": -15.6
+        },
+        "norad": 53852,
+        "allowed_families": [
+          53852,
+          59188
+        ],
+        "penalty": 0.0,
+        "proposal": "whole-track pooled RF costs; shared phase/rate nominee, no evaluation truth"
+      }
+    ],
+    "09_joint_families": [
+      {
+        "name": "59188_69188_to_67870",
+        "norad": 59188,
+        "mapping": {
+          "SCAN-RX1-CH1-T002-RF10940312500.000000": 67870,
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 59188
+        },
+        "aliases": {
+          "SCAN-RX1-CH1-T002-RF10940312500.000000": 0,
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 1,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 0,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 0
+        },
+        "phases": {
+          "59188": -15.851255539496384,
+          "67870": -19.9
+        },
+        "allowed_families": [
+          53852,
+          59188,
+          69188,
+          67870
+        ],
+        "penalty": 1.3862943611198906,
+        "proposal": "replace primary plus RF-conflicting secondary; causal shortlist from longest secondary source"
+      },
+      {
+        "name": "59188_69188_to_57089",
+        "norad": 59188,
+        "mapping": {
+          "SCAN-RX1-CH1-T002-RF10940312500.000000": 57089,
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 59188,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 59188
+        },
+        "aliases": {
+          "SCAN-RX1-CH1-T002-RF10940312500.000000": 0,
+          "SCAN-RX1-CH2-T002-RF11190312500.000000": 1,
+          "SCAN-RX2-CH2-T002-RF11190312500.000000": 0,
+          "SCAN-RX2-CH3-T000-RF11440312500.000000": 0
+        },
+        "phases": {
+          "59188": -15.851255539496384,
+          "57089": -4.899999999999999
+        },
+        "allowed_families": [
+          53852,
+          59188,
+          69188,
+          57089
+        ],
+        "penalty": 1.3862943611198906,
+        "proposal": "replace primary plus RF-conflicting secondary; causal shortlist from longest secondary source"
+      }
+    ]
+  },
+  "partition_costs": [
+    {
+      "component": "SCAN-RX1-CH2-T002-RF11190312500.000000",
+      "paired_costs": {
+        "53852": 43.74897958750245,
+        "59188": 27.045133615325653
+      },
+      "winner": 59188
+    },
+    {
+      "component": "SCAN-RX2-CH2-T002-RF11190312500.000000",
+      "paired_costs": {
+        "53852": 38.76879500610967,
+        "59188": 19.325964362562814
+      },
+      "winner": 59188
+    },
+    {
+      "component": "SCAN-RX2-CH3-T000-RF11440312500.000000",
+      "paired_costs": {
+        "53852": 37.13248796142935,
+        "59188": 18.146288835739917
+      },
+      "winner": 59188
+    }
+  ],
+  "secondary_nomination": {
+    "primary": 59188,
+    "secondary": 69188,
+    "component": "SCAN-RX1-CH1-T002-RF10940312500.000000",
+    "catalogue_size": 11136,
+    "propagation_failures": [
+      46174
+    ],
+    "nominees": [
+      {
+        "model": "L3_phase",
+        "norad": 67870,
+        "score": 103.76311678622159,
+        "phase_s": -19.9,
+        "alias": 0,
+        "bias_hz": 862.6781934001691,
+        "rate_hz_s": 0.47175281266735086,
+        "minimum_elevation_deg": 47.28200172158294,
+        "physical_screen_pass": false,
+        "n": 22,
+        "span_s": 24.09933570000001,
+        "mean_hz": 9.803161288638258,
+        "rms_hz": 275.5897524671317,
+        "slope_hz_s": 36.34445412893856,
+        "lag1": 0.8926323003649814,
+        "free_affine_rms_hz": 75.58124822858856,
+        "free_affine_rate_hz_s": 36.816206941605905
+      },
+      {
+        "model": "L3_phase",
+        "norad": 57089,
+        "score": 149.1050959704961,
+        "phase_s": -4.899999999999999,
+        "alias": 0,
+        "bias_hz": 1205.247120939077,
+        "rate_hz_s": 0.6218968944331772,
+        "minimum_elevation_deg": 52.75592205459462,
+        "physical_screen_pass": false,
+        "n": 22,
+        "span_s": 24.09933570000001,
+        "mean_hz": 13.695990010671354,
+        "rms_hz": 358.91300517159885,
+        "slope_hz_s": 47.91175070024172,
+        "lag1": 0.9304309708110301,
+        "free_affine_rms_hz": 82.08255987842318,
+        "free_affine_rate_hz_s": 48.533647594674896
+      }
+    ]
+  },
+  "observations_preserved": true,
+  "GPS_used_for_proposals": false
+}

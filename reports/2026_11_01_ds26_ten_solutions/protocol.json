@@ -1,0 +1,50 @@
+{
+  "methods": {
+    "01_damped_phase": "Half-step phase refresh to suppress oscillation",
+    "02_inner_phase": "Solve phase consistency inside each position evaluation",
+    "03_regional_basins": "RF-ranked regional multistart across the 25 km box",
+    "04_receiver_shrink": "Reduce nonlinear receiver smooth prior SD 200 to 50 Hz",
+    "05_orbit_shrink": "Halve all physical orbital-mode prior standard deviations",
+    "06_age_uncertainty": "Add independent phase uncertainty of one second per 24 h TLE age in quadrature",
+    "07_shared_rate": "Add one Gaussian satellite-shared frequency rate, SD 0.5 Hz/s",
+    "08_fragment_partition": "RF-nominated whole-graph-track identity partition",
+    "09_joint_families": "Joint replacement of primary and a conflicting/influential secondary family",
+    "10_gate_margin": "Constrained fit with 0.05 normalized slack margin"
+  },
+  "cases": [
+    "DS26-0203",
+    "DS26-0070",
+    "DS26-0251",
+    "DS26-0034"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "revision": "e18ca9e760006c5f72853c5d6319b34410bcb408",
+  "source_sha256": "1ab714d86da82191b747bbad356e8881a373d7dc72d43a6c9df0aa488708eb87",
+  "position_box_center": [
+    37.906,
+    -122.545
+  ],
+  "box_width_km": 25,
+  "catalogue": "latest causal elements available by scan cutoff, <=72h; no later TLEs",
+  "selection": "paired RF scores within each variant, unchanged observations; retain all published owners; GPS only for reporting",
+  "phase_rounds": 15,
+  "phase_limit_s": 30,
+  "closure_s": 0.01,
+  "inner_solver_seconds": 45,
+  "region_grid": [
+    -12.5,
+    0,
+    12.5
+  ],
+  "regional_added_starts": 2,
+  "margin": 0.05,
+  "rate_prior_hz_s": 0.5,
+  "receiver_smooth_prior_hz": 50,
+  "physical_orbit_SD_multiplier": 0.5,
+  "phase_age_extra_SD_s_per_day": 1,
+  "independent_validation": false,
+  "scope": "four posthoc outliers, controlled mechanism prototypes; not promotion evidence"
+}
