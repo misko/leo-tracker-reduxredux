@@ -1,0 +1,92 @@
+{
+  "cases": {
+    "DS26-0203": {
+      "target": 67935,
+      "nominees": [
+        59360,
+        67935
+      ],
+      "hashes": {
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0203.json": "9e7f46156e19edd4c207a0e0f3686ff10be5a6a368f6ab5b9e51ec72d765c2b3",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0203/tle-ledger.json": "1c8265e6b112214463d2465d9bc69c4829e4aa7be936936598164d4d127ac21d",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0203/family_diagnostic.json": "24df6a8f5ce57efc993d03528f0c5cac1f6291d1ea61706e0eb7695c65f41bed"
+      }
+    },
+    "DS26-0070": {
+      "target": 62320,
+      "nominees": [
+        62320,
+        63571,
+        67047
+      ],
+      "hashes": {
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0070.json": "b6e36593add85f45ad445f9a54573a14e03d0855ab791c51fa4740761de76621",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0070/tle-ledger.json": "a533432564b3e0a32cb4528ba02fee5aa574a19dc5083e9443182f76b0a1967d",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0070/family_diagnostic.json": "d999aeb3903f376865ce1b249425176a7bc35a249fba2b0d90bdc781f02fd36c"
+      }
+    },
+    "DS26-0251": {
+      "target": 56548,
+      "nominees": [
+        56548,
+        58787
+      ],
+      "hashes": {
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0251.json": "f9e78d65e17b758f9aba2fe76615bb91650f75fcb57f5c3d81633a99c093b8f0",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0251/tle-ledger.json": "22d87d8ff62cc811c1315bf9ae59195a36425543c748c69afc0856c5b15c82f4",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0251/family_diagnostic.json": "39dac788482d63374ffe6ef00aa6f5cde37070637087aaf26b9ec6ddeeeda873"
+      }
+    },
+    "DS26-0034": {
+      "target": 53852,
+      "nominees": [
+        53852,
+        59188
+      ],
+      "hashes": {
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0034.json": "a2d9240c6f08801bcf51cc991057292bde2c624888e02ebe7140fec356ae615e",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0034/tle-ledger.json": "fe6c061ee25e3f9540dff8b86f6904293eaafed0123bb77e1ba861c5f7f79f0e",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/DS26-0034/family_diagnostic.json": "b8c1a3d3da9a025480744258adbf01c4f77575dc7c750959877f4c35d75ac56b"
+      }
+    }
+  },
+  "code_hashes": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_solution_prototypes/prototype.py": "7e812abdc7851475bd03f87986a1d26176f3fafe41a931e65a7b3837bf71e94a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/diagnose.py": "0b06ffb0de864a6b597e9b50465098063e414528173aa1909a8fdbf598a7c252",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_outlier_root_cause/family_debug.py": "3ce5c4ec8d6284ac8f079fe8837dab627501bb42d71844ef98c2761cd0abfaf2"
+  },
+  "candidate_policy": "reuse prior full causal discovery, top two family-omitted RF nominees union across c arms; bounded shortlist, not new exhaustive search",
+  "weights": [
+    1,
+    0.5,
+    0.25
+  ],
+  "age_policies": [
+    "none",
+    "linear24",
+    "quadratic24",
+    "grace48",
+    "hard48"
+  ],
+  "age_prior_scope": "unique satellite once, no per-point age penalty",
+  "age_definition": "hours from element epoch to scan cutoff; collection also <= cutoff",
+  "starts": "same fitted-c published and family-omitted RF positions for every candidate and both c arms",
+  "priors": "unchanged physical/phase priors; missing causal-history candidates use existing fallback; age does not widen nuisance priors",
+  "fit_budget": {
+    "phase_rounds": 15,
+    "phase_tolerance_s": 0.01,
+    "phase_limit_s": 30,
+    "L_BFGS_maxiter": 35,
+    "L_BFGS_maxfun": 140,
+    "SLSQP_maxiter": 40
+  },
+  "box_center": [
+    37.906,
+    -122.545
+  ],
+  "box_km": 25,
+  "evaluation": "four post-hoc outlier stress tests, NOT independent validation; no evaluation truth in nomination/score/starts",
+  "acceptance": "retain all existing points; exact orbit + all existing gates + phase closure + optimizer + owner retention; no relaxation",
+  "selection": "within fixed weight/constrained policy choose RF score among screened candidates, age terms added once per unique affected satellite",
+  "production_changed": false
+}
