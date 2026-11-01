@@ -20,7 +20,7 @@ for col,(ds,color) in enumerate(zip(datasets,colors)):
         ax=axes[row,col]
         for method,marker,c in [('ALGO05','o',color),('72h_30s','x','#111111')]:
             errors=np.array([float(r['error_m'])/1000 for r in rows if (r['dataset'],r['arm'],r['method'])==(ds,arm,method)])
-            ax.scatter(np.full(len(errors),10.),errors,s=22,alpha=.55,marker=marker,c=c,label=method)
+            ax.scatter(np.full(len(errors),10.),errors,s=22,alpha=.55,marker=marker,c=c,label='ALGO06' if method=='72h_30s' else method)
             if method=='ALGO05':
                 ax.set_title(f'{ds}: n={len(errors)}\nmedian {np.median(errors):.3f} km')
                 ax.plot([9.85,10.15],[np.median(errors)]*2,color=color,lw=3)
