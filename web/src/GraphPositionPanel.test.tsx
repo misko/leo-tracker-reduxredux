@@ -4,6 +4,16 @@ import { GraphPositionPanel } from "./GraphPositionPanel";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+it("labels the selected ALGO06 family recovery", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+    state: "complete", selected_model: "algo06-causal-residual-family-v1", decision: "ALGO06_additive", fallback: false,
+    selected: { model_version: "algo06-causal-residual-family-v1", position: { latitude_deg: 37.92, longitude_deg: -122.52 } },
+  }) })));
+  render(<GraphPositionPanel runId="scan" />);
+  expect(await screen.findByRole("heading", { name: "Graph localization · ALGO06" })).toBeInTheDocument();
+  expect(screen.getByText("ALGO06 causal family recovery")).toBeInTheDocument();
+});
+
 it("shows ALGO05 gap recovery and the actual fallback model", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
     state: "complete", selected_model: "algo05-causal-gap-conditional-v1", decision: "ALGO05_additive", fallback: false,
