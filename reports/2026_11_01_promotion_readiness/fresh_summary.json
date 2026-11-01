@@ -1,0 +1,192 @@
+{
+  "summary": [
+    {
+      "arm": "c0",
+      "method": "ALGO06",
+      "n": 5,
+      "mean_m": 1437.7031149506581,
+      "median_m": 1283.7114901165041,
+      "p90_m": 1901.2653086894895,
+      "max_m": 2236.7042864388077,
+      "within500": 0,
+      "associated_pct": 71.95782410735681
+    },
+    {
+      "arm": "c0",
+      "method": "guarded_candidate",
+      "n": 5,
+      "mean_m": 1437.7031149506581,
+      "median_m": 1283.7114901165041,
+      "p90_m": 1901.2653086894895,
+      "max_m": 2236.7042864388077,
+      "within500": 0,
+      "associated_pct": 71.95782410735681
+    },
+    {
+      "arm": "fitted_c",
+      "method": "ALGO06",
+      "n": 5,
+      "mean_m": 1424.0931012144101,
+      "median_m": 1257.6986020129439,
+      "p90_m": 1874.7584761200692,
+      "max_m": 2271.6504330300613,
+      "within500": 0,
+      "associated_pct": 71.95782410735681
+    },
+    {
+      "arm": "fitted_c",
+      "method": "guarded_candidate",
+      "n": 5,
+      "mean_m": 1424.0931012144101,
+      "median_m": 1257.6986020129439,
+      "p90_m": 1874.7584761200692,
+      "max_m": 2271.6504330300613,
+      "within500": 0,
+      "associated_pct": 71.95782410735681
+    }
+  ],
+  "decisions": [
+    {
+      "case": "FRSH-0001",
+      "status": "complete",
+      "selected": null,
+      "targets": [
+        66542,
+        59493
+      ],
+      "guards": {},
+      "review": [],
+      "candidate_records": [],
+      "failure": null,
+      "seconds": 95.28652085922658
+    },
+    {
+      "case": "FRSH-0002",
+      "status": "complete",
+      "selected": null,
+      "targets": [],
+      "guards": {},
+      "review": [],
+      "candidate_records": [],
+      "failure": null,
+      "seconds": 27.02522573620081
+    },
+    {
+      "case": "FRSH-0003",
+      "status": "complete",
+      "selected": null,
+      "targets": [
+        48289,
+        64750
+      ],
+      "guards": {
+        "48289_to_63926": {
+          "proposed": 63926,
+          "candidates": [
+            48289,
+            63926
+          ],
+          "model": "receiver_offset",
+          "phase_sd_s": 5.0,
+          "minimum_unique_folds": 5,
+          "required_minimum_margin_exclusive": 0.0,
+          "unique_folds": 10,
+          "total_partitions": 10,
+          "retained_fold_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "missing": [],
+          "competitors": [
+            {
+              "arm": "c0",
+              "norad": 48289,
+              "margins": [
+                499.01358665138173,
+                638.6082603973123,
+                -19.94708041599924,
+                281.6673736886639,
+                346.1218102816908,
+                445.3577167444774,
+                227.15427827818002,
+                28.03110178026421,
+                229.2860540961251,
+                330.102797150179
+              ],
+              "minimum_margin": -19.94708041599924,
+              "mean_margin": 300.5395898652275,
+              "wins": 9,
+              "folds": 10
+            },
+            {
+              "arm": "fitted_c",
+              "norad": 48289,
+              "margins": [
+                498.31483147348587,
+                638.238922438669,
+                -19.8546888015058,
+                281.43867423010835,
+                345.9420738337044,
+                445.8674088180306,
+                227.2255688766511,
+                28.468195177785958,
+                228.5823691330532,
+                330.5440933678465
+              ],
+              "minimum_margin": -19.8546888015058,
+              "mean_margin": 300.4767448547829,
+              "wins": 9,
+              "folds": 10
+            }
+          ],
+          "scope": "Conditional on supplied full-data finalist inventory, graph/alias choices, and cavity calibration; not independent discovery or an identity probability",
+          "status": "rejected",
+          "passed": false,
+          "reason": "nonpositive_or_subthreshold_competitor_margin",
+          "minimum_margin": -19.94708041599924
+        }
+      },
+      "review": [],
+      "candidate_records": [],
+      "failure": null,
+      "seconds": 76.61108927614987
+    },
+    {
+      "case": "FRSH-0004",
+      "status": "complete",
+      "selected": null,
+      "targets": [
+        59704,
+        59398
+      ],
+      "guards": {},
+      "review": [],
+      "candidate_records": [],
+      "failure": null,
+      "seconds": 86.4874099176377
+    },
+    {
+      "case": "FRSH-0005",
+      "status": "complete",
+      "selected": null,
+      "targets": [
+        58725,
+        57504
+      ],
+      "guards": {},
+      "review": [],
+      "candidate_records": [],
+      "failure": null,
+      "seconds": 57.93583822157234
+    }
+  ],
+  "protocol_sha256": "8ad9c2074c5c9a02ded4b95b565f372ea4d2ba379472b058366b61a8437f63f0"
+}

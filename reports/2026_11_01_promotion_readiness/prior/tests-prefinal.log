@@ -1,0 +1,36 @@
+test_all_planned_fits_have_matched_starts_and_native_evidence (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_all_planned_fits_have_matched_starts_and_native_evidence) ... FAIL
+test_causal_export_uses_only_prior_72h_availability (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_causal_export_uses_only_prior_72h_availability) ... ok
+test_complete_matches_saved_two_start_history_continuation (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_complete_matches_saved_two_start_history_continuation) ... ERROR
+test_nonintervened_dimensions_and_native_evidence_preserved (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_nonintervened_dimensions_and_native_evidence_preserved) ... ok
+test_original_replays_published_normalized_score (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_original_replays_published_normalized_score) ... ok
+test_predictive_subablation_replays_whole_mixture (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_predictive_subablation_replays_whole_mixture) ... ok
+test_zero_mean_intervention_is_exact_null (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_zero_mean_intervention_is_exact_null) ... ok
+
+======================================================================
+ERROR: test_complete_matches_saved_two_start_history_continuation (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_complete_matches_saved_two_start_history_continuation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/test_ablate.py", line 56, in test_complete_matches_saved_two_start_history_continuation
+    actual=json.loads((OUT/'results/complete.json').read_text())['pair']
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/results/complete.json'
+
+======================================================================
+FAIL: test_all_planned_fits_have_matched_starts_and_native_evidence (reports.2026_11_01_promotion_readiness.prior.test_ablate.AblationTests.test_all_planned_fits_have_matched_starts_and_native_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/test_ablate.py", line 66, in test_all_planned_fits_have_matched_starts_and_native_evidence
+    self.assertEqual({(r['arm'],r['start']) for r in rows},
+AssertionError: Items in the second set but not the first:
+('fitted_c', 'fitted_c')
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.083s
+
+FAILED (failures=1, errors=1)

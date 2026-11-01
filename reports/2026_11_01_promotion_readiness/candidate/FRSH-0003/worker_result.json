@@ -1,0 +1,157 @@
+{
+  "policy": "causal-reassociation-unique-receiver-groups-v1",
+  "selected": null,
+  "final": {
+    "c0": {
+      "x": [
+        6.409786173480558,
+        -5.878776063769458
+      ],
+      "error_m": 1283.7114901165041,
+      "objective": 26680.492493551472,
+      "associated": 3012,
+      "rms_hz": null
+    },
+    "fitted_c": {
+      "x": [
+        6.414010614397605,
+        -5.9033922556389475
+      ],
+      "error_m": 1279.4205407550808,
+      "objective": 26693.453173318452,
+      "associated": 3012,
+      "rms_hz": null
+    }
+  },
+  "review": [],
+  "case": "FRSH-0003",
+  "baseline": {
+    "c0": {
+      "x": [
+        6.409786173480558,
+        -5.878776063769458
+      ],
+      "error_m": 1283.7114901165041,
+      "objective": 26680.492493551472,
+      "associated": 3012,
+      "rms_hz": null
+    },
+    "fitted_c": {
+      "x": [
+        6.414010614397605,
+        -5.9033922556389475
+      ],
+      "error_m": 1279.4205407550808,
+      "objective": 26693.453173318452,
+      "associated": 3012,
+      "rms_hz": null
+    }
+  },
+  "records": [],
+  "guards": {
+    "48289_to_63926": {
+      "proposed": 63926,
+      "candidates": [
+        48289,
+        63926
+      ],
+      "model": "receiver_offset",
+      "phase_sd_s": 5.0,
+      "minimum_unique_folds": 5,
+      "required_minimum_margin_exclusive": 0.0,
+      "unique_folds": 10,
+      "total_partitions": 10,
+      "retained_fold_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "missing": [],
+      "competitors": [
+        {
+          "arm": "c0",
+          "norad": 48289,
+          "margins": [
+            499.01358665138173,
+            638.6082603973123,
+            -19.94708041599924,
+            281.6673736886639,
+            346.1218102816908,
+            445.3577167444774,
+            227.15427827818002,
+            28.03110178026421,
+            229.2860540961251,
+            330.102797150179
+          ],
+          "minimum_margin": -19.94708041599924,
+          "mean_margin": 300.5395898652275,
+          "wins": 9,
+          "folds": 10
+        },
+        {
+          "arm": "fitted_c",
+          "norad": 48289,
+          "margins": [
+            498.31483147348587,
+            638.238922438669,
+            -19.8546888015058,
+            281.43867423010835,
+            345.9420738337044,
+            445.8674088180306,
+            227.2255688766511,
+            28.468195177785958,
+            228.5823691330532,
+            330.5440933678465
+          ],
+          "minimum_margin": -19.8546888015058,
+          "mean_margin": 300.4767448547829,
+          "wins": 9,
+          "folds": 10
+        }
+      ],
+      "scope": "Conditional on supplied full-data finalist inventory, graph/alias choices, and cavity calibration; not independent discovery or an identity probability",
+      "status": "rejected",
+      "passed": false,
+      "reason": "nonpositive_or_subthreshold_competitor_margin",
+      "minimum_margin": -19.94708041599924
+    }
+  },
+  "targets": [
+    48289,
+    64750
+  ],
+  "history": null,
+  "failures": [],
+  "propagation_failures": [],
+  "catalogue_eligibility": {
+    "case": "FRSH-0003",
+    "catalogue_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/catalogues/FRSH-0003.json",
+    "catalogue_sha256": "0a8e87869194667438f34c7352a688df2c3680fb7ebed918feee28d5c1f93e1e",
+    "input_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/inputs/FRSH-0003.json",
+    "input_sha256": "c21d5a04e5df6c4b79411072aa6d09a648eebd78ad7113c654afe9c4438d2685",
+    "origin_utc_ns": 1793556906329568075,
+    "cutoff_utc_ns": 1793556906239559907,
+    "candidate_count": 11182,
+    "inherited_bank_failed_ids": [],
+    "inherited_usable_count": 11182,
+    "classification_counts": {
+      "eligible": 11182
+    },
+    "eligible_ids_sha256": "b6e1adbf99c0628a8dfeb5583ac850047d4a0dfb24f1d4e23228ff1ee676a276",
+    "nominal_causality_verified": true,
+    "causal_failures": [],
+    "failures": [],
+    "partial_or_unknown_blocks": []
+  },
+  "seconds": 74.38078980799764,
+  "execution_status": "complete",
+  "protocol_sha256": "8ad9c2074c5c9a02ded4b95b565f372ea4d2ba379472b058366b61a8437f63f0",
+  "production_modified": false
+}

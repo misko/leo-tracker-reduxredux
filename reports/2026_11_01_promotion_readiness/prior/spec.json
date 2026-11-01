@@ -1,0 +1,77 @@
+{
+  "case": "DS26-0058",
+  "cells": {
+    "original": [],
+    "mean": [
+      "mean"
+    ],
+    "width": [
+      "width"
+    ],
+    "radial": [
+      "radial"
+    ],
+    "cross": [
+      "cross"
+    ],
+    "predictive": [
+      "predictive"
+    ],
+    "phase": [
+      "mean",
+      "width"
+    ],
+    "shape": [
+      "radial",
+      "cross"
+    ],
+    "all_without_predictive": [
+      "mean",
+      "width",
+      "radial",
+      "cross"
+    ],
+    "complete": [
+      "mean",
+      "width",
+      "radial",
+      "cross",
+      "predictive"
+    ]
+  },
+  "components": [
+    "mean",
+    "width",
+    "radial",
+    "cross",
+    "predictive"
+  ],
+  "created_utc_ns": 1793570627315135735,
+  "revision": "326c109601ef85007142dd6dcd22f13cba7f43c8",
+  "hashes": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/evaluate.py": "b12addce77d191274220102f39dcb179c6d6af315badc77d2cda7df0c24a8a51",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/baseline.json": "3129d9ebc335a3a52dd06b5aab13ba888b6feb0ee04053b17fddd7ed2779cbac",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/history_candidate.json": "131344c6caf31c566fbda5b8673b384f839c6bada37c541e40c14ff100fc30ff",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/history_control.json": "e1b71bdf5cb83c92086d084bca09ec5f0d18229ee3b18d2841ad4f532e2ec203",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/incumbent_history/previous.tle": "e623899487beae6cb8713b1a7fd27017e9a4d501576282cdf03fcddad2571cd9",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/incumbent_history/previous_receipt.json": "d46baec1a93769d54f8b736465c91f6d9aff3090fcef2b5fe212d05520adb121",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0058/incumbent_history/export.json": "b9f09bbc01bf243a34f5834648c86edf1df2be597c30f1b6c2022bf47fbab367",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/ablate.py": "2aa4fc544617ada1be621bbdc01fb29c410ddde6c3b31804f60eef5fdde1e163"
+  },
+  "causal": "Original 72h causal ALGO06 observations and fixed identities; cached causal history completion; no later elements",
+  "starts": "Published fitted-c and c0 endpoints, identical two starts for every cell and both arms",
+  "fit": {
+    "phase_rounds": 15,
+    "SLSQP_iterations": 40,
+    "phase_tolerance_s": 0.01
+  },
+  "mean": "Only calibration family phase mean vector from completed history",
+  "width": "Only calibration family phase width vector from completed history",
+  "radial": "Only mode 0 physical mean-motion/radial uncertainty from completed history",
+  "cross": "Only physical inclination/RAAN uncertainty modes 1 and 2 from completed history",
+  "predictive": "Only standalone NewFamily mixture priors/modes from completed history; shared receiver covariance stays integrated once",
+  "scoring": "Inherited normalized hierarchical ELBO plus predictive density, including determinant/prior normalizations; choose qualified start by RF objective within each cell",
+  "comparison": "Every cell is diagnostic; no post-hoc cell promotion or GPS-based model selection; report both c arms and all failed fits",
+  "truth": "Endpoint reporter only, after fitting; never starts, priors, cell selection or search",
+  "no_production_change": true
+}

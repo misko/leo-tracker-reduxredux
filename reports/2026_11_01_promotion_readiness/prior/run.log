@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/ablate.py", line 142, in <module>
+    {'freeze':freeze,'run':run}[sys.argv[1]]()
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/ablate.py", line 124, in run
+    receipts=audit(d,hd,z)
+             ^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/ablate.py", line 98, in audit
+    dd=mixed(d,hd,z,parts);rows={}
+       ^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/prior/ablate.py", line 91, in mixed
+    for a,(p,x) in d['problems'].items():dd['problems'][a]=(e.build(dd,z,a,p.reference)[0],x)
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/evaluate.py", line 43, in build
+    keep=d['keep'].copy();base=d['problems'][arm][0]
+                               ~~~~~~~~~~~~~^^^^^
+KeyError: 'c0'

@@ -1,0 +1,58 @@
+{
+  "revision": "326c109601ef85007142dd6dcd22f13cba7f43c8",
+  "frozen_ns": 1793570671396101532,
+  "cases": {
+    "DS26-0203": {
+      "targets": [
+        67935,
+        63377
+      ],
+      "inputs": {
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0203/trigger.json": "59ce33aa02f46ce3eb11e3829393d8041f50e93b353ee2d805cce18d0678b7ed",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0203/result.json": "a51ee69e02cb26a62c1796c4bbeb0328d7b18b831eb66df4b8d84c40771a89bf",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0203/67935/screen.json": "47fa9e5abfc8b02d93cdff8de96e9d44638a06131ae51b596414ef7b535a38c7",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0203/63377/screen.json": "3a5f9905cf6702f4f8146282e1f68e1c5d682e14110cb74621cf6e509721bd5c",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0203.json": "9e7f46156e19edd4c207a0e0f3686ff10be5a6a368f6ab5b9e51ec72d765c2b3",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/catalogues/DS26-0203.json": "abbe9caf819bbb4c408ac7306c1ac6b41b54bd21785a608aca190c2d977e2210",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/position/DS26-0203/result.json": "db6a654674b438da2f9de6e1ebf5694fa628a4f6f724de9345f7e7962587cef4"
+      }
+    },
+    "DS26-0070": {
+      "targets": [
+        62320,
+        63321
+      ],
+      "inputs": {
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0070/trigger.json": "9b0c572a3d6fc8b1900943134a6ac1ff9865dfb72e38f3881eaad2d1e6c3ea15",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0070/result.json": "b7b69e589e7ebe6b3c0c36884e86b56a4d4f5581d3c62a035da8508938d187dc",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0070/62320/screen.json": "7e9b7f90d4b404722bd1d2f28309aac0592f744200ab6c1b83d3ccd0ef66849a",
+        "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/DS26-0070/63321/screen.json": "38c68d5bdd17620cad00fc7bd43874cd2269d7152a55e10e6062eb1c0f3e7cb5",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0070.json": "b6e36593add85f45ad445f9a54573a14e03d0855ab791c51fa4740761de76621",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/catalogues/DS26-0070.json": "478c1b2a33fd0590b08ec858254d5dc7379c73c12cfd9886dce22251be7606f5",
+        "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/position/DS26-0070/result.json": "c1151b15052b0b2fd4f1dbab2f9f42f2db5e8c33bc007bcead1ab4945719af1b"
+      }
+    }
+  },
+  "code_sha256": "be0e4372c3f05ddc53958a3ec5e069d016f0045f8f0bc80055e9d4ab859e4b23",
+  "imported_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_reconsideration_population/evaluate.py": "b12addce77d191274220102f39dcb179c6d6af315badc77d2cda7df0c24a8a51",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_reconsideration/reconsider.py": "c2dc8861d596763546e6f3e003ea936ec0ba80d300ab400411d84f1835a4d8c4",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_ten_solutions/experiment.py": "81033dd021a9ab2a8a45f860104bea8e3a3c02f2f1df903f4933c20baea1a088",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_ds26_solution_prototypes/prototype.py": "395cae25410c623d19164fd8814dfc99dde726d75d62a9364dd3eca3914d7b34"
+  },
+  "rule": "inherited top2 RF influence eligible targets, top2 full-family nominees by summed full RF scores, Cartesian distinct destinations, no singleton predictive prerequisite; no new discovery",
+  "penalty": "sum inherited per-family discrete nominee penalties plus 2log(max(2,number feasible pairs)); applies to each c arm",
+  "history": "original causal ALGO06 priors and missing-history fallback, no history completion in this bounded branch",
+  "predictive": "5 unique random synchronized 5s held groups, 5s neighbor guards; joint-two-family-omitted RF calibration/position; train-only phase/alias/offset/rate; positive mean and >=4 wins in each arm; conditional on full-data nomination",
+  "budget": "15 phase rounds,40 SLSQP iterations; same published fitted-c and joint-omitted fitted-c starts in both arms and controls",
+  "acceptance": "inherited unmodified RF/exact orbit/gates/optimizer/phase<=.01s/no owners lost/no unintended reassignment/native evidence checks; both arms improve penalized objective over best qualified incumbent continuation and published bound; paired predictive check",
+  "no_truth": "evaluation GPS used by inherited endpoint reporter only, never selection/ranking/starts",
+  "max_case_seconds": 900,
+  "environment": {
+    "PYTHONPATH": "src:tools",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "production_changed": false
+}
