@@ -158,3 +158,26 @@ def test_algo07_is_standard_and_does_not_launch_the_legacy_pipeline(monkeypatch,
             standard_command=[],glrt_lock=threading.Lock(),standard_reader=reader)
         assert result['state']==expected and result['standard_algorithm']=='ALGO07'
         reader.state='complete'
+
+
+def test_automatic_glrt_worker_budget_is_explicit_and_bounded(monkeypatch,tmp_path):
+    import threading
+    import pytest
+    import leo.processing.fast_scan as processing
+    from leo.cli.fast_scan import process_automatic
+    from leo.storage.fast_scan import FastScanStore
+    store=FastScanStore(tmp_path/'bulk');calls=[]
+    def process(recording,**kwargs):
+        calls.append(kwargs)
+        return dict(run_id='run',session_id='session',window_count=1,counts={})
+    monkeypatch.setattr(processing,'process_recording',process)
+    class Reader:
+        def detail(self,run_id):return dict(state='pending')
+    arguments=dict(store=store,database_url='unused',standard_command=[],
+                   glrt_lock=threading.Lock(),standard_reader=Reader())
+    for budget in (0,33,True,1.5):
+        with pytest.raises(ValueError,match='1..32'):
+            process_automatic(tmp_path/'recording',glrt_workers=budget,**arguments)
+    assert not calls
+    process_automatic(tmp_path/'recording',glrt_workers=16,**arguments)
+    assert calls[0]['workers']==16 and calls[0]['export_tracking_input'] is True

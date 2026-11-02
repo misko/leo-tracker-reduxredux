@@ -40,8 +40,10 @@ def register_fast_scan_commands(scanner):
 
 
 def process_automatic(recording, *, store, database_url, standard_command, glrt_lock,
-                      standard_mode='algo07', standard_reader=None):
+                      standard_mode='algo07', standard_reader=None, glrt_workers=8):
     """Resume the existing GLRT queue, then the existing standard CLI pipeline."""
+    if type(glrt_workers) is not int or not 1 <= glrt_workers <= 32:
+        raise ValueError('GLRT workers must be an integer within 1..32')
     from leo.processing.fast_scan import process_recording
 
     identifier = recording.name
@@ -51,7 +53,7 @@ def process_automatic(recording, *, store, database_url, standard_command, glrt_
             with glrt_lock:
                 store.update_automatic(identifier, state="glrt", failure=None)
                 report = process_recording(recording, database_url=database_url,
-                    root=store.root, workers=8, export_tracking_input=True)
+                    root=store.root, workers=glrt_workers, export_tracking_input=True)
             state = store.update_automatic(identifier, state="tracking",
                 run_id=report["run_id"], session_id=report["session_id"],
                 window_count=report["window_count"], counts=report["counts"])
@@ -165,7 +167,7 @@ def watch_automatic(args):
                         active[recording.name] = pool.submit(process_automatic, recording,
                             store=store, database_url=os.environ["LEO_DATABASE_URL"],
                             standard_command=[args.standard_python, args.standard_script],
-                            glrt_lock=glrt_lock,standard_mode=args.standard_mode)
+                            glrt_lock=glrt_lock,standard_mode=args.standard_mode,glrt_workers=args.glrt_workers)
                 time.sleep(5)
 
 
@@ -178,6 +180,7 @@ if __name__ == "__main__":
     parser.add_argument("--standard-python", default='')
     parser.add_argument("--standard-script", default='')
     parser.add_argument('--standard-mode',choices=('algo07','legacy'),default='algo07')
+    parser.add_argument('--glrt-workers',type=int,choices=range(1,33),default=8)
     parser.add_argument('--capture-serial');parser.add_argument('--capture-uri',default='ip:192.168.1.20')
     parser.add_argument('--staging-root',type=Path,action='append',default=[])
     watch_automatic(parser.parse_args())
