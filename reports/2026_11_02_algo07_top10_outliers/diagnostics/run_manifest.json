@@ -1,0 +1,55 @@
+{
+  "revision": "af21461ea5d9af7a34dcc8e067d021951b170d3d",
+  "source_sha256": {
+    "tools/algo07_science/engine.py": "c8d261ee3b8c28fdb983fdb220d5a5d381a6e98768a28a302bcdefeb4364b0ff",
+    "tools/algo07_science/diagnose.py": "b71d80f5853925f4fb7e2c8f41cd4e1d53680925d038ce2b2b2df6b4925ae8b1",
+    "tools/algo07_science/previous.py": "2f6c8a909c00beb76e6d2c5e06bef310fec0fb4794cd8a465a919c90f4ae3f51",
+    "tools/algo06_science/common.py": "99188c0a59ec49225bf6a157b29a631555631e804f8cc630f8ab16a3a7aa33d7",
+    "tools/algo06_science/position.py": "d1ecb47789d5717f4a87e3fc4537bcfcaa03cd9ca744b21a8e5ad3417595ee78",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/diagnose.py": "d3d2a610f7ef59b9bbb742fdbca7f6038a9c9fe63c15a0ecf7a2de6031bdc527",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/render.py": "3df207941f585ef787cde24336da5603fea8ae925e07e1d1ad999301ac964981",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/test_diagnostics.py": "0518c87e35d18c243174470d9b7f7d014d74fc7020bce303067e729927315d76",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/summarize.py": "ea3a57fc28f12d203ce93223b14465ea060f4526a269ac834a6ccf57c19cb62f",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/finalize.py": "7f45e6573cca4cdaa98c0c428025fad3a200c5c8fa3045f85ba552e93eb6f74f",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/matched.py": "5624ec2ed700270c62c7a6b9e3162312eccf0dde960eaf31a7d7276057998692",
+    "reports/2026_11_02_algo07_top10_outliers/diagnostics/publication.py": "e5dc4f75c009dbe92c48ec0a0d2663af08352485c088c96be176fbe8841b0bb9"
+  },
+  "cases": [
+    "DS26-0203",
+    "DS26-0070",
+    "DS26-0072",
+    "DS26-0221",
+    "DS26-0044",
+    "DS26-0100",
+    "DS26-0014",
+    "DS26-0201",
+    "DS26-0309",
+    "DS26-0209"
+  ],
+  "baseline": "actual composed ALGO06 72h_30s guarded policy reconstructed by algo07_science.engine.load_case; ALGO07 fallback requires fresh evaluation confirmation",
+  "priors": "inherited matched; phase_sigma_x2 changes inherited multiplier only",
+  "observations": "frozen published native IDs, exact composed owners; omission controls explicitly remove one entire family",
+  "candidate_policy": "baseline identities frozen; full family influence audit, top-four RF-influence ablation coverage",
+  "phase_rounds": 15,
+  "maxfun_per_round": 140,
+  "maxiter_per_round": 35,
+  "per_case_time_cap_s": 1200,
+  "max_parallel_processes": 6,
+  "python": "/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python",
+  "pythonpath": "src:tools",
+  "blas_threads": 1,
+  "regional_prior_km": [
+    -12.5,
+    12.5
+  ],
+  "truth_policy": "GPS only post-fit evaluation and separately labeled fixed-association 7x7 oracle diagnostic",
+  "no_new_rf_collection": true,
+  "no_production_ownership_changes": true,
+  "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src:tools python diagnostics/diagnose.py CASE",
+  "limitations": [
+    "same-data omission sensitivity is not satellite identity validation",
+    "omission likelihoods use reduced observations",
+    "conditional residual scales differ from predictive/raw family residuals; scopes labeled",
+    "oracle loss grid freezes phase references and associations"
+  ]
+}

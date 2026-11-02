@@ -1,0 +1,1024 @@
+{
+  "source_case": "DS26-0034",
+  "private_label": "SCAN",
+  "research_only": true,
+  "public_terminal_available": false,
+  "execution_status": "complete",
+  "selected": "53852_to_59188",
+  "baseline": {
+    "c0": {
+      "x": [
+        5.658168990453436,
+        -10.847340898772517
+      ],
+      "error_m": 4557.791627817378,
+      "objective": 25931.058691878596,
+      "associated": 2765,
+      "rms_hz": null,
+      "endpoint_latlon": [
+        37.80827620811917,
+        -122.48058087213104
+      ]
+    },
+    "fitted_c": {
+      "x": [
+        5.741034990549776,
+        -10.778293037402936
+      ],
+      "error_m": 4498.106377843569,
+      "objective": 25937.365646198155,
+      "associated": 2765,
+      "rms_hz": null,
+      "endpoint_latlon": [
+        37.808898260924295,
+        -122.47963742992117
+      ]
+    }
+  },
+  "final": {
+    "c0": {
+      "x": [
+        5.396652670631853,
+        -6.836209914479586
+      ],
+      "error_m": 551.6019910223389,
+      "objective": 25908.871962262874,
+      "rms_hz": 71.95690570380927,
+      "associated": 2765,
+      "endpoint_latlon": [
+        37.844412523292974,
+        -122.4835582758238
+      ]
+    },
+    "fitted_c": {
+      "x": [
+        5.425423312730929,
+        -6.621033998309719
+      ],
+      "error_m": 373.8452591315117,
+      "objective": 25906.366612375077,
+      "rms_hz": 71.96655531113075,
+      "associated": 2765,
+      "endpoint_latlon": [
+        37.846351045060274,
+        -122.48323071761983
+      ]
+    }
+  },
+  "guards": {
+    "53852_to_59188": {
+      "proposed": 59188,
+      "candidates": [
+        53852,
+        59188,
+        100303
+      ],
+      "model": "receiver_offset",
+      "phase_sd_s": 5.0,
+      "minimum_unique_folds": 5,
+      "required_minimum_margin_exclusive": 0.0,
+      "unique_folds": 6,
+      "total_partitions": 6,
+      "retained_fold_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "missing": [],
+      "competitors": [
+        {
+          "arm": "c0",
+          "norad": 53852,
+          "margins": [
+            33.1598664425436,
+            8.384851748597669,
+            20.761986529804517,
+            20.56541713306845,
+            28.894894341246186,
+            1.5275121093484074
+          ],
+          "minimum_margin": 1.5275121093484074,
+          "mean_margin": 18.882421384101473,
+          "wins": 6,
+          "folds": 6
+        },
+        {
+          "arm": "c0",
+          "norad": 100303,
+          "margins": [
+            127.46931013661299,
+            48.98834717551608,
+            72.58302408786702,
+            31.651261200227793,
+            93.50127416548628,
+            1.6168959195962032
+          ],
+          "minimum_margin": 1.6168959195962032,
+          "mean_margin": 62.635018780884394,
+          "wins": 6,
+          "folds": 6
+        },
+        {
+          "arm": "fitted_c",
+          "norad": 53852,
+          "margins": [
+            33.30626041638817,
+            9.856653352861372,
+            24.1817657198161,
+            17.31832928792511,
+            32.80859067609816,
+            0.8277443673177061
+          ],
+          "minimum_margin": 0.8277443673177061,
+          "mean_margin": 19.716557303401103,
+          "wins": 6,
+          "folds": 6
+        },
+        {
+          "arm": "fitted_c",
+          "norad": 100303,
+          "margins": [
+            129.01285036557044,
+            51.42242282575762,
+            76.89674325016799,
+            30.1179960291079,
+            99.15142908787857,
+            1.8460036790408765
+          ],
+          "minimum_margin": 1.8460036790408765,
+          "mean_margin": 64.74124087292057,
+          "wins": 6,
+          "folds": 6
+        }
+      ],
+      "scope": "Conditional on supplied full-data finalist inventory, graph/alias choices, and cavity calibration; not independent discovery or an identity probability",
+      "status": "passed",
+      "passed": true,
+      "reason": null,
+      "minimum_margin": 0.8277443673177061
+    }
+  },
+  "targets": [
+    53852,
+    68681
+  ],
+  "trigger": {
+    "ranking": [
+      {
+        "norad": 53852,
+        "rank_score": 2.6660111673213485,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 1.309824238554511,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 1.3561869287668376,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 119,
+        "tracks": 3
+      },
+      {
+        "norad": 68681,
+        "rank_score": 1.3767938909990118,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.673874587723667,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.7029193032753448,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 146,
+        "tracks": 3
+      },
+      {
+        "norad": 65604,
+        "rank_score": 1.0529084738017351,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.5325653139004084,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.5203431599013267,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 108,
+        "tracks": 2
+      },
+      {
+        "norad": 62994,
+        "rank_score": 0.9219328107875988,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.46042436982604323,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.4615084409615555,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 276,
+        "tracks": 5
+      },
+      {
+        "norad": 65191,
+        "rank_score": 0.8832838973410022,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.43890135107905814,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.4443825462619441,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 202,
+        "tracks": 4
+      },
+      {
+        "norad": 62148,
+        "rank_score": 0.6059330920344604,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.30260778887754386,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.3033253031569166,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 56,
+        "tracks": 1
+      },
+      {
+        "norad": 69189,
+        "rank_score": 0.4973049687895641,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.24793457912796235,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.24937038966160174,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 223,
+        "tracks": 4
+      },
+      {
+        "norad": 56130,
+        "rank_score": 0.4888757486680557,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.2338573656313191,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.25501838303673663,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 69,
+        "tracks": 3
+      },
+      {
+        "norad": 65399,
+        "rank_score": 0.3863148606305569,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.18848668694213386,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.19782817368842306,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 33,
+        "tracks": 1
+      },
+      {
+        "norad": 67574,
+        "rank_score": 0.34186251750583707,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.17138001770130312,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.17048249980453395,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 187,
+        "tracks": 4
+      },
+      {
+        "norad": 57653,
+        "rank_score": 0.2915551952686155,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.15029777019303697,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.14125742507557856,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 120,
+        "tracks": 3
+      },
+      {
+        "norad": 62812,
+        "rank_score": 0.24756535991827078,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.10471646312532791,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.14284889679294285,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 134,
+        "tracks": 4
+      },
+      {
+        "norad": 62149,
+        "rank_score": 0.21918799552488946,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.10428483889155755,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.11490315663333191,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 49,
+        "tracks": 2
+      },
+      {
+        "norad": 67601,
+        "rank_score": 0.20850977948035637,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.10006373313401513,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.10844604634634125,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 36,
+        "tracks": 1
+      },
+      {
+        "norad": 63201,
+        "rank_score": 0.2077198529132292,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.1009115928700623,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.10680826004316692,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 130,
+        "tracks": 2
+      },
+      {
+        "norad": 69188,
+        "rank_score": 0.20405017857382365,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.10094911419904143,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.10310106437478223,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 22,
+        "tracks": 1
+      },
+      {
+        "norad": 60588,
+        "rank_score": 0.15454071557602703,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.07575001263794316,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.07879070293808386,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 16,
+        "tracks": 1
+      },
+      {
+        "norad": 53134,
+        "rank_score": 0.13824980524108085,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.07647003941252342,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.06177976582855743,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 26,
+        "tracks": 1
+      },
+      {
+        "norad": 62843,
+        "rank_score": 0.036038018092427945,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.010671474454743795,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.025366543637684147,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 104,
+        "tracks": 2
+      },
+      {
+        "norad": 58183,
+        "rank_score": 0.011489150850711602,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.005546772771692435,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.005942378079019167,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 16,
+        "tracks": 1
+      },
+      {
+        "norad": 62750,
+        "rank_score": 0.00834678545564252,
+        "arms": {
+          "c0": {
+            "local_displacement_km": 0.003705129440186788,
+            "hessian_eigenvalues": [
+              11.027564683556337,
+              20.45276613751215
+            ]
+          },
+          "fitted_c": {
+            "local_displacement_km": 0.0046416560154557305,
+            "hessian_eigenvalues": [
+              10.911635181764087,
+              20.31818415816878
+            ]
+          }
+        },
+        "points": 42,
+        "tracks": 1
+      }
+    ],
+    "selected": [
+      53852,
+      68681
+    ]
+  },
+  "screens": [
+    {
+      "target": 53852,
+      "status": "screened",
+      "nominees": [
+        53852,
+        59188,
+        100303
+      ],
+      "coarse": [
+        {
+          "arm": "c0",
+          "track": "SCAN-RX1-CH2-T002-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 59188,
+              "score": 29.328727816403433
+            },
+            {
+              "norad": 100303,
+              "score": 53.77432675818818
+            }
+          ]
+        },
+        {
+          "arm": "c0",
+          "track": "SCAN-RX2-CH2-T002-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 59188,
+              "score": 29.704423125920467
+            },
+            {
+              "norad": 100303,
+              "score": 51.0557425485899
+            }
+          ]
+        },
+        {
+          "arm": "fitted_c",
+          "track": "SCAN-RX1-CH2-T002-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 59188,
+              "score": 30.015849530796704
+            },
+            {
+              "norad": 100303,
+              "score": 53.66053918542593
+            }
+          ]
+        },
+        {
+          "arm": "fitted_c",
+          "track": "SCAN-RX2-CH2-T002-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 59188,
+              "score": 31.09488158462985
+            },
+            {
+              "norad": 100303,
+              "score": 51.53718672726423
+            }
+          ]
+        }
+      ],
+      "proposals": [
+        {
+          "name": "53852_to_59188",
+          "norad": 59188,
+          "predictive": {
+            "c0": {
+              "gains": [
+                20.55587961809954,
+                33.6107924117203,
+                20.55587961809954,
+                33.6107924117203,
+                1.4897380315200905
+              ],
+              "mean": 21.96461641823195,
+              "wins": 5,
+              "pass_check": true
+            },
+            "fitted_c": {
+              "gains": [
+                24.37029456635338,
+                38.63186817253256,
+                24.37029456635338,
+                38.63186817253256,
+                1.8637022986557668
+              ],
+              "mean": 25.573605555285532,
+              "wins": 5,
+              "pass_check": true
+            }
+          },
+          "guard": {
+            "proposed": 59188,
+            "candidates": [
+              53852,
+              59188,
+              100303
+            ],
+            "model": "receiver_offset",
+            "phase_sd_s": 5.0,
+            "minimum_unique_folds": 5,
+            "required_minimum_margin_exclusive": 0.0,
+            "unique_folds": 6,
+            "total_partitions": 6,
+            "retained_fold_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "missing": [],
+            "competitors": [
+              {
+                "arm": "c0",
+                "norad": 53852,
+                "margins": [
+                  33.1598664425436,
+                  8.384851748597669,
+                  20.761986529804517,
+                  20.56541713306845,
+                  28.894894341246186,
+                  1.5275121093484074
+                ],
+                "minimum_margin": 1.5275121093484074,
+                "mean_margin": 18.882421384101473,
+                "wins": 6,
+                "folds": 6
+              },
+              {
+                "arm": "c0",
+                "norad": 100303,
+                "margins": [
+                  127.46931013661299,
+                  48.98834717551608,
+                  72.58302408786702,
+                  31.651261200227793,
+                  93.50127416548628,
+                  1.6168959195962032
+                ],
+                "minimum_margin": 1.6168959195962032,
+                "mean_margin": 62.635018780884394,
+                "wins": 6,
+                "folds": 6
+              },
+              {
+                "arm": "fitted_c",
+                "norad": 53852,
+                "margins": [
+                  33.30626041638817,
+                  9.856653352861372,
+                  24.1817657198161,
+                  17.31832928792511,
+                  32.80859067609816,
+                  0.8277443673177061
+                ],
+                "minimum_margin": 0.8277443673177061,
+                "mean_margin": 19.716557303401103,
+                "wins": 6,
+                "folds": 6
+              },
+              {
+                "arm": "fitted_c",
+                "norad": 100303,
+                "margins": [
+                  129.01285036557044,
+                  51.42242282575762,
+                  76.89674325016799,
+                  30.1179960291079,
+                  99.15142908787857,
+                  1.8460036790408765
+                ],
+                "minimum_margin": 1.8460036790408765,
+                "mean_margin": 64.74124087292057,
+                "wins": 6,
+                "folds": 6
+              }
+            ],
+            "scope": "Conditional on supplied full-data finalist inventory, graph/alias choices, and cavity calibration; not independent discovery or an identity probability",
+            "status": "passed",
+            "passed": true,
+            "reason": null,
+            "minimum_margin": 0.8277443673177061
+          },
+          "rejection_reasons": [],
+          "admitted": true
+        },
+        {
+          "name": "53852_to_100303",
+          "norad": 100303,
+          "predictive": {
+            "c0": {
+              "gains": [
+                -53.00151628282339,
+                -94.86618184641583,
+                -53.00151628282339,
+                -94.86618184641583,
+                -0.3108794225695135
+              ],
+              "mean": -59.20925513620959,
+              "wins": 0,
+              "pass_check": false
+            },
+            "fitted_c": {
+              "gains": [
+                -52.61272726471739,
+                -94.71283318919336,
+                -52.61272726471739,
+                -94.71283318919336,
+                -0.021587233250443205
+              ],
+              "mean": -58.93454162821439,
+              "wins": 0,
+              "pass_check": false
+            }
+          },
+          "guard": null,
+          "rejection_reasons": [
+            "inherited_predictive_rejected"
+          ],
+          "admitted": false
+        }
+      ]
+    },
+    {
+      "target": 68681,
+      "status": "screened",
+      "nominees": [
+        65604,
+        68681
+      ],
+      "coarse": [
+        {
+          "arm": "c0",
+          "track": "SCAN-RX2-CH4-T000-RF11690312500.000000",
+          "nominees": [
+            {
+              "norad": 68681,
+              "score": 95.17679922833473
+            },
+            {
+              "norad": 65604,
+              "score": 1544.3662594982802
+            }
+          ]
+        },
+        {
+          "arm": "c0",
+          "track": "SCAN-RX2-CH2-T004-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 68681,
+              "score": 38.647259891954995
+            },
+            {
+              "norad": 65604,
+              "score": 539.4734017615115
+            }
+          ]
+        },
+        {
+          "arm": "fitted_c",
+          "track": "SCAN-RX2-CH4-T000-RF11690312500.000000",
+          "nominees": [
+            {
+              "norad": 68681,
+              "score": 105.29443454819815
+            },
+            {
+              "norad": 65604,
+              "score": 1557.9465282225149
+            }
+          ]
+        },
+        {
+          "arm": "fitted_c",
+          "track": "SCAN-RX2-CH2-T004-RF11190312500.000000",
+          "nominees": [
+            {
+              "norad": 68681,
+              "score": 39.590686420115865
+            },
+            {
+              "norad": 65604,
+              "score": 541.865424341076
+            }
+          ]
+        }
+      ],
+      "proposals": [
+        {
+          "name": "68681_to_65604",
+          "norad": 65604,
+          "predictive": {
+            "c0": {
+              "gains": [
+                -843.4054603138725,
+                -2872.9569713075934,
+                -4695.321755435378,
+                -3062.927923705397,
+                -1531.7490153900224
+              ],
+              "mean": -2601.272225230453,
+              "wins": 0,
+              "pass_check": false
+            },
+            "fitted_c": {
+              "gains": [
+                -840.6567138912458,
+                -2856.225135042836,
+                -4676.189646693287,
+                -3047.3075907610328,
+                -1518.0464150025505
+              ],
+              "mean": -2587.6851002781905,
+              "wins": 0,
+              "pass_check": false
+            }
+          },
+          "guard": null,
+          "rejection_reasons": [
+            "inherited_predictive_rejected"
+          ],
+          "admitted": false
+        }
+      ]
+    }
+  ],
+  "candidate_records": [
+    {
+      "name": "53852_to_59188",
+      "accepted": true,
+      "gains": {
+        "c0": 19.989505038385342,
+        "fitted_c": 28.80180924574199
+      },
+      "bounds": {
+        "c0": 25931.058691878596,
+        "fitted_c": 25937.365646198155
+      },
+      "pairs": {
+        "c0": {
+          "x": [
+            5.396652670631853,
+            -6.836209914479586
+          ],
+          "error_m": 551.6019910223389,
+          "objective": 25908.871962262874,
+          "rms_hz": 71.95690570380927,
+          "active_points": 2114,
+          "qualified": true,
+          "endpoint_latlon": [
+            37.844412523292974,
+            -122.4835582758238
+          ]
+        },
+        "fitted_c": {
+          "x": [
+            5.425423312730929,
+            -6.621033998309719
+          ],
+          "error_m": 373.8452591315117,
+          "objective": 25906.366612375077,
+          "rms_hz": 71.96655531113075,
+          "active_points": 2114,
+          "qualified": true,
+          "endpoint_latlon": [
+            37.846351045060274,
+            -122.48323071761983
+          ]
+        }
+      }
+    }
+  ],
+  "subprocess_returncode": 0,
+  "supervisor_failure": null,
+  "seconds": 291.6638219533488,
+  "exact_fallback_equal": null,
+  "output_protocol_sha256": "dd5f068f32486ab0af3de19d1629e2bfd69f64d2fbf9be50c87101f101c75d84"
+}

@@ -1,0 +1,140 @@
+{
+  "case": "DS26-0070",
+  "replay": {
+    "pre_recovery": {
+      "c0": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 2023,
+        "incidental_unpublished_extensions_not_adopted": 485,
+        "selected_kind": "baseline"
+      },
+      "fitted_c": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 2023,
+        "incidental_unpublished_extensions_not_adopted": 485,
+        "selected_kind": "baseline"
+      }
+    },
+    "recovery": {
+      "excluded": [],
+      "eligible_proposals": 0,
+      "status": "no_qualified_new_family"
+    },
+    "rebuilt": {
+      "c0": 0.0,
+      "fitted_c": 0.0
+    }
+  },
+  "input_sha256": "b6e36593add85f45ad445f9a54573a14e03d0855ab791c51fa4740761de76621",
+  "source_root": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants",
+  "ranking": {
+    "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_algo07_top10_outliers/diagnostics/DS26-0070/fit-plan.json",
+    "sha256": "e5c5e1faa6174ed6010f7575a3216a065d9aac84ced83583e574efd45640a17f",
+    "ranking": [
+      {
+        "norad": 62320,
+        "rank_score": 17.81063768573121
+      },
+      {
+        "norad": 63321,
+        "rank_score": 15.615951345375379
+      },
+      {
+        "norad": 58041,
+        "rank_score": 14.895599963246609
+      },
+      {
+        "norad": 63679,
+        "rank_score": 7.022845358429534
+      },
+      {
+        "norad": 62896,
+        "rank_score": 6.889109802140709
+      },
+      {
+        "norad": 63326,
+        "rank_score": 5.395529722253006
+      },
+      {
+        "norad": 57908,
+        "rank_score": 4.56812968264531
+      },
+      {
+        "norad": 67054,
+        "rank_score": 2.482424412103624
+      },
+      {
+        "norad": 58834,
+        "rank_score": 2.3161397728560935
+      },
+      {
+        "norad": 58065,
+        "rank_score": 1.3401540439373867
+      },
+      {
+        "norad": 58062,
+        "rank_score": 1.1227044980270848
+      },
+      {
+        "norad": 58443,
+        "rank_score": 0.9403904448597491
+      },
+      {
+        "norad": 59029,
+        "rank_score": 0.868893287964896
+      }
+    ],
+    "rule": "top2 summed c-arm influence, then longest retained duration per family; longest saved unassociated source"
+  },
+  "position_policy": "actual ALGO06 saved endpoint for each c arm; no evaluation truth",
+  "positions": {
+    "c0": [
+      -2.067337733541461,
+      -6.339978139955036
+    ],
+    "fitted_c": [
+      -1.509205185758324,
+      -6.068239659636083
+    ]
+  },
+  "models": {
+    "L1_offset": [
+      0.0,
+      false
+    ],
+    "L2_small_drift": [
+      0.5,
+      false
+    ],
+    "L3_phase": [
+      0.5,
+      true
+    ],
+    "L4_rate_discrepancy": [
+      2.0,
+      true
+    ]
+  },
+  "scope": "per-track offsets/rates are diagnostic lower bounds, not shared calibration or acceptance",
+  "noise_hz": 150,
+  "offset_prior_hz": 300,
+  "phase_prior_s": 5,
+  "phase_bounds_s": [
+    -30,
+    30
+  ],
+  "exact_phase_step_s": 0.1,
+  "coarse_native_points": 20,
+  "candidate_policy": "sum of matched-arm coarse costs: top3 per model plus incumbent, same exact candidates and budgets for both arms",
+  "independent_evidence": "family transfer required; single-curve fits cannot establish identity",
+  "script_sha256": "bfed8f834e0dc5669183c998c8e62dbf9d85d3e3ee26100f0822821dc53a50f4",
+  "status": "complete",
+  "seconds": 124.84864891599864,
+  "actual_head": "af21461ea5d9af7a34dcc8e067d021951b170d3d",
+  "engine_sha256": "c8d261ee3b8c28fdb983fdb220d5a5d381a6e98768a28a302bcdefeb4364b0ff",
+  "renderer_sha256": "5a1d539c4e38121486a3dfa50948c0fc1686414ee733c43c9f3051680b885948",
+  "original_graph_points_preserved": true,
+  "family_consistency_status": "complete conditional shortlist; independent identity validation absent"
+}
