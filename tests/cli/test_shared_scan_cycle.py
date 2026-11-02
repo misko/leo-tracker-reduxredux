@@ -47,15 +47,38 @@ def test_shared_cycle_serializes_modes_and_alternates_fast_edges(tmp_path):
     assert json.loads(state.read_text())["completed"] == 5
 
 
-def test_pause_and_backpressure_do_not_advance_or_launch(tmp_path):
+def test_pause_does_not_advance_or_launch(tmp_path):
     config, state, authority = setup_cycle(tmp_path)
     def forbidden(*args, **kwargs):
         raise AssertionError("must not acquire RF")
     authority.pause(operator_id="test", reason="pause", wait=False)
     assert run_cycle(config, state, authority, run=forbidden)["state"] == "deferred"
-    authority.resume(operator_id="test", reason="resume")
-    assert run_cycle(config, state, authority, run=forbidden, pending_fast=3)["state"] == "deferred"
     assert not state.exists()
+
+
+def test_analysis_backlog_does_not_block_either_capture_mode(tmp_path):
+    config, state, authority = setup_cycle(tmp_path)
+    for mode in ('fast', 'adaptive'):
+        result = run_cycle(config, state, authority, pending_fast=300,
+                           run=lambda *a, **k: SimpleNamespace(returncode=0))
+        assert result['state'] == 'complete' and result['mode'] == mode
+
+
+def test_storage_reserve_blocks_before_radio_access(tmp_path):
+    config, state, authority = setup_cycle(tmp_path)
+    result = run_cycle(config, state, authority,
+        capacity=lambda *_:dict(free_bytes=1, required_bytes=2),
+        run=lambda *a, **k:pytest.fail('must not launch'))
+    assert result['reason'] == 'insufficient capture storage'
+    assert not state.exists()
+
+
+def test_capacity_checks_the_configured_recording_filesystem(tmp_path):
+    from tools.run_shared_scan_cycle import capture_capacity
+    config={'fast':dict(command=['capture','--root',str(tmp_path/'new')]),
+            'minimum_capture_free_bytes':99}
+    result=capture_capacity(config,'fast',disk_usage=lambda p:SimpleNamespace(free=100))
+    assert result == dict(path=str(tmp_path),free_bytes=100,required_bytes=99)
 
 
 def test_failure_preserves_slot_and_releases_radio(tmp_path):

@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import subprocess
+import shutil
 import time
 import uuid
 from pathlib import Path
@@ -20,7 +21,6 @@ from leo.acquisition.authority import (
     RadioBusyError,
     RadioResource,
 )
-from leo.storage.fast_scan import FastScanStore
 
 SEQUENCE = (("fast", "lower"), ("adaptive", None), ("fast", "upper"), ("adaptive", None))
 
@@ -40,13 +40,33 @@ def save_state(path, value):
         os.close(descriptor)
 
 
-def run_cycle(config, state_path, authority, *, run=subprocess.run, pending_fast=0):
+def capture_capacity(config, mode, *, disk_usage=shutil.disk_usage):
+    """Reserve capture storage; analysis state is not an acquisition resource."""
+    command = config[mode]["command"]
+    flag = "--root" if mode == "fast" else "--iq-spool-root"
+    if flag not in command:
+        return None  # Some bounded adapters own their storage admission check.
+    path = Path(command[command.index(flag) + 1]).resolve()
+    if path == Path('/mnt/qnap01') or Path('/mnt/qnap01') in path.parents:
+        raise ValueError('Capture storage must be local')
+    while not path.exists():
+        path = path.parent
+    reserve = config.get('minimum_capture_free_bytes', 30_000_000_000)
+    if isinstance(reserve, bool) or not isinstance(reserve, int) or reserve <= 0:
+        raise ValueError('Positive capture reserve required')
+    free = disk_usage(path).free
+    return dict(path=str(path), free_bytes=free, required_bytes=reserve)
+
+
+def run_cycle(config, state_path, authority, *, run=subprocess.run, pending_fast=0,
+              capacity=capture_capacity):
     state = json.loads(state_path.read_text()) if state_path.exists() else {"completed": 0}
     if state.get("attempts", 0) >= config.get("maximum_attempts", float("inf")):
         return {"state": "deferred", "reason": "bounded verification capture limit reached"}
     mode, edge = SEQUENCE[state["completed"] % len(SEQUENCE)]
-    if pending_fast >= 3:
-        return {"state": "deferred", "reason": "three fast analyses are still pending"}
+    space = capacity(config, mode)
+    if space and space['free_bytes'] < space['required_bytes']:
+        return dict(state='deferred', reason='insufficient capture storage', storage=space)
     try:
         lease = authority.claim((config["serial"],), task_id=f"shared-scan-{uuid.uuid4().hex}",
                                 task_kind=CaptureTaskKind.SCANNER_SWEEP)
@@ -85,9 +105,7 @@ def main():
     bulk = Path(config["bulk_root"])
     authority = LocalCaptureAuthority(bulk / "control", (
         RadioResource(config["serial"], config["serial"], config["uri"]),))
-    jobs = FastScanStore(bulk).automatic_page()["items"]
-    pending = sum(job["state"] in {"recording", "queued", "glrt", "tracking"} for job in jobs)
-    print(json.dumps(run_cycle(config, args.state, authority, pending_fast=pending)), flush=True)
+    print(json.dumps(run_cycle(config, args.state, authority)), flush=True)
 
 
 if __name__ == "__main__":
