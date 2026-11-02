@@ -1,0 +1,4126 @@
+{
+  "status": "descriptive_one_dependent_group",
+  "independent_holdout_validation": false,
+  "no_calibration_or_threshold_selection": true,
+  "no_RF_or_GPS_or_position_fit": true,
+  "source_sha256": "8acbea5a0e22d2e0b56b28fa65f0599795e4622ce6a1e4154607b6679785b88e",
+  "scientific_module_sha256": "4db4283dbdadcbf5340149f716a02d04b8b86ab888f035fef95b474801ac78e2",
+  "support_inventory_sha256": "3735a77d457f3be8326e1f7157cc018afebd0d6a7e198a9865c8dccb71042db9",
+  "roster_sha256": "679cc726a7e9d9287ab2b3630fdd16df383aee8872681c5f58a5f5ce64aeb0ef",
+  "forecast_count": 25,
+  "completed": 25,
+  "failed": 0,
+  "shared_snapshot_connected_groups": 1,
+  "rows": [
+    {
+      "case": "DS24-0019",
+      "family": 61679,
+      "issuance_utc_ns": 1792627337607017525,
+      "older_epoch_utc_ns": 1792607389087391744,
+      "target_epoch_utc_ns": 1792691805091968000,
+      "held_newer_collected_utc_ns": 1792710196042408291,
+      "horizon_hours": 23.448890160071112,
+      "older_element_sha256": "cfbcd1253ec10e7d7aa135c23913ee0183db51e335592604cdf67fd980efbd55",
+      "held_newer_element_sha256": "bfcec147c59c4e7abb683e91470a1e2566030c7b54ad23ed4cf16ac8e88939e7",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 23.076806176571676,
+        "oldB": 13.28090621956365,
+        "Age2": 14.489618907098379
+      },
+      "age2_gain_over_identity": 8.587187269473297,
+      "age2_gain_over_oldB": -1.208712687534728,
+      "coefficient_innovation": [
+        1.4035556759900238,
+        0.9628872252269418,
+        3.8296285241828074
+      ],
+      "held_represented_energy_fraction": 0.9583429290280425,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.8259744293040794,
+            6.054089267768653,
+            5.4348934849161905
+          ],
+          [
+            6.054089267768653,
+            29.502154712673214,
+            21.871456390818008
+          ],
+          [
+            5.4348934849161905,
+            21.871456390818008,
+            19.92632998624179
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.6597221232331978,
+          1.7088818972968582,
+          24.758625543579477
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.7088818972968582,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9669294497900467
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            1.7127283190811473,
+            7.2668373443546175,
+            4.536520316190792
+          ],
+          [
+            7.2668373443546175,
+            34.10738558385455,
+            17.86548501061149
+          ],
+          [
+            4.536520316190792,
+            17.86548501061149,
+            12.599267130504629
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000006,
+          1.7772446208596953,
+          23.432445895860482
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.7772446208596953,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9497963223472432
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792627337607017525,
+        "forecast_target_epoch_utc_ns": 1792691805091968000,
+        "physical_SD": [
+          0.00016820247662742468,
+          0.0003155717420635154,
+          0.00039431247661529873
+        ],
+        "current_mode_metadata": {
+          "norad": 61679,
+          "previous_available": true,
+          "radial_sigma_km": 0.05,
+          "cross_sigma_km": 0.037682487489831884,
+          "old_alignment_s": 0.3067348488803321,
+          "mean_motion_sigma_rev_day": 0.00016820247662742468,
+          "inclination_sigma_deg": 0.0003155717420635154,
+          "raan_sigma_deg": 0.00039431247661529873
+        },
+        "known_elements": [
+          {
+            "sha256": "9043656f051b547f312b62d9fb3b024ba35a31911c69f725473e5850b1d62e68",
+            "epoch_utc_ns": 1792438556559840000,
+            "collected_utc_ns": 1792515811192772258
+          },
+          {
+            "sha256": "b5c3834536d1b572b182f40d1799c0fcea6339bce5c5ac199e488dbb3c95118d",
+            "epoch_utc_ns": 1792522972518624000,
+            "collected_utc_ns": 1792544459904062822
+          },
+          {
+            "sha256": "5b6be4c2db1235de4dea25e33727605b29734dd83c27785afe0797c2f081d82a",
+            "epoch_utc_ns": 1792534227781824000,
+            "collected_utc_ns": 1792551823478069702
+          },
+          {
+            "sha256": "d30732be76ed1380caa52d6965d0b61994b3c71e7022519a88dbed7e9a27964e",
+            "epoch_utc_ns": 1792562366837952000,
+            "collected_utc_ns": 1792584096129736481
+          },
+          {
+            "sha256": "ff92db43a74e1aa871707a73b9562a3f9c66b6e4eed8ff51f734d08dee66752b",
+            "epoch_utc_ns": 1792584878020128000,
+            "collected_utc_ns": 1792602151679227017
+          },
+          {
+            "sha256": "cfbcd1253ec10e7d7aa135c23913ee0183db51e335592604cdf67fd980efbd55",
+            "epoch_utc_ns": 1792607389087391744,
+            "collected_utc_ns": 1792627337607017525
+          }
+        ],
+        "older_nominal_element_sha256": "cfbcd1253ec10e7d7aa135c23913ee0183db51e335592604cdf67fd980efbd55",
+        "previous_element_sha256": "ff92db43a74e1aa871707a73b9562a3f9c66b6e4eed8ff51f734d08dee66752b",
+        "oldB_covariance": [
+          [
+            1.4712555538996015,
+            1.8767075230072847,
+            1.69997234375411
+          ],
+          [
+            1.8767075230072847,
+            10.105205677711528,
+            6.780309871237164
+          ],
+          [
+            1.69997234375411,
+            6.780309871237164,
+            7.132420665685725
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.5589686401608864,
+            2.3808373645794796,
+            1.4766541967351852
+          ],
+          [
+            2.3808373645794796,
+            12.139463874182645,
+            5.868113466390301
+          ],
+          [
+            1.4766541967351852,
+            5.868113466390301,
+            5.078812106516175
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0075",
+      "family": 66351,
+      "issuance_utc_ns": 1792659874921530114,
+      "older_epoch_utc_ns": 1792644701823360000,
+      "target_epoch_utc_ns": 1792729266321024000,
+      "held_newer_collected_utc_ns": 1792746131710446606,
+      "horizon_hours": 23.49013824,
+      "older_element_sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+      "held_newer_element_sha256": "859f13467a1c248caddcd9635a2a9c168d0ea1c7898dd91d52a9c7acbc3df5e7",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 56.05141006400941,
+        "oldB": 22.182592746245916,
+        "Age2": 28.394665227649824
+      },
+      "age2_gain_over_identity": 27.656744836359586,
+      "age2_gain_over_oldB": -6.212072481403908,
+      "coefficient_innovation": [
+        -0.346424950606542,
+        -6.336559673605732,
+        3.2040256118221406
+      ],
+      "held_represented_energy_fraction": 0.4798077278235706,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            74.58468345819577,
+            -44.818746393420064,
+            21.73563417747707
+          ],
+          [
+            -44.818746393420064,
+            48.503189319883624,
+            -14.634882914598608
+          ],
+          [
+            21.73563417747707,
+            -14.634882914598608,
+            6.694814537084105
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.6151774438527529,
+          7.9908601719371966,
+          57.785306041791785
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          7.9908601719371966,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7685385392671066
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            200.45677166154204,
+            -72.23844126388838,
+            10.742339948339794
+          ],
+          [
+            -72.23844126388838,
+            32.73152851670412,
+            -4.392467928450871
+          ],
+          [
+            10.742339948339794,
+            -4.392467928450871,
+            0.6162344941599969
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000001,
+          3.4662957967539034,
+          114.43597153944917
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          3.4662957967539034,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7379688292557434
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792659874921530114,
+        "forecast_target_epoch_utc_ns": 1792729266321024000,
+        "physical_SD": [
+          0.00028739085282989963,
+          0.0006140763561123859,
+          0.0007672922516394435
+        ],
+        "current_mode_metadata": {
+          "norad": 66351,
+          "previous_available": true,
+          "radial_sigma_km": 0.08567496662764547,
+          "cross_sigma_km": 0.07341032418012611,
+          "old_alignment_s": 0.9953604067387576,
+          "mean_motion_sigma_rev_day": 0.00028739085282989963,
+          "inclination_sigma_deg": 0.0006140763561123859,
+          "raan_sigma_deg": 0.0007672922516394435
+        },
+        "known_elements": [
+          {
+            "sha256": "8c11455246d699b1caf5766423034ddb1562381f35a3b497dd08e3f28e4075cc",
+            "epoch_utc_ns": 1792486848690719744,
+            "collected_utc_ns": 1792551823478069702
+          },
+          {
+            "sha256": "7f5fac4ecb866ec8c4b60c5f414ab5a2e4645c5f6684605b7ecbf51d3cfcc5b6",
+            "epoch_utc_ns": 1792565776326240000,
+            "collected_utc_ns": 1792584096129736481
+          },
+          {
+            "sha256": "57d8a9183ec91d4eccd1f75d4556d42e9174a88c2df773d8a26f832d753a3589",
+            "epoch_utc_ns": 1792571413833792000,
+            "collected_utc_ns": 1792602151679227017
+          },
+          {
+            "sha256": "c913fb3a08e2590c6dbf84be83445262f8918e69057cb8759d0302b70aaab7b1",
+            "epoch_utc_ns": 1792593963504575744,
+            "collected_utc_ns": 1792613076915054243
+          },
+          {
+            "sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+            "epoch_utc_ns": 1792644701823360000,
+            "collected_utc_ns": 1792659874921530114
+          }
+        ],
+        "older_nominal_element_sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+        "previous_element_sha256": "c913fb3a08e2590c6dbf84be83445262f8918e69057cb8759d0302b70aaab7b1",
+        "oldB_covariance": [
+          [
+            12.447413386510506,
+            -3.506783328914898,
+            3.101607898674218
+          ],
+          [
+            -3.506783328914898,
+            10.65842658405995,
+            -1.5692969953560836
+          ],
+          [
+            3.101607898674218,
+            -1.5692969953560836,
+            1.8850202013667434
+          ]
+        ],
+        "age2_covariance": [
+          [
+            14.450385944204285,
+            -4.075352955704013,
+            0.6607458797944273
+          ],
+          [
+            -4.075352955704013,
+            4.966909071498944,
+            -0.412789648908638
+          ],
+          [
+            0.6607458797944273,
+            -0.412789648908638,
+            1.049000781050679
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0075",
+      "family": 66351,
+      "issuance_utc_ns": 1792666949873884435,
+      "older_epoch_utc_ns": 1792650339312767744,
+      "target_epoch_utc_ns": 1792729266321024000,
+      "held_newer_collected_utc_ns": 1792746131710446606,
+      "horizon_hours": 21.92416896007111,
+      "older_element_sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+      "held_newer_element_sha256": "859f13467a1c248caddcd9635a2a9c168d0ea1c7898dd91d52a9c7acbc3df5e7",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 7.308111921482125,
+        "oldB": 10.245582750737228,
+        "Age2": 9.496243971039434
+      },
+      "age2_gain_over_identity": -2.188132049557309,
+      "age2_gain_over_oldB": 0.7493387796977942,
+      "coefficient_innovation": [
+        0.7686198298205652,
+        -0.4599122110314618,
+        0.996084854620753
+      ],
+      "held_represented_energy_fraction": 0.45599556028211574,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            133.93991497653323,
+            -10.193749798530273,
+            7.58579015219707
+          ],
+          [
+            -10.193749798530273,
+            5.878886454416083,
+            -2.340862594902923
+          ],
+          [
+            7.58579015219707,
+            -2.340862594902923,
+            1.7552480885500306
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.814952533416344,
+          3.3740346930409193,
+          68.0980375332924
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          3.3740346930409193,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6670406579514201
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            444.52227482108253,
+            -39.873947259257946,
+            -7.601731008555952
+          ],
+          [
+            -39.873947259257946,
+            3.6348174398609916,
+            0.471733442336156
+          ],
+          [
+            -7.601731008555952,
+            0.471733442336156,
+            0.8901275128131682
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5,
+          0.9090919246816517,
+          224.6145179621967
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 3,
+        "status": "ready",
+        "represented_energy_fraction": 0.6464252345787713
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792666949873884435,
+        "forecast_target_epoch_utc_ns": 1792729266321024000,
+        "physical_SD": [
+          0.00019853999002767553,
+          0.0008282752972061867,
+          0.0010349825371167962
+        ],
+        "current_mode_metadata": {
+          "norad": 66351,
+          "previous_available": true,
+          "radial_sigma_km": 0.05918789024346798,
+          "cross_sigma_km": 0.09901774908868519,
+          "old_alignment_s": -0.17036513825269345,
+          "mean_motion_sigma_rev_day": 0.00019853999002767553,
+          "inclination_sigma_deg": 0.0008282752972061867,
+          "raan_sigma_deg": 0.0010349825371167962
+        },
+        "known_elements": [
+          {
+            "sha256": "8c11455246d699b1caf5766423034ddb1562381f35a3b497dd08e3f28e4075cc",
+            "epoch_utc_ns": 1792486848690719744,
+            "collected_utc_ns": 1792551823478069702
+          },
+          {
+            "sha256": "7f5fac4ecb866ec8c4b60c5f414ab5a2e4645c5f6684605b7ecbf51d3cfcc5b6",
+            "epoch_utc_ns": 1792565776326240000,
+            "collected_utc_ns": 1792584096129736481
+          },
+          {
+            "sha256": "57d8a9183ec91d4eccd1f75d4556d42e9174a88c2df773d8a26f832d753a3589",
+            "epoch_utc_ns": 1792571413833792000,
+            "collected_utc_ns": 1792602151679227017
+          },
+          {
+            "sha256": "c913fb3a08e2590c6dbf84be83445262f8918e69057cb8759d0302b70aaab7b1",
+            "epoch_utc_ns": 1792593963504575744,
+            "collected_utc_ns": 1792613076915054243
+          },
+          {
+            "sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+            "epoch_utc_ns": 1792644701823360000,
+            "collected_utc_ns": 1792659874921530114
+          },
+          {
+            "sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+            "epoch_utc_ns": 1792650339312767744,
+            "collected_utc_ns": 1792666949873884435
+          }
+        ],
+        "older_nominal_element_sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+        "previous_element_sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+        "oldB_covariance": [
+          [
+            15.876314879696766,
+            -0.9771564908456309,
+            0.7833280507287258
+          ],
+          [
+            -0.9771564908456309,
+            3.135063516059073,
+            -0.8672961521265683
+          ],
+          [
+            0.7833280507287258,
+            -0.8672961521265683,
+            1.3626562972850862
+          ]
+        ],
+        "age2_covariance": [
+          [
+            15.875951625067888,
+            -1.3344366601636937,
+            -0.25419760948831377
+          ],
+          [
+            -1.3344366601636937,
+            1.1197046914960445,
+            0.022802615763792052
+          ],
+          [
+            -0.25419760948831377,
+            0.022802615763792052,
+            1.0043436834360693
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0075",
+      "family": 66351,
+      "issuance_utc_ns": 1792666949873884435,
+      "older_epoch_utc_ns": 1792650339312767744,
+      "target_epoch_utc_ns": 1792734904023840000,
+      "held_newer_collected_utc_ns": 1792757072202456527,
+      "horizon_hours": 23.49019752007111,
+      "older_element_sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+      "held_newer_element_sha256": "2ad940e7f9aff88dc7da85695196d67976e0f2e27087a6a8d19996485976f52d",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 7.326920959570339,
+        "oldB": 11.305267101215215,
+        "Age2": 10.085200471768733
+      },
+      "age2_gain_over_identity": -2.758279512198394,
+      "age2_gain_over_oldB": 1.2200666294464817,
+      "coefficient_innovation": [
+        0.18418120142011016,
+        0.520158482632165,
+        1.2283330974664615
+      ],
+      "held_represented_energy_fraction": 0.36617912613414516,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            118.67705970061137,
+            -9.910435958334006,
+            8.358621785268104
+          ],
+          [
+            -9.910435958334006,
+            6.179218781722303,
+            -2.5553228261397014
+          ],
+          [
+            8.358621785268104,
+            -2.5553228261397014,
+            2.0010416879035944
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.8369633559232444,
+          3.5106096460861953,
+          60.58108708310918
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          3.5106096460861953,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6637055266410103
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            423.62377106841194,
+            -41.14286788435474,
+            -3.3144768915596843
+          ],
+          [
+            -41.14286788435474,
+            4.4038998352684,
+            -0.15900830819000977
+          ],
+          [
+            -3.3144768915596843,
+            -0.15900830819000977,
+            0.5927183013089942
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.4999999999999988,
+          0.9858542653795292,
+          214.32434033711516
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 3,
+        "status": "ready",
+        "represented_energy_fraction": 0.662462895864897
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792666949873884435,
+        "forecast_target_epoch_utc_ns": 1792734904023840000,
+        "physical_SD": [
+          0.00020935866706622453,
+          0.0008078939092758197,
+          0.0010095146997186688
+        ],
+        "current_mode_metadata": {
+          "norad": 66351,
+          "previous_available": true,
+          "radial_sigma_km": 0.06241298165133756,
+          "cross_sigma_km": 0.09658102195353864,
+          "old_alignment_s": -0.211882607130839,
+          "mean_motion_sigma_rev_day": 0.00020935866706622453,
+          "inclination_sigma_deg": 0.0008078939092758197,
+          "raan_sigma_deg": 0.0010095146997186688
+        },
+        "known_elements": [
+          {
+            "sha256": "8c11455246d699b1caf5766423034ddb1562381f35a3b497dd08e3f28e4075cc",
+            "epoch_utc_ns": 1792486848690719744,
+            "collected_utc_ns": 1792551823478069702
+          },
+          {
+            "sha256": "7f5fac4ecb866ec8c4b60c5f414ab5a2e4645c5f6684605b7ecbf51d3cfcc5b6",
+            "epoch_utc_ns": 1792565776326240000,
+            "collected_utc_ns": 1792584096129736481
+          },
+          {
+            "sha256": "57d8a9183ec91d4eccd1f75d4556d42e9174a88c2df773d8a26f832d753a3589",
+            "epoch_utc_ns": 1792571413833792000,
+            "collected_utc_ns": 1792602151679227017
+          },
+          {
+            "sha256": "c913fb3a08e2590c6dbf84be83445262f8918e69057cb8759d0302b70aaab7b1",
+            "epoch_utc_ns": 1792593963504575744,
+            "collected_utc_ns": 1792613076915054243
+          },
+          {
+            "sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+            "epoch_utc_ns": 1792644701823360000,
+            "collected_utc_ns": 1792659874921530114
+          },
+          {
+            "sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+            "epoch_utc_ns": 1792650339312767744,
+            "collected_utc_ns": 1792666949873884435
+          }
+        ],
+        "older_nominal_element_sha256": "6209d7ef84459e8307ef98d81c43bef524374e6692833ecc62e73d5791db0097",
+        "previous_element_sha256": "e26d3767405bc2ef06ae5b4d5a12816066cbc55d69a4e2d1c2a3f0ed3ed81f5b",
+        "oldB_covariance": [
+          [
+            15.835157640443207,
+            -1.0596757923326559,
+            0.976965040499154
+          ],
+          [
+            -1.0596757923326559,
+            3.266507027455755,
+            -0.9386750042222505
+          ],
+          [
+            0.976965040499154,
+            -0.9386750042222505,
+            1.4089449781872443
+          ]
+        ],
+        "age2_covariance": [
+          [
+            15.858715191561291,
+            -1.4443459957881113,
+            -0.11478403171118835
+          ],
+          [
+            -1.4443459957881113,
+            1.1403980982645063,
+            0.011157617226328336
+          ],
+          [
+            -0.11478403171118835,
+            0.011157617226328336,
+            1.0008867101741983
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0083",
+      "family": 59653,
+      "issuance_utc_ns": 1792746131710446606,
+      "older_epoch_utc_ns": 1792716681671136000,
+      "target_epoch_utc_ns": 1792773175779936000,
+      "held_newer_collected_utc_ns": 1792818291213854657,
+      "horizon_hours": 15.692808,
+      "older_element_sha256": "ae9293e03bbd5beb1d726435e8d141844f647d9544e45a6ea1087e5d7f4a2908",
+      "held_newer_element_sha256": "ecedcfe06034db715b4f328cfd945a41a76d347a373da2bc2d4d6604da2f2418",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 9.649483285877803,
+        "oldB": 8.50995572417304,
+        "Age2": 8.463201518170916
+      },
+      "age2_gain_over_identity": 1.1862817677068875,
+      "age2_gain_over_oldB": 0.046754206002123766,
+      "coefficient_innovation": [
+        0.6563371583582337,
+        -1.5463761781374379,
+        -1.1462086794720479
+      ],
+      "held_represented_energy_fraction": 0.952567231755438,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            4.20473118059219,
+            -7.4623550771205736,
+            -3.2445812283555493
+          ],
+          [
+            -7.4623550771205736,
+            13.867724822076415,
+            5.859841999055126
+          ],
+          [
+            -3.2445812283555493,
+            5.859841999055126,
+            2.5839760906399225
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.524171870763132,
+          0.5846621194717153,
+          10.71938205641941
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          10.71938205641941
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9449618677320971
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.2105701459848041,
+            -1.3431829623171687,
+            -0.37134679485834465
+          ],
+          [
+            -1.3431829623171687,
+            8.5764474650764,
+            2.3374224462715243
+          ],
+          [
+            -0.37134679485834465,
+            2.3374224462715243,
+            0.7694322152418331
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999933,
+          0.5615569951148235,
+          5.216667918036698
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          5.216667918036698
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9135334875970235
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792746131710446606,
+        "forecast_target_epoch_utc_ns": 1792773175779936000,
+        "physical_SD": [
+          0.00033665656790547456,
+          0.0012260620680507902,
+          0.001797473443311455
+        ],
+        "current_mode_metadata": {
+          "norad": 59653,
+          "previous_available": true,
+          "radial_sigma_km": 0.10080255470025544,
+          "cross_sigma_km": 0.14681428230728583,
+          "old_alignment_s": 0.7004486113003496,
+          "mean_motion_sigma_rev_day": 0.00033665656790547456,
+          "inclination_sigma_deg": 0.0012260620680507902,
+          "raan_sigma_deg": 0.001797473443311455
+        },
+        "known_elements": [
+          {
+            "sha256": "dc93fa57d6e91dd55ad095ce03e13b6b10041cdf61c56526ca3cf1af8b18217b",
+            "epoch_utc_ns": 1792485056435040000,
+            "collected_utc_ns": 1792562588649049465
+          },
+          {
+            "sha256": "74f334bc2a4c8693aa1af01cb93760b308b40e59cef63b97757e23c4477ca9f9",
+            "epoch_utc_ns": 1792547199970272000,
+            "collected_utc_ns": 1792577026608978892
+          },
+          {
+            "sha256": "27f8462d17c75bb15c3151508a7847fcd9dd95309ccf01183088e97ebc4c3ee2",
+            "epoch_utc_ns": 1792569797255232256,
+            "collected_utc_ns": 1792584096129736481
+          },
+          {
+            "sha256": "44c75288070db8fd80db2a014ed07b88e522fea0b5ea9a5f6b6749187f1c0609",
+            "epoch_utc_ns": 1792603693402560000,
+            "collected_utc_ns": 1792641692761346217
+          },
+          {
+            "sha256": "0cc915cd325843169aba505e93b505ffd36cf21d17608c484af5be7c8d0bea8b",
+            "epoch_utc_ns": 1792631940592608000,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "ae9293e03bbd5beb1d726435e8d141844f647d9544e45a6ea1087e5d7f4a2908",
+            "epoch_utc_ns": 1792716681671136000,
+            "collected_utc_ns": 1792746131710446606
+          }
+        ],
+        "older_nominal_element_sha256": "ae9293e03bbd5beb1d726435e8d141844f647d9544e45a6ea1087e5d7f4a2908",
+        "previous_element_sha256": "0cc915cd325843169aba505e93b505ffd36cf21d17608c484af5be7c8d0bea8b",
+        "oldB_covariance": [
+          [
+            2.951549467864148,
+            -3.5804062879137,
+            -1.5297059744018942
+          ],
+          [
+            -3.5804062879137,
+            7.568785161547518,
+            2.80647197501066
+          ],
+          [
+            -1.5297059744018942,
+            2.80647197501066,
+            2.19904742700775
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0941241042889698,
+            -0.6003918492126037,
+            -0.16601316592399717
+          ],
+          [
+            -0.6003918492126037,
+            4.8297349581596265,
+            1.0589524589444403
+          ],
+          [
+            -0.16601316592399717,
+            1.0589524589444403,
+            1.2928088555881043
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0085",
+      "family": 62146,
+      "issuance_utc_ns": 1792666949873884435,
+      "older_epoch_utc_ns": 1792634963090976000,
+      "target_epoch_utc_ns": 1792725353625312000,
+      "held_newer_collected_utc_ns": 1792746131710446606,
+      "horizon_hours": 25.10848176,
+      "older_element_sha256": "bec29c8666e0ed8d5c457c83b59b140bbdbe70518cd85ca35c366b42174cbf91",
+      "held_newer_element_sha256": "d04ea94232400518851e7aac085389938d7db6d85c09780e2b4cbe16e73d8dad",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 154.25008148382167,
+        "oldB": 71.69086879227093,
+        "Age2": 137.14428951901596
+      },
+      "age2_gain_over_identity": 17.105791964805718,
+      "age2_gain_over_oldB": -65.45342072674502,
+      "coefficient_innovation": [
+        0.8585193639231719,
+        -10.901388335862707,
+        5.399919178754355
+      ],
+      "held_represented_energy_fraction": 0.39055111484594185,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.2416623776052644,
+            2.1795004498288564,
+            -2.092078397198132
+          ],
+          [
+            2.1795004498288564,
+            3.9801744995675783,
+            -3.342069504588642
+          ],
+          [
+            -2.092078397198132,
+            -3.342069504588642,
+            10.835505777720835
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5155528702341072,
+          2.0836610882352518,
+          6.9294573689774825
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          2.0836610882352518,
+          6.9294573689774825
+        ],
+        "eigenvalue_clipped_count": 1,
+        "status": "ready",
+        "represented_energy_fraction": 0.5607533694809326
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.19144390391096072,
+            -0.20756808685424508,
+            -2.010167181488996
+          ],
+          [
+            -0.20756808685424508,
+            0.28563647577674306,
+            1.6390913522579424
+          ],
+          [
+            -2.010167181488996,
+            1.6390913522579424,
+            25.926581701854616
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999967,
+          0.6079371380485423,
+          13.593893902722611
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          13.593893902722611
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.5660092936435882
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792666949873884435,
+        "forecast_target_epoch_utc_ns": 1792725353625312000,
+        "physical_SD": [
+          0.0013459977146877018,
+          0.0004112153839787167,
+          0.0006029441450390977
+        ],
+        "current_mode_metadata": {
+          "norad": 62146,
+          "previous_available": true,
+          "radial_sigma_km": 0.4030173087331921,
+          "cross_sigma_km": 0.04924104036705288,
+          "old_alignment_s": 1.2585322862574613,
+          "mean_motion_sigma_rev_day": 0.0013459977146877018,
+          "inclination_sigma_deg": 0.0004112153839787167,
+          "raan_sigma_deg": 0.0006029441450390977
+        },
+        "known_elements": [
+          {
+            "sha256": "c42cae52cb4c49643956fe8980d2f030516fee6d68f8a99ffa8a05ff14bcf231",
+            "epoch_utc_ns": 1792521975646656000,
+            "collected_utc_ns": 1792569694714830414
+          },
+          {
+            "sha256": "fcd9c1645fd3c304b0e5f699b284cba1460f412e94680fe5923cbafcc1cc106a",
+            "epoch_utc_ns": 1792555871889023744,
+            "collected_utc_ns": 1792577026608978892
+          },
+          {
+            "sha256": "bc6fa8babf511df8832debcf17543203426a43f6d32521a08ea4246f001b616e",
+            "epoch_utc_ns": 1792572819759648000,
+            "collected_utc_ns": 1792613076915054243
+          },
+          {
+            "sha256": "32cd22083b67dd17fd88ab6883982504fa528294078a6ae9b208b0b19a649d0d",
+            "epoch_utc_ns": 1792606715856000000,
+            "collected_utc_ns": 1792627337607017525
+          },
+          {
+            "sha256": "bec29c8666e0ed8d5c457c83b59b140bbdbe70518cd85ca35c366b42174cbf91",
+            "epoch_utc_ns": 1792634963090976000,
+            "collected_utc_ns": 1792666949873884435
+          }
+        ],
+        "older_nominal_element_sha256": "bec29c8666e0ed8d5c457c83b59b140bbdbe70518cd85ca35c366b42174cbf91",
+        "previous_element_sha256": "32cd22083b67dd17fd88ab6883982504fa528294078a6ae9b208b0b19a649d0d",
+        "oldB_covariance": [
+          [
+            1.5001193951481637,
+            0.8903839129413419,
+            -1.0342657923126115
+          ],
+          [
+            0.8903839129413419,
+            2.5948807173495645,
+            -1.6772232404978085
+          ],
+          [
+            -1.0342657923126115,
+            -1.6772232404978085,
+            5.918118344715007
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.075531844747328,
+            -0.06201274208500627,
+            -0.9704068215305006
+          ],
+          [
+            -0.06201274208500627,
+            1.050913362354195,
+            0.796718101383727
+          ],
+          [
+            -0.9704068215305006,
+            0.796718101383727,
+            13.467448695621089
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS24-0103",
+      "family": 62496,
+      "issuance_utc_ns": 1792724646655140777,
+      "older_epoch_utc_ns": 1792687713919776000,
+      "target_epoch_utc_ns": 1792772454733056000,
+      "held_newer_collected_utc_ns": 1792818291213854657,
+      "horizon_hours": 23.5391148,
+      "older_element_sha256": "e4df15dc11fddf1d2b539c86f2b3e1036b6a8be570df3efbee3caad96afa5cce",
+      "held_newer_element_sha256": "bba0b3382ab15d20d535b268238e2d7c886df132f041ba340adb5862b16bd2db",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 7.3444212564050435,
+        "oldB": 7.3444212564050435,
+        "Age2": 7.4022150044133035
+      },
+      "age2_gain_over_identity": -0.05779374800825998,
+      "age2_gain_over_oldB": -0.05779374800825998,
+      "coefficient_innovation": [
+        -0.7512638539208494,
+        -0.010814750704347231,
+        1.1252891717848363
+      ],
+      "held_represented_energy_fraction": 0.9737565751770787,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.4575696127163277
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            1.7203269143315556,
+            1.089856815357811,
+            -2.3476002968969127
+          ],
+          [
+            1.089856815357811,
+            0.7653345740297599,
+            -1.3249719118238479
+          ],
+          [
+            -2.3476002968969127,
+            -1.3249719118238479,
+            3.555204004513467
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000002,
+          0.6478727829865103,
+          3.3725599634508807
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          3.3725599634508807
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6049706434660511
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792724646655140777,
+        "forecast_target_epoch_utc_ns": 1792772454733056000,
+        "physical_SD": [
+          0.0011269953298535219,
+          0.0006663230390225541,
+          0.0009771326547023103
+        ],
+        "current_mode_metadata": {
+          "norad": 62496,
+          "previous_available": true,
+          "radial_sigma_km": 0.33746249537407375,
+          "cross_sigma_km": 0.07979274555844068,
+          "old_alignment_s": 2.9180243460608506,
+          "mean_motion_sigma_rev_day": 0.0011269953298535219,
+          "inclination_sigma_deg": 0.0006663230390225541,
+          "raan_sigma_deg": 0.0009771326547023103
+        },
+        "known_elements": [
+          {
+            "sha256": "73002c06852f9905fe57078f63df1c78fbbdd5577a6bfe2f84e6415fcab9745d",
+            "epoch_utc_ns": 1792495634893344000,
+            "collected_utc_ns": 1792594906851908030
+          },
+          {
+            "sha256": "ef450a05ab3f650d4711a96a7f402fca6cce32a779913b3bd8a6574aa9c66728",
+            "epoch_utc_ns": 1792586024893728000,
+            "collected_utc_ns": 1792613076915054243
+          },
+          {
+            "sha256": "7a4ba965147a0067921d4a85ae3bd73784a1f36c09af2b6ba2981caca30500a5",
+            "epoch_utc_ns": 1792602972880992000,
+            "collected_utc_ns": 1792641692761346217
+          },
+          {
+            "sha256": "65f64a3601b5f88b5748d8ce258b64b0d52484c5d1cd78d1602c339a731577fb",
+            "epoch_utc_ns": 1792665116075808000,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "e4df15dc11fddf1d2b539c86f2b3e1036b6a8be570df3efbee3caad96afa5cce",
+            "epoch_utc_ns": 1792687713919776000,
+            "collected_utc_ns": 1792724646655140777
+          }
+        ],
+        "older_nominal_element_sha256": "e4df15dc11fddf1d2b539c86f2b3e1036b6a8be570df3efbee3caad96afa5cce",
+        "previous_element_sha256": "65f64a3601b5f88b5748d8ce258b64b0d52484c5d1cd78d1602c339a731577fb",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.6933957714031644,
+            0.4165939253308372,
+            -0.9953767385442271
+          ],
+          [
+            0.4165939253308372,
+            1.2502906792629496,
+            -0.598024850734262
+          ],
+          [
+            -0.9953767385442271,
+            -0.598024850734262,
+            2.428873512784766
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0014",
+      "family": 64724,
+      "issuance_utc_ns": 1792757072202456527,
+      "older_epoch_utc_ns": 1792728757859616000,
+      "target_epoch_utc_ns": 1792807547440032000,
+      "held_newer_collected_utc_ns": 1792843285183440760,
+      "horizon_hours": 21.88599456,
+      "older_element_sha256": "4c0bca135156969dc233194cd76e1e233f04d0a50b6ba002176ba4c00cdc25ba",
+      "held_newer_element_sha256": "a71af5de609e9c6af4208213d8d1af792c0244197151decd1937bb9d33a34ff6",
+      "strict_prefix_age_pair_count": 3,
+      "strict_prefix_oldB_history_count": 5,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": true,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 77.61132822447851,
+        "oldB": 64.80665574153585,
+        "Age2": 56.72839188819965
+      },
+      "age2_gain_over_identity": 20.88293633627886,
+      "age2_gain_over_oldB": 8.078263853336196,
+      "coefficient_innovation": [
+        2.3418860335142915,
+        -5.919184208082223,
+        5.619299346188206
+      ],
+      "held_represented_energy_fraction": 0.8127898366297854,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            42.87853983306893,
+            -3.1930807222368385,
+            -9.03482459310633
+          ],
+          [
+            -3.1930807222368385,
+            4.609884142264966,
+            1.976034831022861
+          ],
+          [
+            -9.03482459310633,
+            1.976034831022861,
+            3.8251427056962393
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          1.1605223477195294,
+          2.907678898639962,
+          23.088582094155576
+        ],
+        "bounded_eigenvalues": [
+          1.1605223477195294,
+          2.907678898639962,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 1,
+        "status": "ready",
+        "represented_energy_fraction": 0.6532968106987409
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            71.85828462494273,
+            7.1348900043317895,
+            -28.081016942034626
+          ],
+          [
+            7.1348900043317895,
+            10.437321342891684,
+            -2.258148493444232
+          ],
+          [
+            -28.081016942034626,
+            -2.258148493444232,
+            11.511456296556615
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.7191416177673058,
+          5.351972218532593,
+          42.33241729589561
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          5.351972218532593,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.5668140265655981
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792757072202456527,
+        "forecast_target_epoch_utc_ns": 1792807547440032000,
+        "physical_SD": [
+          0.00024111810231576894,
+          0.0003684917803148681,
+          0.0004604448280646268
+        ],
+        "current_mode_metadata": {
+          "norad": 64724,
+          "previous_available": true,
+          "radial_sigma_km": 0.07167367934717263,
+          "cross_sigma_km": 0.044001452477408956,
+          "old_alignment_s": 0.08266030817165618,
+          "mean_motion_sigma_rev_day": 0.00024111810231576894,
+          "inclination_sigma_deg": 0.0003684917803148681,
+          "raan_sigma_deg": 0.0004604448280646268
+        },
+        "known_elements": [
+          {
+            "sha256": "12c72f874ad02386b099324c5cbf397e638787497600ce6368620a65b1d5f4c9",
+            "epoch_utc_ns": 1792582437478464000,
+            "collected_utc_ns": 1792620198433067778
+          },
+          {
+            "sha256": "94f4ba536ee519f4da91a8d4daed107f48d94aaf189035c962121c772225303d",
+            "epoch_utc_ns": 1792621831137696000,
+            "collected_utc_ns": 1792641692761346217
+          },
+          {
+            "sha256": "97dde7429c4fdf299a62f153c0e854059db009205eacb15e215ce297a233db7f",
+            "epoch_utc_ns": 1792644341369472256,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "a6597bba453863569b4e35b6c8033e3e128f527c6d75a78e876e7325072c69d1",
+            "epoch_utc_ns": 1792666852466976000,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "b7366eafcd4f60b385d31a4d191342c497ff95ad31db4556cd89035bd98739c4",
+            "epoch_utc_ns": 1792706246981568000,
+            "collected_utc_ns": 1792724646655140777
+          },
+          {
+            "sha256": "4c0bca135156969dc233194cd76e1e233f04d0a50b6ba002176ba4c00cdc25ba",
+            "epoch_utc_ns": 1792728757859616000,
+            "collected_utc_ns": 1792757072202456527
+          }
+        ],
+        "older_nominal_element_sha256": "4c0bca135156969dc233194cd76e1e233f04d0a50b6ba002176ba4c00cdc25ba",
+        "previous_element_sha256": "b7366eafcd4f60b385d31a4d191342c497ff95ad31db4556cd89035bd98739c4",
+        "oldB_covariance": [
+          [
+            15.237042644047378,
+            -0.9962777505994509,
+            -3.0243876413460002
+          ],
+          [
+            -0.9962777505994509,
+            2.7511815543761884,
+            0.8542996466761674
+          ],
+          [
+            -3.0243876413460002,
+            0.8542996466761674,
+            2.079977047935914
+          ]
+        ],
+        "age2_covariance": [
+          [
+            13.886863090277437,
+            1.088230897482324,
+            -5.0786105001378505
+          ],
+          [
+            1.088230897482324,
+            5.448544009002606,
+            -0.17216417515614188
+          ],
+          [
+            -5.0786105001378505,
+            -0.17216417515614188,
+            3.016565119252552
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0016",
+      "family": 58006,
+      "issuance_utc_ns": 1792757072202456527,
+      "older_epoch_utc_ns": 1792725359314752000,
+      "target_epoch_utc_ns": 1792798801257024256,
+      "held_newer_collected_utc_ns": 1792818291213854657,
+      "horizon_hours": 20.40053952007111,
+      "older_element_sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+      "held_newer_element_sha256": "ff6b84f73a8fcd2d96a01211c6f324f5c84a23be5acb921a6e51383211895915",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 8.05374882267959,
+        "oldB": 8.05374882267959,
+        "Age2": 8.05374882267959
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": 0.0,
+      "coefficient_innovation": [
+        -0.9158777492288387,
+        -0.49895247131630716,
+        1.2051273805230804
+      ],
+      "held_represented_energy_fraction": 0.09331463976314858,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.25383366892769077
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.11275526737474262
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792757072202456527,
+        "forecast_target_epoch_utc_ns": 1792798801257024256,
+        "physical_SD": [
+          0.00047888301569105164,
+          0.0014171563879043234,
+          0.0020779196907633733
+        ],
+        "current_mode_metadata": {
+          "norad": 58006,
+          "previous_available": true,
+          "radial_sigma_km": 0.1433874328358532,
+          "cross_sigma_km": 0.16969748538876195,
+          "old_alignment_s": -1.895145625733241,
+          "mean_motion_sigma_rev_day": 0.00047888301569105164,
+          "inclination_sigma_deg": 0.0014171563879043234,
+          "raan_sigma_deg": 0.0020779196907633733
+        },
+        "known_elements": [
+          {
+            "sha256": "759a53af03005648cea6ea84e4452c9365ff855f9e7d8ce12f369584ec99a04d",
+            "epoch_utc_ns": 1792578472070112256,
+            "collected_utc_ns": 1792620198433067778
+          },
+          {
+            "sha256": "bbf758104b903a6f934111b77a3f6c944b73fa44ff1f86204928aad21f11b0c9",
+            "epoch_utc_ns": 1792640617252992000,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "dc558135164e5324ec7eea0bc1656bf59bccec808c9c2230149da50ace519ef2",
+            "epoch_utc_ns": 1792663216157088256,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+            "epoch_utc_ns": 1792725359314752000,
+            "collected_utc_ns": 1792757072202456527
+          }
+        ],
+        "older_nominal_element_sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+        "previous_element_sha256": "dc558135164e5324ec7eea0bc1656bf59bccec808c9c2230149da50ace519ef2",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0016",
+      "family": 58006,
+      "issuance_utc_ns": 1792757072202456527,
+      "older_epoch_utc_ns": 1792725359314752000,
+      "target_epoch_utc_ns": 1792810100163456000,
+      "held_newer_collected_utc_ns": 1792843285183440760,
+      "horizon_hours": 23.53912464,
+      "older_element_sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+      "held_newer_element_sha256": "91f5d2a419a47fd4855468700875d11a1ba7402e8949e27e25bcec49c384c72d",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 8.575628260765507,
+        "oldB": 8.575628260765507,
+        "Age2": 8.575628260765507
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": 0.0,
+      "coefficient_innovation": [
+        0.3953841462095245,
+        -0.8427583158212835,
+        1.4816972901297047
+      ],
+      "held_represented_energy_fraction": 0.056851709767173575,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.2642299755603046
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.3675214865171329
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792757072202456527,
+        "forecast_target_epoch_utc_ns": 1792810100163456000,
+        "physical_SD": [
+          0.00045565330177483286,
+          0.0014240577069459463,
+          0.0020880388186530164
+        ],
+        "current_mode_metadata": {
+          "norad": 58006,
+          "previous_available": true,
+          "radial_sigma_km": 0.1364321889664041,
+          "cross_sigma_km": 0.17052414760281276,
+          "old_alignment_s": -2.088239074778406,
+          "mean_motion_sigma_rev_day": 0.00045565330177483286,
+          "inclination_sigma_deg": 0.0014240577069459463,
+          "raan_sigma_deg": 0.0020880388186530164
+        },
+        "known_elements": [
+          {
+            "sha256": "759a53af03005648cea6ea84e4452c9365ff855f9e7d8ce12f369584ec99a04d",
+            "epoch_utc_ns": 1792578472070112256,
+            "collected_utc_ns": 1792620198433067778
+          },
+          {
+            "sha256": "bbf758104b903a6f934111b77a3f6c944b73fa44ff1f86204928aad21f11b0c9",
+            "epoch_utc_ns": 1792640617252992000,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "dc558135164e5324ec7eea0bc1656bf59bccec808c9c2230149da50ace519ef2",
+            "epoch_utc_ns": 1792663216157088256,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+            "epoch_utc_ns": 1792725359314752000,
+            "collected_utc_ns": 1792757072202456527
+          }
+        ],
+        "older_nominal_element_sha256": "ba5a035e30d0997c40ab3a071b3b4e9b01e4739550b7b202049563286b017b69",
+        "previous_element_sha256": "dc558135164e5324ec7eea0bc1656bf59bccec808c9c2230149da50ace519ef2",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0020",
+      "family": 60429,
+      "issuance_utc_ns": 1792818291213854657,
+      "older_epoch_utc_ns": 1792760465929536000,
+      "target_epoch_utc_ns": 1792827999187488000,
+      "held_newer_collected_utc_ns": 1792843285183440760,
+      "horizon_hours": 18.75923832,
+      "older_element_sha256": "013913a1a5e72f9be94a8a4a3eda857b01bc6b81e06a30841cd431e740141224",
+      "held_newer_element_sha256": "6b9e1390877db98af722a3b66fd0c7979fd76060d2cfbd5b64589bd5686de23c",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 353.557832700899,
+        "oldB": 40.26190247961459,
+        "Age2": 39.53331472851831
+      },
+      "age2_gain_over_identity": 314.0245179723807,
+      "age2_gain_over_oldB": 0.7285877510962777,
+      "coefficient_innovation": [
+        0.5467817433250964,
+        18.647292235221155,
+        -0.1540244172141847
+      ],
+      "held_represented_energy_fraction": 0.9842393407720077,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            0.7134080192595276,
+            -2.179356220275443,
+            0.4457720459606715
+          ],
+          [
+            -2.179356220275443,
+            178.34443261431042,
+            -42.56386812789146
+          ],
+          [
+            0.4457720459606715,
+            -42.56386812789146,
+            12.863113031309004
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.8418660975744373,
+          1.7801979487247066,
+          94.83841278614034
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.7801979487247066,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7354828454497757
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.09178280708282097,
+            -2.3596072529161933,
+            0.4523364579182843
+          ],
+          [
+            -2.3596072529161933,
+            71.25447722020778,
+            -25.26255810907327
+          ],
+          [
+            0.4523364579182843,
+            -25.26255810907327,
+            19.777478668112952
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5,
+          5.237486668725471,
+          41.32438267897629
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          5.237486668725471,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6201938663553901
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792818291213854657,
+        "forecast_target_epoch_utc_ns": 1792827999187488000,
+        "physical_SD": [
+          0.0005608317895116103,
+          0.00020935869634624486,
+          0.0002616021853091249
+        ],
+        "current_mode_metadata": {
+          "norad": 60429,
+          "previous_available": true,
+          "radial_sigma_km": 0.1667167295250712,
+          "cross_sigma_km": 0.025,
+          "old_alignment_s": 0.8438063717836795,
+          "mean_motion_sigma_rev_day": 0.0005608317895116103,
+          "inclination_sigma_deg": 0.00020935869634624486,
+          "raan_sigma_deg": 0.0002616021853091249
+        },
+        "known_elements": [
+          {
+            "sha256": "79742d55d320abd5ba17b94cd28319463dd0a532baee915b16fd8a2d2be093c9",
+            "epoch_utc_ns": 1792591633516032000,
+            "collected_utc_ns": 1792627337607017525
+          },
+          {
+            "sha256": "cd5ce2747de06a794886f509acc8a73c4b1b045df89184e83a6a7fd2d358e769",
+            "epoch_utc_ns": 1792647910203552000,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "02e93bb9e292453bdd9c126faa6aef68c17a16825256e794e6f742b11ab02521",
+            "epoch_utc_ns": 1792676049805728000,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "23236947f2c3705c50bce2cde2a4caa7b2be10df46dc749618cfa1944ecea8df",
+            "epoch_utc_ns": 1792732326984864000,
+            "collected_utc_ns": 1792746131710446606
+          },
+          {
+            "sha256": "2fbfb80c41ab7bbd12c33848b2419d5fabade28d3632237562bdc77c8edd41a4",
+            "epoch_utc_ns": 1792737954621216000,
+            "collected_utc_ns": 1792757072202456527
+          },
+          {
+            "sha256": "013913a1a5e72f9be94a8a4a3eda857b01bc6b81e06a30841cd431e740141224",
+            "epoch_utc_ns": 1792760465929536000,
+            "collected_utc_ns": 1792818291213854657
+          }
+        ],
+        "older_nominal_element_sha256": "013913a1a5e72f9be94a8a4a3eda857b01bc6b81e06a30841cd431e740141224",
+        "previous_element_sha256": "2fbfb80c41ab7bbd12c33848b2419d5fabade28d3632237562bdc77c8edd41a4",
+        "oldB_covariance": [
+          [
+            1.003504402282265,
+            -0.1801718242198065,
+            0.00957172364668539
+          ],
+          [
+            -0.1801718242198065,
+            15.210283325319521,
+            -3.252521820326027
+          ],
+          [
+            0.00957172364668539,
+            -3.252521820326027,
+            2.5664102211229154
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.023116778638503,
+            -0.48052860704534484,
+            -0.03251102216948374
+          ],
+          [
+            -0.48052860704534484,
+            14.44412928539857,
+            -3.771706549173884
+          ],
+          [
+            -0.03251102216948374,
+            -3.771706549173884,
+            6.7702406046883965
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0024",
+      "family": 66967,
+      "issuance_utc_ns": 1792757072202456527,
+      "older_epoch_utc_ns": 1792719929849760000,
+      "target_epoch_utc_ns": 1792804671814752000,
+      "held_newer_collected_utc_ns": 1792843285183440760,
+      "horizon_hours": 23.53943472,
+      "older_element_sha256": "39b284c0eb1e055d17a20163f9646da1ebabc409ac2334869f495b7233f73239",
+      "held_newer_element_sha256": "8d2ee36cdbf7f69760af84c26bc0b26c3e67fc80b47550603d164768671c6476",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 10.663931131279803,
+        "oldB": 11.140490206878685,
+        "Age2": 10.822270592861749
+      },
+      "age2_gain_over_identity": -0.15833946158194578,
+      "age2_gain_over_oldB": 0.318219614016936,
+      "coefficient_innovation": [
+        -1.1572557856631647,
+        1.6265079600136774,
+        -1.0795975336267878
+      ],
+      "held_represented_energy_fraction": 0.9506796891697396,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.5326196974011406,
+            1.0775867960712293,
+            -0.964381952865457
+          ],
+          [
+            1.0775867960712293,
+            1.8213694933478044,
+            -0.37685474176861083
+          ],
+          [
+            -0.964381952865457,
+            -0.37685474176861083,
+            0.9996123321057774
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5767395316148047,
+          1.0152461579950463,
+          2.0848150718175105
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0152461579950463,
+          2.0848150718175105
+        ],
+        "eigenvalue_clipped_count": 1,
+        "status": "ready",
+        "represented_energy_fraction": 0.7956700390052636
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.6182137801921387,
+            -0.9684520837416656,
+            -0.7374325816912793
+          ],
+          [
+            -0.9684520837416656,
+            1.6794162121648022,
+            0.8745587462366657
+          ],
+          [
+            -0.7374325816912793,
+            0.8745587462366657,
+            1.3649423878367555
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.4999999999999998,
+          0.8186092709374018,
+          2.012676919159446
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.012676919159446
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6008018128687904
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1792757072202456527,
+        "forecast_target_epoch_utc_ns": 1792804671814752000,
+        "physical_SD": [
+          0.0015007548727450292,
+          0.0015856526573564172,
+          0.002325053004030167
+        ],
+        "current_mode_metadata": {
+          "norad": 66967,
+          "previous_available": true,
+          "radial_sigma_km": 0.4493636709533108,
+          "cross_sigma_km": 0.18987649041717525,
+          "old_alignment_s": 4.84529072598648,
+          "mean_motion_sigma_rev_day": 0.0015007548727450292,
+          "inclination_sigma_deg": 0.0015856526573564172,
+          "raan_sigma_deg": 0.002325053004030167
+        },
+        "known_elements": [
+          {
+            "sha256": "6749b9c645b84a63e659fb79c00f416a060a06111681d409b1ff56ce7ee8a6de",
+            "epoch_utc_ns": 1792578695617152000,
+            "collected_utc_ns": 1792634630289188510
+          },
+          {
+            "sha256": "2b322cf9e16baecc93eee46cca1b80aaeed990f0f7ed5418d26740f64fff28a0",
+            "epoch_utc_ns": 1792629539915904000,
+            "collected_utc_ns": 1792666949873884435
+          },
+          {
+            "sha256": "aecfa6e35d5d321cddc8d12a04e0e2d6eda6142ef70e4a6262a19f59bec9824f",
+            "epoch_utc_ns": 1792663435375488000,
+            "collected_utc_ns": 1792699367062929627
+          },
+          {
+            "sha256": "39b284c0eb1e055d17a20163f9646da1ebabc409ac2334869f495b7233f73239",
+            "epoch_utc_ns": 1792719929849760000,
+            "collected_utc_ns": 1792757072202456527
+          }
+        ],
+        "older_nominal_element_sha256": "39b284c0eb1e055d17a20163f9646da1ebabc409ac2334869f495b7233f73239",
+        "previous_element_sha256": "aecfa6e35d5d321cddc8d12a04e0e2d6eda6142ef70e4a6262a19f59bec9824f",
+        "oldB_covariance": [
+          [
+            1.4694012590737393,
+            0.4510516245720446,
+            -0.2897960032612288
+          ],
+          [
+            0.4510516245720446,
+            1.448591907771393,
+            -0.2715479525008553
+          ],
+          [
+            -0.2897960032612288,
+            -0.2715479525008553,
+            1.1820680629674232
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.2060347672557243,
+            -0.31578298039113933,
+            -0.2578321882958545
+          ],
+          [
+            -0.31578298039113933,
+            1.483990600387081,
+            0.3951712516547238
+          ],
+          [
+            -0.2578321882958545,
+            0.3951712516547238,
+            1.3226515515166384
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0197",
+      "family": 58191,
+      "issuance_utc_ns": 1793073707659831880,
+      "older_epoch_utc_ns": 1793027695106592000,
+      "target_epoch_utc_ns": 1793078539928928000,
+      "held_newer_collected_utc_ns": 1793098833668678059,
+      "horizon_hours": 14.12356176,
+      "older_element_sha256": "3c82193a8484e74f74bdd4ae6be87ea07c92827aa5d9ce4ea4755422e076857b",
+      "held_newer_element_sha256": "13fdca48c424b6d9f3d48081a8faff0b3ab8d0d6fee52e4da60bdabd45a3f8a6",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 203.20451999361688,
+        "oldB": 30.24572273580376,
+        "Age2": 38.18538564052717
+      },
+      "age2_gain_over_identity": 165.01913435308973,
+      "age2_gain_over_oldB": -7.939662904723413,
+      "coefficient_innovation": [
+        -0.5035626849072972,
+        -13.836874256949855,
+        2.4450407387436766
+      ],
+      "held_represented_energy_fraction": 0.33052331377979394,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            0.5727659088661395,
+            -2.574803607296598,
+            4.543977389143122
+          ],
+          [
+            -2.574803607296598,
+            24.15141917895021,
+            -11.485747410041014
+          ],
+          [
+            4.543977389143122,
+            -11.485747410041014,
+            76.20263624227286
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5705892856128718,
+          11.422450437471602,
+          39.97037094196014
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          11.422450437471602,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7827600221919828
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.8141951351593324,
+            -5.158846095267155,
+            -0.7693295925640596
+          ],
+          [
+            -5.158846095267155,
+            51.92069526839549,
+            36.84801038520568
+          ],
+          [
+            -0.7693295925640596,
+            36.84801038520568,
+            53.87881615201034
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999956,
+          8.829705711956507,
+          45.47714756582606
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          8.829705711956507,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.6321638597187802
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793073707659831880,
+        "forecast_target_epoch_utc_ns": 1793078539928928000,
+        "physical_SD": [
+          0.0029570208220162336,
+          0.00037058795834356593,
+          0.0005434311811968899
+        ],
+        "current_mode_metadata": {
+          "norad": 58191,
+          "previous_available": true,
+          "radial_sigma_km": 0.8852862224873754,
+          "cross_sigma_km": 0.04437047686792329,
+          "old_alignment_s": -0.6406094759176354,
+          "mean_motion_sigma_rev_day": 0.0029570208220162336,
+          "inclination_sigma_deg": 0.00037058795834356593,
+          "raan_sigma_deg": 0.0005434311811968899
+        },
+        "known_elements": [
+          {
+            "sha256": "3a0a9af5bd3510754c6b83ee69bca6183ba575d37e6f65761e34466d33c29edd",
+            "epoch_utc_ns": 1792824317178912000,
+            "collected_utc_ns": 1792918804454539856
+          },
+          {
+            "sha256": "2a3accb2b834732bd6f4dbb0e84a8470f789d9a2017e80651cf784d17146e2bc",
+            "epoch_utc_ns": 1792942951857696000,
+            "collected_utc_ns": 1792965722171268466
+          },
+          {
+            "sha256": "99f3470fc6d973bc80aa915c700ec93d477b868ae62d20a833b4ab6d0d1234a8",
+            "epoch_utc_ns": 1792971201447072000,
+            "collected_utc_ns": 1792987453669148863
+          },
+          {
+            "sha256": "ad0b04cfbc5cb9b6bb00ca9e2775ca4f79c1dc3aa03607e17c9b3789e89883cb",
+            "epoch_utc_ns": 1792993798986912000,
+            "collected_utc_ns": 1793016028527784605
+          },
+          {
+            "sha256": "3c82193a8484e74f74bdd4ae6be87ea07c92827aa5d9ce4ea4755422e076857b",
+            "epoch_utc_ns": 1793027695106592000,
+            "collected_utc_ns": 1793073707659831880
+          }
+        ],
+        "older_nominal_element_sha256": "3c82193a8484e74f74bdd4ae6be87ea07c92827aa5d9ce4ea4755422e076857b",
+        "previous_element_sha256": "ad0b04cfbc5cb9b6bb00ca9e2775ca4f79c1dc3aa03607e17c9b3789e89883cb",
+        "oldB_covariance": [
+          [
+            1.1153838430304386,
+            -0.935709873847756,
+            0.7680467948146865
+          ],
+          [
+            -0.935709873847756,
+            11.545539790789203,
+            -0.8866168682647917
+          ],
+          [
+            0.7680467948146865,
+            -0.8866168682647917,
+            15.76152680365195
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.323480652712673,
+            -1.5373424694358577,
+            0.5459347898282578
+          ],
+          [
+            -1.5373424694358577,
+            12.100206273107782,
+            3.712470513134286
+          ],
+          [
+            0.5459347898282578,
+            3.712470513134286,
+            12.406018786136048
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0225",
+      "family": 65840,
+      "issuance_utc_ns": 1793098833668678059,
+      "older_epoch_utc_ns": 1793071856550240000,
+      "target_epoch_utc_ns": 1793150645306400256,
+      "held_newer_collected_utc_ns": 1793217819456832744,
+      "horizon_hours": 21.88576560007111,
+      "older_element_sha256": "31ffbcd42c4235b0f70e920cdb88c38c5e149810b49dc0501a19c6b7bd4aee18",
+      "held_newer_element_sha256": "8f959b68f7a410d3f01a792d46e3eb711ecd7bf0295f332fa9fbc947d5dcd083",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 7.10410297685096,
+        "oldB": 7.10410297685096,
+        "Age2": 9.351376756690376
+      },
+      "age2_gain_over_identity": -2.247273779839416,
+      "age2_gain_over_oldB": -2.247273779839416,
+      "coefficient_innovation": [
+        -0.7536430751939243,
+        1.0057916765929265,
+        -0.10429283835220704
+      ],
+      "held_represented_energy_fraction": 0.048345573444771084,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.41055059758133783
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            32.24039639052169,
+            0.31537884116661424,
+            6.594651605244902
+          ],
+          [
+            0.31537884116661424,
+            0.15030472351876145,
+            0.2180293807271716
+          ],
+          [
+            6.594651605244902,
+            0.2180293807271716,
+            1.5090007486852957
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999994,
+          0.6501071355742185,
+          17.299743795788658
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 3,
+        "status": "ready",
+        "represented_energy_fraction": 0.6784391327226647
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793098833668678059,
+        "forecast_target_epoch_utc_ns": 1793150645306400256,
+        "physical_SD": [
+          0.0006817952013358494,
+          0.001493615764373966,
+          0.0018662895698631802
+        ],
+        "current_mode_metadata": {
+          "norad": 65840,
+          "previous_available": true,
+          "radial_sigma_km": 0.20268462213933588,
+          "cross_sigma_km": 0.17836614055029298,
+          "old_alignment_s": 1.3123287002614927,
+          "mean_motion_sigma_rev_day": 0.0006817952013358494,
+          "inclination_sigma_deg": 0.001493615764373966,
+          "raan_sigma_deg": 0.0018662895698631802
+        },
+        "known_elements": [
+          {
+            "sha256": "d615e8fd5ff8ba5f50743eb7f0dea5933f9ee1a21051da8ca0edd84503ec4871",
+            "epoch_utc_ns": 1792936791358848000,
+            "collected_utc_ns": 1792965722171268466
+          },
+          {
+            "sha256": "eab7b033222d9945ced0160fefbffc78c9b60be11035056a8de0e2c7e25fa243",
+            "epoch_utc_ns": 1792948046724000000,
+            "collected_utc_ns": 1792987453669148863
+          },
+          {
+            "sha256": "9d7b0f26d48db477f7a0d4d388e80842f981339633d8b2d56cfef89695feea3f",
+            "epoch_utc_ns": 1792987441064928000,
+            "collected_utc_ns": 1793016028527784605
+          },
+          {
+            "sha256": "b649dfe0753eb43b75f00f1aa9d3bb147d09add01d75e79fef6a5d4f78a2b836",
+            "epoch_utc_ns": 1793009952120960000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "31ffbcd42c4235b0f70e920cdb88c38c5e149810b49dc0501a19c6b7bd4aee18",
+            "epoch_utc_ns": 1793071856550240000,
+            "collected_utc_ns": 1793098833668678059
+          }
+        ],
+        "older_nominal_element_sha256": "31ffbcd42c4235b0f70e920cdb88c38c5e149810b49dc0501a19c6b7bd4aee18",
+        "previous_element_sha256": "b649dfe0753eb43b75f00f1aa9d3bb147d09add01d75e79fef6a5d4f78a2b836",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            15.390186868259397,
+            0.15496188428013238,
+            2.9582616069046694
+          ],
+          [
+            0.15496188428013238,
+            1.0016687195100036,
+            0.03185627796194009
+          ],
+          [
+            2.9582616069046694,
+            0.03185627796194009,
+            1.608144412230607
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0227",
+      "family": 58358,
+      "issuance_utc_ns": 1793098833668678059,
+      "older_epoch_utc_ns": 1793080063451231744,
+      "target_epoch_utc_ns": 1793108308944384256,
+      "held_newer_collected_utc_ns": 1793156476490921440,
+      "horizon_hours": 7.845970320142222,
+      "older_element_sha256": "ac607517035032a66105f5a6b3735c496198295157bae812e7c3dee9f47dea36",
+      "held_newer_element_sha256": "4790126760d149eb7cea501cd4e66c3eba45c902f1c91bea8137206f09af2109",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 7.6006661169800624,
+        "oldB": 7.6006661169800624,
+        "Age2": 7.6006661169800624
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": 0.0,
+      "coefficient_innovation": [
+        -1.3885587952953438,
+        0.2833108203154963,
+        -0.28048951647455683
+      ],
+      "held_represented_energy_fraction": 0.6616751833844859,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.45923235073386137
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.40854768924126916
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793098833668678059,
+        "forecast_target_epoch_utc_ns": 1793108308944384256,
+        "physical_SD": [
+          0.0009139650442786023,
+          0.0027456219382324433,
+          0.004025411342102241
+        ],
+        "current_mode_metadata": {
+          "norad": 58358,
+          "previous_available": true,
+          "radial_sigma_km": 0.273662955742912,
+          "cross_sigma_km": 0.32878474921058165,
+          "old_alignment_s": -3.3969617083784467,
+          "mean_motion_sigma_rev_day": 0.0009139650442786023,
+          "inclination_sigma_deg": 0.0027456219382324433,
+          "raan_sigma_deg": 0.004025411342102241
+        },
+        "known_elements": [
+          {
+            "sha256": "6f0207db6b8513dd1b41a08bcea3a5994c436a2c3ec15b50489b50483eddf4ad",
+            "epoch_utc_ns": 1792933182912960000,
+            "collected_utc_ns": 1792965722171268466
+          },
+          {
+            "sha256": "af3d20e774c4a5a2ccf81e629c0e30581c46b44854f5eec8c41531362fd34044",
+            "epoch_utc_ns": 1792967063041727744,
+            "collected_utc_ns": 1792987453669148863
+          },
+          {
+            "sha256": "b343d79ef1feca699264da9557405f690d2fc53a5d7003fa8f131f4a338c61e3",
+            "epoch_utc_ns": 1792994402000160256,
+            "collected_utc_ns": 1793016028527784605
+          },
+          {
+            "sha256": "436fb69ef3e09e062f1adb865ca548727ac631015ceb40ec924d1786b9ed502f",
+            "epoch_utc_ns": 1793023571418624000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "ac607517035032a66105f5a6b3735c496198295157bae812e7c3dee9f47dea36",
+            "epoch_utc_ns": 1793080063451231744,
+            "collected_utc_ns": 1793098833668678059
+          }
+        ],
+        "older_nominal_element_sha256": "ac607517035032a66105f5a6b3735c496198295157bae812e7c3dee9f47dea36",
+        "previous_element_sha256": "436fb69ef3e09e062f1adb865ca548727ac631015ceb40ec924d1786b9ed502f",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0229",
+      "family": 66231,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793104128773280000,
+      "target_epoch_utc_ns": 1793167202000160256,
+      "held_newer_collected_utc_ns": 1793217819456832744,
+      "horizon_hours": 17.52034080007111,
+      "older_element_sha256": "107811958c7fa0443ae96fa75b8517490f7226edd9fec7186971c84bfa5890bd",
+      "held_newer_element_sha256": "61aeed256acfb10170428c33ab47b69edb314b8641ea96feb5f1d6cba87f73fa",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 54.89688735871699,
+        "oldB": 23.988748538100218,
+        "Age2": 54.89688735871699
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": -30.90813882061677,
+      "coefficient_innovation": [
+        -2.504106579440289,
+        -0.22989221132634796,
+        6.5620009120286085
+      ],
+      "held_represented_energy_fraction": 0.9966769255238579,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            228.65855721760326,
+            -11.557289332390202,
+            63.37621180807674
+          ],
+          [
+            -11.557289332390202,
+            1.6302438669470094,
+            -4.652070923648966
+          ],
+          [
+            63.37621180807674,
+            -4.652070923648966,
+            24.288038677513846
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.8487598344793506,
+          3.769149965851305,
+          124.1705100807014
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          3.769149965851305,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.8861011492697887
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.4226162649349038
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793167202000160256,
+        "physical_SD": [
+          0.000461901470748384,
+          0.0008821764372449164,
+          0.001102310926191298
+        ],
+        "current_mode_metadata": {
+          "norad": 66231,
+          "previous_available": true,
+          "radial_sigma_km": 0.13712932899990946,
+          "cross_sigma_km": 0.10520789652278692,
+          "old_alignment_s": 1.398972445783236,
+          "mean_motion_sigma_rev_day": 0.000461901470748384,
+          "inclination_sigma_deg": 0.0008821764372449164,
+          "raan_sigma_deg": 0.001102310926191298
+        },
+        "known_elements": [
+          {
+            "sha256": "a5ef7bc0f3c64726eafe7a28230beed4786aa79b466c517bfd32a320f7c60d2e",
+            "epoch_utc_ns": 1792935297152064000,
+            "collected_utc_ns": 1792969373158938406
+          },
+          {
+            "sha256": "e9b51ce70b53b21a19680c6b264a973c0852466b2230cc47556066f160b2d242",
+            "epoch_utc_ns": 1792991572611840000,
+            "collected_utc_ns": 1793016028527784605
+          },
+          {
+            "sha256": "98e0a8f85812150fd0ed534d37d2452417758ec3f4fbc3db0d186145702dc4ec",
+            "epoch_utc_ns": 1793019712576896000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "36de0d90bfffeccec32a073b22f0393cb85334027dc36992990454b0771f450a",
+            "epoch_utc_ns": 1793081617592832000,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "107811958c7fa0443ae96fa75b8517490f7226edd9fec7186971c84bfa5890bd",
+            "epoch_utc_ns": 1793104128773280000,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "107811958c7fa0443ae96fa75b8517490f7226edd9fec7186971c84bfa5890bd",
+        "previous_element_sha256": "36de0d90bfffeccec32a073b22f0393cb85334027dc36992990454b0771f450a",
+        "oldB_covariance": [
+          [
+            15.050459718281733,
+            -0.548936191414503,
+            3.2281814866868634
+          ],
+          [
+            -0.548936191414503,
+            1.1836757634355854,
+            -0.7992921064107787
+          ],
+          [
+            3.2281814866868634,
+            -0.7992921064107787,
+            4.535014484133994
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0257",
+      "family": 60290,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793113546412160000,
+      "target_epoch_utc_ns": 1793192334562656000,
+      "held_newer_collected_utc_ns": 1793271836557485524,
+      "horizon_hours": 21.88559736,
+      "older_element_sha256": "b88aa77f603db37cf08be5b851d7267dc10f8c2dbc6f43370b450af87e84a31c",
+      "held_newer_element_sha256": "c19d810c81c18bb0cb0a2e0640651e8d308f0194debacee1756a4ac49bc8a5c4",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 8.671442808528086,
+        "oldB": 7.9254779430396125,
+        "Age2": 7.99531686910443
+      },
+      "age2_gain_over_identity": 0.6761259394236561,
+      "age2_gain_over_oldB": -0.06983892606481756,
+      "coefficient_innovation": [
+        1.3205698722614678,
+        0.10335358149599627,
+        1.1845779243964205
+      ],
+      "held_represented_energy_fraction": 0.9160948017422935,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            0.9577637477770914,
+            -0.11378987718134685,
+            1.2431884045170576
+          ],
+          [
+            -0.11378987718134685,
+            0.374163149114306,
+            0.06097836797404258
+          ],
+          [
+            1.2431884045170576,
+            0.06097836797404258,
+            2.2936119908715136
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5713052696372813,
+          0.7229859437152483,
+          2.0184782305289253
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.0184782305289253
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9221070400101233
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.9083321951365564,
+            -0.018431412012951457,
+            1.2453397085782454
+          ],
+          [
+            -0.018431412012951457,
+            0.8665220346549731,
+            0.68475291826236
+          ],
+          [
+            1.2453397085782454,
+            0.68475291826236,
+            2.2894224142226536
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000003,
+          0.9461563369650362,
+          2.0859819850420553
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.0859819850420553
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9097905010724286
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793192334562656000,
+        "physical_SD": [
+          0.002079355226564038,
+          0.00137153808920088,
+          0.001713714059064817
+        ],
+        "current_mode_metadata": {
+          "norad": 60290,
+          "previous_available": true,
+          "radial_sigma_km": 0.6182128716422804,
+          "cross_sigma_km": 0.163796425901019,
+          "old_alignment_s": 1.9116998735592943,
+          "mean_motion_sigma_rev_day": 0.002079355226564038,
+          "inclination_sigma_deg": 0.00137153808920088,
+          "raan_sigma_deg": 0.001713714059064817
+        },
+        "known_elements": [
+          {
+            "sha256": "b22c12b6aec405a85a89c84b03fdb72c68704473aa1e92e425e670edecf802a0",
+            "epoch_utc_ns": 1792978480440575744,
+            "collected_utc_ns": 1793016028527784605
+          },
+          {
+            "sha256": "a3911cbdc8f4ce8c09b1c91164abf7749ebc62707ad738bb189d71bf1f92bf1c",
+            "epoch_utc_ns": 1793017874385792000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "def2558e37c35d66b4aee09b6478aec5299c86f04ff571dc3996298f71a74fd5",
+            "epoch_utc_ns": 1793062896767424000,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "b88aa77f603db37cf08be5b851d7267dc10f8c2dbc6f43370b450af87e84a31c",
+            "epoch_utc_ns": 1793113546412160000,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "b88aa77f603db37cf08be5b851d7267dc10f8c2dbc6f43370b450af87e84a31c",
+        "previous_element_sha256": "def2558e37c35d66b4aee09b6478aec5299c86f04ff571dc3996298f71a74fd5",
+        "oldB_covariance": [
+          [
+            1.2683165413134225,
+            -0.001192082019743088,
+            0.448641693132277
+          ],
+          [
+            -0.001192082019743088,
+            1.0000052962055,
+            -0.001993234159445109
+          ],
+          [
+            0.448641693132277,
+            -0.001993234159445109,
+            1.7501563930100015
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.2351536017536717,
+            0.12562710154116985,
+            0.42929382730582233
+          ],
+          [
+            0.12562710154116985,
+            1.0671142968848406,
+            0.22934345394564631
+          ],
+          [
+            0.42929382730582233,
+            0.22934345394564631,
+            1.7837140864035412
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0261",
+      "family": 60345,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793119782638016256,
+      "target_epoch_utc_ns": 1793181687869088000,
+      "held_newer_collected_utc_ns": 1793217819456832744,
+      "horizon_hours": 17.195897519928888,
+      "older_element_sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+      "held_newer_element_sha256": "145b822dc023e42b66ee467a1c91e44bcd1dc4f17b407761f63a924f6d42addf",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 8.600027474819793,
+        "oldB": 9.164702698274402,
+        "Age2": 8.355345198209388
+      },
+      "age2_gain_over_identity": 0.24468227661040487,
+      "age2_gain_over_oldB": 0.8093575000650137,
+      "coefficient_innovation": [
+        -1.0369085871029708,
+        0.6044567150341806,
+        -1.2829064413408977
+      ],
+      "held_represented_energy_fraction": 0.8887820424959275,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            0.6749010369576046,
+            0.19196661921263333,
+            2.4158273248786513
+          ],
+          [
+            0.19196661921263333,
+            0.17804391284461088,
+            1.6686253798199406
+          ],
+          [
+            2.4158273248786513,
+            1.6686253798199406,
+            16.451198953641548
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000002463098628,
+          0.6617949933910671,
+          8.990276712020947
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          8.990276712020947
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9518450106203209
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.8898475418926127,
+            -0.019036151324473883,
+            0.4784919507224509
+          ],
+          [
+            -0.019036151324473883,
+            0.04868017749166398,
+            0.3751909135452627
+          ],
+          [
+            0.4784919507224509,
+            0.3751909135452627,
+            3.3346733622156868
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000003,
+          0.9045710913093226,
+          2.2320294494906596
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.2320294494906596
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9511250462956536
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793181687869088000,
+        "physical_SD": [
+          0.0004690732371561343,
+          0.0003169194027358195,
+          0.000395994849080452
+        ],
+        "current_mode_metadata": {
+          "norad": 60345,
+          "previous_available": true,
+          "radial_sigma_km": 0.13943788180837752,
+          "cross_sigma_km": 0.037843615231457184,
+          "old_alignment_s": -1.819363047416066,
+          "mean_motion_sigma_rev_day": 0.0004690732371561343,
+          "inclination_sigma_deg": 0.0003169194027358195,
+          "raan_sigma_deg": 0.000395994849080452
+        },
+        "known_elements": [
+          {
+            "sha256": "ef59665217c22ebd69da5125ece13e12d2142aad1c78b6c854e85e9b9e418e54",
+            "epoch_utc_ns": 1792995971859648000,
+            "collected_utc_ns": 1793019687698317599
+          },
+          {
+            "sha256": "917c934449967661778c567eefc852caa4c90e7b91844b19988deb411772c364",
+            "epoch_utc_ns": 1793046621449088000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "a5ce4b04d58cf4e4667b2fdb7546f657050d03ead666ec1cb3e9993b42fd53ea",
+            "epoch_utc_ns": 1793069133482304000,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+            "epoch_utc_ns": 1793119782638016256,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+        "previous_element_sha256": "a5ce4b04d58cf4e4667b2fdb7546f657050d03ead666ec1cb3e9993b42fd53ea",
+        "oldB_covariance": [
+          [
+            1.1726106772489209,
+            0.11674844518932562,
+            1.1557605415109835
+          ],
+          [
+            0.11674844518932562,
+            1.0789649845036464,
+            0.7817201599759313
+          ],
+          [
+            1.1557605415109835,
+            0.7817201599759313,
+            8.73870105026838
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0403406031084423,
+            0.023719870808354495,
+            0.21796975595136464
+          ],
+          [
+            0.023719870808354495,
+            1.0139470465935423,
+            0.12816403456826142
+          ],
+          [
+            0.21796975595136464,
+            0.12816403456826142,
+            2.1777417997886763
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0261",
+      "family": 60345,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793119782638016256,
+      "target_epoch_utc_ns": 1793198570959583744,
+      "held_newer_collected_utc_ns": 1793271836557485524,
+      "horizon_hours": 21.88564487985778,
+      "older_element_sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+      "held_newer_element_sha256": "78d9c1cee215307cf08f7dc1b7b332daee457b5adc06d8a958722ed1f91454ad",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 20.931825989427303,
+        "oldB": 10.39259733904575,
+        "Age2": 12.698615063131939
+      },
+      "age2_gain_over_identity": 8.233210926295364,
+      "age2_gain_over_oldB": -2.306017724086189,
+      "coefficient_innovation": [
+        -1.5663058198155857,
+        -0.03944476722103296,
+        -3.6004617730716113
+      ],
+      "held_represented_energy_fraction": 0.8850464445784545,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            0.7003521325187712,
+            0.20421025177863417,
+            2.644425295295044
+          ],
+          [
+            0.20421025177863417,
+            0.18393534960371027,
+            1.7609754393073676
+          ],
+          [
+            2.644425295295044,
+            1.7609754393073676,
+            17.86267023339521
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000657369403,
+          0.6570243553771222,
+          9.716454436644781
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          9.716454436644781
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9510986971249775
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.7734822288101276,
+            -0.20392520760905963,
+            -1.0393493987436753
+          ],
+          [
+            -0.20392520760905963,
+            0.2594931177028579,
+            1.870052132562195
+          ],
+          [
+            -1.0393493987436753,
+            1.870052132562195,
+            13.778508836391174
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.4999999999999993,
+          0.8476374356838287,
+          7.5581046557682505
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          7.5581046557682505
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9681548471944601
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793198570959583744,
+        "physical_SD": [
+          0.00044917570181354365,
+          0.00031180684807965157,
+          0.00038960664661633076
+        ],
+        "current_mode_metadata": {
+          "norad": 60345,
+          "previous_available": true,
+          "radial_sigma_km": 0.13352326881344737,
+          "cross_sigma_km": 0.0372331703836115,
+          "old_alignment_s": -1.909856774968702,
+          "mean_motion_sigma_rev_day": 0.00044917570181354365,
+          "inclination_sigma_deg": 0.00031180684807965157,
+          "raan_sigma_deg": 0.00038960664661633076
+        },
+        "known_elements": [
+          {
+            "sha256": "ef59665217c22ebd69da5125ece13e12d2142aad1c78b6c854e85e9b9e418e54",
+            "epoch_utc_ns": 1792995971859648000,
+            "collected_utc_ns": 1793019687698317599
+          },
+          {
+            "sha256": "917c934449967661778c567eefc852caa4c90e7b91844b19988deb411772c364",
+            "epoch_utc_ns": 1793046621449088000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "a5ce4b04d58cf4e4667b2fdb7546f657050d03ead666ec1cb3e9993b42fd53ea",
+            "epoch_utc_ns": 1793069133482304000,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+            "epoch_utc_ns": 1793119782638016256,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "f2628f01339577b2e1afe3337681ff973b58acc85af202d75d287dc252fb6389",
+        "previous_element_sha256": "a5ce4b04d58cf4e4667b2fdb7546f657050d03ead666ec1cb3e9993b42fd53ea",
+        "oldB_covariance": [
+          [
+            1.1906554962721716,
+            0.12457366964734803,
+            1.2688466530373512
+          ],
+          [
+            0.12457366964734803,
+            1.081396023051194,
+            0.8290601995704929
+          ],
+          [
+            1.2688466530373512,
+            0.8290601995704929,
+            9.444402917321407
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0409274086751004,
+            -0.06966490963926034,
+            -0.5117401459381499
+          ],
+          [
+            -0.06966490963926034,
+            1.1185806722720497,
+            0.871062502602381
+          ],
+          [
+            -0.5117401459381499,
+            0.871062502602381,
+            7.3985965748211004
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0279",
+      "family": 66106,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793125693912608000,
+      "target_epoch_utc_ns": 1793198854884672000,
+      "held_newer_collected_utc_ns": 1793271836557485524,
+      "horizon_hours": 20.32249224,
+      "older_element_sha256": "50884b99b0ed1eea4ad22ed45d2e93f3c2bbe94d094d61b646cfafaae73fab52",
+      "held_newer_element_sha256": "8f85653a7a0dd713689abbd1006a8be1f9e2c112b20bfcc51efaa8b819dc1fd8",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 10.769482168278103,
+        "oldB": 10.769482168278103,
+        "Age2": 10.769482168278103
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": 0.0,
+      "coefficient_innovation": [
+        0.7596588607203463,
+        0.4799337000936581,
+        2.109130870262332
+      ],
+      "held_represented_energy_fraction": 0.736906424310579,
+      "oldB_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.3356471773693195
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.2873906389221491
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793198854884672000,
+        "physical_SD": [
+          0.001568243409692748,
+          0.00047642390878686495,
+          0.0005952985488427033
+        ],
+        "current_mode_metadata": {
+          "norad": 66106,
+          "previous_available": true,
+          "radial_sigma_km": 0.466180025095873,
+          "cross_sigma_km": 0.056890831312795966,
+          "old_alignment_s": 2.8998018744798024,
+          "mean_motion_sigma_rev_day": 0.001568243409692748,
+          "inclination_sigma_deg": 0.00047642390878686495,
+          "raan_sigma_deg": 0.0005952985488427033
+        },
+        "known_elements": [
+          {
+            "sha256": "c5a963af04519917d1d9c07d1623892da01a971b0a76f64ab602a6249afec1a0",
+            "epoch_utc_ns": 1792990628157024000,
+            "collected_utc_ns": 1793048616868784492
+          },
+          {
+            "sha256": "853c75f3e374414b5155f2d4854347f699646c43edaa8e80849128c207e066ef",
+            "epoch_utc_ns": 1793035650237984000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "ac9b2e7c81da18976018df21922ec95287e875f48f12cb1e3f48301c9df58ccb",
+            "epoch_utc_ns": 1793075044755167744,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "50884b99b0ed1eea4ad22ed45d2e93f3c2bbe94d094d61b646cfafaae73fab52",
+            "epoch_utc_ns": 1793125693912608000,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "50884b99b0ed1eea4ad22ed45d2e93f3c2bbe94d094d61b646cfafaae73fab52",
+        "previous_element_sha256": "ac9b2e7c81da18976018df21922ec95287e875f48f12cb1e3f48301c9df58ccb",
+        "oldB_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "DS26-0287",
+      "family": 67997,
+      "issuance_utc_ns": 1793156476490921440,
+      "older_epoch_utc_ns": 1793116803000096000,
+      "target_epoch_utc_ns": 1793217601999872000,
+      "held_newer_collected_utc_ns": 1793304268852724990,
+      "horizon_hours": 27.99972216,
+      "older_element_sha256": "09ba76adcf5c44761d7bd0b984a6aabc46d74cb270c24e445a95be7ce23fbeb7",
+      "held_newer_element_sha256": "e3d946be9b3bb8020a0a6597994c16d04a1d38179d20def74cbcb3a6801e3dd9",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 3,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 5.958330739119771,
+        "oldB": 6.917305930739081,
+        "Age2": 7.120222860426214
+      },
+      "age2_gain_over_identity": -1.161892121306443,
+      "age2_gain_over_oldB": -0.2029169296871327,
+      "coefficient_innovation": [
+        -0.6072696333464468,
+        -0.020702348582846725,
+        0.27476270684021387
+      ],
+      "held_represented_energy_fraction": 0.9898586128721366,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.3319015500711748,
+            -1.4459466451993261,
+            1.0368333702485413
+          ],
+          [
+            -1.4459466451993261,
+            2.510915126787117,
+            -1.3484426078492582
+          ],
+          [
+            1.0368333702485413,
+            -1.3484426078492582,
+            0.8599666231078055
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000282208156365,
+          0.6927941090555365,
+          2.6585693201118743
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.6585693201118743
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7294101811273925
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            4.990869321221087,
+            -2.2304394125213696,
+            1.2393695977432948
+          ],
+          [
+            -2.2304394125213696,
+            1.8756632548052625,
+            -0.5560309020029461
+          ],
+          [
+            1.2393695977432948,
+            -0.5560309020029461,
+            0.30777469655097944
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999983,
+          0.8606424710991644,
+          3.7265111651894998
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          3.7265111651894998
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7970314403762947
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793156476490921440,
+        "forecast_target_epoch_utc_ns": 1793217601999872000,
+        "physical_SD": [
+          0.0008688971598539397,
+          0.009722494898205609,
+          0.014255278257139811
+        ],
+        "current_mode_metadata": {
+          "norad": 67997,
+          "previous_available": true,
+          "radial_sigma_km": 0.26016054040092784,
+          "cross_sigma_km": 1.1641819609803314,
+          "old_alignment_s": 7.112131117203236,
+          "mean_motion_sigma_rev_day": 0.0008688971598539397,
+          "inclination_sigma_deg": 0.009722494898205609,
+          "raan_sigma_deg": 0.014255278257139811
+        },
+        "known_elements": [
+          {
+            "sha256": "ab1e83624f08be7b3640927f838ce5cefccc8f0c4162b62f09bc48638982e656",
+            "epoch_utc_ns": 1792980299601216000,
+            "collected_utc_ns": 1793062963523254892
+          },
+          {
+            "sha256": "6a17d41535ea3e5b19ebae6164f8eb4319696bfa2742c9740e84c510a8d1c262",
+            "epoch_utc_ns": 1793008546742016000,
+            "collected_utc_ns": 1793073707659831880
+          },
+          {
+            "sha256": "58fdca32a3dfed2bf1f8e0b74395a40471647d113ab77c7ef3a4e34ba67519f9",
+            "epoch_utc_ns": 1793065038575904000,
+            "collected_utc_ns": 1793098833668678059
+          },
+          {
+            "sha256": "09ba76adcf5c44761d7bd0b984a6aabc46d74cb270c24e445a95be7ce23fbeb7",
+            "epoch_utc_ns": 1793116803000096000,
+            "collected_utc_ns": 1793156476490921440
+          }
+        ],
+        "older_nominal_element_sha256": "09ba76adcf5c44761d7bd0b984a6aabc46d74cb270c24e445a95be7ce23fbeb7",
+        "previous_element_sha256": "58fdca32a3dfed2bf1f8e0b74395a40471647d113ab77c7ef3a4e34ba67519f9",
+        "oldB_covariance": [
+          [
+            1.4325172383753388,
+            -0.6251087500319759,
+            0.37353408295694107
+          ],
+          [
+            -0.6251087500319759,
+            1.903457514975244,
+            -0.5398615430188303
+          ],
+          [
+            0.37353408295694107,
+            -0.5398615430188303,
+            1.3225945667612915
+          ]
+        ],
+        "age2_covariance": [
+          [
+            3.0507483607935315,
+            -1.061186046117538,
+            0.509611262557742
+          ],
+          [
+            -1.061186046117538,
+            1.5491243323675392,
+            -0.26370488506028034
+          ],
+          [
+            0.509611262557742,
+            -0.26370488506028034,
+            1.1266384720284275
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "FRSH-0001",
+      "family": 66542,
+      "issuance_utc_ns": 1793466074157981122,
+      "older_epoch_utc_ns": 1793419203000096000,
+      "target_epoch_utc_ns": 1793476801999008000,
+      "held_newer_collected_utc_ns": 1793520298151829212,
+      "horizon_hours": 15.99972192,
+      "older_element_sha256": "cf8ee1c0fcd86cbd39ee022861532050ad4961d14b4c817722e79f1bd4e17fbc",
+      "held_newer_element_sha256": "1a55b43857a29d629f29d7655f50f5d667ac63b2c00d212cf6a0d8b11f0a1ab6",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 5,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 41.18451100931953,
+        "oldB": 11.890586682946715,
+        "Age2": 41.18451100931953
+      },
+      "age2_gain_over_identity": 0.0,
+      "age2_gain_over_oldB": -29.293924326372814,
+      "coefficient_innovation": [
+        -0.5551377817956861,
+        1.0748057608015795,
+        5.848717332019235
+      ],
+      "held_represented_energy_fraction": 0.9999592543266961,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.323542842978544,
+            0.0847268785562453,
+            -1.378407239810444
+          ],
+          [
+            0.0847268785562453,
+            0.08924072284448505,
+            -0.16287875639752303
+          ],
+          [
+            -1.378407239810444,
+            -0.16287875639752303,
+            43.52741894847736
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5416698994560004,
+          1.1419208278675432,
+          22.28651052982665
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.1419208278675432,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.8357693552394144
+      },
+      "Age2_prior": {
+        "status": "identity_fallback",
+        "represented_energy_fraction": 0.32625374562745335
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793466074157981122,
+        "forecast_target_epoch_utc_ns": 1793476801999008000,
+        "physical_SD": [
+          0.0004375715912100209,
+          0.0002793142964896513,
+          0.0004095450740617262
+        ],
+        "current_mode_metadata": {
+          "norad": 66542,
+          "previous_available": true,
+          "radial_sigma_km": 0.13104116142494174,
+          "cross_sigma_km": 0.03345182502637738,
+          "old_alignment_s": -0.168612986997514,
+          "mean_motion_sigma_rev_day": 0.0004375715912100209,
+          "inclination_sigma_deg": 0.0002793142964896513,
+          "raan_sigma_deg": 0.0004095450740617262
+        },
+        "known_elements": [
+          {
+            "sha256": "aacfa9b382d9431fda317a45ca4cbdd4f7358f0d3aef2368d075a39e801b85b9",
+            "epoch_utc_ns": 1793196001999872000,
+            "collected_utc_ns": 1793289604214686143
+          },
+          {
+            "sha256": "b92a061ef944f56fb94e71d6116ff91e483bd853c5e2d3535c133a6857a53665",
+            "epoch_utc_ns": 1793224801999584000,
+            "collected_utc_ns": 1793304268852724990
+          },
+          {
+            "sha256": "29d3833aa4ecb653da7e4355854e1b54833290f5a7f15019051954e643a7c97d",
+            "epoch_utc_ns": 1793260801999872000,
+            "collected_utc_ns": 1793329460773702704
+          },
+          {
+            "sha256": "c3e0876938fbdee7daf52ff48d225b5c44b4d92417f74f4d20adc38e4739f315",
+            "epoch_utc_ns": 1793347201999872000,
+            "collected_utc_ns": 1793383484214661252
+          },
+          {
+            "sha256": "fad3d1292822e0cab4c6636219472d3512f5e637fbc4a9fc39fde3486ebad881",
+            "epoch_utc_ns": 1793368803000384000,
+            "collected_utc_ns": 1793412124807384843
+          },
+          {
+            "sha256": "e1e9f2e698500de068f7f5a761de38f5b8997d357533c3e1305ea455236db2d1",
+            "epoch_utc_ns": 1793390403000384000,
+            "collected_utc_ns": 1793440829584246727
+          },
+          {
+            "sha256": "cf8ee1c0fcd86cbd39ee022861532050ad4961d14b4c817722e79f1bd4e17fbc",
+            "epoch_utc_ns": 1793419203000096000,
+            "collected_utc_ns": 1793466074157981122
+          }
+        ],
+        "older_nominal_element_sha256": "cf8ee1c0fcd86cbd39ee022861532050ad4961d14b4c817722e79f1bd4e17fbc",
+        "previous_element_sha256": "e1e9f2e698500de068f7f5a761de38f5b8997d357533c3e1305ea455236db2d1",
+        "oldB_covariance": [
+          [
+            1.1571016391132627,
+            0.011240451675421356,
+            -0.4843264565202253
+          ],
+          [
+            0.011240451675421356,
+            1.0008405000931737,
+            -0.05676979479139466
+          ],
+          [
+            -0.4843264565202253,
+            -0.05676979479139466,
+            15.98397868866111
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "FRSH-0004",
+      "family": 59704,
+      "issuance_utc_ns": 1793466074157981122,
+      "older_epoch_utc_ns": 1793433601999008000,
+      "target_epoch_utc_ns": 1793491202000160256,
+      "held_newer_collected_utc_ns": 1793527362387222274,
+      "horizon_hours": 16.000000320071113,
+      "older_element_sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+      "held_newer_element_sha256": "8abfc91c52be790eb69fa2bb80ed001a0d1b0f677d3bf3b366c092eec4ad6806",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 32.925469516818495,
+        "oldB": 12.584335534340065,
+        "Age2": 28.09285233001187
+      },
+      "age2_gain_over_identity": 4.832617186806626,
+      "age2_gain_over_oldB": -15.508516795671804,
+      "coefficient_innovation": [
+        -4.1522501301757355,
+        0.3477066045886086,
+        3.170135216543848
+      ],
+      "held_represented_energy_fraction": 0.9726670930451382,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            10.500394779589195,
+            -0.6695589210268033,
+            -3.6859716586859537
+          ],
+          [
+            -0.6695589210268033,
+            0.3213580735387935,
+            0.8139379701672007
+          ],
+          [
+            -3.6859716586859537,
+            0.8139379701672007,
+            4.791519051392847
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5888588631008329,
+          2.0255741410520867,
+          6.692202948107498
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          2.0255741410520867,
+          6.692202948107498
+        ],
+        "eigenvalue_clipped_count": 1,
+        "status": "ready",
+        "represented_energy_fraction": 0.9394172234085395
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.032968902076046795,
+            -0.0033518777120265923,
+            0.43746267041915554
+          ],
+          [
+            -0.0033518777120265923,
+            0.18201826074953817,
+            0.3023396261064344
+          ],
+          [
+            0.43746267041915554,
+            0.3023396261064344,
+            6.4667275891088325
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.49999999999999994,
+          0.58551088886909,
+          3.755346487098117
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          3.755346487098117
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9307043253014124
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793466074157981122,
+        "forecast_target_epoch_utc_ns": 1793491202000160256,
+        "physical_SD": [
+          0.0001669302191551405,
+          0.0008169923443247526,
+          0.001197945595682756
+        ],
+        "current_mode_metadata": {
+          "norad": 59704,
+          "previous_available": true,
+          "radial_sigma_km": 0.05,
+          "cross_sigma_km": 0.0978658879945044,
+          "old_alignment_s": 0.9709940900289716,
+          "mean_motion_sigma_rev_day": 0.0001669302191551405,
+          "inclination_sigma_deg": 0.0008169923443247526,
+          "raan_sigma_deg": 0.001197945595682756
+        },
+        "known_elements": [
+          {
+            "sha256": "4a7ffb588a25fce22c4358a78a0a99a56c47852e1b4643de52aa3346bbc1c765",
+            "epoch_utc_ns": 1793282401999872000,
+            "collected_utc_ns": 1793329460773702704
+          },
+          {
+            "sha256": "4748bbf2d303e4f4392e49b88508601dd82bd82d913b1643c54911c3ca74fa7c",
+            "epoch_utc_ns": 1793354403000096000,
+            "collected_utc_ns": 1793383484214661252
+          },
+          {
+            "sha256": "1b56c63c54080f3034f71392ab386898c89671a16d04ee93cca054b2bc01c0e1",
+            "epoch_utc_ns": 1793376003000096000,
+            "collected_utc_ns": 1793412124807384843
+          },
+          {
+            "sha256": "4121d2156fc271348bdaf5a244412f2656e40d9750223e5f7cee5adb2bd6df79",
+            "epoch_utc_ns": 1793383202000160256,
+            "collected_utc_ns": 1793415790615773614
+          },
+          {
+            "sha256": "18fedbbdacd6273dbfc29426254da8b8ec5df83ba1c350c4b28532d1473c137f",
+            "epoch_utc_ns": 1793404802000160256,
+            "collected_utc_ns": 1793440829584246727
+          },
+          {
+            "sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+            "epoch_utc_ns": 1793433601999008000,
+            "collected_utc_ns": 1793466074157981122
+          }
+        ],
+        "older_nominal_element_sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+        "previous_element_sha256": "18fedbbdacd6273dbfc29426254da8b8ec5df83ba1c350c4b28532d1473c137f",
+        "oldB_covariance": [
+          [
+            5.750200121027675,
+            -0.33373552695421127,
+            -1.8431678115860914
+          ],
+          [
+            -0.33373552695421127,
+            1.0596919533709337,
+            0.33741162201636316
+          ],
+          [
+            -1.8431678115860914,
+            0.33741162201636316,
+            2.907885014760977
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0124720177524584,
+            0.008819301313601566,
+            0.18474685112007738
+          ],
+          [
+            0.008819301313601566,
+            1.006236366657252,
+            0.13063949868463573
+          ],
+          [
+            0.18474685112007738,
+            0.13063949868463573,
+            3.7366381026884037
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "FRSH-0004",
+      "family": 59704,
+      "issuance_utc_ns": 1793466074157981122,
+      "older_epoch_utc_ns": 1793433601999008000,
+      "target_epoch_utc_ns": 1793498401999872000,
+      "held_newer_collected_utc_ns": 1793534507682901770,
+      "horizon_hours": 18.00000024,
+      "older_element_sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+      "held_newer_element_sha256": "af6b716aaf256aa75d8d8472911b7515a9d8bfb2b5a4b0eed24b843024a74abc",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 13.58595048579923,
+        "oldB": 10.838825730614623,
+        "Age2": 13.047223192838402
+      },
+      "age2_gain_over_identity": 0.5387272929608287,
+      "age2_gain_over_oldB": -2.208397462223779,
+      "coefficient_innovation": [
+        -0.05027111657561981,
+        0.30539243283103046,
+        2.8242746968697965
+      ],
+      "held_represented_energy_fraction": 0.9767563644602957,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            1.4334619955376686,
+            -0.48784326173004694,
+            -0.9915461434527727
+          ],
+          [
+            -0.48784326173004694,
+            0.23773336328563086,
+            0.4385532504383552
+          ],
+          [
+            -0.9915461434527727,
+            0.4385532504383552,
+            2.8775959773786886
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5304091155494413,
+          0.9950755770758943,
+          2.248910975475659
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          2.248910975475659
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9599452072014839
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            0.0001328244988271331,
+            0.0023181937483800273,
+            0.008230954649398848
+          ],
+          [
+            0.0023181937483800273,
+            0.21829450808254833,
+            0.43651119661795684
+          ],
+          [
+            0.008230954649398848,
+            0.43651119661795684,
+            0.9923317059867955
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.5000000000000001,
+          0.5110057922454301,
+          1.0943737270386558
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          1.0943737270386558
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.7691523082173544
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793466074157981122,
+        "forecast_target_epoch_utc_ns": 1793498401999872000,
+        "physical_SD": [
+          0.0010067617412045384,
+          0.0009555029254614306,
+          0.0014010419181645568
+        ],
+        "current_mode_metadata": {
+          "norad": 59704,
+          "previous_available": true,
+          "radial_sigma_km": 0.3014988120569725,
+          "cross_sigma_km": 0.11443773052122685,
+          "old_alignment_s": 1.2770635007771953,
+          "mean_motion_sigma_rev_day": 0.0010067617412045384,
+          "inclination_sigma_deg": 0.0009555029254614306,
+          "raan_sigma_deg": 0.0014010419181645568
+        },
+        "known_elements": [
+          {
+            "sha256": "4a7ffb588a25fce22c4358a78a0a99a56c47852e1b4643de52aa3346bbc1c765",
+            "epoch_utc_ns": 1793282401999872000,
+            "collected_utc_ns": 1793329460773702704
+          },
+          {
+            "sha256": "4748bbf2d303e4f4392e49b88508601dd82bd82d913b1643c54911c3ca74fa7c",
+            "epoch_utc_ns": 1793354403000096000,
+            "collected_utc_ns": 1793383484214661252
+          },
+          {
+            "sha256": "1b56c63c54080f3034f71392ab386898c89671a16d04ee93cca054b2bc01c0e1",
+            "epoch_utc_ns": 1793376003000096000,
+            "collected_utc_ns": 1793412124807384843
+          },
+          {
+            "sha256": "4121d2156fc271348bdaf5a244412f2656e40d9750223e5f7cee5adb2bd6df79",
+            "epoch_utc_ns": 1793383202000160256,
+            "collected_utc_ns": 1793415790615773614
+          },
+          {
+            "sha256": "18fedbbdacd6273dbfc29426254da8b8ec5df83ba1c350c4b28532d1473c137f",
+            "epoch_utc_ns": 1793404802000160256,
+            "collected_utc_ns": 1793440829584246727
+          },
+          {
+            "sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+            "epoch_utc_ns": 1793433601999008000,
+            "collected_utc_ns": 1793466074157981122
+          }
+        ],
+        "older_nominal_element_sha256": "f922f70ad509a1ab92f25f63a0cbf8c08f49fd19264eb17bd2820afae47fed45",
+        "previous_element_sha256": "18fedbbdacd6273dbfc29426254da8b8ec5df83ba1c350c4b28532d1473c137f",
+        "oldB_covariance": [
+          [
+            1.2651257950164865,
+            -0.10685508405824841,
+            -0.4994084691968892
+          ],
+          [
+            -0.10685508405824841,
+            1.043066382840588,
+            0.20127929819924217
+          ],
+          [
+            -0.4994084691968892,
+            0.20127929819924217,
+            1.9407187976185818
+          ]
+        ],
+        "age2_covariance": [
+          [
+            1.0000047778087546,
+            0.0002754574511871274,
+            0.000612372422942315
+          ],
+          [
+            0.0002754574511871274,
+            1.015881089284115,
+            0.03530542042687097
+          ],
+          [
+            0.000612372422942315,
+            0.03530542042687097,
+            1.0784878599457874
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    },
+    {
+      "case": "FRSH-0005",
+      "family": 58725,
+      "issuance_utc_ns": 1793473257136672183,
+      "older_epoch_utc_ns": 1793440801998720000,
+      "target_epoch_utc_ns": 1793491202000160256,
+      "held_newer_collected_utc_ns": 1793527362387222274,
+      "horizon_hours": 14.00000040007111,
+      "older_element_sha256": "6d7ed13e7bb5208e6e6b3fa9ea562ee4afe8df1399c3d547a20ec65878ba4bbc",
+      "held_newer_element_sha256": "09508e4a721e69c7d952afccc6ff3e6efe8ff807850dc7ee6e2a7e6afc99bf54",
+      "strict_prefix_age_pair_count": 2,
+      "strict_prefix_oldB_history_count": 4,
+      "age2_and_oldB_prefix_supported": true,
+      "age3_and_oldB_prefix_supported": false,
+      "preprocessing_cutoff": "older element first collection/forecast issuance; held newer never included",
+      "status": "complete",
+      "scores_negative_twice_log_density": {
+        "identity": 12.948183115713377,
+        "oldB": 13.901816332770618,
+        "Age2": 12.440099042560377
+      },
+      "age2_gain_over_identity": 0.5080840731530003,
+      "age2_gain_over_oldB": 1.4617172902102418,
+      "coefficient_innovation": [
+        0.3677194152255533,
+        0.005823402082130169,
+        2.701721754019038
+      ],
+      "held_represented_energy_fraction": 0.9034756418834029,
+      "oldB_prior": {
+        "second_moment": [
+          [
+            21.91838740346227,
+            9.024182629502612,
+            -11.655547750848715
+          ],
+          [
+            9.024182629502612,
+            5.956046444882518,
+            -6.764658672662099
+          ],
+          [
+            -11.655547750848715,
+            -6.764658672662099,
+            8.94061747179379
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.7543867773080869,
+          1.972379574961617,
+          17.180759307799583
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.972379574961617,
+          16.0
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9457932366435629
+      },
+      "Age2_prior": {
+        "second_moment": [
+          [
+            9.02727600387988,
+            2.966122047567303,
+            -10.032637042906062
+          ],
+          [
+            2.966122047567303,
+            0.9819625064659546,
+            -3.1883622230111537
+          ],
+          [
+            -10.032637042906062,
+            -3.1883622230111537,
+            12.734524987193115
+          ]
+        ],
+        "unbounded_eigenvalues": [
+          0.4999999999999999,
+          0.8800552337783507,
+          11.491826514991121
+        ],
+        "bounded_eigenvalues": [
+          1.0,
+          1.0,
+          11.491826514991121
+        ],
+        "eigenvalue_clipped_count": 2,
+        "status": "ready",
+        "represented_energy_fraction": 0.9154706534933037
+      },
+      "preprocessing": {
+        "issuance_utc_ns": 1793473257136672183,
+        "forecast_target_epoch_utc_ns": 1793491202000160256,
+        "physical_SD": [
+          0.00023194874810233355,
+          0.00047932472230919693,
+          0.0005989435202071943
+        ],
+        "current_mode_metadata": {
+          "norad": 58725,
+          "previous_available": true,
+          "radial_sigma_km": 0.06901830805448825,
+          "cross_sigma_km": 0.05726324047016347,
+          "old_alignment_s": 0.3019921345619413,
+          "mean_motion_sigma_rev_day": 0.00023194874810233355,
+          "inclination_sigma_deg": 0.00047932472230919693,
+          "raan_sigma_deg": 0.0005989435202071943
+        },
+        "known_elements": [
+          {
+            "sha256": "a629ba2d43ea5235a56c61d04af73b67756c45101de688ab927da2d3e2565c5a",
+            "epoch_utc_ns": 1793239201999872000,
+            "collected_utc_ns": 1793311369888651236
+          },
+          {
+            "sha256": "6ccd5ff034cf3fb4f63d984156771cbf5649f48521cb7987b3c2ebebf6d5b02e",
+            "epoch_utc_ns": 1793304001999872000,
+            "collected_utc_ns": 1793329460773702704
+          },
+          {
+            "sha256": "98d85e5af596af6940f8582e88c0550f8d1aad27e8dd30e876b295e8b5a34372",
+            "epoch_utc_ns": 1793361602999808000,
+            "collected_utc_ns": 1793383484214661252
+          },
+          {
+            "sha256": "d3706a7897a5931cd1b27eb640547a998e76d9c9f93eaf099775ed350ad836ed",
+            "epoch_utc_ns": 1793383202000160256,
+            "collected_utc_ns": 1793412124807384843
+          },
+          {
+            "sha256": "3d0bf9127777b359db9e189a02875f64a7f0b214a0dc66975c8e45515d0008ef",
+            "epoch_utc_ns": 1793412001999008000,
+            "collected_utc_ns": 1793440829584246727
+          },
+          {
+            "sha256": "6d7ed13e7bb5208e6e6b3fa9ea562ee4afe8df1399c3d547a20ec65878ba4bbc",
+            "epoch_utc_ns": 1793440801998720000,
+            "collected_utc_ns": 1793473257136672183
+          }
+        ],
+        "older_nominal_element_sha256": "6d7ed13e7bb5208e6e6b3fa9ea562ee4afe8df1399c3d547a20ec65878ba4bbc",
+        "previous_element_sha256": "3d0bf9127777b359db9e189a02875f64a7f0b214a0dc66975c8e45515d0008ef",
+        "oldB_covariance": [
+          [
+            10.722970255517435,
+            4.166978745827815,
+            -5.37069728859758
+          ],
+          [
+            4.166978745827815,
+            3.4454404048876723,
+            -3.0448982498185373
+          ],
+          [
+            -5.37069728859758,
+            -3.0448982498185373,
+            4.803968914556509
+          ]
+        ],
+        "age2_covariance": [
+          [
+            5.1394621083277485,
+            1.3362219692373989,
+            -4.950745661877635
+          ],
+          [
+            1.3362219692373989,
+            1.4313336139689823,
+            -1.5981050060100865
+          ],
+          [
+            -4.950745661877635,
+            -1.5981050060100865,
+            6.921030792694386
+          ]
+        ]
+      },
+      "score_units": "normalized density of the three standardized coefficients conditional on known forecast basis; residual outside that subspace reported separately"
+    }
+  ],
+  "wall_seconds": 2.463379436172545,
+  "age2_vs_oldB": {
+    "sum_normalized_density_gain": -150.20438168910698,
+    "wins": 8
+  },
+  "limitation": "Dependent descriptive paired forecasts; no probability calibration, independent validation or localization conclusion"
+}

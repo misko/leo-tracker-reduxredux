@@ -1,0 +1,411 @@
+{
+  "case": "FRSH-0001",
+  "source_sha256": "4db4283dbdadcbf5340149f716a02d04b8b86ab888f035fef95b474801ac78e2",
+  "receipt": {
+    "policy": {
+      "version": "age-matched-revision-v1",
+      "maximum_age_hours": 72,
+      "horizon_tolerance_hours": 2.0,
+      "horizon_relative_tolerance": 0.25,
+      "minimum_pairs_primary": 3,
+      "minimum_pairs_exploratory": 2,
+      "older_available_by_target_epoch": true,
+      "zero_mean": true,
+      "shrinkage_to_identity": 0.5,
+      "covariance_eigenvalue_bounds": [
+        1.0,
+        16.0
+      ],
+      "minimum_represented_energy_fraction": 0.5,
+      "alignment_maximum_steps": 8,
+      "alignment_tolerance_s": 1e-07,
+      "maximum_alignment_s": 120.0,
+      "matching": "maximum nonreused-element cardinality, minimum total absolute horizon mismatch, stable epoch/hash tie",
+      "transport": "historical newer-epoch physical derivatives, solve rev/day and degrees, divide current declared physical SDs; no historical-state/current-geometry projection"
+    },
+    "selected_family": 66542,
+    "status": "ready",
+    "applied": true,
+    "added_columns": 0,
+    "RF_or_GPS_used_for_covariance": false,
+    "prior_helper_sha256": "04c63abf99a198bb0cd5352db7f96334800f1baf3e6524287f8a5bf4fa43ef32",
+    "raw_target_versions": 11,
+    "eligible_distinct_epochs": 7,
+    "selected_epochs": 6,
+    "selected_span_hours": 35.99999976,
+    "excluded": [
+      {
+        "epoch_utc_ns": 1793196001999872000,
+        "reason": "not older eligible 72-hour epoch"
+      },
+      {
+        "epoch_utc_ns": 1793224801999584000,
+        "reason": "not older eligible 72-hour epoch"
+      },
+      {
+        "epoch_utc_ns": 1793260801999872000,
+        "reason": "not older eligible 72-hour epoch"
+      },
+      {
+        "epoch_utc_ns": 1793484001999584000,
+        "reason": "not older eligible 72-hour epoch"
+      }
+    ],
+    "nominal_element_sha256": "aec3b0ddeb78abf9080acd9ce45db09e54d31e7a61033cd1c59df7af722a5a1c",
+    "nominal_epoch_utc_ns": 1793484001999584000,
+    "nominal_collected_utc_ns": 1793541876812951826,
+    "nominal_snapshot_first_verified_collection_utc_ns": 1793541876812951826,
+    "nominal_receipt_policy": "same snapshot bytes available no later than nominal receipt; duplicate collections may be deduplicated",
+    "nominal_snapshot_sha256": "ed9245bb7126d9d2f1cc06db15dcff5036ffa623276f8645daad7898418a5b3e",
+    "history_records": [
+      {
+        "element_sha256": "1a55b43857a29d629f29d7655f50f5d667ac63b2c00d212cf6a0d8b11f0a1ab6",
+        "epoch_utc_ns": 1793476801999008000,
+        "collected_utc_ns": 1793520298151829212,
+        "snapshot_sha256": "ad076278dfefda7892eb0aabe4bf7ab1533c45da134119688e1fd0191b40c203"
+      },
+      {
+        "element_sha256": "33f3651cb2e4a35ea89694787b75c14fd9d582f80c82b8e8940db9f028450056",
+        "epoch_utc_ns": 1793448002999808000,
+        "collected_utc_ns": 1793502209667142585,
+        "snapshot_sha256": "1c6f4d4fba31a46ffe09bbb537adc221367f0f1e5744b3e8100b772bdade2265"
+      },
+      {
+        "element_sha256": "cf8ee1c0fcd86cbd39ee022861532050ad4961d14b4c817722e79f1bd4e17fbc",
+        "epoch_utc_ns": 1793419203000096000,
+        "collected_utc_ns": 1793466074157981122,
+        "snapshot_sha256": "a9c74ac52beb5dbac7d4fb52d8ecee45d66cf27c166c1320ab6a5ff3a343e803"
+      },
+      {
+        "element_sha256": "e1e9f2e698500de068f7f5a761de38f5b8997d357533c3e1305ea455236db2d1",
+        "epoch_utc_ns": 1793390403000384000,
+        "collected_utc_ns": 1793440829584246727,
+        "snapshot_sha256": "fd239f5b6af41dc0aac6bb49a040bbe395b76da7a159c2287d347f1dfa9f9734"
+      },
+      {
+        "element_sha256": "fad3d1292822e0cab4c6636219472d3512f5e637fbc4a9fc39fde3486ebad881",
+        "epoch_utc_ns": 1793368803000384000,
+        "collected_utc_ns": 1793412124807384843,
+        "snapshot_sha256": "27af038810e7fbba51af35985492844383f0b162f7d02e702875ccf36b52d143"
+      },
+      {
+        "element_sha256": "c3e0876938fbdee7daf52ff48d225b5c44b4d92417f74f4d20adc38e4739f315",
+        "epoch_utc_ns": 1793347201999872000,
+        "collected_utc_ns": 1793383484214661252,
+        "snapshot_sha256": "00cdfcfb2275b6ec0673318392f2fb644a78d7cf1fc1e463d42b8df326b27bee"
+      }
+    ],
+    "eligible_versions": 8,
+    "eligible_pair_count": 6,
+    "maximum_nonreused_pair_count": 3,
+    "pair_count": 3,
+    "nominal_horizon_hours": 17.446715062519722,
+    "horizon_tolerance_hours": 4.3616787656299305,
+    "forecast_availability_required": true,
+    "history_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/exports/FRSH-0001/current/current/cache/snapshot/inference/causal_phase_history/SCAN.json",
+    "history_sha256": "401c2925d79500b6508ffc83f758ac2f68072ac64ace3416dd3f6095ebfd077a",
+    "nominal_elements_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/exports/FRSH-0001/current/current/cache/snapshot/inference/SCAN/nominal_elements.json",
+    "nominal_elements_sha256": "bf2ad2a228ef09b2eee1753fb4ef7fb67b0beacdcbdf5aa97ce2700f1f8ae03a",
+    "temporal_extent_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/exports/FRSH-0001/current/current/cache/snapshot/inference/SCAN/observations.json",
+    "temporal_extent_sha256": "b4f0df4b41fe65c544d735a88f1d122bdf6fce7c9a68f8b7b6eb7c4862e46625",
+    "historical_arc_duration_s": 299.74892259999996,
+    "common_native_midpoint_s": 150.0617796,
+    "primary_history_eligible": true,
+    "exploratory_history_eligible": true,
+    "current_mode_SD": [
+      0.0003321097758050979,
+      0.00020890645711751194,
+      0.0003063065905032692
+    ],
+    "current_mode_metadata": {
+      "norad": 66542,
+      "previous_available": true,
+      "radial_sigma_km": 0.09937862043766649,
+      "cross_sigma_km": 0.025,
+      "old_alignment_s": 0.2598928585556963,
+      "mean_motion_sigma_rev_day": 0.0003321097758050979,
+      "inclination_sigma_deg": 0.00020890645711751194,
+      "raan_sigma_deg": 0.0003063065905032692
+    },
+    "current_nominal_inclination_deg": 43.0015,
+    "current_nominal_radius_km": 6856.6309897320325,
+    "current_derivative_anchor_s": 150.0,
+    "current_mode_direct_perturbation_max_difference": {
+      "position_km": 0.0,
+      "velocity_km_s": 0.0
+    },
+    "historical_pair_projections": [
+      {
+        "older": {
+          "element_sha256": "fad3d1292822e0cab4c6636219472d3512f5e637fbc4a9fc39fde3486ebad881",
+          "epoch_utc_ns": 1793368803000384000,
+          "collected_utc_ns": 1793412124807384843,
+          "snapshot_sha256": "27af038810e7fbba51af35985492844383f0b162f7d02e702875ccf36b52d143"
+        },
+        "newer": {
+          "element_sha256": "7fb84502b34d224bd1bce93d0252bac3f2d756761f61dbf5904e764368906f57",
+          "epoch_utc_ns": 1793440801998720000,
+          "collected_utc_ns": 1793487788070276724,
+          "snapshot_sha256": "6100a68e16ecba8e4fb01e97d20b02e56bced4e850c0182611a79a9326ffec6b"
+        },
+        "horizon_hours": 19.99972176,
+        "absolute_horizon_error_hours": 2.553006697480278,
+        "physical_parameter_revision": [
+          -0.0005665171492667428,
+          1.4169332492552419e-06,
+          -0.0017037672621014925
+        ],
+        "physical_parameter_units": [
+          "rev/day",
+          "deg",
+          "deg"
+        ],
+        "coefficients": [
+          -1.7058129285517007,
+          0.006782620646609324,
+          -5.562293841938436
+        ],
+        "current_mode_SD": [
+          0.0003321097758050979,
+          0.00020890645711751194,
+          0.0003063065905032692
+        ],
+        "historical_derivative_anchor_utc_ns": 1793440801998720000,
+        "historical_arc_times_s": [
+          -149.87446129999998,
+          0.0,
+          149.87446129999998
+        ],
+        "column_normalized_singular_values": [
+          1.0169026113068953,
+          1.0003379164123718,
+          0.9824627891706494
+        ],
+        "column_norms": [
+          0.20248629488772338,
+          0.043357320368698674,
+          0.04336670265031108
+        ],
+        "phase_alignment_s": -0.27352156042371456,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": -1.0902735006381806e-10,
+        "orbital_velocity_timescale_s": 900.2527367553387,
+        "phase_removed_state_energy_km2": 0.2023593551351255,
+        "projection_residual_energy_km2": 0.028524819315151165
+      },
+      {
+        "older": {
+          "element_sha256": "e1e9f2e698500de068f7f5a761de38f5b8997d357533c3e1305ea455236db2d1",
+          "epoch_utc_ns": 1793390403000384000,
+          "collected_utc_ns": 1793440829584246727,
+          "snapshot_sha256": "fd239f5b6af41dc0aac6bb49a040bbe395b76da7a159c2287d347f1dfa9f9734"
+        },
+        "newer": {
+          "element_sha256": "33f3651cb2e4a35ea89694787b75c14fd9d582f80c82b8e8940db9f028450056",
+          "epoch_utc_ns": 1793448002999808000,
+          "collected_utc_ns": 1793502209667142585,
+          "snapshot_sha256": "1c6f4d4fba31a46ffe09bbb537adc221367f0f1e5744b3e8100b772bdade2265"
+        },
+        "horizon_hours": 15.99999984,
+        "absolute_horizon_error_hours": 1.4467152225197228,
+        "physical_parameter_revision": [
+          0.0007911739557469949,
+          0.00021023245091683342,
+          -0.0032183602200327867
+        ],
+        "physical_parameter_units": [
+          "rev/day",
+          "deg",
+          "deg"
+        ],
+        "coefficients": [
+          2.382266387157792,
+          1.006347308827202,
+          -10.506989793281765
+        ],
+        "current_mode_SD": [
+          0.0003321097758050979,
+          0.00020890645711751194,
+          0.0003063065905032692
+        ],
+        "historical_derivative_anchor_utc_ns": 1793448002999808000,
+        "historical_arc_times_s": [
+          -149.87446129999998,
+          0.0,
+          149.87446129999998
+        ],
+        "column_normalized_singular_values": [
+          1.0129717344214535,
+          1.0000417621881514,
+          0.9868154534373739
+        ],
+        "column_norms": [
+          0.20237520606188272,
+          0.0433732672623313,
+          0.04336817898928502
+        ],
+        "phase_alignment_s": -0.1951528685834556,
+        "alignment_converged": true,
+        "alignment_steps": 2,
+        "final_alignment_step_s": 8.211645976685316e-08,
+        "orbital_velocity_timescale_s": 900.7093368977705,
+        "phase_removed_state_energy_km2": 0.455563036256461,
+        "projection_residual_energy_km2": 0.025151166381369727
+      },
+      {
+        "older": {
+          "element_sha256": "cf8ee1c0fcd86cbd39ee022861532050ad4961d14b4c817722e79f1bd4e17fbc",
+          "epoch_utc_ns": 1793419203000096000,
+          "collected_utc_ns": 1793466074157981122,
+          "snapshot_sha256": "a9c74ac52beb5dbac7d4fb52d8ecee45d66cf27c166c1320ab6a5ff3a343e803"
+        },
+        "newer": {
+          "element_sha256": "aec3b0ddeb78abf9080acd9ce45db09e54d31e7a61033cd1c59df7af722a5a1c",
+          "epoch_utc_ns": 1793484001999584000,
+          "collected_utc_ns": 1793534507682901770,
+          "snapshot_sha256": "788bac45642122ab4cc3491301216d8f203c404ea748f38344a5ef496d0ac177"
+        },
+        "horizon_hours": 17.99972208,
+        "absolute_horizon_error_hours": 0.5530070174802795,
+        "physical_parameter_revision": [
+          0.0005979645403281769,
+          -0.0004887804090400713,
+          -0.0021058860299561794
+        ],
+        "physical_parameter_units": [
+          "rev/day",
+          "deg",
+          "deg"
+        ],
+        "coefficients": [
+          1.8005026767989467,
+          -2.3397094363872513,
+          -6.8750921307183015
+        ],
+        "current_mode_SD": [
+          0.0003321097758050979,
+          0.00020890645711751194,
+          0.0003063065905032692
+        ],
+        "historical_derivative_anchor_utc_ns": 1793484001999584000,
+        "historical_arc_times_s": [
+          -149.87446129999998,
+          0.0,
+          149.87446129999998
+        ],
+        "column_normalized_singular_values": [
+          1.009875424893541,
+          0.9998618671940382,
+          0.9901655784399602
+        ],
+        "column_norms": [
+          0.20241293811168942,
+          0.04333004990112906,
+          0.04332248814447683
+        ],
+        "phase_alignment_s": -0.8710913743312515,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": -5.2418171311172834e-09,
+        "orbital_velocity_timescale_s": 898.8413572391332,
+        "phase_removed_state_energy_km2": 0.24012970546733187,
+        "projection_residual_energy_km2": 0.007574316692094565
+      }
+    ],
+    "represented_energy_fraction": 0.9317964930956141,
+    "second_moment": [
+      [
+        3.9422669252520475,
+        -0.6089452058365679,
+        -9.30694588378691
+      ],
+      [
+        -0.6089452058365679,
+        2.162340385548712,
+        1.8247700342915074
+      ],
+      [
+        -9.30694588378691,
+        1.8247700342915074,
+        62.86761303535271
+      ]
+    ],
+    "unbounded_eigenvalues": [
+      1.4623719288243462,
+      1.8435077232497776,
+      32.68023052100261
+    ],
+    "bounded_eigenvalues": [
+      1.4623719288243462,
+      1.8435077232497776,
+      16.0
+    ],
+    "eigenvalue_clipped_count": 1,
+    "coefficient_covariance": [
+      [
+        2.083337575645416,
+        -0.22696719365527468,
+        -2.14107726216679
+      ],
+      [
+        -0.22696719365527468,
+        1.5656798570933927,
+        0.4102542263734356
+      ],
+      [
+        -2.14107726216679,
+        0.4102542263734356,
+        15.656862219335325
+      ]
+    ],
+    "reason": "age-matched physical revision covariance supported"
+  },
+  "checks": {
+    "c0": {
+      "only_changed_columns": [
+        93,
+        94,
+        95
+      ],
+      "unrelated_feature_max_difference": 0.0,
+      "observations_masks_aliases_receiver_phase_priors_preserved": true
+    },
+    "fitted_c": {
+      "only_changed_columns": [
+        94,
+        95,
+        96
+      ],
+      "unrelated_feature_max_difference": 0.0,
+      "observations_masks_aliases_receiver_phase_priors_preserved": true
+    }
+  },
+  "baseline_replay": {
+    "pre_recovery": {
+      "c0": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3453,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      },
+      "fitted_c": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3453,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      }
+    },
+    "recovery": {
+      "status": "fallback"
+    },
+    "rebuilt": {
+      "c0": 0.0,
+      "fitted_c": 0.0
+    }
+  },
+  "no_position_fit": true,
+  "no_GPS_read": true
+}

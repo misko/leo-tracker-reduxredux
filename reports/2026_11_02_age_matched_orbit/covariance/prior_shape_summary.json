@@ -1,0 +1,206 @@
+{
+  "inputs": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_age_matched_orbit/covariance/derived_inventory.json": "b6359936404791bb457dde5433ff592af271fadbdfb5430f17ebf7e23a5c09ba",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_age_matched_orbit/evaluation/rf_roster.json": "679cc726a7e9d9287ab2b3630fdd16df383aee8872681c5f58a5f5ce64aeb0ef",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_generalized_corrections/evaluation/combined_results.json": "1f09be8e05f716e53eadb6fda1a015dbeeb32b264e9b4588ffd62ccc97bc3347",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_age_matched_orbit/covariance/compare_prior_shapes.py": "5c213062d37f8aa85d165eb24c74b009054228274556950b11500f91a2d73d6f"
+  },
+  "no_RF_or_GPS_or_fitting": true,
+  "Age2_ready_contexts": 30,
+  "both_priors_ready": 28,
+  "excluded_oldB_fallbacks": [
+    {
+      "case": "DS24-0103",
+      "oldB_status": "fallback",
+      "reason": "historical discrepancy poorly represented by existing three modes"
+    },
+    {
+      "case": "DS26-0219",
+      "oldB_status": "fallback",
+      "reason": "insufficient separated causal history"
+    }
+  ],
+  "primary_count_in_overlap": 5,
+  "trace_ratio": {
+    "min": 0.327658825876703,
+    "median": 0.9186273342800275,
+    "max": 1.4285511817034617
+  },
+  "trace_decreased_count": 22,
+  "logdet_change": {
+    "min": -2.243732051698239,
+    "median": -0.5801889182248252,
+    "max": 0.444798152549706
+  },
+  "logdet_decreased_count": 22,
+  "covariance_dominant_direction": {
+    "unique_comparisons": 25,
+    "undefined_degenerate": 3,
+    "angle_deg": {
+      "min": 3.41422655839466,
+      "median": 27.065070004768504,
+      "max": 89.48563680098503
+    }
+  },
+  "second_moment_dominant_direction": {
+    "unique_comparisons": 28,
+    "angle_deg": {
+      "min": 3.4142265583940192,
+      "median": 31.49743584506196,
+      "max": 89.48563680098493
+    }
+  },
+  "oldB_signed_mean_fraction": {
+    "min": 0.1279334917987583,
+    "median": 0.4212958869337361,
+    "max": 0.9410246375085279
+  },
+  "Age2_signed_mean_fraction": {
+    "min": 0.027149711324824116,
+    "median": 0.5058328211487393,
+    "max": 0.9510531192453034
+  },
+  "nominal_age_hours": {
+    "min": 8.32373542768,
+    "median": 19.006210811016253,
+    "max": 28.75870662571889
+  },
+  "matched_horizon_hours": {
+    "min": 7.846308480035556,
+    "median": 19.036660819994076,
+    "max": 30.600909480035554
+  },
+  "old_historical_propagation_age_hours": {
+    "min": 34.865155736786335,
+    "median": 48.64156001511989,
+    "max": 55.4591563241049
+  },
+  "eigengap_tolerance": 1e-06,
+  "fixed_cases": [
+    {
+      "case": "DS26-0070",
+      "oldB_status": "fallback",
+      "oldB_reason": "insufficient separated causal history",
+      "Age2_status": "insufficient_history",
+      "Age2_reason": null,
+      "pair_count": 0,
+      "nominal_age_hours": 42.45893598764472,
+      "oldB_covariance": null,
+      "Age2_covariance": null
+    },
+    {
+      "case": "DS26-0309",
+      "oldB_status": "ready",
+      "oldB_reason": "separated causal history supports existing modes",
+      "Age2_status": "ready",
+      "Age2_reason": "age-matched physical revision covariance supported",
+      "pair_count": 2,
+      "nominal_age_hours": 22.971050295409444,
+      "oldB_covariance": [
+        [
+          14.651083784470625,
+          -0.013758221651663126,
+          3.984926152166069
+        ],
+        [
+          -0.013758221651663126,
+          1.2305591174031016,
+          -0.6879017649600218
+        ],
+        [
+          3.984926152166069,
+          -0.6879017649600218,
+          4.191917627833684
+        ]
+      ],
+      "Age2_covariance": [
+        [
+          6.979542942444672,
+          1.1936517554693977,
+          -1.084188269929494
+        ],
+        [
+          1.1936517554693977,
+          1.2443779022909087,
+          -0.23883556218566399
+        ],
+        [
+          -1.084188269929494,
+          -0.23883556218566399,
+          1.2789150032009626
+        ]
+      ]
+    },
+    {
+      "case": "DS26-0044",
+      "oldB_status": "ready",
+      "oldB_reason": "separated causal history supports existing modes",
+      "Age2_status": "projection_fallback",
+      "Age2_reason": "age-matched revisions poorly represented by existing physical coordinates",
+      "pair_count": 2,
+      "nominal_age_hours": 26.91684091227889,
+      "oldB_covariance": [
+        [
+          1.3849616230815869,
+          0.04033774400164475,
+          -0.13967972890111033
+        ],
+        [
+          0.04033774400164475,
+          1.004912775483909,
+          -0.01580680943425755
+        ],
+        [
+          -0.13967972890111033,
+          -0.01580680943425755,
+          1.0526790388330023
+        ]
+      ],
+      "Age2_covariance": null
+    },
+    {
+      "case": "FRSH-0004",
+      "oldB_status": "ready",
+      "oldB_reason": "separated causal history supports existing modes",
+      "Age2_status": "ready",
+      "Age2_reason": "age-matched physical revision covariance supported",
+      "pair_count": 2,
+      "nominal_age_hours": 17.59105634500111,
+      "oldB_covariance": [
+        [
+          6.278421423722091,
+          -0.45484174741532934,
+          3.4917838816450226
+        ],
+        [
+          -0.45484174741532934,
+          1.679303382041326,
+          2.364333991628521
+        ],
+        [
+          3.4917838816450226,
+          2.364333991628521,
+          14.407053415108956
+        ]
+      ],
+      "Age2_covariance": [
+        [
+          4.74606597817308,
+          -0.7232114490353312,
+          -1.1197601325879465
+        ],
+        [
+          -0.7232114490353312,
+          1.2926575963853069,
+          1.6975872933213982
+        ],
+        [
+          -1.1197601325879465,
+          1.6975872933213982,
+          15.675002675814833
+        ]
+      ]
+    }
+  ],
+  "interpretation": "Prior-shape diagnostics in common baseline coefficient coordinates; catalog mean fraction is not evidence of true orbit bias; degenerate dominant axes are undefined"
+}

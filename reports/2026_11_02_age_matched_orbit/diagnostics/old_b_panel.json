@@ -1,0 +1,1631 @@
+{
+  "posthoc_development_panel": true,
+  "fixed_cases": [
+    "DS26-0309",
+    "DS26-0307",
+    "DS26-0315",
+    "FRSH-0004"
+  ],
+  "old_RF_and_published_position_outcomes_used_for_description": true,
+  "new_covariance_construction_or_selection": false,
+  "new_RF_or_position_fits": false,
+  "classifier_or_acceptance_rule_created": false,
+  "limitations": "Four selected development cases; correlated historical revisions; standardized directions are not orthogonal physical energy. Squared mean is descriptive bias, not a justified orbit mean correction. Old mode/receiver posteriors were not persisted; none are reconstructed here.",
+  "inputs": {
+    "combined": {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_generalized_corrections/evaluation/combined_results.json",
+      "sha256": "1f09be8e05f716e53eadb6fda1a015dbeeb32b264e9b4588ffd62ccc97bc3347"
+    },
+    "roster": {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_generalized_corrections/evaluation/rf_roster.json",
+      "sha256": "12883d3be064180eae6be8c6a3fde1fe7e8da5a824ad42fe8bd73f07d30b34de"
+    },
+    "inventory": {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_generalized_corrections/covariance/derived_inventory.json",
+      "sha256": "4b6149fd41175959e40719441b45d767553dc1e6362f68e3b93911d34233ad2d"
+    },
+    "positions": {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_generalized_corrections/position_results.csv",
+      "sha256": "191185d063f20b4f5530e223fcaca8ee24abe63b208f47501f8a76b1d954f1a8"
+    }
+  },
+  "source_sha256": "91f7ad60e2124f0bec0112359652b779fca9fee8e3cdedc55be828da44e70e79",
+  "cases": [
+    {
+      "case": "DS26-0309",
+      "summary": {
+        "case": "DS26-0309",
+        "target_family": 60148,
+        "historical_epochs": 4,
+        "nominal_age_h": 22.971050295409167,
+        "mean_historical_age_h": 47.47181419532028,
+        "minimum_historical_age_h": 32.971883655338054,
+        "maximum_historical_age_h": 66.97160581533805,
+        "mean_extra_historical_age_h": 24.50076389991111,
+        "squared_mean_trace_fraction": 0.24341906935925825,
+        "maximum_unbounded_covariance_eigenvalue": 22.044285556430005,
+        "maximum_bounded_covariance_eigenvalue": 15.999999999999996,
+        "upper_capped_directions": 1,
+        "lower_floored_directions": 1,
+        "represented_state_energy_fraction": 0.9499340185085883,
+        "mean_motion_signed_mean_standardized": -1.9664788274085687,
+        "mean_motion_centered_SD_standardized": 5.938873005915968,
+        "mean_motion_second_moment_trace_fraction": 0.81125159755561,
+        "mean_motion_incumbent_physical_SD": 0.00016786688607918165,
+        "mean_motion_signed_mean_physical": -0.0003301066772977169,
+        "inclination_signed_mean_standardized": 0.7283392554649343,
+        "inclination_centered_SD_standardized": 0.2232605064680395,
+        "inclination_second_moment_trace_fraction": 0.012029159064279168,
+        "inclination_incumbent_physical_SD": 0.0006689113211700212,
+        "inclination_signed_mean_physical": 0.0004871943736330388,
+        "RAAN_signed_mean_standardized": -2.710306502416418,
+        "RAAN_centered_SD_standardized": 1.086146396926993,
+        "RAAN_second_moment_trace_fraction": 0.17671924338011089,
+        "RAAN_incumbent_physical_SD": 0.0008358198127703221,
+        "RAAN_signed_mean_physical": -0.002265327873399877
+      },
+      "historical_signed_mean": [
+        -1.9664788274085687,
+        0.7283392554649343,
+        -2.710306502416418
+      ],
+      "centered_population_spread": [
+        [
+          35.27021258039737,
+          1.309798068964698,
+          6.339051424686775
+        ],
+        [
+          1.309798068964698,
+          0.0498452537483655,
+          0.23900486582060743
+        ],
+        [
+          6.339051424686775,
+          0.23900486582060743,
+          1.1797139955574893
+        ]
+      ],
+      "squared_mean_component": [
+        [
+          3.867038978646179,
+          -1.432263725042314,
+          5.329760352789656
+        ],
+        [
+          -1.432263725042314,
+          0.5304780710512148,
+          -1.974022620051744
+        ],
+        [
+          5.329760352789656,
+          -1.974022620051744,
+          7.345761337040717
+        ]
+      ],
+      "uncentered_second_moment": [
+        [
+          39.13725155904355,
+          -0.12246565607761598,
+          11.668811777476433
+        ],
+        [
+          -0.12246565607761598,
+          0.5803233247995804,
+          -1.7350177542311367
+        ],
+        [
+          11.668811777476433,
+          -1.7350177542311367,
+          8.525475332598207
+        ]
+      ],
+      "decomposition": {
+        "squared_mean_trace": 11.743278386738112,
+        "centered_spread_trace": 36.49977182970323,
+        "second_moment_trace": 48.24305021644133,
+        "squared_mean_trace_fraction": 0.24341906935925825
+      },
+      "incumbent_mode_physical_SD": [
+        0.00016786688607918165,
+        0.0006689113211700212,
+        0.0008358198127703221
+      ],
+      "physical_units": [
+        "rev/day",
+        "deg",
+        "deg"
+      ],
+      "covariance": [
+        [
+          14.651083784470625,
+          -0.013758221651663126,
+          3.984926152166069
+        ],
+        [
+          -0.013758221651663126,
+          1.2305591174031016,
+          -0.6879017649600218
+        ],
+        [
+          3.984926152166069,
+          -0.6879017649600218,
+          4.191917627833684
+        ]
+      ],
+      "covariance_eigenvalues": [
+        1.0,
+        3.0735605297074144,
+        15.999999999999996
+      ],
+      "covariance_eigenvectors_columns": [
+        [
+          -0.09190518101282635,
+          0.30749272157005036,
+          -0.9471017178130569
+        ],
+        [
+          0.9435934632790354,
+          0.33072852848521517,
+          0.015811910165443477
+        ],
+        [
+          0.3180956047481249,
+          -0.8922257935228325,
+          -0.32054378735591943
+        ]
+      ],
+      "unbounded_covariance_eigenvalues": [
+        0.5036790220832464,
+        3.0735605297074136,
+        22.044285556430005
+      ],
+      "unbounded_principal_direction": [
+        -0.9471017178130567,
+        0.01581191016544342,
+        -0.32054378735591915
+      ],
+      "arms": {
+        "c0": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 1.144258228301517,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.6952549763086324,
+          "phase_norad_order": [
+            57438,
+            58533,
+            59361,
+            59803,
+            60148,
+            60260,
+            60356,
+            62035,
+            62102,
+            62193,
+            62506,
+            62812,
+            62816,
+            62817,
+            63566,
+            65641,
+            66425,
+            66438,
+            66522,
+            67822,
+            67828,
+            67846,
+            68020,
+            68382
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "4031c8b4da264e44af8ee52bdaf6611b5f19a63230ce7aa049679d5a8b06d9f5"
+          },
+          "phase_vector_A_s": [
+            -0.1678204207656106,
+            -3.9010079368693233,
+            0.0,
+            -1.2617725538542657,
+            -3.1922456768806584,
+            0.0,
+            0.0,
+            0.0,
+            -2.040232741843794,
+            -0.2808649164142475,
+            0.0,
+            -1.3248648253757016,
+            -0.7130180491871612,
+            -0.7803107430599983,
+            -0.47805368046109314,
+            0.0,
+            -0.035013016618541073,
+            -0.08235446955533265,
+            -1.8462446834087718,
+            -1.028475431874191,
+            -1.485439514159366,
+            -1.7283309692696809,
+            0.0,
+            -1.689786271407998
+          ],
+          "phase_vector_B_s": [
+            -0.07194986665555493,
+            -3.780287210493162,
+            0.0,
+            -1.213908280303824,
+            -3.1259227583769746,
+            0.0,
+            0.0,
+            0.0,
+            -1.8914134621411645,
+            -0.12600055133255203,
+            0.0,
+            -1.2195295411481248,
+            -0.7541116004047393,
+            -0.7952600520837156,
+            -0.2430344937669583,
+            0.0,
+            0.14692661035777332,
+            0.07911230931283049,
+            -1.721927797786712,
+            -0.746871501627074,
+            -1.3602572910708284,
+            -1.5911402984270202,
+            0.0,
+            -1.5136018595735645
+          ],
+          "phase_vector_change_s": [
+            0.09587055411005567,
+            0.12072072637616138,
+            0.0,
+            0.04786427355044176,
+            0.06632291850368377,
+            0.0,
+            0.0,
+            0.0,
+            0.14881927970262954,
+            0.15486436508169546,
+            0.0,
+            0.10533528422757676,
+            -0.041093551217578184,
+            -0.014949309023717383,
+            0.23501918669413485,
+            0.0,
+            0.18193962697631438,
+            0.16146677886816313,
+            0.12431688562205978,
+            0.28160393024711705,
+            0.12518222308853755,
+            0.13719067084266068,
+            0.0,
+            0.17618441183443356
+          ],
+          "maximum_absolute_phase_change_s": 0.28160393024711705,
+          "target_phase_change_s": 0.06632291850368377,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 3161.874201212732,
+          "posthoc_B_position_error_m": 2017.7775746918142,
+          "posthoc_position_error_change_m": -1144.0966265209177
+        },
+        "fitted_c": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 1.1291537762183845,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.6530930614014068,
+          "phase_norad_order": [
+            57438,
+            58533,
+            59361,
+            59803,
+            60148,
+            60260,
+            60356,
+            62035,
+            62102,
+            62193,
+            62506,
+            62812,
+            62816,
+            62817,
+            63566,
+            65641,
+            66425,
+            66438,
+            66522,
+            67822,
+            67828,
+            67846,
+            68020,
+            68382
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "4031c8b4da264e44af8ee52bdaf6611b5f19a63230ce7aa049679d5a8b06d9f5"
+          },
+          "phase_vector_A_s": [
+            -0.16030921343768284,
+            -3.8944867340201212,
+            0.0,
+            -1.195730218153927,
+            -3.1761220277658095,
+            0.0,
+            0.0,
+            0.0,
+            -2.032869535754077,
+            -0.27819593863245057,
+            0.0,
+            -1.345795644821332,
+            -0.6965605255158809,
+            -0.7894862221330728,
+            -0.47199395480281103,
+            0.0,
+            -0.010758652839783113,
+            -0.070758205752477,
+            -1.844802883942447,
+            -1.019251821293333,
+            -1.4662513943247992,
+            -1.710118313919817,
+            0.0,
+            -1.7101983047611355
+          ],
+          "phase_vector_B_s": [
+            -0.0656846639498104,
+            -3.7754301705086357,
+            0.0,
+            -1.1522329918415182,
+            -3.1102480809492214,
+            0.0,
+            0.0,
+            0.0,
+            -1.8843494852037301,
+            -0.12519528716271763,
+            0.0,
+            -1.2391477864325895,
+            -0.7370844858450211,
+            -0.8031165288939501,
+            -0.23878920968557504,
+            0.0,
+            0.1675179864631484,
+            0.08858928202717141,
+            -1.722009461768376,
+            -0.7399506949031679,
+            -1.3437910210813178,
+            -1.5760172044048266,
+            0.0,
+            -1.5350694277146713
+          ],
+          "phase_vector_change_s": [
+            0.09462454948787244,
+            0.11905656351148552,
+            0.0,
+            0.04349722631240893,
+            0.06587394681658809,
+            0.0,
+            0.0,
+            0.0,
+            0.14852005055034678,
+            0.15300065146973293,
+            0.0,
+            0.10664785838874247,
+            -0.040523960329140185,
+            -0.013630306760877287,
+            0.233204745117236,
+            0.0,
+            0.1782766393029315,
+            0.1593474877796484,
+            0.12279342217407097,
+            0.27930112639016513,
+            0.12246037324348147,
+            0.13410110951499044,
+            0.0,
+            0.1751288770464643
+          ],
+          "maximum_absolute_phase_change_s": 0.27930112639016513,
+          "target_phase_change_s": 0.06587394681658809,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 3126.7856847809867,
+          "posthoc_B_position_error_m": 1996.8672288835946,
+          "posthoc_position_error_change_m": -1129.918455897392
+        }
+      },
+      "native_input_sha256": "f12264324a8a4e22b214d689e79651df10bb44930bfe6eebb5bab9f0cbd6b22a",
+      "covariance_history_sha256": "a793c2651e25be4814c5af24e1adbdbc13f69869169838cde395e527c81f38c7",
+      "nominal_epoch_utc_ns": 1793275204999967744,
+      "RF_cutoff_utc_ns": 1793357750650169411
+    },
+    {
+      "case": "DS26-0307",
+      "summary": {
+        "case": "DS26-0307",
+        "target_family": 59342,
+        "historical_epochs": 3,
+        "nominal_age_h": 25.600262469956387,
+        "mean_historical_age_h": 48.00308486990898,
+        "minimum_historical_age_h": 27.16810566988528,
+        "maximum_historical_age_h": 66.13386102995639,
+        "mean_extra_historical_age_h": 22.402822399952594,
+        "squared_mean_trace_fraction": 0.008775092748516265,
+        "maximum_unbounded_covariance_eigenvalue": 27.76087987233605,
+        "maximum_bounded_covariance_eigenvalue": 16.000000000000004,
+        "upper_capped_directions": 1,
+        "lower_floored_directions": 2,
+        "represented_state_energy_fraction": 0.8943128941388483,
+        "mean_motion_signed_mean_standardized": -0.3602281712000342,
+        "mean_motion_centered_SD_standardized": 7.246071278950646,
+        "mean_motion_second_moment_trace_fraction": 0.958321476207273,
+        "mean_motion_incumbent_physical_SD": 0.0010054692748301221,
+        "mean_motion_signed_mean_physical": -0.00036219835806987946,
+        "inclination_signed_mean_standardized": -0.33567689782455595,
+        "inclination_centered_SD_standardized": 0.4226367047879433,
+        "inclination_second_moment_trace_fraction": 0.005303659474293364,
+        "inclination_incumbent_physical_SD": 0.003970552488274981,
+        "inclination_signed_mean_physical": -0.001332822741913717,
+        "RAAN_signed_mean_standardized": -0.4894120277156007,
+        "RAAN_centered_SD_standardized": 1.3260266015528575,
+        "RAAN_second_moment_trace_fraction": 0.0363748643184336,
+        "RAAN_incumbent_physical_SD": 0.005821785923048536,
+        "RAAN_signed_mean_physical": -0.0028492520535253244
+      },
+      "historical_signed_mean": [
+        -0.3602281712000342,
+        -0.33567689782455595,
+        -0.4894120277156007
+      ],
+      "centered_population_spread": [
+        [
+          52.50554897963345,
+          1.657292449354249,
+          9.606711892825885
+        ],
+        [
+          1.657292449354249,
+          0.17862178423401112,
+          0.31227649121460754
+        ],
+        [
+          9.606711892825885,
+          0.31227649121460754,
+          1.7583465480258205
+        ]
+      ],
+      "squared_mean_component": [
+        [
+          0.12976433532612114,
+          0.12092027501744053,
+          0.1762999997072913
+        ],
+        [
+          0.12092027501744053,
+          0.11267897973311737,
+          0.16428431122159845
+        ],
+        [
+          0.1762999997072913,
+          0.16428431122159845,
+          0.23952413287269592
+        ]
+      ],
+      "uncentered_second_moment": [
+        [
+          52.635313314959575,
+          1.7782127243716894,
+          9.783011892533176
+        ],
+        [
+          1.7782127243716894,
+          0.2913007639671285,
+          0.476560802436206
+        ],
+        [
+          9.783011892533176,
+          0.476560802436206,
+          1.9978706808985163
+        ]
+      ],
+      "decomposition": {
+        "squared_mean_trace": 0.4819674479319344,
+        "centered_spread_trace": 54.44251731189328,
+        "second_moment_trace": 54.92448475982522,
+        "squared_mean_trace_fraction": 0.008775092748516265
+      },
+      "incumbent_mode_physical_SD": [
+        0.0010054692748301221,
+        0.003970552488274981,
+        0.005821785923048536
+      ],
+      "physical_units": [
+        "rev/day",
+        "deg",
+        "deg"
+      ],
+      "covariance": [
+        [
+          15.478848060739914,
+          0.4984988124285087,
+          2.7013290579109728
+        ],
+        [
+          0.4984988124285087,
+          1.0171630412136483,
+          0.09300528064788799
+        ],
+        [
+          2.7013290579109728,
+          0.09300528064788799,
+          1.5039888980464426
+        ]
+      ],
+      "covariance_eigenvalues": [
+        0.9999999999999997,
+        1.0,
+        16.000000000000004
+      ],
+      "covariance_eigenvectors_columns": [
+        [
+          0.0,
+          -0.18639598337233396,
+          -0.9824747006323677
+        ],
+        [
+          -0.9833957019890736,
+          0.17829383209141203,
+          -0.03382606609667407
+        ],
+        [
+          0.1814742221623149,
+          0.9661613979148721,
+          -0.18330100891638001
+        ]
+      ],
+      "unbounded_covariance_eigenvalues": [
+        0.5281239109976272,
+        0.6732385965789296,
+        27.76087987233605
+      ],
+      "unbounded_principal_direction": [
+        -0.9824747006323679,
+        -0.0338260660966741,
+        -0.18330100891638007
+      ],
+      "arms": {
+        "c0": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 1.2773449089153661,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": 0.051003825998677144,
+          "phase_norad_order": [
+            57329,
+            57780,
+            58228,
+            59328,
+            59342,
+            59360,
+            59741,
+            63372,
+            63466,
+            63467,
+            64802,
+            65028,
+            65858,
+            65864,
+            66115,
+            67935,
+            67953,
+            68050,
+            68054,
+            68058,
+            68251
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0307/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "5431d96710320c3ca6cd6d79eec21a3afa75ee6af7adcff5da807b28d2a68bd8"
+          },
+          "phase_vector_A_s": [
+            -0.4274840799045636,
+            -0.20466756997927754,
+            -0.21025936915146223,
+            -0.6515884809487085,
+            -6.957403795342147,
+            -1.984778784208815,
+            5.242192126495218,
+            -0.4341410593015856,
+            -0.056250338316226826,
+            0.0,
+            -0.3949123390666196,
+            -0.17798443247777698,
+            0.0,
+            -1.0377318366646822,
+            -2.2000198311423973,
+            -0.32730113670219685,
+            -0.5069703334742925,
+            -2.8675579007702607,
+            -2.797530203200648,
+            0.0,
+            -0.7364564077771656
+          ],
+          "phase_vector_B_s": [
+            -0.2506008405186327,
+            -0.04146103641403398,
+            -0.022939713704358322,
+            -0.513179076819101,
+            -6.889245675359222,
+            -1.8134750295822337,
+            5.3667765640260505,
+            -0.28466271078947136,
+            0.09580628987915477,
+            0.0,
+            -0.33398597955358444,
+            -0.05737753924327767,
+            0.0,
+            -0.8964146423323122,
+            -2.037850290688443,
+            -0.16219456781092537,
+            -0.32564544167684073,
+            -2.7272717384610994,
+            -2.6721971378710094,
+            0.0,
+            -0.6145213779082394
+          ],
+          "phase_vector_change_s": [
+            0.17688323938593092,
+            0.16320653356524356,
+            0.1873196554471039,
+            0.13840940412960745,
+            0.06815811998292531,
+            0.1713037546265812,
+            0.12458443753083248,
+            0.14947834851211422,
+            0.1520566281953816,
+            0.0,
+            0.060926359513035155,
+            0.12060689323449932,
+            0.0,
+            0.14131719433237,
+            0.16216954045395449,
+            0.16510656889127148,
+            0.18132489179745181,
+            0.14028616230916136,
+            0.1253330653296385,
+            0.0,
+            0.12193502986892624
+          ],
+          "maximum_absolute_phase_change_s": 0.1873196554471039,
+          "target_phase_change_s": 0.06815811998292531,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 1683.6920284249868,
+          "posthoc_B_position_error_m": 690.3928599094788,
+          "posthoc_position_error_change_m": -993.299168515508
+        },
+        "fitted_c": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 1.2746803693218454,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": 0.03477943355171931,
+          "phase_norad_order": [
+            57329,
+            57780,
+            58228,
+            59328,
+            59342,
+            59360,
+            59741,
+            63372,
+            63466,
+            63467,
+            64802,
+            65028,
+            65858,
+            65864,
+            66115,
+            67935,
+            67953,
+            68050,
+            68054,
+            68058,
+            68251
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0307/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "5431d96710320c3ca6cd6d79eec21a3afa75ee6af7adcff5da807b28d2a68bd8"
+          },
+          "phase_vector_A_s": [
+            -0.4495971847981535,
+            -0.20412931488797098,
+            -0.2044766647550555,
+            -0.6480703747203017,
+            -6.955364555224811,
+            -1.9663814036145368,
+            5.239110293347766,
+            -0.42283080512450066,
+            -0.05075244007313144,
+            0.0,
+            -0.41024933764205146,
+            -0.18995653650541972,
+            0.0,
+            -1.015439823497367,
+            -2.173696307550978,
+            -0.30588260219020963,
+            -0.5009815309181057,
+            -2.860581102331014,
+            -2.7632276436164513,
+            0.0,
+            -0.740671212688389
+          ],
+          "phase_vector_B_s": [
+            -0.2727180826864154,
+            -0.0414910995729324,
+            -0.01779955312176381,
+            -0.5102590091391919,
+            -6.887940295938872,
+            -1.795623394535569,
+            5.3631875281263675,
+            -0.2733820115276753,
+            0.10120363285871677,
+            0.0,
+            -0.3502331254526238,
+            -0.0698644550847375,
+            0.0,
+            -0.8746762929413787,
+            -2.011873753167159,
+            -0.14156151287002625,
+            -0.32041608792769277,
+            -2.7198726210880015,
+            -2.6376620306371734,
+            0.0,
+            -0.6193961342546038
+          ],
+          "phase_vector_change_s": [
+            0.17687910211173813,
+            0.16263821531503858,
+            0.18667711163329168,
+            0.13781136558110985,
+            0.06742425928593931,
+            0.17075800907896777,
+            0.12407723477860166,
+            0.1494487935968254,
+            0.1519560729318482,
+            0.0,
+            0.06001621218942765,
+            0.12009208142068221,
+            0.0,
+            0.14076353055598823,
+            0.1618225543838192,
+            0.16432108932018338,
+            0.18056544299041294,
+            0.1407084812430126,
+            0.12556561297927793,
+            0.0,
+            0.12127507843378516
+          ],
+          "maximum_absolute_phase_change_s": 0.18667711163329168,
+          "target_phase_change_s": 0.06742425928593931,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 1640.1756687053644,
+          "posthoc_B_position_error_m": 712.4243602526192,
+          "posthoc_position_error_change_m": -927.7513084527452
+        }
+      },
+      "native_input_sha256": "0175f16b3c48dfb1a83cab3db2a635d76bb3df532681cf778e0976249c375e8f",
+      "covariance_history_sha256": "86ac2aa292ae5da7d4f821e42525f0d891f655e989c6a98dd9c3ae91e1355a40",
+      "nominal_epoch_utc_ns": 1793262723954912000,
+      "RF_cutoff_utc_ns": 1793354734811854729
+    },
+    {
+      "case": "DS26-0315",
+      "summary": {
+        "case": "DS26-0315",
+        "target_family": 62425,
+        "historical_epochs": 4,
+        "nominal_age_h": 25.48409635043889,
+        "mean_historical_age_h": 50.98472137035,
+        "minimum_historical_age_h": 37.48465195036778,
+        "maximum_historical_age_h": 67.48492963029666,
+        "mean_extra_historical_age_h": 25.500625019911112,
+        "squared_mean_trace_fraction": 0.6645853885071206,
+        "maximum_unbounded_covariance_eigenvalue": 49.029961357403224,
+        "maximum_bounded_covariance_eigenvalue": 15.999999999999996,
+        "upper_capped_directions": 1,
+        "lower_floored_directions": 1,
+        "represented_state_energy_fraction": 0.9680916596795435,
+        "mean_motion_signed_mean_standardized": 7.817633670338889,
+        "mean_motion_centered_SD_standardized": 5.669663792069086,
+        "mean_motion_second_moment_trace_fraction": 0.9465710567698007,
+        "mean_motion_incumbent_physical_SD": 0.00016710258999757142,
+        "mean_motion_signed_mean_physical": 0.0013063468339658487,
+        "inclination_signed_mean_standardized": -0.398078758480076,
+        "inclination_centered_SD_standardized": 0.243798030098928,
+        "inclination_second_moment_trace_fraction": 0.002211674004711006,
+        "inclination_incumbent_physical_SD": 0.0009048425035241861,
+        "inclination_signed_mean_physical": -0.0003601985804229118,
+        "RAAN_signed_mean_standardized": -2.050392851415652,
+        "RAAN_centered_SD_standardized": 0.9176313844546723,
+        "RAAN_second_moment_trace_fraction": 0.05121726922548834,
+        "RAAN_incumbent_physical_SD": 0.0013267219317965751,
+        "RAAN_signed_mean_physical": -0.002720301164772062
+      },
+      "historical_signed_mean": [
+        7.817633670338889,
+        -0.398078758480076,
+        -2.050392851415652
+      ],
+      "centered_population_spread": [
+        [
+          32.145087515099206,
+          -1.3428822399906835,
+          -2.1159369130672987
+        ],
+        [
+          -1.3428822399906835,
+          0.05943747948011781,
+          0.0624489408283639
+        ],
+        [
+          -2.1159369130672987,
+          0.0624489408283639,
+          0.8420473577361985
+        ]
+      ],
+      "squared_mean_component": [
+        [
+          61.11539620361629,
+          -3.1120339057405446,
+          -16.029220192649166
+        ],
+        [
+          -3.1120339057405446,
+          0.1584666979530387,
+          0.8162178406879658
+        ],
+        [
+          -16.029220192649166,
+          0.8162178406879658,
+          4.204110845136409
+        ]
+      ],
+      "uncentered_second_moment": [
+        [
+          93.26048371871549,
+          -4.454916145731229,
+          -18.145157105716468
+        ],
+        [
+          -4.454916145731229,
+          0.2179041774331565,
+          0.8786667815163298
+        ],
+        [
+          -18.145157105716468,
+          0.8786667815163298,
+          5.046158202872609
+        ]
+      ],
+      "decomposition": {
+        "squared_mean_trace": 65.47797374670574,
+        "centered_spread_trace": 33.04657235231552,
+        "second_moment_trace": 98.52454609902125,
+        "squared_mean_trace_fraction": 0.6645853885071206
+      },
+      "incumbent_mode_physical_SD": [
+        0.00016710258999757142,
+        0.0009048425035241861,
+        0.0013267219317965751
+      ],
+      "physical_units": [
+        "rev/day",
+        "deg",
+        "deg"
+      ],
+      "covariance": [
+        [
+          15.412978219014729,
+          -0.6885159038090704,
+          -2.8034136096620075
+        ],
+        [
+          -0.6885159038090704,
+          1.032905477195517,
+          0.13579319749241536
+        ],
+        [
+          -2.8034136096620075,
+          0.13579319749241536,
+          1.7839305049486425
+        ]
+      ],
+      "covariance_eigenvalues": [
+        1.000000000000001,
+        1.229814201158889,
+        15.999999999999996
+      ],
+      "covariance_eigenvectors_columns": [
+        [
+          -0.046193549503955954,
+          0.19384697897040115,
+          -0.979943623239763
+        ],
+        [
+          -0.9989017578919424,
+          -0.0012665615720144352,
+          0.04683667262063032
+        ],
+        [
+          0.007837988556598674,
+          0.9810309600445002,
+          0.19369259503025274
+        ]
+      ],
+      "unbounded_covariance_eigenvalues": [
+        0.502497490948515,
+        1.2298142011588877,
+        49.029961357403224
+      ],
+      "unbounded_principal_direction": [
+        -0.9799436232397629,
+        0.046836672620630265,
+        0.19369259503025266
+      ],
+      "arms": {
+        "c0": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 0.8898508954336807,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.08413622193377535,
+          "phase_norad_order": [
+            48304,
+            53893,
+            53905,
+            58855,
+            58866,
+            59081,
+            59348,
+            61065,
+            61861,
+            62425,
+            63280,
+            64170,
+            64255,
+            64315,
+            64907,
+            64915,
+            65700,
+            66831,
+            67176,
+            67418,
+            67424,
+            67504,
+            67520,
+            67919
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0315/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "afcc609b482f18b9f513f275579836a40c744a8805f993a32ee84ecd42055649"
+          },
+          "phase_vector_A_s": [
+            -0.23092774374287003,
+            -0.14915860637704534,
+            0.5098835564868539,
+            0.28572739752310516,
+            0.36451513263336816,
+            -0.6732379650164173,
+            -0.42322908076639143,
+            -3.695795697467061,
+            -0.1909036558051949,
+            0.8208976296306362,
+            -0.2191607786870141,
+            -1.8799219584283462,
+            -0.25900745060117786,
+            -1.8172795213680224,
+            -1.3929279469356168,
+            -0.02697507920867966,
+            -2.7119185691457064,
+            -2.5867211993334593,
+            -2.088490530546117,
+            -0.5616154972048998,
+            1.0686166298921629,
+            0.319382837107078,
+            -2.0635655629430154,
+            1.106321957120779
+          ],
+          "phase_vector_B_s": [
+            -0.23092774374287003,
+            -0.05076030909597265,
+            0.6401214760956673,
+            0.3787507942832241,
+            0.482526571008062,
+            -0.5753125750114697,
+            -0.42322908076639143,
+            -3.6148810435916374,
+            -0.05889147933360673,
+            0.898730174789176,
+            -0.10201317361074688,
+            -1.8102842217398554,
+            -0.13860110111541296,
+            -1.750625911166781,
+            -1.2684578674079963,
+            0.07999135553617745,
+            -2.637671229835213,
+            -2.585080201349843,
+            -2.0028729748402747,
+            -0.5616154972048998,
+            1.1858684081704995,
+            0.4195549721480472,
+            -1.9740669294436066,
+            1.2495531954859518
+          ],
+          "phase_vector_change_s": [
+            0.0,
+            0.09839829728107269,
+            0.13023791960881337,
+            0.09302339676011895,
+            0.11801143837469386,
+            0.0979253900049476,
+            0.0,
+            0.08091465387542351,
+            0.13201217647158817,
+            0.07783254515853988,
+            0.11714760507626723,
+            0.06963773668849083,
+            0.1204063494857649,
+            0.06665361020124139,
+            0.12447007952762057,
+            0.1069664347448571,
+            0.07424733931049321,
+            0.001640997983616277,
+            0.08561755570584229,
+            0.0,
+            0.11725177827833666,
+            0.10017213504096922,
+            0.08949863349940879,
+            0.14323123836517282
+          ],
+          "maximum_absolute_phase_change_s": 0.14323123836517282,
+          "target_phase_change_s": 0.07783254515853988,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 1163.7954767871554,
+          "posthoc_B_position_error_m": 2005.6326484731837,
+          "posthoc_position_error_change_m": 841.8371716860283
+        },
+        "fitted_c": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 0.8690936394615432,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.08533247517731013,
+          "phase_norad_order": [
+            48304,
+            53893,
+            53905,
+            58855,
+            58866,
+            59081,
+            59348,
+            61065,
+            61861,
+            62425,
+            63280,
+            64170,
+            64255,
+            64315,
+            64907,
+            64915,
+            65700,
+            66831,
+            67176,
+            67418,
+            67424,
+            67504,
+            67520,
+            67919
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0315/candidate-v2/recovery/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "afcc609b482f18b9f513f275579836a40c744a8805f993a32ee84ecd42055649"
+          },
+          "phase_vector_A_s": [
+            -0.23092774374287003,
+            -0.17521787274619363,
+            0.47774988226351117,
+            0.2778777900341514,
+            0.34359488557388335,
+            -0.703792557340735,
+            -0.42322908076639143,
+            -3.7200191123710726,
+            -0.2126700001510023,
+            0.8010455791269309,
+            -0.23440143898368712,
+            -1.8909488681711093,
+            -0.28406567815593625,
+            -1.8269388454390962,
+            -1.4191304013976744,
+            -0.05290364934119847,
+            -2.7267359898106123,
+            -2.599735375239615,
+            -2.108204979814927,
+            -0.5616154972048998,
+            1.0404300221211487,
+            0.2970017446900214,
+            -2.090181196225197,
+            1.0778989652433533
+          ],
+          "phase_vector_B_s": [
+            -0.23092774374287003,
+            -0.07842910511237709,
+            0.6053298000829771,
+            0.36807120792972553,
+            0.45876480411997994,
+            -0.6078770022682958,
+            -0.42322908076639143,
+            -3.640902576568345,
+            -0.08385015048911514,
+            0.8769695466626263,
+            -0.12041407786335057,
+            -1.8236758796158667,
+            -0.1668323308368167,
+            -1.7616356594584135,
+            -1.2975388229918177,
+            0.05182942012213659,
+            -2.6538594293369786,
+            -2.597798722361076,
+            -2.0248020290540185,
+            -0.5616154972048998,
+            1.1553048011436349,
+            0.39468348371523043,
+            -2.002524920412371,
+            1.217830656672376
+          ],
+          "phase_vector_change_s": [
+            0.0,
+            0.09678876763381654,
+            0.12757991781946593,
+            0.09019341789557411,
+            0.1151699185460966,
+            0.09591555507243921,
+            0.0,
+            0.07911653580272748,
+            0.12881984966188714,
+            0.07592396753569541,
+            0.11398736112033656,
+            0.06727298855524255,
+            0.11723334731911955,
+            0.06530318598068274,
+            0.12159157840585677,
+            0.10473306946333505,
+            0.07287656047363367,
+            0.001936652878538947,
+            0.08340295076090865,
+            0.0,
+            0.11487477902248622,
+            0.09768173902520905,
+            0.08765627581282587,
+            0.13993169142902273
+          ],
+          "maximum_absolute_phase_change_s": 0.13993169142902273,
+          "target_phase_change_s": 0.07592396753569541,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 976.4051433604802,
+          "posthoc_B_position_error_m": 1795.9451355676301,
+          "posthoc_position_error_change_m": 819.5399922071499
+        }
+      },
+      "native_input_sha256": "0e441bd30003f296ff70d498bc0b01258f1f3c310055ce3a2acd6e7e7eb1516a",
+      "covariance_history_sha256": "32f52753cdc58efad6fb37493b696d547c4b79817e5c6403920f7e1c6d0ac771",
+      "nominal_epoch_utc_ns": 1793275204999967744,
+      "RF_cutoff_utc_ns": 1793366797664907590
+    },
+    {
+      "case": "FRSH-0004",
+      "summary": {
+        "case": "FRSH-0004",
+        "target_family": 59704,
+        "historical_epochs": 6,
+        "nominal_age_h": 17.591056345000833,
+        "mean_historical_age_h": 38.92429706496528,
+        "minimum_historical_age_h": 19.591056264929723,
+        "maximum_historical_age_h": 57.590778505000834,
+        "mean_extra_historical_age_h": 21.333240719964447,
+        "squared_mean_trace_fraction": 0.6399020076094236,
+        "maximum_unbounded_covariance_eigenvalue": 101.1384242679635,
+        "maximum_bounded_covariance_eigenvalue": 15.99999999999999,
+        "upper_capped_directions": 1,
+        "lower_floored_directions": 1,
+        "represented_state_energy_fraction": 0.9823003476717719,
+        "mean_motion_signed_mean_standardized": -3.090066084499561,
+        "mean_motion_centered_SD_standardized": 4.511896812967288,
+        "mean_motion_second_moment_trace_fraction": 0.14147679953085462,
+        "mean_motion_incumbent_physical_SD": 0.00018169988942173156,
+        "mean_motion_signed_mean_physical": -0.0005614646658594132,
+        "inclination_signed_mean_standardized": -1.9872295736720622,
+        "inclination_centered_SD_standardized": 1.169036751175649,
+        "inclination_second_moment_trace_fraction": 0.025147436544410578,
+        "inclination_incumbent_physical_SD": 0.00020891349455775667,
+        "inclination_signed_mean_physical": -0.00041515907472435145,
+        "RAAN_signed_mean_standardized": -11.034786084916481,
+        "RAAN_centered_SD_standardized": 7.375266664850445,
+        "RAAN_second_moment_trace_fraction": 0.8333757639247349,
+        "RAAN_incumbent_physical_SD": 0.0003063255086692757,
+        "RAAN_signed_mean_physical": -0.003380236460518686
+      },
+      "historical_signed_mean": [
+        -3.090066084499561,
+        -1.9872295736720622,
+        -11.034786084916481
+      ],
+      "centered_population_spread": [
+        [
+          20.35721285086437,
+          0.851499012245656,
+          25.144289370173706
+        ],
+        [
+          0.851499012245656,
+          1.3666469255993163,
+          5.7725758310063915
+        ],
+        [
+          25.144289370173706,
+          5.7725758310063915,
+          54.3945583776542
+        ]
+      ],
+      "squared_mean_component": [
+        [
+          9.548508406574447,
+          6.140670707718561,
+          34.09821823070811
+        ],
+        [
+          6.140670707718561,
+          3.949081378476846,
+          21.928653247090985
+        ],
+        [
+          34.09821823070811,
+          21.928653247090985,
+          121.76650393986641
+        ]
+      ],
+      "uncentered_second_moment": [
+        [
+          29.905721257438813,
+          6.992169719964217,
+          59.242507600881815
+        ],
+        [
+          6.992169719964217,
+          5.3157283040761625,
+          27.701229078097374
+        ],
+        [
+          59.242507600881815,
+          27.701229078097374,
+          176.16106231752062
+        ]
+      ],
+      "decomposition": {
+        "squared_mean_trace": 135.2640937249177,
+        "centered_spread_trace": 76.11841815411789,
+        "second_moment_trace": 211.38251187903558,
+        "squared_mean_trace_fraction": 0.6399020076094236
+      },
+      "incumbent_mode_physical_SD": [
+        0.00018169988942173156,
+        0.00020891349455775667,
+        0.0003063255086692757
+      ],
+      "physical_units": [
+        "rev/day",
+        "deg",
+        "deg"
+      ],
+      "covariance": [
+        [
+          6.278421423722091,
+          -0.45484174741532934,
+          3.4917838816450226
+        ],
+        [
+          -0.45484174741532934,
+          1.679303382041326,
+          2.364333991628521
+        ],
+        [
+          3.4917838816450226,
+          2.364333991628521,
+          14.407053415108956
+        ]
+      ],
+      "covariance_eigenvalues": [
+        0.9999999999999992,
+        5.364778220872382,
+        15.99999999999999
+      ],
+      "covariance_eigenvectors_columns": [
+        [
+          0.23178376732085904,
+          0.9155983567898546,
+          -0.3285664837597836
+        ],
+        [
+          0.9458698192312959,
+          -0.2910080258838176,
+          -0.14368233690527
+        ],
+        [
+          -0.2271707953807136,
+          -0.2774778872539606,
+          -0.9334877887852482
+        ]
+      ],
+      "unbounded_covariance_eigenvalues": [
+        0.6880534506818817,
+        5.364778220872379,
+        101.1384242679635
+      ],
+      "unbounded_principal_direction": [
+        -0.3285664837597834,
+        -0.14368233690527,
+        -0.9334877887852481
+      ],
+      "arms": {
+        "c0": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 0.7483692217910369,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.10595976062765544,
+          "phase_norad_order": [
+            57985,
+            59398,
+            59704,
+            61068,
+            63768,
+            63770,
+            63781,
+            63795,
+            63796,
+            64002,
+            64174,
+            64183,
+            64458,
+            65833,
+            66564,
+            66580,
+            66598,
+            66867,
+            67988,
+            68002
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/exports/FRSH-0004/current/current/cache/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "7e2e4ecac1587bc6e6639817c73e0f979e462c59cd8d1d247c35caba9fdc6c34"
+          },
+          "phase_vector_A_s": [
+            -0.12739137154707122,
+            -0.41422360866743396,
+            -0.5805318503218911,
+            -1.2888747574009465,
+            -0.7649739553296255,
+            -0.7783253684287571,
+            -0.7506394710008926,
+            -0.4264427807480233,
+            -0.6151389931949239,
+            -0.12455443497307403,
+            0.8011483720191862,
+            -1.0622936563286556,
+            -1.9640326900824558,
+            -0.8273553726268824,
+            -1.0781248884640666,
+            -1.2460983713849392,
+            -0.01995986843613085,
+            -1.0163804727228205,
+            -0.6637813247173361,
+            0.30360075358336264
+          ],
+          "phase_vector_B_s": [
+            -0.12739137154707122,
+            -0.3312687242651838,
+            -0.4584145257829453,
+            -1.2013628794173723,
+            -0.6691277132371874,
+            -0.6673918945222399,
+            -0.6686442784044972,
+            -0.3470896179194894,
+            -0.5349259568415453,
+            -0.014505454604283811,
+            0.8996487779821412,
+            -0.971489714473661,
+            -1.8662620061060986,
+            -0.7326733626885328,
+            -0.9720444106707332,
+            -1.1368910987333118,
+            0.06542091780938168,
+            -0.907192802340504,
+            -0.5797641754096687,
+            0.3848744908081629
+          ],
+          "phase_vector_change_s": [
+            0.0,
+            0.08295488440225018,
+            0.12211732453894586,
+            0.08751187798357418,
+            0.09584624209243808,
+            0.1109334739065172,
+            0.08199519259639532,
+            0.07935316282853389,
+            0.08021303635337862,
+            0.11004898036879021,
+            0.09850040596295495,
+            0.09080394185499463,
+            0.09777068397635724,
+            0.09468200993834963,
+            0.1060804777933334,
+            0.10920727265162733,
+            0.08538078624551253,
+            0.10918767038231647,
+            0.08401714930766735,
+            0.08127373722480025
+          ],
+          "maximum_absolute_phase_change_s": 0.12211732453894586,
+          "target_phase_change_s": 0.12211732453894586,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 2238.0335896994156,
+          "posthoc_B_position_error_m": 2972.4842323250473,
+          "posthoc_position_error_change_m": 734.4506426256316
+        },
+        "fitted_c": {
+          "saved_A_qualified": true,
+          "saved_B_qualified": true,
+          "A_policy_accepted": true,
+          "A_selected_source": "A_numerical_repair",
+          "candidate_movement_from_selected_A_km": 0.7449857224188602,
+          "raw_A_movement_from_selected_A_km": 0.0,
+          "raw_A_to_B_curved_RMS_change_hz": -0.10454792645636246,
+          "phase_norad_order": [
+            57985,
+            59398,
+            59704,
+            61068,
+            63768,
+            63770,
+            63781,
+            63795,
+            63796,
+            64002,
+            64174,
+            64183,
+            64458,
+            65833,
+            66564,
+            66580,
+            66598,
+            66867,
+            67988,
+            68002
+          ],
+          "phase_label_source": {
+            "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_promotion_readiness/fresh/exports/FRSH-0004/current/current/cache/snapshot/inference/family_cavity/position/SCAN.json",
+            "sha256": "7e2e4ecac1587bc6e6639817c73e0f979e462c59cd8d1d247c35caba9fdc6c34"
+          },
+          "phase_vector_A_s": [
+            -0.12739137154707122,
+            -0.4115693234248667,
+            -0.573852829197805,
+            -1.2840785119182863,
+            -0.7555979604555255,
+            -0.773233663127137,
+            -0.7498348318416886,
+            -0.42652114911191386,
+            -0.6089384803475966,
+            -0.1274940852079424,
+            0.8033389018141079,
+            -1.0627013531412,
+            -1.9478998505550837,
+            -0.8262610085441188,
+            -1.074290024503385,
+            -1.2437765916707726,
+            -0.014296795471776648,
+            -1.0127235641453458,
+            -0.6589327593902163,
+            0.31849463467167793
+          ],
+          "phase_vector_B_s": [
+            -0.12739137154707122,
+            -0.32900528465202067,
+            -0.45253111492030523,
+            -1.196896284127612,
+            -0.660256709467618,
+            -0.6628577016774194,
+            -0.668226351875517,
+            -0.3475301216895986,
+            -0.5290964575284355,
+            -0.01789878355445134,
+            0.901546851382408,
+            -0.9723588435532983,
+            -1.850675864803715,
+            -0.7319144515269407,
+            -0.968706256997414,
+            -1.134853942190948,
+            0.07079719899325435,
+            -0.9038887790822842,
+            -0.5753844215346423,
+            0.3994649949489799
+          ],
+          "phase_vector_change_s": [
+            0.0,
+            0.08256403877284602,
+            0.12132171427749977,
+            0.0871822277906742,
+            0.09534125098790747,
+            0.11037596144971762,
+            0.0816084799661716,
+            0.07899102742231523,
+            0.07984202281916108,
+            0.10959530165349105,
+            0.09820794956830003,
+            0.09034250958790169,
+            0.09722398575136881,
+            0.09434655701717809,
+            0.1055837675059711,
+            0.10892264947982455,
+            0.08509399446503099,
+            0.10883478506306166,
+            0.08354833785557403,
+            0.08097036027730198
+          ],
+          "maximum_absolute_phase_change_s": 0.12132171427749977,
+          "target_phase_change_s": 0.12132171427749977,
+          "saved_mode_posterior_available": false,
+          "saved_receiver_posterior_available": false,
+          "mode_posterior": null,
+          "receiver_posterior": null,
+          "posthoc_A_position_error_m": 2271.475841239861,
+          "posthoc_B_position_error_m": 3002.6479164349494,
+          "posthoc_position_error_change_m": 731.1720751950884
+        }
+      },
+      "native_input_sha256": "dd1c2cc4b64f9072bd5c3f632a2342701cdfa2a8eff2cf34304a40ce4f43a37b",
+      "covariance_history_sha256": "8136b807706ccddd251fb8c74bb0a92a922ee897ecc02823c0505c8e1df22161",
+      "nominal_epoch_utc_ns": 1793498401999872000,
+      "RF_cutoff_utc_ns": 1793561579687340175
+    }
+  ]
+}
