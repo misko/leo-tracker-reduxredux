@@ -12,7 +12,8 @@ from pathlib import Path
 
 from leo.contracts.fast_graph_position_v5 import MODEL_VERSION as INCUMBENT_VERSION
 from leo.contracts.fast_graph_position_v6 import MODEL_VERSION, NAMESPACE, validate_terminal
-from leo.storage.fast_graph_position import sha
+from leo.storage.fast_graph_position import sha, FastGraphPositionStore
+from leo.contracts.fast_graph_position import MODEL_VERSION as BASE_MODEL
 from leo.storage.fast_graph_position_v5_export import FastGraphPositionStoreV5Export
 from leo.storage.fast_scan import safe_id
 from leo.storage.uri import confined_path
@@ -173,7 +174,24 @@ class FastGraphPositionStoreV6:
         terminal, receipt = self.terminal(job)
         if terminal['state'] != 'complete':
             raise ValueError('Qualified ALGO07 terminal required')
-        workspace = confined_path(self.root, self.path(job['job_id']) / 'output/recovery', must_exist=True)
+        workspace = confined_path(self.root, self.path(job['job_id']) / 'output/recovery', must_exist=False)
+        if not (workspace/'inputs/SCAN.json').is_file():
+            # Optional recovery may fail before preparing inputs. Only a result
+            # that actually retains ALGO02 may replay the ALGO02 evidence port.
+            from leo.storage.graph_position_view_v6 import completed_view
+            if completed_view(job['run_id'],terminal)['selected']['model_version'] != BASE_MODEL:
+                raise ValueError('Selected recovery model has no prepared replay inputs')
+            source=job
+            while source['model_version'] != BASE_MODEL:
+                source=source['source_job']
+            baseline=FastGraphPositionStore(self.root).plot_evidence(source)
+            embedded=terminal
+            while 'incumbent' in embedded or 'baseline' in embedded:
+                embedded=embedded.get('incumbent',embedded.get('baseline'))
+            if baseline['terminal'] != embedded:
+                raise ValueError('Retained baseline differs from published ALGO07 selection')
+            return dict(baseline,job=job,baseline_terminal=baseline['terminal'],
+                        terminal=terminal,terminal_receipt=receipt)
         context = json.loads((workspace / 'inputs/SCAN.json').read_text())
         native = confined_path(workspace, Path(context['native_path']), must_exist=True)
         return dict(job=job, terminal=terminal, terminal_receipt=receipt,

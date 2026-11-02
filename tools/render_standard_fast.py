@@ -31,8 +31,13 @@ def replay(evidence, scratch):
     from algo06_science.position import family_score
     from prototype_dsx01_continuous_position import latlon
     root=Path(evidence['workspace']); terminal=evidence['terminal']
-    e.configure(root,root/'candidate')
-    d,z,checks=e.load_case('SCAN')
+    if evidence.get('replay_model')=='algo02':
+        from benchmark_graph_covariance import load_case
+        d=load_case(root,'SCAN');d['families']=[]
+        z=dict(baseline_arms=evidence['baseline_terminal']['arms'])
+    else:
+        e.configure(root,root/'candidate')
+        d,z,checks=e.load_case('SCAN')
     candidate=terminal['candidate']
     if candidate:
         # Reuse sealed historical exports. Any missing export raises; no archive access.

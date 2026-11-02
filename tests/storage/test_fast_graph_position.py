@@ -65,3 +65,19 @@ def test_export_rejects_symlinks_and_wrong_tracking_identity(tmp_path, monkeypat
     job['input_sha256'] = 'sha256:changed'
     with pytest.raises(ValueError, match='tracking input'):
         store.export_analysis(job, tmp_path / 'bad-identity')
+
+
+def test_baseline_plot_port_reads_owned_evidence_without_changing_source(tmp_path,monkeypatch):
+    store,job,source=export_fixture(tmp_path,monkeypatch)
+    (source.parent/'observations.json').write_text('[]')
+    (source.parent/'tracks.json').write_text('[]')
+    before={p.name:sha(p) for p in source.parent.iterdir()}
+    result=store.plot_evidence(job)
+    assert result['replay_model']=='algo02' and result['observations']==[]
+    assert result['observation_sha256']==before['observations.json']
+    assert before=={p.name:sha(p) for p in source.parent.iterdir()}
+    outside=tmp_path/'outside.json';outside.write_text('[]')
+    (source.parent/'observations.json').unlink()
+    (source.parent/'observations.json').symlink_to(outside)
+    from leo.storage.errors import PathConfinementError
+    with pytest.raises(PathConfinementError):store.plot_evidence(job)

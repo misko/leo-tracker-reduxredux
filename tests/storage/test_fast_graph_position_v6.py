@@ -133,3 +133,34 @@ def test_plot_port_binds_owned_native_evidence_and_rejects_path_escape(tmp_path,
     context.write_text(json.dumps(dict(native_path=str(tmp_path))))
     from leo.storage.errors import PathConfinementError
     with pytest.raises(PathConfinementError):store.plot_evidence(job)
+
+
+@pytest.mark.parametrize('prepared_folder',[True,False])
+def test_plot_port_replays_retained_baseline_after_optional_preparation_failure(tmp_path,monkeypatch,prepared_folder):
+    import leo.storage.fast_graph_position_v6 as module
+    import leo.storage.graph_position_view_v6 as view
+    baseline=dict(state='complete',model_version=module.BASE_MODEL,position={'latitude_deg':1})
+    terminal=dict(state='complete',incumbent={'baseline':baseline})
+    source=dict(model_version=module.BASE_MODEL,job_id='base')
+    job=dict(job_id='job',run_id='run',model_version=MODEL_VERSION,source_job=source)
+    store=module.FastGraphPositionStoreV6(tmp_path,incumbent=object())
+    if prepared_folder:(store.path('job')/'output/recovery').mkdir(parents=True)
+    monkeypatch.setattr(store,'terminal',lambda _: (terminal,{'sha256':'published'}))
+    monkeypatch.setattr(view,'completed_view',lambda *args:{'selected':{'model_version':module.BASE_MODEL}})
+    calls=[]
+    class Baseline:
+        value=baseline
+        def __init__(self,root):assert root==tmp_path
+        def plot_evidence(self,leaf):
+            calls.append(leaf)
+            return dict(terminal=self.value,workspace='owned',replay_model='algo02',observations=[])
+    monkeypatch.setattr(module,'FastGraphPositionStore',Baseline)
+    result=store.plot_evidence(job)
+    assert calls==[source] and result['terminal']==terminal
+    assert result['baseline_terminal']==baseline and result['replay_model']=='algo02'
+    assert result['terminal_receipt']=={'sha256':'published'}
+    Baseline.value=dict(baseline,position={'latitude_deg':2})
+    with pytest.raises(ValueError,match='differs from published'):store.plot_evidence(job)
+    monkeypatch.setattr(view,'completed_view',lambda *args:{'selected':{'model_version':'a-selected-new-model'}})
+    with pytest.raises(ValueError,match='no prepared replay'):store.plot_evidence(job)
+    assert calls==[source,source]

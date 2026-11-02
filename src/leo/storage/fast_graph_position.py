@@ -167,3 +167,17 @@ class FastGraphPositionStore:
         if current_receipt != receipt or again != terminal:
             raise ValueError("Terminal changed while exporting")
         return _publish_descriptor(destination, descriptor)
+
+    def plot_evidence(self, job):
+        """Read the qualified baseline's owned native evidence for exact replay."""
+        terminal, receipt = self.terminal(job)
+        if terminal['state'] != 'complete':
+            raise ValueError('Qualified graph terminal required')
+        workspace = confined_path(self.namespace, Path(receipt['path']).parent/'inference', must_exist=True)
+        native = confined_path(workspace, workspace/'SCAN', must_exist=True)
+        observations = confined_path(native, native/'observations.json', must_exist=True)
+        tracks = confined_path(native, native/'tracks.json', must_exist=True)
+        return dict(job=job, terminal=terminal, terminal_receipt=receipt,
+            replay_model='algo02', workspace=str(workspace),
+            observations=json.loads(observations.read_text()),tracks=json.loads(tracks.read_text()),
+            observation_sha256=sha(observations),tracks_sha256=sha(tracks))
