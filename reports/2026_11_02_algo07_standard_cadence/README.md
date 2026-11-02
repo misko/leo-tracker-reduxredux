@@ -17,3 +17,29 @@ The scheduler retains the existing five-minute capture and 7.5-minute inactive g
 Abandoned operational recording states are reconciled only while the acquisition authority can be exclusively claimed and the real checkpoint is at least 30 minutes old. Discovery timestamps do not establish capture liveness. Invalid old checkpoints remain evidence of interruption; their IQ and checkpoint bytes are never changed or fabricated as sealed captures. Live acquisition ownership and recent checkpoints prevent reconciliation.
 
 Deployment verification, exact runtime paths, all PNG checks and observed normal timer starts are recorded in the accompanying verification receipt. Rollback removes only the newly installed API, watcher and capture-orchestration overrides, stops the standard-figure worker, and restores the preceding service commands. Existing scientific terminals and image namespaces are preserved.
+
+## Verified publication
+
+The live API and figure worker use release `b23bce3b5063efd7bc8e0b791cfda5c0116ca6ea` under `/opt/leo-standard-fast/`. Commit `b23bce3b5` is on remote main. The staging receipt verifies that 351 native GLRT source files remain byte-identical to the preceding native-rate release; only the orchestration and publication overlay differs. Acquisition uses the independently deployed `c1537511d` cadence script. The recording timer remains unchanged.
+
+The [PNG audit](png-audit.json) verified every completed ALGO07 result available at the audit: **13 scans and 104 PNGs**. It checked the live HTTP image bytes, SHA-256, byte count, image decoding, immutable cache headers, exact terminal/input/native-observation/track hashes, both ownership-map hashes, both endpoints and the replayed RF objective. Both c arms matched their saved objectives to the declared 0.0001 tolerance. No post-observation TLE was used. An additional storage test confirms old digest-qualified URLs retain their prior bytes after the layout revision.
+
+The [live browser receipt](browser-verification.json) confirms all eight standard figures decoded, fitted-c error was 883.5 m, c=0 error was 912.0 m, the legacy result was collapsed, and there were no page exceptions, HTTP errors or requests to the obsolete recording-detail endpoint. The change passed 46 Python component checks and 266 UI tests; the web production build passed.
+
+Normal capture starts at 15:03:22, 15:15:57 and 15:28:35 UTC on November 2 correspond to 07:03:22, 07:15:57 and 07:28:35 PST. The observed spacings were 12m35s and 12m38s, consistent with five-minute captures, normal overhead and the retained 7.5-minute inactive gap. The last two captures finished at 15:21:03 and 15:33:39 UTC, respectively. No additional manual capture was launched.
+
+The wider rollout audit is still active: the fast-analysis watcher was asked to drain its in-progress GLRT work before taking its staged updated publication reader. A pre-existing interrupted 14:50 capture's GLRT run also needs queue recovery; its sealed IQ and completed products remain intact. These pending analysis tasks do not gate the restored capture cadence, and the completed-scan PNG verification above does not claim that pending scans have finished localization.
+
+## Matched-format figures
+
+These figures are from the same ALGO07 result described above. The layout matches the previous main PNGs; ownership, receiver calibration and orbital corrections come from ALGO07.
+
+![CH1–4 GLRT and ALGO07 orbital curves](figures/ch1-4-all.png)
+
+![CH5–8 GLRT and ALGO07 orbital curves](figures/ch5-8-all.png)
+
+![CH1–4 unassociated GLRT](figures/ch1-4-unassociated.png)
+
+![CH5–8 unassociated GLRT](figures/ch5-8-unassociated.png)
+
+Additional diagnostics: [CH1–4 residuals](figures/ch1-4-residuals.png), [CH5–8 residuals](figures/ch5-8-residuals.png), [fragment RMS](figures/track-rms.png), [both positions](figures/position.png), and the [live Web UI](figures/webui.png).
