@@ -1,18 +1,18 @@
 {
-  "observed_utc": "2026-11-02T16:03:51.502469+00:00",
+  "observed_utc": "2026-11-02T16:32:34.431068+00:00",
   "logical_CPUs": 24,
   "cpu_queue_capacity": 20,
   "services": {
     "leo-api.service": {
       "ActiveState": "active",
       "Restart": "on-failure",
-      "MainPID": "2289075",
+      "MainPID": "2311143",
       "argv": [
         "/opt/leo-tracker/releases/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/.venv/bin/python",
         "-m",
         "leo.api.production_v6_lookup"
       ],
-      "source_path": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/src"
+      "source_path": "/opt/leo-standard-fast/c54fd39e22d4e3b7e68490b603e6e3ab23ce8c79/src"
     },
     "leo-fast-scan-analysis.service": {
       "ActiveState": "active",
@@ -41,15 +41,15 @@
     "leo-fast-standard-analysis.service": {
       "ActiveState": "active",
       "Restart": "on-failure",
-      "MainPID": "2289071",
+      "MainPID": "2311119",
       "argv": [
         "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/bin/python",
         "-B",
-        "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/tools/render_standard_fast.py",
+        "/opt/leo-standard-fast/c54fd39e22d4e3b7e68490b603e6e3ab23ce8c79/tools/render_standard_fast.py",
         "--bulk-root",
         "/srv/bulk/leo"
       ],
-      "source_path": "/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/src:/opt/leo-standard-fast/17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3/tools"
+      "source_path": "/opt/leo-standard-fast/c54fd39e22d4e3b7e68490b603e6e3ab23ce8c79/src:/opt/leo-standard-fast/c54fd39e22d4e3b7e68490b603e6e3ab23ce8c79/tools"
     },
     "leo-v052-adaptive.timer": {
       "ActiveState": "active"
@@ -77,13 +77,13 @@
         "session_id": "fast-96aa7954543e6514fab6a0894366be93",
         "standard_algorithm": "ALGO07",
         "standard_stages": {
-          "algo07": false,
+          "algo07": true,
           "glrt": true
         },
-        "standard_terminal_sha256": null,
+        "standard_terminal_sha256": "sha256:eff6d28f1cb00918ca735a56517b05ab13ef0c9f444e7c3eec9848a821126bf4",
         "started_utc_ns": 1793631047544615465,
-        "state": "tracking",
-        "updated_utc_ns": 1793635430917493607,
+        "state": "complete",
+        "updated_utc_ns": 1793636628542601572,
         "window_count": 6772
       }
     },
@@ -108,13 +108,13 @@
         "session_id": "fast-1dbcbc3b492ab9dba8bf2f446567ba45",
         "standard_algorithm": "ALGO07",
         "standard_stages": {
-          "algo07": false,
+          "algo07": true,
           "glrt": true
         },
-        "standard_terminal_sha256": null,
+        "standard_terminal_sha256": "sha256:f28fa25508bed630b137b0c4ac7724718a7084bec5dc392e2bcd432a0ac8ba88",
         "started_utc_ns": 1793632560382497158,
-        "state": "tracking",
-        "updated_utc_ns": 1793635430918284727,
+        "state": "complete",
+        "updated_utc_ns": 1793636479475336067,
         "window_count": 6772
       }
     }
@@ -175,6 +175,49 @@
       "attempts": 1735,
       "failure": null,
       "finished_utc_ns": 1793635133685452630
+    },
+    {
+      "completed": 1683,
+      "mode": "fast",
+      "edge": "upper",
+      "state": "complete",
+      "started_utc_ns": 1793635585370955140,
+      "campaign": "fast8-auto-20261102-160625-e9e02a8e",
+      "attempts": 1736,
+      "failure": null,
+      "finished_utc_ns": 1793635891249650413
+    },
+    {
+      "completed": 1684,
+      "mode": "adaptive",
+      "edge": null,
+      "state": "complete",
+      "started_utc_ns": 1793636343096265133,
+      "campaign": null,
+      "attempts": 1737,
+      "failure": null,
+      "finished_utc_ns": 1793636646716837727
     }
-  ]
+  ],
+  "capture_intervals_s": [
+    754.816,
+    758.255,
+    756.239,
+    758.343,
+    755.397,
+    757.725
+  ],
+  "before_fix": {
+    "start_utc": "2026-11-02 02:50:38",
+    "end_utc": "2026-11-02 14:50:38",
+    "completed": 17,
+    "modes": {
+      "adaptive": 9,
+      "fast": 8
+    },
+    "states": {
+      "deferred": 67,
+      "complete": 17
+    }
+  }
 }
