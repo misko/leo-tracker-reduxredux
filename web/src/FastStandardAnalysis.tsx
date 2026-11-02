@@ -8,8 +8,8 @@ type Analysis = { schema_version: number; state: string; model_version: string; 
   artifacts: {name: string; sha256: string}[] };
 const labels: Record<string,string> = {"ch1-4-all":"CH1–4 · GLRT, satellite owners and fitted orbital curves",
   "ch5-8-all":"CH5–8 · GLRT, satellite owners and fitted orbital curves",
-  "ch1-4-unassociated":"CH1–4 · Unassociated GLRT and polynomial tracks",
-  "ch5-8-unassociated":"CH5–8 · Unassociated GLRT and polynomial tracks",
+  "ch1-4-unassociated":"CH1–4 · Unassociated GLRT and orbital curves",
+  "ch5-8-unassociated":"CH5–8 · Unassociated GLRT and orbital curves",
   "ch1-4-residuals":"CH1–4 · Satellite residuals", "ch5-8-residuals":"CH5–8 · Satellite residuals",
   "track-rms":"RMS for every associated track", position:"Published positions · both calibration arms"};
 
@@ -43,7 +43,7 @@ export function FastStandardAnalysis({runId}:{runId:string}) {
           <td>{a.tracks} / {a.satellites}</td><td>{a.residual_rms_hz.toFixed(2)} Hz</td>
         </tr>;})}</tbody></table>
       {data.evaluation_reference && <p>Evaluation reference: {data.evaluation_reference.latitude_deg.toFixed(8)}, {data.evaluation_reference.longitude_deg.toFixed(8)}. Used only to report error after fitting.</p>}
-      <p>Every figure below uses this ALGO07 result and its published GLRT ownership. Red points are unassociated. Residuals are conditional model diagnostics.</p>
+      <p>Every figure below uses this ALGO07 result and its published GLRT ownership. Gray points are unassociated. CFO plots use the calibrated, wrapped frequency frame. Residuals are conditional model diagnostics.</p>
       <p>The association percentage uses the qualified native GLRT points supplied to ALGO07.</p>
       {data.artifacts.map(a=>{const url=`${base}/${encodeURIComponent(a.name)}.png?sha256=${encodeURIComponent(a.sha256)}`;return <figure key={`${a.name}:${a.sha256}`}>
         <figcaption><a href={url} target="_blank" rel="noreferrer">{labels[a.name]??a.name} · PNG</a></figcaption>

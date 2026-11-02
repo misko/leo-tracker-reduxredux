@@ -44,3 +44,23 @@ def test_publication_preserves_existing_revision(tmp_path):
     store=FastStandardAnalysisStore(tmp_path);d,pngs=publication();store.publish('run',d,pngs)
     changed=copy.deepcopy(d);changed['arms']['c0']['associated_points']=0
     with pytest.raises(ValueError,match='immutable'):store.publish('run',changed,pngs)
+
+
+def test_layout_revision_preserves_old_digest_urls_and_evaluation_reference(tmp_path):
+    import json
+    from leo.storage.fast_standard_analysis import digest
+    store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
+    old=store.publish('run',d,pngs)
+    store.set_evaluation_reference('run',37.849061591561885,-122.48574968092912)
+    base=store.base_folder('run')
+    for path in store.folder('run').iterdir():
+        path.rename(base/path.name)
+    new_pngs={name:data+b'render revision' for name,data in pngs.items()}
+    new=store.publish('run',d,new_pngs)
+    assert json.loads((base/'manifest.json').read_text())==old
+    assert store.detail('run')['arms']['fitted_c']['evaluation_error_m']==pytest.approx(883.504916204,abs=1e-6)
+    for a in old['artifacts']:
+        assert store.artifact('run',a['name'],a['sha256'])==pngs[a['name']]
+    for a in new['artifacts']:
+        assert store.artifact('run',a['name'])==new_pngs[a['name']]
+        assert a['sha256']==digest(new_pngs[a['name']])

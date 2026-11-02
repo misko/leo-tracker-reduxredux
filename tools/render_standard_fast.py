@@ -1,5 +1,6 @@
 """Render the published ALGO07 endpoint; never search position or identities."""
 import argparse
+import fcntl
 import hashlib
 import json
 from pathlib import Path
@@ -12,8 +13,9 @@ import numpy as np
 from leo.contracts.fast_graph_position_v6 import owners, MODEL_VERSION
 from leo.storage.graph_position_view_v6 import completed_view
 from leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6
-from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+from leo.storage.fast_standard_analysis import FastStandardAnalysisStore, RENDER_REVISION
 from leo.presentation.fast_standard_analysis import render
+from standard_orbit_lanes import calibrated_lanes
 
 
 def read(path):
@@ -48,7 +50,7 @@ def replay(evidence, scratch):
             d['problems'][arm]=(p,np.asarray(row['endpoint_east_north_km']))
     view=completed_view(evidence['job']['run_id'],terminal)
     published=owners(terminal); all_rows={}; summaries={}; differences={}
-    native={o['observation_id']:o for o in evidence['observations']}
+    native={o['observation_id']:o for o in evidence['observations']}; lanes=None
     for arm,(p,x) in d['problems'].items():
         expected=candidate['arms'][arm] if candidate else z['baseline_arms'][arm]
         if not np.allclose(latlon(x),expected['endpoint_latlon'],rtol=0,atol=1e-9):
@@ -77,6 +79,8 @@ def replay(evidence, scratch):
         for f,detail in zip(fs,details,strict=True):
             for entry,diag in zip(f.entries,detail['diagnostics'],strict=True):
                 add(entry['observation_ids'],diag['raw_residual_hz'],entry['norad'],entry['component'],'phase_mixture_MAP')
+        if arm=='fitted_c':
+            lanes=calibrated_lanes(p,x,c,evidence['observations'],published[arm],fs,details)
         if set(rows)!=set(published[arm]):
             raise ValueError(f'{arm}: predictions missing for {len(set(published[arm])-set(rows))} published points')
         all_rows[arm]=list(rows.values())
@@ -85,11 +89,19 @@ def replay(evidence, scratch):
             tracks=len({r['component'] for r in rows.values()}),satellites=len(set(published[arm].values())),
             residual_rms_hz=float(np.sqrt(np.mean([r['residual_hz']**2 for r in rows.values()]))),
             owner_sha256=sha(published[arm]))
-    return dict(observations=evidence['observations'],tracks=evidence['tracks'],rows=all_rows,
+    return dict(observations=evidence['observations'],tracks=evidence['tracks'],rows=all_rows,orbit_lanes=lanes,
                 arms=summaries,objective_replay=differences,selected_model=view['selected']['model_version'])
 
 
 def publish(source, target, job):
+    folder=target.folder(job['run_id']);folder.mkdir(parents=True,exist_ok=True)
+    with (folder/'render.lock').open('a') as handle:
+        try:fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:return dict(state='rendering',artifacts=[])
+        return _publish(source,target,job)
+
+
+def _publish(source, target, job):
     old=target.detail(job['run_id'])
     if old['state']=='complete':
         for a in old['artifacts']:target.artifact(job['run_id'],a['name'],a['sha256'])
@@ -97,7 +109,11 @@ def publish(source, target, job):
     began=time.monotonic();evidence=source.plot_evidence(job)
     with tempfile.TemporaryDirectory(prefix='standard-algo07-') as tmp:
         packet=replay(evidence,Path(tmp))
-        pngs=render(packet,title=job['run_id'])
+        acquisition=job
+        while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
+            acquisition=acquisition['source_job']
+        title=acquisition.get('fast_acquisition',{}).get('recording_name',job['run_id'])
+        pngs=render(packet,title=title)
     # Publication is bound to the exact scientific terminal, not its timestamp.
     again=source.plot_evidence(job)
     if again['terminal_receipt']!=evidence['terminal_receipt']:
@@ -108,7 +124,8 @@ def publish(source, target, job):
         glrt_points=len(packet['observations']),arms=packet['arms'],objective_replay=packet['objective_replay'],
         input_sha256=job['input_sha256'],terminal_sha256=evidence['terminal_receipt']['sha256'],
         observations_sha256=evidence['observation_sha256'],tracks_sha256=evidence['tracks_sha256'],
-        figures_model=MODEL_VERSION,figure_frequency_frame='native measured CFO; phase/orbit/receiver corrections included',
+        figures_model=MODEL_VERSION,renderer_revision=RENDER_REVISION,
+        figure_frequency_frame='receiver calibration removed; wrapped at GLRT alias period',
         replay_seconds=time.monotonic()-began)
     return target.publish(job['run_id'],document,pngs)
 
