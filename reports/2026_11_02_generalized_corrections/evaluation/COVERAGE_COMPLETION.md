@@ -1,0 +1,9 @@
+# Prospective queue completion
+
+The original eight-worker, 1,200-second wave remains unchanged. While that wave was running, its throughput showed that many members of the 205-case roster would never reach a worker. Before any geography was released, a separate prospective execution plan authorized at most two additional 1,200-second waves with 16 BLAS=1 workers. Scientific policies, cell limits, priors, starts and selection rules remain imported unchanged from the frozen worker.
+
+Only cases with no actual prior attempt can enter an additional wave. A terminal worker receipt, recorded worker elapsed time, numerical/reconstruction fields, preserved started checkpoint, or **any** case artifact besides the manager's final `result.json` makes the case permanently ineligible for another attempt. This includes incomplete atomic writes and empty engine directories. A model-arm timeout, preprocessing timeout, guard timeout, failure or interrupted started case is never retried. Every previous pool must be joined before the next wave begins.
+
+The completion wrapper verifies source seals, chronological prior packet/row protocol bindings, native input hashes, recording identities, unique case IDs and the full original roster. `eligibility_plan.json` records every start-evidence decision before each wave. It does not use fitted scores, acceptance decisions or position errors to choose the queue. Six tests cover no-retry classification, protocol/input binding and imported-worker dispatch.
+
+The postfit merge preserves exact source rows and records component file hashes plus per-case authoritative provenance. A later row can replace only a manager-only never-started placeholder. Started cases retain their first terminal result forever. The combined RF ledger is independently audited before the parent reads geography. Two merge tests check exact row preservation and rejection of any attempted-case replacement.

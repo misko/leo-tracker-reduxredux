@@ -1,0 +1,259 @@
+{
+  "case": "DS26-0309",
+  "receipt": {
+    "policy": {
+      "version": "causal-anisotropic-v1",
+      "minimum_epochs": 3,
+      "minimum_span_hours": 12,
+      "epoch_spacing_hours": 6,
+      "maximum_age_hours": 72,
+      "shrinkage_to_identity": 0.5,
+      "covariance_eigenvalue_bounds": [
+        1.0,
+        16.0
+      ],
+      "minimum_represented_energy_fraction": 0.5,
+      "sample_times": "minimum, midpoint, maximum timestamp of all native observations",
+      "maximum_alignment_s": 120.0,
+      "alignment_maximum_steps": 8,
+      "alignment_tolerance_s": 1e-07,
+      "historical_distribution": "uncentered coefficient second moment; zero prior mean",
+      "temporal_correlation": "not independent; no sample-count precision or confidence claim",
+      "baseline_history_reuse": "replace by shrunk second moment, never add independent information",
+      "unsupported_variance": "report residual; no additional modes; fallback if less than half represented"
+    },
+    "status": "ready",
+    "applied": true,
+    "added_columns": 0,
+    "RF_or_GPS_used_for_covariance": false,
+    "causal_qualification": "verified epoch and archived availability receipts",
+    "selected_family": 60148,
+    "history_path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/causal_phase_history/SCAN.json",
+    "nominal_elements_path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/SCAN/nominal_elements.json",
+    "history_sha256": "a793c2651e25be4814c5af24e1adbdbc13f69869169838cde395e527c81f38c7",
+    "nominal_elements_sha256": "2de8e615edc5baa18a5a494271ee74857aabce5a63694d959cb2f31a1c63cb3e",
+    "raw_target_versions": 6,
+    "eligible_distinct_epochs": 4,
+    "selected_epochs": 4,
+    "selected_span_hours": 33.99972216,
+    "excluded": [
+      {
+        "epoch_utc_ns": 1793085257139264000,
+        "reason": "not older eligible 72-hour epoch"
+      },
+      {
+        "epoch_utc_ns": 1793275204999967744,
+        "reason": "not older eligible 72-hour epoch"
+      }
+    ],
+    "nominal_element_sha256": "aaac361b6b07433ad9a5179780669feda2ab43d38aae4602dcbcf2f52c183a11",
+    "nominal_epoch_utc_ns": 1793275204999967744,
+    "nominal_collected_utc_ns": 1793354675408927643,
+    "nominal_snapshot_first_verified_collection_utc_ns": 1793347483942715102,
+    "nominal_receipt_policy": "same snapshot bytes available no later than nominal receipt; duplicate collections may be deduplicated",
+    "nominal_snapshot_sha256": "b9271cb0b50e60a49b547c429fe146947a6175bf547734f766a32d691467e2af",
+    "history_records": [
+      {
+        "element_sha256": "f55667c85b9cec215975bb3a8347970f6a2ea566fb1270d718ec2b38708906ea",
+        "epoch_utc_ns": 1793239201999872000,
+        "collected_utc_ns": 1793304268852724990,
+        "snapshot_sha256": "d133dd1e1bf878bbeb5b2ca45596a12c2af1822289a590e93c058110dc47eea3"
+      },
+      {
+        "element_sha256": "74a546b0933e8af732fc7bff80a3a74a2fb95073938acab35a775c39d638d222",
+        "epoch_utc_ns": 1793210402000160256,
+        "collected_utc_ns": 1793271836557485524,
+        "snapshot_sha256": "29983d9cf21b7913a86618d0dea722f6fc80695bbbd6d9a67bda36160587f470"
+      },
+      {
+        "element_sha256": "aa578d19089b0fa832757837b0c1390ec631dec443a6102f872d230a3b6ff05b",
+        "epoch_utc_ns": 1793181601999584000,
+        "collected_utc_ns": 1793217819456832744,
+        "snapshot_sha256": "dd772159392a8d128c0b21e09305445c59ed95f7f0453899b7508ebc7044270b"
+      },
+      {
+        "element_sha256": "9076b2f55c825e84296a1c0baf280ee44dc77bb4d71e36e0b2d2f77b5a3b02bb",
+        "epoch_utc_ns": 1793116803000096000,
+        "collected_utc_ns": 1793156476490921440,
+        "snapshot_sha256": "2a4d61a1a7c0a5ce23c6c9832fdd3336b485474015f89f3ef0823dcb3728cf24"
+      }
+    ],
+    "temporal_extent_source": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/SCAN/observations.json",
+    "temporal_extent_source_sha256": "5d6e4350cea4603fcf7d02645424c0572819a698c156d543d583c9b9dee220e2",
+    "projection_times_s": [
+      0.01,
+      150.04169869999998,
+      300.0733974
+    ],
+    "orbital_velocity_timescale_s": 896.3482435850909,
+    "state_design_singular_values": [
+      0.1454235642770068,
+      0.13358892899762662,
+      0.10036522495125769
+    ],
+    "represented_energy_fraction": 0.9499340185085883,
+    "historical_projection": [
+      {
+        "epoch_utc_ns": 1793239201999872000,
+        "alignment_s": 1.2577372569561014,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": -1.7076477250089103e-10,
+        "coefficients": [
+          -0.4089796047911425,
+          0.7290386883108013,
+          -2.5201588186604402
+        ],
+        "phase_removed_state_energy_km2": 0.1696578491805603,
+        "projection_residual_energy_km2": 0.046036275027612435
+      },
+      {
+        "epoch_utc_ns": 1793210402000160256,
+        "alignment_s": 2.103612821025328,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": 1.5837619586046821e-09,
+        "coefficients": [
+          -2.3282616912167287,
+          0.7185447128792748,
+          -3.0620403851283777
+        ],
+        "phase_removed_state_energy_km2": 0.24631600893012723,
+        "projection_residual_energy_km2": 0.036086431937412414
+      },
+      {
+        "epoch_utc_ns": 1793181601999584000,
+        "alignment_s": -5.193005887416959,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": 9.819953318060784e-10,
+        "coefficients": [
+          5.736545200736436,
+          1.0485157318646108,
+          -1.1218781575129892
+        ],
+        "phase_removed_state_energy_km2": 0.41867706068796484,
+        "projection_residual_energy_km2": 0.004255617861090856
+      },
+      {
+        "epoch_utc_ns": 1793116803000096000,
+        "alignment_s": 11.47431692162606,
+        "alignment_converged": true,
+        "alignment_steps": 3,
+        "final_alignment_step_s": 1.1499251509508686e-08,
+        "coefficients": [
+          -10.86521921436284,
+          0.4172578888050502,
+          -4.1371486483638655
+        ],
+        "phase_removed_state_energy_km2": 1.4103293682799496,
+        "projection_residual_energy_km2": 0.026018816675345842
+      }
+    ],
+    "residual_phase_tangent_removed": true,
+    "common_epoch_utc_ns": [
+      1793357750749332518,
+      1793357900781031217,
+      1793358050812729918
+    ],
+    "second_moment": [
+      [
+        39.13725155904355,
+        -0.12246565607761598,
+        11.668811777476433
+      ],
+      [
+        -0.12246565607761598,
+        0.5803233247995804,
+        -1.7350177542311367
+      ],
+      [
+        11.668811777476433,
+        -1.7350177542311367,
+        8.525475332598207
+      ]
+    ],
+    "unbounded_eigenvalues": [
+      0.5036790220832464,
+      3.0735605297074136,
+      22.044285556430005
+    ],
+    "bounded_eigenvalues": [
+      1.0,
+      3.0735605297074136,
+      16.0
+    ],
+    "eigenvalue_clipped_count": 2,
+    "coefficient_covariance": [
+      [
+        14.651083784470625,
+        -0.013758221651663126,
+        3.984926152166069
+      ],
+      [
+        -0.013758221651663126,
+        1.2305591174031016,
+        -0.6879017649600218
+      ],
+      [
+        3.984926152166069,
+        -0.6879017649600218,
+        4.191917627833684
+      ]
+    ],
+    "reason": "separated causal history supports existing modes",
+    "coefficient_prior": "standard normal after mode transform; original Gaussian determinant retained"
+  },
+  "replay": {
+    "pre_recovery": {
+      "c0": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3008,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      },
+      "fitted_c": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3008,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      }
+    },
+    "recovery": {
+      "excluded": [],
+      "eligible_proposals": 0,
+      "status": "no_qualified_new_family"
+    },
+    "rebuilt": {
+      "c0": 0.0,
+      "fitted_c": 0.0
+    }
+  },
+  "checks": {
+    "c0": {
+      "unrelated_feature_max_difference": 0.0,
+      "changed_columns": [
+        57,
+        58,
+        59
+      ],
+      "all_other_arrays_exact": true,
+      "feature_count": 179
+    },
+    "fitted_c": {
+      "unrelated_feature_max_difference": 0.0,
+      "changed_columns": [
+        58,
+        59,
+        60
+      ],
+      "all_other_arrays_exact": true,
+      "feature_count": 180
+    }
+  },
+  "position_fit_performed": false,
+  "evaluation_coordinate_read": false,
+  "source_sha256": "04c63abf99a198bb0cd5352db7f96334800f1baf3e6524287f8a5bf4fa43ef32"
+}

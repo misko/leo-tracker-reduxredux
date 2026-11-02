@@ -1,0 +1,109 @@
+{
+  "status": "passed",
+  "no_optimizer": true,
+  "no_phase_refresh": true,
+  "no_GPS_read": true,
+  "maximum_cases": 3,
+  "seconds_cap": 90.0,
+  "seconds": 66.49572216439992,
+  "protocol_sha256": "bf842fd3bfa2ffc206c1a1ab6f2534c8209a762f039aac51237297d8a52145de",
+  "results_sha256": "ca7ead701421ef645a9c93b2a59bc59c5ffc0803ae697c1a9a246639075ed3ba",
+  "auditor_sha256": "1dee0c1baf2f48528d513a01aa6216d9b92aa42cbecc0cd738e627f0f3954211",
+  "checks": [
+    {
+      "case": "DS24-0010",
+      "endpoint_replays": [
+        {
+          "model": "A",
+          "arm": "c0",
+          "objective_difference": 0.0,
+          "phase_gap_s": 0.005297903397011083,
+          "projected_gradient_inf": 6.493064574895121e-05
+        },
+        {
+          "model": "A",
+          "arm": "fitted_c",
+          "objective_difference": 0.0,
+          "phase_gap_s": 3.776314514536416e-05,
+          "projected_gradient_inf": 5.2423274610174074e-05
+        },
+        {
+          "model": "A+B",
+          "arm": "c0",
+          "objective_difference": 0.0,
+          "phase_gap_s": 0.008460592499183878,
+          "projected_gradient_inf": 7.119888323356814e-05
+        },
+        {
+          "model": "A+B",
+          "arm": "fitted_c",
+          "objective_difference": 0.0,
+          "phase_gap_s": 0.006627522404746955,
+          "projected_gradient_inf": 9.105497156266807e-05
+        }
+      ],
+      "guard_replays": [
+        {
+          "arm": "c0",
+          "target_tracks_perturbed": 3,
+          "target_CFO_shift_hz": 1000000.0,
+          "target_perturbation_invariant": true,
+          "independent_projection": {
+            "displacement_information": 0.0005917573133406265,
+            "projected_RF_gain": -0.05678734985929251
+          }
+        },
+        {
+          "arm": "fitted_c",
+          "target_tracks_perturbed": 3,
+          "target_CFO_shift_hz": 1000000.0,
+          "target_perturbation_invariant": true,
+          "independent_projection": {
+            "displacement_information": 0.0004884772580536747,
+            "projected_RF_gain": -0.05198285593790041
+          }
+        }
+      ]
+    },
+    {
+      "case": "DS24-0011",
+      "endpoint_replays": [
+        {
+          "model": "A",
+          "arm": "c0",
+          "objective_difference": 0.0,
+          "phase_gap_s": 0.005533218039003751,
+          "projected_gradient_inf": 2.2555468603961087e-07
+        },
+        {
+          "model": "A",
+          "arm": "fitted_c",
+          "objective_difference": 0.0,
+          "phase_gap_s": 8.540537504764245e-06,
+          "projected_gradient_inf": 5.17247826792127e-05
+        }
+      ],
+      "guard_replays": []
+    },
+    {
+      "case": "DS24-0012",
+      "endpoint_replays": [
+        {
+          "model": "A",
+          "arm": "c0",
+          "objective_difference": 0.0,
+          "phase_gap_s": 0.007133959531027134,
+          "projected_gradient_inf": 9.622453944754366e-07
+        },
+        {
+          "model": "A",
+          "arm": "fitted_c",
+          "objective_difference": 0.0,
+          "phase_gap_s": 7.315235353022587e-06,
+          "projected_gradient_inf": 0.00029634247766797777
+        }
+      ],
+      "guard_replays": []
+    }
+  ]
+}

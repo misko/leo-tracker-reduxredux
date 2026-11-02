@@ -1,0 +1,65 @@
+{
+  "case": "DS26-0309",
+  "receipt": {
+    "policy": {
+      "version": "causal-anisotropic-v1",
+      "minimum_epochs": 3,
+      "minimum_span_hours": 12,
+      "epoch_spacing_hours": 6,
+      "maximum_age_hours": 72,
+      "shrinkage_to_identity": 0.5,
+      "covariance_eigenvalue_bounds": [
+        1.0,
+        16.0
+      ],
+      "minimum_represented_energy_fraction": 0.5,
+      "sample_times": "minimum, midpoint, maximum timestamp of all native observations",
+      "maximum_alignment_s": 120.0,
+      "alignment_maximum_steps": 8,
+      "alignment_tolerance_s": 1e-07,
+      "historical_distribution": "uncentered coefficient second moment; zero prior mean",
+      "temporal_correlation": "not independent; no sample-count precision or confidence claim",
+      "baseline_history_reuse": "replace by shrunk second moment, never add independent information",
+      "unsupported_variance": "report residual; no additional modes; fallback if less than half represented"
+    },
+    "status": "fallback",
+    "applied": false,
+    "added_columns": 0,
+    "RF_or_GPS_used_for_covariance": false,
+    "causal_qualification": "unverified",
+    "selected_family": 60148,
+    "history_path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/causal_phase_history/SCAN.json",
+    "nominal_elements_path": "/srv/bulk/leo/research/algo03-full-evaluation-20261030/cases/DS26-0309/candidate-v2/recovery/snapshot/inference/SCAN/nominal_elements.json",
+    "history_sha256": "a793c2651e25be4814c5af24e1adbdbc13f69869169838cde395e527c81f38c7",
+    "nominal_elements_sha256": "2de8e615edc5baa18a5a494271ee74857aabce5a63694d959cb2f31a1c63cb3e",
+    "reason": "Nominal availability and snapshot digest not bound by history source ledger"
+  },
+  "replay": {
+    "pre_recovery": {
+      "c0": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3008,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      },
+      "fitted_c": {
+        "incumbent_core_objective_difference": 0.0,
+        "full_selected_likelihood_difference": 0.0,
+        "associated_points": 3008,
+        "incidental_unpublished_extensions_not_adopted": 0,
+        "selected_kind": "new_family"
+      }
+    },
+    "recovery": {
+      "excluded": [],
+      "eligible_proposals": 0,
+      "status": "no_qualified_new_family"
+    },
+    "rebuilt": {
+      "c0": 0.0,
+      "fitted_c": 0.0
+    }
+  },
+  "source_sha256": "2d686957e779c481f5fa2837a356f3aca874e0c7712689aa57cec733afddf38f"
+}
