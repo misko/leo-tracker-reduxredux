@@ -1,0 +1,20 @@
+{
+  "frozen_utc": "2026-11-02",
+  "engine_revision": "d8d7033f9",
+  "scope": ["DS26-0309", "DS26-0070"],
+  "family_selection": "First existing ALGO07 RF influence-triggered family: summed c-arm omission displacement >=0.5 km, >=30 points, >=2 tracks; descending displacement, NORAD tie break. No case ID or evaluation truth selection.",
+  "physical_standard_deviation_scale_grid": [1, 2, 4],
+  "covariance_scale_grid": [1, 4, 16],
+  "extension": "Scale all three existing selected-family physical orbital perturbation directions together, keeping unit Gaussian latent priors. No new modes or free affine terms.",
+  "normalization": "Unmodified hierarchical_bound Gaussian logdet and Gamma terms, predictive normalization, and family evidence; fixed existing powers mean generalized evidence where powers<1.",
+  "unchanged": ["native observations and IDs", "masks and aliases", "candidate identities", "receiver and band priors", "phase priors", "noise priors and powers", "existing fragment constants", "exact residual gates", "phase closure", "membership checks"],
+  "starts": ["published fitted-c RF position and phase reference shared by both arms"],
+  "arms": ["c0", "fitted_c"],
+  "search_budget": {"rounds": 15, "feasible_iterations_per_round": 40, "bounds_east_north_km": [-12.5, 12.5], "phase_tolerance_s": 0.01},
+  "fit_selection": "Retain every grid cell; no GPS selection. Root supplies independent predictive comparison and combined model.",
+  "qualification": "All original approximate and exact gates, predictive mixture gates and interior, optimizer success, phase closure, and no lost/reassigned native owners. RMS alone is never qualification.",
+  "evaluation_truth": "Only computed after each RF fit; never read by prototype or used to choose family, prior, scale, start, or model.",
+  "first_experiment_wall_cap_seconds": 900,
+  "max_workers": 4,
+  "blas_threads_per_worker": 1
+}

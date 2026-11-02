@@ -1,0 +1,36 @@
+{
+  "revision": "d8d7033f9f654279463fa054cd2020be0bfd273e",
+  "created_utc_ns": 1793584832748658124,
+  "source_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/combined.py": "649d00194244d55e912a6749528e8d435e9720d9de01663d06af405c574bf8d7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/solver/solver.py": "fc97b193dfc1524b36e91eb3574c43466ca220780842eb81d1c1d54fa2377369",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/family/prototype.py": "55ee6ade39b3f3e61eb7935f669b1279f9a53677fe53384b29397815172f1662"
+  },
+  "cases": [
+    "DS26-0070",
+    "DS26-0309"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "physical_SD_scales": [
+    1,
+    2,
+    4
+  ],
+  "solver": "damped_half",
+  "rounds": 15,
+  "maxiter": 35,
+  "maxfun": 140,
+  "target": "first generic ALGO07 RF influence-selected family",
+  "candidates": "incumbent plus all whole-family proposals from prior complete causal RF screen; exclude already-owned destinations",
+  "candidate_selection": "full-data RF discovery, fixed before this experiment; development evidence, not independent discovery",
+  "history": "same full causal history union across all retained hypotheses, including incumbent",
+  "starts": "same published fitted-c position; mapped phase references per identity, same within each c pair",
+  "mixture": "diagnostic generalized-ELBO weights over both-arm-qualified models; equal ID prior, SD prior .6/.3/.1; not calibrated identity probabilities",
+  "qualification": "phase closure, optimizer, base/exact/mixture residual gates, phase interior, unchanged fitted IDs and no unrelated owner loss/reassignment",
+  "no_match": "if no paired model qualifies, unresolved; no forced or averaged endpoint",
+  "predictive_requirement": "no promotion based on generalized-ELBO ensemble; whole-group predictive checks required",
+  "truth": "postfit reporting only; never chooses identity, scale, start, solver or model weight"
+}

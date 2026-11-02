@@ -1,0 +1,48 @@
+{
+  "control": "All original48cells cap15, no reuse",
+  "changed_parameter": "phase cap8\u219215 only",
+  "original_results_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0309_results.json": "87c129d875b71c7afa5c1a66c3b20c172cd20c8de897a5b89472ff40236425f5",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0070_results.json": "6add7f3cf5dcf96b9db4019354e2c3ce54fc3d59ab4222c368165732918d39ce"
+  },
+  "original_protocol_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0309_protocol.json": "c25e61f0697a91c408971b358e7f673b315fd736dad2d676dfdc69a188217382",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0070_protocol.json": "7cd1296e0faeb1c6a46b5dda1d9ed12a0cf9b8a540bea33efa094f0334bdfa50"
+  },
+  "source_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/extended/control.py": "de64c9a329081413dfbce591fd5854622436c47075e638c81f77a61ffba63fee",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/extended/frozen_solver.py": "fc97b193dfc1524b36e91eb3574c43466ca220780842eb81d1c1d54fa2377369",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/predictive.py": "d9b0806bfbfa1bfbb68fe9096d30d0769445de944c9f83eb1a2cafea5eb314b0",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/family/prototype.py": "55ee6ade39b3f3e61eb7935f669b1279f9a53677fe53384b29397815172f1662"
+  },
+  "models": [
+    [
+      "legacy",
+      1.0
+    ],
+    [
+      "damped_half",
+      1.0
+    ],
+    [
+      "damped_half",
+      2.0
+    ],
+    [
+      "damped_half",
+      4.0
+    ]
+  ],
+  "fold_policy": "exact original native train/held IDs, guard, seeds",
+  "position_and_reference_starts": "same frozen fitted_c full-data RF endpoint/reference for all arms as original",
+  "solver_budget": {
+    "max_rounds": 15,
+    "maxiter": 25,
+    "maxfun": 100
+  },
+  "workers": 4,
+  "BLAS_threads": 1,
+  "qualification": "phase_closed AND optimizer_success AND no boundary AND positive unfloored position curvature AND positive normalized predictive covariance. Numerical pass is not generalization/production qualification.",
+  "no_GPS": true,
+  "scope": "Same conditional base-curved-family model and empirical-development leakage as original; no model selection or preprocessing refit claim."
+}

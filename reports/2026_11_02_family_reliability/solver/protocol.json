@@ -1,0 +1,84 @@
+{
+  "frozen_before_new_scores": true,
+  "created_utc_ns": 1793584663511719776,
+  "revision": "d8d7033f9f654279463fa054cd2020be0bfd273e",
+  "cases": [
+    "DS26-0070",
+    "DS26-0309"
+  ],
+  "arms": [
+    "c0",
+    "fitted_c"
+  ],
+  "variants": [
+    "legacy",
+    "damped_half",
+    "damped_quarter"
+  ],
+  "optional_variant_rule": "run damped_quarter on BOTH c arms of a case only if any damped_half arm is not phase closed",
+  "new_solver_variants": 2,
+  "damping": [
+    0.5,
+    0.25
+  ],
+  "phase_tolerance_s": 0.01,
+  "reference_limit_s": 30,
+  "max_rounds": 15,
+  "maxiter": 35,
+  "maxfun": 140,
+  "maxls": 15,
+  "ftol": 1e-10,
+  "gtol": 0.0001,
+  "eps": 0.001,
+  "starts": "shared published fitted-c endpoint and phase reference, both c arms",
+  "selection": "all fixed endpoints reported; no truth-based selection",
+  "objective": "unchanged existing ELBO + family score + elevation penalty at each fixed reference",
+  "objective_invariance": "false for nonlinear geometry; refresh changes the approximation, damping targets same fixed-point equations",
+  "phase_parameterization": "absolute phase / prior sigma; unchanged mean/sigma and latent prior; no delta-phase prior shift",
+  "bounds_km": [
+    [
+      -12.5,
+      12.5
+    ],
+    [
+      -12.5,
+      12.5
+    ]
+  ],
+  "input_root": "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants",
+  "sources": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/solver/solver.py": "fc97b193dfc1524b36e91eb3574c43466ca220780842eb81d1c1d54fa2377369",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/solver/run.py": "e9884be82649559277e073d986fd740d5febbf58fba8b952dfe61a849db84d1f",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/solver/test_solver.py": "719790376a867716d59f3f4aca170cc0fa0a1c8942180a6e5af895567d31dbf3",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/__init__.py": "7224f2288a522db8801bcabf9743e36d8e88ca5939da1e880e1363c7e7828795",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/diagnose.py": "b71d80f5853925f4fb7e2c8f41cd4e1d53680925d038ce2b2b2df6b4925ae8b1",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/engine.py": "c8d261ee3b8c28fdb983fdb220d5a5d381a6e98768a28a302bcdefeb4364b0ff",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/experiment.py": "04f31d971633fd9c555fbd0c5d885a7edea8704528013e61ac228975bb499cfe",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/policy.py": "6bc5c024c5ab0fbe074cf05e9957a8c7d9ffbab4703dee987000418e581ecbde",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/predictive.py": "7a41968d167bab76f5ec508ab916d43f266e5de2be124ab17285ec88005a955a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/previous.py": "2f6c8a909c00beb76e6d2c5e06bef310fec0fb4794cd8a465a919c90f4ae3f51",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/propagation.py": "f980740db85aa932afd8bd00ba45f3021e29bdf14560ace19d15a9b658448ba7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/reconsider.py": "62fdacffd90361a71ee0ba8b87fc7e3776c87409a7161e8cfde501064d03eaff",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/runner.py": "f008f61fab8e38f9f7f9ca4e56f49c46285552940233361461a169b6828a6bc8",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/track.py": "b7882ce6d6010e73abf9f87a0340e56d3bca9625f7f3d909d6b0778a72e30873",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/uniqueness.py": "b0c98ab1093770e8da1d9812503747615b5be76f624beb69c61c9e7aa256ccc7",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/validation.py": "5c6dfcf032a3e55b1ad6f53feade107fa013fbc8fff0a28394831b3ba396f152",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/dsx01_joint_marginal.py": "cf12f2d60bcdff60dffd5eed6872503ec71df905cc6f7363c71e3d386721df0f",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_ds23_history_calibrated_phase.py": "a394f0b671cc6bed0a073cd8826e242f1db2e9265c073a69f8f0a9b95b6e6e9f",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/phase_reference_checks.py": "3528895054df6e5f719e7e8a09e807a760ea51406aafccbf01e8d70a7b2b324e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/ds23_frequency_events.py": "8d1ee3e9fb5709e8a7d6dc77dbc5f22fa62d314fea534b2d3bac3c9c1c1f3863",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0070.json": "b6e36593add85f45ad445f9a54573a14e03d0855ab791c51fa4740761de76621",
+    "/home/mouse9911/gits/leo-tracker-reduxredux/reports/2026_11_01_ds26_ds27_causal_variants/inputs/DS26-0309.json": "f12264324a8a4e22b214d689e79651df10bb44930bfe6eebb5bab9f0cbd6b22a",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_algo07_top10_outliers/diagnostics/DS26-0070/matched-start-plan.json": "61eee777c5d4d7d5e455497e1a08adfd345642bc4101ac01e8d47523d0c4a04d",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_algo07_top10_outliers/diagnostics/DS26-0309/matched-start-plan.json": "400b16cad1a57b95bf51cae09242fbb1a4c10acd09005e347ee83a30a516ed0d"
+  },
+  "environmental_threads": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "max_worker_seconds": 840,
+  "workers": 4,
+  "controls": "published baseline + archived matched 15-round legacy refit; legacy rerun only if missing",
+  "assessment": "phase, optimizer, base/exact/mixture gates and unchanged owner/native IDs; truth read after RF fits"
+}

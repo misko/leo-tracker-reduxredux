@@ -1,0 +1,28 @@
+{
+  "created_utc_ns": 1793585221865643687,
+  "original_policy_sha256": "e43b437d2f0f2b388c955e56964f4ff8ecc92e4b968607752caea4c1e5f9c10c",
+  "original_run_sha256": "ed84107fa8c1257544f5cdcbd09a0a39a264b42df7b85e74a5a91f5a256f1f9f",
+  "amended_run_sha256": "9eb404f4ede130dfe4f295983fe32eeb5757d637e72193ff0a4a9e43af8874e8",
+  "change": "Execution-only RF short circuit: run both SD4 candidate arms first; if either fails original qualification, skip SD1 matched controls, record them not_run_RF_candidate_qualification_failed, and fall back exactly. Otherwise run both matched controls with original budgets and apply identical acceptance.",
+  "rationale": "Measured first8 throughput: no-trigger41s, first fitted cases90-122s at8 BLAS1workers, risking1200s cohort cap.",
+  "acceptance_changed": false,
+  "model_priors_starts_budgets_changed": false,
+  "GPS_used_for_amendment": false,
+  "original_source_copy": "run_frozen_v1.py",
+  "previous_execution_sha256": [
+    "969a3f79522678f031254dab5c741592dfbb11af8653fc7a0e6ba1e891865be8",
+    "785c2217c205a54aa9d4b4ef65b00d42ed2648dc873c306a188b76f3133f53b7",
+    "60837a8126bc6e140bbed32deff81b0ccd95c119f3d41d7ecd8ae956ecfbce56"
+  ],
+  "audit_amended_utc_ns": 1793585315984417081,
+  "audit_corrections": [
+    "GPS comparator agreement only after RF decision, never a fallback/selection gate",
+    "Require both matched control arms optimizer success and phase closure",
+    "Hash full native union curved+entries+families against full saved owners in baseline and every cell",
+    "Twelve nice10 workers authorized; preserve first receipts, separate bounded resume for unfinished ledger"
+  ],
+  "native_inventory_audit_utc_ns": 1793585419538404736,
+  "native_inventory_detail": "Full likelihood IDs counted with duplicate rejection and fitted owner mapping equality against original published owners; not only curved IDs",
+  "score_shortcircuit_utc_ns": 1793585631750806606,
+  "score_shortcircuit": "Skip matched-control computation if either candidate arm already fails its frozen saved-baseline RF improvement >2log3 condition, in addition to original qualification short circuit. All accepted candidates still get both matched controls and identical guard. No model, acceptance, GPS, or budget change."
+}

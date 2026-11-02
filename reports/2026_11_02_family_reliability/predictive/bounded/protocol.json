@@ -1,0 +1,39 @@
+{
+  "operation": "exact bounded-box conditioning identity within frozen local joint Gaussian only",
+  "source_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/bounded/bounded.py": "ba695f7bf9838e0d469f4534b1d3cfbc430768f1da7eeeaeaa90245d76c20700",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/bounded/run.py": "84cd88fe0da1b2835a8c55948a7f8163370e6bad218926969e2dc8362264ec3e",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/bounded/test_bounded.py": "5e88c7cb2a0e2fb8c2e149c57a4465366133b08e81bdba728cb142de34436f7b",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/predictive.py": "d9b0806bfbfa1bfbb68fe9096d30d0769445de944c9f83eb1a2cafea5eb314b0"
+  },
+  "input_sha256": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/extended/results.json": "5b8d9aa1ba841bbed1187bdff7295e122661176482c7e593086867841cf23d6c",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0309_protocol.json": "c25e61f0697a91c408971b358e7f673b315fd736dad2d676dfdc69a188217382",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/predictive/DS26-0070_protocol.json": "7cd1296e0faeb1c6a46b5dda1d9ed12a0cf9b8a540bea33efa094f0334bdfa50"
+  },
+  "bounds_km": [
+    [
+      -12.5,
+      12.5
+    ],
+    [
+      -12.5,
+      12.5
+    ]
+  ],
+  "cells": 48,
+  "subsets": [
+    "all",
+    "target",
+    "other"
+  ],
+  "covariance": "C=diagonal noise plus nuisance covariance conditional on position; J is derivative of total training posterior mean; S is frozen cap15 position covariance",
+  "density": "original Gaussian density times posterior-box-probability/prior-box-probability; analytic Gaussian position update solely for integration, no nuisance or RF parameter refit",
+  "quadrature": "deterministic one-dimensional conditional-normal scaled quadrature, verified against seeded SciPy bivariate normal rectangle CDF",
+  "qualification": "Preserve all original phase, optimizer, boundary and curvature flags. Box integration does not establish Laplace accuracy, empirical noise calibration, independent nomination or generalization.",
+  "workers": 4,
+  "BLAS_threads": 1,
+  "no_GPS": true,
+  "endpoint_optimization": false,
+  "scope": "Post-hoc scientific debug, protocol frozen before bounded corrected scores; original and cap15 results preserved."
+}

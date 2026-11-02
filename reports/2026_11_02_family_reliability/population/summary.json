@@ -1,0 +1,2601 @@
+{
+  "protocol_sha256": "e43b437d2f0f2b388c955e56964f4ff8ecc92e4b968607752caea4c1e5f9c10c",
+  "available": 205,
+  "per_cohort": {
+    "DS24": {
+      "available": 25,
+      "members": 34
+    },
+    "DS26": {
+      "available": 148,
+      "members": 159
+    },
+    "DS27": {
+      "available": 13,
+      "members": 15
+    },
+    "DS28": {
+      "available": 14,
+      "members": 16
+    },
+    "FRSH": {
+      "available": 5,
+      "members": 5
+    }
+  },
+  "status_counts": {
+    "accepted": 35,
+    "case_cap": 7,
+    "guard_rejected": 133,
+    "inapplicable_no_physical_modes": 2,
+    "no_RF_trigger": 20,
+    "preserved_existing_ALGO07": 3,
+    "resume_case_cap": 1,
+    "resume_total_cap": 2,
+    "unsupported_baseline_evidence_union": 2
+  },
+  "accepted": 35,
+  "fits_attempted": 176,
+  "complete_decision_ledger": 205,
+  "completed_candidate_fit_pairs": 168,
+  "completed_matched_control_fit_pairs": 81,
+  "final_audit_passed_cases": 193,
+  "exact_timeout_fallback_bindings": 10,
+  "unsupported_physical_mode_cases": 2,
+  "unsupported_baseline_evidence_union_cases": [
+    {
+      "case": "DS26-0104",
+      "discrepancy": {
+        "c0": {
+          "published_owned": 3486,
+          "likelihood_union": 3463,
+          "missing_count": 23,
+          "missing_by_norad": {
+            "68067": 23
+          },
+          "missing_ids_sha256": "26609eed609c3918ee06e078d149d68913ab2efd1e512ff5e10e41667c16ca60",
+          "extra_count": 0,
+          "changed_identity_count": 0
+        },
+        "fitted_c": {
+          "published_owned": 3486,
+          "likelihood_union": 3463,
+          "missing_count": 23,
+          "missing_by_norad": {
+            "68067": 23
+          },
+          "missing_ids_sha256": "26609eed609c3918ee06e078d149d68913ab2efd1e512ff5e10e41667c16ca60",
+          "extra_count": 0,
+          "changed_identity_count": 0
+        }
+      }
+    },
+    {
+      "case": "DS26-0179",
+      "discrepancy": {
+        "c0": {
+          "published_owned": 3275,
+          "likelihood_union": 3244,
+          "missing_count": 31,
+          "missing_by_norad": {
+            "62593": 31
+          },
+          "missing_ids_sha256": "ab1bc51d2ca79095879e7be31aba9717a5f24c023d98bf6ba2e9ef501fcbaf13",
+          "extra_count": 0,
+          "changed_identity_count": 0
+        },
+        "fitted_c": {
+          "published_owned": 3275,
+          "likelihood_union": 3244,
+          "missing_count": 31,
+          "missing_by_norad": {
+            "62593": 31
+          },
+          "missing_ids_sha256": "ab1bc51d2ca79095879e7be31aba9717a5f24c023d98bf6ba2e9ef501fcbaf13",
+          "extra_count": 0,
+          "changed_identity_count": 0
+        }
+      }
+    }
+  ],
+  "final_capped_failed_unverified_cases": [
+    {
+      "case": "DS24-0079",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0006",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0086",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0104",
+      "status": "unsupported_baseline_evidence_union",
+      "worker_status": "failed",
+      "reason": "AssertionError('Baseline complete likelihood identity map differs from published owners')"
+    },
+    {
+      "case": "DS26-0116",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0128",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0142",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0152",
+      "status": "case_cap",
+      "worker_status": "case_cap",
+      "reason": "TimeoutError('600 second case cap')"
+    },
+    {
+      "case": "DS26-0179",
+      "status": "unsupported_baseline_evidence_union",
+      "worker_status": "failed",
+      "reason": "AssertionError('Baseline complete likelihood identity map differs from published owners')"
+    },
+    {
+      "case": "DS26-0183",
+      "status": "resume_case_cap",
+      "worker_status": "resume_case_cap",
+      "reason": "TimeoutExpired(['/srv/bulk/leo-dev/fast-algo02-production-v1/.venv/bin/python', '/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/run.py', '--case', 'DS26-0183'], 599.9999896893278)"
+    },
+    {
+      "case": "DS26-0255",
+      "status": "resume_total_cap",
+      "worker_status": "resume_total_cap",
+      "reason": "Original bounded resume deadline exhausted; Original1200s resume window exhausted; no further RF retries"
+    },
+    {
+      "case": "DS28-0015",
+      "status": "resume_total_cap",
+      "worker_status": "resume_total_cap",
+      "reason": "Original resume deadline exhausted; numeric worker exited but manager cutoff left a partial receipt unclosed; no completed candidate pair admitted"
+    }
+  ],
+  "independence": "Remaining203 scans are held from this two-scan model development, not independent model-discovery validation of historical RF pipeline.",
+  "coverage_frozen": true,
+  "baseline_geography_reporting_audit": {
+    "checked_case_arms": 398,
+    "maximum_absolute_difference_m": 0.0,
+    "above_002m": [],
+    "scope": "reporting audit only; never changes RF acceptance; original preselection agreement assertion superseded by final RF-only decision replay"
+  },
+  "score_scope": "RF gains determine acceptance; GPS is postfit outcome reporting only",
+  "caveat": "This bounded stress test is not promotion validation. Conditional predictive development evidence has fold qualification limits.",
+  "execution_windows": {
+    "completion.json": {
+      "status": "complete_bounded_attempt_ledger",
+      "cases": 205,
+      "seconds": 1200.266420794651,
+      "max_seconds": 1200
+    },
+    "extra_completion.json": {
+      "seconds": 1011.6601522015408,
+      "max_seconds": 1200,
+      "extra_workers": 4,
+      "schedule": "reverse lexical case ID, no GPS"
+    },
+    "resume_completion.json": {
+      "status": "original_deadline_enforced",
+      "seconds": 1200,
+      "max_seconds": 1200,
+      "workers": 12,
+      "recorded_manager_attempts": 5,
+      "attempts": [
+        {
+          "case": "DS26-0271",
+          "window": "second_bounded_resume",
+          "prior_receipt": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/cases/DS26-0271/before-resume-1793587122182786333.json",
+          "status": "guard_rejected",
+          "seconds": 27.862333948723972
+        },
+        {
+          "case": "DS26-0279",
+          "window": "second_bounded_resume",
+          "prior_receipt": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/cases/DS26-0279/before-resume-1793587122317489248.json",
+          "status": "guard_rejected",
+          "seconds": 28.983104314655066
+        },
+        {
+          "case": "DS26-0283",
+          "window": "second_bounded_resume",
+          "prior_receipt": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/cases/DS26-0283/before-resume-1793587122361811350.json",
+          "status": "guard_rejected",
+          "seconds": 32.86652110982686
+        },
+        {
+          "case": "DS26-0275",
+          "window": "second_bounded_resume",
+          "prior_receipt": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/cases/DS26-0275/before-resume-1793587122227025655.json",
+          "status": "guard_rejected",
+          "seconds": 34.40691182855517
+        },
+        {
+          "case": "DS26-0277",
+          "window": "second_bounded_resume",
+          "prior_receipt": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_02_family_reliability/population/cases/DS26-0277/before-resume-1793587122272788901.json",
+          "status": "guard_rejected",
+          "seconds": 85.75201266538352
+        }
+      ],
+      "deadline_records": [
+        {
+          "case": "DS26-0255",
+          "pid": 1841118,
+          "worker_elapsed_seconds": 589
+        }
+      ]
+    }
+  },
+  "initial_and_resume_cap_events": [
+    {
+      "window": "first_main_window",
+      "case": "DS24-0079",
+      "dataset": "DS24",
+      "status": "subprocess_failed",
+      "seconds_since_window_start": 722.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0006",
+      "dataset": "DS26",
+      "status": "subprocess_failed",
+      "seconds_since_window_start": 899.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0164",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0166",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0168",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0170",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0173",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0175",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0177",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0179",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0183",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0185",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0187",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0189",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0193",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0195",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0197",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0201",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0203",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0205",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0207",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0209",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0211",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0213",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0215",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0217",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0219",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0221",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0223",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0225",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0227",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0229",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0231",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0233",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0235",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0237",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0239",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0241",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0243",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0245",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0247",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0249",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0251",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0253",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0255",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0257",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0259",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0261",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0263",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0265",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0267",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0269",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0271",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0275",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0277",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0279",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0283",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0287",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0291",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0293",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0299",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0152",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0154",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0116",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0128",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0142",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0086",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS26-0150",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "first_main_window",
+      "case": "DS28-0015",
+      "dataset": "DS28",
+      "status": "total_cap",
+      "seconds_since_window_start": 1200.0,
+      "source_log": "run.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "second_bounded_resume",
+      "case": "DS26-0183",
+      "dataset": "DS26",
+      "status": "resume_cap_or_failure",
+      "seconds_since_window_start": 700.0,
+      "source_log": "resume.log",
+      "event_scope": "queue completion; may reuse a previously completed worker receipt"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS24-0079",
+      "dataset": "DS24",
+      "status": "subprocess_failed",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS24-0079/before-resume-1793586375302403821.json",
+      "receipt_sha256": "840ebcacb1ad61ce9552bf4f3594e8f86a4b97c396e69c02aee4d703e592cd97",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS24-0079",
+      "dataset": "DS24",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS24-0079/result.json",
+      "receipt_sha256": "6467d36b00d8c8c4c26ebddc58df3fd98109b9c1b82c09ae41db5a20ab2e0a37",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS24-0079",
+      "dataset": "DS24",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS24-0079/before-resume-1793586977168666927.json",
+      "receipt_sha256": "217aad5787c5496e5b3b0aec9af01cea9078620427ff41fc294bc73455af97b5",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0006",
+      "dataset": "DS26",
+      "status": "subprocess_failed",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0006/before-resume-1793586375337091733.json",
+      "receipt_sha256": "2acce72a476600188f46c65d2e806f65701b0f1deaef306331933d713a1217c1",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0006",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0006/result.json",
+      "receipt_sha256": "f9622156abd9c2e79c50920e9911f4a362354e99596d45f9944f523c5fdd54bb",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0006",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0006/before-resume-1793586977122445440.json",
+      "receipt_sha256": "b4bacb03c5bca49ff7d1198a2f8e001b58b1302cbb65c36012869d874adb3872",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0086",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0086/before-resume-1793586375372137812.json",
+      "receipt_sha256": "77a041582d188aae8bf51629c218f3c8f0fe5076bf1efac90b741a60c441799d",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0086",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0086/result.json",
+      "receipt_sha256": "fbb6d6f9ac0f0498d9e29cf48a966f88bebce01c66acae3f8a32202125cc8af1",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0086",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0086/before-resume-1793586976783271399.json",
+      "receipt_sha256": "cfac74280b917d7fcfb59931a8ecb4e08223ff2636313e6c57e61416e9abee64",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0116",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0116/before-resume-1793586375407504822.json",
+      "receipt_sha256": "b2b699d3464fb5cbf58a9a0b86557696b667de36566a2080ecd7c9d7da5e173b",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0116",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0116/result.json",
+      "receipt_sha256": "5873e76dd84783bbbd377cb9c7578ff2772c19eb84399aae66360bfeb8bf204c",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0116",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0116/before-resume-1793586976826955335.json",
+      "receipt_sha256": "79eaf392316e448d02bdefefa354a31885c5d67c1136ea2c8936178d794c290b",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0128",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0128/before-resume-1793586375442909089.json",
+      "receipt_sha256": "d0103d3167d7b29d6483640ad8ec2e3404c63c6f1b3ac52d9d962a680c969801",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0128",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0128/result.json",
+      "receipt_sha256": "3334b25edbea46b497e14b5580fc471943502ce87baf3c1197d56e9775ca8aa4",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0128",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0128/before-resume-1793586976852390543.json",
+      "receipt_sha256": "0cd0e5a42fc49e0023ca6661797558e850c9f95b158e05390205bd5644172fc2",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0142",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0142/before-resume-1793586375478417136.json",
+      "receipt_sha256": "e39aad809f624df896ab8a8593bf0d65c8b09492d167c609233a9b264402eba2",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0142",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0142/result.json",
+      "receipt_sha256": "8c93fdee6ba38548560de8b399b892f661b7013e4d4592bcf32c0d536ffba223",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0142",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0142/before-resume-1793586976903062548.json",
+      "receipt_sha256": "b74f035936d243a5158d9c857aa9fa507c6339e62cf6f9326e5fdf738c9f17a9",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0150",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0150/before-resume-1793586375515549356.json",
+      "receipt_sha256": "cac7acdd9535ce9aa77ea8cb3c585fe3439b182701810401aad13e6dc5cafcde",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0152",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0152/before-resume-1793586375550815814.json",
+      "receipt_sha256": "bc7ac1ae0ac54ab6d8f4a4ed4f73952fc7c948f823668c7182f6b4ff4f760487",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "bounded_resume_receipt_completion",
+      "case": "DS26-0152",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0152/result.json",
+      "receipt_sha256": "1bde2590819ed9524489feaf4be5b874059f2dfd941586ca028b49832f56584d",
+      "event_scope": "completion bound to retained prior/current receipts; scheduler log unavailable"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0152",
+      "dataset": "DS26",
+      "status": "case_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0152/before-resume-1793586977314098846.json",
+      "receipt_sha256": "16761535580a86c19f7cbcf5cacc37d4e8fa34b7bac8f07cc2678c7f1d1ef193",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0154",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0154/before-resume-1793586375587420952.json",
+      "receipt_sha256": "0991eb418bebb5da03cc44ddfebdcad098e3ef86b5c6f2264453c79f0e5999ae",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0164",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0164/before-resume-1793586375622053973.json",
+      "receipt_sha256": "d1aa4d6185727191b252a7be96bdab944d6a95c3daa916bf15f71b7706b3ca99",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0166",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0166/before-resume-1793586375658493093.json",
+      "receipt_sha256": "27ceea8d5e3523343a8e7703d86bbd506e9f3f7eb3b3a07060341c21d9d68f3d",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0168",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0168/before-resume-1793586375693134662.json",
+      "receipt_sha256": "83052c6a42a3460d3951bfe6bb9413412dee578875301f39a93971043617f673",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0170",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0170/before-resume-1793586404552133302.json",
+      "receipt_sha256": "fd6c566db7869f4d83899f11a01fb0041c73293735e8a735899b7fe76789ba34",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0173",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0173/before-resume-1793586414816247274.json",
+      "receipt_sha256": "1862f8aadfa18899b1533002cc1a743d67ae64c0e29234c2a298c6ae51d5af29",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0175",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0175/before-resume-1793586460552828522.json",
+      "receipt_sha256": "c792fa8e7178fbc5b9a4cac6975b175aae5e6b078844ed8b074f36d1d938fe76",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0177",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0177/before-resume-1793586472081345083.json",
+      "receipt_sha256": "5bf078328b4bfd4525561ef870c57a8520c88acb9f22f1c31fb14f07e2187ace",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0179",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0179/before-resume-1793586480272572003.json",
+      "receipt_sha256": "f6c2b60efbb2c5ab635e09402051343f33c7e325ca0fb3dfe524cf533f515fac",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0183",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0183/before-resume-1793586486656579141.json",
+      "receipt_sha256": "368ae123e5c526a1bce36b5a19f806c8dfe2ea6c72744b85caa3134cb485e475",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0185",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0185/before-resume-1793586487441713152.json",
+      "receipt_sha256": "916c84f8fc57cf03c3d3448d019c518cd4a4782fb8ddf4fc4f9c946c69d00b96",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0187",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0187/before-resume-1793586502722716018.json",
+      "receipt_sha256": "1990d9b21c7426263bffdaea4d9266d5bdd6e53c6bb5bab22b310d3e29f0e5de",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0189",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0189/before-resume-1793586539164097942.json",
+      "receipt_sha256": "0bbaa97f663125fc915d5e2e5bee91f0b413a970e28250c1785c93237ca6163f",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0193",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0193/before-resume-1793586540146798128.json",
+      "receipt_sha256": "0750360db1c00ebeefdc36c4a1aeb021f309996167843da1eb4eaec67b0c42ab",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0195",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0195/before-resume-1793586558248437789.json",
+      "receipt_sha256": "83df858fbbab5a0fc2946d38170c5bc9d7fc52ef044e85c2cc45a142dd44820f",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0197",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0197/before-resume-1793586559253057224.json",
+      "receipt_sha256": "e3e08bd1be99a0f5b760efe40343d4d4989dd36f03ab3934518108f47e9995d5",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0201",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0201/before-resume-1793586586254943305.json",
+      "receipt_sha256": "7388f052164ae3e0c8f608d54a058327a53eed05f255a4e6da0fbd4cedd51035",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0203",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0203/before-resume-1793586607118338562.json",
+      "receipt_sha256": "a6242a7fc8e2047ef155b05c073faadb4407710f858294f19aaaa0dec18dfa00",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0205",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0205/before-resume-1793586613290225684.json",
+      "receipt_sha256": "6a957155bdbec98a300779ef9644010e4194276a9651e99b902321d2e3628cba",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0207",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0207/before-resume-1793586614208875455.json",
+      "receipt_sha256": "8d748200f8b8cbabdada03de6cd68b2fa510187b69105072e493aabae26c9461",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0209",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0209/before-resume-1793586621772855875.json",
+      "receipt_sha256": "589a4dd5711533af58f82349dc5842a23933a0c580b55e5ee42acd76541249a3",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0211",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0211/before-resume-1793586630815189841.json",
+      "receipt_sha256": "2fce05c9aa3193ef2c1c963d9b37d42a276852d5950c5e3ec9aa6a2a707dddd7",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0213",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0213/before-resume-1793586651232391813.json",
+      "receipt_sha256": "3c7e8944740b18371c4ed5a54f83cb41f2ca8a934e3d3e64c48bd41dd006aed9",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0215",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0215/before-resume-1793586654675688622.json",
+      "receipt_sha256": "66785a0d2713272f6fa161318b67184bb9f9c5cfe11944133f54b6bac382891e",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0217",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0217/before-resume-1793586679310375547.json",
+      "receipt_sha256": "053ea2e3d8bf72615a0ba36967e37d7c3b8cab77bb3a37dcc3abecc8593f4153",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0219",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0219/before-resume-1793586694957006578.json",
+      "receipt_sha256": "d2e27ec7607b4fb2f33f7451b16a3f62fd0278b83654c1fa35884c7036e13820",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0221",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0221/before-resume-1793586705710561428.json",
+      "receipt_sha256": "872e43ab71c1695bd8dca8d667ad317f47e44976677e453c570214fa03b0c8fe",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0223",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0223/before-resume-1793586720799209602.json",
+      "receipt_sha256": "0d35e2bb95e2b744d2f6a081d8eef60cde4cbe1fa9142d73128f87940bbeb2f2",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0225",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0225/before-resume-1793586724204171886.json",
+      "receipt_sha256": "b5ae6b6a881a48db637d5cfc20dd4d1f30adabeed64d715072af3c7dc630aeed",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0227",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0227/before-resume-1793586734342318077.json",
+      "receipt_sha256": "e27b0c9319d5f495d2421af5148b73db472a02b4982fbbd65e6478fa1e716112",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0229",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0229/before-resume-1793586772822348859.json",
+      "receipt_sha256": "7632d1966c33d68c81aa123d702e9f3bd54d6150654b639eecdee08ea1b20996",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0231",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0231/before-resume-1793586780813414744.json",
+      "receipt_sha256": "b20614d77879e40ecada57a1af527da428f71b827ea91b17234c7ee0cc3ebb5e",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0233",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0233/before-resume-1793586802832699637.json",
+      "receipt_sha256": "6a9e5eae1806e6699218bc3daa9b056a73d26f50ba08bc858020333337bcff80",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0235",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0235/before-resume-1793586811872928218.json",
+      "receipt_sha256": "92d2d894dcb6fb8a093a92a8454105c7708c8634cf99e48ba02f101e9d6c8699",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0237",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0237/before-resume-1793586815682686859.json",
+      "receipt_sha256": "901e5f7295961c6093174b97ca9e980233dcdfcf3f469c18c38b9cbb03975c62",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0239",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0239/before-resume-1793586835200017260.json",
+      "receipt_sha256": "576bf54a315d1a4a4eed62c3827ae172efbad5976a85ff44e9af6b7ebff8864d",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0241",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0241/before-resume-1793586856018997899.json",
+      "receipt_sha256": "94dd7f6ae4f19c30a72b48d38551519cdf8575486c8a7e31f36c8bebced6debb",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0243",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0243/before-resume-1793586912069180044.json",
+      "receipt_sha256": "da11bdffd5b3cbae948ce04152afc1f9c43e16f9a09ddf0694cbde6cf1879a58",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0245",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0245/before-resume-1793586934410207910.json",
+      "receipt_sha256": "cd1f949116084268477d44a716be18aa67e80bcf958f91020952c421e115afd5",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0247",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0247/before-resume-1793586963021201373.json",
+      "receipt_sha256": "e13f01fe16400f26461f7c3c236dd7791c9274b52f2587222a5d94426e30d4c3",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0249",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0249/before-resume-1793586965625394573.json",
+      "receipt_sha256": "2d837f2b206e00f4a5dfb3f9ba7cc85f2607dafd4106de6bb58116bbc182cb88",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0251",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0251/before-resume-1793586972885889958.json",
+      "receipt_sha256": "42cc75e8245cc400e59a431d53019f076f501c997bad75226fadc530c4ddb80f",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0253",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0253/before-resume-1793586975490336357.json",
+      "receipt_sha256": "00d6d414546dd68930dafbf6769d8b1baa77ca1668611c27ebdb9a00d27b64d7",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0255",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0255/before-resume-1793586986267766192.json",
+      "receipt_sha256": "5f34208b267c63566c9660155d46af2c60a6b6d5ffa41d537e3fc2fc83b517c9",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0257",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0257/before-resume-1793586994528787536.json",
+      "receipt_sha256": "d61a6a0deb03f63903255db483637fe66d899988e357242368453d8a1a069e90",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0259",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0259/before-resume-1793587003048299614.json",
+      "receipt_sha256": "6453bb13e739190c0a8eebb34ff3692abbf332f0efb930903eb701969150e067",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0261",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0261/before-resume-1793587028074680341.json",
+      "receipt_sha256": "3b8f9779bbbbf74d790b304bc0d55e0a798ea4d03bd291202a7a4849c08b86e0",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0263",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0263/before-resume-1793587037658718359.json",
+      "receipt_sha256": "0b09dfa58dbec1eb3dbc914078d9785333d39bbf21b8a81c1e2f84b3c1630d85",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0265",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0265/before-resume-1793587086733010941.json",
+      "receipt_sha256": "4ee54879d5ffdf0924331a4e774a33f73f45a111c5922c0d987a7903723c18ee",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0267",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0267/before-resume-1793587095365464995.json",
+      "receipt_sha256": "44fc594d7d8b41c42cdb3a81bc684277c12bd1ebda59827c5d17dbda303bb5c8",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0269",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0269/before-resume-1793587095766665912.json",
+      "receipt_sha256": "f1380759a0314a103ed374a4136d09371f879277173666545059684fa275ac20",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0271",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0271/before-resume-1793587122182786333.json",
+      "receipt_sha256": "443441b9c0d54b097256ec0e09ea87297934db1b888f0575fd706c112fb0cc92",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0275",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0275/before-resume-1793587122227025655.json",
+      "receipt_sha256": "a4e22f06119ecc85f14e1d541497ca52599f10485e5161a28a0c5b7708763fba",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0277",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0277/before-resume-1793587122272788901.json",
+      "receipt_sha256": "07f89d11d3e54bd0b2df43a0ee83979ab87e523dc77032907f3e784fee4a7cc7",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0279",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0279/before-resume-1793587122317489248.json",
+      "receipt_sha256": "73bf3d0bbb97c4004cf3fc3fde8d88a276610a7cfc0d3a548684d2bc17fecaa1",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS26-0283",
+      "dataset": "DS26",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS26-0283/before-resume-1793587122361811350.json",
+      "receipt_sha256": "2048a1fad91b7229739f05562f6935cce482f881d607dfe0d4d4cf648d10c811",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    },
+    {
+      "window": "archived_before_bounded_resume",
+      "case": "DS28-0015",
+      "dataset": "DS28",
+      "status": "total_cap",
+      "seconds_since_window_start": null,
+      "source_log": "cases/DS28-0015/before-resume-1793587122412753528.json",
+      "receipt_sha256": "d9168089280e6b7e633f417cc27681ac8b55609f3a7c93fad314026a7dc2ae88",
+      "event_scope": "exact earlier receipt retained before bounded retry"
+    }
+  ],
+  "orchestration_correction": {
+    "created_utc_ns": 1793587121802158426,
+    "cause": "Resume manager reloaded as waiting state transitioned active; original children continued under file locks; waiting replacement manager then treated exhausted second attempts as unfinished and started redundant serial retries",
+    "concurrent_duplicate_fitting": false,
+    "correction": "Redundant serial retries terminated; sealed second-attempt600s timeout receipts restored; exhausted model attempts are terminal; original resume deadline retained",
+    "GPS_used": false,
+    "records": [
+      {
+        "case": "DS24-0079",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS24-0079/before-resume-1793586977168666927.json",
+        "restored_timeout_sha256": "217aad5787c5496e5b3b0aec9af01cea9078620427ff41fc294bc73455af97b5",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841042,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0006",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0006/before-resume-1793586977122445440.json",
+        "restored_timeout_sha256": "b4bacb03c5bca49ff7d1198a2f8e001b58b1302cbb65c36012869d874adb3872",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841041,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0086",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0086/before-resume-1793586976783271399.json",
+        "restored_timeout_sha256": "cfac74280b917d7fcfb59931a8ecb4e08223ff2636313e6c57e61416e9abee64",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841037,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0116",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0116/before-resume-1793586976826955335.json",
+        "restored_timeout_sha256": "79eaf392316e448d02bdefefa354a31885c5d67c1136ea2c8936178d794c290b",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841038,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0128",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0128/before-resume-1793586976852390543.json",
+        "restored_timeout_sha256": "0cd0e5a42fc49e0023ca6661797558e850c9f95b158e05390205bd5644172fc2",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841039,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0142",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0142/before-resume-1793586976903062548.json",
+        "restored_timeout_sha256": "b74f035936d243a5158d9c857aa9fa507c6339e62cf6f9326e5fdf738c9f17a9",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841040,
+            "elapsed_seconds": 144
+          }
+        ]
+      },
+      {
+        "case": "DS26-0152",
+        "restored_timeout_receipt": "reports/2026_11_02_family_reliability/population/cases/DS26-0152/before-resume-1793586977314098846.json",
+        "restored_timeout_sha256": "16761535580a86c19f7cbcf5cacc37d4e8fa34b7bac8f07cc2678c7f1d1ef193",
+        "terminated_serial_retries": [
+          {
+            "pid": 1841043,
+            "elapsed_seconds": 144
+          }
+        ]
+      }
+    ]
+  },
+  "aborted_redundant_retry_worker_seconds": 1008,
+  "statistics": [
+    {
+      "subset": "all205",
+      "dataset": "ALL",
+      "arm": "c0",
+      "count": 205,
+      "accepted": 35,
+      "improved": 18,
+      "regressed": 17,
+      "unchanged": 170,
+      "improved_over50m": 18,
+      "regressed_over50m": 13,
+      "maximum_improvement_m": 5008.02218031233,
+      "maximum_regression_m": 1464.4494688610962,
+      "baseline": {
+        "count": 205,
+        "mean_m": 1169.3169018539256,
+        "median_m": 925.7107695351066,
+        "p90_m": 2152.259780893506,
+        "maximum_m": 7269.003759399683
+      },
+      "selected": {
+        "count": 205,
+        "mean_m": 1128.349101073635,
+        "median_m": 925.7107695351066,
+        "p90_m": 2216.8848752122326,
+        "maximum_m": 5596.1788483521295
+      },
+      "baseline_associated": 642355,
+      "selected_associated": 642355
+    },
+    {
+      "subset": "all205",
+      "dataset": "ALL",
+      "arm": "fitted_c",
+      "count": 205,
+      "accepted": 35,
+      "improved": 17,
+      "regressed": 18,
+      "unchanged": 170,
+      "improved_over50m": 17,
+      "regressed_over50m": 14,
+      "maximum_improvement_m": 4341.859615515848,
+      "maximum_regression_m": 1456.5235214024706,
+      "baseline": {
+        "count": 205,
+        "mean_m": 1155.3818791565593,
+        "median_m": 923.3827162228326,
+        "p90_m": 2121.6342956558515,
+        "maximum_m": 6857.982347349733
+      },
+      "selected": {
+        "count": 205,
+        "mean_m": 1117.8433467860523,
+        "median_m": 917.7040840116861,
+        "p90_m": 2133.685599220066,
+        "maximum_m": 5742.061291740683
+      },
+      "baseline_associated": 642355,
+      "selected_associated": 642355
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS24",
+      "arm": "c0",
+      "count": 25,
+      "accepted": 6,
+      "improved": 3,
+      "regressed": 3,
+      "unchanged": 19,
+      "improved_over50m": 3,
+      "regressed_over50m": 2,
+      "maximum_improvement_m": 501.5848900911217,
+      "maximum_regression_m": 520.3136006658651,
+      "baseline": {
+        "count": 25,
+        "mean_m": 1162.1906964299937,
+        "median_m": 1024.281921776618,
+        "p90_m": 2000.401092570599,
+        "maximum_m": 2187.8428197964627
+      },
+      "selected": {
+        "count": 25,
+        "mean_m": 1157.9019374724176,
+        "median_m": 1024.281921776618,
+        "p90_m": 1936.736967518478,
+        "maximum_m": 2596.253994345456
+      },
+      "baseline_associated": 82409,
+      "selected_associated": 82409
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS24",
+      "arm": "fitted_c",
+      "count": 25,
+      "accepted": 6,
+      "improved": 3,
+      "regressed": 3,
+      "unchanged": 19,
+      "improved_over50m": 3,
+      "regressed_over50m": 3,
+      "maximum_improvement_m": 493.8128644287675,
+      "maximum_regression_m": 498.1469548191435,
+      "baseline": {
+        "count": 25,
+        "mean_m": 1175.4566251218391,
+        "median_m": 1016.7526892008708,
+        "p90_m": 2013.271004597944,
+        "maximum_m": 2205.2182010630395
+      },
+      "selected": {
+        "count": 25,
+        "mean_m": 1168.8021434853802,
+        "median_m": 1016.7526892008708,
+        "p90_m": 1979.7067417165788,
+        "maximum_m": 2619.576714987106
+      },
+      "baseline_associated": 82409,
+      "selected_associated": 82409
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS26",
+      "arm": "c0",
+      "count": 148,
+      "accepted": 24,
+      "improved": 13,
+      "regressed": 11,
+      "unchanged": 124,
+      "improved_over50m": 13,
+      "regressed_over50m": 8,
+      "maximum_improvement_m": 5008.02218031233,
+      "maximum_regression_m": 1032.6306108869308,
+      "baseline": {
+        "count": 148,
+        "mean_m": 1241.893611899842,
+        "median_m": 990.7913480907698,
+        "p90_m": 2395.60186211997,
+        "maximum_m": 7269.003759399683
+      },
+      "selected": {
+        "count": 148,
+        "mean_m": 1175.1775489419138,
+        "median_m": 972.3089273522477,
+        "p90_m": 2275.9388450832284,
+        "maximum_m": 5596.1788483521295
+      },
+      "baseline_associated": 463453,
+      "selected_associated": 463453
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS26",
+      "arm": "fitted_c",
+      "count": 148,
+      "accepted": 24,
+      "improved": 12,
+      "regressed": 12,
+      "unchanged": 124,
+      "improved_over50m": 12,
+      "regressed_over50m": 8,
+      "maximum_improvement_m": 4341.859615515848,
+      "maximum_regression_m": 1084.4872772707063,
+      "baseline": {
+        "count": 148,
+        "mean_m": 1223.4013670211998,
+        "median_m": 976.8655136577592,
+        "p90_m": 2259.5029908145384,
+        "maximum_m": 6857.982347349733
+      },
+      "selected": {
+        "count": 148,
+        "mean_m": 1161.8706865913327,
+        "median_m": 962.0649451326956,
+        "p90_m": 2217.872034063549,
+        "maximum_m": 5742.061291740683
+      },
+      "baseline_associated": 463453,
+      "selected_associated": 463453
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS27",
+      "arm": "c0",
+      "count": 13,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 11,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 224.00429193210357,
+      "maximum_regression_m": 94.7261491857059,
+      "baseline": {
+        "count": 13,
+        "mean_m": 638.0392289895063,
+        "median_m": 643.4437427447369,
+        "p90_m": 920.9295265891147,
+        "maximum_m": 1441.1251362715088
+      },
+      "selected": {
+        "count": 13,
+        "mean_m": 628.0947564705526,
+        "median_m": 566.4475968479945,
+        "p90_m": 920.9295265891147,
+        "maximum_m": 1441.1251362715088
+      },
+      "baseline_associated": 43958,
+      "selected_associated": 43958
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS27",
+      "arm": "fitted_c",
+      "count": 13,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 11,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 227.19498905277447,
+      "maximum_regression_m": 95.31352751895986,
+      "baseline": {
+        "count": 13,
+        "mean_m": 619.0587392207109,
+        "median_m": 640.8992327741895,
+        "p90_m": 868.598553724302,
+        "maximum_m": 1449.442664049537
+      },
+      "selected": {
+        "count": 13,
+        "mean_m": 608.9140114104174,
+        "median_m": 636.7892876350099,
+        "p90_m": 868.598553724302,
+        "maximum_m": 1449.442664049537
+      },
+      "baseline_associated": 43958,
+      "selected_associated": 43958
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS28",
+      "arm": "c0",
+      "count": 14,
+      "accepted": 1,
+      "improved": 0,
+      "regressed": 1,
+      "unchanged": 13,
+      "improved_over50m": 0,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 0.0,
+      "maximum_regression_m": 372.20858808724233,
+      "baseline": {
+        "count": 14,
+        "mean_m": 812.2798111793892,
+        "median_m": 729.0828043595269,
+        "p90_m": 1447.0426489953145,
+        "maximum_m": 1864.0376574021707
+      },
+      "selected": {
+        "count": 14,
+        "mean_m": 838.8661388999064,
+        "median_m": 729.0828043595269,
+        "p90_m": 1447.0426489953145,
+        "maximum_m": 2236.246245489413
+      },
+      "baseline_associated": 37521,
+      "selected_associated": 37521
+    },
+    {
+      "subset": "all205",
+      "dataset": "DS28",
+      "arm": "fitted_c",
+      "count": 14,
+      "accepted": 1,
+      "improved": 0,
+      "regressed": 1,
+      "unchanged": 13,
+      "improved_over50m": 0,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 0.0,
+      "maximum_regression_m": 376.1683694603853,
+      "baseline": {
+        "count": 14,
+        "mean_m": 802.5170117121314,
+        "median_m": 725.6783768511032,
+        "p90_m": 1433.550787264956,
+        "maximum_m": 1769.8070254705522
+      },
+      "selected": {
+        "count": 14,
+        "mean_m": 829.3861809593018,
+        "median_m": 725.6783768511032,
+        "p90_m": 1433.550787264956,
+        "maximum_m": 2145.9753949309375
+      },
+      "baseline_associated": 37521,
+      "selected_associated": 37521
+    },
+    {
+      "subset": "all205",
+      "dataset": "FRSH",
+      "arm": "c0",
+      "count": 5,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 3,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 124.58278244871462,
+      "maximum_regression_m": 1464.4494688610962,
+      "baseline": {
+        "count": 5,
+        "mean_m": 1437.7031149506581,
+        "median_m": 1283.7114901165041,
+        "p90_m": 1901.2653086894895,
+        "maximum_m": 2236.7042864388077
+      },
+      "selected": {
+        "count": 5,
+        "mean_m": 1705.6764522331346,
+        "median_m": 1159.1287076677895,
+        "p90_m": 2779.9349900061475,
+        "maximum_m": 3701.153755299904
+      },
+      "baseline_associated": 15014,
+      "selected_associated": 15014
+    },
+    {
+      "subset": "all205",
+      "dataset": "FRSH",
+      "arm": "fitted_c",
+      "count": 5,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 3,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 123.30682075120058,
+      "maximum_regression_m": 1456.5235214024706,
+      "baseline": {
+        "count": 5,
+        "mean_m": 1424.0931012144101,
+        "median_m": 1257.6986020129439,
+        "p90_m": 1874.7584761200692,
+        "maximum_m": 2271.6504330300613
+      },
+      "selected": {
+        "count": 5,
+        "mean_m": 1690.7364413446642,
+        "median_m": 1162.4608146290602,
+        "p90_m": 2739.983813464697,
+        "maximum_m": 3728.173954432532
+      },
+      "baseline_associated": 15014,
+      "selected_associated": 15014
+    },
+    {
+      "subset": "held203",
+      "dataset": "ALL",
+      "arm": "c0",
+      "count": 203,
+      "accepted": 33,
+      "improved": 16,
+      "regressed": 17,
+      "unchanged": 170,
+      "improved_over50m": 16,
+      "regressed_over50m": 13,
+      "maximum_improvement_m": 1395.7871725816715,
+      "maximum_regression_m": 1464.4494688610962,
+      "baseline": {
+        "count": 203,
+        "mean_m": 1129.4525179624354,
+        "median_m": 922.9513246060945,
+        "p90_m": 2085.0242954293303,
+        "maximum_m": 6681.353967031638
+      },
+      "selected": {
+        "count": 203,
+        "mean_m": 1119.0618805761176,
+        "median_m": 922.9513246060945,
+        "p90_m": 2170.0513003449855,
+        "maximum_m": 5596.1788483521295
+      },
+      "baseline_associated": 637324,
+      "selected_associated": 637324
+    },
+    {
+      "subset": "held203",
+      "dataset": "ALL",
+      "arm": "fitted_c",
+      "count": 203,
+      "accepted": 33,
+      "improved": 15,
+      "regressed": 18,
+      "unchanged": 170,
+      "improved_over50m": 15,
+      "regressed_over50m": 14,
+      "maximum_improvement_m": 1435.4283930135734,
+      "maximum_regression_m": 1456.5235214024706,
+      "baseline": {
+        "count": 203,
+        "mean_m": 1118.2799625936161,
+        "median_m": 917.7040840116861,
+        "p90_m": 2109.175063297578,
+        "maximum_m": 6857.982347349733
+      },
+      "selected": {
+        "count": 203,
+        "mean_m": 1107.9942581107432,
+        "median_m": 909.1846616232085,
+        "p90_m": 2120.1254831722413,
+        "maximum_m": 5742.061291740683
+      },
+      "baseline_associated": 637324,
+      "selected_associated": 637324
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS24",
+      "arm": "c0",
+      "count": 25,
+      "accepted": 6,
+      "improved": 3,
+      "regressed": 3,
+      "unchanged": 19,
+      "improved_over50m": 3,
+      "regressed_over50m": 2,
+      "maximum_improvement_m": 501.5848900911217,
+      "maximum_regression_m": 520.3136006658651,
+      "baseline": {
+        "count": 25,
+        "mean_m": 1162.1906964299937,
+        "median_m": 1024.281921776618,
+        "p90_m": 2000.401092570599,
+        "maximum_m": 2187.8428197964627
+      },
+      "selected": {
+        "count": 25,
+        "mean_m": 1157.9019374724176,
+        "median_m": 1024.281921776618,
+        "p90_m": 1936.736967518478,
+        "maximum_m": 2596.253994345456
+      },
+      "baseline_associated": 82409,
+      "selected_associated": 82409
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS24",
+      "arm": "fitted_c",
+      "count": 25,
+      "accepted": 6,
+      "improved": 3,
+      "regressed": 3,
+      "unchanged": 19,
+      "improved_over50m": 3,
+      "regressed_over50m": 3,
+      "maximum_improvement_m": 493.8128644287675,
+      "maximum_regression_m": 498.1469548191435,
+      "baseline": {
+        "count": 25,
+        "mean_m": 1175.4566251218391,
+        "median_m": 1016.7526892008708,
+        "p90_m": 2013.271004597944,
+        "maximum_m": 2205.2182010630395
+      },
+      "selected": {
+        "count": 25,
+        "mean_m": 1168.8021434853802,
+        "median_m": 1016.7526892008708,
+        "p90_m": 1979.7067417165788,
+        "maximum_m": 2619.576714987106
+      },
+      "baseline_associated": 82409,
+      "selected_associated": 82409
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS26",
+      "arm": "c0",
+      "count": 146,
+      "accepted": 22,
+      "improved": 11,
+      "regressed": 11,
+      "unchanged": 124,
+      "improved_over50m": 11,
+      "regressed_over50m": 8,
+      "maximum_improvement_m": 1395.7871725816715,
+      "maximum_regression_m": 1032.6306108869308,
+      "baseline": {
+        "count": 146,
+        "mean_m": 1187.459937174632,
+        "median_m": 986.4460419927723,
+        "p90_m": 2281.0920781778614,
+        "maximum_m": 6681.353967031638
+      },
+      "selected": {
+        "count": 146,
+        "mean_m": 1162.9059813716433,
+        "median_m": 960.6549846106991,
+        "p90_m": 2281.329783714321,
+        "maximum_m": 5596.1788483521295
+      },
+      "baseline_associated": 458422,
+      "selected_associated": 458422
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS26",
+      "arm": "fitted_c",
+      "count": 146,
+      "accepted": 22,
+      "improved": 10,
+      "regressed": 12,
+      "unchanged": 124,
+      "improved_over50m": 10,
+      "regressed_over50m": 8,
+      "maximum_improvement_m": 1435.4283930135734,
+      "maximum_regression_m": 1084.4872772707063,
+      "baseline": {
+        "count": 146,
+        "mean_m": 1172.7462294421025,
+        "median_m": 966.8183967219124,
+        "p90_m": 2152.694030995971,
+        "maximum_m": 6857.982347349733
+      },
+      "selected": {
+        "count": 146,
+        "mean_m": 1148.7795200058729,
+        "median_m": 957.0853426320784,
+        "p90_m": 2172.8092202790017,
+        "maximum_m": 5742.061291740683
+      },
+      "baseline_associated": 458422,
+      "selected_associated": 458422
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS27",
+      "arm": "c0",
+      "count": 13,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 11,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 224.00429193210357,
+      "maximum_regression_m": 94.7261491857059,
+      "baseline": {
+        "count": 13,
+        "mean_m": 638.0392289895063,
+        "median_m": 643.4437427447369,
+        "p90_m": 920.9295265891147,
+        "maximum_m": 1441.1251362715088
+      },
+      "selected": {
+        "count": 13,
+        "mean_m": 628.0947564705526,
+        "median_m": 566.4475968479945,
+        "p90_m": 920.9295265891147,
+        "maximum_m": 1441.1251362715088
+      },
+      "baseline_associated": 43958,
+      "selected_associated": 43958
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS27",
+      "arm": "fitted_c",
+      "count": 13,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 11,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 227.19498905277447,
+      "maximum_regression_m": 95.31352751895986,
+      "baseline": {
+        "count": 13,
+        "mean_m": 619.0587392207109,
+        "median_m": 640.8992327741895,
+        "p90_m": 868.598553724302,
+        "maximum_m": 1449.442664049537
+      },
+      "selected": {
+        "count": 13,
+        "mean_m": 608.9140114104174,
+        "median_m": 636.7892876350099,
+        "p90_m": 868.598553724302,
+        "maximum_m": 1449.442664049537
+      },
+      "baseline_associated": 43958,
+      "selected_associated": 43958
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS28",
+      "arm": "c0",
+      "count": 14,
+      "accepted": 1,
+      "improved": 0,
+      "regressed": 1,
+      "unchanged": 13,
+      "improved_over50m": 0,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 0.0,
+      "maximum_regression_m": 372.20858808724233,
+      "baseline": {
+        "count": 14,
+        "mean_m": 812.2798111793892,
+        "median_m": 729.0828043595269,
+        "p90_m": 1447.0426489953145,
+        "maximum_m": 1864.0376574021707
+      },
+      "selected": {
+        "count": 14,
+        "mean_m": 838.8661388999064,
+        "median_m": 729.0828043595269,
+        "p90_m": 1447.0426489953145,
+        "maximum_m": 2236.246245489413
+      },
+      "baseline_associated": 37521,
+      "selected_associated": 37521
+    },
+    {
+      "subset": "held203",
+      "dataset": "DS28",
+      "arm": "fitted_c",
+      "count": 14,
+      "accepted": 1,
+      "improved": 0,
+      "regressed": 1,
+      "unchanged": 13,
+      "improved_over50m": 0,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 0.0,
+      "maximum_regression_m": 376.1683694603853,
+      "baseline": {
+        "count": 14,
+        "mean_m": 802.5170117121314,
+        "median_m": 725.6783768511032,
+        "p90_m": 1433.550787264956,
+        "maximum_m": 1769.8070254705522
+      },
+      "selected": {
+        "count": 14,
+        "mean_m": 829.3861809593018,
+        "median_m": 725.6783768511032,
+        "p90_m": 1433.550787264956,
+        "maximum_m": 2145.9753949309375
+      },
+      "baseline_associated": 37521,
+      "selected_associated": 37521
+    },
+    {
+      "subset": "held203",
+      "dataset": "FRSH",
+      "arm": "c0",
+      "count": 5,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 3,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 124.58278244871462,
+      "maximum_regression_m": 1464.4494688610962,
+      "baseline": {
+        "count": 5,
+        "mean_m": 1437.7031149506581,
+        "median_m": 1283.7114901165041,
+        "p90_m": 1901.2653086894895,
+        "maximum_m": 2236.7042864388077
+      },
+      "selected": {
+        "count": 5,
+        "mean_m": 1705.6764522331346,
+        "median_m": 1159.1287076677895,
+        "p90_m": 2779.9349900061475,
+        "maximum_m": 3701.153755299904
+      },
+      "baseline_associated": 15014,
+      "selected_associated": 15014
+    },
+    {
+      "subset": "held203",
+      "dataset": "FRSH",
+      "arm": "fitted_c",
+      "count": 5,
+      "accepted": 2,
+      "improved": 1,
+      "regressed": 1,
+      "unchanged": 3,
+      "improved_over50m": 1,
+      "regressed_over50m": 1,
+      "maximum_improvement_m": 123.30682075120058,
+      "maximum_regression_m": 1456.5235214024706,
+      "baseline": {
+        "count": 5,
+        "mean_m": 1424.0931012144101,
+        "median_m": 1257.6986020129439,
+        "p90_m": 1874.7584761200692,
+        "maximum_m": 2271.6504330300613
+      },
+      "selected": {
+        "count": 5,
+        "mean_m": 1690.7364413446642,
+        "median_m": 1162.4608146290602,
+        "p90_m": 2739.983813464697,
+        "maximum_m": 3728.173954432532
+      },
+      "baseline_associated": 15014,
+      "selected_associated": 15014
+    },
+    {
+      "subset": "development2",
+      "dataset": "ALL",
+      "arm": "c0",
+      "count": 2,
+      "accepted": 2,
+      "improved": 2,
+      "regressed": 0,
+      "unchanged": 0,
+      "improved_over50m": 2,
+      "regressed_over50m": 0,
+      "maximum_improvement_m": 5008.02218031233,
+      "maximum_regression_m": 0.0,
+      "baseline": {
+        "count": 2,
+        "mean_m": 5215.551866840178,
+        "median_m": 5215.551866840178,
+        "p90_m": 6858.313380887782,
+        "maximum_m": 7269.003759399683
+      },
+      "selected": {
+        "count": 2,
+        "mean_m": 2071.001981571654,
+        "median_m": 2071.001981571654,
+        "p90_m": 2222.985659584213,
+        "maximum_m": 2260.9815790873527
+      },
+      "baseline_associated": 5031,
+      "selected_associated": 5031
+    },
+    {
+      "subset": "development2",
+      "dataset": "ALL",
+      "arm": "fitted_c",
+      "count": 2,
+      "accepted": 2,
+      "improved": 2,
+      "regressed": 0,
+      "unchanged": 0,
+      "improved_over50m": 2,
+      "regressed_over50m": 0,
+      "maximum_improvement_m": 4341.859615515848,
+      "maximum_regression_m": 0.0,
+      "baseline": {
+        "count": 2,
+        "mean_m": 4921.226410295296,
+        "median_m": 4921.226410295296,
+        "p90_m": 6356.781887660876,
+        "maximum_m": 6715.670757002271
+      },
+      "selected": {
+        "count": 2,
+        "mean_m": 2117.5258473299064,
+        "median_m": 2117.5258473299064,
+        "p90_m": 2322.5540826551187,
+        "maximum_m": 2373.811141486422
+      },
+      "baseline_associated": 5031,
+      "selected_associated": 5031
+    },
+    {
+      "subset": "development2",
+      "dataset": "DS26",
+      "arm": "c0",
+      "count": 2,
+      "accepted": 2,
+      "improved": 2,
+      "regressed": 0,
+      "unchanged": 0,
+      "improved_over50m": 2,
+      "regressed_over50m": 0,
+      "maximum_improvement_m": 5008.02218031233,
+      "maximum_regression_m": 0.0,
+      "baseline": {
+        "count": 2,
+        "mean_m": 5215.551866840178,
+        "median_m": 5215.551866840178,
+        "p90_m": 6858.313380887782,
+        "maximum_m": 7269.003759399683
+      },
+      "selected": {
+        "count": 2,
+        "mean_m": 2071.001981571654,
+        "median_m": 2071.001981571654,
+        "p90_m": 2222.985659584213,
+        "maximum_m": 2260.9815790873527
+      },
+      "baseline_associated": 5031,
+      "selected_associated": 5031
+    },
+    {
+      "subset": "development2",
+      "dataset": "DS26",
+      "arm": "fitted_c",
+      "count": 2,
+      "accepted": 2,
+      "improved": 2,
+      "regressed": 0,
+      "unchanged": 0,
+      "improved_over50m": 2,
+      "regressed_over50m": 0,
+      "maximum_improvement_m": 4341.859615515848,
+      "maximum_regression_m": 0.0,
+      "baseline": {
+        "count": 2,
+        "mean_m": 4921.226410295296,
+        "median_m": 4921.226410295296,
+        "p90_m": 6356.781887660876,
+        "maximum_m": 6715.670757002271
+      },
+      "selected": {
+        "count": 2,
+        "mean_m": 2117.5258473299064,
+        "median_m": 2117.5258473299064,
+        "p90_m": 2322.5540826551187,
+        "maximum_m": 2373.811141486422
+      },
+      "baseline_associated": 5031,
+      "selected_associated": 5031
+    }
+  ]
+}
