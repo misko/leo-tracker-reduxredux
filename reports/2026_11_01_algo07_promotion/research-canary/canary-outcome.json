@@ -1,0 +1,33 @@
+{
+  "research_only": true,
+  "public_terminal_available": false,
+  "source_case": "DS26-0066",
+  "private_label": "SCAN",
+  "first_attempt": {
+    "status": "failed",
+    "log": "reports/2026_11_01_algo07_promotion/research-canary/run.log",
+    "partial_output": "reports/2026_11_01_algo07_promotion/research-canary/output",
+    "reason": "NameError: ARMS was missing from experiment.py extraction imports during remap",
+    "correction": "Import ARMS from algo06_science.common; numerical function bodies unchanged"
+  },
+  "second_attempt": {
+    "status": "passed",
+    "fresh_output": "reports/2026_11_01_algo07_promotion/research-canary/attempt2-output",
+    "summary": "reports/2026_11_01_algo07_promotion/research-canary/attempt2-summary.json",
+    "summary_sha256": "11154916dbc3d21bd425c7098b374b2cb31f126c1c94a972f8765ae79da4412d",
+    "protocol": "reports/2026_11_01_algo07_promotion/research-canary/attempt2-output/protocol.json",
+    "protocol_sha256": "d50013bc3916185d7ccb8f2bb04cafdc408f719ddc43059cf844996eac2e8d06",
+    "all_frozen_source_hashes_rechecked": true,
+    "frozen_source_count": 21,
+    "time_limit_s": 1200,
+    "seconds": 45.46203868184239
+  },
+  "checks": {
+    "component_tests_passed": 51,
+    "ruff_unbound_names_passed": true,
+    "exact_endpoint_objective_phase_reference_parity_both_arms": true,
+    "exact_native_owner_hashes_both_arms": true,
+    "exact_history_export_parity": true
+  },
+  "limitation": "Saved historical RF positive numerical replay only; no published production ALGO06 public terminal is validated by this canary."
+}

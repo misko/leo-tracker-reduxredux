@@ -1,0 +1,152 @@
+SCAN 62025_to_68047 True
+{
+  "research_only": true,
+  "public_terminal_available": false,
+  "source_case": "DS26-0066",
+  "private_label": "SCAN",
+  "selected": "62025_to_68047",
+  "original_research_selected": "62025_to_68047",
+  "execution_status": "complete",
+  "passed": true,
+  "comparisons": {
+    "c0": {
+      "endpoint_east_north_km": [
+        4.822133386133149,
+        -5.137446996060269
+      ],
+      "endpoint_latlon": [
+        37.85971669372918,
+        -122.49009926661317
+      ],
+      "objective": 26229.33142122229,
+      "frozen_objective": 26229.33142122229,
+      "maximum_endpoint_difference_km": 0.0,
+      "objective_difference": 0.0,
+      "native_ids_sha256_equal": true,
+      "owners_sha256_equal": true,
+      "phase_reference_maximum_difference_s": 0.0,
+      "qualified": true,
+      "gains": 55.53698732358351
+    },
+    "fitted_c": {
+      "endpoint_east_north_km": [
+        4.86552002173642,
+        -5.151661043846596
+      ],
+      "endpoint_latlon": [
+        37.85958863924463,
+        -122.4896053030657
+      ],
+      "objective": 26239.101559271003,
+      "frozen_objective": 26239.101559271003,
+      "maximum_endpoint_difference_km": 0.0,
+      "objective_difference": 0.0,
+      "native_ids_sha256_equal": true,
+      "owners_sha256_equal": true,
+      "phase_reference_maximum_difference_s": 0.0,
+      "qualified": true,
+      "gains": 56.99165506184034
+    }
+  },
+  "history_export_parity": [
+    {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_algo07_promotion/research-canary/attempt2-output/SCAN/incumbent_history/export.json",
+      "request": {
+        "cutoff": 1792956629387374231,
+        "latest": {
+          "58109": 1792798369317504000,
+          "65922": 1792798550290944000,
+          "69841": 1792787027748480000
+        }
+      },
+      "exact_frozen_export_equal": true
+    },
+    {
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_algo07_promotion/research-canary/attempt2-output/SCAN/62025/62025_to_68047-combined/history/export.json",
+      "request": {
+        "cutoff": 1792956629387374231,
+        "latest": {
+          "68047": 1792769115409344000
+        }
+      },
+      "exact_frozen_export_equal": true
+    }
+  ],
+  "guards": {
+    "62025_to_68047": {
+      "proposed": 68047,
+      "candidates": [
+        62025,
+        68047
+      ],
+      "model": "receiver_offset",
+      "phase_sd_s": 5.0,
+      "minimum_unique_folds": 5,
+      "required_minimum_margin_exclusive": 0.0,
+      "unique_folds": 10,
+      "total_partitions": 10,
+      "retained_fold_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "missing": [],
+      "competitors": [
+        {
+          "arm": "c0",
+          "norad": 62025,
+          "margins": [
+            108.64096563125179,
+            96.01549177292486,
+            243.38920800713413,
+            255.95080273422917,
+            158.31086804038688,
+            182.7566138463216,
+            91.33968920844666,
+            64.31214852552722,
+            92.41234862608775,
+            179.96817597404942
+          ],
+          "minimum_margin": 64.31214852552722,
+          "mean_margin": 147.30963123663597,
+          "wins": 10,
+          "folds": 10
+        },
+        {
+          "arm": "fitted_c",
+          "norad": 62025,
+          "margins": [
+            110.5778039319876,
+            96.32312728001722,
+            274.8432844511646,
+            262.115527050409,
+            171.25891616829355,
+            202.08356203173895,
+            73.55326957953145,
+            47.2565301532361,
+            102.01939770667798,
+            203.54250359080498
+          ],
+          "minimum_margin": 47.2565301532361,
+          "mean_margin": 154.35739219438614,
+          "wins": 10,
+          "folds": 10
+        }
+      ],
+      "scope": "Conditional on supplied full-data finalist inventory, graph/alias choices, and cavity calibration; not independent discovery or an identity probability",
+      "status": "passed",
+      "passed": true,
+      "reason": null,
+      "minimum_margin": 47.2565301532361
+    }
+  },
+  "seconds": 45.46203868184239,
+  "limitations": "Saved research positive numerical replay only. No real published ALGO06 public terminal or production promotion is validated here."
+}

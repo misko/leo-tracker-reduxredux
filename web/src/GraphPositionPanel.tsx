@@ -12,6 +12,7 @@ function coordinates(position: Position | null | undefined) {
 
 function modelLabel(model: string | null | undefined) {
   switch (model) {
+    case "algo07-causal-guarded-reassociation-v1": return "ALGO07";
     case "algo06-causal-residual-family-v1": return "ALGO06";
     case "algo05-causal-gap-conditional-v1": return "ALGO05";
     case "algo04-causal-numerical-v1": return "ALGO04";
@@ -48,6 +49,7 @@ export function GraphPositionPanel({ runId }: { runId: string }) {
     <p>{view.fallback ? (view.decision?.endsWith("_fallback")
       ? view.decision.replace(/_fallback$/, " fallback")
       : `${modelLabel(view.selected?.model_version)} fallback`)
+      : view.decision === "ALGO07_reassociation" ? "ALGO07 guarded family reassociation"
       : view.decision === "ALGO06_additive" ? "ALGO06 causal family recovery"
       : view.decision === "ALGO05_additive" ? "ALGO05 conditional gap recovery"
       : view.decision === "ALGO04_additive" ? "ALGO04 numerical add-on" : view.decision ?? "Awaiting localization"}

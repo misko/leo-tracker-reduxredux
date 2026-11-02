@@ -4,6 +4,29 @@ import { GraphPositionPanel } from "./GraphPositionPanel";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+it("labels the selected ALGO07 reassociation", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+    state: "complete", selected_model: "algo07-causal-guarded-reassociation-v1", decision: "ALGO07_reassociation", fallback: false,
+    selected: { model_version: "algo07-causal-guarded-reassociation-v1", position: { latitude_deg: 37.92, longitude_deg: -122.52 } },
+  }) })));
+  render(<GraphPositionPanel runId="scan" />);
+  expect(await screen.findByRole("heading", { name: "Graph localization · ALGO07" })).toBeInTheDocument();
+  expect(screen.getByText("ALGO07 guarded family reassociation")).toBeInTheDocument();
+  expect(screen.getByText("37.920000°, -122.520000°")).toBeInTheDocument();
+});
+
+it("shows the exact ALGO06 incumbent when ALGO07 falls back", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+    state: "complete", selected_model: "algo07-causal-guarded-reassociation-v1", decision: "ALGO06_fallback", fallback: true,
+    selected: { model_version: "algo06-causal-residual-family-v1", position: { latitude_deg: 37.91, longitude_deg: -122.51 } },
+  }) })));
+  render(<GraphPositionPanel runId="scan" />);
+  expect(await screen.findByRole("heading", { name: "Graph localization · ALGO07" })).toBeInTheDocument();
+  expect(screen.getByText("ALGO06 fallback")).toBeInTheDocument();
+  expect(screen.getByText("algo06-causal-residual-family-v1")).toBeInTheDocument();
+  expect(screen.getByText("37.910000°, -122.510000°")).toBeInTheDocument();
+});
+
 it("labels the selected ALGO06 family recovery", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
     state: "complete", selected_model: "algo06-causal-residual-family-v1", decision: "ALGO06_additive", fallback: false,

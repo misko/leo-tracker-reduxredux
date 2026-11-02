@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_algo07_promotion/research-canary/run_research_canary.py", line 157, in <module>
+    main()
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_01_algo07_promotion/research-canary/run_research_canary.py", line 109, in main
+    result = runner.run_worker('SCAN', INPUT, OUTPUT)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/runner.py", line 195, in run_worker
+    candidate=e.remap(candidate,z,case,h)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/engine.py", line 160, in remap
+    try:dd=rec.ex.remap(d,z,case,h)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo07_science/experiment.py", line 42, in remap
+    for a in ARMS:
+             ^^^^
+NameError: name 'ARMS' is not defined
