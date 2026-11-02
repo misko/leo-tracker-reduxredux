@@ -1,0 +1,15 @@
+# Conditional RF predictive findings
+
+All five frozen strict decisions are **inconclusive**. Positive raw density gains do not override unsupported transfers, failed optimization, or an unreliable local Gaussian approximation. The challenge panel and fixed identities/masks/aliases remain conditional development inputs.
+
+- **DS26-0070:** joint gains change sign across time folds; target-family marginal gains favor SD1 in folds 0 and 2. Every SD4 time-fit fails the frozen local-Gaussian probe check; both receiver-transfer directions lack the required same-band independent-family calibration.
+- **DS26-0309:** all three time-fold joint gains favor SD4 in both c arms, including other-family marginal predictions. Target-family marginals favor SD1 in folds 0 and 1. Both receiver-transfer directions have structural support, but RX1 transfer has optimizer failures. RX2 transfer qualifies and favors SD4. The complete five-partition rule remains inconclusive.
+- **DS26-0040:** all time-fold joint gains favor SD4, while other-family marginal gains are slightly negative in fold 2. The target appears on only one receiver, preventing the reciprocal transfer test.
+- **DS26-0044:** raw time-fold gains favor SD4, but some cells fail optimizer or local-Gaussian checks. Both transfer directions lack sufficient same-band calibration support.
+- **FRSH-0004:** all three time folds in both c arms favor SD4 for joint and other-family marginal prediction, and all time-fit numerical checks pass. Reciprocal receiver transfer is unsupported because the target appears on only one receiver. These positive RF scores alone cannot establish localization benefit or a general model-selection rule.
+
+Preprocessing uses a fixed 150 Hz engineering base, unit powers, training-only Gamma updates, and common regional-center/zero-reference starts. Predictive Gaussian noise matches the posterior inverse-precision moment. Shared nuisance and position covariance enter a joint normalized density, corrected for the regional box within the local Gaussian approximation. Gamma-mixture tails, residual short-time dependence, nonlinear posterior accuracy and inherited discovery selection remain limitations. The three marginal score subsets do not add, and overlapping randomized folds do not supply independent significance tests. No geography was read to make these figures.
+
+[Joint gains](joint_gain_heatmap.png), [target and other-family gains](marginal_gain_heatmaps.png), [fit qualifications](qualification_grid.png), and [training probe failures](local_gaussian_probe_failures.png) display the raw evidence. Gray means unsupported transfer or an explicitly absent other-family held subset; × marks a failed four-fit paired numerical check, not a rejected satellite identity.
+
+Compact tables retain [support](support.csv), [scores](predictive_scores.csv), [qualifications](qualifications.csv), and [individual training probes](local_gaussian_probes.csv). All numbers come from the sealed RF results and decisions. No optimizer, position-error calculation, or changed decision threshold is present in this presentation script.

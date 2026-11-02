@@ -1,0 +1,20 @@
+{
+  "purpose": "Separately labeled NO-REFIT visualization export from sealed predictive endpoints",
+  "choice_timing": "Cases, splits and c arm fixed by parent before predictive results were sealed",
+  "cases": ["DS26-0070", "DS26-0309", "DS26-0040", "DS26-0044", "FRSH-0004"],
+  "primary_split": "time_f0",
+  "additional_splits": {"DS26-0309": ["family_to_rx1", "family_to_rx2"]},
+  "arms": ["fitted_c"],
+  "SD_scales": [1.0, 4.0],
+  "endpoint_eligibility": "Frozen split structurally eligible and saved status complete; unqualified complete endpoints retained with prominent labels",
+  "reconstruction": "Saved training mask, x and phase reference; unchanged adapter and frozen inference sources",
+  "training_objective_replay_absolute_tolerance": 0.00001,
+  "covariance": "Frozen train-only coefficient posterior plus saved local position covariance and training-only Gamma inverse-precision moments; factor export preserves shared correlations",
+  "position_mean_derivative_step_km": 0.02,
+  "figure_band": "Pointwise plus/minus one unbounded local moment-Gaussian model standard deviation; not calibrated coverage",
+  "line_maximum_gap_seconds": 5.0,
+  "native_inventory": "Every held native curved ID retained in arrays; figures show the fixed target family",
+  "source_constraints": {"RF_optimization": false, "held_nuisance_updates": false, "GPS": false, "new_candidate_search": false},
+  "execution": {"after_predictive_seal_and_workers_exit": true, "total_seconds": 120, "maximum_workers": 4, "retries": 0},
+  "failure_policy": "Report missing, unsupported, failed replay or capped exports; do not refit"
+}
