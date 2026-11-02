@@ -2,7 +2,7 @@
 
 ALGO07 adds one guarded whole-family identity repair to the ALGO06 pipeline. It preserves the published native GLRT point set, so this change targets position accuracy rather than increased association percentage. Ambiguous, incomplete, failed or timed-out proposals retain the exact ALGO06 endpoint and observation owners.
 
-The production identity is `algo07-causal-guarded-reassociation-v1`, persisted schema 6, namespace `fast-scan-graph-position-v6`. Earlier algorithms and contracts remain immutable. The user authorized promotion and deployment on November 1, 2026. Deployment qualification and activation receipts are recorded in the [release report](../2026_11_01_algo07_promotion/README.md).
+**ALGO07 is live and the production default.** The production identity is `algo07-causal-guarded-reassociation-v1`, persisted schema 6, namespace `fast-scan-graph-position-v6`. Earlier algorithms and contracts remain immutable. The user authorized promotion and deployment on November 1, 2026. Numerical and API releases use revision `7cafccaced18e6b0fa9266bd18339d61f0f9c1f4`; activation completed November 2 at 00:19:49 UTC. Deployment qualification and activation receipts are recorded in the [release report](../2026_11_01_algo07_promotion/README.md).
 
 ## Paired evidence
 
