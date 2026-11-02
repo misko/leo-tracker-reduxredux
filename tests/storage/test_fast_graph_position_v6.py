@@ -118,3 +118,18 @@ def test_v6_lookup_uses_validated_public_terminal(tmp_path, monkeypatch):
         store, "terminal", lambda _: (_ for _ in ()).throw(ValueError("invalid proof"))
     )
     assert store.completed_run("run") is None
+
+
+def test_plot_port_binds_owned_native_evidence_and_rejects_path_escape(tmp_path,monkeypatch):
+    store=FastGraphPositionStoreV6(tmp_path,incumbent=object());job=dict(job_id='job')
+    workspace=store.path('job')/'output/recovery';native=workspace/'native'
+    native.mkdir(parents=True);(workspace/'inputs').mkdir()
+    (native/'observations.json').write_text('[]');(native/'tracks.json').write_text('[]')
+    context=workspace/'inputs/SCAN.json';context.write_text(json.dumps(dict(native_path=str(native))))
+    monkeypatch.setattr(store,'terminal',lambda _: (dict(state='complete'),dict(sha256='sealed')))
+    result=store.plot_evidence(job)
+    assert result['observations']==[] and result['tracks']==[]
+    assert result['observation_sha256']==sha(native/'observations.json')
+    context.write_text(json.dumps(dict(native_path=str(tmp_path))))
+    from leo.storage.errors import PathConfinementError
+    with pytest.raises(PathConfinementError):store.plot_evidence(job)

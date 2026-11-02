@@ -1,0 +1,29 @@
+[Unit]
+Description=Publish exact ALGO07 standard results and verified PNGs
+After=local-fs.target leo-algo07-graph-position.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+WorkingDirectory=@RELEASE@
+Environment=PYTHONPATH=@RELEASE@/src:@RELEASE@/tools
+Environment=PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStart=@NUMERICAL_PYTHON@ -B @RELEASE@/tools/render_standard_fast.py --bulk-root /srv/bulk/leo
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+Nice=15
+CPUWeight=50
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo/fast-scan-standard-v1 /srv/bulk/leo/presentation-cache/matplotlib
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target

@@ -39,7 +39,8 @@ def register_fast_scan_commands(scanner):
         typer.echo(json.dumps({k: v for k, v in report.items() if k != "points"}, indent=2))
 
 
-def process_automatic(recording, *, store, database_url, standard_command, glrt_lock):
+def process_automatic(recording, *, store, database_url, standard_command, glrt_lock,
+                      standard_mode='algo07', standard_reader=None):
     """Resume the existing GLRT queue, then the existing standard CLI pipeline."""
     from leo.processing.fast_scan import process_recording
 
@@ -55,6 +56,16 @@ def process_automatic(recording, *, store, database_url, standard_command, glrt_
                 run_id=report["run_id"], session_id=report["session_id"],
                 window_count=report["window_count"], counts=report["counts"])
         workspace = store.automatic_workspace(identifier)
+        if standard_mode == 'algo07':
+            from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
+            reader=standard_reader or FastStandardAnalysisStore(store.root)
+            result=reader.detail(state['run_id'])
+            complete=result['state']=='complete'
+            return store.update_automatic(identifier,state='complete' if complete else 'tracking',failure=None,
+                standard_algorithm='ALGO07', standard_stages=dict(glrt=True,algo07=complete),
+                standard_terminal_sha256=result.get('terminal_sha256'))
+        if standard_mode != 'legacy':
+            raise ValueError('Explicit standard mode required')
         command = [*standard_command, "standard", "--input",
                    str(store.tracking_input_path(state["run_id"])), "--output", str(store.root),
                    "--receipt-root", str(workspace), "--maximum-seconds", "500", "--full"]
@@ -121,8 +132,14 @@ def watch_automatic(args):
     from concurrent.futures import ThreadPoolExecutor
 
     from leo.storage.fast_scan import FastScanStore
+    from leo.storage.fast_capture_health import checkpoint_health
+    from leo.application.reconcile_fast_capture import reconcile
+    from leo.acquisition.authority import LocalCaptureAuthority,RadioResource
 
     store = FastScanStore(args.bulk_root)
+    authority=(LocalCaptureAuthority(args.bulk_root/'control',(
+        RadioResource(args.capture_serial,args.capture_serial,args.capture_uri),)) if args.capture_serial else None)
+    reconciliation_at=0.
     lock_path = store.automatic_workspace("watcher") / "owner.lock"
     with lock_path.open("a") as owner:
         fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -130,6 +147,11 @@ def watch_automatic(args):
         glrt_lock = threading.Lock()
         with ThreadPoolExecutor(max_workers=3) as pool:
             while True:
+                if authority and time.monotonic()-reconciliation_at>60:
+                    roots=[args.recording_root,*args.staging_root]
+                    health={r['run_id']:r for root in roots if root.exists() for r in checkpoint_health(root)}
+                    print(json.dumps(reconcile(authority,args.capture_serial,health.values(),store)),flush=True)
+                    reconciliation_at=time.monotonic()
                 for identifier, future in list(active.items()):
                     if future.done():
                         try:
@@ -143,7 +165,7 @@ def watch_automatic(args):
                         active[recording.name] = pool.submit(process_automatic, recording,
                             store=store, database_url=os.environ["LEO_DATABASE_URL"],
                             standard_command=[args.standard_python, args.standard_script],
-                            glrt_lock=glrt_lock)
+                            glrt_lock=glrt_lock,standard_mode=args.standard_mode)
                 time.sleep(5)
 
 
@@ -153,6 +175,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Automatically analyze sealed fast scans; no RF.")
     parser.add_argument("--recording-root", type=Path, required=True)
     parser.add_argument("--bulk-root", type=Path, required=True)
-    parser.add_argument("--standard-python", required=True)
-    parser.add_argument("--standard-script", required=True)
+    parser.add_argument("--standard-python", default='')
+    parser.add_argument("--standard-script", default='')
+    parser.add_argument('--standard-mode',choices=('algo07','legacy'),default='algo07')
+    parser.add_argument('--capture-serial');parser.add_argument('--capture-uri',default='ip:192.168.1.20')
+    parser.add_argument('--staging-root',type=Path,action='append',default=[])
     watch_automatic(parser.parse_args())

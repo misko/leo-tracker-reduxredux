@@ -158,3 +158,25 @@ class FastGraphPositionStoreV6:
                     "Rejected ALGO07 lookup %s: %s", path.parent.name, type(error).__name__
                 )
         return None
+
+    def completed_jobs(self):
+        """Enumerate owned completed jobs for downstream presentation work."""
+        for path in sorted((self.namespace / 'jobs').glob('*/status.json')):
+            job = self.status(path.parent.name)
+            if job and job.get('state') == 'complete':
+                if job.get('job_id') != path.parent.name or job.get('model_version') != MODEL_VERSION:
+                    raise ValueError('ALGO07 job identity changed')
+                yield job
+
+    def plot_evidence(self, job):
+        """Read-only replay port; consumers never construct production paths."""
+        terminal, receipt = self.terminal(job)
+        if terminal['state'] != 'complete':
+            raise ValueError('Qualified ALGO07 terminal required')
+        workspace = confined_path(self.root, self.path(job['job_id']) / 'output/recovery', must_exist=True)
+        context = json.loads((workspace / 'inputs/SCAN.json').read_text())
+        native = confined_path(workspace, Path(context['native_path']), must_exist=True)
+        return dict(job=job, terminal=terminal, terminal_receipt=receipt,
+            workspace=str(workspace), observations=json.loads((native/'observations.json').read_text()),
+            tracks=json.loads((native/'tracks.json').read_text()),
+            observation_sha256=sha(native/'observations.json'), tracks_sha256=sha(native/'tracks.json'))

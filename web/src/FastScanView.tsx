@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { GraphPositionPanel } from "./GraphPositionPanel";
+import { FastStandardAnalysis } from "./FastStandardAnalysis";
 
 type Point = { channel: number; receiver_id: number; visit: number; time_s: number | null;
   score: number | null; margin: number | null; cfo_hz: number | null };
@@ -128,6 +129,9 @@ export function FastScanView({ renderTracking, recordingId }: {
       <p>Fast-score cutoff {current.policy.threshold.toFixed(5)}. Candidate detections feed the shared trajectory, catalogue and positioning artifacts below.</p>
     </>}
     </section>
+    {selectedRun && <FastStandardAnalysis runId={selectedRun} />}
+    <details className="scanner-results-panel"><summary>Historical and experimental analyses</summary>
+    <p>These older methods are separate from the standard ALGO07 result above.</p>
     {selectedRun && <section className="scanner-results-panel" aria-label="Satellite orbit and GLRT plots">
       <h3>Selected satellite orbits and GLRT CFO</h3>
       {orbitError && <p role="alert">Orbit plots unavailable: {orbitError}</p>}
@@ -146,6 +150,7 @@ export function FastScanView({ renderTracking, recordingId }: {
       <header><div><span>TRAJECTORY AND CATALOGUE EVIDENCE</span><h3>Tracking and positioning</h3></div></header>
       <p>Shared analysis artifacts will appear automatically after GLRT publishes its tracking input.</p>
     </section>}
+    </details>
     {current && <details className="scanner-results-panel fast-diagnostics">
       <summary>Fast-score diagnostics and channel activity</summary>
       <p>Time: {current.time_basis}. These supplemental plots show the strongest saved candidate per window.</p>

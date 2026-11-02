@@ -133,7 +133,28 @@ def test_automatic_resumes_standard_slices_without_recomputing_glrt(monkeypatch,
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr(cli.subprocess, "run", standard)
     result = cli.process_automatic(tmp_path / "recording", store=store, database_url="unused",
-        standard_command=["python", "bridge"], glrt_lock=threading.Lock())
+        standard_command=["python", "bridge"], glrt_lock=threading.Lock(),standard_mode='legacy')
     assert len(calls) == 2
     assert "--full" in calls[0]
     assert result["state"] == "complete"
+
+
+def test_algo07_is_standard_and_does_not_launch_the_legacy_pipeline(monkeypatch,tmp_path):
+    import threading
+    import leo.cli.fast_scan as cli
+    import leo.processing.fast_scan as processing
+    from leo.storage.fast_scan import FastScanStore
+    store=FastScanStore(tmp_path/'bulk')
+    store.update_automatic('recording',state='tracking',run_id='run',session_id='session')
+    def forbidden(*a,**k):raise AssertionError('must not repeat GLRT or legacy analysis')
+    monkeypatch.setattr(processing,'process_recording',forbidden)
+    monkeypatch.setattr(cli.subprocess,'run',forbidden)
+    class Reader:
+        state='pending'
+        def detail(self,run_id):return dict(state=self.state,terminal_sha256='sha256:terminal')
+    reader=Reader()
+    for expected in ('tracking','complete'):
+        result=cli.process_automatic(tmp_path/'recording',store=store,database_url='unused',
+            standard_command=[],glrt_lock=threading.Lock(),standard_reader=reader)
+        assert result['state']==expected and result['standard_algorithm']=='ALGO07'
+        reader.state='complete'

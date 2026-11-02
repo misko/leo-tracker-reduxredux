@@ -16,6 +16,8 @@ from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolve
 from leo.api.blind_regional import blind_regional_router
 from leo.api.fast_scan_orbits import fast_scan_orbit_router
 from leo.api.graph_position import graph_position_router
+from leo.api.fast_standard_analysis import standard_analysis_router
+from leo.storage.fast_standard_analysis import FastStandardAnalysisStore
 from leo.api.native_recordings import native_recording_router
 from leo.api.partial_band import partial_band_router
 from leo.api.position_methods import position_methods_router
@@ -303,6 +305,7 @@ def create_app(
     router = APIRouter(prefix="/api/v1")
     app.include_router(fast_scan_orbit_router(fast_scans, shared_fast_scans))
     app.include_router(graph_position_router(graph_positions))
+    app.include_router(standard_analysis_router(FastStandardAnalysisStore(artifact_root)))
     v2_router = APIRouter(prefix="/api/v2")
     v3_router = APIRouter(prefix="/api/v3")
     v4_router = APIRouter(prefix="/api/v4")

@@ -112,7 +112,7 @@ it("keeps shared artifacts available when the fast report request fails", async 
   render(<FastScanView recordingId="capture" renderTracking={id => <p>Artifacts: {id}</p>} />);
   expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent("503");
   expect(screen.getByText("Artifacts: shared-session")).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent("Analysis complete");
+  expect(screen.getByText("Analysis complete")).toBeInTheDocument();
 });
 it("shows API errors instead of an empty successful scan", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503 })));
