@@ -562,6 +562,33 @@ describe("Observation Console", () => {
     );
   });
 
+  it("loads legacy recording detail only when the recordings view is opened", async () => {
+    render(<App />);
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("include_test=true"), expect.anything()));
+    expect(fetch).not.toHaveBeenCalledWith("/api/v1/recordings/test-session", expect.anything());
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
+    expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith("/api/v1/recordings/test-session", expect.anything());
+  });
+
+  it("directs fast-scan catalogue entries to scans without requesting legacy detail", async () => {
+    const normalFetch = fetch;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input), "http://localhost").pathname === "/api/v1/recordings") {
+        return new Response(JSON.stringify({ ...summary, items: [{ ...summary.items[0],
+          session_id: "fast-missing-legacy-detail", tags: ["fast-scan"] }] }));
+      }
+      return normalFetch(input, init);
+    }));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Recordings" }));
+    expect(await screen.findByRole("heading", { name: "Fast scan results" })).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalledWith("/api/v1/recordings/fast-missing-legacy-detail", expect.anything());
+    fireEvent.click(screen.getByRole("button", { name: "View scans" }));
+    expect(screen.queryByRole("heading", { name: "Fast scan results" })).not.toBeInTheDocument();
+  });
+
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Recordings" }));

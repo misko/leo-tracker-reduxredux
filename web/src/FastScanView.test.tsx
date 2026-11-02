@@ -3,6 +3,35 @@ import { afterEach, expect, it, vi } from "vitest";
 import { FastScanView } from "./FastScanView";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+it.each([null, .03])("preserves CFO evidence when fast scores are missing (other score %s)", async (otherScore) => {
+  const report = { run_id: "run", recording_name: "native-rate", window_count: 3,
+    counts: { processed: 3, skipped_fast_score: 0, invalid_capture: 0 },
+    policy: { mode: "ungated", threshold: .0132, margin_gate: .025, strong_margin: .1 },
+    rf_mapping_authorities: ["hypothesis"], time_basis: "relative sample counter",
+    channels: [{ channel: 8, receiver_id: 0, processed: 3, skipped: 0, active: 2, strong: 2 }],
+    points: [
+      { channel: 8, receiver_id: 0, visit: 1, time_s: .3, score: null, margin: .2, cfo_hz: 1000 },
+      { channel: 8, receiver_id: 0, visit: 2, time_s: .6, score: otherScore, margin: .3, cfo_hz: 1200 },
+      { channel: 8, receiver_id: 0, visit: 3, time_s: .9, score: .02, margin: null, cfo_hz: 1400 },
+    ] };
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true,
+    json: async () => url.endsWith("/automatic") ? { items: [] }
+      : url.includes("?") ? { items: [report] } : report })));
+  render(<FastScanView />);
+  const cfoPlot = await screen.findByRole("img", { name: "RX1 CFO over time" });
+  expect(cfoPlot.querySelectorAll("circle")).toHaveLength(2);
+  expect(cfoPlot).toHaveTextContent("score unavailable, margin 0.20000, CFO 1000.0 Hz");
+  fireEvent.change(screen.getByLabelText("Plot"), { target: { value: "score" } });
+  if (otherScore === null) {
+    expect(screen.getByText("No windows with both a fast score and GLRT margin.")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "RX1 fast score versus GLRT margin" })).not.toBeInTheDocument();
+  } else {
+    expect(screen.getByRole("img", { name: "RX1 fast score versus GLRT margin" }).querySelectorAll("circle")).toHaveLength(1);
+  }
+  fireEvent.change(screen.getByLabelText("Plot"), { target: { value: "cfo" } });
+  expect(screen.getByRole("img", { name: "RX1 CFO over time" }).querySelectorAll("circle")).toHaveLength(2);
+});
 it("keeps the orbit panel visible before PNG publication", async () => {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true, json: async () =>
     url.endsWith("/orbits") ? { artifacts: [] }

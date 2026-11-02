@@ -193,19 +193,21 @@ export default function App() {
     };
   }, [query, includeTest, analysisState]);
 
+  const selectedFastScan = recordings.find(item => item.session_id === selectedId)?.tags.includes("fast-scan") ?? false;
   useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
+    setDetail(null);
+    if (view !== "recordings" || !selectedId || selectedFastScan) {
       return;
     }
     const controller = new AbortController();
+    setError(null);
     getRecording(selectedId, controller.signal)
-      .then(setDetail)
+      .then(value => { if (!controller.signal.aborted) setDetail(value); })
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
       });
     return () => controller.abort();
-  }, [selectedId]);
+  }, [selectedId, selectedFastScan, view]);
 
   return (
     <div className="app-shell">
@@ -241,7 +243,13 @@ export default function App() {
           />
           <section className="detail-pane" aria-label="Recording detail">
             {error ? <ErrorBanner message={error} /> : null}
-            {detail ? (
+            {selectedFastScan ? (
+              <section>
+                <h2>Fast scan results</h2>
+                <p>GLRT, satellite tracks and position results for fast recordings are available in the scan browser.</p>
+                <button type="button" onClick={() => setView("adaptive")}>View scans</button>
+              </section>
+            ) : detail ? (
               <RecordingDetail
                 detail={detail}
                 reprocessEnabled={reprocessEnabled}

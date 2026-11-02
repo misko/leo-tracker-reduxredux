@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { GraphPositionPanel } from "./GraphPositionPanel";
 
 type Point = { channel: number; receiver_id: number; visit: number; time_s: number | null;
-  score: number; margin: number; cfo_hz: number | null };
+  score: number | null; margin: number | null; cfo_hz: number | null };
 type Channel = { channel: number; receiver_id: number; processed: number; skipped: number;
   active: number; strong: number };
 type Report = { run_id: string; recording_name: string; window_count: number;
@@ -169,10 +169,12 @@ export function FastScanView({ renderTracking, recordingId }: {
 }
 
 function Scatter({ receiver, metric, report }: { receiver: number; metric: "cfo" | "score"; report: Report }) {
-  const points = (report.points ?? []).filter(p => p.receiver_id === receiver &&
-    (metric === "score" || (p.margin >= report.policy.strong_margin && p.time_s !== null && p.cfo_hz !== null)));
-  const coordinates = points.map(p => ({ p, x: metric === "cfo" ? p.time_s! : p.score,
-    y: metric === "cfo" ? p.cfo_hz! / 1000 : p.margin }));
+  const finite = (value: number | null): value is number => typeof value === "number" && Number.isFinite(value);
+  const points = (report.points ?? []).filter(p => p.receiver_id === receiver && finite(p.margin) &&
+    (metric === "score" ? finite(p.score)
+      : p.margin >= report.policy.strong_margin && finite(p.time_s) && finite(p.cfo_hz)));
+  const coordinates = points.map(p => ({ p, x: metric === "cfo" ? p.time_s! : p.score!,
+    y: metric === "cfo" ? p.cfo_hz! / 1000 : p.margin! }));
   const xs = coordinates.map(v => v.x), ys = coordinates.map(v => v.y);
   const xmin = xs.reduce((a, b) => Math.min(a, b), 0);
   const xmax = xs.reduce((a, b) => Math.max(a, b), xmin + 0.001);
@@ -181,7 +183,7 @@ function Scatter({ receiver, metric, report }: { receiver: number; metric: "cfo"
   const x = (value: number) => 75 + 900 * (value - xmin) / (xmax - xmin);
   const y = (value: number) => 250 - 225 * (value - ymin) / (ymax - ymin);
   return <section><h3>RX{receiver + 1} · {points.length.toLocaleString()} windows</h3>
-    {!points.length ? <p>No qualifying points.</p> : <svg viewBox="0 0 1020 300" role="img"
+    {!points.length ? <p>{metric === "score" ? "No windows with both a fast score and GLRT margin." : "No qualifying points."}</p> : <svg viewBox="0 0 1020 300" role="img"
       aria-label={`RX${receiver + 1} ${metric === "cfo" ? "CFO over time" : "fast score versus GLRT margin"}`}
       style={{ width: "100%", background: "white", border: "1px solid #cbd5e1" }}>
       <path d="M75 20V250H985" fill="none" stroke="#64748b" />
@@ -192,7 +194,7 @@ function Scatter({ receiver, metric, report }: { receiver: number; metric: "cfo"
       <text x="520" y="291" textAnchor="middle" fill="#334155">{metric === "cfo" ? "Relative sample time (s)" : "Fast score"}</text>
       <text x="16" y="140" transform="rotate(-90 16 140)" textAnchor="middle" fill="#334155">{metric === "cfo" ? "CFO (kHz)" : "GLRT margin"}</text>
       {coordinates.map(({ p, x: px, y: py }) => <circle key={p.visit} cx={x(px)} cy={y(py)} r="1.8"
-        fill={colors[p.channel - 1]} opacity="0.65"><title>CH{p.channel}, visit {p.visit}: score {p.score.toFixed(5)}, margin {p.margin.toFixed(5)}, CFO {p.cfo_hz?.toFixed(1)} Hz</title></circle>)}
+        fill={colors[p.channel - 1]} opacity="0.65"><title>CH{p.channel}, visit {p.visit}: score {finite(p.score) ? p.score.toFixed(5) : "unavailable"}, margin {p.margin!.toFixed(5)}, CFO {finite(p.cfo_hz) ? `${p.cfo_hz.toFixed(1)} Hz` : "unavailable"}</title></circle>)}
     </svg>}
   </section>;
 }
