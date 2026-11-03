@@ -52,6 +52,9 @@ def configuration(old, runtime, python, pin):
     if configured.name != "src":
         raise ValueError("Expected one native source root")
     new = old.replace(lines[0], "Environment=PYTHONPATH=" + str(runtime / "src")).rstrip()
+    # Replace this tool's earlier pin while preserving unrelated pre-start checks.
+    new = "\n".join(s for s in new.splitlines() if not (
+        s.startswith("ExecStartPre=") and "/tools/stage_native_glrt_runtime.py verify " in s))
     new = new.replace(
         "# Overlay only the orchestration files on the installed native-rate GLRT release.\n"
         "# The staged native worker preserves every other installed source byte.",
@@ -133,6 +136,17 @@ def request(args):
     return plan
 
 
+def wait_runtime(root, old_pid):
+    for _ in range(100):
+        pid = int(property_value("MainPID"))
+        if pid and pid != old_pid:
+            with suppress(FileNotFoundError, ProcessLookupError):
+                if environment(pid).get("PYTHONPATH") == str(root / "src"):
+                    return pid
+        time.sleep(.02)
+    raise RuntimeError("Replacement runtime not verified; inspect without restarting")
+
+
 def finish(args):
     plan = read(args.request)
     if not plan["drain_requested"] or plan["service"] != SERVICE:
@@ -148,9 +162,7 @@ def finish(args):
         return dict(activated=False, ready_to_start=True)
     # start is idempotent if systemd already restarted it; restart could kill work.
     subprocess.run(["systemctl", "start", SERVICE], check=True)
-    pid = int(property_value("MainPID"))
-    if pid == plan["old_pid"] or environment(pid).get("PYTHONPATH") != str(root / "src"):
-        raise RuntimeError("Replacement native watcher has another runtime")
+    pid = wait_runtime(root, plan["old_pid"])
     result = dict(activated=True, new_pid=pid, runtime_root=str(root), manifest_sha256=pin,
                   activated_utc_ns=time.time_ns(), old_pid=plan["old_pid"])
     with args.output.open("x") as stream:

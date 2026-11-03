@@ -145,6 +145,14 @@ idempotent service start. Never replace this with a process-group signal or a
 service stop/restart that could terminate active numerical children. A pending
 drain is not a completed deployment.
 
+For exact fractional-weight reuse, `stage_native_glrt_runtime.py stage-fractional`
+requires committed complete native parity, three faster alternating cohort-window
+comparisons, fresh exact downstream both-arm parity and the saved-policy audit.
+It verifies that only the qualified interpolation module differs from the
+deployed native baseline. A reused full baseline establishes parity only; the
+paired window trials supply timing evidence. Run an installed 16-window canary
+before the same guarded native drain, then verify the replacement live runtime.
+
 For ALGO02, `stage_algo02_runtime.py` binds committed exact six-file/both-arm
 parity to the tested runtime manifest and copies only qualified numerical changes
 over the installed baseline. Run an installed prepared replay before activation.
