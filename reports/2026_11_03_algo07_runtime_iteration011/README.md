@@ -4,7 +4,9 @@ The isolated ALGO02 candidate reduces unprofiled prepared-stage time from
 **271.637 to 190.556 seconds (1.43×)** and reproduces **all six scientific JSON outputs
 exactly**, including discovery alternatives, native point ownership, satellite
 assignments, gates, objectives, optimizer histories and both calibration arms.
-Aggregate CPU work decreases **29.78%**. This candidate is not deployed.
+Aggregate CPU work decreases **29.78%**. The qualified runtime was deployed to
+the standard ALGO02 worker at **20:41:01 UTC on November 3**, after an exact
+installed canary and an idle handoff.
 
 ![Matched prepared ALGO02 runtime](algo02_runtime.png)
 
@@ -51,8 +53,9 @@ and all 1,774 files, then changes only:
    the hierarchical posterior. Preserve the installed ALGO02 signature and
    behavior; do not import newer ALGO03 support policies.
 
-The prototype has its own manifest and private directory. Production ALGO02
-remains on `1b63f5908785fc940446086aa4ef5de1a1539003`.
+The prototype has its own manifest and private directory. The deployed package
+preserves the interpreter and all unrelated runtime files from
+`1b63f5908785fc940446086aa4ef5de1a1539003`.
 
 ## Scientific checks and scope
 
@@ -114,9 +117,10 @@ changed manifests, input validation, both older-helper adaptation and rejection
 of mismatched timing configurations. Ruff passes. Existing exact likelihood
 qualification for the two shared numerical modules is retained in iteration007.
 
-The sequential unprofiled pair is complete and exact. Before deployment,
-qualify an immutable installed package and its production handoff. The original
-runtime remains available; this experiment has not modified the ALGO02 service.
+The sequential unprofiled pair, immutable installed package, exact installed
+canary and idle production handoff are complete. The original runtime remains
+available. This is a runtime composition of the existing scientific ALGO02
+stage in the standard ALGO07 chain, not a new association algorithm.
 The tenfold overall runtime goal remains open.
 
 ## Immutable package and handoff preparation
@@ -141,5 +145,38 @@ The source qualification now explicitly binds each trial's runtime manifest:
 [package qualification](receipts/package-source-qualification.json). Thirty-five
 targeted tests pass, covering qualification and canary identity failures, frozen
 input/output comparison, configuration preservation and the reused per-job
-ownership check. Ruff passes. Package staging and installed replay are next;
-production ALGO02 has not changed at this checkpoint.
+ownership check at the preparation checkpoint. The subsequent activation checks
+bring this to **37 passing targeted tests**; they additionally reject a busy
+watcher before any signal and ensure the runtime override sorts after the
+existing `release.conf`. Ruff passes.
+
+## Installed canary and production activation
+
+The installed package is
+`/opt/leo-fast-graph-runtime-algo02/38b8fc5634b59b6df0bb72720ceb20eb22cbab08`,
+with **1,780 files** and manifest pin
+`d2691fbc69b5cf8ae470e37755775dcc17c5a127cbc7427adae95ca20b7a96f5`.
+[Stage receipt](receipts/algo02-runtime-stage.json).
+
+A new prepared replay from that installed directory took **224.223 seconds**,
+including manifest checks. All six scientific outputs and both arms match the
+public reference exactly, with 1,799 frozen files and all three process read
+receipts verified. This additional canary timing is not another matched speed
+trial; it also illustrates shared-host variability.
+[Installed comparison](receipts/installed-canary-parity.json),
+[installed execution](receipts/installed-canary-execution.json).
+
+The old watcher had no numerical children or per-job owners both before and
+after every watcher thread was stopped for the final idle check. No active job
+was terminated. Systemd's pre-start check verified all 1,780 files. The new
+watcher, PID 3183532, is active/running with zero automatic restarts and uses
+the pinned package through its working directory and Python path.
+[Activation receipt](receipts/algo02-runtime-activation.json),
+[live verification](receipts/algo02-runtime-live.json),
+[previous service configuration](receipts/algo02-service-before.txt).
+
+The handoff tool checks the effective working directory after `daemon-reload`
+before terminating the idle old watcher, guarding against a later drop-in that
+would otherwise shadow the new configuration. It verifies the replacement's
+live environment after startup. Full recording-to-published-ALGO07 timing and
+the tenfold objective remain outstanding.

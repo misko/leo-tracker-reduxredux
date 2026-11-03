@@ -1,0 +1,45 @@
+# /etc/systemd/system/leo-fast-shared-position.service
+[Unit]
+Description=Shared satellite-weight localization for exported fast scans
+After=local-fs.target
+RequiresMountsFor=/srv/bulk/leo /var/lib/leo/tle
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-shared-model-v1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+# The immutable release-specific drop-in supplies WorkingDirectory,
+# PYTHONPATH, and ExecStart. No database or radio connection is required.
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+ReadOnlyPaths=/var/lib/leo/tle
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/leo-fast-shared-position.service.d/release.conf
+[Service]
+# Replace /opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003 with the immutable, qualified release path at cutover.
+WorkingDirectory=/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003
+Environment=PYTHONPATH=/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/src:/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/tools
+ExecStart=
+ExecStart=/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/bin/python -B -m leo.cli.fast_graph_position --bulk-root /srv/bulk/leo --maximum-seconds 1200
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-graph-position-v1
+TimeoutStopSec=15
+KillMode=control-group
