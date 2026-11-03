@@ -1,0 +1,139 @@
+{
+  "exact": true,
+  "shape": [
+    27,
+    1201,
+    6,
+    6
+  ],
+  "stress": [
+    {
+      "dimension": 1,
+      "matrices": 31,
+      "exact": true
+    },
+    {
+      "dimension": 2,
+      "matrices": 31,
+      "exact": true
+    },
+    {
+      "dimension": 3,
+      "matrices": 31,
+      "exact": true
+    },
+    {
+      "dimension": 6,
+      "matrices": 31,
+      "exact": true
+    },
+    {
+      "dimension": 12,
+      "matrices": 31,
+      "exact": true
+    },
+    {
+      "dimension": 32,
+      "matrices": 31,
+      "exact": true
+    }
+  ],
+  "singular_rejected": true,
+  "timings": [
+    {
+      "repeat": 0,
+      "variant": "numpy",
+      "seconds": 0.021820656023919582
+    },
+    {
+      "repeat": 0,
+      "variant": "fused",
+      "seconds": 0.015022696927189827
+    },
+    {
+      "repeat": 1,
+      "variant": "fused",
+      "seconds": 0.01131444238126278
+    },
+    {
+      "repeat": 1,
+      "variant": "numpy",
+      "seconds": 0.01887875609099865
+    },
+    {
+      "repeat": 2,
+      "variant": "numpy",
+      "seconds": 0.01611593645066023
+    },
+    {
+      "repeat": 2,
+      "variant": "fused",
+      "seconds": 0.010766217485070229
+    },
+    {
+      "repeat": 3,
+      "variant": "fused",
+      "seconds": 0.011307935230433941
+    },
+    {
+      "repeat": 3,
+      "variant": "numpy",
+      "seconds": 0.014720283448696136
+    },
+    {
+      "repeat": 4,
+      "variant": "numpy",
+      "seconds": 0.015202811919152737
+    },
+    {
+      "repeat": 4,
+      "variant": "fused",
+      "seconds": 0.010881603695452213
+    },
+    {
+      "repeat": 5,
+      "variant": "fused",
+      "seconds": 0.010979278944432735
+    },
+    {
+      "repeat": 5,
+      "variant": "numpy",
+      "seconds": 0.015120619907975197
+    },
+    {
+      "repeat": 6,
+      "variant": "numpy",
+      "seconds": 0.015349715948104858
+    },
+    {
+      "repeat": 6,
+      "variant": "fused",
+      "seconds": 0.012560436502099037
+    }
+  ],
+  "command": [
+    "cc",
+    "-O3",
+    "-fPIC",
+    "-shared",
+    "-std=c11",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/native_batch_lu.c",
+    "-o",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/shared-lu-probe/batch-lu.so",
+    "-lm"
+  ],
+  "source_sha256": "1d4f28fc6f1f1c286bc95e30de7f31d2e51e73ff9a6caded38cf54dd16a83ee3",
+  "binary_sha256": "2d9456896d4074b5dab1f48b89b613209b3026ce8b98f3ba74b14c3a97172a60",
+  "fixture": "/srv/bulk/leo/research/algo07-runtime-20261103/slow-additive/capture-baseline/results/call-00.npz",
+  "fixture_sha256": "af24e894faeb1c3c41937832a0c41a4a9b8ddead73507a4e81953c7e13203838",
+  "numpy_version": "2.5.2",
+  "lapack": "/opt/leo-fast-graph/1b63f5908785fc940446086aa4ef5de1a1539003/venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-61654e39.so",
+  "lapack_sha256": "6cad8d2ad994ddc43d2ccdb0fb5d9458373ff1b87ef7ff420f2f94406eb8f082",
+  "kernel_sha256": "29ddc9c0c0595d5008074f1b88440ea0f9971773b3949b8d7e6703e45f24f7ef",
+  "captured_sha256": "11ed61f46a9b522cbb98dcb96378c81de4a4c10707a24fb3958561469a945229",
+  "scope": "One captured matrix batch, not a full phase integration or worker",
+  "production_modified": false
+}

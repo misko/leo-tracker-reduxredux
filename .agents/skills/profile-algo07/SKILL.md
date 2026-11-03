@@ -94,6 +94,19 @@ The paired-window driver accepts `--comparison` for a direct comparison with
 another verified screened runtime sharing the same deployed baseline; do not
 infer incremental speedup by subtracting times from separate experiments.
 
+`probe_integer_epoch_pair.py` and `evaluate_integer_epoch_pair.py` evaluate
+two-epoch reference reuse against the pinned installed integer screen. Require
+actual native boundary checks with `check_integer_epoch_pair.py`, complete
+receiver-output comparisons, then a bounded full-recording comparison. Their
+grid timings and whole-detector timings are distinct measurements.
+
+`probe_shared_lu.py` is a research-only experiment using the installed NumPy
+ILP64 OpenBLAS provider to reuse DGESV factors for the determinant. Its temporary
+process-local interception must not be used in production. It checks matrix
+outputs bitwise and complete phase-likelihood outputs, but neither establishes
+full-worker parity. A production candidate needs an explicit numerical backend,
+provider/ABI qualification, fallback handling and both-arm worker replays.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.
