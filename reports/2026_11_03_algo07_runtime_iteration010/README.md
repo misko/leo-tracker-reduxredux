@@ -139,8 +139,18 @@ the installed versions. There is no deployment-time rebuild.
 
 Thirteen staging tests pass, rejecting incomplete or mismatched trials, a slower
 candidate, scientific differences, changed runtime bytes and incomplete package
-markers. The stager makes no service change. No native package has been staged
-or activated yet; the required research qualification is now complete.
+markers. The stager makes no service change.
+
+The qualified native package is staged at
+`/opt/leo-native-glrt-runtime/2de51eb20f190d310802dd1fba75c13febdc663c`,
+with 362 verified files and manifest pin
+`41b8ad7887312c1ca8098ac52bbf77de0e753900e249c40c842d41b976a72223`.
+[Stage receipt](receipts/native-stage.json). Its installed canary passed exactly
+for 16 paired windows, all 32 receiver results and every unpublished hypothesis;
+all 370 canary frozen files verify. The canary took 17.415 seconds and is not
+a separate matched speed trial. [Canary parity](receipts/installed-native-parity.json),
+[canary timing](receipts/installed-native-timing.json).
+Production handoff remains pending.
 
 The native watcher owns a global lock but does not use ALGO03's per-job ownership
 files. Child-PID absence alone therefore cannot authorize a restart: a worker

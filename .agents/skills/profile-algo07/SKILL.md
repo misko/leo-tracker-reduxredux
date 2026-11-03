@@ -125,3 +125,11 @@ Its `verify` subcommand supports an explicitly pinned pre-start check. Native
 watcher activation needs its own idle proof: its global watcher lock does not
 cover individual work, and a thread may be preparing or publishing a recording
 without a child PID. Do not reuse the ALGO03 per-job-lock idle rule unchanged.
+`activate_native_glrt_runtime.py request` instead uses the tested graceful drain:
+verify the exact watcher source and installed canary, stop the main process
+briefly to verify its sleep point, configure the pinned package, and send SIGINT
+only to the main process before resuming it. The thread-pool context drains
+existing jobs. `finish` waits for that original process to exit before an
+idempotent service start. Never replace this with a process-group signal or a
+service stop/restart that could terminate active numerical children. A pending
+drain is not a completed deployment.
