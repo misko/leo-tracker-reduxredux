@@ -1,21 +1,34 @@
-# Full-scan native GLRT qualification: exact hypotheses and frozen downstream evidence
+# Full-scan native GLRT qualification: 1.36× faster with exact hypotheses
 
-This iteration is **in progress**. The tiled GLRT candidate has not been deployed.
-The original sixteen-worker replay finished in **1,154.046 seconds**. Every
-native result matches the earlier eight-worker candidate exactly: **6,772 windows,
-13,534 receiver results and 108,272 hypotheses**. A new sixteen-worker candidate
-trial is running sequentially after the baseline. There is no matched full-scan
-speedup or end-to-end speedup claim yet.
+The matched full-scan native replay improves **1,154.046 → 848.122 seconds
+(1.36×)** with all **6,772 windows, 13,534 receiver results and 108,272 hypotheses
+exactly equal**. Aggregate CPU work decreases **23.64%**. The downstream
+localization replay is running; the tiled GLRT candidate has **not been deployed**.
+This is a native-stage speedup, not a measured end-to-end ALGO07 speedup.
 The tenfold ALGO07 objective remains open.
 
 The prior native experiments showed a promising detector improvement, but the
 first completed candidate trial used eight workers.
-Current production uses sixteen GLRT workers. The next comparison runs the
+Current production uses sixteen GLRT workers. This comparison ran the
 original and tiled implementations sequentially, each with sixteen workers and
 an 1,800-second bound, over the same frozen DS27-0004 recording. The original
 runtime frozen for this experiment is byte-identical to the current production
 native worker. Production continues running, so host contention remains a
 measurement limitation; CPU time and launch load are retained separately.
+
+| Complete DS27-0004 native replay | Installed baseline | Tiled candidate | Improvement |
+| --- | ---: | ---: | ---: |
+| Wall seconds | 1,154.046 | 848.122 | 1.36× |
+| Aggregate subprocess CPU seconds | 15,003.471 | 11,456.147 | 1.31× |
+| Peak child RSS, KiB | 289,328 | 289,036 | Comparable |
+
+![Matched complete native replay timing](native_runtime.png)
+
+[Matched full-output comparison](receipts/full-native-matched-parity.json),
+[candidate timing](receipts/candidate16-timing.json),
+[candidate range results](receipts/candidate16-result.json),
+[candidate launch](receipts/candidate16-launch.json),
+[figure source](render_runtime.py).
 
 ## Stronger scientific comparison
 
@@ -82,9 +95,9 @@ bound. It does not rerun graph construction or ALGO03–07.
 
 Three additional tests verify exclusion of archived fitted answers, rejection of
 changed prepared inputs, and accounting for every stage and child in the read
-audit. All **14 combined tool tests** pass. Snapshot creation has completed;
-the prepared numerical replay has not yet run. It will follow the native timing
-trials to avoid adding another research computation during those measurements.
+audit. All **14 combined tool tests** passed at that checkpoint. Snapshot creation
+has completed; the prepared numerical replay started after both native timing
+trials finished, avoiding another numerical research workload during timing.
 
 The downstream adapter now also has an exact `compare` subcommand. It covers
 all six regenerated scientific JSON files, including discovery alternatives,
@@ -110,20 +123,34 @@ the installed versions. There is no deployment-time rebuild.
 Thirteen staging tests pass, rejecting incomplete or mismatched trials, a slower
 candidate, scientific differences, changed runtime bytes and incomplete package
 markers. The stager makes no service change. No native package has been staged
-or activated yet; matched timing and downstream evidence are still pending.
+or activated yet; downstream evidence remains pending.
 
 The native watcher owns a global lock but does not use ALGO03's per-job ownership
 files. Child-PID absence alone therefore cannot authorize a restart: a worker
 thread may be preparing input or publishing results. A native handoff must
 establish idle processing threads as well as no active child before activation.
 
+A separate [lifecycle experiment](verify_native_drain.py) exercised the actual
+installed watcher with two simulated jobs and subprocesses, no radio access and
+no production signal. Sending SIGINT only to that test watcher's main process
+preserved both active work and a job waiting on the GLRT lock. Both children
+finished successfully before the watcher exited with SIGINT. This confirms the
+existing thread-pool context drains work during Python exception unwinding.
+[Test receipt](receipts/native-drain-test.json). An operational handoff must wait
+for the old process to exit and explicitly start the service if needed: SIGINT
+can be considered a clean exit by systemd's `Restart=on-failure` policy.
+
+The live native watcher's source root is `17bf8ccfa3dd495f040fcb05fbcffcb1e11c42e3`;
+systemd's newer configured root is `c54fd39e22d4e3b7e68490b603e6e3ab23ce8c79`.
+All 356 native files are byte-identical between them. The watcher module itself
+also matches this checkout exactly, SHA-256
+`c3b73217c4ae2460cfee0e999785e9ac665932cfe17e1a0cf2091709c1500651`.
+
 ## Remaining qualification
 
-1. Finish the live sixteen-worker candidate, started after the completed baseline.
-2. Compare all 108,272 hypotheses again at matched concurrency and verify every
-   frozen file; report wall and CPU timings separately.
-4. Verify the published tracking input and run downstream localization checks
+1. Complete the running downstream localization checks
    with both c=0 and fitted-c, matching observations, causal inputs and budgets.
-5. Publish complete timings, parity receipts and figures before deciding on a
-   native production rollout. Keep component improvements separate from the
-   full recording-to-ALGO07 runtime target.
+2. Stage a qualified immutable package and verify an installed canary.
+3. Hand off the production watcher without interrupting its numerical work.
+4. Measure the full recording-to-ALGO07 chain; keep component improvements
+   separate from the tenfold overall runtime target.
