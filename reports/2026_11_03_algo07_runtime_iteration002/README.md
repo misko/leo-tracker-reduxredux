@@ -115,12 +115,40 @@ all unavailable-case accounting remain unchanged.
 
 ## Deployment and remaining target
 
-This report publishes the qualified optimization and replay tooling. Numerical
-deployment is the next step: it requires a new immutable runtime composition
-which declares the changed kernel while preserving the previous published
-release manifests. The production discovery improvement from iteration 001 is
-already live; production numerical workers still use their original qualified
-release at the time of this report.
+The qualified numerical runtime is now live for ALGO07. The new composition is
+`145ec0f3356b3f68619409f1ac12f382e9d7a7bf`, installed under
+`/opt/leo-fast-graph-runtime-numerics/145ec0f3356b3f68619409f1ac12f382e9d7a7bf`.
+It binds 2,160 files, retains the original release/manifests, and reuses the exact
+tested Python/dependency installation. The service pins composition manifest
+`bdd440ff16fe07f6d575cd1ec4d55c0ceb537df99bc9f040942d234a00d74c44`.
+The [staging receipt](runtime-stage.json) and
+[runtime composition design](../../docs/operations/algo07-runtime-release.md)
+describe the explicit kernel and verification-entry-point differences.
+
+An [installed production-entry-point canary](installed-canary.json), run as
+the service account into a separate research output, completed in 490.27 seconds
+including public export/preparation, with no failure and a verified read audit.
+It reproduced the original incumbent and exact fallback position. Against the
+qualified candidate replay, all 4,261 scientific leaves matched exactly; six
+private path/hash provenance fields differed. Those hashes bind the actual local
+exports, and their native observations, tracks and causal catalogue are identical.
+Both the [raw comparison](installed-canary-parity.json) and
+[provenance reconciliation](installed-canary-provenance.json) are retained.
+This installed canary's timing has a different scope from the 420-second prepared
+replay and is not used as a matched speedup measurement.
+
+The watcher had no numerical child before activation. It was restarted at
+**16:23 UTC on November 3**, with iteration 001's discovery adapter retained
+and the new qualified worker root selected. The service is active; no running
+numerical job was interrupted. [Activation receipt](runtime-activation.json).
+The other numerical stages remain on their original releases. Eleven tests
+cover the runtime verifier/stager and original production-worker behavior, in
+addition to the 16 numerical/profiling tests above.
+
+Rollback removes only `95-runtime-numerics.conf` from the ALGO07 systemd drop-ins,
+reloads systemd, and restarts the watcher when no numerical child is active.
+Iteration 001's `90-runtime-discovery.conf` then selects the prior worker root
+without the new manifest environment pin. No scientific outputs are deleted.
 
 The remaining work is to stage and check that runtime composition, then profile
 the remaining cost. Even after the contraction improvement, the phase-pair
