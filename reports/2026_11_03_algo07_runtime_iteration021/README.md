@@ -7,10 +7,10 @@ the additional benefit of batching; it does not multiply separately measured
 component ratios. The batched detector is **1.50–1.67× faster than deployed FP64**
 in separate paired trials on the same fixtures.
 
-**Research only: not deployed.** A bounded full-recording replay of the batched
-candidate is running. The unbatched integer candidate already passed all
-108,272 full-recording hypotheses in iteration 020. The 10× overall goal is
-still unmet.
+**Research only: not deployed.** The bounded full-recording replay of the batched
+candidate now passes all 108,272 hypotheses exactly, and the fresh prepared
+downstream replay passes both calibration arms. The 10× overall goal is still
+unmet.
 
 | Fixture, 16 windows | Unbatched integer detector | Batched integer detector | Direct ratio |
 | --- | ---: | ---: | ---: |
@@ -102,14 +102,23 @@ recorded fixture diagnostics. [DS26](receipts/DS26-0046.json),
   preserved because a later line-wrap-only edit changed the builder hash; the
   tested private runtime was left immutable.
 
-The batched full DS27-0004 replay uses 16 workers and a 1,800-second bound. Its
-final all-hypothesis comparison is pending at this checkpoint. A fresh prepared
-ALGO02/family replay of both calibration arms is also running with a 1,200-second
-bound, using the unchanged frozen public evidence export. It reuses prepared
-graph evidence; it does not reconstruct graph tracks from the candidate output.
-The concurrent runs provide parity evidence, not a matched timing comparison.
-The unchanged
-integer screen still requires completion of its numerical-bound qualification
-and production packaging/canary gates. The next useful profile should identify
+The batched full DS27-0004 replay completed with 16 workers in 576.176 seconds
+under its 1,800-second bound. The [strict comparison](receipts/full-parity.json)
+matches all 6,772 windows, 13,534 receiver results and 108,272 hypotheses,
+including unpublished candidates. All 717 frozen candidate files and 708
+baseline files verify. The reused baseline is parity-only; this elapsed time
+does not establish a controlled full-scan speedup.
+
+The fresh prepared ALGO02/family replay completed in 531.464 seconds under its
+1,200-second bound. Its [comparison](receipts/downstream-parity.json) matches
+all six scientific files, including satellites, owners, gates, objectives and
+optimizer histories in both calibration arms. It reuses prepared graph evidence;
+it does not reconstruct graph tracks from the candidate output or rerun
+ALGO03–07. The concurrent runs provide parity evidence, not a matched timing
+comparison. [Execution receipt](receipts/downstream-result.json).
+
+The numerical-domain review is recorded in
+[iteration 022](../2026_11_03_algo07_runtime_iteration022/NUMERICAL_DOMAIN.md).
+Production packaging and installed-canary gates remain separate. The next useful profile should identify
 what dominates after batching; a fast rescoring component alone cannot deliver
 the 10× recorded-data-to-position objective.

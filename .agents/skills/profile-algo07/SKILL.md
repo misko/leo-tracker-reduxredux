@@ -76,7 +76,11 @@ research function. Test fractional/out-of-range IQ and missing VNNI hardware
 fallbacks, int32 overflow controls, quantization bounds and complete outputs.
 One changed approximate row maximum is not a failure if interval selection and
 exact rescoring restore the complete original result; unchanged approximate
-winners alone are insufficient. No integer-screen production staging exists yet.
+winners alone are insufficient. `stage_screened_native_runtime.py` verifies the
+committed domain review, native stress receipts, complete native parity, fresh
+downstream parity, frozen policy audit and three paired detector comparisons
+before staging the tested bytes. Its default dry run does not modify services.
+Require an installed canary before the guarded native-watcher handoff below.
 
 `build_native_sparse_probe.py` builds an optional FP64 batched-column extension
 from the pinned original native kernel. `probe_native_screen.py --sparse-root`
