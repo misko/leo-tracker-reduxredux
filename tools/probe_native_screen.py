@@ -38,7 +38,8 @@ def screen_grid(native, acquisition, values, template, rate, frequencies, symbol
     return tuple(rows)
 
 
-def run(candidate, fixture, output, *, selection=False):
+def run(candidate, fixture, output, *, selection=False, native_rescore=False, limit=None,
+        computed_bound=False):
     import numpy as np
 
     output = output.resolve()
@@ -49,6 +50,16 @@ def run(candidate, fixture, output, *, selection=False):
     script_pin = digest(Path(__file__))
     selector_path = Path(__file__).with_name('interval_coarse_selection.py')
     selector_pin = digest(selector_path) if selection else None
+    oracle_path = Path(__file__).with_name('native_exact_columns.py')
+    oracle_pin = digest(oracle_path) if native_rescore else None
+    bound_path = Path(__file__).with_name('native_screen_bounds.py')
+    bound_pin = digest(bound_path) if computed_bound else None
+    if native_rescore and not selection:
+        raise ValueError('Native rescoring requires selection diagnostics')
+    if computed_bound and not selection:
+        raise ValueError('Computed bounds require selection diagnostics')
+    if limit is not None and limit <= 0:
+        raise ValueError('Window limit must be positive')
     build = json.loads(build_path.read_text())
     base = Path(build['base'])
     verify(base, build['base_pin'])
@@ -96,18 +107,21 @@ def run(candidate, fixture, output, *, selection=False):
                    row_argmax_mismatches=int(np.sum(
                        np.argmax(screen, axis=1) != np.argmax(baseline, axis=1))))
         calls.append(row)
-        latest = (results['baseline'], results['screen'], row)
+        latest = (results['baseline'], results['screen'], row, args)
         # Approximate values NEVER enter the actual acquisition/refinement path.
         return results['baseline']
 
     def retain(residuals, rows, count, epoch_separation, cfo_separation, epochs):
+        began = time.perf_counter()
         baseline = original_retain(residuals, rows, count, epoch_separation,
                                    cfo_separation, epochs)
+        baseline_selection_seconds = time.perf_counter() - began
         if latest is None or rows is not latest[0]:
             raise ValueError('Unbound coarse selection diagnostic')
         screen = original_retain(residuals, latest[1], count, epoch_separation,
                                  cfo_separation, epochs)
         latest[2].update(retained_count=len(baseline),
+                         baseline_selection_seconds=baseline_selection_seconds,
                          retained_coordinates_equal=[x[1:] for x in baseline] ==
                          [x[1:] for x in screen],
                          exact_retained=[[float(x[0]), int(x[1]), float(x[2])]
@@ -118,27 +132,71 @@ def run(candidate, fixture, output, *, selection=False):
             exact_grid = np.asarray(rows)
             screen_scores = np.asarray(latest[1])
             checks = []
-            for assumed_error in (1e-5, 1e-4):
+            bound_seconds = 0.
+            if computed_bound:
+                from native_screen_bounds import bound
+
+                began = time.perf_counter()
+                bound_result = bound(acquisition, latest[3])
+                bound_seconds = time.perf_counter() - began
+                latest[2]['bound'] = bound_result
+                if not bound_result['eligible']:
+                    raise ValueError('Computed-bound diagnostic requires eligible input')
+                errors = (bound_result['absolute_error'],)
+            else:
+                errors = (1e-5, 1e-4)
+            for assumed_error in errors:
                 if np.max(np.abs(exact_grid - screen_scores)) > assumed_error:
                     raise ValueError('Diagnostic interval does not cover this measured grid')
+                setup_began = time.perf_counter()
+                oracle = None
+                if native_rescore:
+                    from native_exact_columns import ExactColumns
+
+                    oracle = ExactColumns(acquisition, original_grid, latest[3])
+                setup_seconds = time.perf_counter() - setup_began
+                oracle_seconds, validation_seconds = 0., 0.
+
+                def exact(columns, current_oracle=oracle):
+                    nonlocal oracle_seconds, validation_seconds
+                    if current_oracle is None:
+                        return exact_grid[:, columns]
+                    began = time.perf_counter()
+                    values = current_oracle(columns)
+                    oracle_seconds += time.perf_counter() - began
+                    began = time.perf_counter()
+                    np.testing.assert_array_equal(values.view(np.uint64),
+                                                  exact_grid[:, columns].view(np.uint64))
+                    validation_seconds += time.perf_counter() - began
+                    return values
+
                 began = time.perf_counter()
                 result = select(screen_scores, assumed_error, residuals, count,
-                                epoch_separation, cfo_separation,
-                                lambda columns: exact_grid[:, columns])
-                selector_seconds = time.perf_counter() - began
+                                epoch_separation, cfo_separation, exact)
+                selector_seconds = time.perf_counter() - began - validation_seconds
                 if result['retained'] != baseline:
                     raise ValueError('Interval selector differs from complete baseline')
                 checks.append(dict(assumed_error=assumed_error, selector_seconds=selector_seconds,
                                    exact_columns=result['exact_columns'], total_columns=epochs,
                                    requests=result['requests'], fallback=result['fallback'],
-                                   selected_peaks_exact=True, native_rescoring_timed=False,
+                                   selected_peaks_exact=True, native_rescoring_timed=native_rescore,
+                                   setup_seconds=setup_seconds,
+                                   bound_seconds=bound_seconds,
+                                   error_source=('input-derived candidate bound' if computed_bound
+                                                 else 'assumed diagnostic envelope'),
+                                   native_rescore_seconds=oracle_seconds,
+                                   validation_seconds_excluded=validation_seconds,
+                                   native_calls=oracle.native_calls if oracle else None,
+                                   dense_fallback_calls=(oracle.dense_fallback_calls
+                                                         if oracle else None),
                                    error_bound_certified=False))
             latest[2]['selection_diagnostics'] = checks
         return baseline
 
     acquisition._folded_anchor_score_grid_native = checked
     acquisition._retain_score_map_peaks = retain
-    windows = json.loads((fixture / 'input.json').read_text())['windows']
+    all_windows = json.loads((fixture / 'input.json').read_text())['windows']
+    windows = all_windows if limit is None else all_windows[:limit]
     started = time.time_ns()
     try:
         for item in windows:
@@ -160,10 +218,14 @@ def run(candidate, fixture, output, *, selection=False):
     if not after['verified'] or digest(build_path) != build_pin:
         raise ValueError('Bound inputs or implementation changed')
     if (digest(Path(__file__)) != script_pin or
-            (selection and digest(selector_path) != selector_pin)):
+            (selection and digest(selector_path) != selector_pin) or
+            (native_rescore and digest(oracle_path) != oracle_pin) or
+            (computed_bound and digest(bound_path) != bound_pin)):
         raise ValueError('Diagnostic implementation changed during execution')
     totals = {key: sum(r['seconds'][key] for r in calls) for key in ['baseline', 'screen']}
     summary = dict(fixture=str(fixture), windows=len(windows), calls=len(calls),
+                   fixture_windows=len(all_windows), native_rescoring_timed=native_rescore,
+                   computed_bound=computed_bound,
                    totals=totals, grid_speedup=totals['baseline'] / totals['screen'],
                    maximum_absolute_delta=max(r['maximum_absolute_delta'] for r in calls),
                    row_argmax_mismatches=sum(r['row_argmax_mismatches'] for r in calls),
@@ -174,13 +236,16 @@ def run(candidate, fixture, output, *, selection=False):
                    error_bound_certified=False, production_modified=False)
     receipt = dict(summary=summary, calls=calls, fixture_before=before, fixture_after=after,
                    source_bytes_verified=True, build_receipt_sha256=build_pin,
-                   script_sha256=script_pin, selector_sha256=selector_pin,
+                   script_sha256=script_pin, selector_sha256=selector_pin, oracle_sha256=oracle_pin,
+                   bound_sha256=bound_pin,
                    cpu_affinity=cpu, cprofile=False, command=[sys.executable, *sys.argv],
                    python=sys.version, numpy=np.__version__, host=platform.node(),
                    threads={k: os.environ.get(k) for k in
                             ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS')},
                    started_utc_ns=started, ended_utc_ns=time.time_ns(),
-                   scope='grid diagnostic only; no exact rescoring or candidate inference')
+                   scope=('grid and selection diagnostic; exact native rescoring'
+                          if native_rescore else 'grid diagnostic; exact baseline-array lookup'),
+                   candidate_inference=False)
     fixture_tools.PROFILE.write_new(output, receipt)
     print(json.dumps(summary), flush=True)
 
@@ -192,6 +257,13 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--selection', action='store_true',
                         help='Test selection using assumed intervals and saved exact scores')
+    parser.add_argument('--native-rescore', action='store_true',
+                        help='Evaluate requested columns with the deployed native FP64 kernel')
+    parser.add_argument('--limit', type=int,
+                        help='Bound a diagnostic to the first N frozen windows')
+    parser.add_argument('--computed-bound', action='store_true',
+                        help='Use the input-derived candidate error bound, not assumed envelopes')
     args = parser.parse_args()
     run(args.candidate.resolve(strict=True), args.fixture.resolve(strict=True), args.output,
-        selection=args.selection)
+        selection=args.selection, native_rescore=args.native_rescore, limit=args.limit,
+        computed_bound=args.computed_bound)
