@@ -3,8 +3,9 @@
 The scheduling prototype from iteration 023 improves the complete detector by
 **1.046–1.059×** against the currently deployed integer-screened, batched-exact
 runtime. All 96 complete receiver outputs match exactly across 48 frozen
-windows. This candidate remains research-only; a bounded full-recording parity
-replay is running at publication.
+windows. This candidate remains research-only. The full-recording parity replay
+now passes, and a fresh deployed-baseline replay is running to assess full-scan
+runtime before any promotion.
 
 | Fixture | Deployed detector | Two-epoch detector | Ratio |
 | --- | ---: | ---: | ---: |
@@ -44,12 +45,25 @@ The new tools, tests and render scripts pass Ruff.
 
 ## Full-recording check and limits
 
-The DS27-0004 native replay uses the full public recording inventory, 16 workers
-and an 1,800-second bound. It must complete and pass the strict all-hypothesis
-comparison before any promotion. Its [launch receipt](receipts/full-launch.json)
-is recorded; no full-recording success is claimed yet. Existing exact downstream
-qualification covers the unchanged downstream implementation and is not being
-relabeled as a new run of this prototype.
+The DS27-0004 native replay completed in **628.051 seconds**, using the full
+public recording inventory, 16 workers and a 1,800-second bound. Its
+[strict comparison](receipts/full-parity.json) matches all **6,772 windows,
+13,534 receiver results and 108,272 hypotheses** exactly against the preceding
+batched-detector replay. All 726 candidate and 717 earlier baseline frozen files
+verify. [Execution](receipts/full-timing.json), [launch](receipts/full-launch.json).
+
+The earlier deployed-detector trial took 576.176 seconds. This reused baseline
+was collected under different shared-host conditions; the comparator withholds
+a speed ratio. The slower observed candidate elapsed time is retained and means
+we cannot infer a full-recording gain from the small fixtures. A new deployed
+baseline is running sequentially after the candidate with the same snapshot,
+Python, worker count and thread settings; its
+[launch receipt](receipts/baseline-launch.json) is recorded. The short LU
+diagnostic overlapped the candidate, and production continued, so contention
+remains a qualification limit even for the new pair.
+
+Existing exact downstream qualification covers the unchanged downstream
+implementation and is not being relabeled as a new run of this prototype.
 
 This modest detector gain does not establish a 10× recorded-data-to-position
 speedup. Larger gains must also address other detector work and numerical
