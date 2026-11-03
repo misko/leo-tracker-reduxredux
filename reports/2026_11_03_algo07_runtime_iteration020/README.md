@@ -120,8 +120,26 @@ it must not be described as graph construction from this candidate's outputs.
 Production packaging, installed-canary checks and guarded activation have not
 been performed for either screen candidate.
 
-The component comparison shows that exact rescoring, interval selection and
-bound preparation still cost time beyond the integer correlation. A fresh
-complete-detector profile is being prepared to locate the next bottleneck.
-Further work must be chosen from that profile and preserve these same exact
-checks; component speedups cannot be multiplied into a claimed overall gain.
+The fresh [complete-detector profile](receipts/profile-summary.json) completes
+all 16 windows with unchanged published evidence and all 377 frozen files
+verified. It ran concurrently with the full replay and production, so its times
+are hotspot attribution only, not comparable with the paired table above.
+
+| Profiled operation | Calls | Self time |
+| --- | ---: | ---: |
+| Integer-screen native grid | 35 | 11.685 s |
+| Original native FP64 sparse rescoring | 1,694 | 3.245 s |
+| Conditioned frame scores | 280 | 2.146 s |
+| Conditioned fractional GLRT scores | 70 | 1.318 s |
+| FFT implementation | 1,510 | 1.208 s |
+
+The next concrete opportunity is **batching the requested exact columns**:
+65 selector requests cause 1,694 native calls because the current exact oracle
+calls the unchanged kernel separately for every column and CFO tile. That
+repeats sample validation and reference preparation. A native sparse-column
+entry point could reuse this work, but must retain each column's original FP64
+operation order, tail support and normalization, and prove bitwise parity with
+the complete grid. This is a measured direction, not an implemented gain.
+Integer correlation remains the largest single cost; batching rescoring alone
+cannot achieve the overall 10× target. Component speedups cannot be multiplied
+into a claimed overall gain.
