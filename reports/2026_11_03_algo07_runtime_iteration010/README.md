@@ -3,7 +3,8 @@
 The matched full-scan native replay improves **1,154.046 → 848.122 seconds
 (1.36×)** with all **6,772 windows, 13,534 receiver results and 108,272 hypotheses
 exactly equal**. Aggregate CPU work decreases **23.64%**. The downstream ALGO02
-localization replay also matches exactly; the tiled GLRT candidate has **not been deployed**.
+localization replay also matches exactly. The qualified tiled GLRT runtime is
+**deployed**, with its live process verified on November 3 at 20:15 UTC.
 This is a native-stage speedup, not a measured end-to-end ALGO07 speedup.
 The tenfold ALGO07 objective remains open.
 
@@ -150,7 +151,18 @@ for 16 paired windows, all 32 receiver results and every unpublished hypothesis;
 all 370 canary frozen files verify. The canary took 17.415 seconds and is not
 a separate matched speed trial. [Canary parity](receipts/installed-native-parity.json),
 [canary timing](receipts/installed-native-timing.json).
-Production handoff remains pending.
+Production handoff completed after the old watcher drained its queued work.
+The main-process-only drain was requested at 20:10:50 UTC; the old watcher exited
+cleanly at 20:14:05 UTC. The replacement started at 20:15:29 UTC after its
+pre-start check verified all 362 package files. Live PID 3169996 uses the pinned
+runtime above, and systemd reports active/running with zero automatic restarts.
+[Drain request](receipts/native-drain-request.json),
+[activation receipt](receipts/native-handoff-activation.json).
+
+The first activation check ran before the replacement process exposed its final
+environment and reported a runtime mismatch. A repeated idempotent `start` and
+live environment check verified the same PID and wrote the activation receipt;
+the worker was not restarted or interrupted.
 
 The native watcher owns a global lock but does not use ALGO03's per-job ownership
 files. Child-PID absence alone therefore cannot authorize a restart: a worker
@@ -175,7 +187,6 @@ also matches this checkout exactly, SHA-256
 
 ## Remaining qualification
 
-1. Stage a qualified immutable package and verify an installed canary.
-2. Hand off the production watcher without interrupting its numerical work.
-3. Measure the full recording-to-ALGO07 chain; keep component improvements
-   separate from the tenfold overall runtime target.
+The immutable package, installed canary and graceful production handoff are
+complete. Measuring the full recording-to-ALGO07 chain remains outstanding;
+component improvements remain separate from the tenfold overall runtime target.
