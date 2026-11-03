@@ -1,11 +1,15 @@
-# Full-scan native GLRT qualification: comparison tooling and frozen downstream evidence
+# Full-scan native GLRT qualification: exact hypotheses and frozen downstream evidence
 
 This iteration is **in progress**. The tiled GLRT candidate has not been deployed.
-There is no new full-scan speedup or end-to-end speedup claim in this checkpoint.
+The original sixteen-worker replay finished in **1,154.046 seconds**. Every
+native result matches the earlier eight-worker candidate exactly: **6,772 windows,
+13,534 receiver results and 108,272 hypotheses**. A new sixteen-worker candidate
+trial is running sequentially after the baseline. There is no matched full-scan
+speedup or end-to-end speedup claim yet.
 The tenfold ALGO07 objective remains open.
 
 The prior native experiments showed a promising detector improvement, but the
-completed full-scan trial used eight workers and lacked a matched baseline timing.
+first completed candidate trial used eight workers.
 Current production uses sixteen GLRT workers. The next comparison runs the
 original and tiled implementations sequentially, each with sixteen workers and
 an 1,800-second bound, over the same frozen DS27-0004 recording. The original
@@ -24,8 +28,8 @@ windows fail validation. Nonfinite numeric leaves fail equality. Timing ratios
 are withheld if workers, interpreter, host, thread settings, profiling or replay
 script differ. No tolerance is introduced.
 
-The checker successfully loaded and validated the previous eight-worker candidate
-trial's complete inventory:
+The checker compared the original sixteen-worker baseline with the previous
+eight-worker candidate over their complete inventories:
 
 | Evidence | Count |
 | --- | ---: |
@@ -34,10 +38,18 @@ trial's complete inventory:
 | Receiver results | 13,534 |
 | All receiver hypotheses, including unpublished candidates | 108,272 |
 
-That inventory check is not a comparison against a new baseline. The original
-eight-worker run's published candidates matched their frozen reference. Its
-1,436.036-second wall time must not be compared directly with the sixteen-worker
-baseline to claim a kernel speedup.
+There are **zero differences**, including unpublished hypotheses, gate fields,
+scores and invalid windows. All **708 frozen runtime/input files** verified.
+[Complete native parity receipt](receipts/full-native-exact-parity.json).
+The eight-worker candidate's 1,436.036-second wall time must not be compared
+directly with the sixteen-worker baseline to claim a kernel speedup; the checker
+explicitly records `matched_timing_configuration: false` and no speed ratio.
+
+The baseline processed all 6,767 valid windows and five invalid windows. Detector
+CPU time was 14,954.348 seconds; total subprocess CPU time was 15,003.471 seconds.
+[Baseline timing](receipts/baseline16-timing.json),
+[range results](receipts/baseline16-result.json),
+[launch configuration](receipts/baseline16-launch.json).
 
 Eleven component tests pass, including changed unpublished hypotheses, invalid
 window reasons, missing windows, duplicate ranges, timeout, extra unfrozen code,
@@ -82,12 +94,13 @@ extra output files. Only five top-level timing fields, checked hash links to
 independently compared results, and validated local discovery paths are
 normalized. Tests explicitly reject changed owners, satellites, gates, position,
 a 1e-10 objective change, forged result hashes and unexpected output files.
+The combined suite now has **22 passing tests**, with Ruff passing.
 
 ## Remaining qualification
 
-1. Finish the live sixteen-worker baseline; retain any timeout or failure.
-2. Run the candidate sequentially with identical settings.
-3. Compare all 108,272 hypotheses and verify every frozen file again.
+1. Finish the live sixteen-worker candidate, started after the completed baseline.
+2. Compare all 108,272 hypotheses again at matched concurrency and verify every
+   frozen file; report wall and CPU timings separately.
 4. Verify the published tracking input and run downstream localization checks
    with both c=0 and fitted-c, matching observations, causal inputs and budgets.
 5. Publish complete timings, parity receipts and figures before deciding on a
