@@ -4,9 +4,10 @@ Reusing a single interpolation-weight row for positions with the same **exact**
 fractional offset reduces native detector time in all three sampled cohorts.
 Every full receiver output remains exactly equal across **48 paired windows / 96
 receiver results**. Complete-recording and downstream qualification now pass
-exactly. The installed canary also passes. The guarded production drain has been
-requested; the old watcher is finishing active work, so **activation is not yet
-complete** at this checkpoint. The tenfold end-to-end objective remains open.
+exactly. The installed canary also passes. **Production activation completed on
+November 3 at 21:45:04 UTC**, after the old watcher finished its graceful drain.
+The replacement process and all 372 package files verify. The tenfold end-to-end
+objective remains open.
 
 | Frozen fixture, 16 paired windows each | Deployed native detector | Weight reuse | Ratio |
 | --- | ---: | ---: | ---: |
@@ -128,7 +129,7 @@ the previous runtime pre-start pin while preserving unrelated checks, and waits
 for the replacement process to expose its post-exec environment. Installed
 canary verification also passed, as described below.
 
-## Installed canary and pending guarded handoff
+## Installed canary and completed guarded handoff
 
 The 372-file qualified package is
 `/opt/leo-native-glrt-runtime/64c6b8469e79c03216c1ff94647b12778ff58ea3`,
@@ -144,12 +145,15 @@ Creating the handoff receipt directory briefly waited in the bulk filesystem's
 `xfs_buf_lock`; no service signal had been sent at that point. The same request
 subsequently resumed and verified the stopped main thread at the tested sleep
 point before requesting a main-process-only SIGINT drain. The previous override
-was saved; active native children were not signalled. The watcher PID 3169996
-remains active while its thread pool finishes existing work.
+was saved; active native children were not signalled. Watcher PID 3169996
+finished its thread pool and exited before the replacement was started.
 [Drain request](receipts/drain-request.json),
 [observation](receipts/draining-observation.json).
 
-The replacement is not yet verified live. Continue with the existing request's
-`finish` operation after the old process exits; do not restart active native work
-or create another drain request. Production resource limits and all capture
-settings remain unchanged. This is a pending handoff, not completed deployment.
+The existing request's `finish` operation started replacement PID 3210832 at
+21:45:04 UTC. The live receipt verifies the pinned 372-file package, the process's
+new runtime `PYTHONPATH`, active/running service state, zero restarts, the pinned
+pre-start check and the preserved sixteen-worker configuration. Production
+resource limits and all capture settings remain unchanged. The previous runtime
+remains available for rollback. [Activation](receipts/activation.json),
+[live verification](receipts/live.json).
