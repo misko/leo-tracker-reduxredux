@@ -61,3 +61,39 @@ def test_staging_checks_qualification_and_preserves_base(tmp_path, monkeypatch):
     files[stage.KERNEL] = b'untested'
     with pytest.raises(ValueError, match='qualified numerical trial'):
         stage.stage(tmp_path, 'a'*40, base)
+
+
+def test_prepared_qualification_binds_every_source_to_exact_full_replays(monkeypatch):
+    sources = {name: name.encode() for name in stage.PREPARED_FILES}
+    documents = {
+        'protocol.json': {},
+        'implementation.json': dict(
+            default_cache_size=1,
+            files_sha256={name: hashlib.sha256(data).hexdigest()
+                          for name, data in sources.items()},
+            baseline_files_sha256={name: None for name in sources}),
+        'full-replays.json': dict(passed=True, cases=[dict(
+            case=case, parity=dict(passed=True, differing_floats=0),
+            read_audit_verified=True, frozen_inputs_verified=True)
+            for case in ('fresh-fallback', 'slow-additive')]),
+        'population-parity.json': dict(passed=True, results=[dict(
+            passed=True, input_tensors_and_output_values_exact=True)]*16),
+        'policy-parity.json': dict(passed=True, cases=175),
+    }
+
+    def committed(repo, revision, path):
+        if path in sources:
+            return sources[path]
+        return json.dumps(documents[path.removeprefix(stage.PREPARED_REPORT+'/')]).encode()
+
+    monkeypatch.setattr(stage, 'committed', committed)
+    actual, proofs = stage.prepared_qualification('.', 'a'*40, dict(files_sha256={}))
+    assert actual == sources and len(proofs) == 5
+    name = stage.PREPARED_FILES[0]
+    sources[name] += b'untested'
+    with pytest.raises(ValueError, match='source differs'):
+        stage.prepared_qualification('.', 'a'*40, dict(files_sha256={}))
+    sources[name] = name.encode()
+    documents['full-replays.json']['cases'][0]['parity']['differing_floats'] = 1
+    with pytest.raises(ValueError, match='qualification is incomplete'):
+        stage.prepared_qualification('.', 'a'*40, dict(files_sha256={}))

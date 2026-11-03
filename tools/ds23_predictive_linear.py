@@ -55,7 +55,8 @@ def linear_geometry(p,entries):
 def attach_predictive_linear(p,entries,powers):
     if not entries:return p
     view,values,sigma,groups,slices=linear_geometry(p,entries)
-    curved_calculate=p.calculate
+    from leo.analysis.research.position_calculation_cache import copying_position_cache
+    curved_calculate=copying_position_cache(p.calculate)
     def calculate(position):
         c=curved_calculate(position)
         g=p.noise_groups[p.keep]

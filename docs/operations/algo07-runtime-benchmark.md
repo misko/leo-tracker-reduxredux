@@ -75,6 +75,31 @@ process-tree-specific read audits. Compare complete intermediate results using
 are insufficient. Research-only inputs use the separate snapshot adapter and
 are intentionally restricted to reconstruction.
 
+`--reference` replaces only the phase-pair kernel. For changes elsewhere in the
+numerical implementation, run the profiler from a separate checkout of the full
+baseline revision. A kernel switch is not a baseline for changed geometry or
+calibration code.
+
+Native GLRT has a separate bounded adapter. Pass the actual installed native
+worker source, which can differ from this checkout's older fast-scan adapter:
+
+```bash
+python tools/profile_algo07_glrt.py snapshot --bulk-root /srv/bulk/leo \
+  --run-id COMPLETED_FAST_RUN --source-root /absolute/installed/native-worker \
+  --output /srv/bulk/leo/research/runtime/native-fixture --per-channel 2 --seed 20261103
+python tools/profile_algo07_glrt.py run \
+  --snapshot /srv/bulk/leo/research/runtime/native-fixture \
+  --source-root /absolute/installed/native-worker \
+  --output /srv/bulk/leo/research/runtime/native-fixture/baseline --timeout 300
+```
+
+Use the native worker's installed Python/dependencies. The snapshot selects
+whole paired-receiver windows within each of the eight channels, verifies their
+IQ through the public source reader, and freezes exported arrays and installed
+Python/native-library bytes. The replay requires exact agreement with every
+published fractional candidate field. This measures detector work without
+rerunning a whole scan, writing production results, or modifying its queue.
+
 1. Measure current discovery/validation, IQ/GLRT, graph construction, initial
    association/localization, each recovery stage, and final publication.
 2. Pick one hotspot and implement a bounded change with component-owned tests.

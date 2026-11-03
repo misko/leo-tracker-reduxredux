@@ -6,6 +6,14 @@ revision, verifies every member of the installed original ALGO07 release against
 its pinned release manifest, and checks the committed numerical parity receipts
 and exact candidate kernel hash before staging.
 
+The optional `--qualification prepared-calibration` composition additionally
+loads the exact geometry and one-position curved-calibration reuse validated in
+iterations 003 and 004. It accepts only the eight explicitly listed source
+files, verifies their hashes against the committed implementation receipt,
+checks their original installed hashes, and requires both complete replay
+comparisons, all 16 paired incumbent reconstructions and the 175-case saved
+policy audit. The original `contractions` qualification remains available.
+
 The new immutable directory preserves the original release source files and
 published manifests. Its explicit differences are:
 

@@ -19,6 +19,14 @@ uses the separate `profile_algo07_research_snapshot.py` adapter and must not be
 reported as a public-terminal or whole-pipeline replay. Concurrent trials' read
 audits must be separated by recorded process ancestry.
 
+Use `tools/profile_algo07_glrt.py` for bounded native-GLRT fixtures. Select the
+actual installed native worker root: the research checkout's older fast-scan
+adapter may accept only 2.5 MS/s, while production processes 10 MS/s. Snapshot
+whole paired-receiver windows using a recorded random seed within each channel,
+freeze their verified IQ and implementation bytes, and compare every published
+candidate field. These small fixtures locate hotspots; they do not establish a
+whole-scan or position speedup.
+
 The production chain includes GLRT, ALGO02 graph localization, then ALGO03–07
 recovery stages. Improving only the final reassociation worker is not an
 end-to-end speedup. Separate active computation, discovery/validation overhead,

@@ -14,6 +14,7 @@ from dsx01_hierarchical_bound import hierarchical_bound
 from dsx01_joint_marginal import JointMarginal
 from probe_ds23_history_calibrated_phase import make_problem
 from probe_ds23_receiver_smooth_prior import scale_posterior
+from leo.analysis.research.position_calculation_cache import copying_position_cache
 
 
 def event_design(times, receivers, channels, rf_hz, labels, events):
@@ -129,7 +130,7 @@ def attach_event_predictive(p,entries,powers):
     ch=np.concatenate([np.full(len(p.scan.tracks[e['track_index']]['times']),p.scan.tracks[e['track_index']]['channel']) for e in entries])
     labels=np.asarray(p.labels)[view.flat_labels]
     design=event_design(view.flat_times,rx,ch,view.q*11.5e9,labels,p.events)
-    curved=p.calculate
+    curved=copying_position_cache(p.calculate)
     def calculate(position):
         c=curved(position);g=p.noise_groups[p.keep]
         weights=np.asarray(powers)[g]*c['noise_precision'][g]/p.point_noise[p.keep]**2
