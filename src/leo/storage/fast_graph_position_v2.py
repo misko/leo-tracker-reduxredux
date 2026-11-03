@@ -88,7 +88,7 @@ class FastGraphPositionStoreV2:
                     error,
                 )
 
-    def completed_inputs(self, *, minimum_completed_utc_ns):
+    def completed_inputs(self, *, minimum_completed_utc_ns, include_status=None):
         """Public downstream port using ALGO03's own completion cutoff.
 
         Unlike ``inputs``, this enumerates completed ALGO03 jobs, including a new
@@ -112,6 +112,10 @@ class FastGraphPositionStoreV2:
                     continue
                 if value["job_id"] != identifier or value["model_version"] != MODEL_VERSION:
                     raise ValueError("ALGO03 status identity differs from its public job")
+                # Selection uses status metadata only. Every included job still
+                # receives the original complete terminal/input validation.
+                if include_status is not None and not include_status(value):
+                    continue
                 terminal, _ = self.terminal(value)
                 if terminal["state"] != "complete":
                     raise ValueError("Completed ALGO03 status lacks its qualified terminal")

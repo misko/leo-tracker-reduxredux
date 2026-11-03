@@ -234,7 +234,8 @@ def test_once_watcher_selects_only_explicit_v2_canary_and_single_worker(tmp_path
             assert name == "watcher"
             yield True
 
-        def inputs(self, *, minimum_completed_utc_ns):
+        def inputs(self, *, minimum_completed_utc_ns, pending_only=False):
+            assert pending_only is True
             assert minimum_completed_utc_ns == 123
             for name in ("unselected", "canary"):
                 yield {"job_id": "v3-" + name, "source_job": {"job_id": name}}

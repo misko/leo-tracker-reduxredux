@@ -11,7 +11,7 @@ from leo.storage.uri import confined_path, PathConfinementError
 LOGGER=logging.getLogger(__name__)
 
 class FastGraphPositionStoreV4Export(FastGraphPositionStoreV4):
-    def completed_inputs(self, *, minimum_completed_utc_ns):
+    def completed_inputs(self, *, minimum_completed_utc_ns, include_status=None):
         """Public downstream port using ALGO05's own completion cutoff.
 
         Unlike ``inputs``, this enumerates completed ALGO05 jobs, including a new
@@ -35,6 +35,10 @@ class FastGraphPositionStoreV4Export(FastGraphPositionStoreV4):
                     continue
                 if value["job_id"] != identifier or value["model_version"] != MODEL_VERSION:
                     raise ValueError("ALGO05 status identity differs from its public job")
+                # Selection uses status metadata only. Every included job still
+                # receives the original complete terminal/input validation.
+                if include_status is not None and not include_status(value):
+                    continue
                 terminal, _ = self.terminal(value)
                 if terminal["state"] != "complete":
                     raise ValueError("Completed ALGO05 status lacks its qualified terminal")

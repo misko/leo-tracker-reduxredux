@@ -2,19 +2,21 @@
 
 import argparse
 import json
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from leo.application.automatic_fast_graph_v3 import process
+from leo.cli.fast_graph_worker_command import worker_command
 from leo.storage.fast_graph_position_v3 import FastGraphPositionStoreV3
 
 
 def watch(args):
     store = FastGraphPositionStoreV3(args.bulk_root)
-    worker = Path(__file__).resolve().parents[3] / "tools/algo04_production_worker.py"
-    command = [sys.executable, "-B", str(worker), "--bulk-root", str(args.bulk_root)]
+    command = worker_command(
+        __file__, "algo04_production_worker.py", args.bulk_root,
+        worker_root=getattr(args, "worker_root", None),
+    )
     with store.owner("watcher") as acquired:
         if not acquired:
             raise RuntimeError("ALGO04 watcher is already owned")
@@ -35,7 +37,8 @@ def watch(args):
                 if active is None:
                     try:
                         for job in store.inputs(
-                            minimum_completed_utc_ns=args.minimum_completed_utc_ns
+                            minimum_completed_utc_ns=args.minimum_completed_utc_ns,
+                            pending_only=True,
                         ):
                             if args.source_job and job["source_job"]["job_id"] != args.source_job:
                                 continue
@@ -64,6 +67,10 @@ def main():
     parser.add_argument("--minimum-completed-utc-ns", type=int, required=True)
     parser.add_argument("--maximum-seconds", type=int, choices=range(1, 1201), default=1200)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument(
+        "--worker-root", type=Path,
+        help="Keep numerical workers and their imports on this qualified release",
+    )
     parser.add_argument(
         "--source-job", help="Explicit completed ALGO03 canary job; requires --once"
     )

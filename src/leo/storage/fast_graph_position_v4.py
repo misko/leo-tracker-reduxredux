@@ -64,9 +64,18 @@ class FastGraphPositionStoreV4:
             incumbent_terminal_sha256=receipt["sha256"],
         )
 
-    def inputs(self, *, minimum_completed_utc_ns):
+    def needs_processing(self, source_status):
+        """Apply the watcher's existing status rule before reading old results."""
+        identifier = hashlib.sha256(
+            (MODEL_VERSION + ":" + source_status["input_sha256"]).encode()
+        ).hexdigest()[:32]
+        status = self.status(identifier)
+        return status is None or status["state"] == "running"
+
+    def inputs(self, *, minimum_completed_utc_ns, pending_only=False):
+        selection = {"include_status": self.needs_processing} if pending_only else {}
         for source in self.incumbent.completed_inputs(
-            minimum_completed_utc_ns=minimum_completed_utc_ns
+            minimum_completed_utc_ns=minimum_completed_utc_ns, **selection
         ):
             try:
                 yield self.job(source)
@@ -134,4 +143,3 @@ class FastGraphPositionStoreV4:
         if value.get("session_id") != job["session_id"] or value["incumbent"] != current:
             raise ValueError("ALGO05 terminal embeds another published ALGO04 incumbent")
         return value, dict(path=str(path), sha256=sha(path))
-

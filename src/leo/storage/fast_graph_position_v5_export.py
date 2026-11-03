@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FastGraphPositionStoreV5Export(FastGraphPositionStoreV5):
-    def completed_inputs(self, *, minimum_completed_utc_ns):
+    def completed_inputs(self, *, minimum_completed_utc_ns, include_status=None):
         """Enumerate qualified ALGO06 completions using their own completion time."""
         if (
             not isinstance(minimum_completed_utc_ns, int)
@@ -34,6 +34,10 @@ class FastGraphPositionStoreV5Export(FastGraphPositionStoreV5):
                     continue
                 if value["job_id"] != identifier or value["model_version"] != MODEL_VERSION:
                     raise ValueError("ALGO06 status identity differs from its public job")
+                # Selection uses status metadata only. Every included job still
+                # receives the original complete terminal/input validation.
+                if include_status is not None and not include_status(value):
+                    continue
                 terminal, _ = self.terminal(value)
                 if terminal["state"] != "complete":
                     raise ValueError("Completed ALGO06 status lacks its qualified terminal")

@@ -20,8 +20,9 @@ def test_once_consumes_only_cutoff_qualified_source_and_uses_v7_worker(monkeypat
             assert key == "watcher"
             yield True
 
-        def inputs(self, *, minimum_completed_utc_ns):
+        def inputs(self, *, minimum_completed_utc_ns, pending_only=False):
             assert minimum_completed_utc_ns == 123
+            assert pending_only is True
             return [dict(job_id="new", source_job=dict(job_id="old"))]
 
         def status(self, _):
