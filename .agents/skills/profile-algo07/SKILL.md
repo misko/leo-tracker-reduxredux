@@ -33,6 +33,14 @@ end-to-end speedup. Separate active computation, discovery/validation overhead,
 queue delay, and acquisition duration. Attribute child-worker time separately:
 a parent cProfile file does not profile its children.
 
+`algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
+validated public terminal and reports exclusive ALGO02–07 worker durations.
+It checks each cumulative relationship instead of summing nested total fields.
+Native GLRT, acquisition, queue waiting and watcher work outside worker timers
+are explicitly excluded; its end-to-end value remains unavailable. Use this
+as observational attribution, not as a paired speed benchmark. The public
+native report currently supplies window count but no processing duration.
+
 `tools/profile_algo02_prepared.py` profiles fresh ALGO02 fitting and family
 comparison from a frozen public `FastGraphPositionStore.export_analysis` export.
 Its allowlist copies prepared graph observations, noise and causal inputs; it

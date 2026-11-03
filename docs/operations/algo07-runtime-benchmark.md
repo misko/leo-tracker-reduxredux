@@ -55,6 +55,23 @@ their own profiles; the CLI explicitly labels this limit.
 
 ## Iteration measurements
 
+To inspect exclusive position-worker durations from one completed public ALGO07
+job, without rerunning inference:
+
+```bash
+python -m leo.cli.algo07_profile chain --bulk-root /srv/bulk/leo \
+  --job COMPLETED_ALGO07_JOB --output /srv/bulk/leo/research/runtime/chain.json
+```
+
+The CLI validates the public terminal and native recording identity, checks the
+nested cumulative timing relationships and reports each worker once. ALGO02's
+substeps are descriptive children, not additional work to add to the parent.
+The current native report has no processing-duration field. Therefore this
+summary excludes native GLRT, acquisition, queue waiting and watcher work outside
+worker timers, and deliberately leaves `end_to_end_seconds` unavailable. Recorded
+worker wall durations and the separately measured validation-read time are not
+CPU measurements or controlled before/after timing evidence.
+
 To inspect a live numerical child rather than its waiting supervisor:
 
 ```bash

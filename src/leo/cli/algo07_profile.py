@@ -204,6 +204,10 @@ def main() -> None:
     sample_parser.add_argument("--output", type=Path, required=True)
     sample_parser.add_argument("--duration", type=int, default=20)
     sample_parser.add_argument("--sampler", type=Path, required=True)
+    chain = commands.add_parser("chain", help="Separate recorded ALGO02–07 worker durations")
+    chain.add_argument("--bulk-root", type=Path, required=True)
+    chain.add_argument("--job", required=True)
+    chain.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.operation == "freeze":
@@ -219,6 +223,12 @@ def main() -> None:
             print(json.dumps(result))
             if not result["successful_execution"]:
                 raise SystemExit(1)
+        elif args.operation == "chain":
+            from leo.cli.algo07_chain_timing import collect
+
+            result = collect(args)
+            write_new(args.output, result)
+            print(json.dumps(result))
         elif args.operation == "sample":
             from leo.cli.algo07_sample import sample
 

@@ -1,0 +1,72 @@
+{
+  "stages": [
+    {
+      "algorithm": "ALGO02",
+      "model_version": "algo02-causal-family-v1",
+      "worker_seconds": 60.52021676581353,
+      "decision": "baseline",
+      "substeps": [
+        {
+          "stage": "prepare",
+          "seconds": 19.767821724526584
+        },
+        {
+          "stage": "algo02",
+          "seconds": 30.494571447372437
+        },
+        {
+          "stage": "family",
+          "seconds": 10.095388369634748
+        }
+      ]
+    },
+    {
+      "algorithm": "ALGO03",
+      "model_version": "algo03-causal-predictive-v1",
+      "worker_seconds": 46.5708532044664,
+      "decision": "ALGO03_single"
+    },
+    {
+      "algorithm": "ALGO04",
+      "model_version": "algo04-causal-numerical-v1",
+      "worker_seconds": 32.98192614689469,
+      "decision": "ALGO04_additive"
+    },
+    {
+      "algorithm": "ALGO05",
+      "model_version": "algo05-causal-gap-conditional-v1",
+      "worker_seconds": 9.181987823918462,
+      "decision": "ALGO04_fallback"
+    },
+    {
+      "algorithm": "ALGO06",
+      "model_version": "algo06-causal-residual-family-v1",
+      "worker_seconds": 10.331516221165657,
+      "decision": "ALGO05_fallback"
+    },
+    {
+      "algorithm": "ALGO07",
+      "model_version": "algo07-causal-guarded-reassociation-v1",
+      "worker_seconds": 63.075412581674755,
+      "decision": "ALGO06_fallback"
+    }
+  ],
+  "position_worker_seconds": 222.6619127439335,
+  "end_to_end_seconds": null,
+  "scope": "Recorded position-worker wall durations; not CPU or end-to-end latency",
+  "excluded": [
+    "native GLRT",
+    "acquisition",
+    "queue waiting",
+    "watcher work outside worker timers, including publication"
+  ],
+  "scientific_inference_rerun": false,
+  "job_id": "efd5e89fd04366ce81d56f8b3c7f1a0d",
+  "run_id": "fast-0ea698acf05f02cb6c4d51548c95a175",
+  "recording_name": "fast8-auto-20261103-205640-ab5c41df-1-upper",
+  "window_count": 6770,
+  "terminal_sha256": "sha256:f7b1347457d9f8a08cd4602d4dd45143e0f3963345c3ce6ae5203bf0b3a50157",
+  "observed_utc_ns": 1793741890876574388,
+  "validation_seconds": 5.439273551106453,
+  "timing_note": "This read's validation time is not part of the recorded worker sum"
+}
