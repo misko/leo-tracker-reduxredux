@@ -14,7 +14,8 @@ from activate_algo03_runtime import activity
 from stage_algo02_runtime import verify
 
 SERVICE = "leo-fast-shared-position.service"
-OVERRIDE = Path("/etc/systemd/system") / (SERVICE + ".d/95-runtime-composition.conf")
+# This must sort after the existing release.conf drop-in.
+OVERRIDE = Path("/etc/systemd/system") / (SERVICE + ".d/zz-runtime-composition.conf")
 
 
 def property_value(name):
@@ -81,6 +82,8 @@ def activate(stage, parity, *, execute=False):
         with OVERRIDE.open("x") as stream:
             stream.write(configuration(stage))
         subprocess.run(["systemctl", "daemon-reload"], check=True)
+        if property_value("WorkingDirectory") != str(root):
+            raise RuntimeError("A later service override shadows the qualified runtime")
         signal.pidfd_send_signal(handle, signal.SIGTERM)
         signal.pidfd_send_signal(handle, signal.SIGCONT)
         if not select.select([handle], [], [], 10)[0]:

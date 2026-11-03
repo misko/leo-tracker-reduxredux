@@ -1,10 +1,12 @@
 """Only a canary of the installed runtime authorizes the ALGO02 handoff."""
 
+import activate_algo02_runtime as activation
 import pytest
-from activate_algo02_runtime import check_canary, configuration
+from activate_algo02_runtime import OVERRIDE, check_canary, configuration
 
 
 def test_configuration_preserves_interpreter_and_whole_job_budget():
+    assert OVERRIDE.name > "release.conf"
     text = configuration(dict(release="/opt/candidate", runtime_manifest_sha256="pin",
                               python="/opt/original/venv/bin/python"))
     assert "--maximum-seconds 1200" in text
@@ -28,3 +30,20 @@ def test_installed_canary_identity_and_science_required(field, value):
         parity[field] = value
         with pytest.raises(ValueError, match="installed ALGO02 canary"):
             check_canary(stage, parity)
+
+
+@pytest.mark.parametrize("busy", [dict(children=[100], job_owner_files=[]),
+                                  dict(children=[], job_owner_files=["job/owner.lock"])])
+def test_busy_watcher_is_not_signalled(monkeypatch, busy):
+    monkeypatch.setattr(activation, "check_canary", lambda *args: None)
+    monkeypatch.setattr(activation, "verify", lambda *args: None)
+    monkeypatch.setattr(activation, "property_value", lambda name: "42")
+    monkeypatch.setattr(activation, "activity", lambda pid: dict(busy, idle=False))
+
+    def forbidden(*args):
+        raise AssertionError("Busy watcher must not be opened for signals")
+
+    monkeypatch.setattr(activation.os, "pidfd_open", forbidden)
+    stage = dict(release="/opt/leo-fast-graph-runtime-algo02/qualified",
+                 runtime_manifest_sha256="pin")
+    assert not activation.activate(stage, {}, execute=True)["activated"]
