@@ -23,6 +23,10 @@ rest of the detector; this is not a paired whole-detector benchmark. The host
 is shared, each cohort uses only four frozen windows, and no repeated timing
 confidence interval is claimed.
 
+The [end-of-iteration frozen policy audit](receipts/policy.json) also passes all
+175 cases / 350 calibration arms and verifies all 707 reference files. This is
+saved-policy replay, not fresh population-wide numerical inference.
+
 ## Change and validation
 
 `tools/probe_integer_epoch_pair.py` builds a private extension from the pinned
