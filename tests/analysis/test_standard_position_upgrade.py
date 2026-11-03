@@ -1,5 +1,6 @@
 """The map upgrade must not change any saved scientific result or orbit PNG."""
 import copy
+import math
 from io import BytesIO
 
 from PIL import Image
@@ -17,6 +18,15 @@ def grid(arms):
         points=[dict(east_km=0.,north_km=0.,latlon=[37.906,-122.545],scores=dict(c0=10.,fitted_c=11.))])
 
 
+def baseline(arms):
+    rows={}
+    for a,row in arms.items():
+        lat,lon=row['endpoint_latlon'];xy=[(lon+122.545)*111.32*math.cos(math.radians(37.906)),(lat-37.906)*111.]
+        rows[a]=dict(row,endpoint_east_north_km=xy,
+                     history=[dict(fit=dict(parameters=xy,history=[dict(parameters=[0.,0.]),dict(parameters=xy)]))])
+    return dict(model_version='algo02-causal-family-v1',arms=rows)
+
+
 def test_upgrade_reuses_nonposition_pngs_and_keeps_sealed_result(tmp_path,monkeypatch):
     target=FastStandardAnalysisStore(tmp_path)
     image=BytesIO();Image.new('RGB',(2,2)).save(image,format='PNG')
@@ -29,15 +39,13 @@ def test_upgrade_reuses_nonposition_pngs_and_keeps_sealed_result(tmp_path,monkey
         objective_replay=dict(c0=0.,fitted_c=0.),terminal_sha256='sha256:terminal',
         input_sha256='sha256:input',
         renderer_revision=PREVIOUS_RENDER_REVISIONS[0])
-    target.publish('run',document,pngs)
+    target.publish('run',document,pngs,position_grid=grid(document['arms']))
     target.set_evaluation_reference('run',37.849061591561885,-122.48574968092912)
     target.folder('run').rename(target.base_folder('run')/PREVIOUS_RENDER_REVISIONS[0])
-    terminal=dict(sealed=True)
+    terminal=baseline(document['arms'])
     class Source:
         def terminal(self,job):return terminal,dict(sha256='sha256:terminal')
-        def plot_evidence(self,job):return dict(terminal_receipt=dict(sha256='sha256:terminal'))
-    monkeypatch.setattr(worker,'replay',lambda *args,**kwargs:
-        dict(arms=document['arms'],selected_model=document['selected_model'],position_grid=grid(document['arms'])))
+        def plot_evidence(self,job):raise AssertionError('A saved grid upgrade must not replay RF science')
     monkeypatch.setattr(worker,'completed_view',lambda run,value:
         dict(selected=dict(arms=document['arms'])))
     result=worker.publish(Source(),target,dict(run_id='run',job_id='job'))
@@ -47,9 +55,10 @@ def test_upgrade_reuses_nonposition_pngs_and_keeps_sealed_result(tmp_path,monkey
         data=target.artifact('run',name)
         if name=='position':
             assert data!=pngs[name]
-            with Image.open(BytesIO(data)) as image:assert image.size==(1080,960)
+            with Image.open(BytesIO(data)) as image:assert image.size==(1680,960)
         else:assert data==pngs[name]
     assert target.position_grid('run')['binding']['terminal_sha256']==document['terminal_sha256']
+    assert target.position_path('run')['stages'][0]['arms']['fitted_c']['rounds'][0]['points'][0]==[0.,0.]
 
 
 def test_fresh_publication_remains_visible_to_live_previous_revision_watcher(tmp_path,monkeypatch):

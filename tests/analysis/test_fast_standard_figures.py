@@ -86,3 +86,23 @@ def test_algo07_grid_reuses_historical_colored_grid_renderer(monkeypatch):
     assert len(figure.axes)==2
     assert 'Conditional fitted-c objective' in figure.axes[1].get_ylabel()
     assert 'fixed satellite associations' in figure._supxlabel.get_text()
+
+
+def test_recorded_path_has_actual_steps_phase_labels_and_zoom():
+    import math
+    from leo.presentation.fast_standard_analysis import position_figure
+    from leo.presentation.position_path import recorded_position_path
+    from tests.presentation.test_recorded_position_path import baseline
+    terminal=baseline();path=recorded_position_path(terminal,terminal['model_version'])
+    xy=[6.,-6.]
+    ll=[37.906+xy[1]/111.,-122.545+xy[0]/(111.32*math.cos(math.radians(37.906)))]
+    arms={a:dict(endpoint_latlon=ll) for a in ('c0','fitted_c')}
+    figure=position_figure(arms,title='Recorded path',position_path=path)
+    region,zoom=figure.axes
+    assert region.get_xlim()==(-12.5,12.5) and region.get_ylim()==(-12.5,12.5)
+    assert zoom.get_xlim()[1]-zoom.get_xlim()[0]<5
+    curves=[line for line in region.lines if line.get_label()=='Fitted c recorded accepted steps']
+    assert len(curves)==1 and list(curves[0].get_xdata())==[0.,5.]
+    assert any('Phase round 1'==t.get_text() for t in zoom.texts)
+    assert 'display zoom' in zoom.get_title()
+    assert 'separate fits are not connected' in figure._supxlabel.get_text()

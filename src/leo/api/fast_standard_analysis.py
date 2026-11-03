@@ -28,4 +28,13 @@ def standard_analysis_router(reader):
             return grid
         except (OSError,ValueError) as error:
             raise HTTPException(404,'Standard position grid not found') from error
+
+    @router.get('/{run_id}/standard-analysis/position-path.json')
+    def position_path(run_id: str):
+        try:
+            path=reader.position_path(run_id)
+            if path is None:raise FileNotFoundError('Recorded path unavailable')
+            return path
+        except (OSError,ValueError) as error:
+            raise HTTPException(404,'Standard position path not found') from error
     return router

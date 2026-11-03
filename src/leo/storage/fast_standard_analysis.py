@@ -7,11 +7,12 @@ from pathlib import Path
 
 from leo.contracts.fast_standard_analysis import validate, PLOTS
 from leo.contracts.position_grid import binding as grid_binding, validate as validate_grid
+from leo.contracts.position_path import validate as validate_path
 from leo.storage.fast_scan import immutable_json, safe_id
 from leo.storage.uri import confined_path
 
-RENDER_REVISION = 'conditional-grid-v5'
-PREVIOUS_RENDER_REVISIONS = ('diagnostic-position-v4','orbit-layout-v3')
+RENDER_REVISION = 'optimizer-path-v6'
+PREVIOUS_RENDER_REVISIONS = ('conditional-grid-v5','diagnostic-position-v4','orbit-layout-v3')
 
 def digest(data):
     return 'sha256:' + hashlib.sha256(data).hexdigest()
@@ -84,11 +85,17 @@ class FastStandardAnalysisStore:
         return data
 
     def position_grid(self, run_id):
+        return self._presentation_evidence(run_id,'position-grid.json',validate_grid)
+
+    def position_path(self, run_id):
+        return self._presentation_evidence(run_id,'position-path.json',validate_path)
+
+    def _presentation_evidence(self, run_id, name, validator):
         for folder in self.publication_folders(run_id):
             manifest=folder/'manifest.json'
             if not manifest.exists():continue
             publication=validate(json.loads(manifest.read_text()))
-            path=folder/'position-grid.json'
+            path=folder/name
             if not path.exists():return None
             envelope=json.loads(path.read_text())
             if not isinstance(envelope,dict) or 'document' not in envelope or 'sha256' not in envelope:
@@ -96,10 +103,10 @@ class FastStandardAnalysisStore:
             value=envelope['document']
             raw=json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
             if digest(raw)!=envelope['sha256']:raise ValueError('Position grid integrity failure')
-            return validate_grid(value,publication)
+            return validator(value,publication)
         return None
 
-    def publish(self, run_id, document, pngs, *, position_grid=None):
+    def publish(self, run_id, document, pngs, *, position_grid=None, position_path=None):
         if document.get('run_id')!=run_id:
             raise ValueError('Standard publication belongs to another scan')
         if set(pngs) != set(PLOTS):
@@ -120,9 +127,13 @@ class FastStandardAnalysisStore:
                 raise ValueError('Figure digest collision')
             entries.append(dict(name=name,sha256=sha,byte_count=len(data)))
         value=validate(dict(document,artifacts=entries))
-        if position_grid is not None:
-            grid=validate_grid(dict(position_grid,binding=grid_binding(value)),value)
-            raw=json.dumps(grid,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
-            immutable_json(folder/'position-grid.json',dict(document=grid,sha256=digest(raw)))
+        sidecars=[]
+        for name,evidence,validator in (('position-grid.json',position_grid,validate_grid),
+                                         ('position-path.json',position_path,validate_path)):
+            if evidence is not None:
+                checked=validator(dict(evidence,binding=grid_binding(value)),value)
+                raw=json.dumps(checked,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+                sidecars.append((name,dict(document=checked,sha256=digest(raw))))
+        for name,evidence in sidecars:immutable_json(folder/name,evidence)
         immutable_json(folder/'manifest.json',value)
         return value

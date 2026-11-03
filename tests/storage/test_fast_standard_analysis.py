@@ -129,3 +129,38 @@ def test_grid_from_different_endpoints_cannot_be_published(tmp_path):
     with pytest.raises(ValueError,match='different published endpoints'):
         store.publish('run',d,pngs,position_grid=grid)
     assert store.detail('run')['state']=='pending'
+
+
+def test_saved_path_is_bound_to_the_final_position_and_image(tmp_path):
+    import json,math
+    from leo.presentation.position_path import recorded_position_path
+    store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
+    model='algo02-causal-family-v1'
+    d.update(selected_model=model,terminal_sha256='sha256:terminal',input_sha256='sha256:input')
+    rows={}
+    for a,row in d['arms'].items():
+        row['owner_sha256']='sha256:owners';lat,lon=row['endpoint_latlon']
+        xy=[(lon+122.545)*111.32*math.cos(math.radians(37.906)),(lat-37.906)*111.]
+        rows[a]=dict(endpoint_east_north_km=xy,
+            history=[dict(fit=dict(parameters=xy,history=[dict(parameters=[0.,0.]),dict(parameters=xy)]))])
+    path=recorded_position_path(dict(model_version=model,arms=rows),model)
+    result=store.publish('run',d,pngs,position_path=path)
+    saved=store.position_path('run')
+    assert saved['binding']['position_png_sha256']==result['artifacts'][-1]['sha256']
+    assert saved['stages'][0]['arms']['fitted_c']['rounds'][0]['points'][0]==[0.,0.]
+    artifact=store.folder('run')/'position-path.json'
+    envelope=json.loads(artifact.read_text());envelope['document']['selected_model']='another'
+    artifact.write_text(json.dumps(envelope))
+    with pytest.raises(ValueError,match='integrity'):store.position_path('run')
+
+
+def test_path_cannot_end_at_a_position_other_than_the_published_one(tmp_path):
+    from leo.presentation.position_path import recorded_position_path
+    model='algo02-causal-family-v1';d,pngs=publication()
+    d.update(selected_model=model,terminal_sha256='sha256:terminal',input_sha256='sha256:input')
+    for row in d['arms'].values():row['owner_sha256']='sha256:owners'
+    path=recorded_position_path(dict(model_version=model,arms={a:dict(endpoint_east_north_km=[0.,0.])
+        for a in ('c0','fitted_c')}),model)
+    store=FastStandardAnalysisStore(tmp_path)
+    with pytest.raises(ValueError,match='published coordinates'):store.publish('run',d,pngs,position_path=path)
+    assert store.detail('run')['state']=='pending'

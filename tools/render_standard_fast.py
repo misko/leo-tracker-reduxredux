@@ -16,6 +16,7 @@ from leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6
 from leo.storage.fast_standard_analysis import FastStandardAnalysisStore, RENDER_REVISION, PREVIOUS_RENDER_REVISIONS
 from leo.presentation.fast_standard_analysis import render, render_position
 from standard_orbit_lanes import calibrated_lanes
+from leo.presentation.position_path import recorded_position_path
 
 
 def read(path):
@@ -95,7 +96,8 @@ def replay(evidence, scratch, *, include_grid=False):
             residual_rms_hz=float(np.sqrt(np.mean([r['residual_hz']**2 for r in rows.values()]))),
             owner_sha256=sha(published[arm]))
     packet=dict(observations=evidence['observations'],tracks=evidence['tracks'],rows=all_rows,orbit_lanes=lanes,
-                arms=summaries,objective_replay=differences,selected_model=view['selected']['model_version'])
+                arms=summaries,objective_replay=differences,selected_model=view['selected']['model_version'],
+                position_path=recorded_position_path(terminal,view['selected']['model_version']))
     if include_grid:
         from leo.analysis.position_grid import sample_position_grid
         grid=sample_position_grid(lambda arm,x:e.objective(d['problems'][arm][0],d,np.asarray(x)),
@@ -133,24 +135,28 @@ def _publish(source, target, job):
         while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
             acquisition=acquisition['source_job']
         title=acquisition.get('fast_acquisition',{}).get('recording_name',job['run_id'])
-        evidence=source.plot_evidence(job)
-        if evidence['terminal_receipt']['sha256']!=old['terminal_sha256']:
-            raise ValueError('Position grid source differs from the published terminal')
-        with tempfile.TemporaryDirectory(prefix='standard-grid-') as tmp:
-            packet=replay(evidence,Path(tmp),include_grid=True)
-        if packet['selected_model']!=old['selected_model'] or any(
-               packet['arms'][a]['owner_sha256']!=old['arms'][a]['owner_sha256']
-               or packet['arms'][a]['endpoint_latlon']!=old['arms'][a]['endpoint_latlon']
-               for a in ('c0','fitted_c')):
-            raise ValueError('Position grid replay changed owners or endpoints')
+        grid=target.position_grid(job['run_id'])
+        if grid is None:
+            evidence=source.plot_evidence(job)
+            if evidence['terminal_receipt']['sha256']!=old['terminal_sha256']:
+                raise ValueError('Position grid source differs from the published terminal')
+            with tempfile.TemporaryDirectory(prefix='standard-grid-') as tmp:
+                packet=replay(evidence,Path(tmp),include_grid=True)
+            if packet['selected_model']!=old['selected_model'] or any(
+                   packet['arms'][a]['owner_sha256']!=old['arms'][a]['owner_sha256']
+                   or packet['arms'][a]['endpoint_latlon']!=old['arms'][a]['endpoint_latlon']
+                   for a in ('c0','fitted_c')):
+                raise ValueError('Position grid replay changed owners or endpoints')
+            grid=packet['position_grid']
+        path=recorded_position_path(terminal,old['selected_model'])
         pngs['position']=render_position(old['arms'],title=title,
             selected_model=old['selected_model'],evaluation_reference=old['evaluation_reference'],
-            position_grid=packet['position_grid'])
+            position_grid=grid,position_path=path)
         document={k:v for k,v in old.items() if k not in ('artifacts','evaluation_reference')}
         document['arms']={a:{k:v for k,v in row.items() if k!='evaluation_error_m'}
                           for a,row in old['arms'].items()}
         document['renderer_revision']=RENDER_REVISION
-        return target.publish(job['run_id'],document,pngs,position_grid=packet['position_grid'])
+        return target.publish(job['run_id'],document,pngs,position_grid=grid,position_path=path)
     began=time.monotonic();evidence=source.plot_evidence(job)
     with tempfile.TemporaryDirectory(prefix='standard-algo07-') as tmp:
         packet=replay(evidence,Path(tmp),include_grid=True)
@@ -178,7 +184,8 @@ def _publish(source, target, job):
         previous=FastStandardAnalysisStore(target.root,revision=revision)
         if previous.detail(job['run_id'])['state']!='complete':
             previous.publish(job['run_id'],dict(document,renderer_revision=revision),pngs)
-    return target.publish(job['run_id'],document,pngs,position_grid=packet.get('position_grid'))
+    return target.publish(job['run_id'],document,pngs,position_grid=packet.get('position_grid'),
+                          position_path=packet.get('position_path'))
 
 
 def main():
