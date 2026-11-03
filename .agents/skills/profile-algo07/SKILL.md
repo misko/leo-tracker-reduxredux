@@ -44,6 +44,18 @@ conservative runtime bounds (including exceptional floating-point cases), actual
 sparse exact evaluation with a full fallback, complete detector parity, both-arm
 downstream parity and matched runtime measurements. Do not install the FP32 probe.
 
+`probe_native_screen.py --selection --native-rescore --computed-bound` measures
+actual sparse scoring through `native_exact_columns.py` and the input-derived
+candidate bound in `native_screen_bounds.py`. Sparse scoring reuses the deployed
+FP64 kernel with shifted frame bases and unchanged IQ/prefix arrays; dense
+requests call the original full grid. Every requested value is compared bitwise
+against the complete reference. The bound and combined path remain research-only:
+the diagnostic still supplies baseline scores to the actual detector. Summed
+component timings are not a fresh full-detector or end-to-end benchmark.
+Use `check_native_screen_numerics.py` for the bounded amplitude/cancellation
+stress cases; a passing stress suite does not replace qualification of the
+integrated detector, unsupported-input fallback and both calibration arms.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.
