@@ -48,7 +48,7 @@ def make_problem(scan,node,keep,arm,reference,weights,means,multiplier,nu,*,supp
     groups=np.full(width,-1,int)
     if nu is not None:groups[begin:begin+len(p.labels)]=np.arange(len(p.labels))
     def calculate(x):
-        result=JointMarginal.calculate(p,x)
+        result=JointMarginal.calculate(p,x,geometry_only=True)
         features=result['features']
         scale=np.ones(width);scale[-len(p.members):]=.3
         raw=p.values-p.q*result['intercept']-features@mean

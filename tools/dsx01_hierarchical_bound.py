@@ -68,24 +68,28 @@ def hierarchical_bound(
     v0 = pa0 / pb0
     rate, prior_rate = alpha.copy(), pa / v0
     blocks = []
+    identity = np.eye(width)
     a, r = u / s[:, None], y / s
     for k in range(len(counts)):
         use = g == k
         columns = np.flatnonzero(np.any(a[use] != 0, axis=0))
         local = a[use][:, columns]
-        blocks.append((columns, local.T @ local, local.T @ r[use]))
+        blocks.append((columns, np.ix_(columns, columns), local.T @ local, local.T @ r[use]))
 
     def posterior(weight, precision, covariance):
         gram, rhs = np.diag(precision), np.zeros(width)
-        for w, (cols, matrix, b) in zip(power * weight, blocks, strict=True):
-            gram[np.ix_(cols, cols)] += w * matrix
+        for w, (cols, index, matrix, b) in zip(power * weight, blocks, strict=True):
+            gram[index] += w * matrix
             rhs[cols] += w * b
         root = np.linalg.cholesky(gram)
         mean = np.linalg.solve(root.T, np.linalg.solve(root, rhs))
         cov = None
         if covariance:
-            inv_root = np.linalg.solve(root, np.eye(width))
+            inv_root = np.linalg.solve(root, identity)
             cov = inv_root.T @ inv_root
+            # Iterative callers need only the moments; the volume is used once,
+            # after convergence. Keep the final determinant arithmetic unchanged.
+            return mean, cov, None
         logdet = float(2 * np.log(np.diag(root)).sum())
         return mean, cov, max(0.0, logdet - np.log(precision).sum())
 
@@ -97,7 +101,7 @@ def hierarchical_bound(
         coefficient, covariance, _ = posterior(weight, precision, True)
         native = (y - u @ coefficient) / s
         variance = np.array(
-            [np.sum(covariance[np.ix_(cols, cols)] * matrix.T) for cols, matrix, _ in blocks]
+            [np.sum(covariance[index] * matrix.T) for _, index, matrix, _ in blocks]
         )
         energy = np.bincount(g, weights=native**2) + np.maximum(0, variance)
         next_rate = beta0 + power * energy / 2

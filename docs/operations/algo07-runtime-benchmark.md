@@ -55,6 +55,45 @@ their own profiles; the CLI explicitly labels this limit.
 
 ## Iteration measurements
 
+To inspect a live numerical child rather than its waiting supervisor:
+
+```bash
+python -m leo.cli.algo07_profile sample --pid CHILD_PID \
+  --research-root /srv/bulk/leo/research/runtime/case \
+  --output /srv/bulk/leo/research/runtime/case/sample-001 \
+  --duration 20 --sampler /absolute/path/to/py-spy
+```
+
+This requires access to the process through the operating system. It uses
+nonblocking external sampling, accepts only a command naming the specified
+private research root, and records PID start identity, raw stacks and sampler
+errors. It does not cover descendants. Duration is bounded to 60 seconds;
+sampler timeout does not terminate the target worker. Sampling may perturb
+timing and fail to unwind frames: report both limitations, preserve raw bytes,
+and do not treat unparseable rows as valid samples.
+
+`tools/profile_algo07_full_glrt.py` extends small native fixtures to every window
+of a recording. Use its `snapshot` and `run` subcommands with the installed native
+Python. Published candidate equality covers all receivers and processed/invalid
+windows. Use a 30-minute total bound and eight or fewer workers for this benchmark
+(the CLI supports up to sixteen);
+this stage still does not rerun downstream localization. A comparison with saved
+published results alone does not measure baseline speed.
+
+For ALGO03 private replays, `tools/compare_algo03_runtime_replays.py` compares
+both arms and every scientific JSON value exactly, including intermediate
+nominations, ownership and optimizer histories. Supply explicit baseline and
+candidate runtime-manifest pins. The tool validates source-receipt hashes and
+requires complete read audits; timing, process IDs and validated relocated
+provenance are accounted for separately. An unchanged endpoint alone cannot
+pass this comparison.
+
+`tools/profile_hierarchical_bound.py capture` records actual likelihood arrays
+at predeclared positions in both arms. `measure` alternates baseline/candidate
+execution order and requires exact equality with recorded outputs. It measures
+the likelihood kernel, not localization accuracy or worker speed. Retain the
+capture hashes, implementation hashes, all timings and failed comparisons.
+
 Prepared numerical replays use `tools/profile_algo07_numerics.py`:
 
 ```bash

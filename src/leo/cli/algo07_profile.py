@@ -198,6 +198,12 @@ def main() -> None:
     s = commands.add_parser("show")
     s.add_argument("--profile", type=Path, required=True)
     s.add_argument("--limit", type=int, default=30)
+    sample_parser = commands.add_parser("sample", help="Sample one live private research child")
+    sample_parser.add_argument("--pid", type=int, required=True)
+    sample_parser.add_argument("--research-root", type=Path, required=True)
+    sample_parser.add_argument("--output", type=Path, required=True)
+    sample_parser.add_argument("--duration", type=int, default=20)
+    sample_parser.add_argument("--sampler", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.operation == "freeze":
@@ -212,6 +218,13 @@ def main() -> None:
             result = run(args)
             print(json.dumps(result))
             if not result["successful_execution"]:
+                raise SystemExit(1)
+        elif args.operation == "sample":
+            from leo.cli.algo07_sample import sample
+
+            result = sample(args)
+            print(json.dumps(result))
+            if not result['successful_sampling']:
                 raise SystemExit(1)
         else:
             if args.limit < 1:

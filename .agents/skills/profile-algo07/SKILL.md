@@ -33,6 +33,23 @@ end-to-end speedup. Separate active computation, discovery/validation overhead,
 queue delay, and acquisition duration. Attribute child-worker time separately:
 a parent cProfile file does not profile its children.
 
+Use `algo07_profile sample --pid PID --research-root /srv/bulk/leo/research/CASE
+--output OUTPUT --duration 20 --sampler /absolute/path/to/py-spy` to sample a
+live private child without code injection. Inspect the target command first.
+The bounded sampler records process identity and raw stack errors; it covers
+one PID, not descendants. Retain corrupted raw rows and exclude them explicitly
+from summaries. Sampling can affect timing; record its use in comparisons.
+
+For complete native replay, use `tools/profile_algo07_full_glrt.py` with the
+installed native Python, up to eight workers and a 30-minute total bound. It
+checks every published candidate and invalid window, but does not rerun position
+inference. For ALGO03 stage replays, `tools/compare_algo03_runtime_replays.py`
+requires both arms, exact scientific values, matching file inventories, verified
+source receipts and explicitly pinned runtime manifests. Runtime/provenance
+accounting is reported separately. `tools/profile_hierarchical_bound.py` captures
+real likelihood arrays for alternating-order microbenchmarks; those are not
+whole-worker timings.
+
 Before an optimization, freeze input and reference-output hashes with `freeze`
 and verify them with `verify`. Include both c=0 and fitted-c, accepted recovery,
 rejection/fallback, slow cases, and unavailable cases. Keep causal TLE versions,

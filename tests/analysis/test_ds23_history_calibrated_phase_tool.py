@@ -19,7 +19,7 @@ def fake_problem(*args,**kwargs):
         q=np.ones(4),point_noise=np.ones(4)*100,noise_groups=np.array([0,0,1,1]))
 
 
-def fake_calculate(p,x):
+def fake_calculate(p,x,**kwargs):
     features=np.zeros((4,6));features[:,0]=5
     features[:2,4]=1000;features[2:,5]=1000
     return dict(features=features,intercept=np.zeros(4))
@@ -58,7 +58,7 @@ def test_active_support_changes_design_width_before_posterior_is_built(monkeypat
         p.scan = SimpleNamespace(tracks=[dict(receiver=1, channel=1), dict(receiver=1, channel=3)])
         return p
 
-    def geometry(p, x):
+    def geometry(p, x, **kwargs):
         width = 6 + 3*len(p.supported)
         features = np.zeros((4, width))
         features[:2, -2] = 1000

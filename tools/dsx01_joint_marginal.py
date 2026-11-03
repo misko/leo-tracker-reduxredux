@@ -14,13 +14,7 @@ from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
 from leo.analysis.research.retained_track_likelihood import PERIOD
 
 
-def integrated_gaussian(raw, features, sigma):
-    """Exact diagonal-plus-low-rank Gaussian cost, conditional mean and volume.
-
-    Unit-normal nuisance coefficients are integrated, not treated as free
-    parameters. The diagonal-noise determinant is omitted because sigma is
-    fixed before each search. It must be restored for cross-noise evidences.
-    """
+def _gaussian_inputs(raw, features, sigma):
     y, u = np.asarray(raw, float), np.asarray(features, float)
     s = np.broadcast_to(np.asarray(sigma, float), y.shape)
     if y.ndim != 1 or u.ndim != 2 or u.shape[0] != len(y):
@@ -32,6 +26,17 @@ def integrated_gaussian(raw, features, sigma):
         or np.any(s <= 0)
     ):
         raise ValueError("finite inputs and strictly positive fixed noise required")
+    return y, u, s
+
+
+def integrated_gaussian(raw, features, sigma):
+    """Exact diagonal-plus-low-rank Gaussian cost, conditional mean and volume.
+
+    Unit-normal nuisance coefficients are integrated, not treated as free
+    parameters. The diagonal-noise determinant is omitted because sigma is
+    fixed before each search. It must be restored for cross-noise evidences.
+    """
+    y, u, s = _gaussian_inputs(raw, features, sigma)
     r, a = y / s, u / s[:, None]
     gram = np.eye(u.shape[1]) + a.T @ a
     root = np.linalg.cholesky(gram)
@@ -125,7 +130,7 @@ class JointMarginal:
             + (list(np.log([30 / 10, 1000 / 200, 5])) if variant == "empirical" else [])
         )
 
-    def calculate(self, x):
+    def calculate(self, x, *, geometry_only=False):
         xy = np.asarray(x)[:2]
         scales = np.exp(x[2:]) if self.variant == "empirical" else np.ones(3)
         frequency, elevation = paired_phase_frequency(
@@ -158,7 +163,14 @@ class JointMarginal:
         features = np.column_stack(
             (hardware, self.smooth * 200 * scales[1], phases, orbital, self.constants)
         )
-        result = integrated_gaussian(self.values - self.q * intercept, features, self.sigma)
+        raw = self.values - self.q * intercept
+        if geometry_only:
+            # Hierarchical callers replace every Gaussian posterior field.
+            # Retain its input checks while avoiding the discarded solve.
+            _gaussian_inputs(raw, features, self.sigma)
+            result = {}
+        else:
+            result = integrated_gaussian(raw, features, self.sigma)
         result.update(
             features=features,
             elevation=elevation,

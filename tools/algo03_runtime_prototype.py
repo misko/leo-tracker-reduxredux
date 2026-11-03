@@ -11,13 +11,21 @@ from stage_algo07_runtime import KERNEL, PREPARED_FILES, PREPARED_REPORT
 
 BASE = Path('/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13')
 SCIENCE = 'reports/ALGO03/releases/2026-10-30-r1/manifest.json'
+HIERARCHICAL_BASE = {
+    'tools/dsx01_hierarchical_bound.py':
+        '2042ab17ac0920488683241c96dc9a05a6d006592ba0ab30a819876dc8c74d58',
+    'tools/dsx01_joint_marginal.py':
+        'cf12f2d60bcdff60dffd5eed6872503ec71df905cc6f7363c71e3d386721df0f',
+    'tools/probe_ds23_history_calibrated_phase.py':
+        'a394f0b671cc6bed0a073cd8826e242f1db2e9265c073a69f8f0a9b95b6e6e9f',
+}
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build(repo, output):
+def build(repo, output, *, hierarchical=False):
     output = output.resolve()
     if not output.is_relative_to('/srv/bulk/leo/research') or output.exists():
         raise ValueError('A new private research directory is required')
@@ -34,6 +42,11 @@ def build(repo, output):
             raise ValueError('Qualified implementation differs: '+name)
     if digest(repo/KERNEL) != '29ddc9c0c0595d5008074f1b88440ea0f9971773b3949b8d7e6703e45f24f7ef':
         raise ValueError('Unexpected contraction kernel')
+    if hierarchical:
+        for name, expected in HIERARCHICAL_BASE.items():
+            if base_manifest['files_sha256'][name] != expected:
+                raise ValueError('Unexpected hierarchical baseline: '+name)
+        allowed.extend(HIERARCHICAL_BASE)
     output.mkdir(parents=True, exist_ok=False)
     for name in base_manifest['files_sha256']:
         target = output/name
@@ -68,7 +81,9 @@ def build(repo, output):
     manifest = dict(kind='algo03-runtime-research-prototype-v1', files_sha256=files,
                     original_release=str(BASE),
                     original_manifest_sha256=digest(BASE/'release-manifest.json'),
-                    qualified_algo07_files=allowed, production_modified=False,
+                    qualified_algo07_files=[KERNEL, *PREPARED_FILES],
+                    experimental_files=list(HIERARCHICAL_BASE) if hierarchical else [],
+                    production_modified=False,
                     algo03_science_qualified=False, policy_changed=False)
     (output/'runtime-manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     return dict(root=str(output), manifest_sha256=digest(output/'runtime-manifest.json'),
@@ -79,5 +94,6 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--repo', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--hierarchical', action='store_true')
     a = p.parse_args()
-    print(json.dumps(build(a.repo.resolve(), a.output)))
+    print(json.dumps(build(a.repo.resolve(), a.output, hierarchical=a.hierarchical)))
