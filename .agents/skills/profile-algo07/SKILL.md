@@ -56,6 +56,16 @@ Use `check_native_screen_numerics.py` for the bounded amplitude/cancellation
 stress cases; a passing stress suite does not replace qualification of the
 integrated detector, unsupported-input fallback and both calibration arms.
 
+`build_screened_detector_runtime.py` composes the separate FP32 extension with
+the original FP64 kernel in an isolated research detector. Its acquisition
+adapter consumes screened maps only after restoring exact retained peaks and
+refinement neighbors. General full-grid APIs remain unchanged. Use
+`check_screened_detector_numerics.py`, complete receiver-output paired fixtures,
+the full-recording comparator and a fresh prepared downstream comparison.
+The builder checks component helper copies against the tested research sources;
+analysis code never imports tools. This builder does not stage a production
+package. Full fixture parity does not alone certify the proposed error bound.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.

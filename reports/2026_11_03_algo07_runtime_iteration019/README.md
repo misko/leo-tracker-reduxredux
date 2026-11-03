@@ -53,17 +53,23 @@ of the proposed numerical bound.
 - [Saved-policy audit](receipts/policy.json): 175 cases / 350 calibration arms
   and 707 frozen files unchanged. This is a saved-policy audit, not fresh
   end-to-end inference.
-- [Full-recording launch](receipts/full-launch.json): DS27-0004, 16 workers,
-  bounded to 1,800 seconds. Final all-hypothesis parity is pending at this
-  checkpoint.
+- [Full-recording parity](receipts/full-parity.json): DS27-0004, 16 workers,
+  bounded to 1,800 seconds. All 6,772 windows, 13,534 receiver results and
+  108,272 hypotheses match exactly, with both frozen inventories verified.
+  [Elapsed time](receipts/full-timing.json) was 711.994 seconds; the reused
+  baseline and concurrent work make this parity-only evidence.
 - [Prepared downstream launch](receipts/downstream-launch.json): fresh ALGO02
-  and family fitting, both c=0 and fitted-c, bounded to 1,200 seconds. Final
-  scientific-file parity is pending at this checkpoint. This replay reuses
+  and family fitting, both c=0 and fitted-c, bounded to 1,200 seconds.
+  [All six scientific files match exactly](receipts/downstream-parity.json),
+  including satellites, owners, gates, objectives and optimizer histories.
+  The [completed replay](receipts/downstream-result.json) took 793.476 seconds
+  under concurrent load and passed its process-ancestry read audit. This replay reuses
   prepared graph evidence; it does not rebuild graph tracks or run ALGO03–07.
 
-The two larger replays were still running when this checkpoint was prepared.
+Both larger replays completed successfully after the initial checkpoint.
 Their concurrent execution is suitable for parity checks, not a matched timing
-comparison. Their results must be recorded separately before making stronger
-qualification claims. Bound review, full parity, packaging and installed canary
+comparison. The downstream replay starts from separately frozen prepared graph
+evidence; it is not a new graph build from the candidate native output.
+Bound review, packaging and installed canary
 checks remain prerequisites for any production activation. Existing production
 workers were left undisturbed.
