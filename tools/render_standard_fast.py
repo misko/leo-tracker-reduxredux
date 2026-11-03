@@ -13,8 +13,8 @@ import numpy as np
 from leo.contracts.fast_graph_position_v6 import owners, MODEL_VERSION
 from leo.storage.graph_position_view_v6 import completed_view
 from leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6
-from leo.storage.fast_standard_analysis import FastStandardAnalysisStore, RENDER_REVISION
-from leo.presentation.fast_standard_analysis import render
+from leo.storage.fast_standard_analysis import FastStandardAnalysisStore, RENDER_REVISION, PREVIOUS_RENDER_REVISIONS
+from leo.presentation.fast_standard_analysis import render, render_position
 from standard_orbit_lanes import calibrated_lanes
 
 
@@ -109,8 +109,26 @@ def publish(source, target, job):
 def _publish(source, target, job):
     old=target.detail(job['run_id'])
     if old['state']=='complete':
-        for a in old['artifacts']:target.artifact(job['run_id'],a['name'],a['sha256'])
-        return old
+        pngs={a['name']:target.artifact(job['run_id'],a['name'],a['sha256']) for a in old['artifacts']}
+        if old.get('renderer_revision')==RENDER_REVISION:return old
+        terminal,receipt=source.terminal(job)
+        if receipt['sha256']!=old['terminal_sha256']:
+            raise ValueError('Scientific terminal differs from the published figures')
+        view=completed_view(job['run_id'],terminal)
+        if any(old['arms'][arm]['endpoint_latlon']!=view['selected']['arms'][arm]['endpoint_latlon']
+               for arm in ('c0','fitted_c')):
+            raise ValueError('Published endpoints differ from the scientific terminal')
+        acquisition=job
+        while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
+            acquisition=acquisition['source_job']
+        title=acquisition.get('fast_acquisition',{}).get('recording_name',job['run_id'])
+        pngs['position']=render_position(old['arms'],title=title,
+            selected_model=old['selected_model'],evaluation_reference=old['evaluation_reference'])
+        document={k:v for k,v in old.items() if k not in ('artifacts','evaluation_reference')}
+        document['arms']={a:{k:v for k,v in row.items() if k!='evaluation_error_m'}
+                          for a,row in old['arms'].items()}
+        document['renderer_revision']=RENDER_REVISION
+        return target.publish(job['run_id'],document,pngs)
     began=time.monotonic();evidence=source.plot_evidence(job)
     with tempfile.TemporaryDirectory(prefix='standard-algo07-') as tmp:
         packet=replay(evidence,Path(tmp))
@@ -132,6 +150,11 @@ def _publish(source, target, job):
         figures_model=MODEL_VERSION,renderer_revision=RENDER_REVISION,
         figure_frequency_frame='receiver calibration removed; wrapped at GLRT alias period',
         replay_seconds=time.monotonic()-began)
+    # The live native GLRT watcher still reads the previous presentation port.
+    # Publish that completion receipt too, without changing any existing bytes.
+    previous=FastStandardAnalysisStore(target.root,revision=PREVIOUS_RENDER_REVISIONS[0])
+    if previous.detail(job['run_id'])['state']!='complete':
+        previous.publish(job['run_id'],dict(document,renderer_revision=PREVIOUS_RENDER_REVISIONS[0]),pngs)
     return target.publish(job['run_id'],document,pngs)
 
 
@@ -143,7 +166,8 @@ def main():
     while True:
         for job in source.completed_jobs():
             if args.run_id and job['run_id']!=args.run_id:continue
-            if target.detail(job['run_id'])['state']=='complete':continue
+            old=target.detail(job['run_id'])
+            if old['state']=='complete' and old.get('renderer_revision')==RENDER_REVISION:continue
             try:
                 result=publish(source,target,job)
                 print(json.dumps(dict(run_id=job['run_id'],state=result['state'],figures=len(result['artifacts']))),flush=True)

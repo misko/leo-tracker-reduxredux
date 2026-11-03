@@ -9,27 +9,38 @@ from leo.contracts.fast_standard_analysis import validate, PLOTS
 from leo.storage.fast_scan import immutable_json, safe_id
 from leo.storage.uri import confined_path
 
-RENDER_REVISION = 'orbit-layout-v3'
+RENDER_REVISION = 'diagnostic-position-v4'
+PREVIOUS_RENDER_REVISIONS = ('orbit-layout-v3',)
 
 def digest(data):
     return 'sha256:' + hashlib.sha256(data).hexdigest()
 
 
 class FastStandardAnalysisStore:
-    def __init__(self, root):
+    def __init__(self, root, *, revision=RENDER_REVISION):
         self.root = Path(root).resolve()
         if self.root == Path('/mnt/qnap01') or Path('/mnt/qnap01') in self.root.parents:
             raise ValueError('Standard publication must be local')
+        if revision not in (RENDER_REVISION,*PREVIOUS_RENDER_REVISIONS):
+            raise ValueError('Unknown standard presentation revision')
+        self.revision=revision
 
     def base_folder(self, run_id):
         return confined_path(self.root, self.root/'fast-scan-standard-v1'/safe_id(run_id), must_exist=False)
 
     def folder(self, run_id):
-        return confined_path(self.root, self.base_folder(run_id)/RENDER_REVISION, must_exist=False)
+        return confined_path(self.root, self.base_folder(run_id)/self.revision, must_exist=False)
+
+    def publication_folders(self, run_id):
+        base=self.base_folder(run_id)
+        revisions=(RENDER_REVISION,*PREVIOUS_RENDER_REVISIONS)
+        return (*(confined_path(self.root,base/revision,must_exist=False)
+            for revision in revisions[revisions.index(self.revision):]),base)
 
     def detail(self, run_id):
-        path = self.folder(run_id)/'manifest.json'
-        if not path.exists():
+        path=next((folder/'manifest.json' for folder in self.publication_folders(run_id)
+                   if (folder/'manifest.json').exists()),None)
+        if path is None:
             return dict(schema_version=1, run_id=run_id, model_version='algo07-causal-guarded-reassociation-v1',
                         state='pending', artifacts=[])
         result=validate(json.loads(path.read_text()))
@@ -54,17 +65,17 @@ class FastStandardAnalysisStore:
             source='user-confirmed-evaluation-only',run_id=run_id,latitude_deg=latitude_deg,longitude_deg=longitude_deg))
 
     def artifact(self, run_id, name, expected=None):
-        manifest = self.detail(run_id)
-        entry = next((a for a in manifest['artifacts'] if a['name'] == name), None)
-        folder = self.folder(run_id)
-        # Previously issued digest-qualified URLs retain their immutable bytes.
-        if expected is not None and (not entry or expected != entry['sha256']):
-            legacy = self.base_folder(run_id)/'manifest.json'
-            if legacy.exists():
-                old = validate(json.loads(legacy.read_text()))
-                entry = next((a for a in old['artifacts'] if a['name']==name and a['sha256']==expected), None)
-                folder = self.base_folder(run_id)
-        if not entry or (expected is not None and expected != entry['sha256']):
+        entry=None
+        # Read the latest available layout, or the exact prior digest requested.
+        for folder in self.publication_folders(run_id):
+            path=folder/'manifest.json'
+            if not path.exists():continue
+            manifest=validate(json.loads(path.read_text()))
+            entry=next((a for a in manifest['artifacts'] if a['name']==name
+                        and (expected is None or a['sha256']==expected)),None)
+            if entry is not None:break
+            if expected is None:break
+        if entry is None:
             raise FileNotFoundError('Standard figure revision unavailable')
         data = (folder/(entry['sha256'].split(':')[1]+'.png')).read_bytes()
         if digest(data) != entry['sha256'] or len(data) != entry['byte_count']:

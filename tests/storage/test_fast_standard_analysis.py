@@ -64,3 +64,36 @@ def test_layout_revision_preserves_old_digest_urls_and_evaluation_reference(tmp_
     for a in new['artifacts']:
         assert store.artifact('run',a['name'])==new_pngs[a['name']]
         assert a['sha256']==digest(new_pngs[a['name']])
+
+
+def test_previous_layout_remains_available_during_atomic_upgrade(tmp_path):
+    import json
+    from leo.storage.fast_standard_analysis import PREVIOUS_RENDER_REVISIONS
+    store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
+    d['renderer_revision']=PREVIOUS_RENDER_REVISIONS[0]
+    old=store.publish('run',d,pngs)
+    store.set_evaluation_reference('run',37.849061591561885,-122.48574968092912)
+    old_folder=store.base_folder('run')/PREVIOUS_RENDER_REVISIONS[0]
+    store.folder('run').rename(old_folder)
+    assert store.detail('run')['state']=='complete'
+    assert store.detail('run')['renderer_revision']==PREVIOUS_RENDER_REVISIONS[0]
+    assert store.artifact('run','position')==pngs['position']
+    changed=dict(pngs,position=pngs['position']+b'new map')
+    store.publish('run',dict(d,renderer_revision='new'),changed)
+    assert store.artifact('run','position')==changed['position']
+    for a in old['artifacts']:
+        assert store.artifact('run',a['name'],a['sha256'])==pngs[a['name']]
+    assert json.loads((old_folder/'manifest.json').read_text())==old
+    assert store.detail('run')['evaluation_reference']['latitude_deg']==37.849061591561885
+
+
+def test_previous_reader_can_observe_completion_without_seeing_new_layout(tmp_path):
+    from leo.storage.fast_standard_analysis import PREVIOUS_RENDER_REVISIONS
+    current=FastStandardAnalysisStore(tmp_path)
+    previous=FastStandardAnalysisStore(tmp_path,revision=PREVIOUS_RENDER_REVISIONS[0])
+    d,pngs=publication()
+    current.publish('run',d,pngs)
+    assert previous.detail('run')['state']=='pending'
+    previous.publish('run',d,pngs)
+    assert previous.detail('run')['state']=='complete'
+    assert previous.artifact('run','position')==pngs['position']

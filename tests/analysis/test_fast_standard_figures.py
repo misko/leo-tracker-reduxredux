@@ -35,3 +35,35 @@ def test_standard_main_pngs_use_the_existing_orbit_renderer(monkeypatch):
     assert [(x.channel,x.receiver) for x in lanes]==[(f'CH{ch}',f'RX{rx}') for ch in range(1,9) for rx in (1,2)]
     assert options['alias_period_hz']==1/4.4e-6
     assert 'receiver calibration removed' in options['subtitle']
+
+
+def test_position_map_restores_reference_marker_and_reports_actual_error():
+    import copy
+    from leo.presentation.fast_standard_analysis import position_figure
+    arms={'c0':dict(endpoint_latlon=[37.85041788079218,-122.47576435392004],residual_rms_hz=105.94),
+          'fitted_c':dict(endpoint_latlon=[37.85027474651324,-122.47676566198743],residual_rms_hz=107.64)}
+    before=copy.deepcopy(arms)
+    reference=dict(latitude_deg=37.849061591561885,longitude_deg=-122.48574968092912)
+    figure=position_figure(arms,title='Saved scan',selected_model='algo02-causal-family-v1',
+                           evaluation_reference=reference)
+    axis=figure.axes[0]
+    markers={line.get_label():line for line in axis.lines}
+    gps=markers['Reference (evaluation only)']
+    assert gps.get_marker()=='+'
+    # The evaluation site is offset from the regional centre; it is not (0, 0).
+    assert 5 < gps.get_xdata()[0] < 5.5 and -6.5 < gps.get_ydata()[0] < -6
+    assert markers['Fitted c selected estimate'].get_marker()=='D'
+    assert markers['c = 0 selected estimate'].get_marker()=='s'
+    assert 'reference error 800.3 m' in axis.get_title()
+    assert 'reference error 889.6 m' in axis.get_title()
+    assert 'retained ALGO02' in figure._suptitle.get_text()
+    assert arms==before
+
+
+def test_position_without_evaluation_reference_does_not_invent_ground_truth():
+    from leo.presentation.fast_standard_analysis import position_figure
+    arms={a:dict(endpoint_latlon=[37.9,-122.5]) for a in ('c0','fitted_c')}
+    figure=position_figure(arms,title='Unreferenced scan')
+    axis=figure.axes[0]
+    assert all(line.get_label()!='Reference (evaluation only)' for line in axis.lines)
+    assert axis.get_title().count('evaluation reference unavailable')==2
