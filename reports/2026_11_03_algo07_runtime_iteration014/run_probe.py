@@ -15,12 +15,14 @@ from profile_algo07_glrt import PROFILE  # noqa: E402
 from stage_native_glrt_runtime import digest, verify, verify_files  # noqa: E402
 
 
-def run(candidate, fixtures, output):
+def run(candidate, fixtures, output, *, build_filename="fractional-probe.json"):
     candidate = candidate.resolve(strict=True)
     output = output.resolve()
     if output.exists() or not output.is_relative_to("/srv/bulk/leo/research"):
         raise ValueError("New private output required")
-    build_path = candidate / "fractional-probe.json"
+    if build_filename not in ("fractional-probe.json", "schedule-probe.json"):
+        raise ValueError("Unknown probe receipt")
+    build_path = candidate / build_filename
     build_pin = digest(build_path)
     build = json.loads(build_path.read_text())
     base = Path(build["base"])
@@ -76,5 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--fixture", type=Path, required=True, action="append")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--build-receipt", default="fractional-probe.json",
+                        choices=("fractional-probe.json", "schedule-probe.json"))
     args = parser.parse_args()
-    run(args.candidate, args.fixture, args.output)
+    run(args.candidate, args.fixture, args.output, build_filename=args.build_receipt)
