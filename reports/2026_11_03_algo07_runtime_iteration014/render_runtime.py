@@ -30,7 +30,7 @@ def main():
     ax.set_axisbelow(True)
     fig.suptitle("Exact fractional-weight reuse · approximately 1.08× faster")
     fig.text(.5, .025, "All 96 receiver outputs exactly equal. Alternating sequential trials, "
-             "CPU 0, shared host.\nNot deployed; complete-recording qualification pending.",
+             "CPU 0, shared host.\nFull-recording parity passed; installed qualification pending.",
              ha="center", fontsize=9)
     fig.tight_layout(rect=(0, .1, 1, .94))
     fig.savefig(ROOT / "fractional_runtime.png", dpi=160)

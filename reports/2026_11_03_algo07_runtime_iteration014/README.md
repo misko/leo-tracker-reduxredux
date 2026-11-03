@@ -3,8 +3,9 @@
 Reusing a single interpolation-weight row for positions with the same **exact**
 fractional offset reduces native detector time in all three sampled cohorts.
 Every full receiver output remains exactly equal across **48 paired windows / 96
-receiver results**. This candidate is **not deployed**. Complete-recording
-qualification is running; the tenfold end-to-end objective remains open.
+receiver results**. Complete-recording and downstream qualification now pass
+exactly. This candidate is **not deployed** at this checkpoint; installed-canary
+qualification and handoff remain. The tenfold end-to-end objective remains open.
 
 | Frozen fixture, 16 paired windows each | Deployed native detector | Weight reuse | Ratio |
 | --- | ---: | ---: | ---: |
@@ -77,9 +78,9 @@ unchanged and the same three accepted repairs. [Audit](receipts/policy.json).
 This is saved-policy verification, not a fresh c=0/fitted-c localization replay;
 no new position-error or frequency-objective improvement is claimed.
 
-## Complete-recording qualification in progress
+## Complete-recording and downstream qualification
 
-The candidate is replaying all **6,772 windows** of DS27-0004 with sixteen workers
+The candidate replayed all **6,772 windows** of DS27-0004 with sixteen workers
 and an 1,800-second bound through the public recording ports. Its complete input
 document is exactly equal to the earlier full-recording reference. The new frozen
 inventory separately binds the candidate and deployed runtime bytes.
@@ -96,6 +97,32 @@ files, unpublished hypotheses, missing windows and mismatched worker settings.
 
 Private replay directory:
 `/srv/bulk/leo/research/algo07-runtime-20261103/full-glrt-fractional-DS27-0004/candidate16`.
-Do not infer full-scan parity or deployment readiness from the launch receipt.
-The next step is to inspect the terminal replay and compare all hypotheses,
-then complete downstream/package qualification before any production handoff.
+The terminal comparison matches every window, **13,534 receiver results and
+108,272 hypotheses exactly**, including invalid windows and unpublished
+candidates. Both 708-file inventories verify. The replay took 669.503 seconds
+on the shared host. Its reused baseline is parity evidence, so the checker
+withholds a full-scan speed ratio. [Full comparison](receipts/full-parity.json),
+[execution](receipts/full-timing.json), [range inventory](receipts/full-result.json).
+
+A fresh prepared downstream replay using the deployed ALGO02 runtime matches all
+six scientific files exactly: both calibration-arm endpoints, satellite identities,
+point ownership, objectives, gates and optimizer histories. All 1,803 bound files
+and three read receipts verify. Its observations and causal catalogue are the
+same public export previously bound to this native recording. It ran concurrently
+with the native replay at nice level 10; its 380.869 seconds are not a controlled
+performance comparison. This replay does not reconstruct graph tracklets or rerun
+ALGO03–07. [Downstream parity](receipts/downstream-parity.json).
+
+| Arm | Reference and fresh latitude | Reference and fresh longitude |
+| --- | ---: | ---: |
+| c=0 | 37.85036003824613 | -122.4777589714538 |
+| fitted-c | 37.85036983800171 | -122.47774826569346 |
+
+The packaging tool now supports `stage-fractional`: complete native parity,
+three faster paired cohort trials, exact downstream both-arm results and the
+frozen policy audit are required. It pins the committed module, preserves all
+other native source bytes, and retains the preceding runtime for rollback.
+Thirty-five packaging, activation and comparator tests pass. Activation replaces
+the previous runtime pre-start pin while preserving unrelated checks, and waits
+for the replacement process to expose its post-exec environment. Installed
+canary verification and the guarded native drain remain before deployment.
