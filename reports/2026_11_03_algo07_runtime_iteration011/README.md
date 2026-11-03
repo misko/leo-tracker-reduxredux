@@ -118,3 +118,28 @@ The sequential unprofiled pair is complete and exact. Before deployment,
 qualify an immutable installed package and its production handoff. The original
 runtime remains available; this experiment has not modified the ALGO02 service.
 The tenfold overall runtime goal remains open.
+
+## Immutable package and handoff preparation
+
+`tools/stage_algo02_runtime.py` requires the committed unprofiled exact comparison,
+both reference audits, candidate manifest identity and saved-policy audit. It
+verifies the installed baseline and tested prototype, copies all 1,774 runtime
+files, and permits only the three qualified numerical differences. It adds
+qualification receipts, the verifier and release provenance, without changing
+the service or rebuilding numerical code. A pinned pre-start verification will
+check the package before production starts.
+
+`tools/activate_algo02_runtime.py` requires a fresh exact replay from that installed
+package. It checks all watcher-thread children and open per-job owner locks,
+then repeats the check with every watcher thread stopped. The installed ALGO02
+application owns its job lock before input validation and until terminal/status
+publication; a job in preparation or publication therefore blocks activation.
+Only an idle watcher can be terminated and replaced. The configured interpreter,
+1,200-second budget and other service resource settings remain unchanged.
+
+The source qualification now explicitly binds each trial's runtime manifest:
+[package qualification](receipts/package-source-qualification.json). Thirty-five
+targeted tests pass, covering qualification and canary identity failures, frozen
+input/output comparison, configuration preservation and the reused per-job
+ownership check. Ruff passes. Package staging and installed replay are next;
+production ALGO02 has not changed at this checkpoint.

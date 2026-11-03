@@ -248,6 +248,9 @@ def verified_trial(snapshot, trial):
             raise ValueError("Stage did not use the verified snapshot")
     comparison = compare_results(export / "inference", trial / "inference")
     comparison.update(read_audit=checked, frozen_inputs_verified=True,
+                      runtime_root=source["runtime"],
+                      runtime_manifest_sha256=PROFILE.digest(
+                          Path(source["runtime"]) / "release-manifest.json"),
                       compared_with="public historical terminal; not a paired new timing trial")
     return comparison
 

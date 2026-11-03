@@ -140,3 +140,10 @@ existing jobs. `finish` waits for that original process to exit before an
 idempotent service start. Never replace this with a process-group signal or a
 service stop/restart that could terminate active numerical children. A pending
 drain is not a completed deployment.
+
+For ALGO02, `stage_algo02_runtime.py` binds committed exact six-file/both-arm
+parity to the tested runtime manifest and copies only qualified numerical changes
+over the installed baseline. Run an installed prepared replay before activation.
+`activate_algo02_runtime.py` requires that installed manifest in the canary proof
+and checks all watcher threads and per-job owner locks before an idle handoff.
+It preserves the installed interpreter and 1,200-second production budget.
