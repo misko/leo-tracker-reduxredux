@@ -2,8 +2,8 @@
 
 The matched full-scan native replay improves **1,154.046 → 848.122 seconds
 (1.36×)** with all **6,772 windows, 13,534 receiver results and 108,272 hypotheses
-exactly equal**. Aggregate CPU work decreases **23.64%**. The downstream
-localization replay is running; the tiled GLRT candidate has **not been deployed**.
+exactly equal**. Aggregate CPU work decreases **23.64%**. The downstream ALGO02
+localization replay also matches exactly; the tiled GLRT candidate has **not been deployed**.
 This is a native-stage speedup, not a measured end-to-end ALGO07 speedup.
 The tenfold ALGO07 objective remains open.
 
@@ -109,6 +109,23 @@ normalized. Tests explicitly reject changed owners, satellites, gates, position,
 a 1e-10 objective change, forged result hashes and unexpected output files.
 The combined suite now has **22 passing tests**, with Ruff passing.
 
+The downstream replay completed in 370.458 seconds with profiling enabled.
+All six generated scientific JSON files match exactly, including both calibration
+arms, discovery alternatives, retained point identities, satellite assignments,
+gate decisions, objectives and optimizer histories. All 1,793 frozen files and
+all three process read receipts verify. [Exact comparison](receipts/downstream-parity.json),
+[execution receipt](receipts/downstream-replay.json).
+
+| Calibration arm | Reference latitude | Reference longitude | Replay |
+| --- | ---: | ---: | --- |
+| c=0 | 37.85036003824613 | -122.4777589714538 | Exactly equal |
+| fitted-c | 37.85036983800171 | -122.47774826569346 | Exactly equal |
+
+This downstream replay begins with the unchanged prepared graph observations
+and causal bank. It reruns ALGO02 discovery/fitting/family comparison. It does not
+rerun graph construction, ALGO03–07 or the whole pipeline; the native input
+parity and downstream replay scopes remain distinct.
+
 ## Package preparation
 
 `tools/stage_native_glrt_runtime.py` now defines the native deployment package.
@@ -123,7 +140,7 @@ the installed versions. There is no deployment-time rebuild.
 Thirteen staging tests pass, rejecting incomplete or mismatched trials, a slower
 candidate, scientific differences, changed runtime bytes and incomplete package
 markers. The stager makes no service change. No native package has been staged
-or activated yet; downstream evidence remains pending.
+or activated yet; the required research qualification is now complete.
 
 The native watcher owns a global lock but does not use ALGO03's per-job ownership
 files. Child-PID absence alone therefore cannot authorize a restart: a worker
@@ -148,9 +165,7 @@ also matches this checkout exactly, SHA-256
 
 ## Remaining qualification
 
-1. Complete the running downstream localization checks
-   with both c=0 and fitted-c, matching observations, causal inputs and budgets.
-2. Stage a qualified immutable package and verify an installed canary.
-3. Hand off the production watcher without interrupting its numerical work.
-4. Measure the full recording-to-ALGO07 chain; keep component improvements
+1. Stage a qualified immutable package and verify an installed canary.
+2. Hand off the production watcher without interrupting its numerical work.
+3. Measure the full recording-to-ALGO07 chain; keep component improvements
    separate from the tenfold overall runtime target.
