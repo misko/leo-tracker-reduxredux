@@ -1,14 +1,15 @@
 """Local versioned graph-position jobs over the public FastScanStore input port."""
 
-from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import time
 import uuid
+from collections import OrderedDict
+from contextlib import contextmanager
+from pathlib import Path
 
 from leo.contracts.fast_graph_position import MODEL_VERSION, validate_terminal
 from leo.storage.fast_scan import FastScanStore, safe_id
@@ -19,9 +20,18 @@ def sha(path):
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+_DISCOVERY_DIGEST_LIMIT = 4096
+
+
+def _discovery_file_identity(path):
+    stat = path.stat()
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+
+
 def _copy_analysis(source, destination, terminal, receipt, job):
     source, destination = Path(source).resolve(strict=True), Path(destination).resolve()
-    if destination == source or destination.is_relative_to(source) or source.is_relative_to(destination):
+    if (destination == source or destination.is_relative_to(source)
+            or source.is_relative_to(destination)):
         raise ValueError("Export overlaps source analysis")
     destination.mkdir(parents=True, exist_ok=False)
     hashes = {}
@@ -81,6 +91,7 @@ class FastGraphPositionStore:
         self.root = Path(root).resolve()
         self.inputs_port = FastScanStore(self.root)
         self.namespace = self.root / "fast-scan-graph-position-v1" / MODEL_VERSION
+        self._discovery_digests = OrderedDict()
 
     def path(self, identifier):
         path = self.namespace / "jobs" / safe_id(identifier)
@@ -88,10 +99,27 @@ class FastGraphPositionStore:
 
     def inputs(self):
         for path in self.inputs_port.exported_tracking_inputs():
-            digest = sha(path)
+            digest = self._discovery_digest(path)
             identifier = hashlib.sha256((MODEL_VERSION + ":" + digest).encode()).hexdigest()[:32]
             yield dict(job_id=identifier, run_id=path.stem, input_path=str(path),
                        input_sha256=digest, model_version=MODEL_VERSION)
+
+    def _discovery_digest(self, path):
+        """Reuse stable discovery identities; verify_input always hashes afresh."""
+        identity = _discovery_file_identity(path)
+        cached = self._discovery_digests.get(path)
+        if cached is not None and cached[0] == identity:
+            self._discovery_digests.move_to_end(path)
+            return cached[1]
+        digest = sha(path)
+        if _discovery_file_identity(path) != identity:
+            self._discovery_digests.pop(path, None)
+            raise ValueError("Public GLRT input changed during discovery")
+        self._discovery_digests[path] = (identity, digest)
+        self._discovery_digests.move_to_end(path)
+        if len(self._discovery_digests) > _DISCOVERY_DIGEST_LIMIT:
+            self._discovery_digests.popitem(last=False)
+        return digest
 
     def status(self, identifier):
         path = self.path(identifier) / "status.json"
@@ -136,7 +164,8 @@ class FastGraphPositionStore:
             raise ValueError("Public GLRT input identity changed")
 
     def terminal(self, job):
-        path = confined_path(self.root, self.path(job["job_id"]) / "output/terminal.json", must_exist=True)
+        path = confined_path(self.root, self.path(job["job_id"]) / "output/terminal.json",
+                             must_exist=True)
         value = json.loads(path.read_text())
         validate_terminal(value, input_sha256=job["input_sha256"])
         self.verify_input(job)
@@ -173,7 +202,8 @@ class FastGraphPositionStore:
         terminal, receipt = self.terminal(job)
         if terminal['state'] != 'complete':
             raise ValueError('Qualified graph terminal required')
-        workspace = confined_path(self.namespace, Path(receipt['path']).parent/'inference', must_exist=True)
+        workspace = confined_path(self.namespace, Path(receipt['path']).parent/'inference',
+                                  must_exist=True)
         native = confined_path(workspace, workspace/'SCAN', must_exist=True)
         observations = confined_path(native, native/'observations.json', must_exist=True)
         tracks = confined_path(native, native/'tracks.json', must_exist=True)

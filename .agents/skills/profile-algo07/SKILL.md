@@ -147,3 +147,11 @@ over the installed baseline. Run an installed prepared replay before activation.
 `activate_algo02_runtime.py` requires that installed manifest in the canary proof
 and checks all watcher threads and per-job owner locks before an idle handoff.
 It preserves the installed interpreter and 1,200-second production budget.
+
+Use `profile_algo02_discovery_cache.py --snapshot --limit 0` to freeze a full
+public tracking-input inventory, then `--fixture PATH --repeats 3` for a bounded
+alternating cold/warm discovery comparison. Report directory enumeration scope,
+first-pass hashing and repeated-pass hashing separately. Metadata-based digest
+reuse is discovery-only: consumed inputs must retain fresh full hashing, job
+statuses must remain live, and tests must cover same-size replacement with
+restored mtime, concurrent edits, stale metadata and eviction.
