@@ -34,6 +34,10 @@ column-major matrix copy and sequential scalar log summation. No Cholesky
 substitution, reduced phase grid, changed prior or approximate factorization is
 introduced. The installed library, C source, compiled binary, captured input
 and numerical kernel are hash-bound in the receipt.
+The [installed-identity check](receipts/installed-identity.json) confirms that
+the tested kernel and OpenBLAS binary match the deployed ALGO07 numerical
+package and its interpreter environment byte-for-byte. This check does not
+replace a complete-worker replay.
 
 The earlier iteration 003 Cholesky prototype was faster in one substep but
 changed coefficients and quadratic values. This LU experiment instead matches
