@@ -50,6 +50,7 @@ def compare(left, right, left_runtime, right_runtime):
     roots = [Path(p).resolve() for p in (left, right)]
     runtimes = [Path(p).resolve() for p in (left_runtime, right_runtime)]
     differences, checked_receipts = [], []
+    remaining_budget_differences = []
     exact_leaves = 0
     inventories = [{str(p.relative_to(root)): p for p in root.rglob('*.json')
                     if not any(k in p.relative_to(root).parts
@@ -63,7 +64,19 @@ def compare(left, right, left_runtime, right_runtime):
     def hashed_sources(mapping, side):
         result = {}
         for name, expected in mapping.items():
-            p = Path(name).resolve()
+            original = Path(name)
+            p = (original if original.is_absolute() else runtimes[side]/original).resolve()
+            if p.is_relative_to(runtimes[side]):
+                manifest = runtimes[side]/'runtime-manifest.json'
+                if not manifest.exists():
+                    manifest = runtimes[side]/'release-manifest.json'
+                relative = str(p.relative_to(runtimes[side]))
+                bound = json.loads(manifest.read_text())['files_sha256'].get(relative)
+                if bound != expected or digest(p) != expected:
+                    raise ValueError('Changed runtime source receipt: '+name)
+                result[normalized(name, side)] = '<verified runtime source>'
+                checked_receipts.append(dict(side=side, runtime_path=relative, sha256=expected))
+                continue
             if not p.is_relative_to(roots[side]) or digest(p) != expected:
                 raise ValueError('Unbound or changed result receipt: '+name)
             # Every referenced scientific JSON is separately compared below.
@@ -93,6 +106,14 @@ def compare(left, right, left_runtime, right_runtime):
                 differences.append(dict(path=path, reason='keys'))
                 return
             for k in a:
+                # Remaining deadlines are not iteration budgets. Only account
+                # for stages hitting neither deadline, with matched CLI limits.
+                if (k == 'budget_seconds' and a[k] != b[k]
+                        and all(v.get('status') == 'complete' and v.get('returncode') == 0
+                                and 0 <= v.get('seconds', -1) < v[k] <= 600 for v in (a, b))):
+                    remaining_budget_differences.append(dict(
+                        path=path+'/'+k, baseline=a[k], candidate=b[k]))
+                    continue
                 visit(a[k], b[k], path+'/'+k, k)
         elif isinstance(a, list) and isinstance(b, list):
             if len(a) != len(b):
@@ -135,6 +156,7 @@ def compare(left, right, left_runtime, right_runtime):
                 differences=differences, verified_source_receipts=checked_receipts,
                 ignored_accounting_fields=sorted(ACCOUNTING), tolerance=0,
                 both_calibration_arms_required=True,
+                completed_stage_deadline_differences=remaining_budget_differences,
                 excluded_file_classes=['read_receipts (process ancestry independently validated)',
                                        'matplotlib-cache (presentation only)'])
 
@@ -148,8 +170,17 @@ def main():
     a = parser.parse_args()
     counts = [verify_runtime(a.baseline_runtime, a.baseline_pin),
               verify_runtime(a.candidate_runtime, a.candidate_pin)]
+    limits = []
+    for root in (a.baseline, a.candidate):
+        command = json.loads((root.parent/'launch.json').read_text())['command']
+        limits.append(float(command[command.index('--maximum-seconds')+1]))
+    if not 0 < limits[0] == limits[1] <= 1200:
+        raise ValueError('Matched whole-run budgets required')
     result = compare(a.baseline, a.candidate, a.baseline_runtime, a.candidate_runtime)
+    result['maximum_seconds'] = limits[0]
     result['verified_runtime_files'] = counts
+    result['baseline_runtime_manifest_sha256'] = a.baseline_pin
+    result['candidate_runtime_manifest_sha256'] = a.candidate_pin
     with a.output.open('x') as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
         stream.write('\n')

@@ -73,15 +73,25 @@ class NewFamily:
             integrate_orbit_uncertainty=integrate_orbit_uncertainty,integrate_receiver_uncertainty=integrate_receiver_uncertainty)
 
     def geometry(self,latitude,longitude):
-        """This family's fixed phase grid is independent of receiver position.
+        """Reuse geometry only for the same orbit buffers and exact phase grid.
 
-        A changed orbit history or phase grid constructs a new NewFamily, as in
-        the existing history-completion and quadrature-refinement paths.
+        Endpoint audits shallow-copy families and replace their grids/banks.
+        Retain buffer references (not recyclable IDs) and snapshot grid values
+        so copies and in-place grid edits cannot reuse stale prepared states.
+        Orbit buffers are fixed inputs; changed histories replace those arrays.
         """
-        if not hasattr(self,'_prepared_phase_geometry'):
-            self._prepared_phase_geometry=prepare_phase_geometry(
+        buffers=tuple(bank[key] for bank in (self.bank,self.modes)
+                      for key in ('time_s','position_km','velocity_km_s'))
+        grid=tuple((a.dtype.str,a.shape,a.tobytes())
+                   for a in (self.grid_times,self.grid_labels,self.phases))
+        cached=getattr(self,'_prepared_geometry_cache',None)
+        if (cached is None or grid!=cached[1]
+                or not all(a is b for a,b in zip(buffers,cached[0],strict=True))):
+            prepared=prepare_phase_geometry(
                 self.bank,self.modes,self.grid_times,self.grid_labels,self.phases)
-        return self._prepared_phase_geometry.evaluate(latitude,longitude)
+            cached=(buffers,grid,prepared)
+            self._prepared_geometry_cache=cached
+        return cached[2].evaluate(latitude,longitude)
 
     def evaluate(self,p,x,powers,old_entries,*,details=False,refine_phase=False):
         if self.j in p.labels:

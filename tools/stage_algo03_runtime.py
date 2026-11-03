@@ -22,6 +22,8 @@ BASE_REVISION = 'e67f67484c4f54316b33dfd8e12f6e68d09d1e13'
 BASE_MANIFEST_SHA256 = '629894a99b17082bc82d422e780c89d8acb143a4a7c6bdffe7c82be6f88018b4'
 REPORT = 'reports/2026_11_03_algo07_runtime_iteration007'
 QUALIFICATION = 'reports/2026_11_03_algo07_runtime_iteration008/qualification.json'
+PREPARED_REVISION = '336715a398c2e6b9295318261bb63da76aaa2726'
+CACHE_SOURCE = 'tools/predictive_new_family.py'
 
 
 def qualified_sources(repo, revision, baseline):
@@ -34,8 +36,10 @@ def qualified_sources(repo, revision, baseline):
 
     implementation = read(REPORT+'/implementation.json')
     qualification = read(QUALIFICATION)
-    policy = read(REPORT+'/receipts/saved-policy-parity.json')
-    population = read(REPORT+'/receipts/population-parity.json')
+    proof_root = str(Path(QUALIFICATION).parent)
+    cache = read(proof_root+'/cache-fix.json')
+    policy = read(proof_root+'/receipts/saved-policy-parity.json')
+    population = read(proof_root+'/receipts/population-parity.json')
     if not (qualification['passed'] and qualification['scientific_tolerance'] == 0
             and {r['case'] for r in qualification['algo03_cases']} == {'single', 'joint'}
             and {r['case'] for r in qualification['algo07_cases']} == {'single', 'two_family'}
@@ -51,7 +55,9 @@ def qualified_sources(repo, revision, baseline):
             raise ValueError('Scientific parity failed: '+row['case'])
         if (row in qualification['algo03_cases']
                 and not (parity.get('both_calibration_arms_required')
-                         and parity.get('tolerance') == 0)):
+                         and parity.get('tolerance') == 0
+                         and parity.get('candidate_runtime_manifest_sha256')
+                             == cache['runtime_manifest_sha256'])):
             raise ValueError('Paired exact ALGO03 comparison required')
         for name in row['timing_paths']:
             timing = read(name)
@@ -87,6 +93,19 @@ def snapshot_launcher(original):
                             '    verify(ROOT)\n').replace(after, '    verify(ROOT)\n'+after)
 
 
+def qualified_cache_fix(repo, revision, prepared):
+    name = QUALIFICATION.replace('qualification.json', 'cache-fix.json')
+    raw = committed(repo, revision, name)
+    proof = json.loads(raw)
+    data = committed(repo, revision, CACHE_SOURCE)
+    if not (proof['file'] == CACHE_SOURCE
+            and proof['previous_sha256'] == hashlib.sha256(prepared[CACHE_SOURCE]).hexdigest()
+            and proof['sha256'] == hashlib.sha256(data).hexdigest()
+            and proof['regression_tests_passed']):
+        raise ValueError('Cache fix differs from qualified implementation')
+    return {CACHE_SOURCE: data}, {name: raw}
+
+
 def stage(repo, revision, base, *, execute=False):
     repo, base = Path(repo).resolve(), Path(base).resolve()
     if not re.fullmatch('[0-9a-f]{40}', revision):
@@ -100,9 +119,14 @@ def stage(repo, revision, base, *, execute=False):
         p = Path(name)
         if p.is_absolute() or '..' in p.parts or digest(base/p) != sha:
             raise ValueError('Installed baseline member changed: '+name)
-    overrides, proofs = prepared_qualification(repo, revision, baseline)
+    # Preserve the prior qualification's exact bytes, then apply the separately
+    # qualified cache correction. Never relabel old evidence as testing new code.
+    overrides, proofs = prepared_qualification(repo, PREPARED_REVISION, baseline)
     hierarchical, extra = qualified_sources(repo, revision, baseline)
     overrides.update(hierarchical)
+    proofs.update(extra)
+    fixed, extra = qualified_cache_fix(repo, revision, overrides)
+    overrides.update(fixed)
     proofs.update(extra)
     overrides[KERNEL] = committed(repo, revision, KERNEL)
     if hashlib.sha256(overrides[KERNEL]).hexdigest() != CANDIDATE_KERNEL_SHA256:

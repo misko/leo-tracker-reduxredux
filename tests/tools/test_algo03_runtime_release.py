@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import algo03_runtime_release as release
 import pytest
@@ -62,13 +63,18 @@ def test_qualification_binds_source_and_rejects_changed_science(monkeypatch):
         stage.REPORT+'/implementation.json': implementation,
         stage.QUALIFICATION: dict(passed=True, scientific_tolerance=0,
                                   algo03_cases=rows[:2], algo07_cases=rows[2:]),
-        stage.REPORT+'/receipts/saved-policy-parity.json': dict(passed=True, cases=175),
-        stage.REPORT+'/receipts/population-parity.json': dict(passed=True, results=[
+        str(Path(stage.QUALIFICATION).parent)+'/cache-fix.json':
+            dict(runtime_manifest_sha256='b'*64),
+        str(Path(stage.QUALIFICATION).parent)+'/receipts/saved-policy-parity.json':
+            dict(passed=True, cases=175),
+        str(Path(stage.QUALIFICATION).parent)+'/receipts/population-parity.json':
+            dict(passed=True, results=[
             dict(passed=True, input_tensors_and_output_values_exact=True)]*16),
         'timing': dict(successful_execution=True, timed_out=False,
                        reference_after=dict(verified=True)),
     }
     documents.update({row['parity_path']: dict(passed=True, differences=[], exact_leaves=12,
+                      candidate_runtime_manifest_sha256='b'*64,
                       both_calibration_arms_required=True, tolerance=0) for row in rows})
 
     def committed(repo, revision, name):
@@ -90,3 +96,26 @@ def test_qualification_binds_source_and_rejects_changed_science(monkeypatch):
     documents['proof-1']['both_calibration_arms_required'] = False
     with pytest.raises(ValueError, match='Paired exact'):
         stage.qualified_sources('.', 'a'*40, baseline)
+    documents['proof-1']['both_calibration_arms_required'] = True
+    documents['proof-1']['candidate_runtime_manifest_sha256'] = 'c'*64
+    with pytest.raises(ValueError, match='Paired exact'):
+        stage.qualified_sources('.', 'a'*40, baseline)
+
+
+def test_cache_fix_requires_separately_bound_old_and_new_bytes(monkeypatch):
+    old, new = b'previous qualified cache', b'corrected cache'
+    proof = dict(file=stage.CACHE_SOURCE,
+                 previous_sha256=hashlib.sha256(old).hexdigest(),
+                 sha256=hashlib.sha256(new).hexdigest(), regression_tests_passed=True)
+    monkeypatch.setattr(stage, 'committed', lambda repo, revision, name:
+                        new if name == stage.CACHE_SOURCE else json.dumps(proof).encode())
+    prepared = {stage.CACHE_SOURCE: old}
+    overrides, _ = stage.qualified_cache_fix('.', 'a'*40, prepared)
+    assert overrides == {stage.CACHE_SOURCE: new}
+    for key, value in [('previous_sha256', '0'*64), ('sha256', '0'*64),
+                       ('regression_tests_passed', False)]:
+        previous = proof[key]
+        proof[key] = value
+        with pytest.raises(ValueError, match='Cache fix differs'):
+            stage.qualified_cache_fix('.', 'a'*40, prepared)
+        proof[key] = previous

@@ -68,6 +68,14 @@ gate decisions, convergence, and fallback reasons. Record numerical tolerances
 before the candidate run; investigate any difference that changes a decision.
 Passing a saved-result audit is not equivalent to rerunning numerical inference.
 
+Geometry caching must cover copied-family endpoint audits as well as integrated
+phase grids. `audit_two_predictive_families.at_phases` shallow-copies a family and
+replaces its grid and banks; a constructor-only cache assumption is invalid.
+Require an accepted joint-family replay with both endpoint audits. A worker that
+finishes faster because an audit fails and it falls back is not a speedup. Bind
+cache validity to orbit buffers and exact time/label/phase grids, and test the
+actual copy-and-restrict operation against the uncached calculation.
+
 Use bounded runs over existing recordings and isolated output directories.
 Production reads go through public storage/export ports. Preserve validation
 when new results are consumed; an optimization must still detect changed or
