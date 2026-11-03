@@ -1,4 +1,4 @@
-"""Render the published ALGO07 endpoint; never search position or identities."""
+"""Replay published ALGO07 endpoints and a bounded conditional diagnostic grid."""
 import argparse
 import fcntl
 import hashlib
@@ -26,7 +26,7 @@ def sha(value):
     return 'sha256:'+hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 
-def replay(evidence, scratch):
+def replay(evidence, scratch, *, include_grid=False):
     from algo07_science import engine as e
     from algo06_science.position import family_score
     from prototype_dsx01_continuous_position import latlon
@@ -94,8 +94,19 @@ def replay(evidence, scratch):
             tracks=len({r['component'] for r in rows.values()}),satellites=len(set(published[arm].values())),
             residual_rms_hz=float(np.sqrt(np.mean([r['residual_hz']**2 for r in rows.values()]))),
             owner_sha256=sha(published[arm]))
-    return dict(observations=evidence['observations'],tracks=evidence['tracks'],rows=all_rows,orbit_lanes=lanes,
+    packet=dict(observations=evidence['observations'],tracks=evidence['tracks'],rows=all_rows,orbit_lanes=lanes,
                 arms=summaries,objective_replay=differences,selected_model=view['selected']['model_version'])
+    if include_grid:
+        from leo.analysis.position_grid import sample_position_grid
+        grid=sample_position_grid(lambda arm,x:e.objective(d['problems'][arm][0],d,np.asarray(x)),
+            {arm:list(x) for arm,(_,x) in d['problems'].items()})
+        grid['endpoint_latlon']={a:r['endpoint_latlon'] for a,r in summaries.items()}
+        grid['region_center']=[37.906,-122.545]
+        grid['endpoint_objective_replay']=differences
+        for point in grid['points']:
+            point['latlon']=list(map(float,latlon((point['east_km'],point['north_km']))))
+        packet['position_grid']=grid
+    return packet
 
 
 def publish(source, target, job):
@@ -122,16 +133,27 @@ def _publish(source, target, job):
         while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
             acquisition=acquisition['source_job']
         title=acquisition.get('fast_acquisition',{}).get('recording_name',job['run_id'])
+        evidence=source.plot_evidence(job)
+        if evidence['terminal_receipt']['sha256']!=old['terminal_sha256']:
+            raise ValueError('Position grid source differs from the published terminal')
+        with tempfile.TemporaryDirectory(prefix='standard-grid-') as tmp:
+            packet=replay(evidence,Path(tmp),include_grid=True)
+        if packet['selected_model']!=old['selected_model'] or any(
+               packet['arms'][a]['owner_sha256']!=old['arms'][a]['owner_sha256']
+               or packet['arms'][a]['endpoint_latlon']!=old['arms'][a]['endpoint_latlon']
+               for a in ('c0','fitted_c')):
+            raise ValueError('Position grid replay changed owners or endpoints')
         pngs['position']=render_position(old['arms'],title=title,
-            selected_model=old['selected_model'],evaluation_reference=old['evaluation_reference'])
+            selected_model=old['selected_model'],evaluation_reference=old['evaluation_reference'],
+            position_grid=packet['position_grid'])
         document={k:v for k,v in old.items() if k not in ('artifacts','evaluation_reference')}
         document['arms']={a:{k:v for k,v in row.items() if k!='evaluation_error_m'}
                           for a,row in old['arms'].items()}
         document['renderer_revision']=RENDER_REVISION
-        return target.publish(job['run_id'],document,pngs)
+        return target.publish(job['run_id'],document,pngs,position_grid=packet['position_grid'])
     began=time.monotonic();evidence=source.plot_evidence(job)
     with tempfile.TemporaryDirectory(prefix='standard-algo07-') as tmp:
-        packet=replay(evidence,Path(tmp))
+        packet=replay(evidence,Path(tmp),include_grid=True)
         acquisition=job
         while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
             acquisition=acquisition['source_job']
@@ -152,10 +174,11 @@ def _publish(source, target, job):
         replay_seconds=time.monotonic()-began)
     # The live native GLRT watcher still reads the previous presentation port.
     # Publish that completion receipt too, without changing any existing bytes.
-    previous=FastStandardAnalysisStore(target.root,revision=PREVIOUS_RENDER_REVISIONS[0])
-    if previous.detail(job['run_id'])['state']!='complete':
-        previous.publish(job['run_id'],dict(document,renderer_revision=PREVIOUS_RENDER_REVISIONS[0]),pngs)
-    return target.publish(job['run_id'],document,pngs)
+    for revision in PREVIOUS_RENDER_REVISIONS:
+        previous=FastStandardAnalysisStore(target.root,revision=revision)
+        if previous.detail(job['run_id'])['state']!='complete':
+            previous.publish(job['run_id'],dict(document,renderer_revision=revision),pngs)
+    return target.publish(job['run_id'],document,pngs,position_grid=packet.get('position_grid'))
 
 
 def main():
@@ -167,7 +190,8 @@ def main():
         for job in source.completed_jobs():
             if args.run_id and job['run_id']!=args.run_id:continue
             old=target.detail(job['run_id'])
-            if old['state']=='complete' and old.get('renderer_revision')==RENDER_REVISION:continue
+            if old['state']=='complete' and (old.get('renderer_revision')==RENDER_REVISION
+                    or (not args.run_id and old.get('renderer_revision')=='diagnostic-position-v4')):continue
             try:
                 result=publish(source,target,job)
                 print(json.dumps(dict(run_id=job['run_id'],state=result['state'],figures=len(result['artifacts']))),flush=True)

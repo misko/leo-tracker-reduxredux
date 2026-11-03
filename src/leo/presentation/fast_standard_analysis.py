@@ -10,9 +10,10 @@ from matplotlib import colormaps
 
 from leo.analysis.research.retained_track_likelihood import PERIOD
 from leo.presentation.fast_scan_orbits import render_fast_scan_orbits
+from leo.presentation.regional_position import draw_position_grid
 
 
-def position_figure(arms, *, title, selected_model=None, evaluation_reference=None):
+def position_figure(arms, *, title, selected_model=None, evaluation_reference=None, position_grid=None):
     """Legacy diagnostic-map conventions over sealed ALGO07 endpoints."""
     center=(37.906,-122.545)
     def project(latlon, origin=center):
@@ -23,6 +24,16 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
             math.cos(a)*math.sin(lat)-math.sin(a)*math.cos(lat)*math.cos(lon-b))
         return distance*math.sin(bearing),distance*math.cos(bearing)
     figure=Figure(figsize=(9,8),layout='constrained');axis=figure.subplots()
+    def plot_coordinates(latlon):
+        if position_grid is None:return project(latlon)
+        # Use the solver's declared local coordinates for grid, fits and reference.
+        lat,lon=latlon
+        return ((lon-center[1])*111.32*math.cos(math.radians(center[0])),
+                (lat-center[0])*111.0)
+    if position_grid is not None:
+        draw_position_grid(figure,axis,
+            ((p['east_km'],p['north_km'],p['scores']['fitted_c']) for p in position_grid['points']),
+            score_label='Conditional fitted-c objective (lower is better)')
     model='ALGO07'
     if selected_model and not selected_model.startswith('algo07-'):
         model+=' · retained '+selected_model.split('-')[0].upper()
@@ -31,7 +42,7 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
     reference=None if evaluation_reference is None else (
         evaluation_reference['latitude_deg'],evaluation_reference['longitude_deg'])
     for arm,marker,color,label in [('fitted_c','D','red','Fitted c'),('c0','s','blue','c = 0')]:
-        row=arms[arm];east,north=project(row['endpoint_latlon'])
+        row=arms[arm];east,north=plot_coordinates(row['endpoint_latlon'])
         axis.plot(east,north,marker=marker,color=color,linestyle='none',markersize=7,
             label=f'{label} selected estimate')
         summary=f'{label}: '
@@ -43,22 +54,27 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
         if 'residual_rms_hz' in row:summary+=f"; residual RMS {row['residual_rms_hz']:.1f} Hz"
         descriptions.append(summary)
     if reference is not None:
-        axis.plot(*project(reference),'k+',markersize=11,markeredgewidth=1.7,
+        axis.plot(*plot_coordinates(reference),'k+',markersize=11,markeredgewidth=1.7,
                   label='Reference (evaluation only)')
     axis.plot(0,0,marker='+',color='gray',linestyle='none',markersize=7,
               label='Regional search centre')
-    axis.set(title='25 × 25 km regional search\n'+'\n'.join(descriptions),
+    grid_summary='' if position_grid is None else (
+        f" · {position_grid['evaluated_points']}/{position_grid['planned_points']} grid locations")
+    axis.set(title='25 × 25 km regional search'+grid_summary+'\n'+'\n'.join(descriptions),
         xlabel='East of prior centre (km)',ylabel='North of prior centre (km)',
         xlim=(-12.5,12.5),ylim=(-12.5,12.5))
     axis.set_aspect('equal');axis.grid(alpha=.2);axis.legend(fontsize=8,loc='lower left')
-    figure.supxlabel('Reference coordinates enter only this presentation stage.\n'
-        'Both calibration arms use the same observations and candidate set.',fontsize=8)
+    note='Both calibration arms use the same observations and candidate set.'
+    if position_grid is not None:
+        note=('Conditional loss: fixed satellite associations and phase linearization; nuisance model re-evaluated.\n'
+              'Matched grid for both c arms. '+('Complete grid.' if position_grid['complete'] else 'Partial grid: time budget reached.'))
+    figure.supxlabel('Reference coordinates enter only this presentation stage.\n'+note,fontsize=8)
     return figure
 
 
-def render_position(arms, *, title, selected_model=None, evaluation_reference=None):
+def render_position(arms, *, title, selected_model=None, evaluation_reference=None, position_grid=None):
     figure=position_figure(arms,title=title,selected_model=selected_model,
-                           evaluation_reference=evaluation_reference)
+                           evaluation_reference=evaluation_reference,position_grid=position_grid)
     FigureCanvasAgg(figure);stream=BytesIO();figure.savefig(stream,format='png',dpi=120)
     figure.clear();return stream.getvalue()
 
@@ -92,5 +108,6 @@ def render(packet, *, title, evaluation_reference=None):
     ax.bar(range(len(metrics)),[m[1] for m in metrics],color=[colors[m[2]] for m in metrics]);ax.set_xticks(range(len(metrics)),[f'{m[0]}\n{m[2]} · {m[3]} pts' for m in metrics],rotation=90,fontsize=5)
     ax.set(ylabel='Replayed RMS (Hz)',title=f'{title} · ALGO07 · RMS for every associated polynomial fragment');ax.grid(axis='y',alpha=.2);save('track-rms',fig)
     products['position']=render_position(packet['arms'],title=title,
-        selected_model=packet.get('selected_model'),evaluation_reference=evaluation_reference)
+        selected_model=packet.get('selected_model'),evaluation_reference=evaluation_reference,
+        position_grid=packet.get('position_grid'))
     return products

@@ -12,6 +12,20 @@ from leo.contracts.regional_position_v2 import RegionalPositionDocumentV2
 from leo.contracts.regional_position_v3 import RegionalEstimateV3, RegionalPositionDocumentV3
 
 
+def draw_position_grid(figure, axis, points, *, score_label):
+    """Shared historical grid layout; points are (east, north, score-or-None)."""
+    points=list(points)
+    scored=[p for p in points if p[2] is not None]
+    if scored:
+        plotted=axis.scatter([p[0] for p in scored],[p[1] for p in scored],
+            c=[p[2] for p in scored],s=12,cmap='viridis_r')
+        figure.colorbar(plotted,ax=axis,label=score_label)
+    failed=[p for p in points if p[2] is None]
+    if failed:
+        axis.scatter([p[0] for p in failed],[p[1] for p in failed],marker='x',
+                     c='gray',s=10,label='Unscored trial')
+
+
 def regional_position_figure(
     document: RegionalPositionDocumentV1 | RegionalPositionDocumentV2 | RegionalPositionDocumentV3,
     method: str,
@@ -30,28 +44,9 @@ def regional_position_figure(
     )
     figure.suptitle(f"{document.session_id} · {label} · diagnostic, not a position fix")
     axis.add_patch(Circle((0, 0), document.prior_radius_km, fill=False, color="gray", alpha=0.4))
-    points = [point for point in result.points if point.objective is not None]
-    if points:
-        plotted = axis.scatter(
-            [p.east_km for p in points],
-            [p.north_km for p in points],
-            c=[p.objective for p in points if p.objective is not None],
-            s=12,
-            cmap="viridis_r",
-        )
-        figure.colorbar(
-            plotted, ax=axis, label="Coarse fitted-c negative log likelihood (lower is better)"
-        )
-    failed = [point for point in result.points if point.objective is None]
-    if failed:
-        axis.scatter(
-            [p.east_km for p in failed],
-            [p.north_km for p in failed],
-            marker="x",
-            c="gray",
-            s=10,
-            label="Unscored trial",
-        )
+    draw_position_grid(figure,axis,
+        ((p.east_km,p.north_km,p.objective) for p in result.points),
+        score_label='Coarse fitted-c negative log likelihood (lower is better)')
     descriptions = []
     for arm, marker, color in zip(result.arms, ("D", "s"), ("red", "blue"), strict=True):
         selected = arm.selected

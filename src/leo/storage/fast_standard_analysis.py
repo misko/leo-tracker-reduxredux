@@ -6,11 +6,12 @@ import os
 from pathlib import Path
 
 from leo.contracts.fast_standard_analysis import validate, PLOTS
+from leo.contracts.position_grid import binding as grid_binding, validate as validate_grid
 from leo.storage.fast_scan import immutable_json, safe_id
 from leo.storage.uri import confined_path
 
-RENDER_REVISION = 'diagnostic-position-v4'
-PREVIOUS_RENDER_REVISIONS = ('orbit-layout-v3',)
+RENDER_REVISION = 'conditional-grid-v5'
+PREVIOUS_RENDER_REVISIONS = ('diagnostic-position-v4','orbit-layout-v3')
 
 def digest(data):
     return 'sha256:' + hashlib.sha256(data).hexdigest()
@@ -82,7 +83,23 @@ class FastStandardAnalysisStore:
             raise ValueError('Standard figure integrity failure')
         return data
 
-    def publish(self, run_id, document, pngs):
+    def position_grid(self, run_id):
+        for folder in self.publication_folders(run_id):
+            manifest=folder/'manifest.json'
+            if not manifest.exists():continue
+            publication=validate(json.loads(manifest.read_text()))
+            path=folder/'position-grid.json'
+            if not path.exists():return None
+            envelope=json.loads(path.read_text())
+            if not isinstance(envelope,dict) or 'document' not in envelope or 'sha256' not in envelope:
+                raise ValueError('Malformed position grid envelope')
+            value=envelope['document']
+            raw=json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+            if digest(raw)!=envelope['sha256']:raise ValueError('Position grid integrity failure')
+            return validate_grid(value,publication)
+        return None
+
+    def publish(self, run_id, document, pngs, *, position_grid=None):
         if document.get('run_id')!=run_id:
             raise ValueError('Standard publication belongs to another scan')
         if set(pngs) != set(PLOTS):
@@ -103,5 +120,9 @@ class FastStandardAnalysisStore:
                 raise ValueError('Figure digest collision')
             entries.append(dict(name=name,sha256=sha,byte_count=len(data)))
         value=validate(dict(document,artifacts=entries))
+        if position_grid is not None:
+            grid=validate_grid(dict(position_grid,binding=grid_binding(value)),value)
+            raw=json.dumps(grid,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+            immutable_json(folder/'position-grid.json',dict(document=grid,sha256=digest(raw)))
         immutable_json(folder/'manifest.json',value)
         return value

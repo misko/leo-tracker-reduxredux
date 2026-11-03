@@ -67,3 +67,22 @@ def test_position_without_evaluation_reference_does_not_invent_ground_truth():
     axis=figure.axes[0]
     assert all(line.get_label()!='Reference (evaluation only)' for line in axis.lines)
     assert axis.get_title().count('evaluation reference unavailable')==2
+
+
+def test_algo07_grid_reuses_historical_colored_grid_renderer(monkeypatch):
+    from leo.presentation import fast_standard_analysis as figures
+    from leo.presentation.regional_position import draw_position_grid
+    calls=[]
+    def capture(figure,axis,points,**kwargs):
+        points=list(points);calls.append(points)
+        return draw_position_grid(figure,axis,points,**kwargs)
+    monkeypatch.setattr(figures,'draw_position_grid',capture)
+    arms={a:dict(endpoint_latlon=[37.9,-122.5]) for a in ('c0','fitted_c')}
+    grid=dict(points=[dict(east_km=0.,north_km=0.,latlon=[37.906,-122.545],scores=dict(c0=11.,fitted_c=10.)),
+                      dict(east_km=4.,north_km=-1.,latlon=[37.9,-122.5],scores=dict(c0=12.,fitted_c=14.))],
+              evaluated_points=2,planned_points=2,complete=True)
+    figure=figures.position_figure(arms,title='Grid',position_grid=grid)
+    assert len(calls)==1 and [p[2] for p in calls[0]]==[10.,14.]
+    assert len(figure.axes)==2
+    assert 'Conditional fitted-c objective' in figure.axes[1].get_ylabel()
+    assert 'fixed satellite associations' in figure._supxlabel.get_text()

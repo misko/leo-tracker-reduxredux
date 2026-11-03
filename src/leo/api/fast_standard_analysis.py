@@ -19,4 +19,13 @@ def standard_analysis_router(reader):
             return Response(data,media_type='image/png',headers={'Cache-Control':'public, max-age=31536000, immutable'} if sha256 else {'Cache-Control':'no-cache'})
         except (OSError,ValueError) as error:
             raise HTTPException(404,'Standard figure not found') from error
+
+    @router.get('/{run_id}/standard-analysis/position-grid.json')
+    def position_grid(run_id: str):
+        try:
+            grid=reader.position_grid(run_id)
+            if grid is None:raise FileNotFoundError('Position grid unavailable')
+            return grid
+        except (OSError,ValueError) as error:
+            raise HTTPException(404,'Standard position grid not found') from error
     return router

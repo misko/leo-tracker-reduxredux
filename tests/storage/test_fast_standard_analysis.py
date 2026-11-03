@@ -97,3 +97,35 @@ def test_previous_reader_can_observe_completion_without_seeing_new_layout(tmp_pa
     previous.publish('run',d,pngs)
     assert previous.detail('run')['state']=='complete'
     assert previous.artifact('run','position')==pngs['position']
+
+
+def test_grid_sidecar_is_bound_to_published_model_owners_and_png(tmp_path):
+    import json
+    store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
+    d.update(terminal_sha256='sha256:terminal',input_sha256='sha256:input')
+    for arm in d['arms'].values():arm['owner_sha256']='sha256:owners'
+    grid=dict(schema_version=1,kind='conditional-position-grid',matched_c_grid=True,
+        conditioning='published satellite ownership and phase linearization fixed',
+        endpoint_latlon={a:v['endpoint_latlon'] for a,v in d['arms'].items()},box_width_km=25.,
+        evaluated_points=1,planned_points=1,complete=True,
+        points=[dict(east_km=0.,north_km=0.,latlon=[37.906,-122.545],scores=dict(c0=10.,fitted_c=11.))])
+    result=store.publish('run',d,pngs,position_grid=grid)
+    saved=store.position_grid('run')
+    assert saved['binding']['terminal_sha256']==d['terminal_sha256']
+    assert saved['binding']['position_png_sha256']==result['artifacts'][-1]['sha256']
+    path=store.folder('run')/'position-grid.json'
+    envelope=json.loads(path.read_text());envelope['document']['points'][0]['scores']['c0']=0.
+    path.write_text(json.dumps(envelope))
+    with pytest.raises(ValueError,match='integrity'):store.position_grid('run')
+
+
+def test_grid_from_different_endpoints_cannot_be_published(tmp_path):
+    store=FastStandardAnalysisStore(tmp_path);d,pngs=publication()
+    d.update(terminal_sha256='sha256:terminal',input_sha256='sha256:input')
+    for arm in d['arms'].values():arm['owner_sha256']='sha256:owners'
+    grid=dict(schema_version=1,kind='conditional-position-grid',matched_c_grid=True,
+        conditioning='published satellite ownership and phase linearization fixed',
+        endpoint_latlon={a:[0.,0.] for a in d['arms']})
+    with pytest.raises(ValueError,match='different published endpoints'):
+        store.publish('run',d,pngs,position_grid=grid)
+    assert store.detail('run')['state']=='pending'
