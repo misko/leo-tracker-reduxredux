@@ -8,8 +8,9 @@ iteration 019's FP32 screen, which improved complete detector time 1.16–1.17×
 These are separate paired experiments, not a direct timing comparison between
 the two research candidates.
 
-**Research only: not deployed.** The full-recording replay is running at this
-checkpoint. The 10× recorded-data-to-position objective remains unmet.
+**Research only: not deployed.** The full-recording replay has now passed exact
+comparison of all 108,272 hypotheses. The 10× recorded-data-to-position objective
+remains unmet.
 
 | Fixture, 16 windows | Deployed detector | Integer-screened detector | Ratio | Coarse-search component ratio |
 | --- | ---: | ---: | ---: | ---: |
@@ -112,9 +113,12 @@ code. [Native build](receipts/native-build.json),
 
 ## Remaining qualification and next measured direction
 
-A 16-worker DS27-0004 full replay is bounded to 1,800 seconds and must compare
-all 6,772 windows and all hypotheses against the frozen FP64 reference. Its
-saved baseline will establish parity only, not a new full-scan timing ratio.
+A 16-worker DS27-0004 full replay completed within its 1,800-second bound.
+[Exact comparison](receipts/full-parity.json) covers all 6,772 windows, 13,534
+receiver results and 108,272 hypotheses, with both inventories verified and no
+differences. Its [635.962-second elapsed time](receipts/full-timing.json) was
+measured under concurrent shared-host work; the reused saved baseline establishes
+parity only, not a new full-scan timing ratio.
 Fresh prepared downstream parity from iteration 019 remains separate evidence;
 it must not be described as graph construction from this candidate's outputs.
 Production packaging, installed-canary checks and guarded activation have not
