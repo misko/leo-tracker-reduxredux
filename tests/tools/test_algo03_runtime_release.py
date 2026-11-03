@@ -59,12 +59,16 @@ def test_qualification_binds_source_and_rejects_changed_science(monkeypatch):
                           baseline_files_sha256=stage.HIERARCHICAL_BASE)
     rows = [dict(case=name, parity_path='proof-'+str(i), timing_paths=['timing'])
             for i, name in enumerate(('single', 'joint', 'single', 'two_family'))]
+    runtime = dict(files_sha256={stage.KERNEL: stage.CANDIDATE_KERNEL_SHA256})
+    pin = hashlib.sha256(json.dumps(runtime).encode()).hexdigest()
     documents = {
         stage.REPORT+'/implementation.json': implementation,
-        stage.QUALIFICATION: dict(passed=True, scientific_tolerance=0,
+        stage.QUALIFICATION: dict(passed=True, exact_decisions_and_objectives=True,
                                   algo03_cases=rows[:2], algo07_cases=rows[2:]),
         str(Path(stage.QUALIFICATION).parent)+'/cache-fix.json':
-            dict(runtime_manifest_sha256='b'*64),
+            dict(runtime_manifest_sha256=pin),
+        str(Path(stage.QUALIFICATION).parent)+'/receipts/candidate-runtime-manifest.json':
+            runtime,
         str(Path(stage.QUALIFICATION).parent)+'/receipts/saved-policy-parity.json':
             dict(passed=True, cases=175),
         str(Path(stage.QUALIFICATION).parent)+'/receipts/population-parity.json':
@@ -74,14 +78,14 @@ def test_qualification_binds_source_and_rejects_changed_science(monkeypatch):
                        reference_after=dict(verified=True)),
     }
     documents.update({row['parity_path']: dict(passed=True, differences=[], exact_leaves=12,
-                      candidate_runtime_manifest_sha256='b'*64,
+                      candidate_runtime_manifest_sha256=pin,
                       both_calibration_arms_required=True, tolerance=0) for row in rows})
 
     def committed(repo, revision, name):
         return sources[name] if name in sources else json.dumps(documents[name]).encode()
 
     monkeypatch.setattr(stage, 'committed', committed)
-    baseline = dict(files_sha256=stage.HIERARCHICAL_BASE)
+    baseline = dict(files_sha256={**stage.HIERARCHICAL_BASE, stage.KERNEL: 'a'*64})
     actual, _ = stage.qualified_sources('.', 'a'*40, baseline)
     assert actual == sources
     first = next(iter(sources))
@@ -99,6 +103,10 @@ def test_qualification_binds_source_and_rejects_changed_science(monkeypatch):
     documents['proof-1']['both_calibration_arms_required'] = True
     documents['proof-1']['candidate_runtime_manifest_sha256'] = 'c'*64
     with pytest.raises(ValueError, match='Paired exact'):
+        stage.qualified_sources('.', 'a'*40, baseline)
+    documents['proof-1']['candidate_runtime_manifest_sha256'] = pin
+    runtime['files_sha256'][stage.KERNEL] = 'a'*64
+    with pytest.raises(ValueError, match='Contraction kernel must match'):
         stage.qualified_sources('.', 'a'*40, baseline)
 
 

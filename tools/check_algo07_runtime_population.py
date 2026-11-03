@@ -40,6 +40,8 @@ def main():
     parser.add_argument('--reference-label', default='calibration-cache1')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--workers', type=int, choices=(1, 2, 3, 4), default=2)
+    parser.add_argument('--reference-kernel', action='store_true',
+                        help='Use each snapshot\'s frozen original contraction kernel')
     args = parser.parse_args()
     for name in (args.output_label, args.reference_label):
         if not re.fullmatch('[a-zA-Z0-9_-]+', name):
@@ -61,7 +63,8 @@ def main():
                 subprocess.run([sys.executable, '-B',
                                 str(args.repo/'tools/profile_algo07_numerics.py'),
                                 'run', '--snapshot', str(root), '--output', str(output),
-                                '--mode', 'capture', '--no-cprofile', '--timeout', '300'],
+                                '--mode', 'capture', '--no-cprofile', '--timeout', '300',
+                                *(['--reference'] if args.reference_kernel else [])],
                                cwd=args.repo, env=environment, stdout=stream,
                                stderr=subprocess.STDOUT, timeout=400, check=True)
             checks = compare_results(root/args.reference_label/'results', output/'results')
@@ -76,6 +79,7 @@ def main():
             results.append(result)
             print(json.dumps(result), flush=True)
     report = dict(passed=all(r['passed'] for r in results), results=results,
+                  reference_kernel=args.reference_kernel,
                   workers=args.workers, scope='Exact paired incumbent reconstruction and '
                   'kernel tensors; not full association search or optimizer reruns')
     with args.output.open('x') as stream:

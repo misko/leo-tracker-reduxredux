@@ -1,0 +1,6 @@
+# Render only after qualification and an installed canary. Retain the original
+# ExecStart, deployment cutoff, worker budget, service account and resource limits.
+[Service]
+WorkingDirectory=@RUNTIME_ROOT@
+Environment=PYTHONPATH=@RUNTIME_ROOT@/src:@RUNTIME_ROOT@/tools
+Environment=LEO_ALGO03_RUNTIME_MANIFEST_SHA256=@RUNTIME_SHA256@

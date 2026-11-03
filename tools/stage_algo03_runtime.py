@@ -10,6 +10,7 @@ from pathlib import Path
 
 from algo03_runtime_prototype import HIERARCHICAL_BASE
 from algo03_runtime_release import ENVIRONMENT, KIND, digest, verify
+from assess_algo03_kernel_contract import assess
 from stage_algo07_runtime import (
     CANDIDATE_KERNEL_SHA256,
     KERNEL,
@@ -21,7 +22,7 @@ from stage_algo07_runtime import (
 BASE_REVISION = 'e67f67484c4f54316b33dfd8e12f6e68d09d1e13'
 BASE_MANIFEST_SHA256 = '629894a99b17082bc82d422e780c89d8acb143a4a7c6bdffe7c82be6f88018b4'
 REPORT = 'reports/2026_11_03_algo07_runtime_iteration007'
-QUALIFICATION = 'reports/2026_11_03_algo07_runtime_iteration008/qualification.json'
+QUALIFICATION = 'reports/2026_11_03_algo07_runtime_iteration009/qualification.json'
 PREPARED_REVISION = '336715a398c2e6b9295318261bb63da76aaa2726'
 CACHE_SOURCE = 'tools/predictive_new_family.py'
 
@@ -38,9 +39,14 @@ def qualified_sources(repo, revision, baseline):
     qualification = read(QUALIFICATION)
     proof_root = str(Path(QUALIFICATION).parent)
     cache = read(proof_root+'/cache-fix.json')
+    runtime_path = proof_root+'/receipts/candidate-runtime-manifest.json'
+    runtime = read(runtime_path)
+    if not (hashlib.sha256(proofs[runtime_path]).hexdigest() == cache['runtime_manifest_sha256']
+            and runtime['files_sha256'][KERNEL] == CANDIDATE_KERNEL_SHA256):
+        raise ValueError('Contraction kernel must match qualified runtime')
     policy = read(proof_root+'/receipts/saved-policy-parity.json')
     population = read(proof_root+'/receipts/population-parity.json')
-    if not (qualification['passed'] and qualification['scientific_tolerance'] == 0
+    if not (qualification['passed'] and qualification['exact_decisions_and_objectives']
             and {r['case'] for r in qualification['algo03_cases']} == {'single', 'joint'}
             and {r['case'] for r in qualification['algo07_cases']} == {'single', 'two_family'}
             and policy['passed'] and policy['cases'] == 175
@@ -50,12 +56,21 @@ def qualified_sources(repo, revision, baseline):
         raise ValueError('Incomplete ALGO03 runtime qualification')
     for row in qualification['algo03_cases']+qualification['algo07_cases']:
         parity = read(row['parity_path'])
+        if parity.get('tolerance') == 'predeclared_kernel_diagnostics_only':
+            strict = read(row['strict_parity_path'])
+            read(row['kernel_protocol_path'])
+            expected = assess(strict, proofs[row['kernel_protocol_path']])
+            expected['strict_receipt_sha256'] = hashlib.sha256(
+                proofs[row['strict_parity_path']]).hexdigest()
+            if parity != expected:
+                raise ValueError('Kernel contract assessment does not reproduce')
         if not (parity['passed'] and not parity['differences']
                 and parity['exact_leaves'] > 0 and parity.get('differing_floats', 0) == 0):
             raise ValueError('Scientific parity failed: '+row['case'])
         if (row in qualification['algo03_cases']
                 and not (parity.get('both_calibration_arms_required')
-                         and parity.get('tolerance') == 0
+                         and parity.get('tolerance') in
+                             (0, 'predeclared_kernel_diagnostics_only')
                          and parity.get('candidate_runtime_manifest_sha256')
                              == cache['runtime_manifest_sha256'])):
             raise ValueError('Paired exact ALGO03 comparison required')
@@ -128,6 +143,11 @@ def stage(repo, revision, base, *, execute=False):
     fixed, extra = qualified_cache_fix(repo, revision, overrides)
     overrides.update(fixed)
     proofs.update(extra)
+    runtime = json.loads(proofs[str(Path(QUALIFICATION).parent)
+                                +'/receipts/candidate-runtime-manifest.json'])
+    for name, data in overrides.items():
+        if hashlib.sha256(data).hexdigest() != runtime['files_sha256'].get(name):
+            raise ValueError('Staged numerical source differs from qualified runtime: '+name)
     overrides[KERNEL] = committed(repo, revision, KERNEL)
     if hashlib.sha256(overrides[KERNEL]).hexdigest() != CANDIDATE_KERNEL_SHA256:
         raise ValueError('Unqualified phase-pair contraction kernel')

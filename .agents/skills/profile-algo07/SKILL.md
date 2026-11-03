@@ -67,6 +67,13 @@ native owner maps, selected satellites, both endpoints and frequency objectives,
 gate decisions, convergence, and fallback reasons. Record numerical tolerances
 before the candidate run; investigate any difference that changes a decision.
 Passing a saved-result audit is not equivalent to rerunning numerical inference.
+Read the registered protocol before interpreting an exact-comparison failure.
+Iteration002 explicitly permits bounded contraction roundoff in phase marginals
+and orbital MAP coefficients. Preserve the strict receipt and assess those fields
+separately with `assess_algo03_kernel_contract.py`; do not describe previously
+allowed diagnostic roundoff as a localization regression or silently weaken a
+decision/owner/position check. Compare original-kernel ablations against the
+original-kernel population reference, not the optimized reference.
 
 Geometry caching must cover copied-family endpoint audits as well as integrated
 phase grids. `audit_two_predictive_families.at_phases` shallow-copies a family and
