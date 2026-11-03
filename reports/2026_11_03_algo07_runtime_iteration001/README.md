@@ -69,21 +69,61 @@ inference run over DS26/27/28**. This iteration changes scheduling/discovery
 only. Future numerical optimizations must additionally rerun the fixed scientific
 benchmark and compare full native owner maps, endpoints, objectives and gates.
 
-## Deployment design
+## Production rollout
 
 The optional watcher `--worker-root` argument keeps each numerical worker on
 its existing qualified release. It selects both that release's script and its
 `PYTHONPATH`; otherwise a watcher overlay could accidentally redirect scientific
 imports. Default launch behavior remains compatible with the existing CLI.
 
-Rollout updates only idle analysis watchers, preserving active numerical jobs,
-capture services, and their cadence. The frozen numerical releases and persisted
-result namespaces are retained. Live rollout/CPU receipts will be recorded here
-after activation. The old service configuration remains the rollback target.
+The adapter release `7999eaa039facc2bfeba7d001f7369b67f9ac42f` was installed
+under `/opt/leo-fast-graph-runtime/7999eaa039facc2bfeba7d001f7369b67f9ac42f`.
+All four installed CLIs passed a smoke test as the `leo` service account. The
+ALGO04, ALGO05 and ALGO07 watchers were updated at 15:36 UTC; ALGO06 was deferred
+while its numerical worker ran, then updated at 15:40 UTC after the worker
+finished. All four services are active. Capture services and cadence were not
+changed. See the [rollout plan](rollout-plan.json), [first activation](activation-1.json),
+and [deferred activation](activation-2.json).
+
+The original numerical scripts' hashes remained unchanged. Child commands use
+each service's original release root and explicitly reset `PYTHONPATH` to that
+release. The old persisted result namespaces remain the same. Rollback consists
+of removing only the `90-runtime-discovery.conf` drop-in recorded in the plan,
+reloading systemd, and restarting that watcher when it has no numerical child.
+
+A naturally arriving ALGO07 job, `6a6049f44b4f7971c47376d8610094a6`, completed
+under the new watcher with no failure and a verified read audit. It preserved
+the exact ALGO06 fallback position and 3,251 owned observations in each c arm.
+No future TLE was used. This exercises new-job consumption and publication; it
+is not a new accepted reassociation or a dataset-level accuracy experiment.
+The [live receipt](live-verification.json) includes the validated terminal hash
+and service commands.
+
+Before activation, idle ALGO05/06/07 watchers each used approximately one CPU
+core over a ten-second observation. In the first post-activation observation,
+the idle ALGO05 watcher used 0.287 cores versus 0.999 before, about 71% less.
+ALGO04 and ALGO07 had numerical children during that interval, and ALGO06 had
+not yet been updated, so their parent CPU figures are not comparable idle
+measurements. [Before](live-cpu-before.json) and
+[after](live-cpu-after-first-activation.json) receipts retain these distinctions.
+
+A second 20-second observation after all four activations found idle ALGO05
+and ALGO06 watcher usage of 0.250 and 0.253 cores respectively, approximately
+75% below their earlier idle samples. ALGO04 used 0.176 cores without a child,
+but lacks a matched earlier idle sample. ALGO07 had a numerical child throughout,
+so its low parent usage is again not an idle comparison. The
+[complete sample](live-cpu-after-all-activation.json) records child presence
+alongside CPU usage. These short live samples show lower overhead, not a
+controlled estimate of full pipeline throughput.
+
+93 targeted tests passed across profiling, storage, application lifecycle,
+watcher launch, and saved-policy comparison. One legacy integration test initially
+lacked its immutable manifest in the sparse checkout; restoring the unchanged
+tracked manifest allowed it to pass. No fixture was edited to change a result.
 
 ## Next measurement
 
-Measure idle CPU and queue discovery latency after rollout, then profile the
+Continue measuring idle CPU and queue discovery latency, then profile the
 expensive two-family phase integration within numerical optimization. The
 remaining overall speedup must be demonstrated from recorded data to published
 position, separately from discovery, queueing and acquisition duration.
