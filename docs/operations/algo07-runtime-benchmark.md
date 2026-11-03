@@ -103,6 +103,20 @@ execution order and requires exact equality with recorded outputs. It measures
 the likelihood kernel, not localization accuracy or worker speed. Retain the
 capture hashes, implementation hashes, all timings and failed comparisons.
 
+For the initial ALGO02 localization stage, obtain and freeze an analysis export
+through `FastGraphPositionStore.export_analysis`, then use the installed ALGO02
+Python with `tools/profile_algo02_prepared.py snapshot --export EXPORT --runtime
+INSTALLED_RELEASE --output SNAPSHOT` and `run --snapshot SNAPSHOT --output TRIAL`.
+The snapshot binds the entire installed release and copies only 17 prepared
+input files. Fitted answers, prior nominations and optimizer histories remain
+outside the inference workspace. The replay preserves production's discovery
+child and initial/ALGO02 fits in one parent, followed by family comparison. The
+total bound is 1,200 seconds. A read audit accounts for both parents and their
+children. Profiles cover each named parent, not its discovery child; retain
+that distinction when attributing time. This starts after graph construction and
+causal preparation and stops before ALGO03. Compare full scientific results and
+both calibration arms separately before claiming accuracy parity.
+
 Prepared numerical replays use `tools/profile_algo07_numerics.py`:
 
 ```bash

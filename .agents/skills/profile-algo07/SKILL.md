@@ -33,6 +33,15 @@ end-to-end speedup. Separate active computation, discovery/validation overhead,
 queue delay, and acquisition duration. Attribute child-worker time separately:
 a parent cProfile file does not profile its children.
 
+`tools/profile_algo02_prepared.py` profiles fresh ALGO02 fitting and family
+comparison from a frozen public `FastGraphPositionStore.export_analysis` export.
+Its allowlist copies prepared graph observations, noise and causal inputs; it
+excludes every prior fitted answer and family nomination. It uses the installed
+runtime, production process structure and read guard. Match the installed Python
+when launching it. This replay does not reconstruct graph tracklets from GLRT,
+refresh the catalogue, or run ALGO03–07. Inspect both-arm scientific parity
+separately; a complete execution is not an accuracy-comparison result.
+
 Use `algo07_profile sample --pid PID --research-root /srv/bulk/leo/research/CASE
 --output OUTPUT --duration 20 --sampler /absolute/path/to/py-spy` to sample a
 live private child without code injection. Inspect the target command first.

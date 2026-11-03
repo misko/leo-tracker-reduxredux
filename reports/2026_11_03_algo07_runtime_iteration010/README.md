@@ -59,6 +59,21 @@ stage timings, not a new matched run. Exporting the analysis does not rerun
 localization. Its stored results must remain reference evidence, never feed
 the optimizer as answers.
 
+The new `tools/profile_algo02_prepared.py` adapter now isolates **17 prepared
+input files** from this export and freezes them with the installed ALGO02
+runtime: **1,793 bound files** in total. The installed numerical runtime is
+`1b63f5908785fc940446086aa4ef5de1a1539003`, identified from the live ALGO02 watcher.
+The adapter preserves production's discovery subprocess, initial/ALGO02 fits in
+one parent, and subsequent family comparison. It records per-stage timing,
+optional cProfile output, and complete read ancestry under a 1,200-second total
+bound. It does not rerun graph construction or ALGO03–07.
+
+Three additional tests verify exclusion of archived fitted answers, rejection of
+changed prepared inputs, and accounting for every stage and child in the read
+audit. All **14 combined tool tests** pass. Snapshot creation has completed;
+the prepared numerical replay has not yet run. It will follow the native timing
+trials to avoid adding another research computation during those measurements.
+
 ## Remaining qualification
 
 1. Finish the live sixteen-worker baseline; retain any timeout or failure.
