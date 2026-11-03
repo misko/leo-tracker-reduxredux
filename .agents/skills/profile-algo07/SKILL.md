@@ -41,6 +41,13 @@ runtime, production process structure and read guard. Match the installed Python
 when launching it. This replay does not reconstruct graph tracklets from GLRT,
 refresh the catalogue, or run ALGO03–07. Inspect both-arm scientific parity
 separately; a complete execution is not an accuracy-comparison result.
+Use its `compare-pair` subcommand for two new prepared ALGO02 trials. It verifies
+each trial against the frozen public scientific reference and compares all six
+output files between trials. It withholds timing ratios for mismatched Python,
+host, thread settings, scripts or profiling. Profiled runs locate bottlenecks;
+use separate unprofiled sequential trials for deployment timing claims and record
+any external sampling. ALGO02 can have older helper APIs than ALGO03: preserve
+its installed source, applying only explicitly qualified numerical changes.
 
 Use `algo07_profile sample --pid PID --research-root /srv/bulk/leo/research/CASE
 --output OUTPUT --duration 20 --sampler /absolute/path/to/py-spy` to sample a

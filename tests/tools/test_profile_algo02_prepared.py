@@ -112,3 +112,22 @@ def test_extra_scientific_output_cannot_be_ignored(tmp_path):
     write(right / "SCAN/extra-fit.json", dict(position=[0., 0.]))
     with pytest.raises(ValueError, match="inventory"):
         replay.compare_results(left, right)
+
+
+@pytest.mark.parametrize("mismatch", [None, "cprofile_enabled", "thread_settings", "executable"])
+def test_pair_does_not_claim_speedup_for_unmatched_measurements(tmp_path, mismatch):
+    roots = [tmp_path / "baseline", tmp_path / "candidate"]
+    for side, root in enumerate(roots):
+        for stage in ("algo02", "family"):
+            launch = dict(executable="python", python="3.12", host="host", cpu_count=24,
+                          thread_settings={"OMP_NUM_THREADS": "1"},
+                          cprofile_enabled=False, script_sha256="script")
+            if side and mismatch:
+                launch[mismatch] = "different"
+            write(root / stage / "launch.json", launch)
+            write(root / stage / "timing.json", dict(wall_seconds=10. if side else 20.,
+                  user_cpu_seconds=8., system_cpu_seconds=1.))
+    result = replay.paired_timing(*roots, True)
+    assert result["matched_timing_configuration"] == (mismatch is None)
+    assert result["wall_speedup"] == (2. if mismatch is None else None)
+    assert replay.paired_timing(*roots, False)["wall_speedup"] is None

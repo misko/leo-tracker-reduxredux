@@ -212,10 +212,10 @@ def compare_results(reference, candidate):
                 normalized_provenance="Two checked result hash links and discovery input paths")
 
 
-def compare(args):
+def verified_trial(snapshot, trial):
     from compare_full_glrt_replays import argument
 
-    snapshot, trial = args.snapshot.resolve(strict=True), args.trial.resolve(strict=True)
+    snapshot, trial = snapshot.resolve(strict=True), trial.resolve(strict=True)
     if not trial.is_relative_to(snapshot) or trial == snapshot:
         raise ValueError("Trial must belong to this prepared snapshot")
     if not PROFILE.verify(snapshot / "frozen.json")["verified"]:
@@ -249,9 +249,63 @@ def compare(args):
     comparison = compare_results(export / "inference", trial / "inference")
     comparison.update(read_audit=checked, frozen_inputs_verified=True,
                       compared_with="public historical terminal; not a paired new timing trial")
+    return comparison
+
+
+def compare(args):
+    comparison = verified_trial(args.snapshot, args.trial)
     PROFILE.write_new(PROFILE.destination(args.output), comparison)
     print(json.dumps({k: v for k, v in comparison.items() if k != "file_sha256"}))
     if not comparison["exact"]:
+        raise SystemExit(1)
+
+
+def paired_timing(baseline, candidate, exact):
+    """Withhold speed claims for mismatched profiling, runtime or thread settings."""
+    rows = []
+    for stage in ("algo02", "family"):
+        a, b = (read(p / stage / "launch.json") for p in (baseline, candidate))
+        ta, tb = (read(p / stage / "timing.json") for p in (baseline, candidate))
+        matched = all(a[k] == b[k] for k in ("executable", "python", "host", "cpu_count",
+                       "thread_settings", "cprofile_enabled", "script_sha256"))
+        rows.append(dict(stage=stage, matched_configuration=matched,
+                         baseline_seconds=ta["wall_seconds"],
+                         candidate_seconds=tb["wall_seconds"],
+                         baseline_cpu_seconds=ta["user_cpu_seconds"]+ta["system_cpu_seconds"],
+                         candidate_cpu_seconds=tb["user_cpu_seconds"]+tb["system_cpu_seconds"],
+                         baseline_launch=a, candidate_launch=b))
+    matched = all(r["matched_configuration"] for r in rows)
+    a, b = (sum(r[k] for r in rows) for k in ("baseline_seconds", "candidate_seconds"))
+    return dict(stages=rows, matched_timing_configuration=matched,
+                baseline_stage_seconds=a, candidate_stage_seconds=b,
+                wall_speedup=a/b if matched and exact else None,
+                cprofile_enabled=rows[0]["baseline_launch"]["cprofile_enabled"],
+                scope="Prepared ALGO02 discovery, fitting and family comparison only")
+
+
+def compare_pair(args):
+    trials = [p.resolve(strict=True) for p in (args.baseline, args.candidate)]
+    if trials[0] == trials[1]:
+        raise ValueError("Independent trial directories required")
+    snapshots = [p.resolve(strict=True) for p in (args.baseline_snapshot, args.candidate_snapshot)]
+    sources = [read(p / "source.json") for p in snapshots]
+    for key in ("job_id", "native_input_sha256", "source_export_manifest_sha256"):
+        if sources[0][key] != sources[1][key]:
+            raise ValueError("Paired trials must share the same public input and reference")
+    for name in INPUTS:
+        hashes = [PROFILE.digest(s / "input" / name) for s in snapshots]
+        if hashes[0] != hashes[1]:
+            raise ValueError("Paired prepared inputs differ: " + name)
+    audits = [verified_trial(s, t) for s, t in zip(snapshots, trials, strict=True)]
+    parity = compare_results(trials[0] / "inference", trials[1] / "inference")
+    exact = parity["exact"] and all(a["exact"] for a in audits)
+    result = dict(exact=exact, parity=parity, reference_audits=audits,
+                  baseline=str(trials[0]), candidate=str(trials[1]),
+                  **paired_timing(*trials, exact))
+    PROFILE.write_new(PROFILE.destination(args.output), result)
+    print(json.dumps({k: v for k, v in result.items() if k not in (
+        "parity", "reference_audits", "stages")}))
+    if not exact:
         raise SystemExit(1)
 
 
@@ -268,10 +322,14 @@ def main():
     p = commands.add_parser("compare")
     p.add_argument("--snapshot", type=Path, required=True)
     p.add_argument("--trial", type=Path, required=True)
+    p = commands.add_parser("compare-pair")
+    for name in ("baseline", "candidate", "baseline-snapshot", "candidate-snapshot"):
+        p.add_argument("--" + name, type=Path, required=True)
     for p in commands.choices.values():
         p.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    {"snapshot": snapshot, "run": run, "compare": compare}[args.command](args)
+    {"snapshot": snapshot, "run": run, "compare": compare,
+     "compare-pair": compare_pair}[args.command](args)
 
 
 if __name__ == "__main__":

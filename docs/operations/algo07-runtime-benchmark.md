@@ -121,6 +121,13 @@ subcommand checks all six generated scientific JSON files exactly against the
 public reference. It validates both arms, read ancestry, unchanged inputs and
 source commands; it rejects extra scientific outputs. Only top-level timing,
 verified result-hash links and validated discovery input paths are normalized.
+For matched new measurements, `compare-pair --baseline-snapshot BASE_SNAPSHOT
+--baseline BASE_TRIAL --candidate-snapshot CANDIDATE_SNAPSHOT --candidate CANDIDATE_TRIAL
+--output RECEIPT` verifies both trials against that public reference and one
+another. All 17 prepared inputs must be identical. Timing ratios are withheld
+when Python, host, threads, entry script or profiling differ. Use unprofiled
+sequential trials to measure performance separately from the diagnostic profiles;
+retain external sampling and shared-host contention as measurement limitations.
 
 Prepared numerical replays use `tools/profile_algo07_numerics.py`:
 
