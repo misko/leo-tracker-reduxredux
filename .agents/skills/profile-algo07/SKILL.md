@@ -155,3 +155,10 @@ first-pass hashing and repeated-pass hashing separately. Metadata-based digest
 reuse is discovery-only: consumed inputs must retain fresh full hashing, job
 statuses must remain live, and tests must cover same-size replacement with
 restored mtime, concurrent edits, stale metadata and eviction.
+For installation, `stage_algo02_runtime.py stage-discovery` preserves the qualified
+numerical package and replaces only the tested storage module. Run the discovery
+profiler with `--candidate-runtime` and `--candidate-pin` against the frozen full
+inventory, then supply that installed canary to the guarded ALGO02 activation.
+The activation binds fixture, storage, package and plan identities and backs up
+an existing override. This discovery qualification does not replace numerical
+replays when scientific code changes.

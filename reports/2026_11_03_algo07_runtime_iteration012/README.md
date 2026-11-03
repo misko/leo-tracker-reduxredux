@@ -3,8 +3,8 @@
 Repeated discovery over **all 897 exported tracking inputs** falls from a median
 **6.454 to 0.934 seconds (6.91×)**. Every job identity, input hash, ordering and
 status matches the original implementation. This is a watcher/discovery
-optimization, not a numerical or end-to-end ALGO07 speedup. It is not deployed
-at this checkpoint.
+optimization, not a numerical or end-to-end ALGO07 speedup. It was deployed on
+November 3 at 21:02 UTC after the installed full-inventory comparison passed.
 
 ![Cold and repeated discovery](discovery_runtime.png)
 
@@ -67,7 +67,7 @@ arms**, with all 707 frozen files intact. [Policy audit](receipts/saved-policy.j
 This saved-policy check is not fresh localization on all those recordings; this
 iteration does not change numerical inference.
 
-## Remaining qualification
+## Installed qualification and deployment
 
 Packaging tools now support `stage-discovery`, which preserves the installed
 numerical modules and pins the tested storage module and full-inventory evidence.
@@ -75,10 +75,24 @@ The profiler accepts `--candidate-runtime` and `--candidate-pin` to qualify the
 installed package. Activation checks that canary against the package manifest
 and preserves the previous service override during an idle handoff. Forty-one
 targeted packaging, activation, profiling and cache tests pass, as does Ruff.
-These tools are committed; installed qualification and activation remain pending.
+The installed comparison repeats all 897 cases exactly. Median repeated discovery
+is **6.205 → 0.898 seconds (6.91×)**; cold discovery is 6.226 versus 6.339 seconds.
+Both cold passes hash all 15.39 GB, while warm candidate passes reuse all 897
+digests. This is a separate measurement from the prototype table above.
+[Installed comparison](receipts/installed-discovery.json).
 
-The discovery candidate needs an immutable installed package and a read-only
-installed discovery canary before an idle production handoff. The numerical
-ALGO02 improvement from iteration011 remains deployed. The tenfold overall
+The 1,784-file immutable package is
+`/opt/leo-fast-graph-runtime-algo02/f7897f7c9f33cef7d8b46b70a41078091d0f217a`,
+with manifest SHA-256
+`2d0683d54286bb11900142858e058626b1c11f8411cac3a659b3d42deb177e86`.
+It preserves the previously deployed numerical modules, interpreter and
+1,200-second budget. The guarded handoff checked all threads, children and
+per-job ownership before and while stopped; no job was active. The previous
+override is retained for rollback. New PID 3193854 was verified active/running
+with the pinned package and zero automatic restarts.
+[Stage](receipts/installed-stage.json), [handoff](receipts/activation.json),
+[live verification](receipts/live.json).
+
+The numerical ALGO02 improvement from iteration011 remains deployed. The tenfold overall
 recording-to-published-ALGO07 target remains open; the next large numerical
 opportunity is still native GLRT correlation and duplicated recovery-stage work.
