@@ -180,3 +180,21 @@ before terminating the idle old watcher, guarding against a later drop-in that
 would otherwise shadow the new configuration. It verifies the replacement's
 live environment after startup. Full recording-to-published-ALGO07 timing and
 the tenfold objective remain outstanding.
+
+## Next measured overhead
+
+A bounded read-only probe of the new watcher's unchanged discovery implementation
+selected 32 of 896 public tracking inputs with random seed 20261103. Those 32
+files total 556,274,500 bytes. Two passes returned identical job identities,
+input hashes and statuses. Wall time was 0.481 seconds initially and 0.258
+seconds on the repeated pass. The repeated profile attributes 0.203 seconds to
+input enumeration/hashing and 0.051 seconds to status lookup. This is a small
+discovery sample, not a measured full-inventory or end-to-end runtime.
+[Probe receipt](receipts/next-discovery-baseline.json),
+[repeated-pass profile](receipts/next-discovery-profile.txt).
+
+An in-memory digest cache keyed by stable file identity and modification metadata
+is a candidate for the next experiment. Needed inputs must still be rehashed at
+consumption, and tests must cover replacement, in-place changes, and job-state
+transitions. No such cache is installed by this iteration. Native correlation
+and recovery-stage numerical work remain larger end-to-end opportunities.
