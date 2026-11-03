@@ -96,6 +96,27 @@ normalized. Tests explicitly reject changed owners, satellites, gates, position,
 a 1e-10 objective change, forged result hashes and unexpected output files.
 The combined suite now has **22 passing tests**, with Ruff passing.
 
+## Package preparation
+
+`tools/stage_native_glrt_runtime.py` now defines the native deployment package.
+It requires committed complete matched GLRT parity/timing, downstream exact
+both-arm parity, the five-fixture qualification and the 175-case saved-policy
+audit. It verifies the original and candidate file inventories against the
+already published prototype-build receipt, then copies the exact tested binary
+and sources. Only the four qualified numerical files differ from the installed
+native implementation; unrelated peak-retention and orchestration code remain
+the installed versions. There is no deployment-time rebuild.
+
+Thirteen staging tests pass, rejecting incomplete or mismatched trials, a slower
+candidate, scientific differences, changed runtime bytes and incomplete package
+markers. The stager makes no service change. No native package has been staged
+or activated yet; matched timing and downstream evidence are still pending.
+
+The native watcher owns a global lock but does not use ALGO03's per-job ownership
+files. Child-PID absence alone therefore cannot authorize a restart: a worker
+thread may be preparing input or publishing results. A native handoff must
+establish idle processing threads as well as no active child before activation.
+
 ## Remaining qualification
 
 1. Finish the live sixteen-worker candidate, started after the completed baseline.

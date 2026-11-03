@@ -116,3 +116,12 @@ publishing after exit. Check every thread's children and the observed open job
 ownership files, then recheck while the watcher is stopped. Resume immediately
 if work is active. `activate_algo03_runtime.py` implements this guarded handoff
 for the qualified ALGO03 composition without interrupting a numerical job.
+
+For native GLRT, `tools/stage_native_glrt_runtime.py` packages the exact tested
+prototype bytes only after committed matched full-window timing/parity,
+downstream both-arm parity, fixture and saved-policy qualifications pass. It
+preserves unrelated installed code and performs no rebuild or service mutation.
+Its `verify` subcommand supports an explicitly pinned pre-start check. Native
+watcher activation needs its own idle proof: its global watcher lock does not
+cover individual work, and a thread may be preparing or publishing a recording
+without a child PID. Do not reuse the ALGO03 per-job-lock idle rule unchanged.
