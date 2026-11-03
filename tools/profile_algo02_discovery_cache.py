@@ -125,8 +125,13 @@ def run(args):
     relative = "src/leo/storage/fast_graph_position.py"
     original = runtime / relative
     current = args.checkout.resolve(strict=True) / relative
-    candidate = output / "candidate_store.py"
-    candidate.write_text(adapt(original.read_text(), current.read_text()))
+    installed = args.candidate_runtime.resolve(strict=True) if args.candidate_runtime else None
+    if installed:
+        verify(installed, args.candidate_pin)
+        candidate = installed / relative
+    else:
+        candidate = output / "candidate_store.py"
+        candidate.write_text(adapt(original.read_text(), current.read_text()))
     sys.path.insert(0, str(runtime / "src"))
     modules = [module(original, "original_discovery"), module(candidate, "candidate_discovery")]
     stores = [m.FastGraphPositionStore(args.bulk_root) for m in modules]
@@ -159,12 +164,16 @@ def run(args):
         if "sha256:" + digest(path) != row["input_sha256"]:
             raise ValueError("Frozen public input changed during measurement")
     verify(runtime, args.pin)
+    if installed:
+        verify(installed, args.candidate_pin)
     result = dict(exact=True, cases=len(fixed), seed=fixture["seed"], cold=cold, trials=trials,
                   original_source_sha256=digest(original),
                   candidate_source_sha256=digest(candidate),
                   current_source_sha256=digest(current), fixture_sha256=digest(args.fixture),
                   benchmark_script_sha256=digest(Path(__file__)),
                   runtime=str(runtime), runtime_manifest_sha256=args.pin,
+                  candidate_runtime=str(installed) if installed else None,
+                  candidate_runtime_manifest_sha256=args.candidate_pin if installed else None,
                   candidate_source=str(candidate), maximum_seconds=120,
                   changed_states_hidden=False, production_modified=False,
                   scope="fixed public input discovery only; no fresh numerical inference")
@@ -177,6 +186,8 @@ if __name__ == "__main__":
     for name in ("runtime", "checkout", "bulk-root", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--fixture", type=Path)
+    parser.add_argument("--candidate-runtime", type=Path)
+    parser.add_argument("--candidate-pin")
     parser.add_argument("--snapshot", action="store_true")
     parser.add_argument("--limit", type=int, choices=range(0, 4097), default=32,
                         help="Snapshot size; zero selects the complete public inventory")
@@ -186,6 +197,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.snapshot and args.fixture is None:
         parser.error("--fixture is required for a paired measurement")
+    if bool(args.candidate_runtime) != bool(args.candidate_pin):
+        parser.error("Both --candidate-runtime and --candidate-pin are required together")
 
     def deadline(*_):
         raise TimeoutError("120-second discovery benchmark bound exceeded")

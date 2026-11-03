@@ -69,6 +69,14 @@ iteration does not change numerical inference.
 
 ## Remaining qualification
 
+Packaging tools now support `stage-discovery`, which preserves the installed
+numerical modules and pins the tested storage module and full-inventory evidence.
+The profiler accepts `--candidate-runtime` and `--candidate-pin` to qualify the
+installed package. Activation checks that canary against the package manifest
+and preserves the previous service override during an idle handoff. Forty-one
+targeted packaging, activation, profiling and cache tests pass, as does Ruff.
+These tools are committed; installed qualification and activation remain pending.
+
 The discovery candidate needs an immutable installed package and a read-only
 installed discovery canary before an idle production handoff. The numerical
 ALGO02 improvement from iteration011 remains deployed. The tenfold overall

@@ -41,6 +41,15 @@ def configuration(stage):
 
 
 def check_canary(stage, parity):
+    if stage.get("qualification") == "discovery":
+        if not (parity["exact"] and parity["cases"] == stage["discovery_cases"]
+                and parity["fixture_sha256"] == stage["discovery_fixture_sha256"]
+                and parity["candidate_source_sha256"] == stage["discovery_store_sha256"]
+                and parity["candidate_runtime"] == stage["release"]
+                and parity["candidate_runtime_manifest_sha256"] == stage["runtime_manifest_sha256"]
+                and not stage["numerical_changes"] and not parity["changed_states_hidden"]):
+            raise ValueError("Exact installed discovery canary required")
+        return
     if not (parity["exact"] and parity["tolerance"] == 0 and parity["files"] == 6
             and parity["difference_count"] == 0 and parity["both_calibration_arms_required"]
             and parity["frozen_inputs_verified"] and parity["read_audit"]["verified"]
@@ -54,7 +63,11 @@ def activate(stage, parity, *, execute=False):
     if root.parent != Path("/opt/leo-fast-graph-runtime-algo02"):
         raise ValueError("Unexpected ALGO02 runtime root")
     check_canary(stage, parity)
-    verify(root, pin)
+    manifest = verify(root, pin)
+    for key in ("release", "base", "python", "revision", "numerical_changes", "qualification",
+                "discovery_cases", "discovery_fixture_sha256", "discovery_store_sha256"):
+        if stage.get(key) != manifest.get(key):
+            raise ValueError("Activation plan differs from pinned runtime: " + key)
     pid = int(property_value("MainPID"))
     before = activity(pid)
     if not before["idle"] or not execute:
@@ -62,7 +75,8 @@ def activate(stage, parity, *, execute=False):
     expected_old = f"{stage['base']}/src:{stage['base']}/tools"
     if environment(pid).get("PYTHONPATH") != expected_old:
         raise ValueError("Live watcher is not the qualified installed baseline")
-    if OVERRIDE.exists():
+    previous = OVERRIDE.read_bytes() if OVERRIDE.exists() else None
+    if previous is not None and stage.get("qualification") != "discovery":
         raise FileExistsError("Preserve the existing override before another activation")
     handle = os.pidfd_open(pid)
     try:
@@ -79,8 +93,16 @@ def activate(stage, parity, *, execute=False):
         if int(property_value("MainPID")) != pid or not frozen["idle"]:
             return dict(activated=False, before=before, frozen=frozen)
         verify(root, pin)
-        with OVERRIDE.open("x") as stream:
+        backup = OVERRIDE.with_name(OVERRIDE.name + ".before-" + stage["revision"])
+        if previous is not None:
+            if OVERRIDE.read_bytes() != previous:
+                raise ValueError("Service override changed during handoff")
+            with backup.open("xb") as stream:
+                stream.write(previous)
+        temporary = OVERRIDE.with_suffix(".runtime-new")
+        with temporary.open("x") as stream:
             stream.write(configuration(stage))
+        temporary.replace(OVERRIDE)
         subprocess.run(["systemctl", "daemon-reload"], check=True)
         if property_value("WorkingDirectory") != str(root):
             raise RuntimeError("A later service override shadows the qualified runtime")

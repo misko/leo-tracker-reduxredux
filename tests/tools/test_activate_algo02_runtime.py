@@ -36,7 +36,6 @@ def test_installed_canary_identity_and_science_required(field, value):
                                   dict(children=[], job_owner_files=["job/owner.lock"])])
 def test_busy_watcher_is_not_signalled(monkeypatch, busy):
     monkeypatch.setattr(activation, "check_canary", lambda *args: None)
-    monkeypatch.setattr(activation, "verify", lambda *args: None)
     monkeypatch.setattr(activation, "property_value", lambda name: "42")
     monkeypatch.setattr(activation, "activity", lambda pid: dict(busy, idle=False))
 
@@ -46,4 +45,24 @@ def test_busy_watcher_is_not_signalled(monkeypatch, busy):
     monkeypatch.setattr(activation.os, "pidfd_open", forbidden)
     stage = dict(release="/opt/leo-fast-graph-runtime-algo02/qualified",
                  runtime_manifest_sha256="pin")
+    monkeypatch.setattr(activation, "verify", lambda *args: stage)
     assert not activation.activate(stage, {}, execute=True)["activated"]
+
+
+@pytest.mark.parametrize("field,value", [(None, None), ("exact", False),
+    ("candidate_runtime_manifest_sha256", "wrong"), ("candidate_source_sha256", "wrong"),
+    ("fixture_sha256", "wrong"), ("cases", 1), ("changed_states_hidden", True)])
+def test_discovery_canary_binds_installed_bytes_and_full_inventory(field, value):
+    stage = dict(qualification="discovery", release="/opt/candidate", discovery_cases=897,
+                 discovery_fixture_sha256="fixture", discovery_store_sha256="store",
+                 runtime_manifest_sha256="pin", numerical_changes=[])
+    parity = dict(exact=True, cases=897, fixture_sha256="fixture",
+                  candidate_source_sha256="store", candidate_runtime="/opt/candidate",
+                  candidate_runtime_manifest_sha256="pin", changed_states_hidden=False)
+    if field is None:
+        check_canary(stage, parity)
+        stage["numerical_changes"] = ["scientific.py"]
+    else:
+        parity[field] = value
+    with pytest.raises(ValueError, match="discovery canary"):
+        check_canary(stage, parity)

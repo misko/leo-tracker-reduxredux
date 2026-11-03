@@ -63,3 +63,40 @@ def test_package_files_pin_and_incomplete_marker(tmp_path):
     (tmp_path / ".incomplete").touch()
     with pytest.raises(ValueError, match="Incomplete"):
         stage.verify(tmp_path, pin)
+
+
+def discovery_evidence():
+    result = dict(exact=True, cases=2, cold=[{"input_hash_calls": 2}]*2,
+                  changed_states_hidden=False, production_modified=False,
+                  trials=[dict(variant=v, repeat=i, wall_seconds=t, input_hash_calls=c)
+                          for i in range(3) for v, t, c in
+                          [("baseline", 2., 2), ("candidate", 1., 0)]])
+    return [result, dict(selected=[1, 2], public_inventory_count=2), evidence()[2]]
+
+
+def test_discovery_qualification_and_failures():
+    stage.discovery_qualification(*discovery_evidence())
+    for key, value in [("exact", False), ("cases", 1), ("changed_states_hidden", True)]:
+        rows = discovery_evidence()
+        rows[0][key] = value
+        with pytest.raises(ValueError):
+            stage.discovery_qualification(*rows)
+    rows = discovery_evidence()
+    rows[0]["trials"][1]["wall_seconds"] = 5.
+    rows[0]["trials"][3]["wall_seconds"] = 5.
+    with pytest.raises(ValueError, match="improvement"):
+        stage.discovery_qualification(*rows)
+
+
+def test_installer_preserves_untouched_numerical_bytes(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "numerics.py").write_bytes(b"# immutable scientific code\n")
+    (source / "storage.py").write_bytes(b"# original storage\n")
+    files = {p.name: stage.digest(p) for p in source.iterdir()}
+    plan = dict(kind=stage.KIND, release=str(tmp_path / "installed"))
+    receipt = stage.install(plan, source, files, {"storage.py": b"# tested storage\n"}, {})
+    target = tmp_path / "installed"
+    assert (target / "numerics.py").read_bytes() == (source / "numerics.py").read_bytes()
+    assert (target / "storage.py").read_bytes() == b"# tested storage\n"
+    stage.verify(target, receipt["runtime_manifest_sha256"])
