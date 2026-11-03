@@ -150,8 +150,8 @@ reloads systemd, and restarts the watcher when no numerical child is active.
 Iteration 001's `90-runtime-discovery.conf` then selects the prior worker root
 without the new manifest environment pin. No scientific outputs are deleted.
 
-The remaining work is to stage and check that runtime composition, then profile
-the remaining cost. Even after the contraction improvement, the phase-pair
+The remaining work is to profile and reduce the remaining cost. Even after the
+contraction improvement, the phase-pair
 routine accounts for 84% of this worker's numerical orchestration. Upstream
 GLRT and ALGO02–06 must also be measured and improved before claiming the user's
 **10× overall** target.

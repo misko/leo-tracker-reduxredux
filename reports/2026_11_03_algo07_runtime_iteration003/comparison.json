@@ -1,0 +1,91 @@
+{
+  "pairs": [
+    {
+      "case": "fresh-fallback",
+      "label": "Single-family case",
+      "baseline": {
+        "trial": "replay-current",
+        "wall_seconds": 153.03236678335816,
+        "cpu_seconds": 151.621245,
+        "peak_rss_kib": 1925108,
+        "orchestration_seconds": 144.94763371534646,
+        "kernel_seconds": 0,
+        "kernel_calls": 0,
+        "read_audit_verified": true,
+        "frozen_files_verified": 1716
+      },
+      "candidate": {
+        "trial": "replay-prepared-geometry",
+        "wall_seconds": 103.9446245180443,
+        "cpu_seconds": 103.549063,
+        "peak_rss_kib": 1968524,
+        "orchestration_seconds": 97.40338290575892,
+        "kernel_seconds": 0,
+        "kernel_calls": 0,
+        "read_audit_verified": true,
+        "frozen_files_verified": 1716
+      },
+      "speedup": 1.47224897384465,
+      "exact_scientific_leaves": 4185
+    },
+    {
+      "case": "slow-additive",
+      "label": "Two-family case: first pair",
+      "baseline": {
+        "trial": "replay-contractions",
+        "wall_seconds": 420.0001638866961,
+        "cpu_seconds": 419.794242,
+        "peak_rss_kib": 1512552,
+        "orchestration_seconds": 411.27905857842416,
+        "kernel_seconds": 347.0937932729721,
+        "kernel_calls": 436,
+        "read_audit_verified": true,
+        "frozen_files_verified": 2833
+      },
+      "candidate": {
+        "trial": "replay-prepared-geometry",
+        "wall_seconds": 456.62133830040693,
+        "cpu_seconds": 453.204152,
+        "peak_rss_kib": 1570272,
+        "orchestration_seconds": 449.6193368351087,
+        "kernel_seconds": 393.97006413247436,
+        "kernel_calls": 436,
+        "read_audit_verified": true,
+        "frozen_files_verified": 2833
+      },
+      "speedup": 0.9197996866506092,
+      "exact_scientific_leaves": 4267
+    },
+    {
+      "case": "slow-additive",
+      "label": "Two-family case: concurrent repeat",
+      "baseline": {
+        "trial": "replay-geometry-control-r2",
+        "wall_seconds": 441.24209016468376,
+        "cpu_seconds": 440.374481,
+        "peak_rss_kib": 1540872,
+        "orchestration_seconds": 433.0623770933598,
+        "kernel_seconds": 367.45921627804637,
+        "kernel_calls": 436,
+        "read_audit_verified": true,
+        "frozen_files_verified": 2833
+      },
+      "candidate": {
+        "trial": "replay-prepared-geometry-r2",
+        "wall_seconds": 425.94445795565844,
+        "cpu_seconds": 425.278749,
+        "peak_rss_kib": 1555868,
+        "orchestration_seconds": 417.3545775366947,
+        "kernel_seconds": 367.50982910580933,
+        "kernel_calls": 436,
+        "read_audit_verified": true,
+        "frozen_files_verified": 2833
+      },
+      "speedup": 1.035914617324632,
+      "exact_scientific_leaves": 4267
+    }
+  ],
+  "scope": "Complete prepared ALGO07 worker; excludes upstream stages",
+  "scientific_values_exact": true,
+  "all_pairs_faster": false
+}

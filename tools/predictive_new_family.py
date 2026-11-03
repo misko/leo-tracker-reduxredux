@@ -16,6 +16,7 @@ from ds23_predictive_linear import linear_geometry
 from ds23_height_problem import geometry_features
 from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
 from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
+from leo.analysis.research.prepared_phase_geometry import prepare_phase_geometry
 from leo.analysis.research.predictive_track import condition_coefficients,phase_mixture_evidence,phase_resolution_agreement
 from leo.analysis.research.retained_track_likelihood import PERIOD,profile
 from leo.analysis.research.polynomial_satellite_diagnostics import batch_noise_screen
@@ -71,6 +72,17 @@ class NewFamily:
             history=history,target_updates_receiver_calibration=False,conditions_on_incumbent_predictive_uncertainty=True,
             integrate_orbit_uncertainty=integrate_orbit_uncertainty,integrate_receiver_uncertainty=integrate_receiver_uncertainty)
 
+    def geometry(self,latitude,longitude):
+        """This family's fixed phase grid is independent of receiver position.
+
+        A changed orbit history or phase grid constructs a new NewFamily, as in
+        the existing history-completion and quadrature-refinement paths.
+        """
+        if not hasattr(self,'_prepared_phase_geometry'):
+            self._prepared_phase_geometry=prepare_phase_geometry(
+                self.bank,self.modes,self.grid_times,self.grid_labels,self.phases)
+        return self._prepared_phase_geometry.evaluate(latitude,longitude)
+
     def evaluate(self,p,x,powers,old_entries,*,details=False,refine_phase=False):
         if self.j in p.labels:
             if not self.allow_uncalibrated_label or any(r['candidate_index']==self.j and p.keep[sl].any() for r,sl in zip(p.rows,p.slices,strict=True)):
@@ -90,8 +102,7 @@ class NewFamily:
         receiver=np.concatenate([receiver_design(t['times'],t['rf_hz'],t['receiver'],t['channel'],self.scan.rx_basis[e['track_index']],fitted_c=p.fitted_c)
                                  for t,e in zip(self.tracks,self.entries,strict=True)])
         h=np.zeros((len(self.times),len(coef)));h[:,:receiver.shape[1]]=receiver
-        f,e=paired_phase_frequency(self.bank,self.grid_times,self.grid_labels,self.phases,*latlon(x))
-        modes=paired_frequency_modes(self.bank,self.modes,self.grid_times,self.grid_labels,self.phases,*latlon(x))
+        f,e,modes=self.geometry(*latlon(x))
         f=f.reshape(len(self.phases),-1)*self.q;e=e.reshape(len(self.phases),-1)
         modes=modes.reshape(len(self.phases),len(self.times),3)*self.q[None,:,None]
         if not self.integrate_orbit_uncertainty:modes=np.zeros_like(modes)

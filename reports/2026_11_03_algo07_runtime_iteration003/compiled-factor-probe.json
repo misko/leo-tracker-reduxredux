@@ -1,0 +1,101 @@
+{
+  "command": [
+    "cc",
+    "-O3",
+    "-fPIC",
+    "-shared",
+    "-std=c11",
+    "-ffp-contract=off",
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/reports/2026_11_03_algo07_runtime_iteration003/batch_factor.c",
+    "-o",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/compiled-factor-probe/factor.so",
+    "-lm"
+  ],
+  "source_sha256": "028fb4d7ff367b8b45e3a16522acfe16f13d891c0be83eed3c044aadaf8b6ae9",
+  "binary_sha256": "dd5e01c1d54d50481a7547046e2d5cda86ad6e0b845a6ee5731f2d0a678d5990",
+  "shape": [
+    27,
+    1201,
+    6,
+    6
+  ],
+  "differences": {
+    "coefficient": 3.836930773104541e-13,
+    "logdet": 2.220446049250313e-15,
+    "quadratic": 3.0015643513573684e-11
+  },
+  "timings": [
+    {
+      "repeat": 0,
+      "variant": "numpy",
+      "seconds": 0.01417312677949667
+    },
+    {
+      "repeat": 0,
+      "variant": "compiled",
+      "seconds": 0.006158860400319099
+    },
+    {
+      "repeat": 1,
+      "variant": "compiled",
+      "seconds": 0.005766095593571663
+    },
+    {
+      "repeat": 1,
+      "variant": "numpy",
+      "seconds": 0.01499966997653246
+    },
+    {
+      "repeat": 2,
+      "variant": "numpy",
+      "seconds": 0.013544426299631596
+    },
+    {
+      "repeat": 2,
+      "variant": "compiled",
+      "seconds": 0.00551940593868494
+    },
+    {
+      "repeat": 3,
+      "variant": "compiled",
+      "seconds": 0.005651884712278843
+    },
+    {
+      "repeat": 3,
+      "variant": "numpy",
+      "seconds": 0.013724375516176224
+    },
+    {
+      "repeat": 4,
+      "variant": "numpy",
+      "seconds": 0.013882034458220005
+    },
+    {
+      "repeat": 4,
+      "variant": "compiled",
+      "seconds": 0.005585722625255585
+    },
+    {
+      "repeat": 5,
+      "variant": "compiled",
+      "seconds": 0.00552362110465765
+    },
+    {
+      "repeat": 5,
+      "variant": "numpy",
+      "seconds": 0.01375542487949133
+    },
+    {
+      "repeat": 6,
+      "variant": "numpy",
+      "seconds": 0.013704128563404083
+    },
+    {
+      "repeat": 6,
+      "variant": "compiled",
+      "seconds": 0.0055422093719244
+    }
+  ],
+  "diagnostic_only": true,
+  "production_modified": false
+}

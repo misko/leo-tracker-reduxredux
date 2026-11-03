@@ -8,8 +8,6 @@ from diagnose_all_large_tracks import context
 from predictive_new_family import NewFamily
 from leo.analysis.research.predictive_track import condition_coefficients,receiver_design,phase_mixture_evidence
 from leo.analysis.research.joint_predictive_families import two_family_phase_evidence
-from leo.analysis.research.continuous_curve_fit import paired_phase_frequency
-from leo.analysis.research.orbit_uncertainty import paired_frequency_modes
 from ds23_predictive_linear import linear_geometry
 from ds23_height_problem import geometry_features
 from prototype_dsx01_continuous_position import latlon
@@ -31,8 +29,7 @@ def joint_inputs(families,p,x,powers,old_entries):
         if any(e['candidate_index']==family.j for e in old_entries):raise ValueError('family already has predictive data')
         receiver=np.concatenate([receiver_design(t['times'],t['rf_hz'],t['receiver'],t['channel'],family.scan.rx_basis[e['track_index']],fitted_c=p.fitted_c) for t,e in zip(family.tracks,family.entries,strict=True)])
         h=np.zeros((len(family.times),len(coef)));h[:,:receiver.shape[1]]=receiver;designs.append(h)
-        f,e=paired_phase_frequency(family.bank,family.grid_times,family.grid_labels,family.phases,*latlon(x))
-        uu=paired_frequency_modes(family.bank,family.modes,family.grid_times,family.grid_labels,family.phases,*latlon(x))
+        f,e,uu=family.geometry(*latlon(x))
         means.append(h@mean+f.reshape(len(family.phases),-1)*family.q)
         modes.append(uu.reshape(len(family.phases),len(family.times),3)*family.q[None,:,None])
         visible.append(e.reshape(len(family.phases),-1).min(axis=1)>=0)

@@ -49,8 +49,15 @@ def paired_phase_frequency(bank, times, labels, phases, latitude, longitude, *, 
     if not np.isfinite(altitude_m):
         raise ValueError("finite receiver altitude required")
     states = paired_phase_states(bank, times, labels, phases)
+    return phase_frequency_from_states(*states, latitude, longitude, altitude_m=altitude_m)
+
+
+def phase_frequency_from_states(position, velocity, latitude, longitude, *, altitude_m=0.0):
+    """Project already interpolated phase states using the original CFO arithmetic."""
+    if not np.isfinite(altitude_m):
+        raise ValueError("finite receiver altitude required")
     _, elevation, _, rate = look_angles(
-        *states,
+        position, velocity,
         geodetic_to_ecef_km(latitude, longitude, altitude_m),
         ecef_to_enu_matrix(latitude, longitude),
     )

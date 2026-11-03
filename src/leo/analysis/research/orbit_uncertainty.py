@@ -101,6 +101,13 @@ def paired_frequency_modes(
         mode_bank, np.repeat(times, count), expanded, np.repeat(phases, count)
     )
     dp, dv = dp.reshape(-1, count, 3), dv.reshape(-1, count, 3)
+    return frequency_modes_from_states(
+        position, velocity, dp, dv, latitude, longitude, altitude_m=altitude_m
+    )
+
+
+def frequency_modes_from_states(position, velocity, dp, dv, latitude, longitude, *, altitude_m=0.0):
+    """Project prepared orbital-mode states without changing the reduction order."""
     line = position - geodetic_to_ecef_km(latitude, longitude, altitude_m)
     distance = np.linalg.norm(line, axis=1)
     direction = line / distance[:, None]
