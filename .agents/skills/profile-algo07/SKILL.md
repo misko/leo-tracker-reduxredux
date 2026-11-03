@@ -9,6 +9,16 @@ Use the repository CLI `python -m leo.cli.algo07_profile`. Read
 [the benchmark protocol](../../../docs/operations/algo07-runtime-benchmark.md)
 before freezing a baseline or interpreting a speedup.
 
+For numerical replays, `tools/profile_algo07_numerics.py snapshot` obtains a
+prepared input through the public evidence port, relocates and freezes it;
+`run --mode capture` records real likelihood tensors, while `run --mode replay`
+executes the full guarded ALGO07 worker over those prepared inputs. Compare
+intermediate screens and optimizer histories with
+`tools/compare_algo07_runtime_replays.py`. Historical research reconstruction
+uses the separate `profile_algo07_research_snapshot.py` adapter and must not be
+reported as a public-terminal or whole-pipeline replay. Concurrent trials' read
+audits must be separated by recorded process ancestry.
+
 The production chain includes GLRT, ALGO02 graph localization, then ALGO03–07
 recovery stages. Improving only the final reassociation worker is not an
 end-to-end speedup. Separate active computation, discovery/validation overhead,

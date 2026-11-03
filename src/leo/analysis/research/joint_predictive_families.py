@@ -41,10 +41,10 @@ def two_family_phase_evidence(observed, means, base_covariance, modes, log_prior
     for start in range(0,counts[0],rows_per_chunk):
         end=min(start+rows_per_chunk,counts[0]);shape=(end-start,counts[1]);gram=np.empty((*shape,d1+d2,d1+d2))
         gram[:,:,:d1,:d1]=g1[start:end,None];gram[:,:,d1:,d1:]=g2[None]
-        off=np.einsum('ian,jnb->ijab',cross[start:end],u2)
+        off=np.einsum('ian,jnb->ijab',cross[start:end],u2,optimize=True)
         gram[:,:,:d1,d1:]=off;gram[:,:,d1:,:d1]=off.swapaxes(-1,-2)
-        rhs=np.concatenate((h1[start:end,None]+np.einsum('ian,jn->ija',cross[start:end],r2),
-            h2[None]+np.einsum('jna,in->ija',u2,projected[start:end])),axis=-1)
+        rhs=np.concatenate((h1[start:end,None]+np.einsum('ian,jn->ija',cross[start:end],r2,optimize=True),
+            h2[None]+np.einsum('jna,in->ija',u2,projected[start:end],optimize=True)),axis=-1)
         coefficient=np.linalg.solve(gram,rhs[...,None])[...,0]
         raw=q1[start:end,None]+q2[None]+2*projected[start:end]@r2.T
         sign,logdet=np.linalg.slogdet(gram)

@@ -1,0 +1,81 @@
+{
+  "settings": {
+    "policy": "causal-reassociation-unique-receiver-groups-v1",
+    "process_limit_s": 1200,
+    "methods": [
+      "combined_whole_family_replacement_only"
+    ],
+    "standalone_history": false,
+    "chaining": false,
+    "history": "complete active and proposed causal history only after inherited and receiver-shared predictive admission",
+    "trigger": "original top2 RF-influence families, >=0.5km summed influence, >=30 native points and >=2 tracks",
+    "nomination": "original full72h causal bank coarse two-longest-track nomination; same finalists botharms",
+    "inherited_predictive": "original five synchronized5s groups+5s guards; positive mean and >=4/5 wins botharms",
+    "added_predictive": {
+      "seed": 20261111,
+      "folds": 10,
+      "minimum_unique_folds": 5,
+      "minimum_competitor_margin_exclusive": 0.0,
+      "models": [
+        "receiver_offset"
+      ],
+      "phase_sd_s": 5.0,
+      "noise_hz": 150.0,
+      "offset_sd_hz": 300.0,
+      "shared_rate_sd_hz_s": 0.5,
+      "phase_grid_s": [
+        -30,
+        30,
+        0.4
+      ],
+      "block_s": 5,
+      "guard_s": 5,
+      "held_group_fraction": 0.2
+    },
+    "candidate_scope": "all common nominees including incumbent; conditional on full-data nomination/graph/aliases/cavity calibration",
+    "destination_ownership": "absent from both baseline-arm owner maps",
+    "phase_rounds": 15,
+    "phase_tolerance_s": 0.01,
+    "phase_limit_s": 30,
+    "position_iterations": 40,
+    "starts": [
+      "published_fitted_c",
+      "family_omitted_fitted_c"
+    ],
+    "region_center": [
+      37.906,
+      -122.545
+    ],
+    "region_width_km": 25,
+    "joint_acceptance": "original gates/exact orbit/phase/solver/mixture phase interior/native owner checks, botharms; gains beyond existing shortlist penalty",
+    "controls": "same two starts and budget under matched active history; bound by best qualified control, matched-prior published endpoint and original published objective",
+    "catalogue_eligibility": "every381knots error0 and finite states; explicitly exclude only one uniform documented invalid SGP4 code in{1,2,3,4,6} at ALLknots; partial/mixed/unknown/nonfinite-error0 blocks",
+    "fallback": "exact frozen published baseline on rejection, incomplete search, unexplained/partial/nonfinite propagation, worker failure or hardcap; no partial winner publication",
+    "truth": "endpoint error metadata only, never nomination/guard/search/selection",
+    "production_modified": true
+  },
+  "baselines": {
+    "SCAN": {
+      "c0": {
+        "x": [
+          4.144608784705958,
+          -6.548634449808948
+        ],
+        "error_m": null,
+        "objective": 16516.758823663098,
+        "associated": 1776,
+        "rms_hz": null
+      },
+      "fitted_c": {
+        "x": [
+          4.11986170724618,
+          -6.5262566390125185
+        ],
+        "error_m": null,
+        "objective": 16518.70908198267,
+        "associated": 1776,
+        "rms_hz": null
+      }
+    }
+  }
+}

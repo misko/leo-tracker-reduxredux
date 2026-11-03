@@ -55,6 +55,26 @@ their own profiles; the CLI explicitly labels this limit.
 
 ## Iteration measurements
 
+Prepared numerical replays use `tools/profile_algo07_numerics.py`:
+
+```bash
+python tools/profile_algo07_numerics.py snapshot --bulk-root /srv/bulk/leo \
+  --job COMPLETED_ALGO07_JOB --output /srv/bulk/leo/research/runtime/case
+python tools/profile_algo07_numerics.py run \
+  --snapshot /srv/bulk/leo/research/runtime/case \
+  --output /srv/bulk/leo/research/runtime/case/reference \
+  --mode replay --reference --timeout 1200
+```
+
+Omit `--reference` for the candidate kernel. The frozen reference kernel must
+be captured before editing it. `--mode capture` performs only incumbent
+reconstruction and records real tensor inputs; it does not repeat nomination
+and refitting. The guarded launches verify input hashes afterward and retain
+process-tree-specific read audits. Compare complete intermediate results using
+`tools/compare_algo07_runtime_replays.py`; unchanged fallback endpoints alone
+are insufficient. Research-only inputs use the separate snapshot adapter and
+are intentionally restricted to reconstruction.
+
 1. Measure current discovery/validation, IQ/GLRT, graph construction, initial
    association/localization, each recovery stage, and final publication.
 2. Pick one hotspot and implement a bounded change with component-owned tests.

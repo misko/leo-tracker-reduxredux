@@ -57,3 +57,30 @@ def test_family_order_invariance_and_invisible_mass():
 def test_invalid_covariance_rejected():
     args=list(fixture());args[2][0,1]+=1
     with pytest.raises(ValueError,match='symmetric'):two_family_phase_evidence(*args)
+
+
+def test_strided_modes_and_unequal_phase_grids_match_full_gaussian():
+    """BLAS contractions must retain the phase/mode ordering for noncontiguous views."""
+    rng = np.random.default_rng(20261103)
+    y = [rng.normal(size=5), rng.normal(size=7)]
+    m = [rng.normal(size=(4, 5)), rng.normal(size=(7, 7))]
+    u = [rng.normal(size=(4, 5, 6))[:, :, ::2],
+         rng.normal(size=(7, 7, 4))[:, :, ::2]]
+    h = rng.normal(size=(12, 3))
+    b = np.eye(12) + h @ h.T
+    lp = [np.zeros(4), np.zeros(7)]
+    v = [np.array([True, True, False, True]), np.ones(7, dtype=bool)]
+    table = np.full((4, 7), -np.inf)
+    for i in range(4):
+        for j in range(7):
+            if v[0][i]:
+                modes = block_diag(u[0][i], u[1][j])
+                table[i, j] = multivariate_normal.logpdf(
+                    np.concatenate(y), mean=np.r_[m[0][i], m[1][j]],
+                    cov=b + modes @ modes.T) - np.log(28)
+    result = two_family_phase_evidence(y, m, b, u, lp, v, max_pairs=9)
+    score = logsumexp(table)
+    assert result['negative_twice_log_density'] == pytest.approx(-2 * score, abs=1e-11)
+    np.testing.assert_allclose(result['phase_marginals'][0],
+                               np.exp(table - score).sum(axis=1), atol=1e-12)
+    assert result['joint_map_indices'] == list(np.unravel_index(np.argmax(table), table.shape))

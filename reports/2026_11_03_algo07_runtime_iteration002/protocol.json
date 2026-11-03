@@ -1,0 +1,27 @@
+{
+  "status": "predeclared_before_candidate_measurement",
+  "purpose": "Equivalent two-family phase integration; no scientific policy changes",
+  "reference_kernel_sha256": "dbf7f397753cf91f764c75630e208bb2162a5ce9e2c69305537ce8ba53385065",
+  "real_fixture_source_job": "1afa181f335df49bfa8906f9096f7b67",
+  "kernel_tolerances": {
+    "negative_twice_log_density_atol": 0.000001,
+    "phase_marginal_atol": 0.00000001,
+    "orbital_map_mean_atol": 0.000001,
+    "rtol": 0,
+    "joint_map_indices": "exact",
+    "phase_pair_count": "exact",
+    "visible_prior_mass": "exact"
+  },
+  "full_replay_tolerances": {
+    "endpoint_max_abs_km": 0.00001,
+    "objective_atol": 0.0001,
+    "phase_reference_atol_s": 0.000001,
+    "native_owners": "exact",
+    "selected_satellites": "exact",
+    "qualification_and_fallback": "exact",
+    "notes": "A failed tolerance is investigated, never silently relaxed. Frequency score and endpoint parity are separate. Published fallback equality alone cannot establish proposal/refit parity."
+  },
+  "unchanged": ["observations", "causal catalogue", "both c arms", "phase grid", "priors", "starts", "solver budgets", "acceptance gates"],
+  "deployment_requirement": "Component tests and matched numerical replays plus the frozen population audit; no deployment based only on microbenchmarks",
+  "scope": "ALGO07 numerical worker, not whole pipeline from IQ"
+}
