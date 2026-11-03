@@ -66,6 +66,10 @@ window results, including unpublished hypotheses and invalid windows, between
 two finished trials. It verifies frozen runtime/input identities and rejects
 missing or duplicate windows. It reports timing ratios only with matched worker,
 interpreter, profiling, host and thread configurations.
+To reuse an earlier complete native trial, pass `--baseline-snapshot` to the
+comparator. It independently revalidates both frozen inventories and requires
+exact equality of their input documents. This mode is parity-only and withholds
+a timing ratio; use new alternating trials for performance evidence.
 For ALGO03 stage replays, `tools/compare_algo03_runtime_replays.py`
 requires both arms, exact scientific values, matching file inventories, verified
 source receipts and explicitly pinned runtime manifests. Runtime/provenance

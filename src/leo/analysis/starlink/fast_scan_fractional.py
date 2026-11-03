@@ -165,7 +165,14 @@ def fractional_take(
     indexes = bases[..., None] + tap_offsets
     if np.any(indexes < 0) or np.any(indexes >= len(values)):
         raise ValueError("fractional sample position lacks interpolation support")
-    distance = locations[..., None] - indexes
+    fractions = locations - bases
+    if locations.size >= 32 and np.all(fractions == fractions.flat[0]):
+        # A common exact fractional offset has identical interpolation weights.
+        # Form the first row using the original subtraction, then broadcast its
+        # weights; retain each sample's original multiplication/reduction order.
+        distance = locations.flat[0] - indexes.reshape(-1, len(tap_offsets))[0]
+    else:
+        distance = locations[..., None] - indexes
     weights = np.sinc(distance) * np.sinc(distance / half_width)
     normalizer = np.sum(weights, axis=-1, keepdims=True)
     if np.any(np.abs(normalizer) <= np.finfo(float).tiny):

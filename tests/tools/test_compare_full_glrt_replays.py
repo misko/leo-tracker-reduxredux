@@ -101,3 +101,42 @@ def test_different_workers_do_not_establish_speedup(replay_pair):
 
 def test_nonfinite_equal_values_fail():
     assert list(check.differences(float("inf"), float("inf"))) == [""]
+
+
+def relocated_candidate(replay_pair):
+    old, baseline, candidate = replay_pair
+    other = old.parent / "new-snapshot"
+    write(other / "input.json", check.read(old / "input.json"))
+    spec = check.read(old / "spec.json")
+    spec["files"][0]["path"] = str(other / "input.json")
+    write(other / "spec.json", spec)
+    check.full.PROFILE.freeze(other / "spec.json", other / "frozen.json")
+    change(candidate, "launch.json", lambda x: x.update(
+        manifest_sha256=check.full.PROFILE.digest(other / "frozen.json")))
+    change(candidate, "launch.json", lambda x:
+           x["command"].__setitem__(3, str(other / "input.json")))
+    return other, baseline, candidate
+
+
+def test_separate_frozen_baseline_is_parity_only(replay_pair):
+    result = check.compare(*relocated_candidate(replay_pair), baseline_snapshot=replay_pair[0])
+    assert result["exact"] and result["reused_baseline_snapshot"]
+    assert result["baseline_frozen_verification"]["verified"]
+    assert not result["matched_timing_configuration"] and result["wall_speedup"] is None
+
+
+def test_reused_baseline_does_not_allow_changed_inputs(replay_pair):
+    args = relocated_candidate(replay_pair)
+    change(args[0], "input.json", lambda x: x.update(changed=True))
+    # Re-freezing changed inputs does not make them equivalent to the baseline.
+    (args[0] / "frozen.json").unlink()
+    check.full.PROFILE.freeze(args[0] / "spec.json", args[0] / "frozen.json")
+    with pytest.raises(ValueError, match="input documents differ"):
+        check.compare(*args, baseline_snapshot=replay_pair[0])
+
+
+def test_reused_baseline_reverifies_original_files(replay_pair):
+    args = relocated_candidate(replay_pair)
+    change(replay_pair[0], "input.json", lambda x: x.update(corrupt=True))
+    with pytest.raises(ValueError, match="baseline evidence changed"):
+        check.compare(*args, baseline_snapshot=replay_pair[0])
