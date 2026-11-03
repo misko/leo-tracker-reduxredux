@@ -1,0 +1,15 @@
+# DS11 single-recording development hill climb
+
+User objective: improve DS11 single-scan position error, using SOL agents for independent bounded work. This is explicitly reference-informed development on an exposed site, not blind accuracy validation.
+
+Preserve the original ten-model, 32-recording benchmark and all its inputs. No RF collection, production edits, golden changes, or QNAP writes. Every estimate consumes one recording. Historical same-recording fits may initialize optimization; no pooled or reference coordinate may initialize, constrain, or select an optimizer endpoint.
+
+Wave 1 screen: original benchmark zero-based indices 0,4,8,12,16,20,24,28 (eight chronological ranks). Other 24 benchmark recordings are the within-DS11 replication panel; their old baseline outcomes are already exposed. Freeze each family's variants before screen evaluation. Select at most one variant per family using screen reference median, requiring all eight qualified, at least four paired wins, at least 10% median reduction, and P90 no more than 110% of matched original IID P90. A failure is retained, never replaced with another recording. If no variant passes, diagnose and declare a new development wave before further tests.
+
+Families: (1) original observation-independent Student-t likelihood with scale 50/200 Hz at df4 and df2/8 at scale100; (2) conservative training-frozen repeated-candidate evidence weighting, at most three declared variants; (3) timing sensitivities fixed zero and Gaussian SD0.1/0.5 seconds. Timing sensitivities do not imply calibrated UTC or ephemeris corrections. Composite weighted objectives are not normalized physical posteriors.
+
+Each fit uses the original same-scan IID endpoint plus the three original generic E/N/timing starts, 100 iterations and 160 function evaluations per start. Qualification preserves optimizer success, gradient <=0.01, derivative-audit discrepancy <=0.02, and no free-parameter boundary hit. Select the highest qualified training objective only. Fixed dimensions are explicitly recorded. Each process has a 90-second cap; no more than three numerical workers overall, one BLAS thread each, nice19. Preserve every start and failure. Additional starts differ from the old benchmark budget; baseline replay checks will expose numerical improvements unrelated to a new model.
+
+Report original-matched errors, paired wins, median/P90/max, sub-km count over attempts, common-model held diagnostics, all failures and execution cost. A common-model held score is diagnostic, not cross-model native predictive evidence. Reference coordinates enter only post-fit metric reporting. Source, plan, observation and bank digests bind results.
+
+Promotion beyond this exposed development panel requires freezing a winner and evaluating additional DS11 recordings whose prior exposure has been audited. Keep any training/confirmation chronology and all-recording denominators explicit. The original unsurveyed reference and unconfirmed installation continuity remain limitations; do not optimize or advertise shrinkage toward the 809m-error configured center as measurement-derived accuracy.

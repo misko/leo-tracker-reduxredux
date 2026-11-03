@@ -1,0 +1,7 @@
+# DS10 transfer of conditional cross-receiver residual slopes
+
+Reuse the existing DS7–9 candidate cross-RX transfer method unchanged on the frozen DS10 N24_h0 fit. Export residuals for tracks whose training MAP candidate has joint signal probability >=0.5, with >=5 training points spanning >=5 seconds. Use scan-local catalogue indices from the frozen bank; never compare indices across scans or claim a verified satellite identity.
+
+For each eligible target, predict a residual slope from opposite-RX tracks in the same scan and exact RF, requiring >=50% training-span overlap and >=5 donor training points spanning >=5 seconds within the target span. Compare same-candidate donors to other-candidate donors and zero slope; target-own training slope is a descriptive comparator. Reuse the frozen median aggregation and target training-only mean offset. Held residuals never select donors, candidates or slopes. Retain unsupported targets with zero-slope fallback and report matched coverage.
+
+Geography, timing and candidate assignment come from a fit that used both receivers' training observations. This is conditional residual transfer, not independent receiver calibration or a geographic accuracy test. No location refit or new nuisance model is authorized by this diagnostic result alone. Cap at 180 seconds, no new RF/export/propagation, verify provenance and score replay, and run the existing transfer isolation tests.

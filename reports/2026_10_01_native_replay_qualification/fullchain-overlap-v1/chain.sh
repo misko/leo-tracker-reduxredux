@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+set -C
+umask 077
+mkdir /mnt/glrtbench/fullchain-overlap-v1/results
+/mnt/glrtbench/native-adaptive/current/measure-run 90 /mnt/glrtbench/fresh-graph-tracking-v1/seed /mnt/glrtbench/modular-ds9-iq-v1/overlap-vector-queue16-observations-v1.tsv 151 8 512 8 4 16 > /mnt/glrtbench/fullchain-overlap-v1/results/seeds.stdout 2> /mnt/glrtbench/fullchain-overlap-v1/results/seeds.stderr
+/mnt/glrtbench/native-adaptive/current/measure-run 90 /mnt/glrtbench/fresh-graph-tracking-v1/tracker /mnt/glrtbench/modular-ds9-iq-v1/overlap-vector-queue16-observations-v1.tsv --acceleration 250 --seeds /mnt/glrtbench/fullchain-overlap-v1/results/seeds.stdout > /mnt/glrtbench/fullchain-overlap-v1/results/tracks.stdout 2> /mnt/glrtbench/fullchain-overlap-v1/results/tracks.stderr
+/mnt/glrtbench/native-adaptive/current/measure-run 90 /mnt/glrtbench/direct-orbit-authority-v1/leo-orbit-loc1-arm /mnt/glrtbench/modular-orbit-v1/selected.tle 1790590660968615222 -60.0 10.0 43 /mnt/glrtbench/fullchain-overlap-v1/results/authority.loc1 --loc1-site -2699.556949946347 -4250.351238915085 3901.913613282986 -0.4227152827856192 -0.665549369474093 0.6151063538056741 > /mnt/glrtbench/fullchain-overlap-v1/results/orbit.stdout 2> /mnt/glrtbench/fullchain-overlap-v1/results/orbit.stderr
+/mnt/glrtbench/native-adaptive/current/measure-run 90 /mnt/glrtbench/fresh-graph-location-v1/pipeline /mnt/glrtbench/modular-ds9-iq-v1/overlap-vector-queue16-observations-v1.tsv /mnt/glrtbench/modular-ds9-iq-v1/overlap-vector-queue16-graph-v1.tsv /mnt/glrtbench/fullchain-overlap-v1/results/authority.loc1 /mnt/glrtbench/fullchain-overlap-v1/results/input.loc1 --tracks /mnt/glrtbench/fullchain-overlap-v1/results/tracks.stdout --exclusive-candidates > /mnt/glrtbench/fullchain-overlap-v1/results/convert.stdout 2> /mnt/glrtbench/fullchain-overlap-v1/results/convert.stderr
+/mnt/glrtbench/native-adaptive/current/measure-run 360 /mnt/glrtbench/search-associate-v1/leo-search-associate-arm /mnt/glrtbench/fullchain-overlap-v1/results/input.loc1 38.5816 -121.4944 250 1 /mnt/glrtbench/fullchain-overlap-v1/results/associations.json > /mnt/glrtbench/fullchain-overlap-v1/results/search.stdout 2> /mnt/glrtbench/fullchain-overlap-v1/results/search.stderr
+cat /mnt/glrtbench/fullchain-overlap-v1/results/search.stdout

@@ -1,0 +1,5 @@
+# Independent joint optimizer control
+
+Test SLSQP on the exact forty-scan model and initial vector saved by the validated-timing refit. Optimize training likelihood only, subtracting its initial constant, with unchanged E/N bounds ±12 km and timing bounds ±5 seconds. Declare maxiter=100 and ftol=1e−10. Require optimizer success, no parameter within 0.001 of its bounds, maximum absolute gradient <=0.01, and independent central finite-difference gradient discrepancy <=0.02. These are the same scientific qualification gates as the original optimizer; its status is not reused.
+
+Before radio execution, test coupled quadratic recovery with a large likelihood offset, boundary rejection, and rejection of incorrect derivatives. Cap the single radio fit at 180 seconds, preserving failure or timeout with no retries. Compare qualified output against both prior qualified locations and preserve all prior failed results. No new RF, exports, physical-model changes or reference-based selection. This numerical diagnosis is not independent geographic validation.

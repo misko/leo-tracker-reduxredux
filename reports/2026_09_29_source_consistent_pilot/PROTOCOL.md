@@ -1,0 +1,9 @@
+# Source-consistent track-set pilot
+
+Use exactly the three first-scan quality sidecars already exported. Match them to the baseline loader's eligible tracks. Construct a conflict when two tracks use the same source_group_id, regardless of whether they choose identical or different candidates. Require each track internally uses each source at most once, matching the legacy hypothesis invariant.
+
+Rank eligible tracks by descending training-observation count, then track ID. Build a greedy source-disjoint closure with no seed and with every track as seed. Among these bounded alternatives, select greatest retained training-observation count; ties use the lexicographically ordered retained track IDs. This is not a globally optimal set-packing solver. Held detector scores, held frequencies and geographic outcomes do not select the subset. All-point source identities enforce consistency, including held support; this is support-aware selection, not a blind split.
+
+Fit all eligible tracks and selected tracks separately with the original q=0.2 mixture, six starts (E=-2,0,+2 km cold/grid timings), original bounds and qualification gates. Select by each arm's training likelihood. Retain unqualified starts/arms without substitution. Compare reference distance only after selection. Evaluate both parameter estimates on the SAME selected-track held observations; do not compare absolute scores across unequal track sets as an improvement.
+
+This three-single-scan test is exploratory and may lack sufficient geographic information. Loss of coverage is part of the result. The rule enforces the archived hypothesis contract but does not establish which candidate is physically correct or whether every excluded signal is false. Per-dataset subprocess cap 120 s, BLAS1; no new RF, public-contract changes or production dependencies.

@@ -1,0 +1,5 @@
+# Joint DS8 union of the two 24-scan selections
+
+Use all forty distinct recordings in the matched DS8 sampling diagnostic. Preserve the zero-height q020 likelihood, inputs, masks and candidate banks. Start once at each of the original and rank-selected N24 positions, with all forty timings initialized from their qualified fixed-position training fits in that diagnostic. Fit shared E/N plus one timing per scan with the unchanged optimizer/qualification. Select highest qualified training score, never reference distance. Preserve each start separately.
+
+Report convergence of the two endpoints, reference distance, and training/held changes on identical union observations relative to both fixed-position controls. Break changes down by shared, original-only and rank-only scans. This is an exploratory larger-budget N40 fit, not a 24-scan improvement, independent validation, or proof of the true location. Cap each start at 180 seconds; do not replace recordings or silently retry failures. No new RF, export, propagation or production change.

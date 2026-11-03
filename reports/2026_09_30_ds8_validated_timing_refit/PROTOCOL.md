@@ -1,0 +1,5 @@
+# Joint DS8 fit from independently validated rank timings
+
+Start at the original qualified rank-start N40 endpoint. Replace the timing values for the three preselected ambiguous scans with their highest-training-score qualified scalar solutions from the completed timing-mode diagnostic; preserve the other 37 timings. Run one unchanged joint E/N plus forty-timing optimization with its original qualification gates and a 180-second cap. Preserve failure without retry or threshold changes.
+
+Compare to both the original rank endpoint and the previously qualified corrected endpoint, which need not be rerun because the finer timing search found no material gain at that location. Report training/held changes, reference distance, and endpoint separation. Selection or promotion must not use reference distance. Replay initial scores from the original rank fit plus the three recorded timing-score deltas. This is a numerical diagnosis on the same exposed forty scans, not a new geographic validation or equal-budget N24 improvement. No new RF, exports, propagation or production changes.

@@ -1,0 +1,1195 @@
+"""SQLAlchemy mappings for the stable PostgreSQL catalog schema."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import (
+    ARRAY,
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Identity,
+    Index,
+    Integer,
+    MetaData,
+    PrimaryKeyConstraint,
+    SmallInteger,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from leo.catalog.states import AnalysisRunState, JobState
+
+NAMING_CONVENTION = {
+    "ix": "ix_%(table_name)s_%(column_0_N_name)s",
+    "uq": "uq_%(table_name)s_%(column_0_N_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_N_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+
+
+class Base(DeclarativeBase):
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+
+def _json_default() -> Any:
+    return text("'{}'::jsonb")
+
+
+class Radio(Base):
+    __tablename__ = "radio"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    serial: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    uri: Mapped[str] = mapped_column(Text, nullable=False)
+    transport: Mapped[str] = mapped_column(String(32), nullable=False)
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ReceiverPath(Base):
+    __tablename__ = "receiver_path"
+    __table_args__ = (UniqueConstraint("radio_id", "receiver_id", "physical_receiver_id"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    label: Mapped[str | None] = mapped_column(String(128))
+    physical_receiver_id: Mapped[str | None] = mapped_column(String(128))
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+
+
+class HardwareEpoch(Base):
+    __tablename__ = "hardware_epoch"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    external_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    ended_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    description: Mapped[str | None] = mapped_column(Text)
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+
+
+class FrequencyCalibration(Base):
+    __tablename__ = "frequency_calibration"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    external_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    receiver_path_id: Mapped[int] = mapped_column(
+        ForeignKey("receiver_path.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    hardware_epoch_id: Mapped[int | None] = mapped_column(
+        ForeignKey("hardware_epoch.id", ondelete="SET NULL"), index=True
+    )
+    center_offset_hz: Mapped[float] = mapped_column(Float, nullable=False)
+    uncertainty_hz: Mapped[float | None] = mapped_column(Float)
+    uncertainty_lower_hz: Mapped[float | None] = mapped_column(Float)
+    uncertainty_upper_hz: Mapped[float | None] = mapped_column(Float)
+    valid_from_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    valid_until_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    evidence_uri: Mapped[str | None] = mapped_column(Text)
+    evidence_digest: Mapped[str | None] = mapped_column(String(71))
+    calibration_digest: Mapped[str | None] = mapped_column(String(71), unique=True)
+    method: Mapped[str | None] = mapped_column(String(128))
+    created_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    evidence: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class FrequencyCalibrationSet(Base):
+    __tablename__ = "frequency_calibration_set"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    evidence_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    promotion_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    sealed_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FrequencyCalibrationSetMember(Base):
+    __tablename__ = "frequency_calibration_set_member"
+    __table_args__ = (UniqueConstraint("set_id", "ordinal"),)
+
+    set_id: Mapped[str] = mapped_column(
+        ForeignKey("frequency_calibration_set.id", ondelete="RESTRICT"), primary_key=True
+    )
+    calibration_id: Mapped[int] = mapped_column(
+        ForeignKey("frequency_calibration.id", ondelete="RESTRICT"), primary_key=True
+    )
+    ordinal: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+
+
+class StationTopology(Base):
+    """One immutable, content-addressed approved station topology."""
+
+    __tablename__ = "station_topology"
+    __table_args__ = (
+        UniqueConstraint("station_id", "topology_revision"),
+        CheckConstraint(
+            "valid_from_utc_ns >= 0 AND valid_until_utc_ns > valid_from_utc_ns",
+            name="valid_interval",
+        ),
+    )
+
+    topology_digest: Mapped[str] = mapped_column(String(71), primary_key=True)
+    station_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    topology_revision: Mapped[str] = mapped_column(String(128), nullable=False)
+    valid_from_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    valid_until_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    assignment_sealed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StationReceiverAssignment(Base):
+    """Exact radio/RX/physical-path assignment within a topology."""
+
+    __tablename__ = "station_receiver_assignment"
+    __table_args__ = (
+        UniqueConstraint(
+            "topology_digest",
+            "radio_id",
+            "receiver_id",
+            "valid_from_utc_ns",
+            "valid_until_utc_ns",
+            name="exact_interval",
+        ),
+        CheckConstraint("receiver_id IN (0, 1)", name="receiver_values"),
+        CheckConstraint(
+            "valid_from_utc_ns >= 0 AND valid_until_utc_ns > valid_from_utc_ns",
+            name="valid_interval",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    topology_digest: Mapped[str] = mapped_column(
+        ForeignKey("station_topology.topology_digest", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False
+    )
+    radio_serial: Mapped[str] = mapped_column(String(128), nullable=False)
+    radio_transport: Mapped[str] = mapped_column(String(32), nullable=False)
+    radio_endpoint: Mapped[str] = mapped_column(Text, nullable=False)
+    endpoint_evidence_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    endpoint_evidence_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    physical_receiver_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    hardware_epoch_external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    valid_from_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    valid_until_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    receiver_path_id: Mapped[int] = mapped_column(
+        ForeignKey("receiver_path.id", ondelete="RESTRICT"), nullable=False
+    )
+    hardware_epoch_id: Mapped[int] = mapped_column(
+        ForeignKey("hardware_epoch.id", ondelete="RESTRICT"), nullable=False
+    )
+
+
+class CaptureProfile(Base):
+    __tablename__ = "capture_profile"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class CaptureProfileRevision(Base):
+    __tablename__ = "capture_profile_revision"
+    __table_args__ = (
+        UniqueConstraint("profile_id", "revision_number"),
+        UniqueConstraint("profile_id", "digest"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    profile_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_profile.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class CaptureSession(Base):
+    __tablename__ = "capture_session"
+    __table_args__ = (
+        CheckConstraint("source_type IN ('live', 'test', 'import')", name="source_type_values"),
+        CheckConstraint(
+            "state IN ('committed', 'degraded', 'failed', 'purging', 'purged')",
+            name="state_values",
+        ),
+        CheckConstraint("allocated_bytes >= 0", name="nonnegative_allocated_bytes"),
+        CheckConstraint(
+            "(state = 'purging' AND purge_claim_token IS NOT NULL "
+            "AND purge_claim_expires_at IS NOT NULL AND purge_previous_state IS NOT NULL) "
+            "OR (state <> 'purging' AND purge_claim_token IS NULL "
+            "AND purge_claim_expires_at IS NULL AND purge_previous_state IS NULL)",
+            name="purge_claim_coherent",
+        ),
+        Index("ix_capture_session_created_source_state", "created_at", "source_type", "state"),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    profile_revision_id: Mapped[int | None] = mapped_column(
+        ForeignKey("capture_profile_revision.id", ondelete="RESTRICT"), index=True
+    )
+    source_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    requested_start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    observed_start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    observed_end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    bundle_uri: Mapped[str | None] = mapped_column(Text)
+    manifest_digest: Mapped[str | None] = mapped_column(String(71))
+    allocated_bytes: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
+    raw_available: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    purge_claim_token: Mapped[str | None] = mapped_column(String(128))
+    purge_claim_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    purge_previous_state: Mapped[str | None] = mapped_column(String(16))
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+
+
+class CapturePathAuthority(Base):
+    """Immutable exact station or protected-TEST authority for one capture."""
+
+    __tablename__ = "capture_path_authority"
+    __table_args__ = (
+        UniqueConstraint("authority_digest"),
+        CheckConstraint(
+            "(authority_kind='station' AND topology_digest IS NOT NULL "
+            "AND NOT evidence_only AND current_analysis_eligible "
+            "AND physical_association_permitted AND calibration_association_permitted "
+            "AND promotion_permitted) OR "
+            "(authority_kind='protected_test_fixture' AND topology_digest IS NULL "
+            "AND evidence_only AND NOT current_analysis_eligible "
+            "AND NOT physical_association_permitted "
+            "AND NOT calibration_association_permitted AND NOT promotion_permitted)",
+            name="kind_capabilities",
+        ),
+    )
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), primary_key=True
+    )
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    manifest_snapshot_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    authority_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    authority_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    topology_digest: Mapped[str | None] = mapped_column(
+        ForeignKey("station_topology.topology_digest", ondelete="RESTRICT")
+    )
+    evidence_only: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    current_analysis_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    physical_association_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    calibration_association_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    promotion_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RadioStream(Base):
+    __tablename__ = "radio_stream"
+    __table_args__ = (
+        PrimaryKeyConstraint("session_id", "id"),
+        UniqueConstraint("session_id", "radio_id"),
+        UniqueConstraint("session_id", "manifest_ordinal"),
+        CheckConstraint(
+            "manifest_ordinal IS NULL OR manifest_ordinal >= 0",
+            name="nonnegative_manifest_ordinal",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(128))
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    manifest_ordinal: Mapped[int | None] = mapped_column(SmallInteger)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    receiver_ids: Mapped[list[int]] = mapped_column(ARRAY(SmallInteger), nullable=False)
+    sample_rate_hz: Mapped[int] = mapped_column(Integer, nullable=False)
+    captured_sample_count: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    observed_start_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    observed_end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+
+
+class CaptureReceiverLineage(Base):
+    """Manifest-time stream/radio/receiver relation, independent of mutable labels."""
+
+    __tablename__ = "capture_receiver_lineage"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="CASCADE",
+        ),
+        PrimaryKeyConstraint("session_id", "stream_id", "receiver_id"),
+        CheckConstraint("receiver_id IN (0, 1)", name="receiver_values"),
+        CheckConstraint(
+            "(lineage_status = 'resolved' AND receiver_path_id IS NOT NULL "
+            "AND hardware_epoch_id IS NOT NULL AND physical_receiver_id IS NOT NULL "
+            "AND hardware_epoch_external_id IS NOT NULL "
+            "AND capture_authority_session_id IS NOT NULL "
+            "AND station_assignment_id IS NOT NULL) OR "
+            "(lineage_status = 'unresolved' AND receiver_path_id IS NULL "
+            "AND hardware_epoch_id IS NULL AND physical_receiver_id IS NULL "
+            "AND hardware_epoch_external_id IS NULL AND station_assignment_id IS NULL)",
+            name="resolution_shape",
+        ),
+    )
+
+    session_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    radio_serial: Mapped[str] = mapped_column(String(128), nullable=False)
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    stream_identity_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    lineage_status: Mapped[str] = mapped_column(String(16), nullable=False)
+    physical_receiver_id: Mapped[str | None] = mapped_column(String(128))
+    hardware_epoch_external_id: Mapped[str | None] = mapped_column(String(128))
+    receiver_path_id: Mapped[int | None] = mapped_column(
+        ForeignKey("receiver_path.id", ondelete="RESTRICT")
+    )
+    hardware_epoch_id: Mapped[int | None] = mapped_column(
+        ForeignKey("hardware_epoch.id", ondelete="RESTRICT")
+    )
+    capture_authority_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capture_path_authority.session_id", ondelete="RESTRICT")
+    )
+    station_assignment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("station_receiver_assignment.id", ondelete="RESTRICT")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RecordingChunk(Base):
+    __tablename__ = "recording_chunk"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="CASCADE",
+        ),
+        Index("ix_recording_chunk_session_id_stream_id", "session_id", "stream_id"),
+        UniqueConstraint("session_id", "stream_id", "chunk_index"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    sample_start: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    sample_count: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    logical_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    compressed_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    uncompressed_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    compressed_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    uncompressed_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class Tag(Base):
+    __tablename__ = "tag"
+
+    name: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class SessionTag(Base):
+    __tablename__ = "session_tag"
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag_name: Mapped[str] = mapped_column(
+        ForeignKey("tag.name", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class RetentionHold(Base):
+    __tablename__ = "retention_hold"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        Index(
+            "uq_retention_hold_active_session",
+            "session_id",
+            unique=True,
+            postgresql_where=text("released_at IS NULL"),
+        ),
+    )
+
+
+class RetentionEvent(Base):
+    __tablename__ = "retention_event"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="SET NULL"), index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    bytes_reclaimed: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default="0")
+    details: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+
+
+class PipelineRelease(Base):
+    __tablename__ = "pipeline_release"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    code_revision: Mapped[str] = mapped_column(String(128), nullable=False)
+    environment_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    graph_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    configuration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    executable_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    authority_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    configuration: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AnalysisScope(Base):
+    """Normalized reversible identity for a receiver path, radio, or radio pair."""
+
+    __tablename__ = "analysis_scope"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("kind IN ('receiver_path', 'radio', 'paired')", name="kind_values"),
+        CheckConstraint(
+            "(kind = 'receiver_path' AND stream_id IS NOT NULL AND receiver_id IS NOT NULL "
+            "AND radio_id IS NULL AND synchronization_inventory_digest IS NULL) OR "
+            "(kind = 'radio' AND stream_id IS NOT NULL AND receiver_id IS NULL "
+            "AND radio_id IS NOT NULL AND synchronization_inventory_digest IS NULL) OR "
+            "(kind = 'paired' AND stream_id IS NULL AND receiver_id IS NULL "
+            "AND radio_id IS NULL AND synchronization_inventory_digest IS NOT NULL)",
+            name="typed_shape",
+        ),
+        UniqueConstraint("canonical_digest"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    canonical_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    stream_id: Mapped[str | None] = mapped_column(String(128))
+    radio_id: Mapped[str | None] = mapped_column(ForeignKey("radio.id", ondelete="RESTRICT"))
+    receiver_id: Mapped[int | None] = mapped_column(SmallInteger)
+    synchronization_inventory_digest: Mapped[str | None] = mapped_column(String(71))
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RawIntegrityAttestation(Base):
+    __tablename__ = "raw_integrity_attestation"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    attestation_digest: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RunSubjectBinding(Base):
+    """One immutable run-owned snapshot of manifest-derived subject facts."""
+
+    __tablename__ = "run_subject_binding"
+    __table_args__ = (
+        UniqueConstraint("run_id", "scope_id"),
+        UniqueConstraint("snapshot_digest"),
+        CheckConstraint("kind IN ('receiver_path', 'paired')", name="kind_values"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    scope_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    binding_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    snapshot_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StageDerivation(Base):
+    """One immutable run-independent computation identity."""
+
+    __tablename__ = "stage_derivation"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    derivation_key: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    implementation_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    configuration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    environment_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scope_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    input_closure_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    key_document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    producing_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StageDerivationOutput(Base):
+    __tablename__ = "stage_derivation_output"
+    __table_args__ = (
+        UniqueConstraint("derivation_id", "kind", "schema_version"),
+        CheckConstraint("schema_version > 0", name="positive_schema_version"),
+        CheckConstraint("byte_size >= 0", name="nonnegative_byte_size"),
+        CheckConstraint("role IN ('scientific', 'presentation')", name="role_values"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    derivation_id: Mapped[int] = mapped_column(
+        ForeignKey("stage_derivation.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(128), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    logical_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    summary: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    available: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class WorkerIncompatibilityEvent(Base):
+    __tablename__ = "worker_incompatibility_event"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    worker_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    reason: Mapped[str] = mapped_column(String(64), nullable=False)
+    worker_authority: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ProcessingFenceEvent(Base):
+    """Immutable operator evidence for one atomic processing cutover fence."""
+
+    __tablename__ = "processing_fence_event"
+
+    operation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    operator_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    run_ids: Mapped[list[str]] = mapped_column(ARRAY(String(128)), nullable=False)
+    cancelled_run_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    cancelled_job_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    expired_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    preserved_succeeded_job_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    preserved_product_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AcquisitionOperation(Base):
+    """Durable intent for one operation that may own acquisition radios."""
+
+    __tablename__ = "acquisition_operation"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('scheduled_recording', 'scanner_sweep', 'operator_once', "
+            "'qualification', 'soak', 'radio_probe')",
+            name="kind_values",
+        ),
+        CheckConstraint(
+            "state IN ('pending', 'leased', 'succeeded', 'failed', 'cancelled')",
+            name="state_values",
+        ),
+        CheckConstraint("attempt_count >= 0 AND max_attempts > 0", name="attempt_bounds"),
+        CheckConstraint(
+            "(state = 'leased' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL) "
+            "OR (state <> 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)",
+            name="lease_coherence",
+        ),
+        Index(
+            "uq_acquisition_operation_single_lease",
+            text("(1)"),
+            unique=True,
+            postgresql_where=text("state = 'leased'"),
+        ),
+        Index(
+            "uq_acquisition_operation_one_pending_cadence_kind",
+            "kind",
+            unique=True,
+            postgresql_where=text(
+                "state = 'pending' AND kind IN ('scheduled_recording', 'scanner_sweep')"
+            ),
+        ),
+        Index("ix_acquisition_operation_claim", "state", "available_at", "priority", "id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    operation_key: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default="pending"
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    attempt_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    max_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3, server_default="3"
+    )
+    lease_owner: Mapped[str | None] = mapped_column(String(128))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    outcome: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class AnalysisRun(Base):
+    __tablename__ = "analysis_run"
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('pending', 'running', 'succeeded', 'failed', 'cancelled')",
+            name="state_values",
+        ),
+        CheckConstraint(
+            "promotion_policy IN ('current', 'evidence_only')",
+            name="promotion_policy_values",
+        ),
+        CheckConstraint(
+            "pipeline_lane IN ('standard', 'research')",
+            name="pipeline_lane_values",
+        ),
+        Index(
+            "uq_analysis_run_active_session_lane",
+            "session_id",
+            "pipeline_lane",
+            unique=True,
+            postgresql_where=text("state IN ('pending', 'running')"),
+        ),
+        Index("ix_analysis_run_session_created", "session_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False
+    )
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    trigger: Mapped[str] = mapped_column(String(32), nullable=False)
+    pipeline_lane: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="standard", server_default="standard"
+    )
+    promotion_policy: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="current", server_default="current"
+    )
+    state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=AnalysisRunState.PENDING.value
+    )
+    input_manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    expanded_plan_digest: Mapped[str | None] = mapped_column(String(71))
+    raw_integrity_attestation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("raw_integrity_attestation.id", ondelete="RESTRICT"), unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    manifest_uri: Mapped[str | None] = mapped_column(Text)
+    manifest_digest: Mapped[str | None] = mapped_column(String(71))
+    failure: Mapped[str | None] = mapped_column(Text)
+
+
+class ProcessingJob(Base):
+    __tablename__ = "processing_job"
+    __table_args__ = (
+        UniqueConstraint("run_id", "stage_key", "scope_key"),
+        UniqueConstraint("run_id", "node_id"),
+        CheckConstraint(
+            "state IN ('pending', 'leased', 'succeeded', 'failed', 'cancelled')",
+            name="state_values",
+        ),
+        CheckConstraint("max_attempts > 0", name="positive_max_attempts"),
+        CheckConstraint("attempt_count >= 0", name="nonnegative_attempt_count"),
+        CheckConstraint(
+            "resource_class IN ('streaming', 'cpu', 'memory', 'heavy')",
+            name="resource_class_values",
+        ),
+        CheckConstraint(
+            "iq_access IN ('legacy', 'none', 'receiver_path')",
+            name="iq_access_values",
+        ),
+        CheckConstraint(
+            "(state = 'leased' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL) "
+            "OR (state <> 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)",
+            name="lease_state_coherence",
+        ),
+        Index("ix_processing_job_claim", "state", "available_at", "priority", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    node_id: Mapped[str | None] = mapped_column(String(128))
+    resource_class: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="streaming", server_default="streaming"
+    )
+    iq_access: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="legacy", server_default="legacy"
+    )
+    scope_key: Mapped[str] = mapped_column(String(256), nullable=False, default="session")
+    scope_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), index=True
+    )
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default=JobState.PENDING.value)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    lease_owner: Mapped[str | None] = mapped_column(String(128))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    outcome: Mapped[str | None] = mapped_column(String(32))
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ProcessingResourceCapacity(Base):
+    __tablename__ = "processing_resource_capacity"
+    __table_args__ = (
+        CheckConstraint(
+            "resource_class IN ('streaming', 'cpu', 'memory', 'heavy')",
+            name="resource_values",
+        ),
+        CheckConstraint("maximum_leases > 0", name="positive_maximum"),
+    )
+
+    resource_class: Mapped[str] = mapped_column(String(32), primary_key=True)
+    maximum_leases: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ProcessingJobDependency(Base):
+    __tablename__ = "processing_job_dependency"
+    __table_args__ = (CheckConstraint("job_id <> depends_on_job_id", name="not_self"),)
+
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("processing_job.id", ondelete="CASCADE"), primary_key=True
+    )
+    depends_on_job_id: Mapped[int] = mapped_column(
+        ForeignKey("processing_job.id", ondelete="CASCADE"), primary_key=True
+    )
+    requires_product: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
+
+class ProcessingJobAttempt(Base):
+    __tablename__ = "processing_job_attempt"
+    __table_args__ = (UniqueConstraint("job_id", "attempt_number"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("processing_job.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    lease_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    outcome: Mapped[str | None] = mapped_column(String(32))
+    error: Mapped[str | None] = mapped_column(Text)
+
+
+class AnalysisProduct(Base):
+    __tablename__ = "analysis_product"
+    __table_args__ = (
+        UniqueConstraint("run_id", "stage_key", "scope_key", "kind", "schema_version"),
+        CheckConstraint("schema_version > 0", name="positive_schema_version"),
+        CheckConstraint("byte_size >= 0", name="nonnegative_byte_size"),
+        CheckConstraint(
+            "(purge_claim_token IS NULL AND purge_claim_expires_at IS NULL) OR "
+            "(purge_claim_token IS NOT NULL AND purge_claim_expires_at IS NOT NULL)",
+            name="purge_claim_coherent",
+        ),
+        CheckConstraint(
+            "derivation_mode IN ('legacy', 'computed', 'reused')",
+            name="derivation_mode_values",
+        ),
+        CheckConstraint(
+            "(derivation_mode = 'legacy' AND derivation_output_id IS NULL "
+            "AND reused_from_product_id IS NULL) OR "
+            "(derivation_mode = 'computed' AND derivation_output_id IS NOT NULL "
+            "AND reused_from_product_id IS NULL) OR "
+            "(derivation_mode = 'reused' AND derivation_output_id IS NOT NULL "
+            "AND reused_from_product_id IS NOT NULL)",
+            name="derivation_lineage_coherent",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    scope_key: Mapped[str] = mapped_column(String(256), nullable=False, default="session")
+    scope_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), index=True
+    )
+    derivation_output_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stage_derivation_output.id", ondelete="RESTRICT"), index=True
+    )
+    derivation_mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="legacy", server_default="legacy"
+    )
+    reused_from_product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="RESTRICT"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(128), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    logical_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    available: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    purge_claim_token: Mapped[str | None] = mapped_column(String(128))
+    purge_claim_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    coverage: Mapped[float | None] = mapped_column(Float)
+    summary: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    lineage_sealed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ScientificCampaign(Base):
+    """Durable WP11 campaign identity and its sealed aggregate evidence."""
+
+    __tablename__ = "scientific_campaign"
+    __table_args__ = (
+        CheckConstraint(
+            "state <> 'sealed' OR seal_authority_version = 0 OR "
+            "(outer_seal_uri IS NOT NULL AND outer_seal_digest IS NOT NULL)",
+            name="scientific_campaign_outer_seal_authority",
+        ),
+        CheckConstraint("state IN ('in_progress', 'sealed')", name="state_values"),
+        CheckConstraint(
+            "result_status IS NULL OR result_status IN ('pass', 'fail', 'inconclusive')",
+            name="result_status_values",
+        ),
+        CheckConstraint("expected_stream_count = 40", name="exact_stream_count"),
+        CheckConstraint(
+            "(state = 'in_progress' AND sealed_at IS NULL "
+            "AND scientific_uri IS NULL AND scientific_digest IS NULL "
+            "AND presentation_uri IS NULL AND presentation_digest IS NULL "
+            "AND result_status IS NULL) OR "
+            "(state = 'sealed' AND sealed_at IS NOT NULL "
+            "AND scientific_uri IS NOT NULL AND scientific_digest IS NOT NULL "
+            "AND presentation_uri IS NOT NULL AND presentation_digest IS NOT NULL "
+            "AND result_status IS NOT NULL)",
+            name="seal_coherent",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="in_progress", server_default="in_progress"
+    )
+    expected_stream_count: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=40, server_default="40"
+    )
+    capture_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    capture_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scientific_uri: Mapped[str | None] = mapped_column(Text)
+    scientific_digest: Mapped[str | None] = mapped_column(String(71))
+    presentation_uri: Mapped[str | None] = mapped_column(Text)
+    presentation_digest: Mapped[str | None] = mapped_column(String(71))
+    outer_seal_uri: Mapped[str | None] = mapped_column(Text)
+    outer_seal_digest: Mapped[str | None] = mapped_column(String(71))
+    seal_authority_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    result_status: Mapped[str | None] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ScientificCampaignStream(Base):
+    """One exact captured stream and all catalog evidence bound to it."""
+
+    __tablename__ = "scientific_campaign_stream"
+    __table_args__ = (
+        UniqueConstraint("campaign_id", "ordinal"),
+        UniqueConstraint("campaign_id", "session_id", "stream_id"),
+        UniqueConstraint("campaign_id", "analysis_product_id"),
+        CheckConstraint("ordinal >= 0 AND ordinal < 40", name="ordinal_range"),
+        CheckConstraint(
+            "status IN ('pass', 'fail', 'inconclusive', 'insufficient')",
+            name="status_values",
+        ),
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="RESTRICT",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("scientific_campaign.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    ordinal: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    analysis_run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    analysis_run_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    analysis_run_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    analysis_product_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    frequency_calibration_id: Mapped[int] = mapped_column(
+        ForeignKey("frequency_calibration.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    capture_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    capture_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    calibration_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    calibration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scientific_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    scientific_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ProductDependency(Base):
+    __tablename__ = "product_dependency"
+    __table_args__ = (CheckConstraint("product_id <> input_product_id", name="not_self"),)
+
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="CASCADE"), primary_key=True
+    )
+    input_product_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="RESTRICT"), primary_key=True
+    )
+
+
+class CurrentAnalysis(Base):
+    __tablename__ = "current_analysis"
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), primary_key=True
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, unique=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CurrentPipelineAnalysis(Base):
+    """Lane-scoped current pointer; Standard also retains its legacy projection."""
+
+    __tablename__ = "current_pipeline_analysis"
+    __table_args__ = (
+        PrimaryKeyConstraint("session_id", "pipeline_lane"),
+        CheckConstraint(
+            "pipeline_lane IN ('standard', 'research')",
+            name="pipeline_lane_values",
+        ),
+        UniqueConstraint("run_id"),
+    )
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False
+    )
+    pipeline_lane: Mapped[str] = mapped_column(String(16), nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class AnalysisSummary(Base):
+    __tablename__ = "analysis_summary"
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), primary_key=True
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, unique=True
+    )
+    mean_power_dbfs: Mapped[float | None] = mapped_column(Float, index=True)
+    best_qam_accuracy: Mapped[float | None] = mapped_column(Float, index=True)
+    best_cfo_hz: Mapped[float | None] = mapped_column(Float, index=True)
+    doppler_slope_hz_s: Mapped[float | None] = mapped_column(Float, index=True)
+    candidate_count: Mapped[int | None] = mapped_column(Integer, index=True)
+    coverage: Mapped[float | None] = mapped_column(Float, index=True)
+    details: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )

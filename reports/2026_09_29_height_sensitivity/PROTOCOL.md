@@ -1,0 +1,5 @@
+# Fixed-height sensitivity, balanced N8 panels
+
+The frozen Stationary.site implementation places the receiver at zero WGS84 ellipsoidal height. Test fixed +100 m and +300 m ellipsoidal heights on the same balanced_0 N8 sets from DS7/8/9. These are sensitivity offsets, not measured roof heights or an asserted uncertainty range. Preserve candidate banks, observation masks, likelihood and all nuisance parameters.
+
+First require zero-height predictions and training score to reproduce the original selected fit. At each test height, warm-start one local E/N/timing refit from the zero-height selected endpoint. Use existing optimizer and gradient qualification. Report horizontal movement, reference distance, training and held log-score changes, and changes in candidate visibility. Fail on changed visibility at the original point rather than silently compare different supports. This is a local sensitivity analysis, not a global optimum search or selection of height from geographic truth. Do not choose a height for deployment from reference error.

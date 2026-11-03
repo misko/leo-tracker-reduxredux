@@ -1,0 +1,7 @@
+# Training-carrier agreement for local rate correction
+
+Retain the same 80 evaluation blocks / 160 targets from rate_transfer. Freeze each dataset's donor-selected strength from that report. Split the eight cached pilot columns into alternating subsets [0,2,4,6] and [1,3,5,7]. Fit each subset's frequency/rate using only the first eight frames and symbols 22–221, with the unchanged chirp estimator. Column order is the cached pilot-bin order; this is a deterministic carrier split, not an independent noise guarantee or an antenna comparison.
+
+For qualified subset rates r0,r1, define agreement `max(0, 2*r0*r1/(r0²+r1²))`. Define zero if both rates are zero or either fit fails qualification. Multiply the inherited correction strength by agreement, applying it to the full-carrier fitted intercept displacement and rate. Agreement cannot increase correction strength. This is an explicitly heuristic stability weight, not a calibrated probability or uncertainty.
+
+Compare constant, inherited reduced correction and agreement-weighted correction on identical held samples. Keep every target, including failed subset fits as baseline fallbacks. Report per-dataset and per-visit gains, support, same-sign rates, agreement distribution and optimizer status. No evaluation-derived thresholds or model selection. This is a posthoc exploratory follow-up on already examined recordings, not a blind confirmation.

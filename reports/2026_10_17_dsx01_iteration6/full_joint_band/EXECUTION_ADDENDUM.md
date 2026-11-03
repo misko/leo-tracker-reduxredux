@@ -1,0 +1,7 @@
+# Immutable preparation reuse
+
+Actual public source preparation took about20 seconds per arm, versus much smaller per-fit inference. A new narrow family dispatcher therefore prepares each source once, then runs its four declared source/RF/policy cases with fresh complete vector/nuisance copies and unchanged shared model/bank/observations. It checks exact qualified seed/bank identity and a source-state/design/observation/bank fingerprint before and after each case. No persistent cache or new scientific policy is introduced. Frozen run_v2.py, B math and fit helpers remain unchanged.
+
+Each inference retains1000 objective/density calls and120 active seconds, profile costs charged as originally declared. The family has an external540s TERM/545s KILL cap covering one preparation and all four cases; at most two families run. Preparation counts/wall times and per-case active wall times are separate receipts. This replaces repeated per-case preparation and its150s outer launcher only; it does not add scientific attempts. No implicit retry on failed or nonstationary results. All20 source outcomes still globally seal before evaluation.
+
+execution_plan.json freezes this dispatcher/test/addendum plus post-seal evaluator/test and binds protocol_v2.json and all qualification/profile seals before launch. Component tests verify complete fitted/c0 copy independence, identical per-case quotas, no retry after nonstationarity and exact saved-profile forwarding. No new optimizer, dataset, likelihood, prior, bank, seed or constraint is added.

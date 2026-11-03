@@ -1,0 +1,3 @@
+# Centered objective control
+
+The original refit reports optimizer success but fails the projected-gradient gate (0.016083 > 0.01). Preserve it unchanged. Test an additive objective shift as a separate arm, from the exact same initial vector, with the same bounds, optimizer options, derivative checks, qualification gates and 180-second cap. Subtract the initial training log likelihood from every optimizer objective evaluation, retaining unchanged gradients. Restore absolute score before reporting and require replay agreement. This changes relative objective stopping scale, not the likelihood or its optimum. No threshold relaxation or restart from the failed endpoint. Preserve failure if this arm fails.

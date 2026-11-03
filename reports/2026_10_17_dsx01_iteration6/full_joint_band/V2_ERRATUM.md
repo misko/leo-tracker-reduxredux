@@ -1,0 +1,7 @@
+# Historical seed schema correction before inference
+
+Frozen version1 qualification stopped before band profiling or new inference because the canonical iteration2 full fitted-profile receipts omit the optional mode field. Public source replay/preparation is not zero cost and may evaluate original-source audits. No profile grid or optimizer was launched by these failed qualifications. Source/protocol/logs remain unchanged; no threshold, observations, candidate bank, calibration function or budget changes.
+
+Version2 explicitly accepts omitted mode only for the exact declared canonical full seed path and verifies source ID, fitted RF arm, profile method and exact job/input/terminal/TLE digest authority. A present non-full mode is rejected. All five actual frozen schemas and complete vector/nuisance sizes were inspected before this version. The actual fitted-c full target must replay the historical full-observation J and data NLL (absolute tolerance1e-7); this strengthens the source/domain check beyond the absent descriptive field. c0 still changes only c at the same complete seed. New regression tests cover absent/full/non-full mode and incorrect source authority.
+
+New authority is protocol_v2.json; immutable B math/fit/test hashes stay identical. Runtime profile qualifications still precede fitting, finite differences retain their original thresholds, and all20 outcomes must seal before evaluation.

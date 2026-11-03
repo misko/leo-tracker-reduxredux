@@ -1,0 +1,7 @@
+# DS10 transfer of fine timing search
+
+Use all 24 recordings in the frozen DS10 N24_h0 panel and its highest-training-score qualified baseline. Keep geography fixed. For every scan evaluate a 401-point timing grid from −5 to +5 seconds, detect all strict local maxima (including one-sided endpoints), and refine each within its adjacent grid points using bounded scalar minimization (xatol 1e−10, maxiter 100). Require success, |tau|<4.999, absolute timing gradient <=0.01, finite-difference discrepancy <=0.02 and score no worse than its grid seed by more than 1e−7. Keep all results and baseline timings; replace a timing only when a qualified peak improves training score. Held samples never select peaks.
+
+Verify input digests, exact membership, and per-scan baseline sums against the frozen full fit. Require scalar replay of best-grid values. Use a 180-second process cap; preserve per-scan results on partial completion. If total qualified timing improvement exceeds 0.01 log-score units on complete coverage, a subsequent bounded joint SLSQP refit from these timings is warranted; otherwise stop this direction without a joint fit. This declared trigger is numerical, not reference-distance based.
+
+This is transfer of a DS8-derived numerical search to exposed DS10 data, not a research-blind test. No new RF, export, height adjustment, candidate propagation or production change. No panel or observation replacement and no silent retry.

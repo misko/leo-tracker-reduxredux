@@ -1,0 +1,9 @@
+# Direct conditional contrast scale calibration
+
+Freeze the same paired-RX training feature and supported-track membership as the previous calibration. Use all nine existing DS7–9 eight-scan baseline fits as donors and the fixed DS10 N24_h0 fit as target. For each track, aggregate paired features by median log feature. Unsupported tracks retain noise scale 100 Hz in all arms. Do not change position, timing, candidate banks or q020 mixture.
+
+Calibrate the actual normalized joint held contrast likelihood: log p(all observations) minus log p(training), with signal candidate mixture and the background's physical slope prior fixed at 2000 Hz/s. Fit receiver-specific constant scales as control, versus receiver-specific log scales `log(sigma/100)=a_rx+b_rx log(feature/100)`. Use initial zero coefficients, a in [−log(4),log(4)], b in [−2,2], L-BFGS-B maxiter=200, ftol=1e−12, gtol=1e−7. Optimize donor conditional scores with equal dataset and scan weights, dividing each scan's sum by its supported held-observation count. Target outcomes never fit parameters.
+
+Require optimizer success, parameters at least 0.001 inside bounds, maximum gradient <=1e−5 and finite-difference gradient discrepancy <=1e−5. Preserve failed fits without retries or relaxed bounds. Test sufficient-statistic densities and derivatives against direct contrast/trend densities, and replay frozen baseline track scores to 1e−7. Export all required statistics under a 180-second cap; fit/evaluate under a separate 180-second cap.
+
+Report complete DS10 fixed-point score deltas (unsupported tracks contribute zero), per-scan signs and coverage. Only a qualified variable model that improves equal-scan DS10 conditional likelihood over both fixed100 and learned constant control warrants considering another joint geographic fit. This is exploratory transfer to exposed DS10 and does not establish accuracy. No new RF, archive mutation, propagation or production change.

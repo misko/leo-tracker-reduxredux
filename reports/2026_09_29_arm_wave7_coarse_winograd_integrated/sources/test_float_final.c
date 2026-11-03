@@ -1,0 +1,14 @@
+static int regional_count;static int regional_epochs[13334];
+#include "full_search.c"
+#include <assert.h>
+static void compare(leo_presence_workspace *w,size_t count,int epoch,double cfo,double *maximum){double reference[3],approx[3];assert(!glrt(w,count,epoch,cfo,0,16,1,reference));assert(!glrt_float_final(w,count,epoch,cfo,approx));for(int j=0;j<2;j++){double error=fabs(reference[j]-approx[j]);if(error>*maximum)*maximum=error;/* Bound proportional to the longest per-symbol dot plus 16 frame and FFT reductions. */assert(error<32768*FLT_EPSILON);}assert(fabs(reference[2]-approx[2])<=2.0/(512*SYMBOL_S));}
+static void run_rate(uint32_t rate,double *maximum){
+ size_t n=(rate+375)/750,count=rate/50;leo_presence_complex *exact=calloc(n,sizeof(*exact)),*control=calloc(n,sizeof(*control));assert(exact&&control);
+ for(size_t k=0;k<n;k++){exact[k]=(leo_presence_complex){cos(.013*k),sin(.013*k)};control[k]=(leo_presence_complex){cos(.019*k),-sin(.019*k)};}
+ leo_presence_workspace *w=leo_presence_create(rate,exact,control,n);assert(w);
+ for(size_t k=0;k<count;k++){int16_t re=(int16_t)((k*7919u+17u)&65535u),im=(int16_t)((k*3571u+32768u)&65535u);if(k==0)re=INT16_MIN;if(k+1==count)im=INT16_MAX;w->samples[k]=(double)re+I*(double)im;w->float_samples[2*k]=(float)re/32768.0f;w->float_samples[2*k+1]=(float)im/32768.0f;}
+ const double cfos[]={-317500,0,248750};for(int q=0;q<3;q++)compare(w,count,(int)n/4,cfos[q],maximum);
+ for(int mode=0;mode<2;mode++){double cfo=12345;memset(w->samples,0,count*sizeof(*w->samples));memset(w->float_samples,0,2*count*sizeof(*w->float_samples));int first=symbol_start(w,2),stop=symbol_start(w,66);for(int frame=0;frame<16;frame++){int start=frame_start(w,(int)n/4,frame);if(start+stop>=(int)count)break;for(int k=first;k<stop;k++){double sign=mode&&((k-first)&1)?-1:1;double complex target=30000*sign*w->exact[k]*conj(rotate(-TAU*cfo*k/rate));int16_t re=(int16_t)lrint(creal(target)),im=(int16_t)lrint(cimag(target));w->samples[start+k]=(double)re+I*(double)im;w->float_samples[2*(start+k)]=(float)re/32768.0f;w->float_samples[2*(start+k)+1]=(float)im/32768.0f;}}compare(w,count,(int)n/4,cfo,maximum);}
+ memset(w->samples,0,count*sizeof(*w->samples));memset(w->float_samples,0,2*count*sizeof(*w->float_samples));double reference[3],approx[3];assert(!glrt(w,count-1,(int)n/3,12345,0,16,1,reference));assert(!glrt_float_final(w,count-1,(int)n/3,12345,approx));assert(reference[0]==0&&reference[1]==0&&reference[2]==0);assert(approx[0]==0&&approx[1]==0&&approx[2]==0);leo_presence_destroy(w);free(control);free(exact);
+}
+int main(void){double maximum=0;uint32_t rates[]={2500000,5000000,7500000,10000000};for(int k=0;k<4;k++)run_rate(rates[k],&maximum);float_final_free();printf("full FP32 final GLRT passed FP64 CI16-domain random/coherent/cancellation, flat tails, extrema, all rates; max_score_error=%.17g bound=%.17g\n",maximum,32768*FLT_EPSILON);}
