@@ -25,6 +25,7 @@ const SkyInterface = lazy(() =>
   import("./SkyView").then((module) => ({ default: module.SkyInterface })),
 );
 import { StandardAnalysis } from "./StandardAnalysis";
+import { FastScanView } from "./FastScanView";
 import type {
   AnalysisState,
   ActiveQueueV1,
@@ -47,7 +48,7 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "recordings" | "queue" | "scanner" | "sky";
+type PrimaryView = "recordings" | "queue" | "scanner" | "fast-scans" | "sky";
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("recordings");
@@ -205,7 +206,7 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense>}
+      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : view === "fast-scans" ? <FastScanView /> : <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense>}
     </div>
   );
 }
@@ -251,6 +252,8 @@ function Header({
         </div>
       </div>
       <nav className="primary-nav" aria-label="Primary views">
+        <button type="button" aria-current={view === "fast-scans" ? "page" : undefined}
+          onClick={() => onView("fast-scans")}>Fast scans</button>
         <button
           type="button"
           aria-current={view === "recordings" ? "page" : undefined}

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import StrEnum
+from functools import lru_cache
 
 import numpy as np
 
@@ -131,6 +132,76 @@ class _ConditionedCorrelationWorkspace:
             np.stack(tuple(powers[int(index)][:frame_count] for index in offsets), axis=1),
             np.stack(tuple(self.times_s[int(index)][:frame_count] for index in offsets), axis=1),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class _ConditionedSymbolGeometry:
+    """Immutable template views for one sample-rate and Starlink edge."""
+
+    positions: np.ndarray
+    relative: np.ndarray
+    exact_reference: np.ndarray
+    control_reference: np.ndarray
+    exact_energy: np.ndarray
+    control_energy: np.ndarray
+    count: int
+
+
+@dataclass(frozen=True, slots=True)
+class _ConditionedWorkspaceGeometry:
+    symbols: np.ndarray
+    local_starts: np.ndarray
+    groups: tuple[_ConditionedSymbolGeometry, ...]
+
+
+def _readonly(array: np.ndarray) -> np.ndarray:
+    array.setflags(write=False)
+    return array
+
+
+@lru_cache(maxsize=16)
+def _conditioned_workspace_geometry(
+    sample_rate_hz: int, edge: StarlinkEdge
+) -> _ConditionedWorkspaceGeometry:
+    """Cache static pilot references without retaining any received IQ."""
+
+    symbols = _readonly(np.arange(_FIRST_PILOT_SYMBOL, _LAST_PILOT_SYMBOL + 1))
+    exact_template = _readonly(
+        np.array(qin_edge_pilot_frame(sample_rate_hz, edge), dtype=np.complex128, copy=True)
+    )
+    control_template = _readonly(
+        np.array(
+            qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=CONTROL_SYMBOL_ROLL),
+            dtype=np.complex128,
+            copy=True,
+        )
+    )
+    symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
+    local_starts = _readonly(np.rint(symbols * symbol_period).astype(int))
+    local_stops = np.minimum(
+        np.rint((symbols + 1) * symbol_period).astype(int), len(exact_template)
+    )
+    counts = local_stops - local_starts
+    groups = []
+    for count in np.unique(counts):
+        if count < 2:
+            continue
+        positions = np.flatnonzero(counts == count)
+        relative = local_starts[positions, None] + np.arange(int(count))[None, :]
+        exact_reference = exact_template[relative]
+        control_reference = control_template[relative]
+        groups.append(
+            _ConditionedSymbolGeometry(
+                _readonly(positions),
+                _readonly(relative),
+                _readonly(exact_reference),
+                _readonly(control_reference),
+                _readonly(np.sum(np.abs(exact_reference) ** 2, axis=1)),
+                _readonly(np.sum(np.abs(control_reference) ** 2, axis=1)),
+                int(count),
+            )
+        )
+    return _ConditionedWorkspaceGeometry(symbols, local_starts, tuple(groups))
 
 
 def detect_pilot_methods(
@@ -624,14 +695,9 @@ def _conditioned_correlation_workspace(
 ) -> _ConditionedCorrelationWorkspace:
     """Correlate exact/control pilots once, retaining per-symbol frame support."""
 
-    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, edge), dtype=np.complex128)
-    control_template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=CONTROL_SYMBOL_ROLL),
-        dtype=np.complex128,
-    )
+    geometry = _conditioned_workspace_geometry(sample_rate_hz, StarlinkEdge(edge))
     frame_period = sample_rate_hz / FRAME_RATE_HZ
-    symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
-    symbols = np.arange(_FIRST_PILOT_SYMBOL, _LAST_PILOT_SYMBOL + 1)
+    symbols = geometry.symbols
     selected = symbols if selected_symbols is None else np.asarray(selected_symbols, dtype=int)
     if (
         selected.ndim != 1
@@ -642,11 +708,9 @@ def _conditioned_correlation_workspace(
     ):
         raise ValueError("selected workspace symbols must be unique, ordered, and supported")
     selected_positions = selected - _FIRST_PILOT_SYMBOL
-    local_starts = np.rint(symbols * symbol_period).astype(int)
-    local_stops = np.minimum(
-        np.rint((symbols + 1) * symbol_period).astype(int), len(exact_template)
-    )
-    counts = local_stops - local_starts
+    selected_mask = np.zeros(len(symbols), dtype=bool)
+    selected_mask[selected_positions] = True
+    local_starts = geometry.local_starts
     frame_starts = []
     frame = 0
     while True:
@@ -663,16 +727,18 @@ def _conditioned_correlation_workspace(
     time_matrix = np.zeros(shape, dtype=float)
     valid_matrix = np.zeros(shape, dtype=bool)
 
-    for count in np.unique(counts[selected_positions]):
-        if count < 2:
+    for group in geometry.groups:
+        chosen = selected_mask[group.positions]
+        if not np.any(chosen):
             continue
-        positions = selected_positions[counts[selected_positions] == count]
-        relative = local_starts[positions, None] + np.arange(int(count))[None, :]
+        positions = group.positions[chosen]
+        count = group.count
+        relative = group.relative[chosen]
         relative_rotation = np.exp(-2j * np.pi * cfo_hz * relative / sample_rate_hz)
-        exact_reference = exact_template[relative]
-        control_reference = control_template[relative]
-        exact_energy = np.sum(np.abs(exact_reference) ** 2, axis=1)
-        control_energy = np.sum(np.abs(control_reference) ** 2, axis=1)
+        exact_reference = group.exact_reference[chosen]
+        control_reference = group.control_reference[chosen]
+        exact_energy = group.exact_energy[chosen]
+        control_energy = group.control_energy[chosen]
         for frame_index, frame_start in enumerate(frame_starts):
             starts = frame_start + local_starts[positions]
             valid = (starts >= 0) & (starts + count <= len(samples))

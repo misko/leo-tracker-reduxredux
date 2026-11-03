@@ -35,6 +35,7 @@ from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import PinnedLocalRoot, RecordingStore, ScannerAnalysisStore, ScannerIqStore
+from leo.storage.fast_scan import FastScanStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -168,6 +169,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             sky_service=sky_service,
             sky_archive_root=configured.tle_root,
             research_reprocessor=research_reprocessor,
+            fast_scans=FastScanStore(configured.bulk_root),
             scanner_reports=ScannerReportStore(
                 configured.scanner_report_root or configured.bulk_root / "scanner-reports"
             ),

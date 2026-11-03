@@ -583,6 +583,7 @@ class ProcessingService:
         worker_authority: WorkerReleaseAuthority | None = None,
         loaded_worker_release: LoadedWorkerRelease | None = None,
         worker_resource_classes: tuple[str, ...] | None = None,
+        worker_run_ids: tuple[str, ...] | None = None,
         lane_registries: dict[PipelineLane, AnalyzerRegistry] | None = None,
     ) -> None:
         if heartbeat_interval <= timedelta(0) or heartbeat_interval >= lease_for:
@@ -608,6 +609,7 @@ class ProcessingService:
         )
         self._loaded_worker_release = loaded_worker_release
         self._worker_resource_classes = worker_resource_classes
+        self._worker_run_ids = worker_run_ids
         self._output_byte_limits = _DEFAULT_OUTPUT_LIMITS
         self._wall_time_limits_seconds = _DEFAULT_WALL_LIMITS
 
@@ -704,6 +706,12 @@ class ProcessingService:
             lease_for=self.lease_for,
             authority=claim_authority,
             resource_classes=self._worker_resource_classes,
+            stage_keys=tuple(
+                sorted(
+                    {key for registry in self._lane_registries.values() for key in registry.keys}
+                )
+            ),
+            **({} if self._worker_run_ids is None else {"run_ids": self._worker_run_ids}),
         )
         if lease is None:
             if self._worker_authority is not None:

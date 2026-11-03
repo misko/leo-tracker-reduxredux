@@ -43,6 +43,7 @@ from leo.contracts.sky import (
     SkyWindowV1,
 )
 from leo.operations.tle_archive import PROVIDERS, TleArchiveError
+from leo.presentation.fast_scan import FastScanReports
 from leo.presentation.models import (
     AcquisitionQueueV1,
     ActiveQueueV1,
@@ -113,6 +114,7 @@ def create_app(
     research_reprocessor: ResearchReprocessor | None = None,
     scanner_reports: ScannerReportStore | None = None,
     scanner_analyses: ScannerAnalysisReader | None = None,
+    fast_scans: FastScanReports | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -127,7 +129,27 @@ def create_app(
     resolver = RegisteredArtifactResolver(artifact_root)
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
+    from leo.api.fast_scan_orbits import fast_scan_orbit_router
+
+    app.include_router(fast_scan_orbit_router(fast_scans))
     v2_router = APIRouter(prefix="/api/v2")
+
+    @router.get("/fast-scans")
+    def fast_scan_page(limit: Annotated[int, Query(ge=1, le=100)] = 20):
+        return {"items": []} if fast_scans is None else fast_scans.page(limit=limit)
+
+    @router.get("/fast-scans/automatic")
+    def fast_scan_automatic(limit: Annotated[int, Query(ge=1, le=100)] = 100):
+        return {"items": []} if fast_scans is None else fast_scans.automatic_page(limit=limit)
+
+    @router.get("/fast-scans/{run_id}")
+    def fast_scan_detail(run_id: str):
+        if fast_scans is None:
+            raise HTTPException(status_code=404, detail="Fast scan not found")
+        try:
+            return fast_scans.detail(run_id)
+        except (FileNotFoundError, ValueError) as error:
+            raise HTTPException(status_code=404, detail="Fast scan not found") from error
 
     @router.api_route(
         "/recordings",

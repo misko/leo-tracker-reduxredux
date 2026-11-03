@@ -1,0 +1,25 @@
+[Unit]
+Description=Verify and publish sealed fast recordings from NVMe to permanent RAID
+After=local-fs.target
+RequiresMountsFor=/srv/postgres-nvme/fast-scan-recordings /srv/bulk/leo/fast-scan-recordings
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/leo-shared-scans/raid-archive-dacd9022244ea6bb/worker/src
+ExecStart=/opt/leo-fast-auto/20261010-r1/venv/bin/python /opt/leo-shared-scans/raid-archive-dacd9022244ea6bb/bin/raid_archive.py --source-root /srv/postgres-nvme/fast-scan-recordings --archive-root /srv/bulk/leo/fast-scan-recordings --maximum-recordings 8 --maximum-seconds 300
+TimeoutStartSec=30min
+Nice=10
+CPUWeight=100
+IOWeight=500
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/postgres-nvme/fast-scan-recordings /srv/bulk/leo/fast-scan-recordings
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes

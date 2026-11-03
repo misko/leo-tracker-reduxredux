@@ -21,3 +21,11 @@
   evidence. Do not start, wait on, or disappear into multi-hour radio campaigns.
   Any new RF collection requires explicit user authorization, must be bounded to
   at most 30 minutes, and must not displace recording CLI/UI or re-analysis work.
+
+# Localization analysis comparisons
+
+- Large localization/tracking analyses that use the learned RF-dependent
+  calibration coefficient `c` must include a controlled `c = 0` versus fitted-`c`
+  ablation. Keep observations, candidate sets, other priors, and search budgets
+  matched. Report frequency-fit/score effects separately from position accuracy;
+  do not infer better localization from a better in-sample fit alone.

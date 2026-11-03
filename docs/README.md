@@ -44,8 +44,13 @@ Solution, Method—so it remains understandable when read alone.
 | How is a normal recording processed? | [Standard analysis pipeline](pipelines/standard-analysis.md) |
 | How should a scientific question be investigated? | [Research analysis pipeline](pipelines/research-analysis.md) |
 | Which reports support each conclusion? | [Research evidence ledger](research/evidence-ledger.md) |
+| What did the complete DS7 benchmark achieve? | [DS7 full88 final benchmark](../reports/2026_09_27_ds7_full88/REPORT.md) |
+| Where are the PLUTO+ ARM GLRT speed improvements, source, and validation results? | [ARM GLRT performance index](research/arm-glrt-performance.md) |
+| Where are external Starlink papers, reviews, and signal datasets cataloged? | [Starlink literature catalog](research/starlink-literature/README.md) |
+| Which public and historical Starlink APKs and firmware bundles are available, and how large are they? | [Public firmware catalog and size comparison](research/starlink-public-firmware/README.md) |
 | How should another page be written? | [Documentation standard](contributing/documentation.md) |
 | How is production operated? | [Operator runbook](operations/runbook.md) |
+| What are the continuous eight channel IQ and FPGA power scanner workstreams? | [Continuous scanning workstreams](operations/scan-workstreams.md) |
 | How is a release qualified? | [Release qualification](operations/release-qualification.md) |
 
 ## Documentation map

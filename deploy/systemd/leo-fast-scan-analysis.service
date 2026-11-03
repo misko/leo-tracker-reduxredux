@@ -1,0 +1,35 @@
+[Unit]
+Description=Automatically analyze sealed fast scans with existing GLRT and standard pipelines
+After=local-fs.target postgresql.service
+RequiresMountsFor=/srv/bulk/leo /srv/postgres-nvme
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+EnvironmentFile=/etc/leo/leo.env
+Environment=PYTHONPATH=/opt/leo-fast-auto/20261010-r2/worker/src
+Environment=OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+WorkingDirectory=/opt/leo-fast-auto/20261010-r1
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/fast-scan-automatic-work /srv/bulk/leo/fast-scan-automatic /srv/bulk/leo/fast-scan-inputs /srv/bulk/leo/fast-scan-reports /srv/bulk/leo/fast-scan-tracking-inputs
+ExecStartPre=+/usr/bin/install -d -o leo -g leo -m 0750 /srv/bulk/leo/prediction-scratch /srv/bulk/leo/scanner-shared-tracking-v15 /srv/bulk/leo/scanner-position-methods-v1 /srv/bulk/leo/scanner-blind-regional-v1 /srv/bulk/leo/scanner-adaptive-tle-position-v3 /srv/bulk/leo/scanner-regional-position-v3 /srv/bulk/leo/scanner-regional-position-work-v1
+ExecStart=/opt/leo-fast-auto/20261010-r1/venv/bin/python -m leo.cli.fast_scan --recording-root /srv/postgres-nvme/fast-scan-recordings --bulk-root /srv/bulk/leo --standard-python /opt/leo-fast-auto/20261010-r1/bin/standard-python --standard-script /opt/leo-fast-auto/20261010-r1/bin/fast_scan_standard_pipeline.py
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=60
+KillMode=control-group
+UMask=0027
+Nice=10
+CPUWeight=100
+IOWeight=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bulk/leo
+ReadOnlyPaths=/srv/postgres-nvme/fast-scan-recordings /var/lib/leo/tle
+InaccessiblePaths=/mnt/qnap01
+
+[Install]
+WantedBy=multi-user.target

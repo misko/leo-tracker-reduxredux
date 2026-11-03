@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import lru_cache
+from heapq import heapify, heappop
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
@@ -683,7 +684,6 @@ def acquire_symbolwise(
         config.coarse_cfo_step_hz,
     )
     score_maps: dict[float, np.ndarray] = {}
-    peaks: list[tuple[float, int, float]] = []
     coarse_absolute = tuple(calibration.absolute_cfo_hz(residual) for residual in coarse_residuals)
     coarse_scores = _folded_anchor_score_grid(
         values,
@@ -695,11 +695,9 @@ def acquire_symbolwise(
     )
     for residual, scores in zip(coarse_residuals, coarse_scores, strict=True):
         score_maps[residual] = scores
-        for epoch in _local_peak_indexes(scores):
-            peaks.append((float(scores[epoch]), epoch, residual))
-    peaks.sort(key=lambda item: (item[0], -abs(item[2]), -item[1]), reverse=True)
-    retained = _retain_separated(
-        peaks,
+    retained = _retain_score_map_peaks(
+        coarse_residuals,
+        coarse_scores,
         config.retained_candidate_count,
         config.candidate_epoch_separation_samples,
         config.candidate_cfo_separation_hz,
@@ -1608,6 +1606,43 @@ def _retain_separated(
             retained.append(candidate)
             if len(retained) == count:
                 break
+    return tuple(retained)
+
+
+def _retain_score_map_peaks(
+    residuals: tuple[float, ...],
+    score_rows: tuple[np.ndarray, ...],
+    count: int,
+    epoch_separation: int,
+    cfo_separation: float,
+    epoch_count: int,
+) -> tuple[tuple[float, int, float], ...]:
+    """Retain coarse peaks without sorting every peak in the score map.
+
+    The heap key exactly matches the former stable descending sort: greatest
+    score, then smallest absolute CFO, then smallest epoch, then discovery
+    order for a complete key tie.
+    """
+
+    heap: list[tuple[float, float, int, int, float]] = []
+    discovery_order = 0
+    for residual, scores in zip(residuals, score_rows, strict=True):
+        for epoch in _local_peak_indexes(scores):
+            score = float(scores[epoch])
+            heap.append((-score, abs(residual), epoch, discovery_order, residual))
+            discovery_order += 1
+    heapify(heap)
+
+    retained: list[tuple[float, int, float]] = []
+    while heap and len(retained) < count:
+        negative_score, _, epoch, _, cfo = heappop(heap)
+        candidate = (-negative_score, epoch, cfo)
+        for _, other_epoch, other_cfo in retained:
+            epoch_distance = min(abs(epoch - other_epoch), epoch_count - abs(epoch - other_epoch))
+            if epoch_distance < epoch_separation and abs(cfo - other_cfo) <= cfo_separation:
+                break
+        else:
+            retained.append(candidate)
     return tuple(retained)
 
 

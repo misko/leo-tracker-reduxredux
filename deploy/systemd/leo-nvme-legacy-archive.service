@@ -1,0 +1,55 @@
+[Unit]
+Description=Preserve quiescent legacy scanner spools and analysis scratch on RAID
+After=local-fs.target
+RequiresMountsFor=/srv/postgres-nvme /srv/bulk/leo/nvme-archive
+
+[Service]
+Type=oneshot
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/leo-shared-scans/raid-archive-dacd9022244ea6bb/worker/src
+ExecStart=/opt/leo-fast-auto/20261010-r1/venv/bin/python /opt/leo-shared-scans/raid-archive-dacd9022244ea6bb/bin/raid_archive.py \
+    --source-root /srv/postgres-nvme --archive-root /srv/bulk/leo/nvme-archive \
+    --maximum-recordings 100 --maximum-seconds 86400 \
+    --name leo-scanner-spool --name leo-analysis-scratch \
+    --name codex-radio20-authority --name fast8-power-glrt-20pct \
+    --name fast8-radio20-20261009 --name fast8-radio20-dual-reference-20261009 \
+    --name fast8-standard-e2e-20261010 --name fast8-upper-full-analysis \
+    --name radio20-observer9-track10-30ms-20260914-v1 \
+    --name radio20-track10-30ms-20260914-v1 \
+    --name radio20-scan80-prefilter-30ms-20260914-v1 \
+    --name radio20-scan80-prefilter-30ms-20260914-v2 \
+    --name radio20-scan80-prefilter-30ms-20260914-v3 \
+    --name radio20-scan80-prefilter-30ms-20260914-v4 \
+    --name radio20-scan80-prefilter-30ms-20260914-v5 \
+    --name activity-followup-20260915-v12 --name activity-followup-20260915-v13 \
+    --name activity-followup-20260915-v14 --name activity-followup-20260915-v15 \
+    --name activity-followup-20260915-v16 --name activity-followup-20260915-v17 \
+    --name activity-followup-20260915-v18 --name activity-followup-20260915-v19 \
+    --name activity-followup-20260915-v20 --name activity-followup-20260915-v21 \
+    --name activity-followup-20260915-v22 --name activity-followup-20260915-v23 \
+    --name activity-followup-20260915-v24 --name activity-followup-20260915-v25 \
+    --name activity-followup-20260915-v26 --name activity-followup-20260915-v27 \
+    --name activity-followup-20260915-v28 --name activity-followup-20260915-v29 \
+    --name activity-followup-20260915-v30 --name activity-followup-20260915-v31 \
+    --name activity-followup-20260915-v32 --name activity-followup-20260915-v33 \
+    --name activity-followup-20260915-v34 --name activity-followup-20260915-v35 \
+    --name activity-followup-20260915-v36 --name activity-followup-20260915-v37 \
+    --name activity-followup-20260915-v38 --name activity-followup-20260915-v39
+TimeoutStartSec=infinity
+Restart=on-failure
+RestartSec=60s
+Nice=15
+CPUWeight=50
+IOWeight=100
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/postgres-nvme /srv/bulk/leo/nvme-archive
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -36,6 +36,11 @@ status determine weight.
 
 ## Status vocabulary
 
+For the current PLUTO+ speed/recovery experiments, source locations, and
+DS7/DS8/DS9 validation, see the [ARM GLRT performance index](arm-glrt-performance.md).
+It distinguishes research implementations from deployed analysis and exact
+outputs from approximate individual-hit recovery.
+
 | Status | Meaning |
 |---|---|
 | **Established** | Repeated, controlled evidence supports the bounded claim |
