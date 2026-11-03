@@ -36,5 +36,6 @@ or changed member before inference, and verifies the inventory again afterward.
 It is compatible with the watcher `--worker-root` isolation added in iteration
 001. Staging itself does not mutate services. Activate only after an isolated
 installed-runtime canary and when the watcher has no active numerical child.
-Rollback restores the previous worker root and removes the runtime manifest pin;
-all old numerical releases and published results remain available.
+Rollback restores the previous worker root and its matching runtime manifest
+pin. Remove the pin only when returning to an original, uncomposed release.
+All old numerical releases and published results remain available.

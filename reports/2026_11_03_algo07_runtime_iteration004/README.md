@@ -142,3 +142,30 @@ pass a private canary before the watcher can use the new composition, and the
 watcher must have no active numerical child before restart. Activation evidence,
 when completed, is recorded separately; the existence of this report alone is
 not a deployment receipt.
+
+### Installed canary and activation
+
+The qualified composition was staged from commit `336715a398c2e6b9295318261bb63da76aaa2726`.
+Its manifest binds **2,167 files**, with SHA-256
+`ab5217ddb51bf699953ee917bc12df06f9dacccfa459fa5eeabec48faded15cd`.
+[Staging receipt](staging.json).
+
+The private installed-entry-point canary completed in **121.52 seconds** including
+export and preparation, with no failure and a verified process-tree read audit.
+All **4,179 scientific leaves** match the prepared replay exactly. Six provenance
+fields differ because the private export directories and their input-manifest
+hashes differ; observations, tracks and causal catalogue hashes were verified
+equal. Both c arms and the fallback decision are preserved. This broader entry
+point timing is not comparable to the prepared-worker timing above.
+[Canary qualification](installed-canary-provenance.json),
+[raw comparison](installed-canary-raw-parity.json).
+
+The watcher was activated at **2026-11-03 17:23:05 UTC**, with no pending inputs
+and no numerical child. Its threads were briefly stopped during the child check
+and termination to prevent a new-job race. The service is active with the new
+worker root and manifest pin; no numerical job was interrupted.
+[Activation receipt](runtime-activation.json).
+
+Rollback restores [the previous drop-in](previous-95-runtime-numerics.conf),
+including its previous manifest pin, reloads systemd and restarts only an idle
+watcher. Both immutable runtime directories remain available.
