@@ -75,10 +75,19 @@ and do not treat unparseable rows as valid samples.
 `tools/profile_algo07_full_glrt.py` extends small native fixtures to every window
 of a recording. Use its `snapshot` and `run` subcommands with the installed native
 Python. Published candidate equality covers all receivers and processed/invalid
-windows. Use a 30-minute total bound and eight or fewer workers for this benchmark
-(the CLI supports up to sixteen);
+windows. Use a 30-minute total bound and matched worker counts. The first replay
+used eight; the next matched comparison uses sixteen, matching the current
+production service. Run the two trials sequentially and retain host-load records;
 this stage still does not rerun downstream localization. A comparison with saved
 published results alone does not measure baseline speed.
+
+`tools/compare_full_glrt_replays.py --snapshot SNAPSHOT --baseline BASELINE
+--candidate CANDIDATE --output RECEIPT` additionally compares every stored native
+result, including unpublished candidates, scores and invalid windows. It requires
+finished, verified trials and complete ordered range inventories. Runtime files
+must belong to the frozen reference. Timing ratios require matching concurrency,
+interpreter, host, profiling and thread settings. This exact check still does not
+claim a downstream position replay.
 
 For ALGO03 private replays, `tools/compare_algo03_runtime_replays.py` compares
 both arms and every scientific JSON value exactly, including intermediate

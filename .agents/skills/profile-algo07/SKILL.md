@@ -41,9 +41,16 @@ one PID, not descendants. Retain corrupted raw rows and exclude them explicitly
 from summaries. Sampling can affect timing; record its use in comparisons.
 
 For complete native replay, use `tools/profile_algo07_full_glrt.py` with the
-installed native Python, up to eight workers and a 30-minute total bound. It
+installed native Python and a 30-minute total bound. Match the production worker
+count in both trials (currently sixteen); run baseline and candidate sequentially
+and record contention. Earlier eight-worker timings are separate evidence. It
 checks every published candidate and invalid window, but does not rerun position
-inference. For ALGO03 stage replays, `tools/compare_algo03_runtime_replays.py`
+inference. Use `tools/compare_full_glrt_replays.py` to compare complete native
+window results, including unpublished hypotheses and invalid windows, between
+two finished trials. It verifies frozen runtime/input identities and rejects
+missing or duplicate windows. It reports timing ratios only with matched worker,
+interpreter, profiling, host and thread configurations.
+For ALGO03 stage replays, `tools/compare_algo03_runtime_replays.py`
 requires both arms, exact scientific values, matching file inventories, verified
 source receipts and explicitly pinned runtime manifests. Runtime/provenance
 accounting is reported separately. `tools/profile_hierarchical_bound.py` captures
