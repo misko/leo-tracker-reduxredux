@@ -1,5 +1,9 @@
 # Dataset configuration index
 
+Use `uv run leo datasets list` for scan counts, fast/adaptive types and sample-rate
+breakdowns. See the [dataset inventory CLI](dataset-cli.md) for filters, JSON,
+revision handling and catalogue updates.
+
 All located named dataset membership authorities are now published in the
 [lossless manifest archive](../../reports/2026_10_18_dataset_manifest_archive/README.md),
 including full authorities previously available only in ignored local directories.

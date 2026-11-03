@@ -13,6 +13,7 @@ import typer
 
 from leo.cli.backend import CliBackendError
 from leo.cli.composition import BackendFactory, default_backend_factory
+from leo.cli.datasets import register_dataset_commands
 from leo.cli.fast_scan import register_fast_scan_commands
 from leo.cli.models import (
     AcquisitionStatusDataV1,
@@ -110,6 +111,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         help="Predict which catalogued objects fall in an antenna beam.",
     )
     register_sky_commands(sky)
+    register_dataset_commands(app)
     register_short_window_commands(scanner)
     register_fast_scan_commands(scanner)
     register_standard_pipeline_commands(process, cast(StandardBackendFactory, backend_factory))
