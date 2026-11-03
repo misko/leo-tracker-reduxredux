@@ -94,3 +94,9 @@ data, parity results, and figures to the requested remote. State component and
 overall speedups separately, with runtime environment and concurrency. Install
 a qualified change only within the user's deployment authorization, then verify
 live behavior and retain the previous release for rollback.
+For watcher activation, absence of a child PID alone does not prove idleness:
+the application holds a per-job ownership lock before launching and while
+publishing after exit. Check every thread's children and the observed open job
+ownership files, then recheck while the watcher is stopped. Resume immediately
+if work is active. `activate_algo03_runtime.py` implements this guarded handoff
+for the qualified ALGO03 composition without interrupting a numerical job.

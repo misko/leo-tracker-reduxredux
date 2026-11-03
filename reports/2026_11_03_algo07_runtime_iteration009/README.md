@@ -76,10 +76,37 @@ and new source hashes. The production entry point verifies the full composition
 before and after the guarded worker. The failed iteration008 qualification
 remains unchanged.
 
-An installed production-entry-point canary and idle-watcher activation are the
-remaining deployment steps at initial publication. No running numerical job may
-be interrupted. Deployment receipts will be added after those steps complete.
-The final ALGO07 worker and native GLRT services are not changed by this release.
+The runtime was activated at **19:20:35 UTC on November 3**. The installed
+production-entry-point canary ran as the service account and completed in
+**285.53 seconds**, preserving all **2,714,225 compared values across 117 files**
+exactly relative to the qualified prototype. Its complete process read audit and
+1,910-file frozen input inventory passed. This extra canary timing is not a new
+matched baseline measurement.
+
+The immutable release is
+`/opt/leo-fast-graph-runtime-algo03/f286f3e3029ec17479f4aa2b41312e4220258944`,
+binding 2,075 files with manifest SHA-256
+`eded58eba2111382e45aa9b3095ad662a3feb7c90dcb30996b5eb1ec2e62f764`.
+The original ALGO03 release and dependency installation remain intact.
+
+Activation waited for the original numerical job to complete. It verified no
+children across any watcher thread and no open per-job ownership locks, then
+briefly stopped the idle watcher and repeated those checks before replacing it.
+The ownership-lock check also protects the interval before a worker launches
+and after it exits. Two component tests cover that distinction. No numerical
+job was interrupted; cutoff, budget, service account, thread limits and resource
+settings remain unchanged. The new watcher is active with zero restarts and the
+expected working directory, source path and manifest pin.
+
+[Stage receipt](receipts/runtime-stage.json),
+[exact installed-canary comparison](receipts/installed-canary-parity.json),
+[activation receipt](receipts/runtime-activation.json) and
+[live verification](receipts/runtime-live.json) record the rollout. The qualification
+document remains the immutable pre-deployment evidence; activation is recorded
+separately. Rollback retains the original unit and release and should use the same
+idle-only procedure to remove the new override and reload the original configuration.
+
+The final ALGO07 worker and native GLRT services were not changed by this release.
 
 Regenerate the collected receipts and figure with `collect_results.py` after all
 named comparisons exist. A missing or failing required result prevents a
