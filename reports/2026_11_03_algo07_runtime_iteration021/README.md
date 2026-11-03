@@ -103,7 +103,12 @@ recorded fixture diagnostics. [DS26](receipts/DS26-0046.json),
   tested private runtime was left immutable.
 
 The batched full DS27-0004 replay uses 16 workers and a 1,800-second bound. Its
-final all-hypothesis comparison is pending at this checkpoint. The unchanged
+final all-hypothesis comparison is pending at this checkpoint. A fresh prepared
+ALGO02/family replay of both calibration arms is also running with a 1,200-second
+bound, using the unchanged frozen public evidence export. It reuses prepared
+graph evidence; it does not reconstruct graph tracks from the candidate output.
+The concurrent runs provide parity evidence, not a matched timing comparison.
+The unchanged
 integer screen still requires completion of its numerical-bound qualification
 and production packaging/canary gates. The next useful profile should identify
 what dominates after batching; a fast rescoring component alone cannot deliver
