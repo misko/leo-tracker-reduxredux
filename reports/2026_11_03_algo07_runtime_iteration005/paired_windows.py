@@ -11,7 +11,8 @@ from pathlib import Path
 
 
 def initialize(source, cpu):
-    global PROFILE
+    global PROFILE, DIAGNOSTICS
+    DIAGNOSTICS = []
     os.sched_setaffinity(0, {cpu})
     path = Path(__file__).resolve().parents[2]/'tools/profile_algo07_glrt.py'
     spec = importlib.util.spec_from_file_location('native_profile', path)
@@ -20,6 +21,19 @@ def initialize(source, cpu):
     PROFILE.use_source(Path(source))
     # Import outside the per-window timer.
     from leo.scanner.fast_scan_analysis import production_glrt  # noqa: F401
+    try:
+        from leo.analysis.starlink import coarse_screen
+    except ImportError:
+        pass
+    else:
+        from leo.analysis.starlink._screen_native import _native_acquisition  # noqa: F401
+
+        original = coarse_screen.acquire
+
+        def observed(*args, **kwargs):
+            return original(*args, **kwargs, observer=DIAGNOSTICS.append)
+
+        coarse_screen.acquire = observed
 
 
 def evaluate(fixture, item):
@@ -31,12 +45,14 @@ def evaluate(fixture, item):
                                 item['target'], np.load(Path(fixture)/item['samples'],
                                                         allow_pickle=False),
                                 item['sample_rate_hz'])
+    first_diagnostic = len(DIAGNOSTICS)
     wall, cpu = time.perf_counter(), time.process_time()
     receivers = production_glrt(window, tuple(item['receiver_ids']))
     seconds, cpu_seconds = time.perf_counter()-wall, time.process_time()-cpu
     expected = {p['receiver_id']: p['candidates'] for p in item['expected_probes']}
     assert all(PROFILE.published_candidates(r) == expected[r.receiver_id] for r in receivers)
     return dict(seconds=seconds, cpu_seconds=cpu_seconds,
+                screening=DIAGNOSTICS[first_diagnostic:],
                 receivers=[r.model_dump(mode='json') for r in receivers])
 
 
