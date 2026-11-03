@@ -33,6 +33,17 @@ end-to-end speedup. Separate active computation, discovery/validation overhead,
 queue delay, and acquisition duration. Attribute child-worker time separately:
 a parent cProfile file does not profile its children.
 
+For coarse-screening research, `build_native_screen_probe.py` builds an isolated
+approximate kernel, and `probe_native_screen.py --selection` measures its grid
+cost and tests an interval selector against exact baseline scores. Approximate
+scores never enter that diagnostic's actual detector path. `interval_coarse_selection.py`
+is correct only if its supplied intervals cover the exact scores: an empirical
+maximum error or unchanged winners on a fixture is not a general error bound.
+Oracle lookup time is not native exact-rescoring time. Before promotion, require
+conservative runtime bounds (including exceptional floating-point cases), actual
+sparse exact evaluation with a full fallback, complete detector parity, both-arm
+downstream parity and matched runtime measurements. Do not install the FP32 probe.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.
