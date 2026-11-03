@@ -74,6 +74,15 @@ audit. All **14 combined tool tests** pass. Snapshot creation has completed;
 the prepared numerical replay has not yet run. It will follow the native timing
 trials to avoid adding another research computation during those measurements.
 
+The downstream adapter now also has an exact `compare` subcommand. It covers
+all six regenerated scientific JSON files, including discovery alternatives,
+optimizer histories, satellites, native ownership, gates, objectives and both
+position estimates. It verifies read ancestry and unchanged inputs, and rejects
+extra output files. Only five top-level timing fields, checked hash links to
+independently compared results, and validated local discovery paths are
+normalized. Tests explicitly reject changed owners, satellites, gates, position,
+a 1e-10 objective change, forged result hashes and unexpected output files.
+
 ## Remaining qualification
 
 1. Finish the live sixteen-worker baseline; retain any timeout or failure.

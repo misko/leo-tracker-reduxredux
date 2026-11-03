@@ -116,6 +116,11 @@ children. Profiles cover each named parent, not its discovery child; retain
 that distinction when attributing time. This starts after graph construction and
 causal preparation and stops before ALGO03. Compare full scientific results and
 both calibration arms separately before claiming accuracy parity.
+The adapter's `compare --snapshot SNAPSHOT --trial TRIAL --output RECEIPT`
+subcommand checks all six generated scientific JSON files exactly against the
+public reference. It validates both arms, read ancestry, unchanged inputs and
+source commands; it rejects extra scientific outputs. Only top-level timing,
+verified result-hash links and validated discovery input paths are normalized.
 
 Prepared numerical replays use `tools/profile_algo07_numerics.py`:
 
