@@ -1,0 +1,3739 @@
+{
+  "summary": {
+    "fixture": "/srv/bulk/leo/research/algo07-runtime-20261103/glrt-native-DS26-0046",
+    "windows": 16,
+    "calls": 34,
+    "fixture_windows": 16,
+    "native_rescoring_timed": true,
+    "computed_bound": true,
+    "screen_kind": "integer_vnni",
+    "sparse_native_batch": true,
+    "totals": {
+      "baseline": 9.401928102597594,
+      "screen": 4.04051711410284
+    },
+    "grid_speedup": 2.326912085035236,
+    "maximum_absolute_delta": 6.274398402283943e-06,
+    "row_argmax_mismatches": 1,
+    "retained_coordinate_mismatch_calls": 0,
+    "baseline_published_candidates_exact": true,
+    "approximate_scores_used_for_inference": false,
+    "error_bound_certified": false,
+    "production_modified": false
+  },
+  "calls": [
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.264968566596508,
+        "screen": 0.11943992413580418
+      },
+      "cpu_seconds": {
+        "baseline": 0.2649391590000001,
+        "screen": 0.11943175499999992
+      },
+      "maximum_absolute_delta": 5.006258169848454e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013117729686200619,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17215937389511687,
+          12029,
+          -80000.0
+        ],
+        [
+          0.17170609321096503,
+          3478,
+          800000.0
+        ],
+        [
+          0.17156056714256812,
+          8297,
+          -720000.0
+        ],
+        [
+          0.17114184588134773,
+          5624,
+          -320000.0
+        ],
+        [
+          0.1711225126852776,
+          11317,
+          -80000.0
+        ],
+        [
+          0.17068235035114449,
+          2896,
+          -80000.0
+        ],
+        [
+          0.17051803525708537,
+          2874,
+          -640000.0
+        ],
+        [
+          0.17049894595564005,
+          10712,
+          320000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00041235471033344905,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1504.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014763880782,
+        "normalized_product_bound": 16.000011811100265,
+        "denominator_lower": 6820.920987246607,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3475.4156448379176,
+        "quantized_maximum": 16224.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00041235471033344905,
+          "selector_seconds": 0.018531757406890392,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            4
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0013192500919103622,
+          "bound_seconds": 0.0054518356919288635,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0030597420409321785,
+          "single_column_control_seconds": 0.02864812221378088,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.001336313784122467,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11253217328339815,
+        "baseline": 0.2612668536603451
+      },
+      "cpu_seconds": {
+        "screen": 0.11252150700000008,
+        "baseline": 0.261262616
+      },
+      "maximum_absolute_delta": 5.68940599945944e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014242964796721935,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.1740484112963872,
+          12014,
+          160000.0
+        ],
+        [
+          0.1732297041747479,
+          10015,
+          160000.0
+        ],
+        [
+          0.17309674750475343,
+          6627,
+          -400000.0
+        ],
+        [
+          0.17253477317673,
+          5970,
+          -240000.0
+        ],
+        [
+          0.17226768583324492,
+          10827,
+          -160000.0
+        ],
+        [
+          0.17219800993187667,
+          11842,
+          0.0
+        ],
+        [
+          0.17194940179918378,
+          11842,
+          80000.0
+        ],
+        [
+          0.171642091193899,
+          2884,
+          0.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00045922861447135336,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1675.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.000001416827461,
+        "normalized_product_bound": 16.00001133461567,
+        "denominator_lower": 7894.164461260128,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3120.676473989077,
+        "quantized_maximum": 14568.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00045922861447135336,
+          "selector_seconds": 0.018049078062176704,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            7
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007818732410669327,
+          "bound_seconds": 0.0034988364204764366,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0031118253245949745,
+          "single_column_control_seconds": 0.028612220659852028,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.00017610378563404083,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.26088589895516634,
+        "screen": 0.11485357023775578
+      },
+      "cpu_seconds": {
+        "baseline": 0.2608713990000002,
+        "screen": 0.11485272199999974
+      },
+      "maximum_absolute_delta": 4.00628616217813e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012100704945623875,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17455405711856858,
+          6293,
+          320000.0
+        ],
+        [
+          0.1734184984779203,
+          12609,
+          400000.0
+        ],
+        [
+          0.17299223207968337,
+          3011,
+          -560000.0
+        ],
+        [
+          0.1720681625304122,
+          9262,
+          400000.0
+        ],
+        [
+          0.17139298338634767,
+          4545,
+          -640000.0
+        ],
+        [
+          0.17137949909649627,
+          10600,
+          560000.0
+        ],
+        [
+          0.17076846699239753,
+          8323,
+          -160000.0
+        ],
+        [
+          0.17056713038767554,
+          396,
+          -640000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003405122045011186,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1242.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015119883898,
+        "normalized_product_bound": 16.000012095902548,
+        "denominator_lower": 5618.619845972622,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4208.671793277279,
+        "quantized_maximum": 19647.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003405122045011186,
+          "selector_seconds": 0.01572193019092083,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            4
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006956681609153748,
+          "bound_seconds": 0.0031081680208444595,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.00313667394220829,
+          "single_column_control_seconds": 0.028659794479608536,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.00017546862363815308,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11334895621985197,
+        "baseline": 0.2620263146236539
+      },
+      "cpu_seconds": {
+        "screen": 0.11334648999999963,
+        "baseline": 0.2620067669999999
+      },
+      "maximum_absolute_delta": 4.3036176893829214e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.011671110056340694,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17605179765678733,
+          11133,
+          80000.0
+        ],
+        [
+          0.17583285313723981,
+          11134,
+          0.0
+        ],
+        [
+          0.17292831777965487,
+          2968,
+          400000.0
+        ],
+        [
+          0.17190079323127355,
+          7530,
+          -80000.0
+        ],
+        [
+          0.17179563959148816,
+          589,
+          160000.0
+        ],
+        [
+          0.17146738648815504,
+          6440,
+          400000.0
+        ],
+        [
+          0.17140790945855713,
+          6439,
+          320000.0
+        ],
+        [
+          0.17107115457205854,
+          6814,
+          320000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003608047998127506,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1316.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013406273263,
+        "normalized_product_bound": 16.000010725015017,
+        "denominator_lower": 5981.515795580738,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3971.9647982362344,
+        "quantized_maximum": 18542.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003608047998127506,
+          "selector_seconds": 0.014536147937178612,
+          "exact_columns": 27,
+          "total_columns": 13333,
+          "requests": [
+            20,
+            7
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006603775545954704,
+          "bound_seconds": 0.0028495267033576965,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0030758939683437347,
+          "single_column_control_seconds": 0.02755258046090603,
+          "single_column_control_calls": 54,
+          "validation_seconds_excluded": 0.00017437338829040527,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2680175472050905,
+        "screen": 0.11779704131186008
+      },
+      "cpu_seconds": {
+        "baseline": 0.2679842199999998,
+        "screen": 0.11777306199999993
+      },
+      "maximum_absolute_delta": 5.5445048636748595e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014520484022796154,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17394889294542218,
+          10420,
+          -320000.0
+        ],
+        [
+          0.17235982522830365,
+          9454,
+          -400000.0
+        ],
+        [
+          0.17129684855563385,
+          9454,
+          -480000.0
+        ],
+        [
+          0.17116286278976883,
+          9271,
+          -400000.0
+        ],
+        [
+          0.17055953826234727,
+          3942,
+          0.0
+        ],
+        [
+          0.17051415047087637,
+          4239,
+          -80000.0
+        ],
+        [
+          0.17045796037670538,
+          7944,
+          -160000.0
+        ],
+        [
+          0.17041888784101464,
+          5384,
+          -720000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.000419754203578608,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1531.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013881331804,
+        "normalized_product_bound": 16.00001110506159,
+        "denominator_lower": 7036.775393305691,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3414.1503049449416,
+        "quantized_maximum": 15938.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.000419754203578608,
+          "selector_seconds": 0.015095454640686512,
+          "exact_columns": 33,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            12
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007149809971451759,
+          "bound_seconds": 0.003163892775774002,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003200015053153038,
+          "single_column_control_seconds": 0.03371127508580685,
+          "single_column_control_calls": 66,
+          "validation_seconds_excluded": 0.0001785019412636757,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.10941819567233324,
+        "baseline": 0.26021821051836014
+      },
+      "cpu_seconds": {
+        "screen": 0.10941584099999968,
+        "baseline": 0.26019881300000014
+      },
+      "maximum_absolute_delta": 5.772216737920388e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012121199630200863,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17423082243610233,
+          5746,
+          -720000.0
+        ],
+        [
+          0.17397631650441017,
+          8916,
+          -800000.0
+        ],
+        [
+          0.1735399749318194,
+          9439,
+          -320000.0
+        ],
+        [
+          0.1728709339654731,
+          3210,
+          320000.0
+        ],
+        [
+          0.1723863444468242,
+          9947,
+          400000.0
+        ],
+        [
+          0.17237451970243753,
+          9440,
+          -400000.0
+        ],
+        [
+          0.17214578293243657,
+          10015,
+          640000.0
+        ],
+        [
+          0.1720968787488171,
+          6745,
+          -400000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.000434559438613221,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1585.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014225469736,
+        "normalized_product_bound": 16.000011380371742,
+        "denominator_lower": 6979.881581449581,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3297.831844938347,
+        "quantized_maximum": 15395.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.000434559438613221,
+          "selector_seconds": 0.014642473310232162,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            22,
+            6
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006918087601661682,
+          "bound_seconds": 0.0029568737372756004,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0030287038534879684,
+          "single_column_control_seconds": 0.028669731691479683,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.00017802231013774872,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.26658123172819614,
+        "screen": 0.11266970727592707
+      },
+      "cpu_seconds": {
+        "baseline": 0.2665675219999999,
+        "screen": 0.11266190700000056
+      },
+      "maximum_absolute_delta": 3.7419417641126884e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013428621925413609,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.1738392879580641,
+          12298,
+          480000.0
+        ],
+        [
+          0.1712426425016372,
+          8051,
+          80000.0
+        ],
+        [
+          0.1705198886759508,
+          9865,
+          -320000.0
+        ],
+        [
+          0.1704520845667216,
+          5215,
+          -160000.0
+        ],
+        [
+          0.1701569952767648,
+          12987,
+          -80000.0
+        ],
+        [
+          0.17014704452045618,
+          11946,
+          -400000.0
+        ],
+        [
+          0.16982535620857223,
+          3580,
+          0.0
+        ],
+        [
+          0.16967461889066687,
+          12997,
+          -640000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00032543869242114093,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1187.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014603497427,
+        "normalized_product_bound": 16.000011682793676,
+        "denominator_lower": 5441.373952719432,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4403.606965664021,
+        "quantized_maximum": 20557.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00032543869242114093,
+          "selector_seconds": 0.015117364935576916,
+          "exact_columns": 27,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            3
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007235296070575714,
+          "bound_seconds": 0.0029115667566657066,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003121095709502697,
+          "single_column_control_seconds": 0.027671686373651028,
+          "single_column_control_calls": 54,
+          "validation_seconds_excluded": 0.00017760135233402252,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.10946401860564947,
+        "baseline": 0.2588695380836725
+      },
+      "cpu_seconds": {
+        "screen": 0.10945499700000028,
+        "baseline": 0.2588470779999996
+      },
+      "maximum_absolute_delta": 2.6732980162313957e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014045859687030315,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17468512172392844,
+          1920,
+          -240000.0
+        ],
+        [
+          0.1730140632861976,
+          8391,
+          -400000.0
+        ],
+        [
+          0.17155189941685783,
+          8199,
+          -560000.0
+        ],
+        [
+          0.17127247302823928,
+          11149,
+          0.0
+        ],
+        [
+          0.17116532920084288,
+          9529,
+          240000.0
+        ],
+        [
+          0.170835570971155,
+          7870,
+          -160000.0
+        ],
+        [
+          0.17032433460397056,
+          2514,
+          -400000.0
+        ],
+        [
+          0.17030127346354884,
+          478,
+          -560000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0002404414920627853,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 877.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.000001504700371,
+        "normalized_product_bound": 16.000012037598438,
+        "denominator_lower": 4159.8685300660845,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 5960.303556581005,
+        "quantized_maximum": 27824.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0002404414920627853,
+          "selector_seconds": 0.017547142691910267,
+          "exact_columns": 25,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            1
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007705008611083031,
+          "bound_seconds": 0.004149104468524456,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0029342053458094597,
+          "single_column_control_seconds": 0.025503485463559628,
+          "single_column_control_calls": 50,
+          "validation_seconds_excluded": 0.00016180332750082016,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.26566189900040627,
+        "screen": 0.11410284042358398
+      },
+      "cpu_seconds": {
+        "baseline": 0.2656160939999994,
+        "screen": 0.11408882199999937
+      },
+      "maximum_absolute_delta": 3.206515633236151e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012793246656656265,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17349675823484836,
+          12842,
+          -800000.0
+        ],
+        [
+          0.17177223852018145,
+          10250,
+          -80000.0
+        ],
+        [
+          0.17059356780838852,
+          1077,
+          -320000.0
+        ],
+        [
+          0.17039849959476175,
+          9278,
+          -400000.0
+        ],
+        [
+          0.1702979532423919,
+          4157,
+          -720000.0
+        ],
+        [
+          0.17029467361888465,
+          5407,
+          160000.0
+        ],
+        [
+          0.17018077549991598,
+          11081,
+          -640000.0
+        ],
+        [
+          0.1700209680971223,
+          4881,
+          -720000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0002725179859803972,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 994.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015914496938,
+        "normalized_product_bound": 16.000012731592484,
+        "denominator_lower": 4631.693741019858,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 5258.751150463883,
+        "quantized_maximum": 24549.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0002725179859803972,
+          "selector_seconds": 0.014405450783669949,
+          "exact_columns": 32,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            8
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007657129317522049,
+          "bound_seconds": 0.0030095065012574196,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0032035084441304207,
+          "single_column_control_seconds": 0.03253716882318258,
+          "single_column_control_calls": 64,
+          "validation_seconds_excluded": 0.00016080494970083237,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11345386877655983,
+        "baseline": 0.2666812604293227
+      },
+      "cpu_seconds": {
+        "screen": 0.11345147499999975,
+        "baseline": 0.2663331210000006
+      },
+      "maximum_absolute_delta": 3.902639469643976e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.011312960647046566,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17511049494293734,
+          12898,
+          80000.0
+        ],
+        [
+          0.17302133123353663,
+          10315,
+          -560000.0
+        ],
+        [
+          0.1728014691927836,
+          3595,
+          0.0
+        ],
+        [
+          0.17248504557486727,
+          5622,
+          -800000.0
+        ],
+        [
+          0.17220231788556498,
+          11079,
+          -400000.0
+        ],
+        [
+          0.17170265956119365,
+          12271,
+          400000.0
+        ],
+        [
+          0.17062025798436461,
+          8789,
+          80000.0
+        ],
+        [
+          0.17040329771949714,
+          13205,
+          -560000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00030870947998685257,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1126.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014093167056,
+        "normalized_product_bound": 16.000011274529673,
+        "denominator_lower": 5117.894593561031,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4642.241890981417,
+        "quantized_maximum": 21671.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00030870947998685257,
+          "selector_seconds": 0.018239459954202175,
+          "exact_columns": 35,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            11
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006588781252503395,
+          "bound_seconds": 0.0048639364540576935,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003499148413538933,
+          "single_column_control_seconds": 0.03596013970673084,
+          "single_column_control_calls": 70,
+          "validation_seconds_excluded": 0.0001847725361585617,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2624184051528573,
+        "screen": 0.1140928827226162
+      },
+      "cpu_seconds": {
+        "baseline": 0.26239661199999986,
+        "screen": 0.11408305899999949
+      },
+      "maximum_absolute_delta": 5.562200731668021e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.011807320639491081,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17591819509799786,
+          6190,
+          -480000.0
+        ],
+        [
+          0.1749004068811961,
+          6072,
+          240000.0
+        ],
+        [
+          0.17449814228603855,
+          6190,
+          -560000.0
+        ],
+        [
+          0.17231673260220157,
+          12562,
+          0.0
+        ],
+        [
+          0.17230521659133355,
+          8275,
+          -80000.0
+        ],
+        [
+          0.17123107944534163,
+          10618,
+          -640000.0
+        ],
+        [
+          0.1705578504047652,
+          8577,
+          240000.0
+        ],
+        [
+          0.1705176853157796,
+          6072,
+          160000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0004979192237328472,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1816.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015207599655,
+        "normalized_product_bound": 16.0000121660751,
+        "denominator_lower": 7822.985984930004,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 2878.1856881189756,
+        "quantized_maximum": 13436.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0004979192237328472,
+          "selector_seconds": 0.01578521355986595,
+          "exact_columns": 19,
+          "total_columns": 13333,
+          "requests": [
+            18,
+            1
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006678169593214989,
+          "bound_seconds": 0.0027798907831311226,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0027802493423223495,
+          "single_column_control_seconds": 0.019316096790134907,
+          "single_column_control_calls": 38,
+          "validation_seconds_excluded": 0.0001422688364982605,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11295763775706291,
+        "baseline": 0.262667553499341
+      },
+      "cpu_seconds": {
+        "screen": 0.11293679999999995,
+        "baseline": 0.2626487700000002
+      },
+      "maximum_absolute_delta": 4.516190509396001e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013420945033431053,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17281581472424334,
+          3509,
+          -800000.0
+        ],
+        [
+          0.1708539538614071,
+          3762,
+          400000.0
+        ],
+        [
+          0.17045266809090837,
+          12381,
+          -640000.0
+        ],
+        [
+          0.17018200460293792,
+          11401,
+          -160000.0
+        ],
+        [
+          0.1701340759570311,
+          6927,
+          -720000.0
+        ],
+        [
+          0.17002205571860934,
+          8781,
+          -400000.0
+        ],
+        [
+          0.16976520051830743,
+          10659,
+          -160000.0
+        ],
+        [
+          0.1696356516002027,
+          8336,
+          -320000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.000380548544821157,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1388.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000016144759458,
+        "normalized_product_bound": 16.000012915802355,
+        "denominator_lower": 5640.729007370002,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3765.8904731416787,
+        "quantized_maximum": 17580.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.000380548544821157,
+          "selector_seconds": 0.014704450964927673,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            4
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.000719037838280201,
+          "bound_seconds": 0.0031098853796720505,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0030814483761787415,
+          "single_column_control_seconds": 0.02873015869408846,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.0001873224973678589,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.26320859231054783,
+        "screen": 0.112691187299788
+      },
+      "cpu_seconds": {
+        "baseline": 0.263165313,
+        "screen": 0.11268979899999998
+      },
+      "maximum_absolute_delta": 5.4477724411583495e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.01246696151793003,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17143950828751595,
+          1945,
+          800000.0
+        ],
+        [
+          0.17118188304730508,
+          1625,
+          -560000.0
+        ],
+        [
+          0.170773446197519,
+          4425,
+          -800000.0
+        ],
+        [
+          0.17056494903559993,
+          7783,
+          -240000.0
+        ],
+        [
+          0.16996694843067556,
+          10912,
+          160000.0
+        ],
+        [
+          0.16948870785772452,
+          10642,
+          0.0
+        ],
+        [
+          0.16946650653041018,
+          10875,
+          480000.0
+        ],
+        [
+          0.16913203049748124,
+          9763,
+          800000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0004123546841408025,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1504.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013493484685,
+        "normalized_product_bound": 16.000010794784107,
+        "denominator_lower": 6690.254625092242,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3475.4156448379176,
+        "quantized_maximum": 16224.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0004123546841408025,
+          "selector_seconds": 0.011783515103161335,
+          "exact_columns": 24,
+          "total_columns": 13333,
+          "requests": [
+            24
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006834445521235466,
+          "bound_seconds": 0.002989368513226509,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.001878335140645504,
+          "single_column_control_seconds": 0.0244075795635581,
+          "single_column_control_calls": 48,
+          "validation_seconds_excluded": 0.00010542571544647217,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11083691660314798,
+        "baseline": 0.2607894102111459
+      },
+      "cpu_seconds": {
+        "screen": 0.11081310800000033,
+        "baseline": 0.26078494699999943
+      },
+      "maximum_absolute_delta": 4.425869463919874e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014515495859086514,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17260233775412084,
+          8542,
+          80000.0
+        ],
+        [
+          0.17172367638931105,
+          9715,
+          -320000.0
+        ],
+        [
+          0.171067899904831,
+          5106,
+          80000.0
+        ],
+        [
+          0.17003637635349186,
+          4105,
+          -560000.0
+        ],
+        [
+          0.1698962022982854,
+          3500,
+          -480000.0
+        ],
+        [
+          0.16987507337698673,
+          4324,
+          -560000.0
+        ],
+        [
+          0.16950389951571984,
+          7028,
+          640000.0
+        ],
+        [
+          0.169373353825507,
+          4325,
+          -480000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00038410993125859177,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1401.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013965621504,
+        "normalized_product_bound": 16.000011172493302,
+        "denominator_lower": 6193.9965397781025,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3730.9735136921854,
+        "quantized_maximum": 17417.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00038410993125859177,
+          "selector_seconds": 0.01481296680867672,
+          "exact_columns": 33,
+          "total_columns": 13333,
+          "requests": [
+            22,
+            11
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006632143631577492,
+          "bound_seconds": 0.002817397005856037,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003297768533229828,
+          "single_column_control_seconds": 0.03393028397113085,
+          "single_column_control_calls": 66,
+          "validation_seconds_excluded": 0.00017859134823083878,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2654701815918088,
+        "screen": 0.11426528915762901
+      },
+      "cpu_seconds": {
+        "baseline": 0.26544088099999996,
+        "screen": 0.11426008300000134
+      },
+      "maximum_absolute_delta": 4.930269101338647e-06,
+      "row_argmax_mismatches": 1,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014740155078470707,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17393045535830498,
+          7688,
+          80000.0
+        ],
+        [
+          0.17360239631796193,
+          10277,
+          -160000.0
+        ],
+        [
+          0.17342652378420453,
+          11509,
+          -160000.0
+        ],
+        [
+          0.17299350674364677,
+          7320,
+          -480000.0
+        ],
+        [
+          0.17145716412271592,
+          11509,
+          -80000.0
+        ],
+        [
+          0.17135774849251945,
+          4087,
+          -160000.0
+        ],
+        [
+          0.17133996558153983,
+          5656,
+          240000.0
+        ],
+        [
+          0.17054971346161626,
+          4334,
+          80000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003983590974307235,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1453.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014180331036,
+        "normalized_product_bound": 16.00001134426081,
+        "denominator_lower": 6314.115121134705,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3597.5178956735695,
+        "quantized_maximum": 16794.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003983590974307235,
+          "selector_seconds": 0.018526545725762844,
+          "exact_columns": 28,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            7
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.000814344733953476,
+          "bound_seconds": 0.005897842347621918,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003276500850915909,
+          "single_column_control_seconds": 0.028543176129460335,
+          "single_column_control_calls": 56,
+          "validation_seconds_excluded": 0.00017846468836069107,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11455133650451899,
+        "baseline": 0.26710266061127186
+      },
+      "cpu_seconds": {
+        "screen": 0.11453896200000102,
+        "baseline": 0.267057651
+      },
+      "maximum_absolute_delta": 4.311502380949239e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.017004545778036118,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17259295441399258,
+          3166,
+          -480000.0
+        ],
+        [
+          0.17255695438228658,
+          6087,
+          -400000.0
+        ],
+        [
+          0.17244360152125648,
+          3131,
+          -560000.0
+        ],
+        [
+          0.17117927275376885,
+          620,
+          -320000.0
+        ],
+        [
+          0.17061708606998977,
+          620,
+          -240000.0
+        ],
+        [
+          0.1705849888902639,
+          13204,
+          -240000.0
+        ],
+        [
+          0.1704910196229793,
+          4431,
+          560000.0
+        ],
+        [
+          0.16973326617902024,
+          6727,
+          -240000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00036573601816590034,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1334.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015412729089,
+        "normalized_product_bound": 16.00001233017852,
+        "denominator_lower": 5820.939102618452,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3918.411179448668,
+        "quantized_maximum": 18292.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00036573601816590034,
+          "selector_seconds": 0.01795704197138548,
+          "exact_columns": 31,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            10
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.000675673596560955,
+          "bound_seconds": 0.0029330141842365265,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0034091277047991753,
+          "single_column_control_seconds": 0.031883206218481064,
+          "single_column_control_calls": 62,
+          "validation_seconds_excluded": 0.00019245315343141556,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.4762434372678399,
+        "screen": 0.2059861719608307
+      },
+      "cpu_seconds": {
+        "baseline": 0.47619974900000095,
+        "screen": 0.20598352899999917
+      },
+      "maximum_absolute_delta": 2.933163385621107e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.02147661428898573,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.16601554329855364,
+          4851,
+          0.0
+        ],
+        [
+          0.16516873363345635,
+          4706,
+          320000.0
+        ],
+        [
+          0.16460889787354274,
+          3743,
+          -320000.0
+        ],
+        [
+          0.1638877867694718,
+          12096,
+          -640000.0
+        ],
+        [
+          0.16370943416296346,
+          11949,
+          -320000.0
+        ],
+        [
+          0.16360116511057388,
+          4237,
+          0.0
+        ],
+        [
+          0.16346198265040368,
+          2908,
+          240000.0
+        ],
+        [
+          0.16336014207837066,
+          8403,
+          -800000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003327443009019561,
+        "max_taps": 44,
+        "maximum_support": 374,
+        "max_sample_component": 1334.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015412729089,
+        "normalized_product_bound": 16.00001233017852,
+        "denominator_lower": 5813.174005574923,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4312.67625943441,
+        "quantized_maximum": 18292.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003327443009019561,
+          "selector_seconds": 0.0175480917096138,
+          "exact_columns": 37,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            13
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007096966728568077,
+          "bound_seconds": 0.003686288371682167,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0042737992480397224,
+          "single_column_control_seconds": 0.04124616365879774,
+          "single_column_control_calls": 74,
+          "validation_seconds_excluded": 0.0001857401803135872,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11064640060067177,
+        "baseline": 0.2607516339048743
+      },
+      "cpu_seconds": {
+        "screen": 0.1106293780000005,
+        "baseline": 0.2607295270000005
+      },
+      "maximum_absolute_delta": 5.274996627696593e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.017639040015637875,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.1766764857427858,
+          2726,
+          -400000.0
+        ],
+        [
+          0.17623111450136444,
+          8799,
+          0.0
+        ],
+        [
+          0.1740957949601925,
+          2726,
+          -320000.0
+        ],
+        [
+          0.17261831077926856,
+          4844,
+          0.0
+        ],
+        [
+          0.17197921750221198,
+          6455,
+          -720000.0
+        ],
+        [
+          0.17195531974663386,
+          10279,
+          160000.0
+        ],
+        [
+          0.1712961003941369,
+          677,
+          800000.0
+        ],
+        [
+          0.1711627810355734,
+          3542,
+          240000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00047020261862925613,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1715.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015472419124,
+        "normalized_product_bound": 16.00001237793051,
+        "denominator_lower": 8271.988989557318,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3047.8435524379865,
+        "quantized_maximum": 14228.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00047020261862925613,
+          "selector_seconds": 0.01595550775527954,
+          "exact_columns": 27,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            6
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006885910406708717,
+          "bound_seconds": 0.002952979877591133,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0033194785937666893,
+          "single_column_control_seconds": 0.027837321162223816,
+          "single_column_control_calls": 54,
+          "validation_seconds_excluded": 0.00019581802189350128,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2611579755321145,
+        "screen": 0.11017894838005304
+      },
+      "cpu_seconds": {
+        "baseline": 0.2611314450000002,
+        "screen": 0.11016711399999934
+      },
+      "maximum_absolute_delta": 5.409972641340355e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013160618022084236,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17162796922002935,
+          12964,
+          -560000.0
+        ],
+        [
+          0.17136617561636952,
+          6053,
+          -80000.0
+        ],
+        [
+          0.17063361389107293,
+          12771,
+          720000.0
+        ],
+        [
+          0.17058848712885114,
+          6053,
+          -160000.0
+        ],
+        [
+          0.17054596870668068,
+          9876,
+          -480000.0
+        ],
+        [
+          0.17041000960608496,
+          7846,
+          -560000.0
+        ],
+        [
+          0.1699938173693714,
+          5829,
+          -400000.0
+        ],
+        [
+          0.16981008497040034,
+          693,
+          -640000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0004353795684025911,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1588.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013907156378,
+        "normalized_product_bound": 16.000011125721233,
+        "denominator_lower": 6673.401563033406,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3291.6196251589895,
+        "quantized_maximum": 15366.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0004353795684025911,
+          "selector_seconds": 0.01587747409939766,
+          "exact_columns": 30,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            9
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006726644933223724,
+          "bound_seconds": 0.00288225244730711,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003117004409432411,
+          "single_column_control_seconds": 0.03042714297771454,
+          "single_column_control_calls": 60,
+          "validation_seconds_excluded": 0.00014815200120210648,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11379680503159761,
+        "baseline": 0.26262607984244823
+      },
+      "cpu_seconds": {
+        "screen": 0.1137940000000004,
+        "baseline": 0.2626217940000011
+      },
+      "maximum_absolute_delta": 4.753615407276923e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012524580582976341,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17386190258324474,
+          11165,
+          160000.0
+        ],
+        [
+          0.17320739052731685,
+          9515,
+          -560000.0
+        ],
+        [
+          0.17190210615391036,
+          4242,
+          400000.0
+        ],
+        [
+          0.17168513663951898,
+          2095,
+          -400000.0
+        ],
+        [
+          0.1708563644349718,
+          2473,
+          -560000.0
+        ],
+        [
+          0.17054375122815976,
+          12027,
+          80000.0
+        ],
+        [
+          0.17034379221114018,
+          6685,
+          -640000.0
+        ],
+        [
+          0.1703143526724253,
+          6684,
+          -720000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003948092442720911,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1440.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014021405066,
+        "normalized_product_bound": 16.00001121712012,
+        "denominator_lower": 6186.231824794566,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3629.8642814212594,
+        "quantized_maximum": 16945.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003948092442720911,
+          "selector_seconds": 0.016946068964898586,
+          "exact_columns": 29,
+          "total_columns": 13333,
+          "requests": [
+            22,
+            7
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.000659269280731678,
+          "bound_seconds": 0.005255649797618389,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0029657073318958282,
+          "single_column_control_seconds": 0.029323016293346882,
+          "single_column_control_calls": 58,
+          "validation_seconds_excluded": 0.00014754943549633026,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.25940005388110876,
+        "screen": 0.1098797358572483
+      },
+      "cpu_seconds": {
+        "baseline": 0.2593867880000005,
+        "screen": 0.10987099299999947
+      },
+      "maximum_absolute_delta": 3.885504585049437e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012156995013356209,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17493183308997617,
+          1899,
+          -400000.0
+        ],
+        [
+          0.17257461633613905,
+          8377,
+          -160000.0
+        ],
+        [
+          0.17197595162060644,
+          752,
+          -400000.0
+        ],
+        [
+          0.17180328319246838,
+          3330,
+          -560000.0
+        ],
+        [
+          0.17118285063595898,
+          10335,
+          -400000.0
+        ],
+        [
+          0.1711031860694875,
+          13231,
+          -240000.0
+        ],
+        [
+          0.1709725960256784,
+          10135,
+          -160000.0
+        ],
+        [
+          0.17084867993291797,
+          9230,
+          560000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00033037250492273026,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1205.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014768769876,
+        "normalized_product_bound": 16.00001181501154,
+        "denominator_lower": 5936.436126948949,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4337.843121792889,
+        "quantized_maximum": 20250.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00033037250492273026,
+          "selector_seconds": 0.013773288577795029,
+          "exact_columns": 24,
+          "total_columns": 13333,
+          "requests": [
+            24
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006611961871385574,
+          "bound_seconds": 0.0027557192370295525,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0018199393525719643,
+          "single_column_control_seconds": 0.024400529451668262,
+          "single_column_control_calls": 48,
+          "validation_seconds_excluded": 9.710993617773056e-05,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.1141325831413269,
+        "baseline": 0.2663962272927165
+      },
+      "cpu_seconds": {
+        "screen": 0.11412161800000042,
+        "baseline": 0.2663764880000006
+      },
+      "maximum_absolute_delta": 5.049063646983543e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012080544605851173,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.176095613937203,
+          3497,
+          -240000.0
+        ],
+        [
+          0.17375133262745038,
+          8025,
+          -240000.0
+        ],
+        [
+          0.1734653975265343,
+          9234,
+          -480000.0
+        ],
+        [
+          0.17326791222802107,
+          6893,
+          -80000.0
+        ],
+        [
+          0.17300471898740571,
+          8555,
+          -80000.0
+        ],
+        [
+          0.17288942155889886,
+          9788,
+          -720000.0
+        ],
+        [
+          0.17243688587795222,
+          2854,
+          -240000.0
+        ],
+        [
+          0.17239499556747684,
+          8555,
+          0.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003937172261083258,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1436.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015388041683,
+        "normalized_product_bound": 16.00001231042861,
+        "denominator_lower": 6330.516852734685,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3639.932361753322,
+        "quantized_maximum": 16992.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003937172261083258,
+          "selector_seconds": 0.016757152043282986,
+          "exact_columns": 24,
+          "total_columns": 13333,
+          "requests": [
+            21,
+            3
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006588594987988472,
+          "bound_seconds": 0.004362770356237888,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.002864914946258068,
+          "single_column_control_seconds": 0.024346803314983845,
+          "single_column_control_calls": 48,
+          "validation_seconds_excluded": 0.0001412946730852127,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2616784106940031,
+        "screen": 0.11312698572874069
+      },
+      "cpu_seconds": {
+        "baseline": 0.26164573800000035,
+        "screen": 0.11309217999999888
+      },
+      "maximum_absolute_delta": 5.8491618782630095e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.011999948881566525,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.2430149064227219,
+          2854,
+          400000.0
+        ],
+        [
+          0.2361640439517863,
+          2854,
+          480000.0
+        ],
+        [
+          0.20609134510862642,
+          2853,
+          320000.0
+        ],
+        [
+          0.19822292952894255,
+          2854,
+          560000.0
+        ],
+        [
+          0.178707483638412,
+          1837,
+          480000.0
+        ],
+        [
+          0.17729967086495552,
+          5954,
+          160000.0
+        ],
+        [
+          0.1762059198332005,
+          1837,
+          400000.0
+        ],
+        [
+          0.1754692528128387,
+          5367,
+          320000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0004798137057597176,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1750.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.000001448602817,
+        "normalized_product_bound": 16.00001158881834,
+        "denominator_lower": 8310.481628142092,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 2986.7924270201606,
+        "quantized_maximum": 13943.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0004798137057597176,
+          "selector_seconds": 0.013647421263158321,
+          "exact_columns": 16,
+          "total_columns": 13333,
+          "requests": [
+            13,
+            3
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006881440058350563,
+          "bound_seconds": 0.0029387781396508217,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0027293218299746513,
+          "single_column_control_seconds": 0.01663776393979788,
+          "single_column_control_calls": 32,
+          "validation_seconds_excluded": 0.0001676781103014946,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11434405483305454,
+        "baseline": 0.2684191223233938
+      },
+      "cpu_seconds": {
+        "screen": 0.11434152300000022,
+        "baseline": 0.26839315600000013
+      },
+      "maximum_absolute_delta": 4.5874114213417805e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.014213813468813896,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.1740175507557249,
+          4236,
+          320000.0
+        ],
+        [
+          0.17341431528423476,
+          12189,
+          -160000.0
+        ],
+        [
+          0.17278147018453732,
+          9795,
+          -400000.0
+        ],
+        [
+          0.1726525204939078,
+          10051,
+          80000.0
+        ],
+        [
+          0.17144515861205056,
+          3631,
+          80000.0
+        ],
+        [
+          0.17129937990665,
+          8632,
+          400000.0
+        ],
+        [
+          0.17086638024177123,
+          8764,
+          400000.0
+        ],
+        [
+          0.17070720768804254,
+          10105,
+          80000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00038548214122999057,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1406.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013650273496,
+        "normalized_product_bound": 16.00001092021507,
+        "denominator_lower": 5917.238329451692,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3717.6922162328688,
+        "quantized_maximum": 17355.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00038548214122999057,
+          "selector_seconds": 0.01798984594643116,
+          "exact_columns": 33,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            9
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006813360378146172,
+          "bound_seconds": 0.005476169288158417,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0031974315643310547,
+          "single_column_control_seconds": 0.033738382160663605,
+          "single_column_control_calls": 66,
+          "validation_seconds_excluded": 0.00017611775547266006,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2596674235537648,
+        "screen": 0.11006804369390011
+      },
+      "cpu_seconds": {
+        "baseline": 0.25964558999999987,
+        "screen": 0.11005800999999948
+      },
+      "maximum_absolute_delta": 4.8047781945059764e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.01390621718019247,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17183320844549338,
+          10105,
+          560000.0
+        ],
+        [
+          0.17111482932253938,
+          5608,
+          640000.0
+        ],
+        [
+          0.17062396153417222,
+          11179,
+          800000.0
+        ],
+        [
+          0.17038136626383651,
+          13330,
+          0.0
+        ],
+        [
+          0.17000604541408063,
+          5716,
+          320000.0
+        ],
+        [
+          0.16985339342685524,
+          3333,
+          240000.0
+        ],
+        [
+          0.16953121542787514,
+          1167,
+          -560000.0
+        ],
+        [
+          0.16951677708299567,
+          10232,
+          640000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00037479230418958393,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1367.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013707784698,
+        "normalized_product_bound": 16.000010966224,
+        "denominator_lower": 6022.405083570428,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3823.7283814322504,
+        "quantized_maximum": 17850.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00037479230418958393,
+          "selector_seconds": 0.013946271501481533,
+          "exact_columns": 24,
+          "total_columns": 13333,
+          "requests": [
+            24
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006655771285295486,
+          "bound_seconds": 0.002867487259209156,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.001851511187851429,
+          "single_column_control_seconds": 0.024740696884691715,
+          "single_column_control_calls": 48,
+          "validation_seconds_excluded": 9.477231651544571e-05,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11387839913368225,
+        "baseline": 0.2629771865904331
+      },
+      "cpu_seconds": {
+        "screen": 0.11387597900000124,
+        "baseline": 0.2629573030000003
+      },
+      "maximum_absolute_delta": 3.625455864242344e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.017416222020983696,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17419672719361598,
+          6761,
+          0.0
+        ],
+        [
+          0.17334961792179768,
+          4758,
+          320000.0
+        ],
+        [
+          0.17152983296038585,
+          1521,
+          240000.0
+        ],
+        [
+          0.1712069155935697,
+          6622,
+          400000.0
+        ],
+        [
+          0.1709866952231544,
+          1303,
+          -320000.0
+        ],
+        [
+          0.17058392346942952,
+          7791,
+          560000.0
+        ],
+        [
+          0.1705771492134363,
+          13182,
+          -640000.0
+        ],
+        [
+          0.1705286653248983,
+          13183,
+          -720000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003070658274344156,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1120.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014182609178,
+        "normalized_product_bound": 16.00001134608332,
+        "denominator_lower": 5107.800389815471,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4667.090770098848,
+        "quantized_maximum": 21787.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003070658274344156,
+          "selector_seconds": 0.015035874210298061,
+          "exact_columns": 22,
+          "total_columns": 13333,
+          "requests": [
+            22
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006907982751727104,
+          "bound_seconds": 0.004736685194075108,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0019815973937511444,
+          "single_column_control_seconds": 0.022353537380695343,
+          "single_column_control_calls": 44,
+          "validation_seconds_excluded": 9.829923510551453e-05,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2697499208152294,
+        "screen": 0.1180715449154377
+      },
+      "cpu_seconds": {
+        "baseline": 0.2696959450000005,
+        "screen": 0.11807045000000116
+      },
+      "maximum_absolute_delta": 4.28089860146641e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.01441678311675787,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.1745833287719816,
+          4245,
+          -720000.0
+        ],
+        [
+          0.174039579158397,
+          387,
+          0.0
+        ],
+        [
+          0.1738596498531295,
+          10940,
+          -800000.0
+        ],
+        [
+          0.1738234424858404,
+          6095,
+          -560000.0
+        ],
+        [
+          0.1725037076096161,
+          8096,
+          -160000.0
+        ],
+        [
+          0.17197185848927707,
+          9498,
+          -800000.0
+        ],
+        [
+          0.17166153131243206,
+          5233,
+          -240000.0
+        ],
+        [
+          0.17155567932455057,
+          8097,
+          -240000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00035613748877799537,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1299.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000013717980671,
+        "normalized_product_bound": 16.000010974380775,
+        "denominator_lower": 5541.215341768579,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4024.0189156977494,
+        "quantized_maximum": 18785.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00035613748877799537,
+          "selector_seconds": 0.011925721541047096,
+          "exact_columns": 22,
+          "total_columns": 13333,
+          "requests": [
+            22
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006718942895531654,
+          "bound_seconds": 0.002814481034874916,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0017864303663372993,
+          "single_column_control_seconds": 0.022392057813704014,
+          "single_column_control_calls": 44,
+          "validation_seconds_excluded": 9.160768240690231e-05,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.113018280826509,
+        "baseline": 0.2630282863974571
+      },
+      "cpu_seconds": {
+        "screen": 0.11301612299999952,
+        "baseline": 0.2630039650000011
+      },
+      "maximum_absolute_delta": 4.882441718950803e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.015653526410460472,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.18765484004763433,
+          6008,
+          -160000.0
+        ],
+        [
+          0.18384016648618895,
+          11191,
+          -80000.0
+        ],
+        [
+          0.18142458228525232,
+          11191,
+          0.0
+        ],
+        [
+          0.17503586431303766,
+          11217,
+          -800000.0
+        ],
+        [
+          0.17488228772702305,
+          6006,
+          -240000.0
+        ],
+        [
+          0.17456766898135356,
+          6008,
+          -80000.0
+        ],
+        [
+          0.1745534591644469,
+          4606,
+          -400000.0
+        ],
+        [
+          0.173697262807012,
+          8659,
+          -320000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00041345053415523295,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1508.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015592026241,
+        "normalized_product_bound": 16.00001247361613,
+        "denominator_lower": 6237.195209676609,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3466.204422406456,
+        "quantized_maximum": 16181.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00041345053415523295,
+          "selector_seconds": 0.015186694450676441,
+          "exact_columns": 24,
+          "total_columns": 13333,
+          "requests": [
+            17,
+            7
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007520467042922974,
+          "bound_seconds": 0.003053971566259861,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0029816655442118645,
+          "single_column_control_seconds": 0.024533736519515514,
+          "single_column_control_calls": 48,
+          "validation_seconds_excluded": 0.00018877629190683365,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2611547978594899,
+        "screen": 0.11254557967185974
+      },
+      "cpu_seconds": {
+        "baseline": 0.26112072800000163,
+        "screen": 0.11253513500000167
+      },
+      "maximum_absolute_delta": 4.59750599449138e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.016056159511208534,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.2560462270554067,
+          3432,
+          320000.0
+        ],
+        [
+          0.2512823810171971,
+          3432,
+          400000.0
+        ],
+        [
+          0.2033211303763435,
+          3431,
+          240000.0
+        ],
+        [
+          0.19514602624905059,
+          3432,
+          480000.0
+        ],
+        [
+          0.18431712722964672,
+          4726,
+          320000.0
+        ],
+        [
+          0.18156052894457375,
+          2416,
+          400000.0
+        ],
+        [
+          0.17961604340654924,
+          2416,
+          320000.0
+        ],
+        [
+          0.17921685468523965,
+          2099,
+          -80000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00033503821984184933,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1222.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014700957813,
+        "normalized_product_bound": 16.00001176076193,
+        "denominator_lower": 4867.84814298934,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 4277.434639800514,
+        "quantized_maximum": 19968.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00033503821984184933,
+          "selector_seconds": 0.011960920877754688,
+          "exact_columns": 13,
+          "total_columns": 13333,
+          "requests": [
+            13
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007310248911380768,
+          "bound_seconds": 0.003466096706688404,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0015981635078787804,
+          "single_column_control_seconds": 0.01330183632671833,
+          "single_column_control_calls": 26,
+          "validation_seconds_excluded": 0.00011047068983316422,
+          "native_calls": 2,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.1130632171407342,
+        "baseline": 0.2613858412951231
+      },
+      "cpu_seconds": {
+        "screen": 0.11305126499999929,
+        "baseline": 0.2613654810000021
+      },
+      "maximum_absolute_delta": 6.274398402283943e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.015545862726867199,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17318741540991955,
+          8596,
+          640000.0
+        ],
+        [
+          0.17146149361966895,
+          1907,
+          -160000.0
+        ],
+        [
+          0.17055819093886831,
+          7943,
+          -160000.0
+        ],
+        [
+          0.1703830305540905,
+          2534,
+          -160000.0
+        ],
+        [
+          0.17019549944760887,
+          2051,
+          240000.0
+        ],
+        [
+          0.16984857118097976,
+          8595,
+          560000.0
+        ],
+        [
+          0.1694960897831916,
+          4146,
+          -480000.0
+        ],
+        [
+          0.16911398835993813,
+          4547,
+          560000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0004666603542997704,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1702.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015384480667,
+        "normalized_product_bound": 16.0000123075798,
+        "denominator_lower": 7699.83765106607,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3070.978715754215,
+        "quantized_maximum": 14336.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0004666603542997704,
+          "selector_seconds": 0.01925364602357149,
+          "exact_columns": 35,
+          "total_columns": 13333,
+          "requests": [
+            22,
+            13
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007379278540611267,
+          "bound_seconds": 0.004685697145760059,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.0035008052363991737,
+          "single_column_control_seconds": 0.036088124848902225,
+          "single_column_control_calls": 70,
+          "validation_seconds_excluded": 0.00020616501569747925,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2614355497062206,
+        "screen": 0.11336112022399902
+      },
+      "cpu_seconds": {
+        "baseline": 0.26141547900000006,
+        "screen": 0.11335955999999925
+      },
+      "maximum_absolute_delta": 5.0447998898861535e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.012592230923473835,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17067823479651198,
+          12393,
+          -240000.0
+        ],
+        [
+          0.17017153561354226,
+          3605,
+          -320000.0
+        ],
+        [
+          0.17007290524921398,
+          11524,
+          -320000.0
+        ],
+        [
+          0.1700125902128602,
+          4209,
+          -320000.0
+        ],
+        [
+          0.1699758533929401,
+          1326,
+          -800000.0
+        ],
+        [
+          0.16976041534933795,
+          4001,
+          720000.0
+        ],
+        [
+          0.16973966096339554,
+          9167,
+          -720000.0
+        ],
+        [
+          0.1696482497736746,
+          8421,
+          480000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00041070930737951647,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1498.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000017995420674,
+        "normalized_product_bound": 16.000014396330062,
+        "denominator_lower": 6428.056774877462,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3489.339585722685,
+        "quantized_maximum": 16289.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00041070930737951647,
+          "selector_seconds": 0.014828605577349663,
+          "exact_columns": 40,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            16
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006592273712158203,
+          "bound_seconds": 0.0027627218514680862,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003397393971681595,
+          "single_column_control_seconds": 0.04062514379620552,
+          "single_column_control_calls": 80,
+          "validation_seconds_excluded": 0.00016804225742816925,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.11276723258197308,
+        "baseline": 0.26763628609478474
+      },
+      "cpu_seconds": {
+        "screen": 0.11275616499999686,
+        "baseline": 0.2676243050000018
+      },
+      "maximum_absolute_delta": 4.603284843390787e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013032437302172184,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.18474562867536898,
+          3618,
+          -80000.0
+        ],
+        [
+          0.18038382970445113,
+          3618,
+          0.0
+        ],
+        [
+          0.17682011153581764,
+          4226,
+          0.0
+        ],
+        [
+          0.1747458166542389,
+          4226,
+          -80000.0
+        ],
+        [
+          0.17451353289278562,
+          12512,
+          -800000.0
+        ],
+        [
+          0.17303598173610568,
+          8616,
+          160000.0
+        ],
+        [
+          0.17113788744738187,
+          9310,
+          -560000.0
+        ],
+        [
+          0.17089734150853272,
+          11337,
+          -720000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.0003800081366750908,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1386.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000015623712641,
+        "normalized_product_bound": 16.00001249896523,
+        "denominator_lower": 5692.064641094963,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 3771.245835020435,
+        "quantized_maximum": 17605.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.0003800081366750908,
+          "selector_seconds": 0.017494497820734978,
+          "exact_columns": 29,
+          "total_columns": 13333,
+          "requests": [
+            18,
+            11
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006680786609649658,
+          "bound_seconds": 0.004627016372978687,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.003102540038526058,
+          "single_column_control_seconds": 0.02958960086107254,
+          "single_column_control_calls": 58,
+          "validation_seconds_excluded": 0.00017427094280719757,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "baseline",
+        "screen"
+      ],
+      "seconds": {
+        "baseline": 0.2675049966201186,
+        "screen": 0.11269115749746561
+      },
+      "cpu_seconds": {
+        "baseline": 0.2674879489999995,
+        "screen": 0.11268377100000038
+      },
+      "maximum_absolute_delta": 3.6173016989826667e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.013970203697681427,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.17198149216492237,
+          8318,
+          -240000.0
+        ],
+        [
+          0.17189379818991424,
+          8292,
+          -160000.0
+        ],
+        [
+          0.1715459190105782,
+          1355,
+          160000.0
+        ],
+        [
+          0.16986016976108703,
+          10768,
+          80000.0
+        ],
+        [
+          0.16956411064477428,
+          4864,
+          -160000.0
+        ],
+        [
+          0.169483267244214,
+          9091,
+          -800000.0
+        ],
+        [
+          0.16919494434306262,
+          13024,
+          -480000.0
+        ],
+        [
+          0.16918859482671753,
+          675,
+          640000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00027855450052396687,
+        "max_taps": 44,
+        "maximum_support": 204,
+        "max_sample_component": 1016.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014283566852,
+        "normalized_product_bound": 16.0000114268494,
+        "denominator_lower": 4516.3595651699425,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 5144.789049683942,
+        "quantized_maximum": 24017.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00027855450052396687,
+          "selector_seconds": 0.014238621108233929,
+          "exact_columns": 25,
+          "total_columns": 13333,
+          "requests": [
+            24,
+            1
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0006563309580087662,
+          "bound_seconds": 0.0027456581592559814,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.002858695574104786,
+          "single_column_control_seconds": 0.025783668272197247,
+          "single_column_control_calls": 50,
+          "validation_seconds_excluded": 0.00016254466027021408,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    },
+    {
+      "shape": [
+        21,
+        13333
+      ],
+      "samples": 200000,
+      "sample_rate_hz": 10000000,
+      "order": [
+        "screen",
+        "baseline"
+      ],
+      "seconds": {
+        "screen": 0.21248530689626932,
+        "baseline": 0.4938807487487793
+      },
+      "cpu_seconds": {
+        "screen": 0.21246452399999782,
+        "baseline": 0.493831225000001
+      },
+      "maximum_absolute_delta": 2.2286762651757552e-06,
+      "row_argmax_mismatches": 0,
+      "retained_count": 8,
+      "baseline_selection_seconds": 0.015373321250081062,
+      "retained_coordinates_equal": true,
+      "exact_retained": [
+        [
+          0.16564732278443392,
+          12236,
+          480000.0
+        ],
+        [
+          0.16484105531246981,
+          12357,
+          -640000.0
+        ],
+        [
+          0.1644477404191441,
+          12591,
+          -800000.0
+        ],
+        [
+          0.163959102196442,
+          12590,
+          -720000.0
+        ],
+        [
+          0.16363765522883422,
+          5580,
+          -640000.0
+        ],
+        [
+          0.16280107821288822,
+          9894,
+          -560000.0
+        ],
+        [
+          0.16252460336488922,
+          12168,
+          -560000.0
+        ],
+        [
+          0.1622832385426409,
+          532,
+          -560000.0
+        ]
+      ],
+      "bound": {
+        "eligible": true,
+        "absolute_error": 0.00025342711333487054,
+        "max_taps": 44,
+        "maximum_support": 374,
+        "max_sample_component": 1016.0,
+        "max_reference_component": 2.6230316162109375,
+        "maximum_energy_ratio": 1.0000014283566852,
+        "normalized_product_bound": 16.0000114268494,
+        "denominator_lower": 4510.334769224003,
+        "gamma": 1.1444222765610873e-05,
+        "production_qualified": false,
+        "reference_scale": 5662.450564336116,
+        "quantized_maximum": 24017.0,
+        "error_model": "integer IQ / int16 reference quantization norm bound"
+      },
+      "selection_diagnostics": [
+        {
+          "assumed_error": 0.00025342711333487054,
+          "selector_seconds": 0.01951458677649498,
+          "exact_columns": 34,
+          "total_columns": 13333,
+          "requests": [
+            22,
+            12
+          ],
+          "fallback": null,
+          "selected_peaks_exact": true,
+          "native_rescoring_timed": true,
+          "setup_seconds": 0.0007877182215452194,
+          "bound_seconds": 0.004774986766278744,
+          "error_source": "input-derived candidate bound",
+          "native_rescore_seconds": 0.00421356875449419,
+          "single_column_control_seconds": 0.03780398331582546,
+          "single_column_control_calls": 68,
+          "validation_seconds_excluded": 0.0001915227621793747,
+          "native_calls": 4,
+          "dense_fallback_calls": 0,
+          "error_bound_certified": false
+        }
+      ]
+    }
+  ],
+  "fixture_before": {
+    "verified": true,
+    "files": 370,
+    "failed": []
+  },
+  "fixture_after": {
+    "verified": true,
+    "files": 370,
+    "failed": []
+  },
+  "source_bytes_verified": true,
+  "build_receipt_sha256": "d2c5f2f661d6ff83f8aca0cc5390200fb912fc532b0efbdc24804c4a653db84c",
+  "script_sha256": "1accc01a250d6b7f5841727dd32dba0c11324ddd2213b5526cc4a57bab96c7d3",
+  "selector_sha256": "7e22b1e585bd2442565a2756256cd2ca18c695720fc5760274a4ca0e615473dd",
+  "oracle_sha256": "8b5c556aded30ab0622a55287cc32db274e126c35f50fcb622d2101b8ae583bf",
+  "bound_sha256": "c153507e41ad5b0457d7faa0121f026fa90065ac32c740ea4717cd639ef7adae",
+  "bound_dependency_sha256": "f83a8330629c9cc0323822a322302a7e028f4a8a114182eaf676381e13362d2c",
+  "sparse_build_sha256": "b1ec07f8d35a2ab5cebf9893e4cba7bd59a8a22d275b7869cdddbc7c90a5f945",
+  "cpu_affinity": 0,
+  "cprofile": false,
+  "command": [
+    "/opt/leo-fast-auto/20261010-r1/venv/bin/python",
+    "tools/probe_native_screen.py",
+    "--candidate",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/native-integer-screen-probe",
+    "--fixture",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/glrt-native-DS26-0046",
+    "--sparse-root",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/native-sparse-probe-v2",
+    "--output",
+    "/srv/bulk/leo/research/algo07-runtime-20261103/sparse-screen-DS26-0046-final.json",
+    "--selection",
+    "--native-rescore",
+    "--computed-bound"
+  ],
+  "python": "3.12.14 (main, Aug 14 2026, 15:34:45) [Clang 22.1.3 ]",
+  "numpy": "2.5.2",
+  "host": "gauss",
+  "threads": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "started_utc_ns": 1793747037276091592,
+  "ended_utc_ns": 1793747056428950624,
+  "scope": "grid and selection diagnostic; exact native rescoring",
+  "candidate_inference": false
+}

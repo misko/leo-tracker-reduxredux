@@ -81,7 +81,17 @@ def acquire(acquisition, args, residuals, count, epoch_separation, cfo_separatio
     if approximate.shape != (len(residuals), epochs) or not np.isfinite(approximate).all():
         return fallback('invalid screen scores')
     restored = approximate.copy()
-    exact = ExactColumns(acquisition, full, args)
+    columns_native = None
+    try:
+        from ._sparse_native import _native_acquisition as sparse
+    except ImportError:
+        sparse = None
+    if sparse is not None and sparse.folded_anchor_score_grid_backend() == 'avx2_fma':
+        columns_native = sparse.folded_anchor_score_columns
+    if columns_native is None:
+        exact = ExactColumns(acquisition, full, args)
+    else:
+        exact = ExactColumns(acquisition, full, args, columns_native=columns_native)
 
     def evaluate(columns):
         values = exact(columns)
@@ -97,6 +107,7 @@ def acquire(acquisition, args, residuals, count, epoch_separation, cfo_separatio
     rows = cached_full if cached_full is not None else tuple(restored)
     if observer is not None:
         observer(dict(path='screened', screen_kind=screen_kind, columns=selected['exact_columns'],
+                      batched_rescoring=columns_native is not None,
                       native_calls=exact.native_calls, dense_calls=exact.dense_fallback_calls,
                       absolute_error=eligibility['absolute_error']))
     return rows, selected['retained']

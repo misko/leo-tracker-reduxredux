@@ -10,7 +10,7 @@ import numpy as np
 
 
 class ExactColumns:
-    def __init__(self, acquisition, full_grid, args):
+    def __init__(self, acquisition, full_grid, args, *, columns_native=None):
         self.acquisition = acquisition
         self.full_grid = full_grid
         self.args = args
@@ -32,6 +32,7 @@ class ExactColumns:
         self.offsets = np.asarray(offsets, np.intp)
         self.prefix = acquisition._power_prefix(self.values)
         self.native = acquisition._native_acquisition.folded_anchor_score_grid
+        self.columns_native = columns_native
         if acquisition._folded_anchor_score_grid_backend() != 'avx2_fma':
             raise ValueError('This exact-column prototype requires the deployed AVX2/FMA backend')
         self.tiles = []
@@ -57,6 +58,17 @@ class ExactColumns:
             self.dense_fallback_calls += 1
             return np.asarray(self.full_grid(*self.args))[:, columns]
         result = np.empty((len(self.frequencies), len(columns)), dtype=float)
+        if self.columns_native is not None and len(columns):
+            start = 0
+            for frequencies, count in self.tiles:
+                scores = self.columns_native(
+                    self.values, self.template, frequencies, self.starts, self.stops,
+                    self.offsets, self.prefix, self.rate, self.epochs,
+                    np.asarray(columns, dtype=np.intp))
+                result[start:start+count] = scores[:count]
+                start += count
+                self.native_calls += 1
+            return result
         for j, epoch in enumerate(columns):
             shifted_offsets = self.offsets + epoch
             start = 0

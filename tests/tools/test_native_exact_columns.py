@@ -59,3 +59,29 @@ def test_invalid_columns_rejected(columns):
     oracle, _ = prepared()
     with pytest.raises(ValueError):
         oracle(columns)
+
+
+@pytest.mark.parametrize('count', [1, 8, 11, 12, 21, 25])
+def test_batch_preserves_unsorted_duplicate_columns_and_original_frame_offsets(count):
+    oracle, single_calls = prepared(count)
+    calls = []
+
+    def batch(*args):
+        calls.append(args)
+        np.testing.assert_array_equal(args[5], np.arange(0, 400, 10))
+        assert args[-2] == 100
+        return args[2][:, None] + args[-1][None, :]
+
+    oracle.columns_native = batch
+    columns = np.array([99, 0, 50, 50], dtype=np.intp)
+    np.testing.assert_array_equal(oracle(columns), np.arange(count)[:, None]+columns[None, :])
+    assert not single_calls
+    assert len(calls) == (count+11)//12
+    assert oracle.native_calls == len(calls)
+
+
+def test_empty_integer_request_never_calls_native():
+    oracle, calls = prepared()
+    oracle.columns_native = lambda *a: pytest.fail('empty native call')
+    assert oracle(np.array([], dtype=np.intp)).shape == (21, 0)
+    assert not calls

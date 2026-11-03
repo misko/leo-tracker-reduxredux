@@ -39,7 +39,7 @@ def screen_grid(native, acquisition, values, template, rate, frequencies, symbol
 
 
 def run(candidate, fixture, output, *, selection=False, native_rescore=False, limit=None,
-        computed_bound=False):
+        computed_bound=False, sparse_root=None):
     import numpy as np
 
     output = output.resolve()
@@ -74,6 +74,25 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
     base = Path(build['base'])
     verify(base, build['base_pin'])
     verify_files(candidate, build['files_sha256'])
+    columns_native = None
+    sparse = None
+    sparse_pin = None
+    if sparse_root is not None:
+        if not native_rescore:
+            raise ValueError('Sparse kernel requires native rescoring')
+        sparse_pin = digest(sparse_root / 'sparse-probe.json')
+        sparse = json.loads((sparse_root / 'sparse-probe.json').read_text())
+        if sparse['base'] != build['base'] or sparse['base_pin'] != build['base_pin']:
+            raise ValueError('Sparse kernel and screen need the same original baseline')
+        verify_files(sparse_root, sparse['files_sha256'])
+        sparse_directory = sparse_root / 'src/leo/analysis/starlink'
+        extension = next(sparse_directory.glob('_native_acquisition*.so'))
+        spec = importlib.util.spec_from_file_location('_sparse._native_acquisition', extension)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        if module.folded_anchor_score_grid_backend() != 'avx2_fma':
+            raise ValueError('This sparse probe requires AVX2/FMA')
+        columns_native = module.folded_anchor_score_columns
     before = fixture_tools.PROFILE.verify(fixture / 'frozen.json')
     if not before['verified']:
         raise ValueError('Frozen input changed')
@@ -165,27 +184,48 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
                 if native_rescore:
                     from native_exact_columns import ExactColumns
 
-                    oracle = ExactColumns(acquisition, original_grid, latest[3])
+                    oracle = ExactColumns(acquisition, original_grid, latest[3],
+                                          columns_native=columns_native)
                 setup_seconds = time.perf_counter() - setup_began
                 oracle_seconds, validation_seconds = 0., 0.
+                control_seconds, requests = 0., 0
+                control_oracle = None
+                if columns_native is not None:
+                    control_oracle = ExactColumns(acquisition, original_grid, latest[3])
 
-                def exact(columns, current_oracle=oracle):
-                    nonlocal oracle_seconds, validation_seconds
+                def exact(columns, current_oracle=oracle, current_control=control_oracle):
+                    nonlocal oracle_seconds, validation_seconds, control_seconds, requests
                     if current_oracle is None:
                         return exact_grid[:, columns]
-                    began = time.perf_counter()
-                    values = current_oracle(columns)
-                    oracle_seconds += time.perf_counter() - began
+                    versions = [('candidate', current_oracle)]
+                    if current_control is not None:
+                        versions.append(('control', current_control))
+                        if requests % 2:
+                            versions.reverse()
+                    results = {}
+                    for name, implementation in versions:
+                        began = time.perf_counter()
+                        results[name] = implementation(columns)
+                        elapsed = time.perf_counter() - began
+                        if name == 'control':
+                            control_seconds += elapsed
+                        else:
+                            oracle_seconds += elapsed
+                    requests += 1
+                    values = results['candidate']
                     began = time.perf_counter()
                     np.testing.assert_array_equal(values.view(np.uint64),
                                                   exact_grid[:, columns].view(np.uint64))
+                    if 'control' in results:
+                        np.testing.assert_array_equal(values.view(np.uint64),
+                                                      results['control'].view(np.uint64))
                     validation_seconds += time.perf_counter() - began
                     return values
 
                 began = time.perf_counter()
                 result = select(screen_scores, assumed_error, residuals, count,
                                 epoch_separation, cfo_separation, exact)
-                selector_seconds = time.perf_counter() - began - validation_seconds
+                selector_seconds = time.perf_counter() - began - validation_seconds-control_seconds
                 if result['retained'] != baseline:
                     raise ValueError('Interval selector differs from complete baseline')
                 checks.append(dict(assumed_error=assumed_error, selector_seconds=selector_seconds,
@@ -197,6 +237,9 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
                                    error_source=('input-derived candidate bound' if computed_bound
                                                  else 'assumed diagnostic envelope'),
                                    native_rescore_seconds=oracle_seconds,
+                                   single_column_control_seconds=control_seconds,
+                                   single_column_control_calls=(control_oracle.native_calls
+                                                                if control_oracle else None),
                                    validation_seconds_excluded=validation_seconds,
                                    native_calls=oracle.native_calls if oracle else None,
                                    dense_fallback_calls=(oracle.dense_fallback_calls
@@ -226,6 +269,10 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
         acquisition._retain_score_map_peaks = original_retain
     verify(base, build['base_pin'])
     verify_files(candidate, build['files_sha256'])
+    if sparse_root is not None:
+        verify_files(sparse_root, sparse['files_sha256'])
+        if digest(sparse_root / 'sparse-probe.json') != sparse_pin:
+            raise ValueError('Sparse kernel receipt changed')
     after = fixture_tools.PROFILE.verify(fixture / 'frozen.json')
     if not after['verified'] or digest(build_path) != build_pin:
         raise ValueError('Bound inputs or implementation changed')
@@ -241,6 +288,7 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
                    fixture_windows=len(all_windows), native_rescoring_timed=native_rescore,
                    computed_bound=computed_bound,
                    screen_kind=build.get('screen_kind', 'fp32'),
+                   sparse_native_batch=sparse_root is not None,
                    totals=totals, grid_speedup=totals['baseline'] / totals['screen'],
                    maximum_absolute_delta=max(r['maximum_absolute_delta'] for r in calls),
                    row_argmax_mismatches=sum(r['row_argmax_mismatches'] for r in calls),
@@ -254,6 +302,7 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
                    script_sha256=script_pin, selector_sha256=selector_pin, oracle_sha256=oracle_pin,
                    bound_sha256=bound_pin,
                    bound_dependency_sha256=bound_dependency_pin,
+                   sparse_build_sha256=sparse_pin,
                    cpu_affinity=cpu, cprofile=False, command=[sys.executable, *sys.argv],
                    python=sys.version, numpy=np.__version__, host=platform.node(),
                    threads={k: os.environ.get(k) for k in
@@ -279,7 +328,8 @@ if __name__ == '__main__':
                         help='Bound a diagnostic to the first N frozen windows')
     parser.add_argument('--computed-bound', action='store_true',
                         help='Use the input-derived candidate error bound, not assumed envelopes')
+    parser.add_argument('--sparse-root', type=Path, help='Isolated batched FP64 probe')
     args = parser.parse_args()
     run(args.candidate.resolve(strict=True), args.fixture.resolve(strict=True), args.output,
         selection=args.selection, native_rescore=args.native_rescore, limit=args.limit,
-        computed_bound=args.computed_bound)
+        computed_bound=args.computed_bound, sparse_root=args.sparse_root)

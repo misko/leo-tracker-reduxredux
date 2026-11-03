@@ -78,6 +78,18 @@ One changed approximate row maximum is not a failure if interval selection and
 exact rescoring restore the complete original result; unchanged approximate
 winners alone are insufficient. No integer-screen production staging exists yet.
 
+`build_native_sparse_probe.py` builds an optional FP64 batched-column extension
+from the pinned original native kernel. `probe_native_screen.py --sparse-root`
+compares each batch bitwise with the complete original grid and times the prior
+single-column oracle in alternating order on identical requests. Control and
+validation times are excluded from candidate selection costs. Use
+`check_native_sparse_numerics.py` for actual native tail, duplicate/order, CFO
+tiling and invalid-vector checks. `build_screened_detector_runtime.py --sparse-root`
+composes the optional extension without replacing the original full-grid kernel.
+The paired-window driver accepts `--comparison` for a direct comparison with
+another verified screened runtime sharing the same deployed baseline; do not
+infer incremental speedup by subtracting times from separate experiments.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.

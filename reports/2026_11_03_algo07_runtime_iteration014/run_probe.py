@@ -15,7 +15,7 @@ from profile_algo07_glrt import PROFILE  # noqa: E402
 from stage_native_glrt_runtime import digest, verify, verify_files  # noqa: E402
 
 
-def run(candidate, fixtures, output, *, build_filename="fractional-probe.json"):
+def run(candidate, fixtures, output, *, build_filename="fractional-probe.json", comparison=None):
     candidate = candidate.resolve(strict=True)
     output = output.resolve()
     if output.exists() or not output.is_relative_to("/srv/bulk/leo/research"):
@@ -27,19 +27,37 @@ def run(candidate, fixtures, output, *, build_filename="fractional-probe.json"):
     build_pin = digest(build_path)
     build = json.loads(build_path.read_text())
     base = Path(build["base"])
+    comparison_build = None
+    comparison_pin = None
+    if comparison is not None:
+        comparison = comparison.resolve(strict=True)
+        comparison_receipt = comparison / 'screened-detector.json'
+        comparison_pin = digest(comparison_receipt)
+        comparison_build = json.loads(comparison_receipt.read_text())
+        if (comparison_build['base'] != build['base']
+                or comparison_build['base_pin'] != build['base_pin']):
+            raise ValueError('Compared variants must share the same deployed baseline')
+
+    def verify_comparison():
+        if comparison is not None:
+            verify_files(comparison, comparison_build['files_sha256'])
+            if digest(comparison_receipt) != comparison_pin:
+                raise ValueError('Comparison runtime receipt changed')
+
     script = ROOT / "reports/2026_11_03_algo07_runtime_iteration005/paired_windows.py"
     output.mkdir(parents=True)
     summaries = []
     for fixture in fixtures:
         fixture = fixture.resolve(strict=True)
         verify(base, build["base_pin"])
+        verify_comparison()
         verify_files(candidate, build["files_sha256"])
         before = PROFILE.verify(fixture / "frozen.json")
         if not before["verified"]:
             raise ValueError("Fixture changed")
         name = fixture.name
         command = [sys.executable, "-B", str(script), "--fixture", str(fixture),
-                   "--base", str(base), "--candidate", str(candidate),
+                   "--base", str(comparison or base), "--candidate", str(candidate),
                    "--output", str(output / (name + ".json"))]
         began = time.time_ns()
         child = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -53,6 +71,7 @@ def run(candidate, fixtures, output, *, build_filename="fractional-probe.json"):
             raise
         (output / (name + ".log")).write_text(log)
         verify(base, build["base_pin"])
+        verify_comparison()
         verify_files(candidate, build["files_sha256"])
         after = PROFILE.verify(fixture / "frozen.json")
         if not after["verified"] or digest(build_path) != build_pin:
@@ -61,6 +80,8 @@ def run(candidate, fixtures, output, *, build_filename="fractional-probe.json"):
                        ended_utc_ns=time.time_ns(), timeout_seconds=180,
                        fixture_before=before, fixture_after=after,
                        source_bytes_verified=True, build_receipt_sha256=build_pin,
+                       comparison_root=str(comparison) if comparison else None,
+                       comparison_receipt_sha256=comparison_pin,
                        script_sha256=digest(script), driver_sha256=digest(Path(__file__)))
         (output / (name + "-verification.json")).write_text(json.dumps(receipt, indent=2) + "\n")
         if child.returncode:
@@ -79,8 +100,11 @@ if __name__ == "__main__":
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--fixture", type=Path, required=True, action="append")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--comparison", type=Path,
+                        help="Compare with an isolated screened detector instead of deployed FP64")
     parser.add_argument("--build-receipt", default="fractional-probe.json",
                         choices=("fractional-probe.json", "schedule-probe.json",
                                  "screened-detector.json"))
     args = parser.parse_args()
-    run(args.candidate, args.fixture, args.output, build_filename=args.build_receipt)
+    run(args.candidate, args.fixture, args.output, build_filename=args.build_receipt,
+        comparison=args.comparison)

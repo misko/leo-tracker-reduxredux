@@ -51,7 +51,7 @@ def transform(source):
     return ''.join(lines)
 
 
-def build(repo, screen, output):
+def build(repo, screen, output, *, sparse_root=None):
     repo, screen, output = repo.resolve(strict=True), screen.resolve(strict=True), output.resolve()
     if output.exists() or not output.is_relative_to('/srv/bulk/leo/research'):
         raise ValueError('New private research directory required')
@@ -61,6 +61,15 @@ def build(repo, screen, output):
     base = Path(prototype['base'])
     manifest = verify(base, prototype['base_pin'])
     verify_files(screen, prototype['files_sha256'])
+    sparse = None
+    sparse_pin = None
+    if sparse_root is not None:
+        sparse_root = sparse_root.resolve(strict=True)
+        sparse_pin = digest(sparse_root / 'sparse-probe.json')
+        sparse = json.loads((sparse_root / 'sparse-probe.json').read_text())
+        if sparse['base'] != prototype['base'] or sparse['base_pin'] != prototype['base_pin']:
+            raise ValueError('Sparse kernel does not share the exact baseline')
+        verify_files(sparse_root, sparse['files_sha256'])
     prefix = 'src/leo/analysis/starlink/'
     screen_kind = prototype.get('screen_kind', 'fp32')
     if screen_kind not in ('fp32', 'integer_vnni'):
@@ -106,6 +115,15 @@ def build(repo, screen, output):
         name = prefix + '_screen_native/' + Path(member).name
         shutil.copyfile(screen / member, output / name)
         added.append(name)
+    if sparse_root is not None:
+        directory = output / prefix / '_sparse_native'
+        directory.mkdir()
+        (directory / '__init__.py').write_text('"""Research FP64 batched-column kernel."""\n')
+        added.append(prefix + '_sparse_native/__init__.py')
+        for member in native_members:
+            name = prefix + '_sparse_native/' + Path(member).name
+            shutil.copyfile(sparse_root / member, output / name)
+            added.append(name)
     inventory = {name: digest(output / name) for name in [*manifest['files_sha256'], *added]}
     changed = [name for name in manifest['files_sha256']
                if manifest['files_sha256'][name] != inventory[name]]
@@ -116,12 +134,19 @@ def build(repo, screen, output):
     verify_files(output, inventory)
     if digest(screen_receipt) != screen_pin:
         raise ValueError('Screen source changed during composition')
+    if sparse_root is not None:
+        verify_files(sparse_root, sparse['files_sha256'])
+        if digest(sparse_root / 'sparse-probe.json') != sparse_pin:
+            raise ValueError('Sparse source changed during composition')
     receipt = dict(base=str(base), base_pin=prototype['base_pin'], candidate=str(output),
                    screen_kind=screen_kind,
+                   sparse_root=str(sparse_root) if sparse_root is not None else None,
+                   sparse_receipt_sha256=sparse_pin,
                    screen=str(screen), screen_receipt_sha256=screen_pin,
                    files_sha256=inventory, changes=changed, additions=added,
                    component_sources={n: digest(repo / n) for n in added
-                                      if '/_screen_native/' not in n},
+                                      if '/_screen_native/' not in n
+                                      and '/_sparse_native/' not in n},
                    builder_sha256=digest(Path(__file__)), production_modified=False,
                    qualification='isolated detector qualification; not installed')
     (output / 'screened-detector.json').write_text(json.dumps(receipt, indent=2)+'\n')
@@ -133,5 +158,6 @@ if __name__ == '__main__':
     parser.add_argument('--repo', type=Path, default=Path.cwd())
     parser.add_argument('--screen', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--sparse-root', type=Path)
     args = parser.parse_args()
-    print(json.dumps(build(args.repo, args.screen, args.output)))
+    print(json.dumps(build(args.repo, args.screen, args.output, sparse_root=args.sparse_root)))
