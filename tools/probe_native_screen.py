@@ -61,6 +61,16 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
     if limit is not None and limit <= 0:
         raise ValueError('Window limit must be positive')
     build = json.loads(build_path.read_text())
+    integer = build.get('screen_kind') == 'integer_vnni'
+    if integer:
+        if not computed_bound:
+            raise ValueError('Integer screen requires its input-derived diagnostic bound')
+        bound_path = Path(__file__).with_name('native_integer_screen.py')
+        bound_pin = digest(bound_path)
+        if build.get('transformer_sha256') != bound_pin:
+            raise ValueError('Integer bound differs from the built screen implementation')
+    bound_dependency = Path(__file__).with_name('native_screen_bounds.py')
+    bound_dependency_pin = digest(bound_dependency) if computed_bound else None
     base = Path(build['base'])
     verify(base, build['base_pin'])
     verify_files(candidate, build['files_sha256'])
@@ -135,6 +145,8 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
             bound_seconds = 0.
             if computed_bound:
                 from native_screen_bounds import bound
+                if integer:
+                    from native_integer_screen import bound
 
                 began = time.perf_counter()
                 bound_result = bound(acquisition, latest[3])
@@ -222,10 +234,13 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
             (native_rescore and digest(oracle_path) != oracle_pin) or
             (computed_bound and digest(bound_path) != bound_pin)):
         raise ValueError('Diagnostic implementation changed during execution')
+    if computed_bound and digest(bound_dependency) != bound_dependency_pin:
+        raise ValueError('Bound dependency changed during execution')
     totals = {key: sum(r['seconds'][key] for r in calls) for key in ['baseline', 'screen']}
     summary = dict(fixture=str(fixture), windows=len(windows), calls=len(calls),
                    fixture_windows=len(all_windows), native_rescoring_timed=native_rescore,
                    computed_bound=computed_bound,
+                   screen_kind=build.get('screen_kind', 'fp32'),
                    totals=totals, grid_speedup=totals['baseline'] / totals['screen'],
                    maximum_absolute_delta=max(r['maximum_absolute_delta'] for r in calls),
                    row_argmax_mismatches=sum(r['row_argmax_mismatches'] for r in calls),
@@ -238,6 +253,7 @@ def run(candidate, fixture, output, *, selection=False, native_rescore=False, li
                    source_bytes_verified=True, build_receipt_sha256=build_pin,
                    script_sha256=script_pin, selector_sha256=selector_pin, oracle_sha256=oracle_pin,
                    bound_sha256=bound_pin,
+                   bound_dependency_sha256=bound_dependency_pin,
                    cpu_affinity=cpu, cprofile=False, command=[sys.executable, *sys.argv],
                    python=sys.version, numpy=np.__version__, host=platform.node(),
                    threads={k: os.environ.get(k) for k in

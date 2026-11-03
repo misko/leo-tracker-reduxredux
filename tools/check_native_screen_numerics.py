@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import numpy as np
 import profile_algo07_glrt as fixture_tools
 from native_exact_columns import ExactColumns
-from native_screen_bounds import bound
+from native_screen_bounds import bound as floating_bound
 from probe_native_screen import screen_grid
 from stage_native_glrt_runtime import digest, verify, verify_files
 
@@ -27,13 +27,22 @@ def full_grid(oracle):
 
 def run(candidate, output):
     build = json.loads((candidate / 'screen-probe.json').read_text())
+    integer = build.get('screen_kind') == 'integer_vnni'
+    bound = floating_bound
+    if integer:
+        from native_integer_screen import bound
     base = Path(build['base'])
     verify(base, build['base_pin'])
     verify_files(candidate, build['files_sha256'])
     files = [Path(__file__).with_name(name) for name in
              ('check_native_screen_numerics.py', 'native_exact_columns.py',
               'native_screen_bounds.py', 'probe_native_screen.py')]
+    if integer:
+        files += [Path(__file__).with_name(n) for n in
+                  ('native_integer_screen.py', 'interval_coarse_selection.py')]
     pins = {p.name: digest(p) for p in files}
+    if integer and build.get('transformer_sha256') != pins['native_integer_screen.py']:
+        raise ValueError('Integer bound differs from the built screen implementation')
     fixture_tools.use_source(base)
     from leo.analysis.starlink import acquisition
 
@@ -55,12 +64,25 @@ def run(candidate, output):
     patterns = [('noise', source),
                 ('alternating', np.tile([1+1j, -1-1j], 256)),
                 ('prefix-cancellation', np.r_[source[:256], source[256:]*2.**-40])]
+    scales = (-100, -30, 0, 30, 36)
+    if integer:
+        patterns = [('noise', np.rint(source.real*32) + 1j*np.rint(source.imag*32)),
+                    ('alternating', np.tile([1+1j, -1-1j], 256)),
+                    ('zero-tail', np.r_[np.ones(256)*(1+1j), np.zeros(256)]),
+                    ('constant', np.ones(512)*(1+1j))]
+        scales = (1, 127, 1023, 32767)
     results = []
     began = time.time_ns()
     for pattern, values in patterns:
-        for x_exponent in (-100, -30, 0, 30, 36):
+        for x_exponent in scales:
             for r_exponent in (-100, -30, 0, 30, 36):
-                args = (values*2.**x_exponent, template*2.**r_exponent, 80_000.,
+                if integer:
+                    maximum = max(np.max(abs(values.real)), np.max(abs(values.imag)))
+                    scaled = (np.rint(values.real/maximum*x_exponent)
+                              + 1j*np.rint(values.imag/maximum*x_exponent))
+                else:
+                    scaled = values*2.**x_exponent
+                args = (scaled, template*2.**r_exponent, 80_000.,
                         tuple(np.linspace(-4000, 4000, 21)), (0, 1, 2), 80)
 
                 oracle = ExactColumns(geometry, None, args)
@@ -75,7 +97,19 @@ def run(candidate, output):
                 delta = float(np.max(np.abs(approximate-exact)))
                 if not result['eligible'] or delta > result['absolute_error']:
                     raise AssertionError((pattern, x_exponent, r_exponent, delta, result))
-                results.append(dict(pattern=pattern, sample_scale_exponent=x_exponent,
+                if integer:
+                    from interval_coarse_selection import select
+
+                    residuals = args[3]
+                    expected = acquisition._retain_score_map_peaks(
+                        residuals, tuple(exact), 4, 4, 1000., args[-1])
+                    selected = select(approximate, result['absolute_error'], residuals,
+                                      4, 4, 1000., oracle)
+                    if selected['retained'] != expected:
+                        raise AssertionError('Integer screen selection differs from exact search')
+                results.append(dict(pattern=pattern,
+                                    sample_scale_exponent=None if integer else x_exponent,
+                                    integer_maximum=x_exponent if integer else None,
                                     reference_scale_exponent=r_exponent,
                                     max_absolute_delta=delta, bound=result['absolute_error'],
                                     sparse_bit_exact=True, sparse_values=int(sparse.size)))
@@ -84,6 +118,8 @@ def run(candidate, output):
     if pins != {p.name: digest(p) for p in files}:
         raise ValueError('Stress-check implementation changed')
     receipt = dict(cases=len(results), results=results, all_bounds_cover=True,
+                   screen_kind=build.get('screen_kind', 'fp32'),
+                   exact_selection_checked=integer,
                    all_sparse_bit_exact=True, source_pins=pins,
                    build_receipt_sha256=digest(candidate / 'screen-probe.json'),
                    started_utc_ns=began, ended_utc_ns=time.time_ns(),

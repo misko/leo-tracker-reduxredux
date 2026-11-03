@@ -137,3 +137,43 @@ def test_dense_oracle_full_result_is_cached_and_returned(setup, monkeypatch):
     assert selected == retain(truth, (-1., 1.), 3, 3, 2)
     assert calls == ['full']
     assert diagnostics[0]['dense_calls'] > 0
+
+
+def test_integer_screen_rejects_fractional_iq_before_native_call(setup, monkeypatch):
+    from leo.analysis.starlink import _screen_integer
+
+    acquisition, truth, _, calls = setup
+    package = sys.modules['leo.analysis.starlink._screen_native']
+    package.SCREEN_KIND = 'integer_vnni'
+    package._native_acquisition = SimpleNamespace(
+        folded_anchor_score_grid_backend=lambda: 'avx2_fma')
+    monkeypatch.setattr(_screen_integer, 'floating_bound',
+                        lambda *a: dict(eligible=True, max_sample_component=1.))
+    diagnostics = []
+    args = (np.full(100, .5+1j), np.ones(20, complex), 1., (0., 1.), (0,), 100)
+    rows, _ = coarse_screen.acquire(acquisition, args, (-1., 1.), 3, 3, 2,
+                                   observer=diagnostics.append)
+    np.testing.assert_array_equal(rows, truth)
+    assert calls == ['full']
+    assert diagnostics[0]['reason'] == 'integer screen requires signed integer IQ'
+
+
+def test_integer_screen_without_vnni_falls_back(setup):
+    acquisition, truth, _, calls = setup
+    package = sys.modules['leo.analysis.starlink._screen_native']
+    package.SCREEN_KIND = 'integer_vnni'
+    package._native_acquisition = SimpleNamespace(
+        folded_anchor_score_grid_backend=lambda: 'portable')
+    rows, _, diagnostics = run(acquisition)
+    np.testing.assert_array_equal(rows, truth)
+    assert calls == ['full']
+    assert diagnostics[0]['reason'] == 'integer screen hardware unavailable'
+
+
+def test_unknown_screen_kind_falls_back(setup):
+    acquisition, truth, _, calls = setup
+    sys.modules['leo.analysis.starlink._screen_native'].SCREEN_KIND = 'unsupported'
+    rows, _, diagnostics = run(acquisition)
+    np.testing.assert_array_equal(rows, truth)
+    assert calls == ['full']
+    assert diagnostics[0]['reason'] == 'unknown screen kind'

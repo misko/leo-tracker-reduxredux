@@ -71,7 +71,7 @@ def transform(source, grid):
     return source, grid
 
 
-def build(base, pin, output):
+def build(base, pin, output, *, integer=False):
     import numpy
 
     base, output = base.resolve(strict=True), output.resolve()
@@ -81,7 +81,10 @@ def build(base, pin, output):
     inventory = manifest['files_sha256']
     prefix = 'src/leo/analysis/starlink/'
     names = [prefix + name for name in ('_native_acquisition.c', '_native_acquisition_grid.inc')]
-    texts = transform(*[(base / name).read_text() for name in names])
+    selected_transform = transform
+    if integer:
+        from native_integer_screen import transform as selected_transform
+    texts = selected_transform(*[(base / name).read_text() for name in names])
     output.mkdir(parents=True)
     for name in inventory:
         destination = output / name
@@ -109,6 +112,9 @@ def build(base, pin, output):
                    production_modified=False, qualification='approximate screening research only',
                    safe_for_inference=False, error_bounds_implemented=False,
                    exact_rescoring_implemented=False)
+    receipt['screen_kind'] = 'integer_vnni' if integer else 'fp32'
+    if integer:
+        receipt['transformer_sha256'] = digest(Path(__file__).with_name('native_integer_screen.py'))
     (output / 'screen-probe.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return dict(candidate=str(output), changed=changed, safe_for_inference=False)
 
@@ -118,5 +124,6 @@ if __name__ == '__main__':
     parser.add_argument('--base', type=Path, required=True)
     parser.add_argument('--pin', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--integer', action='store_true', help='Research integer-IQ VNNI screen')
     args = parser.parse_args()
-    print(json.dumps(build(args.base, args.pin, args.output)))
+    print(json.dumps(build(args.base, args.pin, args.output, integer=args.integer)))

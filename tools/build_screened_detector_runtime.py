@@ -9,6 +9,17 @@ from pathlib import Path
 from stage_native_glrt_runtime import digest, verify, verify_files
 
 
+def verify_integer_bound(tool, component):
+    def body(source):
+        nodes = [n for n in ast.parse(source).body
+                 if isinstance(n, ast.FunctionDef) and n.name == 'bound']
+        if len(nodes) != 1:
+            raise ValueError('Unknown integer bound layout')
+        return ast.dump(nodes[0], include_attributes=False)
+    if body(tool) != body(component):
+        raise ValueError('Research and component integer bounds differ')
+
+
 def transform(source):
     nodes = [n for n in ast.parse(source).body
              if isinstance(n, ast.FunctionDef) and n.name == 'acquire_symbolwise']
@@ -51,6 +62,17 @@ def build(repo, screen, output):
     manifest = verify(base, prototype['base_pin'])
     verify_files(screen, prototype['files_sha256'])
     prefix = 'src/leo/analysis/starlink/'
+    screen_kind = prototype.get('screen_kind', 'fp32')
+    if screen_kind not in ('fp32', 'integer_vnni'):
+        raise ValueError('Unsupported screen kind')
+    integer_members = []
+    if screen_kind == 'integer_vnni':
+        integer_source = repo / 'tools/native_integer_screen.py'
+        if prototype.get('transformer_sha256') != digest(integer_source):
+            raise ValueError('Integer bound and built screen differ')
+        verify_integer_bound(integer_source.read_text(),
+                             (repo / prefix / '_screen_integer.py').read_text())
+        integer_members = ['_screen_integer.py']
     pairs = [('native_exact_columns.py', '_screen_exact.py'),
              ('native_screen_bounds.py', '_screen_bounds.py'),
              ('interval_coarse_selection.py', '_screen_selection.py')]
@@ -65,14 +87,15 @@ def build(repo, screen, output):
     acquisition = prefix + 'acquisition.py'
     (output / acquisition).write_text(transform((base / acquisition).read_text()))
     added = []
-    for name in ['coarse_screen.py', *[p[1] for p in pairs]]:
+    for name in ['coarse_screen.py', *[p[1] for p in pairs], *integer_members]:
         member = prefix + name
         shutil.copyfile(repo / member, output / member)
         added.append(member)
     native_directory = output / prefix / '_screen_native'
     native_directory.mkdir()
     (native_directory / '__init__.py').write_text(
-        '"""Research-only approximate native kernel."""\n')
+        '"""Research-only approximate native kernel."""\n'
+        f'SCREEN_KIND = {screen_kind!r}\n')
     added.append(prefix + '_screen_native/__init__.py')
     native_members = [prefix + '_native_acquisition.c', prefix + '_native_acquisition_grid.inc']
     native_members += [name for name in prototype['files_sha256']
@@ -94,6 +117,7 @@ def build(repo, screen, output):
     if digest(screen_receipt) != screen_pin:
         raise ValueError('Screen source changed during composition')
     receipt = dict(base=str(base), base_pin=prototype['base_pin'], candidate=str(output),
+                   screen_kind=screen_kind,
                    screen=str(screen), screen_receipt_sha256=screen_pin,
                    files_sha256=inventory, changes=changed, additions=added,
                    component_sources={n: digest(repo / n) for n in added

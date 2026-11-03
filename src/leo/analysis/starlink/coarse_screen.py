@@ -58,10 +58,19 @@ def acquire(acquisition, args, residuals, count, epoch_separation, cfo_separatio
     if acquisition._folded_anchor_score_grid_backend() != 'avx2_fma':
         return fallback('unsupported backend')
     try:
+        from . import _screen_native
         from ._screen_native import _native_acquisition as native
     except ImportError:
         return fallback('screen extension unavailable')
-    eligibility = bound(acquisition, args)
+    screen_kind = getattr(_screen_native, 'SCREEN_KIND', 'fp32')
+    selected_bound = bound
+    if screen_kind == 'integer_vnni':
+        if native.folded_anchor_score_grid_backend() != 'avx2_fma':
+            return fallback('integer screen hardware unavailable')
+        from ._screen_integer import bound as selected_bound
+    elif screen_kind != 'fp32':
+        return fallback('unknown screen kind')
+    eligibility = selected_bound(acquisition, args)
     if not eligibility['eligible']:
         return fallback(eligibility['reason'])
     if eligibility['absolute_error'] > .01:
@@ -87,7 +96,7 @@ def acquire(acquisition, args, residuals, count, epoch_separation, cfo_separatio
     # Return it instead of retaining unused approximate entries.
     rows = cached_full if cached_full is not None else tuple(restored)
     if observer is not None:
-        observer(dict(path='screened', columns=selected['exact_columns'],
+        observer(dict(path='screened', screen_kind=screen_kind, columns=selected['exact_columns'],
                       native_calls=exact.native_calls, dense_calls=exact.dense_fallback_calls,
                       absolute_error=eligibility['absolute_error']))
     return rows, selected['retained']

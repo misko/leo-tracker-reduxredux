@@ -1,9 +1,10 @@
 """The composition changes acquisition selection only, retaining full-grid APIs."""
 
 import ast
+from pathlib import Path
 
 import pytest
-from build_screened_detector_runtime import transform
+from build_screened_detector_runtime import transform, verify_integer_bound
 
 SOURCE = '''def another_function():
     return "untouched"
@@ -43,3 +44,12 @@ def test_only_acquisition_selection_is_replaced():
 def test_unknown_or_already_transformed_source_rejected(source):
     with pytest.raises(ValueError):
         transform(source)
+
+
+def test_component_bound_matches_research_and_rejects_drift():
+    root = Path(__file__).resolve().parents[2]
+    tool = (root / 'tools/native_integer_screen.py').read_text()
+    component = (root / 'src/leo/analysis/starlink/_screen_integer.py').read_text()
+    verify_integer_bound(tool, component)
+    with pytest.raises(ValueError, match='differ'):
+        verify_integer_bound(tool, component.replace('32767.', '32766.'))

@@ -66,6 +66,18 @@ The builder checks component helper copies against the tested research sources;
 analysis code never imports tools. This builder does not stage a production
 package. Full fixture parity does not alone certify the proposed error bound.
 
+`build_native_screen_probe.py --integer` builds a separate AVX-VNNI research
+screen for exactly integral signed IQ. `probe_native_screen.py` automatically
+requires its input-derived quantization bound and binds that bound to the native
+transform hash. Quantized correlations are proposals, never exact evidence.
+`build_screened_detector_runtime.py` can compose this screen with exact FP64
+rescoring and fallback; it verifies the component bound against the tested
+research function. Test fractional/out-of-range IQ and missing VNNI hardware
+fallbacks, int32 overflow controls, quantization bounds and complete outputs.
+One changed approximate row maximum is not a failure if interval selection and
+exact rescoring restore the complete original result; unchanged approximate
+winners alone are insufficient. No integer-screen production staging exists yet.
+
 `algo07_profile chain --bulk-root ROOT --job ALGO07_JOB --output FILE` reads a
 validated public terminal and reports exclusive ALGO02–07 worker durations.
 It checks each cumulative relationship instead of summing nested total fields.

@@ -42,6 +42,14 @@ def run(candidate, output):
              for x in (-100, -30, 0, 30, 36) for r in (-100, -30, 0, 30, 36)]
     cases.append(('zero', np.zeros_like(source), template, 0, 0))
     cases.append(('zero-reference', source, np.zeros_like(template), 0, 0))
+    if build.get('screen_kind') == 'integer_vnni':
+        for maximum in (1, 127, 1023, 32767):
+            values = (rng.integers(-maximum, maximum+1, 512)
+                      + 1j*rng.integers(-maximum, maximum+1, 512))
+            for r in (-100, -30, 0, 30, 36):
+                cases.append(('integer-noise', values, template*2.**r, maximum, r))
+                cases.append(('integer-constant', np.full(512, maximum*(1+1j)),
+                              template*2.**r, maximum, r))
     results = []
     frequencies = tuple(np.linspace(-4000, 4000, 21))
     for name, values, reference, x, r in cases:
@@ -74,6 +82,7 @@ def run(candidate, output):
     if digest(build_file) != build_pin or pins != {p.name: digest(p) for p in files}:
         raise ValueError('Checked implementation changed')
     summary = dict(cases=len(results), exact=True,
+                   screen_kind=build.get('screen_kind', 'fp32'),
                    screened=sum(r['diagnostic']['path'] == 'screened' for r in results),
                    complete_fallback=sum(r['diagnostic']['path'] == 'full' for r in results),
                    production_modified=False)
