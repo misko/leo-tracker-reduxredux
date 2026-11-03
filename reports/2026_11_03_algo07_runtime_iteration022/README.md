@@ -2,9 +2,9 @@
 
 The integer-screened, batched-exact detector has passed full native parity,
 prepared downstream parity and an installed 16-window canary. Its immutable
-package is staged and a guarded production handoff has been requested. At this
-checkpoint the old watcher is still draining active numerical jobs: **activation
-is pending**, and no end-to-end speedup is claimed.
+package is **active in production as of November 3, 23:26:40 UTC** after a guarded
+handoff. The old watcher drained its active numerical jobs and exited before the
+replacement started. No end-to-end speedup is claimed.
 
 The [numerical review](NUMERICAL_DOMAIN.md) describes the admitted arithmetic
 domain and selection guarantees. The [recorded challenge](receipts/domain-review.json)
@@ -15,7 +15,7 @@ rejections. Its largest observed error is 0.4999999998 of the calculated bound.
 downstream parity, paired detector measurements, frozen policy evidence and
 native/domain receipts before staging. It defaults to a dry run and does not
 modify services. The completed staging and installed-runtime qualification are
-recorded below, separately from the pending service activation.
+recorded below, separately from service activation.
 
 Validation: Ruff passed for the two new tools and staging tests; the existing and
 new native staging test suites passed all 30 tests. The completed full native
@@ -43,6 +43,13 @@ The [drain request](receipts/drain-request.json) records a verified watcher slee
 point and a main-process-only SIGINT. The watcher finishes its thread pool;
 active numerical children are not killed. The old override and runtime remain
 available. A requested drain must not be described as completed deployment.
+
+The subsequent [activation receipt](receipts/activation.json) records replacement
+PID 3253454, and the [live verification](receipts/live.json) confirms its installed
+runtime, all 402 manifest members, ALGO07 standard mode, 16 GLRT workers, active
+service state and zero restarts. The original PID had exited. This verifies
+runtime activation; the installed canary and prior qualification establish the
+scientific checks, not a newly completed production cohort comparison.
 
 ## Profile after batching
 
