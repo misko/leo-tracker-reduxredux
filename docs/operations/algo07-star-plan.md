@@ -296,6 +296,14 @@ stage order unchanged. Then evaluate exact repeated geometry preparation.
 Give each change its own implementation pin, tests, full DS26 parity receipt and
 paired timing report; do not combine several unqualified changes into one trial.
 
+The [terminal-validation reuse prototype](../../reports/2026_11_04_algo07_star_terminal_reuse/README.md)
+now provides measured evidence for another exact-work target: repeated recursive
+validation of the same incumbent. It runs separately from the baseline cohort,
+preserves source checks and byte hashes, and has exact complete-return agreement
+on two completed stores. Its component timing improvement is not an accepted
+ALGO07* iteration or an end-to-end speedup. Integration, real-store failure tests,
+full DS26 scientific/artifact checks and end-to-end measurements remain required.
+
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),
 [first full smoke comparison and its failed grid-artifact gate](../../reports/2026_11_04_algo07_star_full_smoke/README.md),
