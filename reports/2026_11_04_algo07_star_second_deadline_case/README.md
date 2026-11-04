@@ -76,6 +76,13 @@ The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
 
+An [iteration source-pin audit](source-pin-audit.json) checks all nine initialized
+optimized cases (including unfinished and failed cases). Their complete maps of
+852 Python/coordinator source files are identical, as are their fixture pins.
+The current source-file inventory and bytes also match that common map. This
+rules out mixing implementation revisions within these configured trials; it
+does not qualify their scientific outcomes or extend the completed denominator.
+
 ## Optimized DS26-0084: complete ordinary-clock parity
 
 The first ordinary-clock publication pair for optimized DS26-0084 completes
