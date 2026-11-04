@@ -83,6 +83,21 @@ The current source-file inventory and bytes also match that common map. This
 rules out mixing implementation revisions within these configured trials; it
 does not qualify their scientific outcomes or extend the completed denominator.
 
+### Unavailable native input: failed acquisition
+
+The single unavailable fast member is DS26-0172,
+`fast8-auto-20261027-202259-4b766129-1-lower`. A fresh read through
+`FastScanStore.automatic_status` still reports `state: failed` and no native run
+ID. The recorded acquisition failure identifies invalid or partial support in
+continuous visits 5387 and 5388, a regressed terminal source counter, and a
+missing terminal drain/restoration receipt. The status records 5,389 captured
+windows; that count does not establish valid native input.
+
+The [availability audit](unavailable-input-audit.json) binds this public status
+to the frozen cohort member. No partial recording was substituted, no new RF
+collection was attempted, and the member remains in the 159-member denominator.
+This explains an acquisition exclusion, not an ALGO07* inference failure or pass.
+
 ## Optimized DS26-0084: complete ordinary-clock parity
 
 The first ordinary-clock publication pair for optimized DS26-0084 completes

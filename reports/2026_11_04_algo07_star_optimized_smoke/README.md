@@ -111,8 +111,9 @@ passed. Optimized DS26-0170 has failed strict
 qualification: three ALGO03 targets were omitted after crossing the discovery
 deadline, although its final selected result, owners and all six decisions match
 exactly. See the [full diagnosis](../2026_11_04_algo07_star_second_deadline_case/README.md).
-The DS26-0082 reference has finished and its optimized candidate is running.
-References DS26-0259 and DS26-0221 continue in the predeclared cohort order.
+Both DS26-0082 inference paths have finished and their full scientific comparison
+is running. The DS26-0259 reference has finished and its optimized candidate is
+running. References DS26-0221 and DS26-0112 continue in the predeclared cohort order.
 Optimized DS26-0018 has passed science. Its first ordinary publication pair has
 68/179 versus 46/179 grid locations and fails artifact completeness; all shared
 scores match exactly. DS26-0162 has passed science; its first artifact comparison
