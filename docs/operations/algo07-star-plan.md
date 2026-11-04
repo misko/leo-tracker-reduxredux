@@ -314,11 +314,11 @@ remains recorded separately.
 ### Optimized iteration qualification update
 
 The opt-in adapter is integrated into the experimental coordinator, and its
-real six-stage storage integrity tests are complete. Five optimized cases pass
+real six-stage storage integrity tests are complete. Six optimized cases pass
 the full scientific comparison: DS26-0002, DS26-0267, DS26-0084, DS26-0018 and
-DS26-0162. Both c=0 and fitted-c, intermediate scientific evidence, process
-provenance and hash links are checked. DS26-0084 additionally passes the first
-ordinary-clock complete artifact comparison, including all eight PNGs and all
+DS26-0162 and DS26-0082. Both c=0 and fitted-c, intermediate scientific evidence, process
+provenance and hash links are checked. DS26-0084 and DS26-0082 additionally pass
+ordinary-clock complete artifact comparisons, including all eight PNGs and all
 179 diagnostic grid locations.
 
 These passes do not qualify the cohort. DS26-0170's optimized replay fails

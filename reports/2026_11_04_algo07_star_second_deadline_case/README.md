@@ -70,11 +70,60 @@ Existing worker control-flow tests cover the admission boundary and
 preservation of earlier accepted recovery using explicitly stubbed children;
 they do not substitute for that numerical replay or full-cohort qualification.
 
-The optimized adapter now has five full scientific passes, DS26-0002,
-DS26-0267, DS26-0084, DS26-0018 and DS26-0162, plus this failed case.
+The optimized adapter now has six full scientific passes, DS26-0002,
+DS26-0267, DS26-0084, DS26-0018, DS26-0162 and DS26-0082. Optimized
+DS26-0102 also fails strict qualification, as detailed below, alongside this case.
 The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
+
+## Optimized DS26-0082: scientific and first publication comparisons
+
+The six-stage scientific comparison passes exactly across 7,052 JSON documents,
+801 binary/text files, 493 process receipts and 31,729 verified links per side.
+Both c=0 and fitted-c, all intermediate scientific values and the final selected
+policy agree. The first ordinary-clock publication pair also completes all
+179 locations with all eight PNGs byte-identical and zero science, grid or path
+differences. The combined CLI check independently rehashes the evidence and
+validates these bindings: **PASS, `case_full_parity: true`**. This is the second
+optimized ordinary-clock full-case pass, alongside DS26-0084.
+
+The publication durations, 85.43 versus 57.05 seconds, are not a controlled
+optimization comparison: both use the original reader and share a busy host.
+The separate [fresh timing protocol](../2026_11_04_algo07_star_glrt_ready_timing/README.md)
+addresses the missing GLRT-ready-to-publication measurement without reusing a
+completed scientific reference.
+
+Evidence: [combined verification](ds26-0082-full-verification.json),
+[science](ds26-0082-optimized-verification.json),
+[first publication comparison](ds26-0082-publication.json).
+
+## Optimized DS26-0102: another deadline-dependent missing hypothesis
+
+This is the optimized adapter's fresh candidate, separate from the earlier
+zero-change DS26-0102 failure. Its strict check fails at process provenance.
+The first differing group is ALGO03 discovery: 31 reference process receipts
+versus 12 candidate receipts. The reference admits six targets, the candidate
+four. Recorded child durations through target 3's retry audit sum to 406.026 s
+versus 707.489 s, straddling the unchanged 600-second discovery admission limit.
+As above, child-duration sums locate the boundary but exclude bookkeeping time.
+
+| Additional reference target | Points | Reference status | Optimized candidate status |
+|---|---:|---|---|
+| `2e271088e442bf9701f7` | 33 | `RF_qualified` | `discovery_budget_exhausted` |
+| `17227ac79bdec1f733c0` | 30 | `ambiguous_identity` | `discovery_budget_exhausted` |
+
+Both paths omit the final 22-point target. The limited diagnostic separately
+validates the exported terminals and finds identical selected public results,
+3,471 owners in each calibration arm and all six retained decision labels.
+This does not excuse an omitted RF-qualified hypothesis or qualify intermediate
+equivalence. The adapter only changes the final ALGO07 read, so this divergence
+again occurs in an unchanged earlier worker. The ordinary failure is retained;
+no inference rerun or comparison tolerance was used to convert it to a pass.
+
+Evidence: [strict failure](ds26-0102-optimized-verification.json),
+[process difference](ds26-0102-optimized-process-difference.json),
+[limited diagnostic](ds26-0102-optimized-diagnostic-summary.json).
 
 An [iteration source-pin audit](source-pin-audit.json) checks all nine initialized
 optimized cases (including unfinished and failed cases). Their complete maps of
