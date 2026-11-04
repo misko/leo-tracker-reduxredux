@@ -253,6 +253,37 @@ These packages describe execution order and ownership boundaries. The initial
 implementation uses one bounded private smoke pair before cohort scheduling;
 no background agents or production changes are required for that step.
 
+## Current qualification checkpoints
+
+The first complete private smoke pair is DS26-0002. These checkpoints are
+separate: passing a later endpoint check does not waive an intermediate failure.
+
+| Checkpoint | Current evidence | Next required action |
+| --- | --- | --- |
+| Frozen production inputs and implementations | Complete for the first pair, including a private read-only causal archive | Preserve these pins for the next comparator iteration |
+| Coordinator execution | All six original scientific stages completed | Add representative accepted/rejected recovery cases after intermediate comparison qualifies |
+| Final science | Both endpoints, ownership maps, association counts and residual metrics match exactly | Repeat across all available DS26 fast inputs |
+| Process provenance | All 42 original/copied receipt groups match after verified PID and private-path mapping; 27 process identities per execution | Retain this check alongside file-link and scientific-value checks |
+| Intermediate science and hash links | Conservative raw diff exists; full qualification remains incomplete | Validate referenced file content before allowing operational hash differences |
+| Publication | Seven PNGs match byte-for-byte; position-grid completeness differs under the original 30-second budget | Run a controlled publication comparison; retain the deadline-sensitive failure in the record |
+| Speed | No controlled end-to-end improvement established | Sequential unprofiled A/B and B/A measurements after parity |
+| Full DS26 and promotion | Outstanding; 158 available fast inputs and one missing native input | Complete the paired denominator before accepting an optimization |
+
+The process comparator follows references to earlier process receipts instead
+of stripping numeric filenames. It rejects missing child receipts, denied reads,
+unknown receipt references, cyclic ancestry/dependencies and changed exported
+bytes. Read sets, interpreter launches and parent/child structure must agree.
+Its result explicitly does **not** qualify scientific values or artifact parity.
+See the [process provenance report](../../reports/2026_11_04_algo07_star_process_provenance/README.md).
+
+The first optimization to evaluate after the zero-change gate is transport:
+remove a demonstrated repeated evidence export or decode through a narrow public
+port. The smoke output contains about 1.5 GB of repeated logical file content,
+but this is not yet a measured speed benefit. Keep numerical operations and
+stage order unchanged. Then evaluate exact repeated geometry preparation.
+Give each change its own implementation pin, tests, full DS26 parity receipt and
+paired timing report; do not combine several unqualified changes into one trial.
+
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),
 [first full smoke comparison and its failed grid-artifact gate](../../reports/2026_11_04_algo07_star_full_smoke/README.md),
