@@ -1,6 +1,7 @@
 import fcntl
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import benchmark_algo07_star_case as bench
@@ -11,7 +12,6 @@ def test_only_coordinator_window_changes():
     config = dict(python='/python', archive_view='/view', archive_manifest='/archive',
                   runtimes='/runtimes', manifest='/manifest', reference='/reference',
                   candidate='/candidate', candidate_terminal_read_reuse=True)
-    from pathlib import Path
     for side in bench.SIDES:
         original = bench.replay_command(config, side, Path('/execution.json'))
         timed = bench.fresh_command(config, side, Path('/execution.json'))
@@ -93,3 +93,59 @@ def test_existing_cli_lock_prevents_parallel_timing(tmp_path):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         with pytest.raises(BlockingIOError):
             bench.run(SimpleNamespace(case=tmp_path, side='reference'))
+
+
+def test_remaining_bound_preserves_python_and_scientific_arguments():
+    command = ['timeout', '--kill-after=15', '1785', '/python', '--maximum-seconds', '1800']
+    assert bench.bound_outer_timeout(command, 900) == [
+        'timeout', '--kill-after=15', '900', '/python', '--maximum-seconds', '1800']
+    assert command[2] == '1785'
+    assert bench.bound_outer_timeout(command, 1900) == command
+    with pytest.raises(ValueError):
+        bench.bound_outer_timeout(command, 0)
+
+
+@pytest.mark.parametrize('failure', [None, 'process', 'no_progress', 'active', 'wrong_next'])
+def test_only_verified_forward_checkpoints_resume(tmp_path, monkeypatch, failure):
+    config = dict(reference=str(tmp_path / 'reference'))
+    commands, states = [], []
+
+    def fresh(config, side, output):
+        return ['timeout', '--kill-after=15', '1785', '/python', str(output)]
+
+    def execute(command, environment, output):
+        commands.append(command)
+        assert command[3] == '/python'
+        complete = len(commands) == 2
+        value = dict(state='scientific_complete' if complete else 'checkpointed',
+                     next_stage='ALGO04' if failure == 'wrong_next' else 'ALGO03')
+        Path(command[-1]).write_text(json.dumps(value))
+        if complete:
+            states[:] = [dict(algorithm=a, state='complete') for a in bench.ALGORITHMS]
+        elif failure == 'no_progress':
+            states[:] = [dict(algorithm='ALGO02', state='not_started')]
+        else:
+            states[:] = [dict(algorithm='ALGO02', state='complete'),
+                         dict(algorithm='ALGO03', state=(
+                             'running' if failure == 'active' else 'not_started'))]
+        return dict(returncode=int(failure == 'process'), wall_seconds=1)
+
+    monkeypatch.setattr(bench, 'fresh_command', fresh)
+    monkeypatch.setattr(bench, 'execute', execute)
+    monkeypatch.setattr(bench, 'stage_status', lambda _: states)
+    deadline = bench.time.monotonic() + 1800
+    if failure:
+        with pytest.raises(ValueError):
+            bench.checkpointed_inference(config, 'reference', tmp_path, {}, deadline)
+        assert len(commands) == 1
+    else:
+        result, receipt = bench.checkpointed_inference(
+            config, 'reference', tmp_path, {}, deadline)
+        assert len(commands) == len(result['attempts']) == 2
+        assert json.loads(receipt.read_text())['state'] == 'scientific_complete'
+
+
+def test_expired_total_deadline_never_launches_work(tmp_path, monkeypatch):
+    monkeypatch.setattr(bench, 'execute', lambda *args: pytest.fail('Must not launch'))
+    with pytest.raises(ValueError, match='deadline'):
+        bench.checkpointed_inference({}, 'reference', tmp_path, {}, bench.time.monotonic() - 1)

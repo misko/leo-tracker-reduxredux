@@ -121,6 +121,37 @@ This preserves the full denominator and failed-check history. It does not rehash
 scientific exports, check live processes or grant qualification. Separate renderer
 diagnostics are not aggregated; use the per-case verifier for acceptance.
 
+## Fresh complete-path timing
+
+Use `tools/benchmark_algo07_star_case.py` for a separately predeclared, fresh
+pair. Read the [current timing protocol](../../../reports/2026_11_04_algo07_star_glrt_ready_timing/README.md)
+first. Never time an adopted scientific reference or an already-started path.
+Reference and candidate run sequentially; retain failures and incomplete runs.
+
+```bash
+sudo -n "$VERIFY_PY" -B tools/benchmark_algo07_star_case.py \
+  --case /absolute/fresh/timing-case --side reference \
+  --resume-completed-checkpoints \
+  --publication-plan "$VERIFY_FIXTURE/DS26-0002/controlled-publication-001/plan.json" \
+  --presentation-manifest "$VERIFY_FIXTURE/presentation-frozen.json" \
+  --output /absolute/fresh/reference-timing
+```
+
+The opt-in mode advances only verified completed checkpoints, at most six
+invocations within one 1,800-second research bound, including publication.
+It never retries failed or non-progressing work and preserves the original
+1,200-second scientific stage budgets. This bounded continuation is distinct
+from an unattended failure-retry loop. Start the candidate only after the
+reference is terminal, using its own fresh output directory.
+
+A `completed_unqualified` timing is not parity. Pass each timing summary's
+`final_inference_receipt` to the existing check's `--reference-execution` and
+`--candidate-execution`, plus the timing directories' `publication` roots.
+Only after full comparison passes may the paired times be interpreted. These
+times include the private research coordinator and its runtime validation; they
+exclude native GLRT, acquisition and production queue delay. Do not describe
+them as raw-IQ end-to-end timing or a representative distribution from one scan.
+
 ## Deadline diagnostics
 
 Wall-clock admission can change work even with unchanged numerical workers.

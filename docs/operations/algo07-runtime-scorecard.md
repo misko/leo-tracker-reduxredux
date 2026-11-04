@@ -19,6 +19,12 @@ controlled timing claim. An unchanged final position alone is insufficient:
 both calibration arms, associations, intermediate decisions and artifacts must
 pass their declared comparisons.
 
+The [fresh GLRT-ready timing trial](../../reports/2026_11_04_algo07_star_glrt_ready_timing/README.md)
+retains an incomplete first reference: 562.161 seconds through ALGO06, then a safe
+checkpoint before ALGO07. This is not a complete-path baseline. A revised,
+predeclared trial advances verified checkpoints within one monotonic timer and
+30-minute research bound. Its paired complete times and parity remain pending.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

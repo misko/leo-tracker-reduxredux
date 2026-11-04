@@ -1,8 +1,9 @@
 """Time one fresh GLRT-ready-to-publication path using the existing pinned drivers.
 
 Run reference and candidate sequentially in distinct invocations. This is not
-raw-IQ-to-publication timing or an equivalence gate. A checkpoint is incomplete,
-never resumed or included as a complete-path performance result here.
+raw-IQ-to-publication timing or an equivalence gate. Explicit checkpoint mode
+advances only verified completed stages, never retries failed work, and keeps one
+outer timer through publication. Incomplete paths never earn a speedup claim.
 """
 import argparse
 import fcntl
@@ -15,6 +16,8 @@ from pathlib import Path
 from verify_algo07_star import CONFIG, SIDES, digest, load, read, replay_command, stage_status
 
 from leo.cli.algo07_profile import destination, verify, write_new
+
+ALGORITHMS = tuple(f'ALGO{i:02d}' for i in range(2, 8))
 
 
 def fresh_command(config, side, output):
@@ -55,6 +58,52 @@ def execute(command, environment, output):
     return receipt
 
 
+def bound_outer_timeout(command, remaining):
+    if command[:2] != ['timeout', '--kill-after=15'] or remaining <= 0:
+        raise ValueError('A positive bounded research command is required')
+    bounded = list(command)
+    bounded[2] = str(min(int(command[2]), remaining))
+    return bounded
+
+
+def checkpointed_inference(config, side, output, environment, deadline):
+    """At most six advancing invocations, inside one 30-minute research limit."""
+    attempts, completed = [], 0
+    started = time.monotonic()
+    for number in range(1, 7):
+        remaining = int(deadline - time.monotonic())
+        if remaining <= 0:
+            raise ValueError('Research timing deadline exhausted; no complete-path timing')
+        directory = output / f'inference-attempt-{number:04d}'
+        directory.mkdir()
+        receipt_path = directory / 'inference.json'
+        command = bound_outer_timeout(fresh_command(config, side, receipt_path), remaining)
+        receipt = execute(command, environment, directory / 'process')
+        if receipt['returncode'] != 0:
+            raise ValueError('Inference process failed; checkpoint mode never retries failed work')
+        value = read(receipt_path)
+        rows = stage_status(Path(config[side]))
+        count = sum(row['state'] == 'complete' for row in rows)
+        attempts.append(dict(receipt_path=str(receipt_path), receipt_sha256=digest(receipt_path),
+                             state=value['state'], completed_stages=count, **receipt))
+        write_new(directory / 'progress.json', attempts[-1])
+        if count <= completed or [row['algorithm'] for row in rows] != list(ALGORITHMS[:len(rows)]):
+            raise ValueError('Checkpoint made no verified forward progress')
+        if value['state'] == 'scientific_complete':
+            if count != 6 or len(rows) != 6:
+                raise ValueError('Completed inference does not have six completed public stages')
+            return dict(returncode=0, wall_seconds=time.monotonic() - started,
+                        attempts=attempts), receipt_path
+        if (value['state'] != 'checkpointed' or count >= 6
+                or value.get('next_stage') != ALGORITHMS[count]
+                or rows != [dict(algorithm=a, state='complete') for a in ALGORITHMS[:count]]
+                + [dict(algorithm=ALGORITHMS[count], state='not_started')]):
+            raise ValueError('Only a verified completed checkpoint may advance')
+        completed = count
+        print(f'{side}: verified {completed}/6 stages; advancing checkpoint', flush=True)
+    raise ValueError('Six advancing invocations exhausted without completion')
+
+
 def run(args):
     case = args.case.resolve(strict=True)
     with (case / f'verify-{args.side}.lock').open('a') as lock:
@@ -93,16 +142,29 @@ def run_locked(args, case):
                    production_queue_included=False, scientific_parity_verified=False,
                    scope='Fresh private native evidence through eight published artifacts',
                    preflight_and_comparison_excluded=True, cache_condition='OS cache uncontrolled')
+    resume = getattr(args, 'resume_completed_checkpoints', False)
+    summary.update(resume_completed_checkpoints=resume,
+                   total_research_limit_seconds=1800 if resume else None)
     write_new(output / 'plan.json', summary)
     start = time.monotonic()
     try:
         print(f'{args.side}: timing fresh six-stage inference', flush=True)
-        summary['inference'] = execute(inference_command, env, output / 'inference-process')
+        if resume:
+            summary['inference'], inference_receipt = checkpointed_inference(
+                config, args.side, output, env, start + 1800)
+        else:
+            summary['inference'] = execute(inference_command, env, output / 'inference-process')
+        summary['final_inference_receipt'] = str(inference_receipt)
         if summary['inference']['returncode'] != 0:
             raise ValueError('Inference process failed; no complete-path timing')
         if read(inference_receipt)['state'] != 'scientific_complete':
             raise ValueError('Inference checkpointed or failed; no complete-path timing')
         print(f'{args.side}: timing first publication', flush=True)
+        if resume:
+            remaining = int(start + 1800 - time.monotonic())
+            if remaining <= 0:
+                raise ValueError('Research timing deadline exhausted before publication')
+            publish_command = bound_outer_timeout(publish_command, remaining)
         summary['publication'] = execute(
             publish_command, render_env, output / 'publication-process')
         elapsed = time.monotonic() - start
@@ -134,4 +196,6 @@ if __name__ == '__main__':
     parser.add_argument('--publication-plan', type=Path, required=True)
     parser.add_argument('--presentation-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--resume-completed-checkpoints', action='store_true',
+                        help='Advance verified checkpoints within one 1800-second total bound')
     raise SystemExit(run(parser.parse_args()))
