@@ -1,7 +1,11 @@
 import sys
 from types import ModuleType
 
-from algo07v3_initial_search_oracle import RESULT_FIELDS, reference_initial_search
+from algo07v3_initial_search_oracle import (
+    RESULT_FIELDS,
+    reference_conservative_recovery,
+    reference_initial_search,
+)
 
 
 def test_external_oracle_removes_io_but_retains_search_and_declared_budgets(tmp_path, monkeypatch):
@@ -62,3 +66,40 @@ def fit_case(case, noise_mode="fixed150"):
     assert {c[2] for c in calls[1:]} == {7}
     assert [p['c0'][0] for p in result['choices']] == [(0, 'c0'), (1, 'c0')]
     assert result['selection'] == 'scientific policy'
+
+
+def _original_infer_example(case):
+    forbidden()  # noqa: F821
+    winner = next(c for c in original['choices']  # noqa: F821
+                  if c['hypothesis'] == original['selected_hypothesis'])  # noqa: F821
+    scan = final_scan(case)  # noqa: F821
+    if winner['empty']:
+        write('not-created', dict(case=case, status='no_passing_calibration', GPS_used=False))  # noqa: F821
+        return
+    observations = read('not-read')  # noqa: F821
+    write('not-created', dict(case=case, status='complete', node=winner['node'],  # noqa: F821
+        observations=observations, scan=scan, seconds=forbidden(),  # noqa: F821
+        algorithm='label', source_sha256=forbidden()))  # noqa: F821
+    print('not-printed')
+
+
+def test_conservative_oracle_keeps_explicit_inputs_and_original_failure_return(monkeypatch):
+    for name, attributes in {
+        'run_algo01_ds23_sample': dict(infer=_original_infer_example),
+        'audit_ds23_algo01_coverage': dict(coverage=None),
+        'evaluate_ds23_phase_refreshed': dict(extend_associations=None),
+        'propagate_ds23_arc_positions': dict(PositionNormal=None),
+    }.items():
+        module = ModuleType(name)
+        module.__file__ = __file__
+        module.__dict__.update(attributes)
+        monkeypatch.setitem(sys.modules, name, module)
+    initial = dict(choices=[dict(hypothesis=0, empty=False, node='native-hypothesis')],
+                   selected_hypothesis=0)
+    observations, scan = [dict(observation_id='native-1')], object()
+    result = reference_conservative_recovery(scan, initial, observations)
+    assert result == dict(status='complete', node='native-hypothesis',
+                          observations=observations, scan=scan)
+    initial['choices'][0]['empty'] = True
+    assert reference_conservative_recovery(scan, initial, observations) == dict(
+        status='no_passing_calibration', GPS_used=False)

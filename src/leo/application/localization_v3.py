@@ -1,8 +1,9 @@
 """Standalone preparation and initial regional position search.
 
-No earlier ALGO jobs or result stores are inputs. Subsequent gate/refit and
-ordered recovery policies are still under construction.
+No earlier ALGO jobs or result stores are inputs. Conservative refitting is
+included; later family/history fitting and ordered recovery remain unfinished.
 """
+from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 from leo.analysis.localization_v3.elements import ElementParser
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
@@ -45,6 +46,28 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
         regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
         noise_sha256=noise_sha256, search_region=search_region,
         previous_tle=sky['previous_tle'],
-        previous_tle_sha256=sky['previous_receipt']['catalogue_sha256'])
+        previous_tle_sha256=sky['previous_receipt']['catalogue_sha256'],
+        previous_sources=sky['previous_receipt'].get('sources'))
     result = initial_search(scan, scan.radio_sigma_hz, on_branch=on_branch)
     return dict(status='initial_position_fitted', initial_fit=result, recovery_complete=False)
+
+
+def refit_initial_position(prepared, initial, search_region, *, noise_sha256=None, on_round=None):
+    """Use a fresh context for the genuine-previous prior and conservative recovery.
+
+    Later family-weighted and predictive recovery policies are not yet complete.
+    """
+    if prepared['status'] != 'inputs_prepared':
+        return dict(status=prepared['status'], conservative_fit=None, recovery_complete=False)
+    sky = prepared['sky']
+    scan = ScanLikelihood(prepared['tracks']['tracks'], sky['bank'], sky['nominal_elements'],
+        origin_utc_ns=sky['metadata']['origin_utc_ns'],
+        regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
+        noise_sha256=noise_sha256, search_region=search_region,
+        previous_tle=sky['genuine_previous_tle'],
+        previous_tle_sha256=sky['genuine_previous_receipt']['catalogue_sha256'],
+        previous_sources=sky['genuine_previous_receipt']['sources'])
+    result = conservative_recovery(scan, initial, prepared['tracks']['observations'],
+                                    on_round=on_round)
+    return dict(status='conservative_fit_evaluated', conservative_fit=result,
+                recovery_complete=False)

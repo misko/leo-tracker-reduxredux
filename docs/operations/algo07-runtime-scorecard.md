@@ -67,6 +67,13 @@ elapsed times overlap on a shared host and are **not a qualified speedup**;
 another bounded pair is slower on v3. Later recovery and publication remain
 unimplemented, so the primary complete-path speed metric remains unavailable.
 
+The [conservative-recovery extraction](../../reports/2026_11_04_algo07v3_conservative/README.md)
+extends exact full-budget comparisons through paired rejection/refit and salvage
+on DS26-0002, DS26-0084 and DS26-0102. Observed reference/v3 times are 77.462/77.610,
+68.636/65.281 and 186.178/184.773 seconds respectively, under concurrent shared-host
+load. These are completion observations, not controlled speed measurements.
+The later policies and complete publication path are still unfinished.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

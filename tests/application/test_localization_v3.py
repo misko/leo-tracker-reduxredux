@@ -84,3 +84,36 @@ def test_initial_fit_preserves_prior_stage_and_does_not_claim_final_completion(m
                          initial_fit={'selected_hypothesis': 2}, recovery_complete=False)
     assert app.fit_initial_position({'status': 'no_active_curvature'}, region) == dict(
         status='no_active_curvature', initial_fit=None, recovery_complete=False)
+
+
+def test_refit_constructs_a_fresh_context_with_genuine_previous_prior(monkeypatch):
+    from types import SimpleNamespace
+
+    observation = dict(observation_id='native-1')
+    prepared = dict(status='inputs_prepared', tracks=dict(tracks=[], observations=[observation]),
+        noise={}, sky=dict(bank={}, nominal_elements={}, previous_tle='initial',
+        genuine_previous_tle='genuine', genuine_previous_receipt=dict(
+            catalogue_sha256='genuine-sha', sources={'1': {'epoch_utc_ns': 5}}),
+        metadata=dict(origin_utc_ns=10, regional_center=[1., 2.])))
+    initial, region, contexts = {}, object(), []
+
+    def context(*args, **kw):
+        assert kw['previous_tle'] == 'genuine'
+        assert kw['previous_tle_sha256'] == 'genuine-sha'
+        assert kw['previous_sources'] == {'1': {'epoch_utc_ns': 5}}
+        result = SimpleNamespace()
+        contexts.append(result)
+        return result
+
+    def recovery(scan, result, observations, **kwargs):
+        assert scan is contexts[-1] and result is initial
+        assert observations == [observation] and kwargs == dict(on_round=None)
+        return dict(status='gate_refit_unstable')
+
+    monkeypatch.setattr(app, 'ScanLikelihood', context)
+    monkeypatch.setattr(app, 'conservative_recovery', recovery)
+    result = app.refit_initial_position(prepared, initial, region)
+    assert result['conservative_fit']['status'] == 'gate_refit_unstable'
+    assert result['recovery_complete'] is False
+    app.refit_initial_position(prepared, initial, region)
+    assert contexts[0] is not contexts[1]

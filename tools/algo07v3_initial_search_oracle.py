@@ -68,3 +68,49 @@ def reference_initial_search(scan, sigma, *, seed_budget=4, branch_budget=3,
     exec(compile(ast.fix_missing_locations(module), inspect.getsourcefile(original), 'exec'),
          namespace)
     return namespace['result']
+
+
+def reference_conservative_recovery(scan, initial, observations):
+    """Original full-budget inference body, with explicit numerical inputs only."""
+    import run_algo01_ds23_sample as original
+    from audit_ds23_algo01_coverage import coverage
+    from evaluate_ds23_phase_refreshed import extend_associations
+    from propagate_ds23_arc_positions import PositionNormal
+
+    function = ast.parse(inspect.getsource(original.infer)).body[0]
+    start = next(i for i, node in enumerate(function.body) if isinstance(node, ast.Assign)
+                 and any(isinstance(t, ast.Name) and t.id == 'winner' for t in node.targets))
+    function.body = function.body[start:]
+    function.name = 'numerical_recovery'
+    function.args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in
+        ('scan', 'original', 'observations')], kwonlyargs=[], kw_defaults=[], defaults=[])
+
+    class ExplicitInputsAndOutput(ast.NodeTransformer):
+        def visit_Assign(self, node):
+            if any(isinstance(t, ast.Name) and t.id in ('scan', 'observations')
+                   for t in node.targets):
+                return None
+            return self.generic_visit(node)
+
+        def visit_Expr(self, node):
+            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name):
+                if node.value.func.id == 'print':
+                    return None
+                if node.value.func.id == 'write':
+                    output = node.value.args[1]
+                    assert isinstance(output, ast.Call) and output.func.id == 'dict'
+                    output.keywords = [k for k in output.keywords
+                                       if k.arg not in ('case', 'algorithm', 'source_sha256',
+                                                        'seconds')]
+                    return ast.Return(value=output)
+            return self.generic_visit(node)
+
+    namespace = dict(original.infer.__globals__)
+    import numpy as np
+
+    namespace.update(np=np, PositionNormal=PositionNormal, coverage=coverage,
+                     extend_associations=extend_associations)
+    module = ast.Module(body=[ExplicitInputsAndOutput().visit(function)], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), inspect.getsourcefile(original), 'exec'),
+         namespace)
+    return namespace['numerical_recovery'](scan, initial, observations)
