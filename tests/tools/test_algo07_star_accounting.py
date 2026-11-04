@@ -24,6 +24,58 @@ def test_completed_receipt_duration_has_explicit_bound():
     assert None in reasons('receipt.json', a, dict(b, returncode=1))
 
 
+def capped_receipts():
+    left = dict(name='target-7-retry', status='complete', command=['/python', 'retry.py'],
+                budget_seconds=538.7589376755059, returncode=0, seconds=184.84237453434616)
+    right = dict(left, budget_seconds=600, seconds=176.1607345789671)
+    return left, right
+
+
+@pytest.mark.parametrize('nested', [False, True])
+@pytest.mark.parametrize('reverse', [False, True])
+def test_completed_capped_timeout_representation_is_explicit_accounting(nested, reverse):
+    left, right = capped_receipts()
+    if nested:
+        left, right = [dict(incumbent=dict(stages=[v])) for v in (left, right)]
+    if reverse:
+        left, right = right, left
+    assert reasons('terminal.json', left, right) == [
+        'completed_capped_subprocess_budget', 'completed_subprocess_accounting']
+
+
+@pytest.mark.parametrize('field,value', [
+    ('status', 'failed'), ('returncode', 1), ('returncode', False),
+    ('seconds', 600.), ('seconds', -1.), ('seconds', float('nan')),
+    ('budget_seconds', 599), ('budget_seconds', True), ('budget_seconds', '600'),
+    ('name', 'another-target'), ('command', ['/python', 'different.py']),
+    ('command', []), ('unknown', True),
+])
+def test_capped_timeout_type_rule_rejects_failed_or_changed_work(field, value):
+    left, right = capped_receipts()
+    right[field] = value
+    rows = list(differences(left, right))
+    budget = next(row for row in rows if row.get('path') == '/budget_seconds')
+    assert classify('receipt.json', budget, left, right, ({}, {})) is None
+    assert None in reasons('receipt.json', left, right)
+
+
+@pytest.mark.parametrize('remaining', [0., -1., 600., 601., float('nan'), float('inf')])
+def test_capped_timeout_requires_finite_uncapped_remaining_time(remaining):
+    left, right = capped_receipts()
+    left['budget_seconds'] = remaining
+    row = next(r for r in differences(left, right) if r['path'] == '/budget_seconds')
+    assert classify('receipt.json', row, left, right, ({}, {})) is None
+
+
+def test_other_numeric_type_changes_remain_scientific_differences():
+    assert reasons('unknown.json', {'budget_seconds': 550.}, {'budget_seconds': 600}) == [None]
+    assert reasons('solver.json', {'maxiter': 600.}, {'maxiter': 600}) == [None]
+    left, right = capped_receipts()
+    right['endpoint'] = 1.
+    left['endpoint'] = 1
+    assert all(v is None for v in reasons('receipt.json', left, right))
+
+
 def test_decisions_and_endpoints_are_never_accounting():
     a = dict(job='scan', arms=dict(c0={'endpoint': 1.0}, fitted_c={'endpoint': 1.0}),
              paired_valid=True, target_entries=[], seconds=1.0)

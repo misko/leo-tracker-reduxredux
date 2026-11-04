@@ -80,12 +80,31 @@ def root_scientific_timing(name, value):
 
 
 def classify(name, row, left, right, process_roles):
-    if row['kind'] not in ('float', 'value') or not row.get('path'):
+    if row['kind'] not in ('float', 'value', 'type') or not row.get('path'):
         return None
     keys = parts(row['path'])
     a, b = at(left, keys[:-1]), at(right, keys[:-1])
     key = keys[-1]
     x, y = at(left, keys), at(right, keys)
+    if row['kind'] == 'type':
+        # ALGO03 stage() writes min(600, remaining): a capped timeout is an
+        # integer, while an uncapped timeout is floating point. Only this
+        # successful receipt shape can account for that representation change.
+        # Process forests and all other scientific fields are compared elsewhere.
+        receipt = {'name', 'status', 'command', 'budget_seconds', 'returncode', 'seconds'}
+        if (key == 'budget_seconds' and isinstance(a, dict) and isinstance(b, dict)
+                and set(a) == set(b) == receipt and {type(x), type(y)} == {int, float}
+                and a['name'] == b['name'] and isinstance(a['name'], str) and a['name']
+                and isinstance(a['command'], list) and a['command']
+                and a['command'] == b['command']
+                and all(isinstance(v, str) for v in a['command'])
+                and all(v['status'] == 'complete' and type(v['returncode']) is int
+                        and v['returncode'] == 0
+                        and finite_time(v['seconds'], v['budget_seconds']) for v in (a, b))
+                and all(v == 600 if type(v) is int else 0 < v < 600 and math.isfinite(v)
+                        for v in (x, y))):
+            return 'completed_capped_subprocess_budget'
+        return None
     if not isinstance(a, dict) or not isinstance(b, dict):
         # The launch command's remaining wall budget must agree with its own
         # explicit maximum_seconds. All other command arguments remain exact.
@@ -118,6 +137,7 @@ def classify(name, row, left, right, process_roles):
     receipt = {'name', 'status', 'command', 'budget_seconds', 'returncode', 'seconds'}
     if (set(a) == receipt and key in ('seconds', 'budget_seconds')
             and all(v['status'] == 'complete' and v['returncode'] == 0
+                                and type(v['budget_seconds']) in (float, int)
                                 and 0 < v['budget_seconds'] <= 1200
                                 and finite_time(v['seconds'], v['budget_seconds'])
                                 for v in (a, b))):

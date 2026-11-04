@@ -102,11 +102,13 @@ despite identical final positions and ownership. The optimized adapter has two
 completed scientific passes, DS26-0002 and DS26-0267. These are separate cohorts/iterations.
 
 The mandatory population remains **159 fast members: 158 available native inputs
-and one unavailable input**. DS26-0162 continues in bounded unchanged-worker
-replays. Optimized DS26-0170 is continuing with fresh candidate inputs and its
-previous independent reference, for parity only. The next reference, DS26-0082,
-has started in the predeclared cohort order. Optimized cases DS26-0018 and
-DS26-0084 have been initialized but not yet executed.
+and one unavailable input**. DS26-0162's unchanged-worker replays have finished
+and their full comparison is running. Optimized DS26-0170 has failed strict
+qualification: three ALGO03 targets were omitted after crossing the discovery
+deadline, although its final selected result, owners and all six decisions match
+exactly. See the [full diagnosis](../2026_11_04_algo07_star_second_deadline_case/README.md).
+The next reference, DS26-0082, continues in the predeclared cohort order.
+Optimized DS26-0018, DS26-0084 and DS26-0162 are now running.
 The remaining full-cohort runs, deadline-sensitive
 qualification, complete artifact comparisons and controlled pipeline timings
 are still required. Production is unchanged.
