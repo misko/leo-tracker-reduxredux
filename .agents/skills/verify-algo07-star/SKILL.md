@@ -111,6 +111,13 @@ Keep these failures and investigate the first differing admission; never hide
 missing hypotheses or incomplete grids as timing metadata. DS26-0102 is a
 documented discovery-budget example.
 
+`tools/algo03_stage_clock_fixture.py` is a separate research diagnostic for
+matched ALGO03 discovery admission. It delegates numerical children to the
+installed worker, but its stage durations are synthetic. Keep the separate real
+wall deadline, read-audit receipts and predeclared schedule visible. Its results
+do not replace an ordinary failed DS26 comparison; see the
+[DS26-0170 diagnosis](../../../reports/2026_11_04_algo07_star_second_deadline_case/README.md).
+
 `tools/algo07_grid_clock_fixture.py` is a **research-only** injected-clock
 fixture for matching diagnostic-grid work. It has separate real wall-time
 receipts; the grid's own elapsed field is synthetic. The saved 179-location and

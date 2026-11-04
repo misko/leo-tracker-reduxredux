@@ -1,11 +1,12 @@
 # ALGO07*: optimized scientific replays and publication qualification
 
-The opt-in terminal-read adapter has passed two full scientific replays,
-on **DS26-0002 and DS26-0267**. Every scientific stage, both calibration arms and the final
+The opt-in terminal-read adapter has passed four full scientific replays,
+on **DS26-0002, DS26-0267, DS26-0084 and DS26-0018**. Every scientific stage, both calibration arms and the final
 policy agree exactly with their independent pinned production references. This
-qualifies two scientific cases, not the DS26 cohort or deployment. The first
-artifact comparison fails because the candidate's diagnostic grid reaches its
-unchanged 30-second limit before completing all locations.
+qualifies four scientific cases, not the DS26 cohort or deployment. DS26-0084
+also passes the full ordinary-clock artifact comparison: all eight PNGs and all
+179 grid locations match. Earlier incomplete-grid failures remain recorded;
+see the [full case receipt](../2026_11_04_algo07_star_second_deadline_case/ds26-0084-full-verification.json).
 
 ## Optimization and scientific evidence
 
@@ -93,22 +94,25 @@ cohort order, not by position error or a favorable timing result.
 
 ## Qualification status and next work
 
-The zero-change coordinator now has five completed scientific passes:
-DS26-0002, DS26-0267, DS26-0170, DS26-0018 and DS26-0084. The last case required
-the narrowly reviewed diagnostic-duration classification described below.
+The zero-change coordinator now has six completed scientific passes:
+DS26-0002, DS26-0267, DS26-0170, DS26-0018, DS26-0084 and DS26-0162. DS26-0084 required
+the narrowly reviewed diagnostic-duration classification described below;
+DS26-0162 required the capped-timeout accounting review in the follow-up report.
 DS26-0102 remains a strict failure because of
 the documented [discovery-deadline divergence](../2026_11_04_algo07_star_deadline_divergence/README.md),
-despite identical final positions and ownership. The optimized adapter has two
-completed scientific passes, DS26-0002 and DS26-0267. These are separate cohorts/iterations.
+despite identical final positions and ownership. The optimized adapter has four
+completed scientific passes, DS26-0002, DS26-0267, DS26-0084 and DS26-0018. These are separate cohorts/iterations.
 
 The mandatory population remains **159 fast members: 158 available native inputs
-and one unavailable input**. DS26-0162's unchanged-worker replays have finished
-and their full comparison is running. Optimized DS26-0170 has failed strict
+and one unavailable input**. DS26-0162's unchanged-worker full comparison has
+passed. Optimized DS26-0170 has failed strict
 qualification: three ALGO03 targets were omitted after crossing the discovery
 deadline, although its final selected result, owners and all six decisions match
 exactly. See the [full diagnosis](../2026_11_04_algo07_star_second_deadline_case/README.md).
-The next reference, DS26-0082, continues in the predeclared cohort order.
-Optimized DS26-0018, DS26-0084 and DS26-0162 are now running.
+The DS26-0082 reference has finished and its optimized candidate is running.
+References DS26-0259 and DS26-0221 continue in the predeclared cohort order.
+Optimized DS26-0018 has passed science and its first ordinary publication pair
+is running. DS26-0162 has completed inference; its scientific comparison is running.
 The remaining full-cohort runs, deadline-sensitive
 qualification, complete artifact comparisons and controlled pipeline timings
 are still required. Production is unchanged.

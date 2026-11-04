@@ -1,0 +1,108 @@
+{
+  "kind": "algo07-star-controlled-algo03-cancellation-plan",
+  "order": [
+    "reference",
+    "candidate"
+  ],
+  "scope": "Actual numerical children; stop admission after five targets",
+  "expected_omitted_track_ids": [
+    "a6b06e9895ba90815a29",
+    "a5d11aa5f4141cb314d1",
+    "3f26523f1eb74e47f7ec"
+  ],
+  "schedule": [
+    {
+      "name": "inventory",
+      "script": "algo03_inventory.py",
+      "seconds": 10.33667799923569
+    },
+    {
+      "name": "target-0-annotation",
+      "script": "annotate_predictive_only.py",
+      "seconds": 32.18672982882708
+    },
+    {
+      "name": "target-0-inclusion",
+      "script": "include_new_predictive_family.py",
+      "seconds": 58.04466923326254
+    },
+    {
+      "name": "target-0-audit",
+      "script": "audit_predictive_family_inclusion.py",
+      "seconds": 8.732742423191667
+    },
+    {
+      "name": "target-0-retry",
+      "script": "include_new_predictive_family.py",
+      "seconds": 101.22768480237573
+    },
+    {
+      "name": "target-0-retry-audit",
+      "script": "audit_predictive_family_inclusion.py",
+      "seconds": 8.535585799254477
+    },
+    {
+      "name": "target-1-annotation",
+      "script": "annotate_predictive_only.py",
+      "seconds": 31.084344652481377
+    },
+    {
+      "name": "target-2-annotation",
+      "script": "annotate_predictive_only.py",
+      "seconds": 29.437741052359343
+    },
+    {
+      "name": "target-3-annotation",
+      "script": "annotate_predictive_only.py",
+      "seconds": 32.07698309980333
+    },
+    {
+      "name": "target-4-annotation",
+      "script": "annotate_predictive_only.py",
+      "seconds": 31.13940443471074
+    },
+    {
+      "name": "target-4-inclusion",
+      "script": "include_predictive_annotations.py",
+      "seconds": 25.466389688663185
+    },
+    {
+      "name": "target-4-audit",
+      "script": "audit_shared_predictive_inclusion.py",
+      "seconds": 12.640530915930867
+    }
+  ],
+  "stop_after": "target-4-audit",
+  "maximum_seconds": 1168,
+  "real_wall_limit_seconds": 1200,
+  "inputs": {
+    "reference": {
+      "descriptor": "/srv/bulk/leo/research/algo07-star-20261104/iteration001/DS26-0170/logical-cancellation-001/inputs/reference/descriptor.json",
+      "descriptor_sha256": "1eb5fac5822754d0307e4c548f0a922a13e1a5031a00bf680eb812ec32e64e7c",
+      "input_sha256": "sha256:94dbf021f27facdc1ba9c17b0ddfc6ae7220f6df2443795fd5245332edf6d561"
+    },
+    "candidate": {
+      "descriptor": "/srv/bulk/leo/research/algo07-star-20261104/iteration001/DS26-0170/logical-cancellation-001/inputs/candidate/descriptor.json",
+      "descriptor_sha256": "50180788747c59787fe27348afdf9c4925849808f017a596cd06880d15c2c05a",
+      "input_sha256": "sha256:94dbf021f27facdc1ba9c17b0ddfc6ae7220f6df2443795fd5245332edf6d561"
+    }
+  },
+  "runtime": "/opt/leo-fast-graph-runtime-algo03/f286f3e3029ec17479f4aa2b41312e4220258944",
+  "python": "/opt/leo-fast-graph/e67f67484c4f54316b33dfd8e12f6e68d09d1e13/venv/bin/python",
+  "environment": {
+    "LEO_ALGO03_RUNTIME_MANIFEST_SHA256": "eded58eba2111382e45aa9b3095ad662a3feb7c90dcb30996b5eb1ec2e62f764"
+  },
+  "manifest": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/frozen-r2.json",
+  "manifest_sha256": "bac89fcc869d69730a3681a91ef89d45b5f2f72e930737349bfee499e4010a07",
+  "reference_decision_sha256": "4cdb041df3e669d944966cac250e147642d5e1f20edc7dbf175182033d624091",
+  "source_pins": {
+    "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/algo03_stage_clock_fixture.py": "072d4b6eafb7a236961092f92430ff366796edf38f3ffcaae08e272fe4aadd36",
+    "/tmp/algo03_clock_worker.py": "4ce9a3822f1d749d7404727249a1e91f00aff22ca7a9f7bf121b78eb955881a5",
+    "/tmp/run_algo03_clock_trial.py": "a87c35d2e7c562f4d81b977a2eecc755e8e3fe02845892ec631cc5d1aac665dd"
+  },
+  "production_modified": false,
+  "numerical_children_stubbed": false,
+  "production_deadline_behavior_qualified": false,
+  "scientific_parity_qualified": false,
+  "performance_comparison": false
+}

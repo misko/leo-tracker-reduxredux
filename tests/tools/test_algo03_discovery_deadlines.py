@@ -15,7 +15,7 @@ import pytest
 
 
 def recovery(tmp_path, monkeypatch, *, boundary, inventory_seconds=1., fail_annotation=False,
-             maximum_seconds=1169):
+             maximum_seconds=1169, controlled=None):
     clock = SimpleNamespace(now=0.)
     monkeypatch.setattr(worker, 'time', SimpleNamespace(monotonic=lambda: clock.now))
     baseline = dict(state='complete', marker='unchanged incumbent')
@@ -67,7 +67,62 @@ def recovery(tmp_path, monkeypatch, *, boundary, inventory_seconds=1., fail_anno
         return 0
 
     monkeypatch.setattr(worker, 'execute', execute)
+    if controlled is not None:
+        from algo03_stage_clock_fixture import run_controlled
+
+        before = worker.time, worker.execute
+        result, receipt = run_controlled(worker, tmp_path, maximum_seconds,
+                                         controlled['schedule'],
+                                         stop_after=controlled.get('stop_after'))
+        assert (worker.time, worker.execute) == before
+        controlled['receipt'] = receipt
+        return result, launched, candidate, baseline
     return worker.run(tmp_path, maximum_seconds), launched, candidate, baseline
+
+
+def logical_schedule(targets):
+    rows = [dict(name='inventory', script='algo03_inventory.py', seconds=1.)]
+    for index in range(targets):
+        for stage, script, seconds in (
+                ('annotation', 'annotate_predictive_only.py', 10.),
+                ('inclusion', 'include_predictive_annotations.py', 2.),
+                ('audit', 'audit_shared_predictive_inclusion.py', 2.)):
+            rows.append(dict(name=f'target-{index}-{stage}', script=script, seconds=seconds))
+    return rows
+
+
+@pytest.mark.parametrize('cancel', [False, True])
+def test_controlled_clock_drives_actual_admission_and_retains_qualified_recovery(
+        tmp_path, monkeypatch, cancel):
+    controlled = dict(schedule=logical_schedule(1 if cancel else 2))
+    if cancel:
+        controlled['stop_after'] = 'target-0-audit'
+    result, launched, candidate, _ = recovery(
+        tmp_path, monkeypatch, boundary=10000., controlled=controlled)
+    assert result['selected'] == candidate
+    assert result['attempts'][0]['status'] == 'RF_qualified'
+    assert result['attempts'][1]['status'] == (
+        'discovery_budget_exhausted' if cancel else 'RF_qualified')
+    assert len(launched) == len(controlled['schedule'])
+    receipt = controlled['receipt']
+    assert receipt['clock_elapsed_seconds_is_synthetic'] is True
+    assert receipt['production_deadline_behavior_qualified'] is False
+    assert receipt['synthetic_elapsed_seconds'] == (600.001 if cancel else 29.)
+    assert all(r['real_wall_seconds'] >= 0 and r['returncode'] == 0
+               for r in receipt['children'])
+
+
+def test_controlled_clock_cannot_turn_child_failure_into_equivalence(tmp_path, monkeypatch):
+    with pytest.raises(ValueError, match='declared complete work'):
+        recovery(tmp_path, monkeypatch, boundary=0., fail_annotation=True,
+                 controlled=dict(schedule=logical_schedule(2)))
+
+
+def test_controlled_clock_rejects_changed_child_order(tmp_path, monkeypatch):
+    schedule = logical_schedule(2)
+    schedule[1]['script'] = 'different.py'
+    with pytest.raises(ValueError, match='declared complete work'):
+        recovery(tmp_path, monkeypatch, boundary=0., controlled=dict(schedule=schedule))
 
 
 @pytest.mark.parametrize('maximum_seconds,threshold', [(1169, 600.), (200, 140.)])

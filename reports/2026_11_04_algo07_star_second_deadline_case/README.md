@@ -70,10 +70,28 @@ visible. Existing worker control-flow tests cover the admission boundary and
 preservation of earlier accepted recovery using explicitly stubbed children;
 they do not substitute for that numerical replay or full-cohort qualification.
 
-The optimized adapter remains at two full scientific passes, DS26-0002 and
-DS26-0267, plus this failed case. The full population is still 159 fast members,
+The optimized adapter now has four full scientific passes, DS26-0002,
+DS26-0267, DS26-0084 and DS26-0018, plus this failed case. The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
+
+## Optimized DS26-0084: complete ordinary-clock parity
+
+The first ordinary-clock publication pair for optimized DS26-0084 completes
+all 179 diagnostic grid locations on both paths. All eight PNGs are byte-identical;
+grid, path and published scientific values have zero differences. The combined
+CLI check independently rehashes the scientific exports and validates publication
+bindings: **PASS, `case_full_parity: true`**. This is the optimized iteration's
+first full case pass under ordinary clocks, not a full DS26 qualification.
+
+Both arms retain 3,715 of 4,628 GLRT points. Evaluation errors are exactly
+1,217.272407 m for c=0 and 1,259.897558 m for fitted-c. The retained model is
+ALGO02. The shared frozen renderer uses the original terminal reader on both
+publication paths; differences in publication wall times are not evidence of
+an optimization speedup. No failed rendering was replaced to obtain this pass.
+
+Evidence: [combined verification](ds26-0084-full-verification.json) and
+[publication comparison](ds26-0084-publication.json).
 
 ## Optimized DS26-0267 publication follow-up
 
@@ -125,7 +143,63 @@ instead of raising an incidental comparison exception.
 
 The comparator, receipt, publication, CLI and deadline regression selection has
 **107 passing tests**. Inference and frozen numerical code are unchanged. The
-original DS26-0162 exports are being rehashed and rechecked under this explicit
-accounting review; a pass is not claimed before that check completes. This rule
+original DS26-0162 exports have now been rehashed and rechecked: **PASS**, with
+zero scientific differences and zero link errors across all six stages, both
+arms and 33,595 verified links per path. All 326 budget-type records are
+explicitly classified; the original failure remains in the report. This rule
 does not affect DS26-0170 or DS26-0102, whose different admitted work fails before
 field accounting is reached.
+
+The unchanged-worker coordinator therefore has six scientific passes:
+DS26-0002, DS26-0267, DS26-0170, DS26-0018, DS26-0084 and DS26-0162.
+These are distinct from the optimized iteration's four passes. Optimized
+DS26-0084 independently matches 2,681 JSON documents, 290 binary/text files,
+114 process receipts and 12,481 verified links per path, with no scientific
+differences or link errors. It does not require the new capped-timeout rule.
+See [DS26-0162's reviewed receipt](ds26-0162-reviewed-verification.json) and
+[optimized DS26-0084's receipt](ds26-0084-optimized-verification.json).
+
+Optimized DS26-0018 also passes the full scientific comparison with no scientific
+differences or link errors; its [verification receipt](ds26-0018-optimized-verification.json)
+retains the exact execution bindings. Its first ordinary-clock publication pair
+is running and is not yet qualified.
+
+## Controlled numerical cancellation trial: reference complete, candidate running
+
+The new [stage-clock fixture](../../tools/algo03_stage_clock_fixture.py) runs the
+installed worker's real control flow and delegates each numerical child to its
+unchanged executor. A declared schedule supplies synthetic parent-stage
+durations. After the fifth target's audit, the next admission clock read exceeds
+600 seconds, so the remaining three annotations are omitted on both paths.
+Real child wall durations and timeouts are recorded separately. The worker's
+clock and executor bindings are restored after the diagnostic call.
+
+The [frozen plan](logical-cancellation-plan.json) declares two trials, reference
+then candidate, using independent ALGO02 snapshots exported through the public
+storage port. Both use the original 1,168-second logical recovery allowance,
+the same first twelve child stages, the same installed numerical runtime and
+thread limits, and a separate 1,200-second real wall limit per trial. A 1,300-second
+outer supervisor bound also covers verification and cleanup. Source pins,
+snapshot hashes and process read auditing remain required. No production
+worker or default clock was modified.
+
+The reference trial completes its twelve real numerical children in 515.470129
+seconds of measured worker wall time. Its thirteen expected process read-audit
+receipts all verify, with no denied paths; all 72,405 frozen runtime files and
+three source pins verify after execution. It selects `ALGO03_single`, retaining
+the qualified first recovery and annotating the final three attempts as
+`discovery_budget_exhausted`. Its reported logical duration of 600.001 seconds
+is synthetic, not measured runtime. The candidate trial is now running;
+**no paired numerical cancellation result is claimed yet**.
+
+The fixture's control-flow tests use explicitly stubbed
+children: twelve tests pass, including logical cancellation retaining accepted
+recovery, changed child sequence and child failure. The combined comparator,
+CLI and deadline selection now has **111 passing tests** ([test receipt](clock-regression.xml)).
+Those tests do not replace the real numerical pair or full DS26 qualification.
+
+The resulting stage `seconds` fields are synthetic. Any agreement under this
+fixture will qualify only the declared cancellation condition. The ordinary
+DS26-0170 failure stays failed; these outputs must not be passed off as a normal
+wall-clock parity run. Saved preparation, trial and worker scripts accompany
+the plan for reproducibility.
