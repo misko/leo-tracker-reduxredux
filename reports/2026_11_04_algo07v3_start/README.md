@@ -1,5 +1,11 @@
 # ALGO07v3 implementation: standalone track and orbit components
 
+Update: [causal preparation and exact parsing reuse](../2026_11_04_algo07v3_preparation/README.md)
+are now implemented. The full track comparison finished: 158/158 available DS26
+fast inputs match exactly, with one unavailable member retained in the 159-member
+denominator. The text below records the original implementation checkpoint;
+the full localization engine is still unfinished.
+
 **Complete-pipeline speedup: unavailable. ALGO07v3 is not yet a complete
 localizer or a production release.** This first implementation extracts native
 track preparation and regional orbit propagation, and introduces exact reuse of

@@ -12,7 +12,8 @@ class CausalCatalogue:
     snapshot_count: int
 
 
-def causal_catalogue(reader, cutoff_utc_ns, *, maximum_age_s=172800.0, provider="space-track"):
+def causal_catalogue(reader, cutoff_utc_ns, *, maximum_age_s=172800.0, provider="space-track",
+                     element_parser=parse_element_sets):
     """Newest past element per Starlink in the declared recent archive window.
 
     Both collection and element epochs must be <= cutoff. No nearest-snapshot
@@ -28,7 +29,7 @@ def causal_catalogue(reader, cutoff_utc_ns, *, maximum_age_s=172800.0, provider=
         raise ValueError("no past TLE snapshots in declared age window")
     chosen = {}
     for snapshot in snapshots:
-        catalogue = parse_element_sets(reader.read(snapshot))
+        catalogue = element_parser(reader.read(snapshot))
         for name, number, satellite, epoch in zip(
             catalogue.names,
             catalogue.satellite_numbers,

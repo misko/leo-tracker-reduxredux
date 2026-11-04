@@ -47,6 +47,13 @@ a primitive-only experiment with a 1 GiB cache allowance, not a complete engine
 speedup or a measured production hit rate. The full v3 processing path is not yet
 implemented and its timing remains unavailable.
 
+The [standalone preparation iteration](../../reports/2026_11_04_algo07v3_preparation/README.md)
+adds causal catalogue/history, noise and phase-prior preparation. A DS26-0084
+ABBA comparison reduces native-input-to-saved-preparation subprocess time from
+22.263 to 13.946 s (1.596×), with exact scientific outputs on all four runs.
+This excludes localization, recovery and publication. Preparation matches three
+DS26 replay cases; track-only outputs match all 158 available members out of 159.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
@@ -55,6 +62,7 @@ implemented and its timing remains unavailable.
 | Upstream ALGO03 recovery, single-family case, iteration 009 | 557 s | 314 s | 1.77× | Stage only; rounded report values; qualified numerical contract |
 | Upstream ALGO03 recovery, joint-family case, iteration 009 | 929 s | 560 s | 1.66× | Stage only; rounded report values; qualified numerical contract |
 | ALGO07* terminal-result validation/read, DS26-0170 ABBA means | 10.111 s | 1.618 s | 6.250× | Exact returned result; 8.493 s saved per measured read; experimental |
+| Standalone v3 preparation, DS26-0084 ABBA means | 22.263 s | 13.946 s | 1.596× | Exact science; native-input-to-saved-preparation only; excludes position/recovery/publication |
 | Native GLRT tiling, 16 paired-window DS27 fixture | 25.454 s | 16.643 s | 1.529× | Detector-only alternating trial; prototype, not deployed by that report |
 
 These are separate experiments, not one cumulative baseline/current pair.
