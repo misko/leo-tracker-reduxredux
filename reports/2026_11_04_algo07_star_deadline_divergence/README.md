@@ -90,9 +90,21 @@ this by raising the deadline only for the candidate, removing an intermediate
 comparison, or rerunning until a pair happens to match. The already documented
 qualification protocol requires matching logical cancellation boundaries for
 deadline-sensitive behavior and separately reporting actual wall-time outcomes.
-Those controlled cancellation tests remain outstanding. A deterministic work
-limit would be a scientific-policy change and requires a separate proposal;
-it cannot silently become an ALGO07* optimization.
+Eight focused control-flow tests now exercise the actual worker with an injected
+logical clock and explicitly stubbed numerical children. They cover admission
+just before, exactly at, and just after both the 600-second cap and a smaller
+70%-of-budget limit; preserving an already-qualified recovery; retaining the
+baseline when discovery expires before any target; and annotation cancellation.
+All eight pass. Together with the existing shared-fit qualification and
+coordinator tests, **39 tests pass**. The repository worker's SHA256 exactly
+matches the installed worker examined above:
+`34d92771cfe49c825771cd25ab4ef4ded744ae3007fbb1b4b842c591dd8f3b95`.
+
+These tests establish the boundary/fallback behavior, not numerical equivalence
+of a full interrupted reference/candidate pair. Controlled cancellation of real
+numerical replays remains outstanding. A deterministic work limit would be a
+scientific-policy change and requires a separate proposal; it cannot silently
+become an ALGO07* optimization.
 
 The current terminal-read optimization operates in the outer storage adapter;
 the numerical workers and their discovery clocks remain unchanged. Its fresh
