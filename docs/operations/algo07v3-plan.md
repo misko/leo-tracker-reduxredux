@@ -4,6 +4,9 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Implementation has begun: see the [first extraction and geometry-reuse report](../../reports/2026_11_04_algo07v3_start/README.md).
+This is component progress, not completion of the standalone engine or its gates.
+
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times
 faster. Independence, exact equivalence and speed are three separate release

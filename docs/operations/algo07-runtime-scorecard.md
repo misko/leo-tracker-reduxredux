@@ -39,6 +39,14 @@ The next architecture is specified in [the ALGO07v3 plan](algo07v3-plan.md): one
 standalone engine without earlier ALGO runtime dependencies. Its 10× complete
 processing target remains unachieved.
 
+The [first v3 implementation](../../reports/2026_11_04_algo07v3_start/README.md)
+provides standalone track/orbit components and exact phase-geometry reuse.
+On a real-bank, deliberately repeated three-query workload, original trials take
+7.836 and 5.637 s; cached trials take 2.017 and 2.066 s including setup. This is
+a primitive-only experiment with a 1 GiB cache allowance, not a complete engine
+speedup or a measured production hit rate. The full v3 processing path is not yet
+implemented and its timing remains unavailable.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
