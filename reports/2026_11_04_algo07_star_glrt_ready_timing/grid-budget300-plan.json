@@ -1,0 +1,31 @@
+{
+  "kind": "algo07-star-larger-real-publication-budget",
+  "grid_seconds": 300.0,
+  "maximum_seconds_per_publication": 600,
+  "order": [
+    "reference",
+    "candidate"
+  ],
+  "original_production_budget_qualified": false,
+  "inference_rerun": false,
+  "performance_comparison": false,
+  "parent_plan": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/DS26-0002/controlled-publication-001/plan.json",
+  "parent_plan_sha256": "de3ab73104efd86e918808da090c2f77db34aa18f1a16d82c9569cbf2cbede36",
+  "case_configuration_sha256": "0e1fce258af755033f51ab2180b1d4a541091fad4c41d34add9576047d4984b7",
+  "executions": {
+    "reference": {
+      "path": "/srv/bulk/leo/research/algo07-star-20261104/timing002/DS26-0084/reference-timing-001/inference-attempt-0002/inference.json",
+      "sha256": "f311d9fc8776ff6434b8104472f91d436681bde0ae9d962530032808814179bd"
+    },
+    "candidate": {
+      "path": "/srv/bulk/leo/research/algo07-star-20261104/timing002/DS26-0084/candidate-timing-001/inference-attempt-0002/inference.json",
+      "sha256": "bd90cd896056de351427057be9f973b1ebd7e733ce76ed6a6b209040385a5122"
+    }
+  },
+  "presentation_manifest": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/presentation-frozen.json",
+  "presentation_manifest_sha256": "f3976af17d920d4765b4304fb3c6a67143228377e58f08f1948e0fd12ddea8bd",
+  "runner_path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/replay_algo07_star_publication_budget.py",
+  "runner_sha256": "faa98f228a33b738597dc5a42b32fa141046853b44ce6a7faaddbf30a48f51c6",
+  "driver_code": "import functools\nimport leo.analysis.position_grid as _grid\n_grid.sample_position_grid = functools.partial(\n    _grid.sample_position_grid, maximum_seconds=300.0)\nimport json,sys,time\nfrom pathlib import Path\nfrom leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6\nfrom leo.storage.fast_standard_analysis import FastStandardAnalysisStore\nimport render_standard_fast as renderer\nsource_root,target_root,run_id=sys.argv[1:]\nsource_root=Path(source_root);target_root=Path(target_root)\nmarker=json.loads((source_root/'algo07-star-input.json').read_text())\nassert marker['kind']=='algo07-star-native-evidence' and marker['run_id']==run_id\nassert source_root!=Path(marker['source_root'])\ntarget_root.mkdir(exist_ok=False)\nsource=FastGraphPositionStoreV6(source_root);target=FastStandardAnalysisStore(target_root)\njobs=[j for j in source.completed_jobs() if j['run_id']==run_id]\nassert len(jobs)==1\nbefore=source.terminal(jobs[0])[1]\nstart=time.monotonic()\nresult=renderer.publish(source,target,jobs[0],evaluation_reference=renderer.evaluation_coordinates(37.849061591561885,-122.48574968092912))\nwall=time.monotonic()-start\nafter=source.terminal(jobs[0])[1]\nassert before==after and result['terminal_sha256']==after['sha256']\ngrid=target.position_grid(run_id)\nprint(json.dumps(dict(publication_wall_seconds=wall,grid_seconds=grid['elapsed_seconds'],grid_complete=grid['complete'],grid_evaluated=grid['evaluated_points'],grid_planned=grid['planned_points'],artifacts=len(result['artifacts']),source_terminal=after)),flush=True)\n",
+  "driver_sha256": "35376efe2b72ef46455697786130b2b76ac87df1b7d3edfb783fa1f335a4aa54"
+}

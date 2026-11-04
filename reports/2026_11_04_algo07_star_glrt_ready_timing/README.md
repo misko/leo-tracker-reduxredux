@@ -76,9 +76,8 @@ failed/checkpointed runs, verified forward progress, stalled/active checkpoints,
 total deadline exhaustion, incomplete publication, changed pins and the
 distinction between timing and scientific parity. No numerical worker changed.
 The [revised protocol](protocol-002.json) binds the new source and fresh inputs.
-The revised reference has finished; its observed timing and qualification failure
-are reported below. The planned candidate is running. Independent equivalence
-checks remain pending.
+Both revised paths have finished. The first strict comparison passes scientific
+parity but fails publication parity because the reference grid is incomplete.
 
 ## Revised reference: measured latency, incomplete diagnostic grid
 
@@ -87,8 +86,9 @@ artifacts in an observed **912.576 seconds (15.21 minutes)**. Its 30-second
 diagnostic-grid allowance admits only **91/179 locations**, so the runner retains
 `state: incomplete` and no qualified complete-path time. This is a real latency
 observation for this private run, not a qualified before/after speedup. The
-reference is not rerendered to obtain a favorable grid outcome. The planned
-candidate runs next on its own fresh native-only store.
+original publication is retained. The candidate runs next on its own fresh
+native-only store. A subsequent, explicitly declared larger-budget presentation
+diagnostic is separate from these timing observations.
 
 | Exclusive interval in this reference | Seconds |
 |---|---:|
@@ -117,6 +117,61 @@ Native GLRT, capture and production queue waiting are outside this measurement.
 
 Evidence: [reference timing receipt](reference-timing-002.json),
 [bound interval breakdown](reference-breakdown-002.json).
+
+## Completed candidate and paired observations
+
+The candidate executes all six scientific stages and publishes all eight PNGs,
+including **179/179** diagnostic locations. Its timed completed path is
+**886.824 s**; the outer observation including final bookkeeping is **887.264 s**.
+The reference's incomplete result records only its outer observation. Neither a
+complete-path ratio nor an original end-to-end speedup is qualified by this pair.
+
+| Measured interval | ALGO07 reference | ALGO07* candidate |
+|---|---:|---:|
+| Inference including checkpoint validation | 817.550 s | 821.556 s |
+| Final ALGO07 invocation, inside inference | 136.173 s | 106.075 s |
+| Publication process | 95.025 s | 65.257 s |
+| Outer observed trial | 912.576 s | 887.264 s |
+| Completed grid locations | 91/179 | 179/179 |
+
+This does **not** establish that ALGO07* is slower or faster overall. Inference
+is about four seconds slower in this one candidate trial, while the final-stage
+invocation is about thirty seconds faster. Earlier scientific workers are
+unchanged. Candidate one-minute host load falls from 32.10 to 18.83; reference
+load ranged from 36.63 to 34.19. Host scheduling and uncontrolled cache state
+confound the small whole-path difference. The faster candidate publication also
+uses the original reader, so that difference cannot be attributed to the
+candidate's final-stage reader optimization.
+
+Evidence: [candidate receipt](candidate-timing-002.json),
+[paired interval bindings](paired-breakdown-002.json),
+[first strict verification](paired-verification-002.json).
+
+## Separate larger real grid budget
+
+Following the user's request to increase limits, the new
+[paired publication tool](../../tools/replay_algo07_star_publication_budget.py)
+uses **300 real seconds** for the grid on both sides, within a 600-second
+per-publication external bound. The protocol was written before either new
+publication started. There were no failure retries. Earlier publications and
+timing failures remain intact.
+
+The original sampler, scorer, grid locations, real monotonic clock and both
+calibration arms are retained. Inference is not rerun; its scientific budgets
+remain unchanged. Only the sampler's explicit `maximum_seconds` argument changes.
+Thirteen tests cover budget bounds, source integrity, real-clock/score
+preservation, propagated failures, identical paired settings, postflight checks
+and refusal to overwrite prior evidence.
+
+The first larger-budget pair passes: **179 shared locations, eight byte-identical
+PNGs, zero grid, path or published scientific differences**. This establishes
+publication equivalence for this case under the new presentation budget. It does
+not qualify production's original 30-second deadline, repair the other cases'
+ALGO03 admission failures, or establish an end-to-end speedup.
+
+Evidence: [declared protocol](grid-budget300-plan.json),
+[comparison summary](grid-budget300-summary.json),
+[full publication comparison](grid-budget300-comparison.json).
 
 The [cumulative scorecard](../../docs/operations/algo07-runtime-scorecard.md)
 remains the authoritative headline and must distinguish this GLRT-ready metric

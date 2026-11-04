@@ -10,7 +10,7 @@ The tenfold active-processing target remains open.
 |---|---:|---:|---:|
 | Recorded input ready → all standard web artifacts published, excluding queue waits | Not measured as one complete matched run | Not measured as one complete matched run | Unavailable |
 | Capture start → all standard web artifacts published, including acquisition and queue waits | No matched baseline/current cohort | No matched baseline/current cohort | Unavailable |
-| ALGO07* versus its frozen ALGO07 reference, complete processing path | Qualification runs exist; no controlled full-path timing pair | Qualification incomplete | Unavailable |
+| ALGO07* versus its frozen ALGO07 reference, GLRT-ready through publication | 912.576 s observed; grid incomplete | 887.264 s observed; full grid | Unqualified: unequal completed grid work |
 
 The current verification CLI begins at preserved native GLRT evidence. Its
 runtime cannot establish raw-IQ-to-publication speedup. Parallel cohort runs
@@ -25,9 +25,19 @@ checkpoint before ALGO07. This is not a complete-path baseline. A revised,
 predeclared trial advances verified checkpoints within one monotonic timer and
 30-minute research bound. Its reference completes inference and eight-artifact
 publication in an observed **912.576 s (15.21 min)**, but evaluates only 91/179
-diagnostic grid locations and fails the strict completeness gate. The planned
-candidate is running. This is an unqualified private GLRT-ready latency
-observation; paired complete times and parity remain pending.
+diagnostic grid locations and fails the strict completeness gate. The candidate
+finishes in an observed **887.264 s (14.79 min)** with 179/179 grid locations.
+These are unqualified private GLRT-ready latency observations, not a speedup.
+Inference alone takes **817.550 → 821.556 s**; the final ALGO07 invocation takes
+**136.173 → 106.075 s**. Upstream timing variation offsets the final-stage saving.
+The shared host's load falls during the candidate run. Strict scientific parity
+passes, but original publication parity fails. A separate matched 300-second
+real-grid-budget replay produces exact 179-location grids and all eight PNGs;
+it cannot retroactively qualify the original unequal-work timings.
+
+The next architecture is specified in [the ALGO07v3 plan](algo07v3-plan.md): one
+standalone engine without earlier ALGO runtime dependencies. Its 10× complete
+processing target remains unachieved.
 
 ## Measured improvements within the pipeline
 
