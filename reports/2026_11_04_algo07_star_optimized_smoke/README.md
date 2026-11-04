@@ -1,9 +1,9 @@
-# ALGO07*: first optimized scientific replay and third unchanged-worker pass
+# ALGO07*: optimized scientific replays and publication qualification
 
-The opt-in terminal-read adapter has passed its first full scientific replay,
-on **DS26-0002**. Every scientific stage, both calibration arms and the final
-policy agree exactly with the independent pinned production reference. This
-qualifies one scientific case, not the DS26 cohort or deployment. The first
+The opt-in terminal-read adapter has passed two full scientific replays,
+on **DS26-0002 and DS26-0267**. Every scientific stage, both calibration arms and the final
+policy agree exactly with their independent pinned production references. This
+qualifies two scientific cases, not the DS26 cohort or deployment. The first
 artifact comparison fails because the candidate's diagnostic grid reaches its
 unchanged 30-second limit before completing all locations.
 
@@ -98,13 +98,15 @@ DS26-0002, DS26-0267, DS26-0170, DS26-0018 and DS26-0084. The last case required
 the narrowly reviewed diagnostic-duration classification described below.
 DS26-0102 remains a strict failure because of
 the documented [discovery-deadline divergence](../2026_11_04_algo07_star_deadline_divergence/README.md),
-despite identical final positions and ownership. The optimized adapter has one
-completed scientific pass, DS26-0002. These are separate cohorts/iterations.
+despite identical final positions and ownership. The optimized adapter has two
+completed scientific passes, DS26-0002 and DS26-0267. These are separate cohorts/iterations.
 
 The mandatory population remains **159 fast members: 158 available native inputs
 and one unavailable input**. DS26-0162 continues in bounded unchanged-worker
-replays. Optimized DS26-0267 and DS26-0170 candidates are running with fresh
-candidate inputs and their previous independent references, for parity only.
+replays. Optimized DS26-0170 is continuing with fresh candidate inputs and its
+previous independent reference, for parity only. The next reference, DS26-0082,
+has started in the predeclared cohort order. Optimized cases DS26-0018 and
+DS26-0084 have been initialized but not yet executed.
 The remaining full-cohort runs, deadline-sensitive
 qualification, complete artifact comparisons and controlled pipeline timings
 are still required. Production is unchanged.
@@ -197,3 +199,50 @@ rechecking the original DS26-0084 exports now passes: **2,681 JSON documents,
 zero scientific differences and zero link errors. This is an explicit accounting
 review, not a numerical tolerance or an inference rerun. DS26-0102's different
 search work remains a failure and is unaffected by this correction.
+
+## Second optimized scientific pass and another publication comparison
+
+The fresh optimized DS26-0267 candidate passes the full scientific comparison:
+**3,650 JSON documents, 392 binary/text files, 205 process receipts and 17,479
+verified links per path**. All six public terminals validate, both arms match
+exactly, and scientific differences and link errors are both zero. Forty-two
+font-cache byte differences remain explicitly recorded as presentation accounting.
+There is no new accounting rule or numerical tolerance for this comparison.
+The previous independent reference is reused for parity; this does not measure
+pipeline speed. See the [verification receipt](ds26-0267-optimized-verification.json)
+and [follow-up evidence bindings](evidence-followup.json).
+
+DS26-0018's first ordinary wall-clock publication pair now completes. Its
+previous full scientific pass remains unchanged. Both paths produce all eight
+figures, but the 30-second diagnostic-grid budget admits different prefixes:
+
+| DS26-0018 publication | ALGO07 reference | Unchanged-worker ALGO07* |
+| --- | ---: | ---: |
+| Grid locations completed / planned | 75 / 179 | 77 / 179 |
+| Associated GLRT points, each arm | 3,226 | 3,226 |
+| c=0 evaluation error | 521.406039 m | 521.406039 m |
+| Fitted-c evaluation error | 482.321559 m | 482.321559 m |
+| c=0 residual RMS | 95.020310 Hz | 95.020310 Hz |
+| Fitted-c residual RMS | 90.924497 Hz | 90.924497 Hz |
+
+All 75 shared paired grid scores match exactly; the seven non-position PNGs are
+byte-identical. Published science has zero differences. The position-path data
+differs only in its binding to the different position-PNG hash. This remains a
+**failed full-artifact comparison** because both grids are incomplete. No
+injected clock, changed grid budget or repeated attempt was used for this pair.
+The frozen renderer was verified before and after, and the private runner has
+a separate 600-second real limit for each publication. The
+[publication comparison](ds26-0018-publication.json) and
+[saved runner](publication_followup.py) preserve the procedure and result.
+
+DS26-0084's first ordinary publication pair also fails full artifact parity:
+the reference admits **84/179** grid locations, while the unchanged-worker
+candidate completes **179/179**. All 84 shared paired scores are exact, published
+science has zero differences, and seven PNGs match byte-for-byte. Again, the
+only path-sidecar difference is the position-PNG hash binding. The reference
+grid took 30.016 seconds and the candidate grid took 25.117 seconds. These are
+uncontrolled, shared-host timings with unequal work; **they do not establish a
+speedup**, and this candidate does not use the terminal-read optimization.
+Both original publications and the [failed comparison](ds26-0084-publication.json)
+are retained. The renderer's 2,149 frozen files verified before and after both
+new publication pairs.
