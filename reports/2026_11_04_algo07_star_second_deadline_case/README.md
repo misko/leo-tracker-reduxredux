@@ -64,14 +64,15 @@ Replacing the time limit with a target quota would be a policy change and is not
 part of the current candidate.
 
 Continue the predeclared DS26 comparisons and record deadline-sensitive failures
-separately. The next diagnostic for this class is a matched logical-cancellation
-replay with actual numerical children, keeping the ordinary wall-clock failures
-visible. Existing worker control-flow tests cover the admission boundary and
+separately. The matched logical-cancellation replay below uses actual numerical
+children while keeping the ordinary wall-clock failures visible.
+Existing worker control-flow tests cover the admission boundary and
 preservation of earlier accepted recovery using explicitly stubbed children;
 they do not substitute for that numerical replay or full-cohort qualification.
 
-The optimized adapter now has four full scientific passes, DS26-0002,
-DS26-0267, DS26-0084 and DS26-0018, plus this failed case. The full population is still 159 fast members,
+The optimized adapter now has five full scientific passes, DS26-0002,
+DS26-0267, DS26-0084, DS26-0018 and DS26-0162, plus this failed case.
+The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
 
@@ -152,7 +153,7 @@ field accounting is reached.
 
 The unchanged-worker coordinator therefore has six scientific passes:
 DS26-0002, DS26-0267, DS26-0170, DS26-0018, DS26-0084 and DS26-0162.
-These are distinct from the optimized iteration's four passes. Optimized
+These are distinct from the optimized iteration's five passes. Optimized
 DS26-0084 independently matches 2,681 JSON documents, 290 binary/text files,
 114 process receipts and 12,481 verified links per path, with no scientific
 differences or link errors. It does not require the new capped-timeout rule.
@@ -160,11 +161,27 @@ See [DS26-0162's reviewed receipt](ds26-0162-reviewed-verification.json) and
 [optimized DS26-0084's receipt](ds26-0084-optimized-verification.json).
 
 Optimized DS26-0018 also passes the full scientific comparison with no scientific
-differences or link errors; its [verification receipt](ds26-0018-optimized-verification.json)
-retains the exact execution bindings. Its first ordinary-clock publication pair
-is running and is not yet qualified.
+differences or link errors: 6,667 JSON documents, 662 binary/text files, 409 process
+receipts and 30,223 verified links per path. Its
+[verification receipt](ds26-0018-optimized-verification.json) retains the exact
+execution bindings. Its first ordinary-clock publication pair fails artifact
+parity: the unchanged 30-second grid budget admits 68/179 locations on the
+reference and 46/179 on the candidate. All 46 shared scores are exact, seven of
+eight PNGs are byte-identical, and published scientific values have no
+differences. The incomplete position grids remain failures; see the
+[publication receipt](ds26-0018-publication.json). No rendering retry is used.
 
-## Controlled numerical cancellation trial: reference complete, candidate running
+Optimized DS26-0162 independently passes its scientific comparison: 7,584 JSON
+documents, 608 binary/text files, 366 process receipts and 33,595 verified links
+per path, with no scientific differences or link errors. This comparison records
+62 capped-timeout accounting classifications; no missing search work is waived.
+Its first ordinary artifact pair fails completeness: 19/179 reference locations
+versus 36/179 candidate locations, with all 19 shared scores exact, seven PNGs
+byte-identical, and no published scientific differences. See the
+[optimized verification receipt](ds26-0162-optimized-verification.json) and
+[artifact comparison](ds26-0162-publication.json).
+
+## Controlled numerical cancellation trial: matched retained outcomes
 
 The new [stage-clock fixture](../../tools/algo03_stage_clock_fixture.py) runs the
 installed worker's real control flow and delegates each numerical child to its
@@ -183,14 +200,41 @@ outer supervisor bound also covers verification and cleanup. Source pins,
 snapshot hashes and process read auditing remain required. No production
 worker or default clock was modified.
 
-The reference trial completes its twelve real numerical children in 515.470129
-seconds of measured worker wall time. Its thirteen expected process read-audit
-receipts all verify, with no denied paths; all 72,405 frozen runtime files and
-three source pins verify after execution. It selects `ALGO03_single`, retaining
-the qualified first recovery and annotating the final three attempts as
-`discovery_budget_exhausted`. Its reported logical duration of 600.001 seconds
-is synthetic, not measured runtime. The candidate trial is now running;
-**no paired numerical cancellation result is claimed yet**.
+Both trials complete their twelve real numerical children. All thirteen expected
+process read-audit receipts verify on each path, with no denied paths; all 72,405
+frozen runtime files and three source pins verify after execution. Both select
+`ALGO03_single`, retaining the qualified first recovery and annotating the final
+three attempts as `discovery_budget_exhausted`.
+
+| Controlled cancellation evidence | Reference | Candidate |
+| --- | ---: | ---: |
+| Completed numerical children | 12 | 12 |
+| Verified process read receipts | 13 | 13 |
+| Retained owners, each calibration arm | 3,353 | 3,353 |
+| Reported logical duration, synthetic | 600.001 s | 600.001 s |
+| Measured worker wall duration | 515.470129 s | 654.273812 s |
+
+The [limited outcome comparison](logical-cancellation-outcome.json) finds zero
+differences in the complete selected scientific arm dictionaries, target details,
+attempt identities/counts/statuses, RF checks, policy, eligibility and selected
+track IDs. This includes exact endpoints, objectives and every retained owner
+in both arms. The comparison revalidates the frozen runtime, pinned trial source,
+planned input descriptors and copied input hashes, process audit ancestry, and
+selected source receipts before comparing these projections.
+
+The full decision diff is also retained: thirteen differences remain in
+historical baseline accounting and evidence-hash bindings. This diagnostic does
+not recursively qualify every linked child scientific document and does not
+replace the stricter full-stage comparator. It supports the narrower conclusion
+that this matched cancellation boundary preserves the same accepted recovery
+and ownership with actual numerical children. It does not qualify ordinary
+deadline behavior, clear DS26-0170's original failure, or establish a speedup;
+both trials use the unchanged worker, and the synthetic schedule is explicit.
+
+The [diagnostic script](compare_clock_outcomes.py) preserves all decision
+differences instead of silently dropping them. The
+[candidate execution receipt](logical-cancellation-candidate-execution.json)
+records the separate measured wall time and read-audit outcome.
 
 The fixture's control-flow tests use explicitly stubbed
 children: twelve tests pass, including logical cancellation retaining accepted

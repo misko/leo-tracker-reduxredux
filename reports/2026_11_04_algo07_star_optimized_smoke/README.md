@@ -1,9 +1,10 @@
 # ALGO07*: optimized scientific replays and publication qualification
 
-The opt-in terminal-read adapter has passed four full scientific replays,
-on **DS26-0002, DS26-0267, DS26-0084 and DS26-0018**. Every scientific stage, both calibration arms and the final
+The opt-in terminal-read adapter has passed five full scientific replays,
+on **DS26-0002, DS26-0267, DS26-0084, DS26-0018 and DS26-0162**.
+Every scientific stage, both calibration arms and the final
 policy agree exactly with their independent pinned production references. This
-qualifies four scientific cases, not the DS26 cohort or deployment. DS26-0084
+qualifies five scientific cases, not the DS26 cohort or deployment. DS26-0084
 also passes the full ordinary-clock artifact comparison: all eight PNGs and all
 179 grid locations match. Earlier incomplete-grid failures remain recorded;
 see the [full case receipt](../2026_11_04_algo07_star_second_deadline_case/ds26-0084-full-verification.json).
@@ -100,8 +101,9 @@ the narrowly reviewed diagnostic-duration classification described below;
 DS26-0162 required the capped-timeout accounting review in the follow-up report.
 DS26-0102 remains a strict failure because of
 the documented [discovery-deadline divergence](../2026_11_04_algo07_star_deadline_divergence/README.md),
-despite identical final positions and ownership. The optimized adapter has four
-completed scientific passes, DS26-0002, DS26-0267, DS26-0084 and DS26-0018. These are separate cohorts/iterations.
+despite identical final positions and ownership. The optimized adapter has five
+completed scientific passes, DS26-0002, DS26-0267, DS26-0084, DS26-0018 and
+DS26-0162. These are separate cohorts/iterations.
 
 The mandatory population remains **159 fast members: 158 available native inputs
 and one unavailable input**. DS26-0162's unchanged-worker full comparison has
@@ -111,8 +113,12 @@ deadline, although its final selected result, owners and all six decisions match
 exactly. See the [full diagnosis](../2026_11_04_algo07_star_second_deadline_case/README.md).
 The DS26-0082 reference has finished and its optimized candidate is running.
 References DS26-0259 and DS26-0221 continue in the predeclared cohort order.
-Optimized DS26-0018 has passed science and its first ordinary publication pair
-is running. DS26-0162 has completed inference; its scientific comparison is running.
+Optimized DS26-0018 has passed science. Its first ordinary publication pair has
+68/179 versus 46/179 grid locations and fails artifact completeness; all shared
+scores match exactly. DS26-0162 has passed science; its first artifact comparison
+also fails grid completeness (19/179 versus 36/179), with all 19 shared scores
+exact. DS26-0102's optimized case has started its first run; its previous
+unchanged-worker deadline failure remains included, not excluded from evaluation.
 The remaining full-cohort runs, deadline-sensitive
 qualification, complete artifact comparisons and controlled pipeline timings
 are still required. Production is unchanged.
