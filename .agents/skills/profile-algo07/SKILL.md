@@ -33,6 +33,21 @@ end-to-end speedup. Separate active computation, discovery/validation overhead,
 queue delay, and acquisition duration. Attribute child-worker time separately:
 a parent cProfile file does not profile its children.
 
+Use `tools/profile_algo07_publication.py --bulk-root ROOT --job JOB --output NEW_DIR`
+to profile a fresh prediction/grid/PNG replay into a private publication store.
+It records evidence reads, reconstruction, grid, plotting and publication costs,
+alongside the original public ALGO02–07 worker durations. The grid duration is
+inside reconstruction, not additive. Use an external timeout of at most 30
+minutes and distinguish profiled research timings from recorded production
+timings. Optional evaluation coordinates enter presentation only. A fresh native
+replay plus historical position times is not one measured end-to-end execution.
+
+Profile distinct workload classes before selecting a numerical optimization.
+Some ALGO07 scans call the two-family phase kernel zero times and are instead
+dominated by catalogue interpolation and phase-shifted orbit states. Geometry
+reuse must bind immutable orbit buffers, satellite selections, times and phase
+grids while retaining query-domain checks and copy/restrict behavior.
+
 For coarse-screening research, `build_native_screen_probe.py` builds an isolated
 approximate kernel, and `probe_native_screen.py --selection` measures its grid
 cost and tests an interval selector against exact baseline scores. Approximate

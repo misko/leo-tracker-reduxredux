@@ -1,0 +1,385 @@
+{
+  "chain": {
+    "stages": [
+      {
+        "algorithm": "ALGO02",
+        "model_version": "algo02-causal-family-v1",
+        "worker_seconds": 78.56821436807513,
+        "decision": "baseline",
+        "substeps": [
+          {
+            "stage": "prepare",
+            "seconds": 19.620497526600957
+          },
+          {
+            "stage": "algo02",
+            "seconds": 45.78793533425778
+          },
+          {
+            "stage": "family",
+            "seconds": 13.00251656677574
+          }
+        ]
+      },
+      {
+        "algorithm": "ALGO03",
+        "model_version": "algo03-causal-predictive-v1",
+        "worker_seconds": 100.69175752159208,
+        "decision": "ALGO03_single"
+      },
+      {
+        "algorithm": "ALGO04",
+        "model_version": "algo04-causal-numerical-v1",
+        "worker_seconds": 40.486748394556344,
+        "decision": "ALGO04_additive"
+      },
+      {
+        "algorithm": "ALGO05",
+        "model_version": "algo05-causal-gap-conditional-v1",
+        "worker_seconds": 9.762922330759466,
+        "decision": "ALGO04_fallback"
+      },
+      {
+        "algorithm": "ALGO06",
+        "model_version": "algo06-causal-residual-family-v1",
+        "worker_seconds": 29.5474896421656,
+        "decision": "ALGO05_fallback"
+      },
+      {
+        "algorithm": "ALGO07",
+        "model_version": "algo07-causal-guarded-reassociation-v1",
+        "worker_seconds": 60.51463291235268,
+        "decision": "ALGO06_fallback"
+      }
+    ],
+    "position_worker_seconds": 319.5717651695013,
+    "end_to_end_seconds": null,
+    "scope": "Recorded position-worker wall durations; not CPU or end-to-end latency",
+    "excluded": [
+      "native GLRT",
+      "acquisition",
+      "queue waiting",
+      "watcher work outside worker timers, including publication"
+    ],
+    "scientific_inference_rerun": false,
+    "job_id": "1df772f61a533fa7b22596511310494a",
+    "run_id": "fast-df35dde5da1f89620c239bdc1b24503e",
+    "recording_name": "fast8-auto-20261104-140048-18c682a7-1-upper",
+    "window_count": 6773,
+    "terminal_sha256": "sha256:142b438609608d30a56ca29602077a7755f8fd88f68421152507c69b7460a8ca",
+    "observed_utc_ns": 1793805131189046727,
+    "validation_seconds": 5.006427152082324,
+    "timing_note": "This read's validation time is not part of the recorded worker sum"
+  },
+  "publication_wall_seconds": 37.093463798984885,
+  "calls": [
+    {
+      "stage": "read_and_validate_evidence",
+      "seconds": 5.01709855068475
+    },
+    {
+      "stage": "reconstruct_predictions_and_conditional_grid",
+      "seconds": 15.957339755259454
+    },
+    {
+      "stage": "render_eight_pngs",
+      "seconds": 8.512597222812474
+    },
+    {
+      "stage": "read_and_validate_evidence",
+      "seconds": 4.7633078917860985
+    },
+    {
+      "stage": "write_private_publication",
+      "seconds": 0.7092726416885853
+    }
+  ],
+  "grid_seconds": 12.523689976893365,
+  "grid_points": 179,
+  "hotspots": [
+    {
+      "function": "raw_decode",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/runtime/lib/python3.12/json/decoder.py",
+      "line": 344,
+      "calls": 275,
+      "self_seconds": 7.013737921000001,
+      "cumulative_seconds": 7.0138272630000005
+    },
+    {
+      "function": "<built-in method posix.fsync>",
+      "path": "~",
+      "line": 0,
+      "calls": 56,
+      "self_seconds": 2.7328665560000003,
+      "cumulative_seconds": 2.7328665560000003
+    },
+    {
+      "function": "solve",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/numpy/linalg/_linalg.py",
+      "line": 374,
+      "calls": 24151,
+      "self_seconds": 2.507232016,
+      "cumulative_seconds": 2.612301682
+    },
+    {
+      "function": "posterior",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/dsx01_hierarchical_bound.py",
+      "line": 79,
+      "calls": 7411,
+      "self_seconds": 1.7001672650000001,
+      "cumulative_seconds": 4.294097328
+    },
+    {
+      "function": "hierarchical_bound",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/dsx01_hierarchical_bound.py",
+      "line": 15,
+      "calls": 363,
+      "self_seconds": 1.597775245,
+      "cumulative_seconds": 6.6508398710000005
+    },
+    {
+      "function": "_get_layout",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/text.py",
+      "line": 416,
+      "calls": 2904,
+      "self_seconds": 1.154036585,
+      "cumulative_seconds": 0.014277114
+    },
+    {
+      "function": "<method 'encode' of 'ImagingEncoder' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 178,
+      "self_seconds": 1.016844544,
+      "cumulative_seconds": 1.016844544
+    },
+    {
+      "function": "phase_shifted_states",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_phase_geometry.py",
+      "line": 16,
+      "calls": 11,
+      "self_seconds": 0.8715134800000001,
+      "cumulative_seconds": 1.037840413
+    },
+    {
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 585956,
+      "self_seconds": 0.7330240010000001,
+      "cumulative_seconds": 0.7330240010000001
+    },
+    {
+      "function": "<built-in method builtins.compile>",
+      "path": "~",
+      "line": 0,
+      "calls": 1079,
+      "self_seconds": 0.729957835,
+      "cumulative_seconds": 0.729957835
+    },
+    {
+      "function": "<built-in method numpy._core._multiarray_umath.c_einsum>",
+      "path": "~",
+      "line": 0,
+      "calls": 7491,
+      "self_seconds": 0.713960577,
+      "cumulative_seconds": 0.713960577
+    },
+    {
+      "function": "evaluate",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/predictive_new_family.py",
+      "line": 96,
+      "calls": 368,
+      "self_seconds": 0.593557927,
+      "cumulative_seconds": 3.8438031940000004
+    },
+    {
+      "function": "paired_phase_states",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/continuous_curve_fit.py",
+      "line": 13,
+      "calls": 5648,
+      "self_seconds": 0.573406117,
+      "cumulative_seconds": 0.786490121
+    },
+    {
+      "function": "<built-in method _codecs.utf_8_decode>",
+      "path": "~",
+      "line": 0,
+      "calls": 245,
+      "self_seconds": 0.49118463900000003,
+      "cumulative_seconds": 0.49118463900000003
+    },
+    {
+      "function": "look_angles",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/sky/frames.py",
+      "line": 158,
+      "calls": 3760,
+      "self_seconds": 0.490263681,
+      "cumulative_seconds": 0.78384061
+    },
+    {
+      "function": "calculate",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/ds23_frequency_events.py",
+      "line": 134,
+      "calls": 362,
+      "self_seconds": 0.48464972300000003,
+      "cumulative_seconds": 8.882796501000001
+    },
+    {
+      "function": "get_text_width_height_descent",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/backends/backend_agg.py",
+      "line": 251,
+      "calls": 31,
+      "self_seconds": 0.470104159,
+      "cumulative_seconds": 0.36959024900000004
+    },
+    {
+      "function": "<method 'read' of '_io.TextIOWrapper' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 245,
+      "self_seconds": 0.45017753600000004,
+      "cumulative_seconds": 0.941907652
+    },
+    {
+      "function": "cholesky",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/numpy/linalg/_linalg.py",
+      "line": 789,
+      "calls": 9330,
+      "self_seconds": 0.43298486100000005,
+      "cumulative_seconds": 0.48435717300000003
+    },
+    {
+      "function": "<method 'read' of '_io.BufferedReader' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 1068,
+      "self_seconds": 0.421494829,
+      "cumulative_seconds": 0.421494829
+    },
+    {
+      "function": "verify_input",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/storage/fast_graph_position_v2.py",
+      "line": 220,
+      "calls": 32,
+      "self_seconds": 0.38480909700000004,
+      "cumulative_seconds": 5.745775436000001
+    },
+    {
+      "function": "<built-in method _hashlib.openssl_sha256>",
+      "path": "~",
+      "line": 0,
+      "calls": 343,
+      "self_seconds": 0.361756362,
+      "cumulative_seconds": 0.361756362
+    },
+    {
+      "function": "condition_coefficients",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/predictive_track.py",
+      "line": 33,
+      "calls": 368,
+      "self_seconds": 0.27610290200000004,
+      "cumulative_seconds": 0.535851392
+    },
+    {
+      "function": "draw",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/collections.py",
+      "line": 360,
+      "calls": 860,
+      "self_seconds": 0.221961508,
+      "cumulative_seconds": 0.40634141700000004
+    },
+    {
+      "function": "frequency_modes_from_states",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/analysis/research/orbit_uncertainty.py",
+      "line": 109,
+      "calls": 1495,
+      "self_seconds": 0.221155431,
+      "cumulative_seconds": 0.883556093
+    },
+    {
+      "function": "_cho_solve",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/scipy/linalg/_decomp_cholesky.py",
+      "line": 271,
+      "calls": 1104,
+      "self_seconds": 0.21127767,
+      "cumulative_seconds": 0.23191108900000001
+    },
+    {
+      "function": "draw_path",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/backends/backend_agg.py",
+      "line": 95,
+      "calls": 1726,
+      "self_seconds": 0.20030666600000002,
+      "cumulative_seconds": 0.284063292
+    },
+    {
+      "function": "terminal",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/src/leo/storage/fast_graph_position_v2.py",
+      "line": 268,
+      "calls": 32,
+      "self_seconds": 0.198548423,
+      "cumulative_seconds": 9.175272446000001
+    },
+    {
+      "function": "_wrapreduction",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/numpy/_core/fromnumeric.py",
+      "line": 66,
+      "calls": 436048,
+      "self_seconds": 0.19694128400000002,
+      "cumulative_seconds": 0.548406272
+    },
+    {
+      "function": "<method 'searchsorted' of 'numpy.ndarray' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 8451,
+      "self_seconds": 0.195984439,
+      "cumulative_seconds": 0.195984439
+    },
+    {
+      "function": "<built-in method builtins.isinstance>",
+      "path": "~",
+      "line": 0,
+      "calls": 3172971,
+      "self_seconds": 0.16972721500000001,
+      "cumulative_seconds": 0.21375633200000002
+    },
+    {
+      "function": "calculate",
+      "path": "/srv/bulk/leo-dev/algo06-promotion-20261101/tools/probe_ds23_history_calibrated_phase.py",
+      "line": 50,
+      "calls": 363,
+      "self_seconds": 0.16915927800000002,
+      "cumulative_seconds": 7.65985108
+    },
+    {
+      "function": "process",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/cbook.py",
+      "line": 377,
+      "calls": 77457,
+      "self_seconds": 0.15890288800000002,
+      "cumulative_seconds": 0.194384847
+    },
+    {
+      "function": "<method '__deepcopy__' of 'numpy.ndarray' objects>",
+      "path": "~",
+      "line": 0,
+      "calls": 19801,
+      "self_seconds": 0.15689735000000002,
+      "cumulative_seconds": 0.15689735000000002
+    },
+    {
+      "function": "set_children",
+      "path": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/lib/python3.12/site-packages/matplotlib/transforms.py",
+      "line": 178,
+      "calls": 34523,
+      "self_seconds": 0.155807905,
+      "cumulative_seconds": 0.158626813
+    }
+  ],
+  "profiled": true,
+  "production_modified": false,
+  "scope": "Fresh figure replay; recorded fitting times; no fresh localization",
+  "uninstrumented_publication_seconds": 2.1338477367535233
+}
