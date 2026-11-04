@@ -1,9 +1,10 @@
 # ALGO07*: consolidate production, then optimize under an equivalence gate
 
-Status: proposed implementation plan, November 4, 2026. No new numerical
-implementation or production deployment is authorized by completion of this
-document alone. Existing production remains the reference. ALGO07* is a research
-implementation identifier, not a new scientific algorithm version.
+Status: implementation started, November 4, 2026, following the explicit goal
+to implement and optimize ALGO07* with DS26 equivalence checked at each iteration.
+Existing production remains the reference. ALGO07* is a research implementation
+identifier, not a new scientific algorithm version. Production deployment requires
+the qualification evidence below; the initial coordinator is research-only.
 
 ## Objective and scope
 
@@ -156,10 +157,18 @@ Such changes can be evaluated later as a different scientific candidate.
 
 ## Benchmark population and timing
 
-Reuse the registered DS26/27/28 inventory: 175 existing paired cases / 350 arms,
-with 15 unavailable upstream cases explicitly retained in the accounting.
-Re-inventory before execution rather than assuming every historical artifact
-is still accessible. The current saved-policy audit is not fresh inference.
+Every optimization iteration must compare all available DS26 fast cases against
+fresh production executions. The initial November 4 public-port inventory finds
+158 available native inputs among 159 fast members, plus 158 adaptive members
+excluded from this fast-only work. The one fast member without a native run stays
+in the denominator. Input availability does not imply a successful position fit.
+
+The historical DS26/DS27/DS28 audit contains 175 paired cases / 350 arms (148
+DS26, 13 DS27, 14 DS28), with 15 unavailable upstream cases at that time. Use it
+to locate diagnostic strata, not to replace fresh inference or exclude currently
+available DS26 cases. Broader cohorts and new-scan shadow validation follow the
+mandatory DS26 gate. Re-inventory before execution rather than assuming historical
+availability is unchanged.
 
 Start with a small fixed set covering: baseline-only retention; accepted
 recoveries at different stages; accepted ALGO07 reassociation; rejected
@@ -240,8 +249,9 @@ report. Separate verified facts, optimization hypotheses and rollout status.
 4. **Qualification/reporting:** small diagnostic suite, randomized representative
    set, full available cohort, then new-scan shadow comparison and rollback.
 
-These packages describe execution order and ownership boundaries; no background
-agents or numerical campaigns have been launched by this plan.
+These packages describe execution order and ownership boundaries. The initial
+implementation uses one bounded private smoke pair before cohort scheduling;
+no background agents or production changes are required for that step.
 
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),

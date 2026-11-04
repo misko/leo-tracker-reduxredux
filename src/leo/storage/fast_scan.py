@@ -1,5 +1,6 @@
 """Verified fast-scan source snapshots and immutable UI publications."""
 
+import hashlib
 import json
 import os
 import re
@@ -170,6 +171,54 @@ class FastScanStore:
         path = self._path("fast-scan-tracking-inputs", f"{safe_id(run_id)}.json")
         immutable_json(path, document)
         return path
+
+    def export_replay_inputs(self, run_id, destination):
+        """Copy public GLRT evidence into a new isolated local store, without IQ.
+
+        Preserve the tracking bytes and their job identity. The immutable source
+        inventory still refers to the original read-only segments; this export
+        does not claim to re-verify or duplicate the raw recording.
+        """
+        destination = Path(destination).resolve()
+        if (destination == self.root or self.root.is_relative_to(destination)
+                or destination.is_relative_to('/mnt/qnap01')):
+            raise ValueError('A new local replay store distinct from its source is required')
+        tracking_path = self.tracking_input_path(run_id)
+        tracking_bytes = tracking_path.read_bytes()
+        tracking = json.loads(tracking_bytes)
+        source = tracking['source']
+        inventory = self.source(source['session_id'], source['input_manifest_sha256'])
+        report_path = self._path('fast-scan-reports', f'{safe_id(run_id)}.json')
+        report_bytes = report_path.read_bytes()
+        report = json.loads(report_bytes)
+        if report['run_id'] != run_id or report['session_id'] != source['session_id']:
+            raise ValueError('Native report and tracking input disagree')
+        inventory_path = self._path('fast-scan-inputs', f"{safe_id(source['session_id'])}.json")
+        inventory_bytes = inventory_path.read_bytes()
+        if json.loads(inventory_bytes) != inventory:
+            raise ValueError('Source inventory changed during export')
+        payloads = [(tracking_path, tracking_bytes), (report_path, report_bytes),
+                    (inventory_path, inventory_bytes)]
+        if any(path.read_bytes() != data for path, data in payloads):
+            raise ValueError('Native evidence changed during export')
+        destination.mkdir(parents=True, exist_ok=False)
+        target = FastScanStore(destination)
+        files = []
+        for original, data in payloads:
+            relative = original.relative_to(self.root)
+            path = confined_path(target.root, target.root / relative, must_exist=False)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('xb') as stream:
+                stream.write(data)
+                stream.flush()
+                os.fsync(stream.fileno())
+            files.append(dict(path=str(relative), sha256=hashlib.sha256(data).hexdigest()))
+        receipt = dict(schema_version=1, kind='algo07-star-native-evidence', run_id=run_id,
+                       source_root=str(self.root), session_id=source['session_id'], files=files,
+                       input_sha256='sha256:'+hashlib.sha256(tracking_bytes).hexdigest(),
+                       raw_iq_reverified=False, numerical_inference_run=False)
+        immutable_json(destination / 'algo07-star-input.json', receipt)
+        return receipt
 
     def publish_orbits(self, run_id, artifacts, provenance):
         from leo.contracts.digests import sha256_digest
