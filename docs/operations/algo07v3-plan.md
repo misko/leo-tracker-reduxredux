@@ -7,15 +7,17 @@ architecture; its existing evidence remains useful and its failures remain open.
 Implementation has begun: see the [first extraction and geometry-reuse report](../../reports/2026_11_04_algo07v3_start/README.md).
 This is component progress, not completion of the standalone engine or its gates.
 The [causal-preparation iteration](../../reports/2026_11_04_algo07v3_preparation/README.md)
-now reproduces initial scientific preparation and removes repeated TLE text
-validation. The initial optimizer and subsequent policies remain to be extracted.
+reproduces initial scientific preparation and removes repeated TLE text validation.
 The [scan-scoring extraction](../../reports/2026_11_04_algo07v3_scan_likelihood/README.md)
 also matches the original context and exercised scoring states on three DS26
-scans. It is not yet wired into a complete position optimizer.
+scans.
 The [joint-likelihood and fresh-discovery extraction](../../reports/2026_11_04_algo07v3_position/README.md)
 adds independent bounded position fitting and phase refresh. Exact component
-comparisons pass; full regional branch orchestration, gates, recovery and
-publication remain unfinished.
+comparisons pass. The [initial-search extraction](../../reports/2026_11_04_algo07v3_initial_search/README.md)
+now adds full regional branch orchestration, acceptance gates and frozen-calibration
+extension. It matches the production-budget initial search on DS26-0084 and bounded
+searches on three DS26 cases. Subsequent gate/refit, recovery, reassociation and
+publication remain unfinished; full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

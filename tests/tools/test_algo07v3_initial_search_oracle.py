@@ -1,0 +1,64 @@
+import sys
+from types import ModuleType
+
+from algo07v3_initial_search_oracle import RESULT_FIELDS, reference_initial_search
+
+
+def test_external_oracle_removes_io_but_retains_search_and_declared_budgets(tmp_path, monkeypatch):
+    calls = []
+
+    def module(name, source, **namespace):
+        path = tmp_path/(name+'.py')
+        path.write_text(source)
+        result = ModuleType(name)
+        result.__file__ = str(path)
+        result.__dict__.update(namespace)
+        exec(compile(source, str(path), 'exec'), result.__dict__)
+        monkeypatch.setitem(sys.modules, name, result)
+        return result
+
+    def numerical_fit(problem, start=(0., 0.), iterations=48):
+        calls.append(('fit', problem, iterations))
+        return problem
+
+    module('investigate_dsx01_localization_failures', '''
+def refreshed(scan, sigma, node, arm, control="baseline", rounds=5):
+    return [fit((node, arm)) for _ in range(rounds)]
+''', fit=numerical_fit)
+
+    def discovery(scan, sigma, budget):
+        calls.append(('discovery', budget))
+        return list(range(budget))[::-1]
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('External oracle must not run preparation or publication')
+
+    module('evaluate_ds23_phase_refreshed', '''
+def fit_case(case, noise_mode="fixed150"):
+    forbidden()
+    candidates = fresh_discovery(scan, sigma, budget=4)
+    selected = sorted(candidates)[:3]
+    choices = []
+    for node in selected:
+        pair = {arm: refreshed(scan, sigma, node, arm) for arm in ("c0", "fitted_c")}
+        choices.append(pair)
+        write("not-created", pair)
+        print("not-printed")
+    zero = {arm: fit(("zero", arm)) for arm in ("c0", "fitted_c")}
+    write("not-created", dict(status="complete", GPS_used=False, choices=choices,
+        selected_hypothesis=0, zero_phase_control=zero, selection="scientific policy",
+        unique_RF_hypotheses=len(candidates), fully_fitted_hypotheses=len(selected),
+        same_observations_candidates_priors_bounds_and_budgets_in_c_pair=True,
+        fresh_radio_seed_budget=4, RF_proposal_points=((0., 0.),), region_center=(10., 20.),
+        box_width_km=25., noise_sigma_hz=sigma, seconds=forbidden()))
+''', fresh_discovery=discovery, forbidden=forbidden, write=forbidden)
+    result = reference_initial_search(object(), 150., seed_budget=5, branch_budget=2,
+                                      rounds=2, iterations=7)
+    assert set(result) == set(RESULT_FIELDS)
+    assert result['unique_RF_hypotheses'] == result['fresh_radio_seed_budget'] == 5
+    assert result['fully_fitted_hypotheses'] == 2
+    assert calls[0] == ('discovery', 5)
+    assert len(calls[1:]) == 10  # Two branches × two arms × two rounds, plus two controls.
+    assert {c[2] for c in calls[1:]} == {7}
+    assert [p['c0'][0] for p in result['choices']] == [(0, 'c0'), (1, 'c0')]
+    assert result['selection'] == 'scientific policy'

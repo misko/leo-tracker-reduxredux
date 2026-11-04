@@ -60,6 +60,13 @@ A same-CPU, sequential ABBA test of one declared hypothesis and a reduced
 one-round/four-iteration budget measures 36.329 → 34.417 s (1.056×), with exact
 outputs in all four trials. This is not complete regional search or full ALGO07.
 
+The [initial-search extraction](../../reports/2026_11_04_algo07v3_initial_search/README.md)
+now matches the full production-budget regional search on DS26-0084, including
+acceptance and frozen-calibration extension. Its observed 123.472 → 88.268 s
+elapsed times overlap on a shared host and are **not a qualified speedup**;
+another bounded pair is slower on v3. Later recovery and publication remain
+unimplemented, so the primary complete-path speed metric remains unavailable.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

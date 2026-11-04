@@ -1,8 +1,9 @@
 """External bounded exact oracle for joint position likelihood and descent.
 
-Each side independently nominates a zero-calibration hypothesis from the full
-causal bank. This is one declared hypothesis test, not full production discovery,
-recovery or publication. Reference worker imports occur only in reference mode.
+Default mode independently nominates one zero-calibration hypothesis. Discovery
+mode compares seed proposals. Initial-search mode compares the complete initial
+regional branch policy using explicitly declared solver budgets. None includes
+the later recovery or publication stages. Old imports occur only in reference mode.
 """
 import argparse
 import hashlib
@@ -69,7 +70,15 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    if args.discovery:
+    if args.initial_search:
+        if args.side == 'candidate':
+            from leo.analysis.localization_v3.initial_search import initial_search
+        else:
+            from algo07v3_initial_search_oracle import reference_initial_search as initial_search
+        result = fingerprint(initial_search(scan, scan.radio_sigma_hz,
+            seed_budget=args.seed_budget, branch_budget=args.branch_budget,
+            rounds=args.rounds, iterations=args.iterations))
+    elif args.discovery:
         result = dict(candidates=fingerprint(fresh_discovery(
             scan, scan.radio_sigma_hz, budget=args.seed_budget)))
     else:
@@ -118,9 +127,14 @@ def run(args):
                    and str(module.__file__).startswith(str(args.reference_runtime))))}
     receipt = dict(side=args.side, source=str(args.source), seconds=time.monotonic()-started,
         output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
-        discovery=args.discovery, seed_budget=args.seed_budget,
+        discovery=args.discovery, initial_search=args.initial_search,
+        seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
         modules={name:dict(path=path, sha256=digest(Path(path))) for name,path in modules.items()},
+        tool_sources={str(Path(path).resolve()):digest(Path(path)) for path in (
+            __file__, sys.modules['check_algo07v3_scan_likelihood'].__file__,
+            *([sys.modules['algo07v3_initial_search_oracle'].__file__]
+              if args.initial_search and args.side == 'reference' else []))},
         inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
                'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
     with args.output.with_suffix('.receipt.json').open('x') as stream:
@@ -138,6 +152,9 @@ if __name__ == '__main__':
     parser.add_argument('--search-center', type=float, nargs=2, required=True)
     parser.add_argument('--rounds', type=int, default=2)
     parser.add_argument('--iterations', type=int, default=8)
-    parser.add_argument('--discovery', action='store_true')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--discovery', action='store_true')
+    mode.add_argument('--initial-search', action='store_true')
+    parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     run(parser.parse_args())
