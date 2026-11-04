@@ -1,5 +1,6 @@
 import copy
 
+import pytest
 from algo07_star_accounting import classify, log_accounting
 from diff_algo07_star_evidence import differences
 
@@ -101,3 +102,41 @@ def test_cavity_duration_keeps_objective_and_requires_completed_fit():
     assert None in reasons('screen.json', a, b)
     b['cavity']['c0']['optimizer_success'] = False
     assert all(v is None for v in reasons('screen.json', a, b))
+
+
+def unsuccessful_cavity():
+    fit = dict(x=[1., 2.], latlon=[37., -122.], error_m=None, objective=2., rms_hz=3.,
+               history=[dict(success=False, message='ABNORMAL: ', nfev=105)],
+               reference=[0.], active_points=20, seconds=1., phase_closed=True,
+               optimizer_success=False, boundary=False, diagnostic_only=True,
+               omitted_norad=12345, phase_scale=1.)
+    left = dict(cavity=dict(c0=fit))
+    right = copy.deepcopy(left)
+    right['cavity']['c0']['seconds'] = 2.
+    return left, right
+
+
+def test_returned_unsuccessful_diagnostic_may_only_differ_in_elapsed_time():
+    left, right = unsuccessful_cavity()
+    assert reasons('screen.json', left, right) == ['completed_unsuccessful_cavity_fit_duration']
+    assert reasons('unknown.json', left, right) == [None]
+
+
+@pytest.mark.parametrize('field,value', [
+    ('objective', 2.001), ('optimizer_success', True), ('phase_closed', False),
+    ('diagnostic_only', False), ('omitted_norad', 23456), ('phase_scale', 2.),
+    ('history', [dict(success=False, message='different', nfev=105)]),
+    ('history', [dict(success=True, message='ABNORMAL: ', nfev=105)]),
+    ('history', []), ('history', [None]), ('new_unknown_field', True),
+])
+def test_unsuccessful_cavity_science_or_outcome_changes_are_never_accounting(field, value):
+    left, right = unsuccessful_cavity()
+    right['cavity']['c0'][field] = value
+    assert all(r is None for r in reasons('screen.json', left, right))
+
+
+@pytest.mark.parametrize('duration', [float('nan'), float('inf'), -1., 1200., True])
+def test_unsuccessful_cavity_rejects_invalid_timing(duration):
+    left, right = unsuccessful_cavity()
+    right['cavity']['c0']['seconds'] = duration
+    assert reasons('screen.json', left, right) == [None]

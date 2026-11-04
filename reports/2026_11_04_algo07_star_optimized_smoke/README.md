@@ -93,17 +93,19 @@ cohort order, not by position error or a favorable timing result.
 
 ## Qualification status and next work
 
-The zero-change coordinator now has three completed scientific passes:
-DS26-0002, DS26-0267 and DS26-0170. DS26-0102 remains a strict failure because of
+The zero-change coordinator now has five completed scientific passes:
+DS26-0002, DS26-0267, DS26-0170, DS26-0018 and DS26-0084. The last case required
+the narrowly reviewed diagnostic-duration classification described below.
+DS26-0102 remains a strict failure because of
 the documented [discovery-deadline divergence](../2026_11_04_algo07_star_deadline_divergence/README.md),
 despite identical final positions and ownership. The optimized adapter has one
 completed scientific pass, DS26-0002. These are separate cohorts/iterations.
 
 The mandatory population remains **159 fast members: 158 available native inputs
-and one unavailable input**. DS26-0018 and DS26-0084 continue in bounded
-unchanged-worker replays. The next optimized DS26-0267 case is initialized with
-fresh candidate inputs and the previous independent reference and is starting
-its bounded run. The remaining full-cohort runs, deadline-sensitive
+and one unavailable input**. DS26-0162 continues in bounded unchanged-worker
+replays. Optimized DS26-0267 and DS26-0170 candidates are running with fresh
+candidate inputs and their previous independent references, for parity only.
+The remaining full-cohort runs, deadline-sensitive
 qualification, complete artifact comparisons and controlled pipeline timings
 are still required. Production is unchanged.
 
@@ -117,3 +119,81 @@ new product tooling or counted as qualification. Fresh replays remain necessary.
 Use the [verification skill](../../.agents/skills/verify-algo07-star/SKILL.md) for
 the continued bounded runs. [Evidence and hashes](evidence.json) bind the saved
 comparisons, publication receipts, component probe and availability inventory.
+
+## Follow-up: match logical grid work explicitly
+
+The sampler already exposes a clock dependency. A research-only fixture injects
+a logical admission clock into that sampler inside each isolated publication
+process. It admits a predeclared number of paired locations, while the unmodified
+renderer, scoring functions, scientific inputs and evaluation reference remain
+the same. A separate **600-second real wall limit per publication** is enforced
+by the launcher. The fixture does not enter production or numerical inference.
+
+The original plan declared a full 179-location pair followed by cancellation
+after 17 paired locations. Both experiments completed, with frozen presentation
+files and fixture source verified before/after. No previous failed publication
+was overwritten, and the strict comparison's completeness requirement was kept.
+
+| Test condition | Reference locations | Candidate locations | Identical PNGs | Result |
+| --- | ---: | ---: | ---: | --- |
+| Original 30-second wall-clock runs | 179 | 154 | 7/8 | Artifact parity fails |
+| Controlled full grid | 179 | 179 | **8/8** | Exact publication content under this fixture |
+| Controlled stop after 17 locations | 17 | 17 | **8/8** | Equivalent cancellation; both remain incomplete |
+
+![Grid admission and PNG equality](comparison-conditions.png)
+
+For the full controlled pair, all 179 paired scores, all eight PNG bytes,
+published scientific summaries and path sidecars match exactly. For the
+17-location fixture, all 17 shared scores and all PNGs/path data also match; the
+unmodified strict comparator still reports `publication_exact=false` because
+both grids are incomplete. A separate cancellation receipt records the expected
+equivalent truncation without converting it into a full artifact pass.
+
+**The injected clock's `elapsed_seconds` is synthetic.** Separate receipts record
+the real grid times: 57.667 / 34.022 seconds for the full reference/candidate
+pair, and 2.843 / 3.232 seconds for the 17-location pair. These are shared-host
+fixture executions, not controlled performance trials, and no speed ratio is
+claimed. The 179-location reference took more than the normal 30-second budget;
+matching work demonstrates content equivalence, not identical behavior under
+arbitrary wall-clock interruptions.
+
+The fixture and existing sampler have 10 passing focused tests, including
+whole-pair cancellation, exact point prefixes, failed score retention and
+unexpected clock-protocol rejection. [Controlled evidence](evidence-controlled.json)
+binds both plans, executions, comparisons and implementation hashes.
+
+## Further scientific comparisons and an accounting correction
+
+DS26-0018 passes all six stages with **6,667 JSON documents, 662 binary/text
+files, 409 process receipts and 30,223 verified hash links per path**. There are
+zero scientific differences and zero link errors. Its figure comparison is
+still outstanding.
+
+DS26-0084's first comparison reported one difference, preserved in its original
+failed receipt: `ALGO07/.../58627/screen.json`, `/cavity/c0/seconds`, was
+5.013776754029095 versus 6.932386378757656. The cavity coordinates, objective,
+history, phase state and unsuccessful optimizer flag were otherwise identical.
+
+Source review of the pinned `algo07_science/diagnose.py::refit` establishes that
+this field is assigned from elapsed monotonic time **after** `minimize` returns;
+the function has no wall-clock stopping rule. Its optimizer may return
+unsuccessfully and still produce a complete diagnostic record. The previous
+accounting classifier recognized this elapsed field only for successful fits.
+
+The new classification applies only to this known cavity schema and exact
+`seconds` pointer. Both records must be phase-closed diagnostics with an
+unsuccessful optimizer and unsuccessful final history entry, valid elapsed
+values, and **every other field identical**. The failure remains a failure;
+objectives, histories, satellite identity, phase state and acceptance decisions
+are never ignored. Unknown schemas and invalid timing remain differences.
+
+The classifier, fixture and sampler suite has **37 passing tests**, including
+mutated scientific values, changed failure outcomes, malformed histories and
+invalid durations. The broader comparator, receipt, publication and verification
+CLI regression selection has **85 passing tests**. No golden scientific fixture
+was changed. Rehashing and
+rechecking the original DS26-0084 exports now passes: **2,681 JSON documents,
+290 binary/text files, 114 process receipts, 12,481 verified links per path**,
+zero scientific differences and zero link errors. This is an explicit accounting
+review, not a numerical tolerance or an inference rerun. DS26-0102's different
+search work remains a failure and is unaffected by this correction.

@@ -104,6 +104,24 @@ artifact parity. A case PASS never establishes full DS26 parity or a speedup.
 Retain missing/failed cases in the cohort denominator. Parallel runs establish
 parity only; speed requires separately controlled sequential trials.
 
+## Deadline diagnostics
+
+Wall-clock admission can change work even with unchanged numerical workers.
+Keep these failures and investigate the first differing admission; never hide
+missing hypotheses or incomplete grids as timing metadata. DS26-0102 is a
+documented discovery-budget example.
+
+`tools/algo07_grid_clock_fixture.py` is a **research-only** injected-clock
+fixture for matching diagnostic-grid work. It has separate real wall-time
+receipts; the grid's own elapsed field is synthetic. The saved 179-location and
+17-location experiments are described in
+[the optimized smoke report](../../../reports/2026_11_04_algo07_star_optimized_smoke/README.md).
+An exact publication comparison under this fixture qualifies only that
+controlled condition. Do not use these publication roots to report an ordinary
+wall-clock `case_full_parity` pass. Equivalent partial grids still fail the
+strict completeness gate. Preserve the plans, hard wall limits and original
+failed publications; do not rerender until a favorable result appears.
+
 ## Experimental terminal-read reuse
 
 For a **new private candidate case**, `init --candidate-terminal-read-reuse`

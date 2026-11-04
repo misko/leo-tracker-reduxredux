@@ -170,10 +170,23 @@ def classify(name, row, left, right, process_roles):
               'diagnostic_only', 'omitted_norad', 'phase_scale'}
     if (Path(name).name == 'screen.json' and len(keys) == 3 and keys[0] == 'cavity'
             and keys[1] in ('c0', 'fitted_c') and key == 'seconds' and set(a) == cavity
+            and set(b) == cavity
             and all(v['diagnostic_only'] is True and v['phase_closed'] is True
-                    and v['optimizer_success'] is True for v in (a, b))
+                    for v in (a, b))
             and finite_time(x, 1200) and finite_time(y, 1200)):
-        return 'completed_cavity_fit_duration'
+        if all(v['optimizer_success'] is True for v in (a, b)):
+            return 'completed_cavity_fit_duration'
+        # diagnose.refit() writes elapsed time after returning from minimize,
+        # including a normally returned unsuccessful optimizer result. It has
+        # no wall-clock stopping rule. Keep the failure and every other value
+        # exact; this does not convert an unsuccessful fit into a valid fit.
+        if (all(v['optimizer_success'] is False and isinstance(v['history'], list)
+                and v['history'] and isinstance(v['history'][-1], dict)
+                and v['history'][-1].get('success') is False
+                for v in (a, b))
+                and {k: v for k, v in a.items() if k != 'seconds'} ==
+                    {k: v for k, v in b.items() if k != 'seconds'}):
+            return 'completed_unsuccessful_cavity_fit_duration'
     return None
 
 
