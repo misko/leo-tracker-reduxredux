@@ -3,6 +3,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 from pathlib import Path
 import shutil
 import tempfile
@@ -111,15 +112,34 @@ def replay(evidence, scratch, *, include_grid=False):
     return packet
 
 
-def publish(source, target, job):
+def evaluation_coordinates(latitude, longitude):
+    if latitude is None and longitude is None:
+        return None
+    if (latitude is None or longitude is None or not math.isfinite(latitude)
+            or not math.isfinite(longitude) or not -90 <= latitude <= 90
+            or not -180 <= longitude <= 180):
+        raise ValueError('Both valid evaluation coordinates are required')
+    return dict(latitude_deg=latitude, longitude_deg=longitude)
+
+
+def publish(source, target, job, *, evaluation_reference=None):
     folder=target.folder(job['run_id']);folder.mkdir(parents=True,exist_ok=True)
     with (folder/'render.lock').open('a') as handle:
         try:fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:return dict(state='rendering',artifacts=[])
-        return _publish(source,target,job)
+        old=target.detail(job['run_id'])
+        saved=old.get('evaluation_reference')
+        # A saved per-recording site takes precedence over today's service setting.
+        reference=saved or evaluation_reference
+        if reference and old['state']=='complete' and not saved:
+            target.set_evaluation_reference(job['run_id'],reference['latitude_deg'],reference['longitude_deg'])
+        result=_publish(source,target,job,evaluation_reference=reference)
+        if reference and result['state']=='complete':
+            target.set_evaluation_reference(job['run_id'],reference['latitude_deg'],reference['longitude_deg'])
+        return result
 
 
-def _publish(source, target, job):
+def _publish(source, target, job, *, evaluation_reference=None):
     old=target.detail(job['run_id'])
     if old['state']=='complete':
         pngs={a['name']:target.artifact(job['run_id'],a['name'],a['sha256']) for a in old['artifacts']}
@@ -150,7 +170,7 @@ def _publish(source, target, job):
             grid=packet['position_grid']
         path=recorded_position_path(terminal,old['selected_model'])
         pngs['position']=render_position(old['arms'],title=title,
-            selected_model=old['selected_model'],evaluation_reference=old['evaluation_reference'],
+            selected_model=old['selected_model'],evaluation_reference=evaluation_reference,
             position_grid=grid,position_path=path)
         document={k:v for k,v in old.items() if k not in ('artifacts','evaluation_reference')}
         document['arms']={a:{k:v for k,v in row.items() if k!='evaluation_error_m'}
@@ -164,7 +184,7 @@ def _publish(source, target, job):
         while 'source_job' in acquisition and 'fast_acquisition' not in acquisition:
             acquisition=acquisition['source_job']
         title=acquisition.get('fast_acquisition',{}).get('recording_name',job['run_id'])
-        pngs=render(packet,title=title)
+        pngs=render(packet,title=title,evaluation_reference=evaluation_reference)
     # Publication is bound to the exact scientific terminal, not its timestamp.
     again=source.plot_evidence(job)
     if again['terminal_receipt']!=evidence['terminal_receipt']:
@@ -192,15 +212,20 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bulk-root',type=Path,required=True)
     parser.add_argument('--run-id');parser.add_argument('--once',action='store_true')
+    parser.add_argument('--evaluation-latitude',type=float)
+    parser.add_argument('--evaluation-longitude',type=float)
     args=parser.parse_args();source=FastGraphPositionStoreV6(args.bulk_root);target=FastStandardAnalysisStore(args.bulk_root)
+    reference=evaluation_coordinates(args.evaluation_latitude,args.evaluation_longitude)
     while True:
         for job in source.completed_jobs():
             if args.run_id and job['run_id']!=args.run_id:continue
             old=target.detail(job['run_id'])
+            # Do not apply today's evaluation site retroactively to historical scans.
+            # Existing publications are upgraded only through an explicit --run-id.
             if old['state']=='complete' and (old.get('renderer_revision')==RENDER_REVISION
-                    or (not args.run_id and old.get('renderer_revision')=='diagnostic-position-v4')):continue
+                    or not args.run_id):continue
             try:
-                result=publish(source,target,job)
+                result=publish(source,target,job,evaluation_reference=reference)
                 print(json.dumps(dict(run_id=job['run_id'],state=result['state'],figures=len(result['artifacts']))),flush=True)
             except Exception as error:
                 print(json.dumps(dict(run_id=job['run_id'],state='failed',error=str(error))),flush=True)

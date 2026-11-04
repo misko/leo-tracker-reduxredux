@@ -11,8 +11,8 @@ from leo.contracts.position_path import validate as validate_path
 from leo.storage.fast_scan import immutable_json, safe_id
 from leo.storage.uri import confined_path
 
-RENDER_REVISION = 'optimizer-path-v6'
-PREVIOUS_RENDER_REVISIONS = ('conditional-grid-v5','diagnostic-position-v4','orbit-layout-v3')
+RENDER_REVISION = 'final-error-v7'
+PREVIOUS_RENDER_REVISIONS = ('optimizer-path-v6','conditional-grid-v5','diagnostic-position-v4','orbit-layout-v3')
 
 def digest(data):
     return 'sha256:' + hashlib.sha256(data).hexdigest()

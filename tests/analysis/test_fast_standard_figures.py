@@ -57,6 +57,7 @@ def test_position_map_restores_reference_marker_and_reports_actual_error():
     assert 'reference error 800.3 m' in axis.get_title()
     assert 'reference error 889.6 m' in axis.get_title()
     assert 'retained ALGO02' in figure._suptitle.get_text()
+    assert 'Final position error — Fitted c: 800.3 m | c = 0: 889.6 m' in figure._suptitle.get_text()
     assert arms==before
 
 
@@ -67,6 +68,7 @@ def test_position_without_evaluation_reference_does_not_invent_ground_truth():
     axis=figure.axes[0]
     assert all(line.get_label()!='Reference (evaluation only)' for line in axis.lines)
     assert axis.get_title().count('evaluation reference unavailable')==2
+    assert 'Final position error unavailable' in figure._suptitle.get_text()
 
 
 def test_algo07_grid_reuses_historical_colored_grid_renderer(monkeypatch):

@@ -40,8 +40,8 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
     model='ALGO07'
     if selected_model and not selected_model.startswith('algo07-'):
         model+=' · retained '+selected_model.split('-')[0].upper()
-    figure.suptitle(f'{title}\n{model} · diagnostic position map')
     descriptions=[]
+    errors=[]
     reference=None if evaluation_reference is None else (
         evaluation_reference['latitude_deg'],evaluation_reference['longitude_deg'])
     for arm,marker,color,label in [('fitted_c','D','red','Fitted c'),('c0','s','blue','c = 0')]:
@@ -53,10 +53,15 @@ def position_figure(arms, *, title, selected_model=None, evaluation_reference=No
         if reference is not None:
             delta=project(row['endpoint_latlon'],reference)
             summary+=f'reference error {math.hypot(*delta)*1000:,.1f} m'
+            errors.append(f'{label}: {math.hypot(*delta)*1000:,.1f} m')
         else:
             summary+='evaluation reference unavailable'
         if 'residual_rms_hz' in row:summary+=f"; residual RMS {row['residual_rms_hz']:.1f} Hz"
         descriptions.append(summary)
+    error_heading=('Final position error — '+' | '.join(errors) if errors else
+                   'Final position error unavailable — no confirmed evaluation reference')
+    figure.suptitle(f'{title}\n{model} · diagnostic position map\n{error_heading}',
+                   fontsize=12, fontweight='bold')
     if reference is not None:
         for ax in axes:
             ax.plot(*plot_coordinates(reference),'k+',markersize=11,markeredgewidth=1.7,zorder=9,
