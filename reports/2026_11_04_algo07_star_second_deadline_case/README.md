@@ -72,7 +72,8 @@ they do not substitute for that numerical replay or full-cohort qualification.
 
 The optimized adapter now has six full scientific passes, DS26-0002,
 DS26-0267, DS26-0084, DS26-0018, DS26-0162 and DS26-0082. Optimized
-DS26-0102 also fails strict qualification, as detailed below, alongside this case.
+DS26-0102 and DS26-0259 also fail strict qualification, as detailed below,
+alongside this case. There are six scientific passes and three strict failures.
 The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
@@ -124,6 +125,29 @@ no inference rerun or comparison tolerance was used to convert it to a pass.
 Evidence: [strict failure](ds26-0102-optimized-verification.json),
 [process difference](ds26-0102-optimized-process-difference.json),
 [limited diagnostic](ds26-0102-optimized-diagnostic-summary.json).
+
+## Optimized DS26-0259: a smaller timing margin still changes admitted work
+
+The optimized DS26-0259 pair also fails first at ALGO03 discovery, with 15
+reference process receipts versus 14 candidate receipts. The reference admits
+seven targets and the candidate six. The omitted seventh target,
+`0a1727830e4fa8e64e59` (24 points), is `prediction_mismatch` in the reference and
+`discovery_budget_exhausted` in the candidate. Both omit the final eighth target.
+
+Through target 5's audit, recorded child durations sum to 574.796 s in the
+reference and 598.286 s in the candidate. The latter sum is below 600 seconds;
+it excludes orchestration/bookkeeping and must not be presented as an exact
+wall-clock reconstruction. The producer explicitly records budget exhaustion
+at the next admission. This is a near-boundary case, not evidence of a changed
+numerical search setting.
+
+The limited diagnostic finds identical selected public results, all six retained
+decisions and 3,262 owners in each arm. The full intermediate-work comparison
+still fails. No new tolerance, rerun or matched-clock result clears that failure.
+
+Evidence: [strict failure](ds26-0259-optimized-verification.json),
+[process difference](ds26-0259-optimized-process-difference.json),
+[limited diagnostic](ds26-0259-optimized-diagnostic-summary.json).
 
 An [iteration source-pin audit](source-pin-audit.json) checks all nine initialized
 optimized cases (including unfinished and failed cases). Their complete maps of

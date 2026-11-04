@@ -114,8 +114,10 @@ exactly. See the [full diagnosis](../2026_11_04_algo07_star_second_deadline_case
 DS26-0082 passes science and its first ordinary publication comparison, including
 all eight PNGs and all 179 grid locations. Its combined CLI check also passes,
 with `case_full_parity: true`.
-Both DS26-0259 inference paths have finished; their scientific comparison is
-running. References DS26-0221 and DS26-0112 continue in the predeclared cohort order.
+Both DS26-0259 inference paths have finished; their comparison fails at ALGO03
+discovery admission (seven targets versus six), although selected results and
+ownership match. This third optimized strict failure remains recorded. The
+DS26-0112 reference is complete; DS26-0221 and DS26-0074 references continue.
 Optimized DS26-0018 has passed science. Its first ordinary publication pair has
 68/179 versus 46/179 grid locations and fails artifact completeness; all shared
 scores match exactly. DS26-0162 has passed science; its first artifact comparison
