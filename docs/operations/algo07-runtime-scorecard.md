@@ -23,7 +23,11 @@ The [fresh GLRT-ready timing trial](../../reports/2026_11_04_algo07_star_glrt_re
 retains an incomplete first reference: 562.161 seconds through ALGO06, then a safe
 checkpoint before ALGO07. This is not a complete-path baseline. A revised,
 predeclared trial advances verified checkpoints within one monotonic timer and
-30-minute research bound. Its paired complete times and parity remain pending.
+30-minute research bound. Its reference completes inference and eight-artifact
+publication in an observed **912.576 s (15.21 min)**, but evaluates only 91/179
+diagnostic grid locations and fails the strict completeness gate. The planned
+candidate is running. This is an unqualified private GLRT-ready latency
+observation; paired complete times and parity remain pending.
 
 ## Measured improvements within the pipeline
 
