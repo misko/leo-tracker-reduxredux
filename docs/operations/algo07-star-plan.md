@@ -255,6 +255,14 @@ no background agents or production changes are required for that step.
 
 ## Current qualification checkpoints
 
+For routine runs, use `tools/verify_algo07_star.py` and the
+[verify-algo07-star skill](../../.agents/skills/verify-algo07-star/SKILL.md).
+Initialize a case once, then use `status`, bounded `run --side reference|candidate`,
+and `check`. The default check requires scientific and publication parity;
+`--scope science` reports the narrower result explicitly. Detailed comparison
+receipts remain alongside the concise summary. The wrapper changes no science
+settings and makes no cohort-wide or speed claim from a single case.
+
 The first complete private smoke pair is DS26-0002. These checkpoints are
 separate: passing a later endpoint check does not waive an intermediate failure.
 
