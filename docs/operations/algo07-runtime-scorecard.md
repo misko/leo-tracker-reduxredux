@@ -54,6 +54,12 @@ ABBA comparison reduces native-input-to-saved-preparation subprocess time from
 This excludes localization, recovery and publication. Preparation matches three
 DS26 replay cases; track-only outputs match all 158 available members out of 159.
 
+The [position-component iteration](../../reports/2026_11_04_algo07v3_position/README.md)
+reproduces joint likelihoods, exercised descent histories and fresh discovery.
+A same-CPU, sequential ABBA test of one declared hypothesis and a reduced
+one-round/four-iteration budget measures 36.329 → 34.417 s (1.056×), with exact
+outputs in all four trials. This is not complete regional search or full ALGO07.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
@@ -63,6 +69,7 @@ DS26 replay cases; track-only outputs match all 158 available members out of 159
 | Upstream ALGO03 recovery, joint-family case, iteration 009 | 929 s | 560 s | 1.66× | Stage only; rounded report values; qualified numerical contract |
 | ALGO07* terminal-result validation/read, DS26-0170 ABBA means | 10.111 s | 1.618 s | 6.250× | Exact returned result; 8.493 s saved per measured read; experimental |
 | Standalone v3 preparation, DS26-0084 ABBA means | 22.263 s | 13.946 s | 1.596× | Exact science; native-input-to-saved-preparation only; excludes position/recovery/publication |
+| V3 bounded position component, DS26-0084 same-CPU ABBA means | 36.329 s | 34.417 s | 1.056× | Exact outputs; one hypothesis, both arms, one phase round × four iterations; excludes full search/recovery/UI |
 | Native GLRT tiling, 16 paired-window DS27 fixture | 25.454 s | 16.643 s | 1.529× | Detector-only alternating trial; prototype, not deployed by that report |
 
 These are separate experiments, not one cumulative baseline/current pair.

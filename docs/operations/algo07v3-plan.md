@@ -12,6 +12,10 @@ validation. The initial optimizer and subsequent policies remain to be extracted
 The [scan-scoring extraction](../../reports/2026_11_04_algo07v3_scan_likelihood/README.md)
 also matches the original context and exercised scoring states on three DS26
 scans. It is not yet wired into a complete position optimizer.
+The [joint-likelihood and fresh-discovery extraction](../../reports/2026_11_04_algo07v3_position/README.md)
+adds independent bounded position fitting and phase refresh. Exact component
+comparisons pass; full regional branch orchestration, gates, recovery and
+publication remain unfinished.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

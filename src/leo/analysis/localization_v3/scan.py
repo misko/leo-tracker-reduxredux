@@ -61,10 +61,15 @@ def perturb(base, parameter, delta):
 
 
 class ScanLikelihood:
-    def __init__(self, tracks, bank, elements, *, origin_utc_ns, regional_center, noise):
+    def __init__(self, tracks, bank, elements, *, origin_utc_ns, regional_center, noise,
+                 search_region=None, previous_tle=None, previous_tle_sha256=None,
+                 noise_sha256=None):
         if not tracks:
             raise ValueError("Nonempty prepared tracks required")
         self.origin_utc_ns = origin_utc_ns
+        self.search_region = search_region
+        self.previous_tle = previous_tle
+        self.previous_tle_sha256 = previous_tle_sha256
         self.sky = {key: np.array(value, copy=True) for key, value in bank.items()}
         self.tracks = deepcopy(tracks)
         for track in self.tracks:
@@ -85,6 +90,7 @@ class ScanLikelihood:
         self.reference, self.element_derivatives = {}, {}
         self.elements = deepcopy(elements)
         self.fixed_window_noise = deepcopy(noise)
+        self.fixed_window_noise_sha256 = noise_sha256
         self.radio_sigma_hz = noise["constant_radio_sigma_hz"]
 
     def latlon(self, xy):
