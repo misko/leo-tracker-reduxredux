@@ -1,9 +1,9 @@
 import json
 
 import pytest
-from probe_algo07_terminal_reuse import TerminalReuse
 
 from leo.cli.algo07_profile import digest
+from leo.storage.graph_terminal_reuse import TerminalReuse
 
 
 class Source:

@@ -70,6 +70,38 @@ def test_replay_uses_frozen_archive_original_workers_and_bounded_budget(tmp_path
         assert '--evaluation-latitude' not in command
 
 
+def test_reuse_option_cannot_change_reference_path(tmp_path):
+    config = {key: '/' + key for key in ('python', 'archive_view', 'archive_manifest',
+                                        'runtimes', 'manifest', 'reference', 'candidate')}
+    config['candidate_terminal_read_reuse'] = True
+    for side in cli.SIDES:
+        command = cli.replay_command(config, side, tmp_path / 'receipt.json')
+        driver = str(cli.REPO / 'tools/run_algo07_star_reuse.py')
+        assert (driver in command) == (side == 'candidate')
+        assert command[command.index('--maximum-seconds') + 1] == '1500'
+
+
+def test_experimental_source_pin_rejects_edits_and_additions(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, 'REPO', tmp_path)
+    tree = tmp_path / 'src'
+    tree.mkdir()
+    files = [tree / 'adapter.py', tmp_path / 'tools/run_algo07_star.py',
+             tmp_path / 'tools/run_algo07_star_reuse.py']
+    for p in files:
+        p.parent.mkdir(exist_ok=True)
+        p.write_text('original')
+    config = dict(candidate_terminal_read_reuse=True, candidate_source_tree=str(tree),
+                  candidate_source_pins={str(p): cli.digest(p) for p in files})
+    cli.verify_candidate_sources(config)
+    (tree / 'additional.py').write_text('new')
+    with pytest.raises(ValueError, match='implementation changed'):
+        cli.verify_candidate_sources(config)
+    (tree / 'additional.py').unlink()
+    files[0].write_text('changed')
+    with pytest.raises(ValueError, match='implementation changed'):
+        cli.verify_candidate_sources(config)
+
+
 def test_unfinished_attempt_is_not_retried(tmp_path):
     (tmp_path / 'verify-run-reference-0001').mkdir()
     with pytest.raises(ValueError, match='unfinished or failed'):

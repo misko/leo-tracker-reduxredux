@@ -303,6 +303,12 @@ preserves source checks and byte hashes, and has exact complete-return agreement
 on two completed stores. Its component timing improvement is not an accepted
 ALGO07* iteration or an end-to-end speedup. Integration, real-store failure tests,
 full DS26 scientific/artifact checks and end-to-end measurements remain required.
+The [component adapter and integrity report](../../reports/2026_11_04_algo07_star_read_adapter/README.md)
+adds real six-stage storage tests, an operation-local public reader, and a
+separate opt-in candidate driver with source pins. It remains outside production
+and the zero-change cohort path. DS26-0267 now also passes full scientific parity;
+its incomplete 40-versus-41-location grid fails the artifact comparison and
+remains recorded separately.
 
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),

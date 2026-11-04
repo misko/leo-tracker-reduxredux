@@ -79,6 +79,12 @@ def initialize(args):
                 config[key] = str(getattr(args, key).resolve(strict=True))
     config['pins'] = {key: digest(Path(config[key]))
                       for key in ('runtimes', 'manifest', 'archive_manifest')}
+    if getattr(args, 'candidate_terminal_read_reuse', False):
+        config['candidate_terminal_read_reuse'] = True
+        config['candidate_source_tree'] = str(REPO / 'src')
+        paths = sorted((REPO / 'src').rglob('*.py')) + [
+            REPO / 'tools/run_algo07_star.py', REPO / 'tools/run_algo07_star_reuse.py']
+        config['candidate_source_pins'] = {str(p): digest(p) for p in paths}
     # An init is cheap: only public native documents, never a raw-IQ replay.
     for side in SIDES:
         root = Path(config[side])
@@ -101,7 +107,19 @@ def load(case):
             or any(specifications[a]['maximum_seconds'] != 1200 for a in ALGORITHMS)):
         raise ValueError('Original six-stage 1200-second budgets required')
     inputs(config)
+    verify_candidate_sources(config)
     return config
+
+
+def verify_candidate_sources(config):
+    if not config.get('candidate_terminal_read_reuse', False):
+        return
+    pins = config['candidate_source_pins']
+    tree = Path(config['candidate_source_tree'])
+    observed = {str(p) for p in tree.rglob('*.py')} | {
+        str(REPO / 'tools/run_algo07_star.py'), str(REPO / 'tools/run_algo07_star_reuse.py')}
+    if observed != set(pins) or any(digest(Path(p)) != sha for p, sha in pins.items()):
+        raise ValueError('Experimental candidate implementation changed')
 
 
 def stage_status(root):
@@ -162,13 +180,16 @@ def reserve(case, stem):
 
 def replay_command(config, side, output):
     script = 'run_algo07_star_reference.py' if side == 'reference' else 'run_algo07_star.py'
-    return ['timeout', '--kill-after=15', '1785', config['python'], '-B',
+    if side == 'candidate' and config.get('candidate_terminal_read_reuse', False):
+        script = 'run_algo07_star_reuse.py'
+    command = ['timeout', '--kill-after=15', '1785', config['python'], '-B',
             str(REPO / 'tools/algo07_star_archive.py'), 'exec',
             '--view', config['archive_view'], '--manifest', config['archive_manifest'], '--',
             config['python'], '-B', str(REPO / 'tools' / script),
             '--root', config[side], '--runtimes', config['runtimes'],
             '--manifest', config['manifest'], '--maximum-seconds', '1500',
             '--output', str(output)]
+    return command
 
 
 def replay(case, config, side):
@@ -207,6 +228,7 @@ def replay(case, config, side):
                 except subprocess.TimeoutExpired:
                     print(f'{side}: still running; log {attempt / "process.log"}', flush=True)
         write_new(attempt / 'outcome.json', dict(exit_code=code))
+        verify_candidate_sources(config)
         if code or not output.exists():
             raise ValueError(f'Execution failed ({code}); retained evidence: {attempt}')
         result = read(output)
@@ -287,6 +309,8 @@ def parser():
     init.add_argument('--fixture', type=Path, required=True)
     init.add_argument('--run-id', required=True)
     init.add_argument('--source', type=Path, default=Path('/srv/bulk/leo'))
+    init.add_argument('--candidate-terminal-read-reuse', action='store_true',
+                      help='Experimental candidate only; pin the current adapter source tree')
     for name in ('reference', 'candidate', 'runtimes', 'manifest',
                  'archive-manifest', 'archive-view'):
         init.add_argument('--' + name, type=Path)

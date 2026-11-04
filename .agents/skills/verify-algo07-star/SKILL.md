@@ -29,6 +29,9 @@ iteration supply its own fixture and interpreter. `init` defaults to
 explicit path overrides are listed by `init --help`. The archive clone is bound
 to the **original** `frozen.json`; the corrected runtime uses **frozen-r2.json**.
 Do not interchange them or rebuild the fixture from today's live TLE archive.
+The frozen inventory also includes the original coordinator and repository
+source files. Do not edit pinned files while an experiment uses them; a new
+experimental entry point must have its own source pins.
 
 ## One-time setup per case
 
@@ -100,6 +103,18 @@ read `requested_scope` and `case_full_parity`: science-only PASS is not full
 artifact parity. A case PASS never establishes full DS26 parity or a speedup.
 Retain missing/failed cases in the cohort denominator. Parallel runs establish
 parity only; speed requires separately controlled sequential trials.
+
+## Experimental terminal-read reuse
+
+For a **new private candidate case**, `init --candidate-terminal-read-reuse`
+selects `run_algo07_star_reuse.py` only on the candidate path. It pins the current
+Python source tree and both coordinator scripts, verifies them before and after
+execution, and preserves original scientific workers, budgets and TLE pins.
+It substitutes the final-stage public terminal reader; it does not skip stages.
+Default cases continue to use the original driver. Do not enable this in an
+existing zero-change case or call the prototype a qualified optimization before
+full DS26 comparisons and end-to-end measurements. A previously completed
+independent reference may be adopted for parity only, never for timing claims.
 
 Read [the ALGO07* plan](../../../docs/operations/algo07-star-plan.md) only when
 changing qualification scope or implementing a new optimization. Routine checks
