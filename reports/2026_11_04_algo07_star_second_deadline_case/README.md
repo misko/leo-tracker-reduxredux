@@ -78,6 +78,16 @@ The full population is still 159 fast members,
 158 with available native inputs. No production change or end-to-end speedup is
 claimed.
 
+![Recorded target outcomes across the three strict failures](admission-outcomes.png)
+
+The figure shows the actual attempted targets in their recorded order. Red
+outlines mark changed outcomes; gray cells were not evaluated after discovery
+admission closed. RF-qualified targets are not necessarily accepted into the
+final position model. All three limited diagnostics preserve the selected
+public result, but the changed intermediate work remains a strict failure.
+[Figure inputs and hashes](admission-outcomes-evidence.json) make the counts
+reproducible from the retained diagnostic summaries.
+
 ## Optimized DS26-0082: scientific and first publication comparisons
 
 The six-stage scientific comparison passes exactly across 7,052 JSON documents,
