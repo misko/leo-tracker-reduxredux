@@ -5,6 +5,10 @@ scan data to the standard published ALGO07 position, preserving scientific
 behavior. Acquisition duration and queue delay are reported separately. A
 tenfold speedup of one function does not establish this end-to-end target.
 
+The [cumulative runtime scorecard](algo07-runtime-scorecard.md) is the headline
+metric for every iteration. It records missing complete-path timing explicitly
+and keeps measured component gains separate from cumulative pipeline speedup.
+
 ## Frozen reference
 
 Freeze the complete available DS26/DS27/DS28 reference inventory before changing

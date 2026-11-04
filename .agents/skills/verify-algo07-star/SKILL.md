@@ -104,6 +104,23 @@ artifact parity. A case PASS never establishes full DS26 parity or a speedup.
 Retain missing/failed cases in the cohort denominator. Parallel runs establish
 parity only; speed requires separately controlled sequential trials.
 
+Every progress report must lead runtime claims with the complete-path status in
+[the cumulative scorecard](../../../docs/operations/algo07-runtime-scorecard.md).
+Report baseline/current seconds, paired scan count, ratio and parity status, or
+explicitly say unavailable. Terminal-read speedup is not end-to-end speedup.
+
+For a compact read-only cohort receipt summary:
+
+```bash
+"$VERIFY_PY" -B tools/report_algo07_star_cohort.py \
+  --plan "$VERIFY_FIXTURE/cohort-plan-001.json" \
+  --iteration /srv/bulk/leo/research/algo07-star-20261104/iteration001
+```
+
+This preserves the full denominator and failed-check history. It does not rehash
+scientific exports, check live processes or grant qualification. Separate renderer
+diagnostics are not aggregated; use the per-case verifier for acceptance.
+
 ## Deadline diagnostics
 
 Wall-clock admission can change work even with unchanged numerical workers.
