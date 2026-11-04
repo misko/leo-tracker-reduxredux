@@ -74,6 +74,14 @@ on DS26-0002, DS26-0084 and DS26-0102. Observed reference/v3 times are 77.462/77
 load. These are completion observations, not controlled speed measurements.
 The later policies and complete publication path are still unfinished.
 
+The [family/history extraction](../../reports/2026_11_04_algo07v3_history/README.md)
+extends exact comparisons through family weighting, causal phase priors and
+predictive-linear acceptance/fallback on the same three cases. All persisted
+scientific values also match archived production. Observed reference/v3 durations
+are 101.906/102.593, 205.985/228.501 and 216.759/219.935 seconds under concurrent
+shared-host load; no speedup is qualified. Signed-prior/cavity selection, later
+recovery and publication still remain before complete-path benchmarking.
+
 ## Measured improvements within the pipeline
 
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |

@@ -114,3 +114,46 @@ def reference_conservative_recovery(scan, initial, observations):
     exec(compile(ast.fix_missing_locations(module), inspect.getsourcefile(original), 'exec'),
          namespace)
     return namespace['numerical_recovery'](scan, initial, observations)
+
+
+def reference_history_policy(scan, original_result, raw, forecast, history_sha256):
+    """Execute the frozen family-policy body with already bound explicit inputs."""
+    import algo02_scan as original
+
+    function = ast.parse(inspect.getsource(original.infer_algo02)).body[0]
+    imports = [node for node in function.body if isinstance(node, (ast.Import, ast.ImportFrom))]
+    start = next(i for i, node in enumerate(function.body) if isinstance(node, ast.Assign)
+                 and any(isinstance(t, ast.Name) and t.id == 'common' for t in node.targets))
+    function.body = imports+function.body[start:]
+    function.name = 'numerical_history'
+    function.args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in
+        ('scan', 'original', 'raw', 'forecast', 'history_sha256')],
+        kwonlyargs=[], kw_defaults=[], defaults=[])
+
+    class ExplicitInputsAndOutput(ast.NodeTransformer):
+        def visit_Assign(self, node):
+            if any(isinstance(t, ast.Name) and t.id in
+                   ('scan', 'history_root', 'raw_path', 'forecast_path') for t in node.targets):
+                return None
+            return self.generic_visit(node)
+
+        def visit_Call(self, node):
+            if isinstance(node.func, ast.Name) and node.func.id == 'validate_history':
+                node.args = [ast.Name(id=n, ctx=ast.Load()) for n in
+                             ('raw', 'forecast', 'scan', 'history_sha256')]
+            node.keywords = [kw for kw in node.keywords if kw.arg not in
+                ('case', 'algorithm', 'baseline_sha256', 'engine_sha256',
+                 'history_sha256', 'history_forecast_sha256', 'seconds')]
+            return self.generic_visit(node)
+
+        def visit_Expr(self, node):
+            if (isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name)
+                    and node.value.func.id in ('write', 'print')):
+                return None
+            return self.generic_visit(node)
+
+    namespace = dict(original.infer_algo02.__globals__)
+    module = ast.Module(body=[ExplicitInputsAndOutput().visit(function)], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), inspect.getsourcefile(original), 'exec'),
+         namespace)
+    return namespace['numerical_history'](scan, original_result, raw, forecast, history_sha256)

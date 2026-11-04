@@ -4,6 +4,7 @@ from types import ModuleType
 from algo07v3_initial_search_oracle import (
     RESULT_FIELDS,
     reference_conservative_recovery,
+    reference_history_policy,
     reference_initial_search,
 )
 
@@ -103,3 +104,46 @@ def test_conservative_oracle_keeps_explicit_inputs_and_original_failure_return(m
     initial['choices'][0]['empty'] = True
     assert reference_conservative_recovery(scan, initial, observations) == dict(
         status='no_passing_calibration', GPS_used=False)
+
+
+def _original_family_example(run_dir, case):
+    forbidden()  # noqa: F821
+    original = read('not-read')  # noqa: F821
+    common = dict(case=case, algorithm='legacy-label', GPS_used=False,
+                  baseline_sha256=forbidden(), engine_sha256=forbidden())  # noqa: F821
+    if original['status'] != 'complete':
+        result = dict(common, status='failed', reason='initial_'+original['status'])
+        write('not-created', result)  # noqa: F821
+        return result
+    scan = load_scan(run_dir, case)  # noqa: F821
+    history_root = forbidden()  # noqa: F821
+    raw_path = history_root/'raw'
+    forecast_path = history_root/'forecast'
+    model, qualified = validate_history(read(raw_path), read(forecast_path),  # noqa: F821
+                                         scan, sha(raw_path))  # noqa: F821
+    common.update(history_sha256=sha(raw_path), history_forecast_sha256=sha(forecast_path))  # noqa: F821
+    result = dict(common, status='accepted', model=model, qualified=qualified,
+                  seconds=forbidden())  # noqa: F821
+    write('not-created', result)  # noqa: F821
+    print('not-printed')
+    return result
+
+
+def test_history_oracle_preserves_validation_and_skips_old_storage(monkeypatch):
+    original = ModuleType('algo02_scan')
+    original.__file__ = __file__
+    original.infer_algo02 = _original_family_example
+    monkeypatch.setitem(sys.modules, 'algo02_scan', original)
+    raw, forecast, scan = {}, {}, object()
+
+    def validation(a, b, s, digest):
+        assert a is raw and b is forecast and s is scan and digest == 'bound'
+        return {'multiplier': 1.}, True
+
+    monkeypatch.setitem(_original_family_example.__globals__, 'validate_history', validation)
+    result = reference_history_policy(scan, {'status': 'complete'}, raw, forecast, 'bound')
+    assert result == dict(GPS_used=False, status='accepted', model={'multiplier': 1.},
+                          qualified=True)
+    failed = reference_history_policy(scan, {'status': 'gate_refit_unstable'},
+                                       raw, forecast, 'bound')
+    assert failed == dict(GPS_used=False, status='failed', reason='initial_gate_refit_unstable')

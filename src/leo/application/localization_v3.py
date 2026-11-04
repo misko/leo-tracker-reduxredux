@@ -1,10 +1,14 @@
 """Standalone preparation and initial regional position search.
 
-No earlier ALGO jobs or result stores are inputs. Conservative refitting is
-included; later family/history fitting and ordered recovery remain unfinished.
+No earlier ALGO jobs or result stores are inputs. Initial, conservative and
+family/history fitting are included; later ordered recovery remains unfinished.
 """
+import hashlib
+import json
+
 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 from leo.analysis.localization_v3.elements import ElementParser
+from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
 from leo.analysis.localization_v3.phase_prior import forecast
@@ -40,14 +44,7 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
     """
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], initial_fit=None, recovery_complete=False)
-    sky = prepared['sky']
-    scan = ScanLikelihood(prepared['tracks']['tracks'], sky['bank'], sky['nominal_elements'],
-        origin_utc_ns=sky['metadata']['origin_utc_ns'],
-        regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
-        noise_sha256=noise_sha256, search_region=search_region,
-        previous_tle=sky['previous_tle'],
-        previous_tle_sha256=sky['previous_receipt']['catalogue_sha256'],
-        previous_sources=sky['previous_receipt'].get('sources'))
+    scan = _context(prepared, search_region, noise_sha256, genuine=False)
     result = initial_search(scan, scan.radio_sigma_hz, on_branch=on_branch)
     return dict(status='initial_position_fitted', initial_fit=result, recovery_complete=False)
 
@@ -55,19 +52,41 @@ def fit_initial_position(prepared, search_region, *, noise_sha256=None, on_branc
 def refit_initial_position(prepared, initial, search_region, *, noise_sha256=None, on_round=None):
     """Use a fresh context for the genuine-previous prior and conservative recovery.
 
-    Later family-weighted and predictive recovery policies are not yet complete.
+    Later ordered recovery policies remain separate from this incumbent.
     """
     if prepared['status'] != 'inputs_prepared':
         return dict(status=prepared['status'], conservative_fit=None, recovery_complete=False)
-    sky = prepared['sky']
-    scan = ScanLikelihood(prepared['tracks']['tracks'], sky['bank'], sky['nominal_elements'],
-        origin_utc_ns=sky['metadata']['origin_utc_ns'],
-        regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
-        noise_sha256=noise_sha256, search_region=search_region,
-        previous_tle=sky['genuine_previous_tle'],
-        previous_tle_sha256=sky['genuine_previous_receipt']['catalogue_sha256'],
-        previous_sources=sky['genuine_previous_receipt']['sources'])
+    scan = _context(prepared, search_region, noise_sha256, genuine=True)
     result = conservative_recovery(scan, initial, prepared['tracks']['observations'],
                                     on_round=on_round)
     return dict(status='conservative_fit_evaluated', conservative_fit=result,
                 recovery_complete=False)
+
+
+def _context(prepared, search_region, noise_sha256, *, genuine):
+    sky = prepared['sky']
+    prefix = 'genuine_previous' if genuine else 'previous'
+    receipt = sky[prefix+'_receipt']
+    return ScanLikelihood(prepared['tracks']['tracks'], sky['bank'], sky['nominal_elements'],
+        origin_utc_ns=sky['metadata']['origin_utc_ns'],
+        regional_center=sky['metadata']['regional_center'], noise=prepared['noise'],
+        noise_sha256=noise_sha256, search_region=search_region,
+        previous_tle=sky[prefix+'_tle'], previous_tle_sha256=receipt['catalogue_sha256'],
+        previous_sources=receipt['sources'] if genuine else receipt.get('sources'))
+
+
+def fit_family_policy(prepared, conservative, search_region, *, noise_sha256=None):
+    """Bind owned in-memory history and evaluate the original paired family policy."""
+    if prepared['status'] != 'inputs_prepared':
+        return dict(status=prepared['status'], family_fit=None, recovery_complete=False)
+    history = prepared['phase_history']
+    history_bytes = (json.dumps(history, sort_keys=True, allow_nan=False)+'\n').encode()
+    history_sha256 = hashlib.sha256(history_bytes).hexdigest()
+    if prepared['phase_forecast'].get('history_sha256', history_sha256) != history_sha256:
+        raise ValueError('In-memory phase forecast/history binding differs')
+    phase_forecast = dict(prepared['phase_forecast'], history_sha256=history_sha256)
+    scan = _context(prepared, search_region, noise_sha256, genuine=True)
+    result = history_policy(scan, conservative, history, phase_forecast,
+        case='SCAN', cutoff_utc_ns=prepared['sky']['metadata']['cutoff_utc_ns'],
+        history_sha256=history_sha256)
+    return dict(status='family_policy_evaluated', family_fit=result, recovery_complete=False)

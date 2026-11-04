@@ -70,9 +70,9 @@ def run(args):
     else:
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
-    if args.initial_search or args.conservative:
-        if args.conservative and (args.rounds, args.iterations) != (5, 48):
-            raise ValueError('Conservative comparison requires full production fitting budgets')
+    if args.initial_search or args.conservative or args.history_policy:
+        if (args.conservative or args.history_policy) and (args.rounds, args.iterations) != (5, 48):
+            raise ValueError('Recovery comparisons require full production fitting budgets')
         if args.side == 'candidate':
             from leo.analysis.localization_v3.initial_search import initial_search
         else:
@@ -80,30 +80,57 @@ def run(args):
         initial = initial_search(scan, scan.radio_sigma_hz,
             seed_budget=args.seed_budget, branch_budget=args.branch_budget,
             rounds=args.rounds, iterations=args.iterations)
-        if args.conservative:
+        if args.conservative or args.history_policy:
             if args.side == 'candidate':
                 from leo.analysis.localization_v3.conservative_recovery import conservative_recovery
 
                 prior = read('genuine_previous_receipt.json')
-                scan = ScanLikelihood(read('tracks.json')['tracks'], bank,
-                    read('nominal_elements.json'), origin_utc_ns=metadata['origin_utc_ns'],
-                    regional_center=metadata['regional_center'], noise=read('radio_noise.json'),
-                    noise_sha256=digest(args.source/'radio_noise.json'), search_region=region,
-                    previous_tle=(args.source/'genuine_previous.tle').read_text(),
-                    previous_tle_sha256=prior['catalogue_sha256'],
-                    previous_sources=prior['sources'])
+                def final_scan():
+                    return ScanLikelihood(read('tracks.json')['tracks'], bank,
+                        read('nominal_elements.json'), origin_utc_ns=metadata['origin_utc_ns'],
+                        regional_center=metadata['regional_center'], noise=read('radio_noise.json'),
+                        noise_sha256=digest(args.source/'radio_noise.json'), search_region=region,
+                        previous_tle=(args.source/'genuine_previous.tle').read_text(),
+                        previous_tle_sha256=prior['catalogue_sha256'],
+                        previous_sources=prior['sources'])
                 observations = read('tracks.json')['observations']
             else:
                 from algo07v3_initial_search_oracle import reference_conservative_recovery
 
                 conservative_recovery = reference_conservative_recovery
-                scan = FreshScan(args.source, noise_mode='radio')
                 prior_root = args.source.parent/'causal_prior'/args.source.name
-                scan.previous_tle_path = prior_root/'previous.tle'
-                scan.receipt = json.loads((prior_root/'receipt.json').read_text())
+                def final_scan():
+                    scan = FreshScan(args.source, noise_mode='radio')
+                    scan.previous_tle_path = prior_root/'previous.tle'
+                    scan.receipt = json.loads((prior_root/'receipt.json').read_text())
+                    return scan
                 observations = read('observations.json')
+            scan = final_scan()
             recovery = conservative_recovery(scan, initial, observations)
             result = dict(initial=fingerprint(initial), recovery=fingerprint(recovery))
+            if args.history_policy:
+                scan = final_scan()
+                if args.side == 'candidate':
+                    from leo.analysis.localization_v3.history_policy import history_policy
+
+                    history_path = args.source/'phase_history.json'
+                    forecast_path = args.source/'phase_forecast.json'
+                    raw = json.loads(history_path.read_text())
+                    forecast = json.loads(forecast_path.read_text())
+                    history_result = history_policy(scan, recovery, raw, forecast,
+                        case='SCAN', cutoff_utc_ns=metadata['cutoff_utc_ns'],
+                        history_sha256=digest(history_path))
+                else:
+                    from algo07v3_initial_search_oracle import reference_history_policy
+
+                    history_path = args.source.parent/'causal_phase_history'/(
+                        args.source.name+'.json')
+                    forecast_path = history_path.with_name(args.source.name+'_forecast.json')
+                    raw = json.loads(history_path.read_text())
+                    forecast = json.loads(forecast_path.read_text())
+                    history_result = reference_history_policy(scan, recovery, raw, forecast,
+                                                               digest(history_path))
+                result['history_policy'] = fingerprint(history_result)
         else:
             result = fingerprint(initial)
     elif args.discovery:
@@ -154,23 +181,28 @@ def run(args):
                or (args.side == 'reference'
                    and str(module.__file__).startswith(str(args.reference_runtime))))}
     additional_inputs = {}
-    if args.conservative:
+    if args.conservative or args.history_policy:
         paths = ([args.source/'genuine_previous.tle', args.source/'genuine_previous_receipt.json']
                  if args.side == 'candidate' else
                  [prior_root/'previous.tle', prior_root/'previous_receipt.json',
                   prior_root/'receipt.json', args.source/'observations.json'])
         additional_inputs = {str(path):digest(path) for path in paths}
+        if args.history_policy:
+            additional_inputs.update({str(path):digest(path)
+                                      for path in (history_path, forecast_path)})
     receipt = dict(side=args.side, source=str(args.source), seconds=time.monotonic()-started,
         output_sha256=digest(args.output), rounds=args.rounds, iterations=args.iterations,
         discovery=args.discovery, initial_search=args.initial_search,
-        conservative=args.conservative, additional_inputs=additional_inputs,
+        conservative=args.conservative, history_policy=args.history_policy,
+        additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
         search_center=args.search_center, full_localization_parity=False,
         modules={name:dict(path=path, sha256=digest(Path(path))) for name,path in modules.items()},
         tool_sources={str(Path(path).resolve()):digest(Path(path)) for path in (
             __file__, sys.modules['check_algo07v3_scan_likelihood'].__file__,
             *([sys.modules['algo07v3_initial_search_oracle'].__file__]
-              if (args.initial_search or args.conservative) and args.side == 'reference' else []))},
+              if (args.initial_search or args.conservative or args.history_policy)
+              and args.side == 'reference' else []))},
         inputs={name:digest(args.source/name) for name in ('tracks.json', 'bank.npz',
                'nominal_elements.json', 'radio_noise.json', 'previous.tle')})
     with args.output.with_suffix('.receipt.json').open('x') as stream:
@@ -192,6 +224,7 @@ if __name__ == '__main__':
     mode.add_argument('--discovery', action='store_true')
     mode.add_argument('--initial-search', action='store_true')
     mode.add_argument('--conservative', action='store_true')
+    mode.add_argument('--history-policy', action='store_true')
     parser.add_argument('--branch-budget', type=int, default=3)
     parser.add_argument('--seed-budget', type=int, default=4)
     run(parser.parse_args())

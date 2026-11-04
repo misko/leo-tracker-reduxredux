@@ -19,8 +19,12 @@ extension. It matches the production-budget initial search on DS26-0084 and boun
 searches on three DS26 cases. The [conservative-recovery extraction](../../reports/2026_11_04_algo07v3_conservative/README.md)
 adds causal-width retained fitting, paired rejection, independently calibrated
 salvage and exact observation accounting. Initial search through this policy
-matches all three replay cases with full production budgets. Family/history
-fitting, later recovery, reassociation and publication remain unfinished;
+matches all three replay cases with full production budgets. The
+[family/history extraction](../../reports/2026_11_04_algo07v3_history/README.md)
+adds family weighting, history-qualified phase priors, predictive linear evidence
+and paired fallback. All three full-budget comparisons match both fresh oracles
+and archived production scientific values. Signed-prior/cavity selection,
+later recovery, reassociation and publication remain unfinished;
 full DS26 localization parity is still open.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
