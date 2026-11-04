@@ -263,8 +263,9 @@ and `check`. The default check requires scientific and publication parity;
 receipts remain alongside the concise summary. The wrapper changes no science
 settings and makes no cohort-wide or speed claim from a single case.
 
-The first complete private smoke pair is DS26-0002. These checkpoints are
-separate: passing a later endpoint check does not waive an intermediate failure.
+The first complete private smoke pair is DS26-0002. The table below records that
+initial smoke checkpoint; later optimized results follow it. These checkpoints
+are separate: passing a later endpoint check does not waive an intermediate failure.
 
 | Checkpoint | Current evidence | Next required action |
 | --- | --- | --- |
@@ -301,14 +302,40 @@ now provides measured evidence for another exact-work target: repeated recursive
 validation of the same incumbent. It runs separately from the baseline cohort,
 preserves source checks and byte hashes, and has exact complete-return agreement
 on two completed stores. Its component timing improvement is not an accepted
-ALGO07* iteration or an end-to-end speedup. Integration, real-store failure tests,
-full DS26 scientific/artifact checks and end-to-end measurements remain required.
+ALGO07* iteration or an end-to-end speedup. Full DS26 scientific/artifact checks
+and end-to-end measurements remain required.
 The [component adapter and integrity report](../../reports/2026_11_04_algo07_star_read_adapter/README.md)
 adds real six-stage storage tests, an operation-local public reader, and a
 separate opt-in candidate driver with source pins. It remains outside production
 and the zero-change cohort path. DS26-0267 now also passes full scientific parity;
 its incomplete 40-versus-41-location grid fails the artifact comparison and
 remains recorded separately.
+
+### Optimized iteration qualification update
+
+The opt-in adapter is integrated into the experimental coordinator, and its
+real six-stage storage integrity tests are complete. Five optimized cases pass
+the full scientific comparison: DS26-0002, DS26-0267, DS26-0084, DS26-0018 and
+DS26-0162. Both c=0 and fitted-c, intermediate scientific evidence, process
+provenance and hash links are checked. DS26-0084 additionally passes the first
+ordinary-clock complete artifact comparison, including all eight PNGs and all
+179 diagnostic grid locations.
+
+These passes do not qualify the cohort. DS26-0170's optimized replay fails
+because the unchanged ALGO03 discovery deadline admits different work. Its
+separate real numerical replay with matched logical cancellation preserves
+identical retained owners, endpoints, objectives and target outcomes, but does
+not clear that ordinary failure. Incomplete ordinary presentation grids on
+other cases also remain failures. The matched-clock diagnostic is not a timing
+benchmark or a substitute acceptance gate.
+
+The [optimized smoke report](../../reports/2026_11_04_algo07_star_optimized_smoke/README.md)
+and [deadline and cancellation report](../../reports/2026_11_04_algo07_star_second_deadline_case/README.md)
+contain the receipts and their precise scopes. Full DS26 qualification still
+requires all 158 available fast inputs, with the unavailable 159th member kept
+visible. No end-to-end speedup or production promotion is established. The next
+steps remain completing that denominator and conducting sequential controlled
+timing trials, rather than adding a second unqualified numerical optimization.
 
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),
