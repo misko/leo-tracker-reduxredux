@@ -1,8 +1,9 @@
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from run_algo07_star import verify_coverage
+from run_algo07_star import verify_coverage, worker_environment
 
 
 def fixture(tmp_path, monkeypatch):
@@ -42,3 +43,20 @@ def test_archive_inventory_without_byte_pin_is_insufficient(tmp_path, monkeypatc
     manifest['files'].pop()
     with pytest.raises(ValueError, match='bytes must be frozen'):
         verify_coverage(spec, manifest)
+
+
+def test_qualified_runtime_needs_its_explicit_production_environment_pin(tmp_path):
+    manifest = tmp_path/'runtime-manifest.json'
+    manifest.write_bytes(b'fixture manifest')
+    spec = dict(runtime=str(tmp_path))
+    with pytest.raises(ValueError, match='Explicit deployment runtime pin'):
+        worker_environment(spec, 'ALGO03')
+    pin = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    spec['environment'] = dict(LEO_ALGO03_RUNTIME_MANIFEST_SHA256=pin)
+    assert worker_environment(spec, 'ALGO03') == ['LEO_ALGO03_RUNTIME_MANIFEST_SHA256='+pin]
+
+
+def test_environment_cannot_replace_arbitrary_worker_configuration(tmp_path):
+    with pytest.raises(ValueError, match='Unexpected worker environment'):
+        worker_environment(dict(runtime=str(tmp_path), environment=dict(PYTHONPATH='/other')),
+                           'ALGO03')

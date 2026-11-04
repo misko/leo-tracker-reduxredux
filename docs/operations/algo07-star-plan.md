@@ -255,4 +255,5 @@ no background agents or production changes are required for that step.
 
 References: [runtime benchmark](algo07-runtime-benchmark.md),
 [current timing investigation](../../reports/2026_11_04_algo07_pipeline_profile/README.md),
+[first full smoke comparison and its failed grid-artifact gate](../../reports/2026_11_04_algo07_star_full_smoke/README.md),
 [evaluation-only figure configuration](standard-position-error.md).
