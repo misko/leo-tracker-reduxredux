@@ -264,8 +264,8 @@ separate: passing a later endpoint check does not waive an intermediate failure.
 | Coordinator execution | All six original scientific stages completed | Add representative accepted/rejected recovery cases after intermediate comparison qualifies |
 | Final science | Both endpoints, ownership maps, association counts and residual metrics match exactly | Repeat across all available DS26 fast inputs |
 | Process provenance | All 42 original/copied receipt groups match after verified PID and private-path mapping; 27 process identities per execution | Retain this check alongside file-link and scientific-value checks |
-| Intermediate science and hash links | Conservative raw diff exists; full qualification remains incomplete | Validate referenced file content before allowing operational hash differences |
-| Publication | Seven PNGs match byte-for-byte; position-grid completeness differs under the original 30-second budget | Run a controlled publication comparison; retain the deadline-sensitive failure in the record |
+| Intermediate science and hash links | First case passes exact JSON/array comparison: 3,037 JSON documents, 15,955 verified links per side, all six public terminals validated | Extend the comparator to additional representative completed/fallback cases without relaxing scientific fields |
+| Publication | Both controlled A/B and B/A pairs pass all eight PNGs and all 179 grid points; prior 179-versus-96 deadline-sensitive failure retained | Keep completed and deadline-sensitive outcomes separate during the cohort run |
 | Speed | No controlled end-to-end improvement established | Sequential unprofiled A/B and B/A measurements after parity |
 | Full DS26 and promotion | Outstanding; 158 available fast inputs and one missing native input | Complete the paired denominator before accepting an optimization |
 
@@ -275,6 +275,10 @@ unknown receipt references, cyclic ancestry/dependencies and changed exported
 bytes. Read sets, interpreter launches and parent/child structure must agree.
 Its result explicitly does **not** qualify scientific values or artifact parity.
 See the [process provenance report](../../reports/2026_11_04_algo07_star_process_provenance/README.md).
+The [intermediate and controlled-publication report](../../reports/2026_11_04_algo07_star_intermediate_parity/README.md)
+records the first case's completed comparison, its typed accounting rules, and
+the unchanged failure under earlier wall-time contention. Neither report is a
+full DS26 or speed qualification.
 
 The first optimization to evaluate after the zero-change gate is transport:
 remove a demonstrated repeated evidence export or decode through a narrow public

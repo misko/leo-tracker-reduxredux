@@ -1,0 +1,88 @@
+{
+  "plan": {
+    "kind": "algo07-star-controlled-publication-pairs",
+    "order": [
+      "reference-A1",
+      "candidate-B1",
+      "candidate-B2",
+      "reference-A2"
+    ],
+    "manifest_sha256": "f3976af17d920d4765b4304fb3c6a67143228377e58f08f1948e0fd12ddea8bd",
+    "driver_code": "import json,sys,time\nfrom pathlib import Path\nfrom leo.storage.fast_graph_position_v6 import FastGraphPositionStoreV6\nfrom leo.storage.fast_standard_analysis import FastStandardAnalysisStore\nimport render_standard_fast as renderer\nsource_root,target_root,run_id=sys.argv[1:]\nsource_root=Path(source_root);target_root=Path(target_root)\nmarker=json.loads((source_root/'algo07-star-input.json').read_text())\nassert marker['kind']=='algo07-star-native-evidence' and marker['run_id']==run_id\nassert source_root!=Path(marker['source_root'])\ntarget_root.mkdir(exist_ok=False)\nsource=FastGraphPositionStoreV6(source_root);target=FastStandardAnalysisStore(target_root)\njobs=[j for j in source.completed_jobs() if j['run_id']==run_id]\nassert len(jobs)==1\nbefore=source.terminal(jobs[0])[1]\nstart=time.monotonic()\nresult=renderer.publish(source,target,jobs[0],evaluation_reference=renderer.evaluation_coordinates(37.849061591561885,-122.48574968092912))\nwall=time.monotonic()-start\nafter=source.terminal(jobs[0])[1]\nassert before==after and result['terminal_sha256']==after['sha256']\ngrid=target.position_grid(run_id)\nprint(json.dumps(dict(publication_wall_seconds=wall,grid_seconds=grid['elapsed_seconds'],grid_complete=grid['complete'],grid_evaluated=grid['evaluated_points'],grid_planned=grid['planned_points'],artifacts=len(result['artifacts']),source_terminal=after)),flush=True)\n",
+    "driver_sha256": "3b9ff934ffdaf33920aa83198d7a2f620c3930518cc775cd147ccd49d514e8f3",
+    "renderer": "/opt/leo-standard-fast/4cd629cef1e3bb35073d8c39f587ddf3d6d6ebf7",
+    "python": "/opt/leo-fast-graph/7cafccaced18e6b0fa9266bd18339d61f0f9c1f4/venv/bin/python",
+    "thread_settings": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "grid_budget_unchanged": true,
+    "numerical_inference_rerun": false,
+    "production_modified": false
+  },
+  "verification": {
+    "frozen_runtime_verified": true,
+    "manifest_sha256": "f3976af17d920d4765b4304fb3c6a67143228377e58f08f1948e0fd12ddea8bd",
+    "trials": 4,
+    "production_modified": false
+  },
+  "trials": [
+    {
+      "label": "reference-A1",
+      "receipt_sha256": "d1301832f957eb6fd5c44124df5f0d67e8abb1c55393e2fc9c33f35ac5375b89",
+      "publication_wall_seconds": 56.73261989466846,
+      "grid_seconds": 28.35753444675356,
+      "grid_complete": true,
+      "grid_evaluated": 179,
+      "grid_planned": 179,
+      "artifacts": 8,
+      "source_terminal": {
+        "path": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/DS26-0002/reference/fast-scan-graph-position-v6/algo07-causal-guarded-reassociation-v1/jobs/c34efcd9f4f5a50fcef636472c21e5f7/output/terminal.json",
+        "sha256": "sha256:3c5c440354af987cdb634a37cc110f452d6299a1337a17d1601a9d249586fbde"
+      }
+    },
+    {
+      "label": "candidate-B1",
+      "receipt_sha256": "80110cc0ca19eab289aeb292d7105345ae2655a14b80b8d0ba96654b35264feb",
+      "publication_wall_seconds": 51.576658769510686,
+      "grid_seconds": 27.446173389442265,
+      "grid_complete": true,
+      "grid_evaluated": 179,
+      "grid_planned": 179,
+      "artifacts": 8,
+      "source_terminal": {
+        "path": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/DS26-0002/candidate-r2/fast-scan-graph-position-v6/algo07-causal-guarded-reassociation-v1/jobs/c34efcd9f4f5a50fcef636472c21e5f7/output/terminal.json",
+        "sha256": "sha256:24427b759599b1f95bb958f1b9dd96030616686eba4c5061002a090356beee97"
+      }
+    },
+    {
+      "label": "candidate-B2",
+      "receipt_sha256": "869f16cadb8471b5d089fffce14b057dfc2b5ebf9dc067b33e1dbce42f82900b",
+      "publication_wall_seconds": 53.176898170262575,
+      "grid_seconds": 28.563301260583103,
+      "grid_complete": true,
+      "grid_evaluated": 179,
+      "grid_planned": 179,
+      "artifacts": 8,
+      "source_terminal": {
+        "path": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/DS26-0002/candidate-r2/fast-scan-graph-position-v6/algo07-causal-guarded-reassociation-v1/jobs/c34efcd9f4f5a50fcef636472c21e5f7/output/terminal.json",
+        "sha256": "sha256:24427b759599b1f95bb958f1b9dd96030616686eba4c5061002a090356beee97"
+      }
+    },
+    {
+      "label": "reference-A2",
+      "receipt_sha256": "e6c937f228b92aac24576bf6062de2c3642455c8628630ef7cf6f84b9602283e",
+      "publication_wall_seconds": 50.09325389470905,
+      "grid_seconds": 28.004385244101286,
+      "grid_complete": true,
+      "grid_evaluated": 179,
+      "grid_planned": 179,
+      "artifacts": 8,
+      "source_terminal": {
+        "path": "/srv/bulk/leo/research/algo07-star-20261104/iteration000/DS26-0002/reference/fast-scan-graph-position-v6/algo07-causal-guarded-reassociation-v1/jobs/c34efcd9f4f5a50fcef636472c21e5f7/output/terminal.json",
+        "sha256": "sha256:3c5c440354af987cdb634a37cc110f452d6299a1337a17d1601a9d249586fbde"
+      }
+    }
+  ]
+}

@@ -23,6 +23,8 @@ def load_catalogue(root):
         for name, path in files.items():
             catalogue[algorithm+'/'+name] = dict(
                 path=path, store_root=descriptor['source_store_root'],
+                sha256=descriptor['files'][name],
+                job_id=descriptor['job_id'], model_version=descriptor['model_version'],
                 source_path=str(Path(descriptor['source_worker_root'])/
                                 Path(name).relative_to('worker')))
     return catalogue, bindings

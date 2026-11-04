@@ -43,11 +43,16 @@ def run(args):
     if roots[0] == roots[1]:
         raise ValueError('Independent private publications required')
     packages = []
-    for root in roots:
+    publication_roots = [
+        (getattr(args, side+'_publication', None) or root).resolve(strict=True)
+        for side, root in zip(('reference', 'candidate'), roots, strict=True)]
+    if publication_roots[0] == publication_roots[1]:
+        raise ValueError('Independent publication stores required')
+    for root, publication_root in zip(roots, publication_roots, strict=True):
         marker = json.loads((root/'algo07-star-input.json').read_text())
         if marker['kind'] != 'algo07-star-native-evidence' or marker['run_id'] != args.run_id:
             raise ValueError('Private native replay root required')
-        target = FastStandardAnalysisStore(root)
+        target = FastStandardAnalysisStore(publication_root)
         document = target.detail(args.run_id)
         if document['state'] != 'complete':
             raise ValueError('Complete public artifact set required')
@@ -93,6 +98,8 @@ def run(args):
                   arms=a['document']['arms'], selected_model=a['document']['selected_model'],
                   glrt_points=a['document']['glrt_points'], tolerance=0,
                   source_terminals_independently_verified=True,
+                  source_roots=list(map(str, roots)),
+                  publication_roots=list(map(str, publication_roots)),
                   all_internal_decisions_qualified=False, ds26_equivalence_verified=False)
     write_new(args.output, result)
     print(json.dumps(result))
@@ -104,6 +111,8 @@ if __name__ == '__main__':
     for name in ('reference', 'candidate', 'output'):
         parser.add_argument('--'+name, type=Path, required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--reference-publication', type=Path)
+    parser.add_argument('--candidate-publication', type=Path)
     result = run(parser.parse_args())
     if not result['publication_exact']:
         raise SystemExit(1)
