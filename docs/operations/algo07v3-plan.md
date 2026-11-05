@@ -86,6 +86,14 @@ The application is connected through this stage; its fresh DS26-0002 no-addition
 branch preserves the entire earlier prefix and correctly excludes an existing
 family. Accepted additions from fresh native inputs across the population, final
 guarded reassociation and publication remain unqualified or unfinished.
+The [final-stage handoff and trigger](../../reports/2026_11_05_algo07v3_reassociation_context/README.md)
+now preserve the qualified additional likelihood and owners. DS26-0086's full
+handoff, likelihood probes and all 26 influence rankings match frozen final
+ALGO07 exactly; both implementations nominate 62116 and 58002. The selector
+matches six accepted/fallback/invalid-admission checks. A fresh connected
+DS26-0002 prefix preserves all earlier science and 2,783 owners per arm, then
+nominates 69265. Candidate screening, receiver-shared validation, causal-history
+completion and replacement fits remain to be integrated into this final stage.
 Production cancellation, final proof
 publication and broader gap branches still need qualification. Broader inactive-fragment/shared
 inclusion qualification, fresh joint

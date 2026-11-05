@@ -25,7 +25,7 @@ from leo.sky.propagation import ElementSetCatalogue
 ARMS = ("c0", "fitted_c")
 
 
-def family_score(families, d, p, x, details=False):
+def family_score(families, d, p, x, details=False, *, optimize_contractions=False):
     if not families:
         return (0.0, []) if details else 0.0
     if len(families) == 1:
@@ -35,7 +35,8 @@ def family_score(families, d, p, x, details=False):
     if len(families) != 2:
         raise ValueError("Exact two-family compute cap exceeded")
     joint = two_family_phase_evidence(
-        *joint_inputs(families, p, x, d["powers"], d["entries"]), optimize_contractions=False
+        *joint_inputs(families, p, x, d["powers"], d["entries"]),
+        optimize_contractions=optimize_contractions,
     )
     if not details:
         return joint["negative_twice_log_density"]

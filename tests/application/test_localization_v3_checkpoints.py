@@ -226,3 +226,42 @@ def test_changed_screen_or_catalogue_cannot_authorize_fit(monkeypatch, fault):
         return
     with pytest.raises(ValueError, match="Residual"):
         app.fit_additional_recovery(prepared, screened, catalogue, [], clock=None)
+
+
+def test_reassociation_handoff_preserves_selected_trial_provenance(monkeypatch):
+    from leo.analysis.localization_v3 import reassociation_context
+
+    prepared, screened, catalogue = position_inputs()
+    prepared.update(incumbent_arms=object(), incumbent_selection=object())
+    position = dict(status="additional_position_evaluated", recovery=object())
+    observations = object()
+    owned = dict(context=object(), owners=object(), arms=object(), replay=object())
+
+    def adopt(*args):
+        assert args == (
+            prepared["context_factory"],
+            prepared["incumbent_arms"],
+            prepared["incumbent_owners"],
+            prepared["incumbent_selection"],
+            position["recovery"],
+            screened["screen"],
+            catalogue,
+            observations,
+        )
+        return owned
+
+    monkeypatch.setattr(reassociation_context, "adopt_additional", adopt)
+    result = app.prepare_reassociation(prepared, position, screened, catalogue, observations)
+    assert result["status"] == "reassociation_prepared" and result["owners"] is owned["owners"]
+    assert not result["recovery_complete"]
+    monkeypatch.setattr(reassociation_context, "rank_families", lambda d: ([d], [123]))
+    ranked = app.rank_reassociation_families(result)
+    assert ranked["targets"] == [123] and ranked["ranking"] == [owned["context"]]
+    assert not ranked["recovery_complete"]
+
+
+def test_incomplete_additional_position_cannot_enter_final_reassociation():
+    prepared, screened, catalogue = position_inputs()
+    result = app.prepare_reassociation(prepared, dict(status="incomplete"), screened, catalogue, [])
+    assert result["status"] == "incomplete" and result["context"] is None
+    assert app.rank_reassociation_families(result)["targets"] is None

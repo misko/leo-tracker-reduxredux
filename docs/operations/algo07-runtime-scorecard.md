@@ -207,6 +207,17 @@ represented family. It excludes native preparation, final guarded reassociation
 and all artifact publication. Complete-path matched scans remain zero and no
 end-to-end ratio is available. The focused suite passes 397 tests.
 
+The [final-stage handoff and RF trigger](../../reports/2026_11_05_algo07v3_reassociation_context/README.md)
+match the frozen final ALGO07 engine on DS26-0086, preserving 3,311 owners per arm
+and all 26 family-influence rankings. The component observations are
+**304.143/284.512 seconds** for reference/v3; this is an overlapping shared-host
+comparison, not a controlled speedup. A fresh connected DS26-0002 prefix through
+the trigger takes **381.182 seconds**, preserving every previously validated
+field and 2,783 owners per arm. Remaining final-stage nomination/validation/fits,
+native preparation and artifact publication are excluded. The selector matches
+six decision checks and the focused suite passes 424 tests. Whole-path matched
+scans and the end-to-end speedup remain zero/unavailable respectively.
+
 | Scope / experiment | Reference | Candidate | Ratio | Qualification / limitation |
 |---|---:|---:|---:|---|
 | Final ALGO07 numerical worker, two-family case, iteration 002 | 779.063 s | 420.000 s | 1.855× | Full worker; exact scientific comparison; profiled overlapping runs on shared host |

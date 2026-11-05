@@ -355,6 +355,30 @@ def fit_additional_recovery(prepared, screened, catalogue, observations, *, cloc
     return dict(status='additional_position_evaluated', recovery=result, recovery_complete=False)
 
 
+def prepare_reassociation(prepared, position, screened, catalogue, observations):
+    """Restore the exact owned incumbent for final guarded identity repair."""
+    for result, status in ((prepared, 'additional_recovery_prepared'),
+                           (position, 'additional_position_evaluated'),
+                           (screened, 'additional_candidates_screened')):
+        if result['status'] != status:
+            return dict(status=result['status'], context=None, recovery_complete=False)
+    from leo.analysis.localization_v3.reassociation_context import adopt_additional
+    result = adopt_additional(prepared['context_factory'], prepared['incumbent_arms'],
+        prepared['incumbent_owners'], prepared['incumbent_selection'], position['recovery'],
+        screened['screen'], catalogue, observations)
+    return dict(result, status='reassociation_prepared', recovery_complete=False)
+
+
+def rank_reassociation_families(prepared):
+    """Run the original top-two RF-influence trigger, without location truth."""
+    if prepared['status'] != 'reassociation_prepared':
+        return dict(status=prepared['status'], ranking=None, targets=None, recovery_complete=False)
+    from leo.analysis.localization_v3.reassociation_context import rank_families
+    ranking, targets = rank_families(prepared['context'])
+    return dict(status='reassociation_targets_ranked', ranking=ranking, targets=targets,
+                recovery_complete=False)
+
+
 def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
                                 arms, owners, identities, selection=None, annotations=()):
     """Replay an explicitly chosen owned likelihood and rank remaining evidence.
@@ -375,4 +399,5 @@ def prepare_additional_recovery(prepared_recovery, native, scan_receipt, *,
     packet = preflight(context, ranked['targets'], scan_receipt)
     return dict(status='additional_recovery_prepared', residual_context=context,
                 residual_inventory=ranked, preflight=packet, recovery_complete=False,
-                context_factory=fresh, incumbent_owners=owners)
+                context_factory=fresh, incumbent_owners=owners, incumbent_arms=arms,
+                incumbent_selection=selection)
