@@ -35,6 +35,35 @@ still takes 79.151 s in the concurrent run and is the largest stage. The next
 performance investigation should target repeated fitting inside recovery,
 with exact-output checks, before adding more fold workers.
 
+A subsequent bounded profile of DS26-0002's complete serial annotation confirms
+that direction. All proposal fields still match the frozen historical annotation.
+These are nested profiler intervals, not additive stages or speedup evidence:
+
+| Profiled work | Calls | Cumulative seconds |
+| --- | ---: | ---: |
+| Complete annotation, three grouped folds | 1 | 14.827 |
+| Training calibration fits, both c arms | 6 | 12.228 |
+| Hierarchical likelihood | 570 | 9.422 |
+| Posterior updates | 6,526 | 5.673 |
+| Dense linear solves | 19,175 | 3.958 |
+| Satellite nomination | 3 | 2.511 |
+| Phase-shifted state interpolation | 396 | 1.594 |
+
+[Profile summary and source/input bindings](annotation-profile.json).
+The profile ran serially on CPU 4 with one BLAS thread and a 300-second outer
+deadline, after both timed full jobs were terminal. Context reconstruction was
+outside the profiled interval; this is a frozen-context experiment. A first
+non-root attempt stopped before profiling because the reference fixture is
+root-readable; the completed attempt used read access via sudo without changing
+fixture permissions. Raw profile:
+`/srv/bulk/leo-dev/algo07v3-annotation-profile002-20261105/annotation.prof`.
+
+Next experiments should preserve the dense solve arithmetic while reusing
+identical likelihood work or factorization; the earlier exact factor-reuse
+microbenchmark has not yet established a complete-path gain. Phase interpolation
+also repeats across nomination positions and is a smaller reuse opportunity.
+Neither optimization is enabled by this report.
+
 ## Stronger historical equivalence evidence
 
 The fresh standalone result now matches **15 of 17 historical scientific audit
