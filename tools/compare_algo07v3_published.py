@@ -269,6 +269,191 @@ def map_preflight_metadata(receipt, root, request):
     return {k: receipt[k] for k in retained}
 
 
+def compare_numerical_recovery(
+    original,
+    guarded,
+    terminal,
+    caches,
+    receipts,
+    candidate,
+    descriptor,
+    folder,
+    context_counts=None,
+):
+    """Qualify the complete additive branch, including discarded trials and replay."""
+    if (
+        terminal["decision"] != "ALGO04_additive"
+        or terminal["state"] != "complete"
+        or terminal["failure"] is not None
+        or terminal["future_TLE_used"] is not False
+        or terminal["matched_c_inputs"] is not True
+    ):
+        raise ValueError("Other numerical admission branches need independent mappings")
+    if not guarded["read_audit"]["verified"]:
+        raise ValueError("Original guarded result lacks a successful read audit")
+    if {k: v for k, v in guarded.items() if k != "read_audit"} != original:
+        raise ValueError("Original guarded result differs from the numerical decision")
+    for field in ("selected", "attempts", "stages"):
+        if terminal["candidate"][field] != original[field]:
+            raise ValueError("Terminal candidate differs from the original numerical decision")
+    excluded = {
+        "policy",
+        "shadow_only",
+        "production_changed",
+        "job_id",
+        "baseline",
+        "maximum_seconds",
+        "ranking",
+        "limitations",
+        "source_support_receipt",
+        "seconds",
+    }
+    fields = {
+        "decision",
+        "selected",
+        "attempts",
+        "stages",
+        "source_support",
+        "inventory_summary",
+        "eligible_tracks",
+        "selected_track_ids",
+        "no_GPS_selection",
+        "causal_only",
+        "matched_c_arms",
+        "rf_checks",
+    }
+    if set(original) != fields | excluded:
+        raise ValueError("Unknown numerical controller fields")
+    mapped = mapped_predictive(original, descriptor, folder)
+    scientific = {k: mapped[k] for k in fields}
+    stages = original["stages"]
+    if len(caches) != len(stages) or any(r["status"] != "complete" for r in stages):
+        raise ValueError("Complete numerical stage receipts required")
+    expected_replay = []
+    for stage, cache in zip(stages, caches, strict=True):
+        expected_fields = {
+            "script",
+            "output",
+            "source",
+            "reused",
+            "reason",
+            "returncode",
+            "wall_seconds",
+            "charged_original_seconds" if cache["reused"] else "command",
+        }
+        if set(cache) != expected_fields or cache["returncode"] != 0:
+            raise ValueError("Unknown or unsuccessful original stage receipt")
+        for key in ("output", "source"):
+            bound_link(cache[key], descriptor, folder)
+        expected_replay.append(
+            dict(
+                name=stage["name"],
+                original_name=stage["name"],
+                reused=cache["reused"],
+                reason=cache["reason"],
+                status="complete",
+            )
+        )
+    replay = []
+    for row in candidate["stage_replay"]:
+        fields = {"name", "original_name", "reused", "reason", "status"}
+        clocks = {"charged_original_seconds", "additional_logical_seconds", "reuse_wall_seconds"}
+        if set(row) != fields | (clocks if row["reused"] else set()):
+            raise ValueError("Unknown native replay receipt fields")
+        replay.append({k: row[k] for k in fields})
+    if replay != expected_replay:
+        raise ValueError("Conditional numerical stage reuse differs")
+    expected_receipts = {}
+    policy_fields = {
+        "reference_limit_s",
+        "centered_lbfgsb",
+        "extra_optimizer_rounds",
+        "physical_priors_and_target_phase_support_unchanged",
+        "reference_updates",
+        "optimizer_calls",
+        "problem_count",
+    }
+    bookkeeping = {
+        "helper_sha256",
+        "patched_aliases",
+        "restored_aliases",
+        "script",
+        "arguments",
+        "seconds",
+        "script_sha256",
+        "bootstrap_sha256",
+    }
+    required = {s["name"] for s, c in zip(stages, caches, strict=True) if not c["reused"]}
+    if set(receipts) != required:
+        raise ValueError("Missing numerical recomputation receipts")
+    for name, row in receipts.items():
+        if set(row) != policy_fields | bookkeeping:
+            raise ValueError("Unknown numerical policy fields")
+        expected_receipts[name] = {k: row[k] for k in policy_fields}
+        if context_counts is not None:
+            if set(context_counts) != set(receipts) or context_counts[name] < 0:
+                raise ValueError("Complete nonnegative context accounting required")
+            expected_receipts[name]["problem_count"] -= context_counts[name]
+            if expected_receipts[name]["problem_count"] < 0:
+                raise ValueError("Context count exceeds the original problem count")
+    expected = dict(
+        decision=terminal["decision"],
+        selected=scientific["selected"],
+        retained=scientific,
+        candidate=scientific,
+        admission_reason=terminal["acceptance_reason"],
+        completed_target_ids=sorted(original["selected_track_ids"]),
+        stage_replay=expected_replay,
+        numerical_receipts=expected_receipts,
+        no_GPS_selection=original["no_GPS_selection"],
+        causal_only=original["causal_only"],
+        matched_c_arms=original["matched_c_arms"],
+    )
+    compare_persisted(expected, fingerprint(dict(candidate, stage_replay=replay)))
+
+
+def read_context_counts(path, root, receipts):
+    """Check a frozen context-only execution before mapping construction counts."""
+    value = json.loads(path.read_bytes())
+    folder = (root / "ALGO04").resolve()
+    descriptor_path = folder / "descriptor.json"
+    descriptor = json.loads(descriptor_path.read_bytes())
+    if (
+        Path(value["source"]).resolve() != folder
+        or value["descriptor_sha256"] != hashlib.sha256(descriptor_path.read_bytes()).hexdigest()
+        or value["input_sha256"] != descriptor["input_sha256"]
+    ):
+        raise ValueError("Context reconstruction differs from the original export")
+    if set(value["stages"]) != set(receipts) or not value["inputs"] or not value["modules"]:
+        raise ValueError("Complete context reconstruction bindings required")
+    for relative, digest in value["inputs"].items():
+        bound_link(
+            str(Path(descriptor["source_worker_root"]) / Path(relative).relative_to("worker")),
+            descriptor,
+            folder,
+            digest,
+        )
+    for binding in [value["tool"], *value["modules"].values()]:
+        if hashlib.sha256(Path(binding["path"]).read_bytes()).hexdigest() != binding["sha256"]:
+            raise ValueError("Context reconstruction source changed")
+    counts = {}
+    for name, row in value["stages"].items():
+        relative = f"worker/recovery/numerical-receipts/{name}.json"
+        if "sha256:" + row["receipt_sha256"] != descriptor["files"][relative]:
+            raise ValueError("Context used a different numerical worker receipt")
+        if (
+            row["helper_sha256"] != receipts[name]["helper_sha256"]
+            or row["arms"] != ["c0", "fitted_c"]
+            or row["problem_count"] != len(row["arms"])
+            or row["policy_kind"] != "baseline"
+            or row["optimizer_calls"]
+            or row["reference_updates"]
+        ):
+            raise ValueError("Only the original two baseline-arm constructions may be mapped")
+        counts[name] = row["problem_count"]
+    return counts
+
+
 def compare_signed_snapshot(reference, candidate, root):
     """Restore only the explicitly persisted node/unchanged-arm boundaries.
 
@@ -656,6 +841,69 @@ def compare(args):
             scope="Prepare-only branch with unchanged full parent supports",
             metadata_semantics_qualified=False,
         )
+    numerical_files = []
+
+    def check_numerical_recovery():
+        def read_numerical(path):
+            value, descriptor = read_export(args.reference_evidence, "ALGO04", path)
+            same(descriptor["input_sha256"], request["identity"]["input_sha256"])
+            numerical_files.append(path)
+            return value, descriptor
+
+        original, descriptor = read_numerical("worker/recovery/decision.json")
+        guarded, _ = read_numerical("worker/recovery/guarded-result.json")
+        terminal, _ = read_numerical("worker/terminal.json")
+        same(terminal["input_sha256"], request["identity"]["input_sha256"])
+        caches = [
+            read_numerical(f"worker/recovery/stage-cache/{i + 1:03}.json")[0]
+            for i in range(len(original["stages"]))
+        ]
+        receipts = {
+            stage["name"]: read_numerical(
+                "worker/recovery/numerical-receipts/" + stage["name"] + ".json"
+            )[0]
+            for stage, cache in zip(original["stages"], caches, strict=True)
+            if not cache["reused"]
+        }
+        counts = (
+            read_context_counts(args.context_count_oracle, args.reference_evidence, receipts)
+            if args.context_count_oracle
+            else None
+        )
+        compare_numerical_recovery(
+            original,
+            guarded,
+            terminal,
+            caches,
+            receipts,
+            evidence["audit"]["numerical_recovery"],
+            descriptor,
+            args.reference_evidence / "ALGO04",
+            context_counts=counts,
+        )
+
+    check("policy/numerical_recovery", check_numerical_recovery)
+    if checks["policy/numerical_recovery"]:
+        policies["numerical_recovery"] = dict(
+            stage="ALGO04",
+            file=numerical_files[0],
+            supporting_files=numerical_files[1:],
+            scope="Complete additive numerical branch, losing trials and conditional replay",
+            context_count_oracle=(
+                str(args.context_count_oracle) if args.context_count_oracle else None
+            ),
+            context_count_oracle_sha256=(
+                hashlib.sha256(args.context_count_oracle.read_bytes()).hexdigest()
+                if args.context_count_oracle
+                else None
+            ),
+            mapped_fields=[
+                "controller process/file representation",
+                "stage timing accounting",
+                "numerical bootstrap bookkeeping",
+            ],
+            metadata_semantics_qualified=False,
+        )
     additional_documents = {}
     additional_files = []
 
@@ -829,6 +1077,7 @@ if __name__ == "__main__":
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--signed-oracle", type=Path)
     parser.add_argument("--inventory-oracle", type=Path)
+    parser.add_argument("--context-count-oracle", type=Path)
     args = parser.parse_args()
     result = compare(args)
     with args.output.open("x") as stream:

@@ -1,0 +1,22 @@
+| Stage | Baseline (s) | Candidate (s) |
+| --- | ---: | ---: |
+| native_preparation | 12.753 | 8.833 |
+| recovery_catalogue | 9.072 | 5.597 |
+| initial | 47.857 | 30.100 |
+| conservative | 42.048 | 24.126 |
+| family | 32.283 | 19.280 |
+| signed | 4.145 | 3.884 |
+| cavity | 12.993 | 8.181 |
+| inventory | 0.272 | 0.217 |
+| predictive | 121.602 | 78.217 |
+| numerical | 20.932 | 16.507 |
+| gap | 0.002 | 0.001 |
+| residual | 0.214 | 0.191 |
+| residual_screen | 21.574 | 18.265 |
+| addition | 0.003 | 0.003 |
+| incumbent | 0.301 | 0.273 |
+| ranking | 7.842 | 7.336 |
+| admission | 11.450 | 10.701 |
+| final | 0.069 | 0.062 |
+| plot_evidence | 18.027 | 17.052 |
+| png_rendering | 5.686 | 5.542 |

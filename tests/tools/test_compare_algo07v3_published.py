@@ -3,6 +3,292 @@ import pytest
 from compare_algo07v3_published import exact_persisted, mapped_predictive, read_export
 
 
+@pytest.fixture
+def numerical_additive_documents(tmp_path):
+    import hashlib
+    from copy import deepcopy
+
+    descriptor = dict(source_worker_root="/old", files={})
+    for relative in ("worker/trial/value.json", "worker/cache/value.json"):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"{}")
+        descriptor["files"][relative] = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    original = dict(
+        decision="ALGO03_single",
+        selected=dict(
+            kind="new_family",
+            arms={"c0": {"owners": {"point": 123}, "score": 2.0}},
+            targets=["track"],
+            trial="/old/trial",
+            source_receipts={},
+        ),
+        attempts=[dict(rejected_score=4.0)],
+        stages=[
+            dict(name="inventory", status="complete", returncode=0),
+            dict(name="target-0-audit", status="complete", returncode=0),
+        ],
+        source_support={},
+        inventory_summary=[],
+        eligible_tracks=1,
+        selected_track_ids=["track"],
+        no_GPS_selection=True,
+        causal_only=True,
+        matched_c_arms=True,
+        rf_checks={"valid": True},
+        policy="policy",
+        shadow_only=True,
+        production_changed=False,
+        job_id="id",
+        baseline={},
+        maximum_seconds=60,
+        ranking="ranking",
+        limitations=[],
+        source_support_receipt={},
+        seconds=1,
+    )
+    scientific = mapped_predictive(original, descriptor, tmp_path)
+    excluded = {
+        "policy",
+        "shadow_only",
+        "production_changed",
+        "job_id",
+        "baseline",
+        "maximum_seconds",
+        "ranking",
+        "limitations",
+        "source_support_receipt",
+        "seconds",
+    }
+    scientific = {k: v for k, v in scientific.items() if k not in excluded}
+    terminal = dict(
+        decision="ALGO04_additive",
+        state="complete",
+        failure=None,
+        future_TLE_used=False,
+        matched_c_inputs=True,
+        candidate=deepcopy(original),
+        acceptance_reason="paired",
+    )
+    guarded = dict(deepcopy(original), read_audit={"verified": True})
+    caches = [
+        dict(
+            script="script",
+            output="/old/trial",
+            source="/old/cache",
+            reused=reuse,
+            reason="reuse" if reuse else "recompute",
+            returncode=0,
+            wall_seconds=1,
+            **({"charged_original_seconds": 2} if reuse else {"command": ["script"]}),
+        )
+        for reuse in (True, False)
+    ]
+    policy = dict(
+        reference_limit_s=15.0,
+        centered_lbfgsb=True,
+        extra_optimizer_rounds=1,
+        physical_priors_and_target_phase_support_unchanged=True,
+        reference_updates=[{"phase": 0.2}],
+        optimizer_calls=[{"score": 3.0}],
+        problem_count=1,
+    )
+    receipt = dict(
+        policy,
+        helper_sha256="h",
+        patched_aliases=[],
+        restored_aliases=[],
+        script="s",
+        arguments=[],
+        seconds=1,
+        script_sha256="s",
+        bootstrap_sha256="b",
+    )
+    replay = [
+        dict(
+            name=s["name"],
+            original_name=s["name"],
+            reused=c["reused"],
+            reason=c["reason"],
+            status="complete",
+            **(
+                {
+                    "charged_original_seconds": 1,
+                    "additional_logical_seconds": 0,
+                    "reuse_wall_seconds": 1,
+                }
+                if c["reused"]
+                else {}
+            ),
+        )
+        for s, c in zip(original["stages"], caches, strict=True)
+    ]
+    candidate = dict(
+        decision="ALGO04_additive",
+        selected=deepcopy(scientific["selected"]),
+        retained=deepcopy(scientific),
+        candidate=deepcopy(scientific),
+        admission_reason="paired",
+        completed_target_ids=["track"],
+        stage_replay=replay,
+        numerical_receipts={"target-0-audit": deepcopy(policy)},
+        no_GPS_selection=True,
+        causal_only=True,
+        matched_c_arms=True,
+    )
+    return (
+        original,
+        guarded,
+        terminal,
+        caches,
+        {"target-0-audit": receipt},
+        candidate,
+        descriptor,
+        tmp_path,
+    )
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        None,
+        "owner",
+        "loser",
+        "phase",
+        "optimizer",
+        "reuse",
+        "target",
+        "reason",
+        "unknown",
+        "failed",
+        "guarded",
+        "branch",
+    ],
+)
+def test_numerical_mapping_checks_all_science_and_original_admission(
+    numerical_additive_documents, changed
+):
+    from compare_algo07v3_published import compare_numerical_recovery
+
+    args = numerical_additive_documents
+    original, guarded, terminal, caches, receipts, candidate, descriptor, folder = args
+    if changed == "owner":
+        candidate["selected"]["arms"]["c0"]["owners"]["point"] = 456
+    if changed == "loser":
+        candidate["candidate"]["attempts"][0]["rejected_score"] += 1e-12
+    if changed == "phase":
+        candidate["numerical_receipts"]["target-0-audit"]["reference_updates"][0]["phase"] += 1e-12
+    if changed == "optimizer":
+        candidate["numerical_receipts"]["target-0-audit"]["optimizer_calls"][0]["score"] += 1e-12
+    if changed == "reuse":
+        candidate["stage_replay"][0]["reason"] = "different"
+    if changed == "target":
+        candidate["completed_target_ids"] = []
+    if changed == "reason":
+        candidate["admission_reason"] = "different"
+    if changed == "unknown":
+        receipts["target-0-audit"]["unknown"] = True
+    if changed == "failed":
+        caches[0]["returncode"] = 1
+    if changed == "guarded":
+        guarded["read_audit"]["verified"] = False
+    if changed == "branch":
+        terminal["decision"] = "ALGO04_fallback"
+    if changed:
+        with pytest.raises(ValueError):
+            compare_numerical_recovery(*args)
+    else:
+        compare_numerical_recovery(*args)
+
+
+@pytest.mark.parametrize("count", [None, 1, 2, 3])
+def test_numerical_creation_count_requires_exact_independent_accounting(
+    numerical_additive_documents, count
+):
+    from compare_algo07v3_published import compare_numerical_recovery
+
+    args = numerical_additive_documents
+    args[4]["target-0-audit"]["problem_count"] += 2
+    kwargs = {} if count is None else dict(context_counts={"target-0-audit": count})
+    if count == 2:
+        compare_numerical_recovery(*args, **kwargs)
+    else:
+        with pytest.raises(ValueError):
+            compare_numerical_recovery(*args, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "changed", [None, "input", "source", "count", "optimizer", "receipt", "arm"]
+)
+def test_context_count_oracle_is_bound_and_cannot_hide_numerical_work(tmp_path, changed):
+    import hashlib
+    import json
+
+    from compare_algo07v3_published import read_context_counts
+
+    folder = tmp_path / "ALGO04"
+    (folder / "worker/recovery/numerical-receipts").mkdir(parents=True)
+    inventory = folder / "worker/inventory.json"
+    inventory.write_bytes(b"{}")
+    helper = tmp_path / "helper.py"
+    helper.write_bytes(b"# frozen context helper\n")
+    def sha(p):
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+    relative = "worker/recovery/numerical-receipts/target-1-audit.json"
+    original = {"helper_sha256": sha(helper)}
+    (folder / relative).write_text(json.dumps(original))
+    descriptor = dict(
+        source_worker_root="/original/worker",
+        input_sha256="input",
+        files={
+            "worker/inventory.json": "sha256:" + sha(inventory),
+            relative: "sha256:" + sha(folder / relative),
+        },
+    )
+    dp = folder / "descriptor.json"
+    dp.write_text(json.dumps(descriptor))
+    row = dict(
+        receipt_sha256=sha(folder / relative),
+        helper_sha256=sha(helper),
+        arms=["c0", "fitted_c"],
+        problem_count=2,
+        policy_kind="baseline",
+        optimizer_calls=[],
+        reference_updates=[],
+    )
+    binding = dict(path=str(helper), sha256=sha(helper))
+    value = dict(
+        source=str(folder),
+        descriptor_sha256=sha(dp),
+        input_sha256="input",
+        stages={"target-1-audit": row},
+        inputs={"worker/inventory.json": sha(inventory)},
+        tool=binding,
+        modules={"helper": binding},
+    )
+    if changed == "input":
+        inventory.write_bytes(b"changed")
+    if changed == "source":
+        helper.write_bytes(b"changed")
+    if changed == "count":
+        row["problem_count"] = 3
+    if changed == "optimizer":
+        row["optimizer_calls"] = [{"score": 1.0}]
+    if changed == "receipt":
+        row["receipt_sha256"] = "different"
+    if changed == "arm":
+        row["arms"] = ["c0", "c0"]
+    path = tmp_path / "oracle.json"
+    path.write_text(json.dumps(value))
+    if changed:
+        with pytest.raises(ValueError):
+            read_context_counts(path, tmp_path, {"target-1-audit": original})
+    else:
+        assert read_context_counts(path, tmp_path, {"target-1-audit": original}) == {
+            "target-1-audit": 2
+        }
+
+
 @pytest.mark.parametrize(
     "changed", [None, "owners", "prior", "replay", "targets", "unknown", "gap", "kind"]
 )

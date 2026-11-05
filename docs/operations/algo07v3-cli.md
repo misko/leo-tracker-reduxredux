@@ -1,5 +1,11 @@
 # Standalone ALGO07v3 run and publication recovery
 
+Current qualification: [all 17 mapped scientific audit sections](../../reports/2026_11_05_algo07v3_factor_reuse/README.md)
+match on DS26-0002, including explicitly accounted original-worker context
+construction counters. This does not qualify other scans, ordinary admission
+or excluded operational metadata. The factorization prototypes remain external;
+the owned CLI continues to use its previously integrated numerical kernel.
+
 The owned command is `leo-algo07v3` after installing this checkout, or
 `PYTHONPATH=src python -B -m leo.cli.algo07v3` from its root. It starts one owned
 worker. It does not invoke earlier ALGO executables or consume their results.

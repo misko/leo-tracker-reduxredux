@@ -4,6 +4,15 @@ Planning deliverable, 2026-11-04. Implementation and performance qualification
 are not complete. This supersedes the ALGO07* coordinator as the intended
 architecture; its existing evidence remains useful and its failures remain open.
 
+Latest qualification: the [completed factor-reuse pair](../../reports/2026_11_05_algo07v3_factor_reuse/README.md)
+preserves all scientific/publication outputs, but its 380.865 / 264.616 s timings
+have unequal host pressure and establish no attributable total gain. The variant
+remains external. All 17 mapped scientific audit sections now match on
+DS26-0002, with the original workers' two extra context constructions verified
+by an independent frozen trace. Operational metadata, other branches, full DS26,
+ordinary admission and cumulative 10× qualification remain open. The final broad
+suite passes 777 tests. A further upper-root prototype is in native qualification.
+
 Latest experiment: [exact root-factorization reuse](../../reports/2026_11_05_algo07v3_factor_reuse/README.md).
 All 6,772 native likelihood calls and the complete snapshot match; component
 compute decreases 2.33%, with no complete-path gain established yet. A fresh

@@ -4,6 +4,17 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Completed [factor-reuse pair and 17-section audit](../../reports/2026_11_05_algo07v3_factor_reuse/README.md):
+both isolated native-to-publication runs are exact, including all PNGs. Times
+are **380.865 / 264.616 s**, but baseline CPU pressure was much higher; the
+observed 1.439× ratio is **not attributable to the optimization**. Factor reuse
+remains external, with only a 2.33% interleaved component saving established.
+All 17 mapped scientific audit sections match on DS26-0002; original worker
+context construction counters are independently traced and explicitly mapped.
+Operational metadata, broader branches, full DS26 and production admission stay
+open. The broad suite has 777 passing tests; eight tests cover a separate new
+upper-root prototype whose complete native probe is ongoing. No deployment.
+
 Latest [factorization-reuse experiment](../../reports/2026_11_05_algo07v3_factor_reuse/README.md):
 all 6,772 native likelihood calls and the complete scientific/PNG snapshot are
 exact. Interleaved component time is **163.053 → 159.250 s (2.33% less)**.

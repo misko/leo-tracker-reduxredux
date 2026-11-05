@@ -1,4 +1,4 @@
-# ALGO07v3: exact factor reuse experiment and 16/17 historical audits
+# ALGO07v3: exact factor reuse, completed timing pair and 17 mapped audits
 
 2026-11-05. External experiment; the numerical runtime and production remain
 unchanged. Complete-pipeline speedup is not established by this experiment.
@@ -40,7 +40,7 @@ The probe ran on CPU 0 with one BLAS thread and a 1,200-second outer bound.
 The native qualification driver blocks legacy access. This diagnostic itself is
 not the separate mount/network namespace isolation test.
 
-## Complete-path comparison in progress
+## Completed complete-path comparison
 
 After the exact native probe completed, two fresh isolated CLI runs were launched
 in baseline/candidate order. Both use CPUs 0–2, one BLAS thread, the same native
@@ -52,16 +52,40 @@ Each run includes scientific persistence, all PNGs and atomic publication.
 [Predeclared pair plan](paired-plan.json), [isolated runner](run_kernel.sh).
 Evidence directory:
 `/srv/bulk/leo-dev/algo07v3-factor-reuse-20261105/paired`.
-This report records the launched comparison, not completed paired results.
-Host load rose above 30 runnable tasks during the baseline. Neither production
-workers nor capture settings were changed. Even successful exact runs may leave
-the small total speed effect unresolved under this contention.
+Both runs completed successfully. All owned science, both calibration arms,
+PNG bytes, grid/path data and published fields match exactly. The candidate also
+matches the preceding independently qualified native result exactly, connecting
+it to the historical comparison below. [Pair comparison](paired-comparison.json),
+[prior-run comparison](prior-native-comparison.json).
+
+![Complete native-to-publication observations](paired-runtime.png)
+
+| Measurement | Baseline | Factor reuse |
+| --- | ---: | ---: |
+| Complete supervised process | 380.865 s | 264.616 s |
+| Initial host load average | 28.47 | 16.46 |
+| Initial CPU pressure, avg10 | 18.54% | 0.28% |
+| Native preparation, unchanged | 12.753 s | 8.833 s |
+| Initial search | 47.857 s | 30.100 s |
+| Predictive recovery | 121.602 s | 78.217 s |
+
+The observed ratio is 1.439×, but **this is not an attributable pipeline
+speedup**. Baseline contention was much greater, and unchanged preparation also
+sped up substantially. The 2.33% interleaved kernel saving cannot explain the
+whole difference. [Resource observations](paired-resources.jsonl),
+[all stages](paired-stages.md), [summary](paired-summary.json).
+Neither production workers nor capture settings were changed.
+
+**Decision: keep factor reuse external for now.** Its correctness on this scan
+is supported; its small total benefit and population behavior are not established.
+The cumulative 10× target remains open. Repeated unqualified ratios are not
+substituted for that metric.
 
 ## Historical audit: residual preparation now checked
 
-The existing fresh published native result now matches **16 of 17 historical
-audit sections**, adding the complete residual-recovery preparation for the
-selected-one-family/no-gap branch. The comparison checks all fragments, selected
+The existing fresh published native result now matches **17 of 17 mapped
+scientific audit sections** on DS26-0002. The residual-recovery mapping covers the
+selected-one-family/no-gap branch and checks all fragments, selected
 and eligible targets, preflight corrected measurements in both arms, ownership
 maps, replay checks and the complete selected family's physical prior.
 
@@ -77,29 +101,58 @@ from scientific comparison. Other incumbent/gap branches require their own
 mappings and are rejected by this one.
 
 The [first metadata-mismatch result](historical-before-metadata-mapping.json)
-is retained. The [completed comparison](historical-comparison.json) has no
-differing checked values. `numerical_recovery` is the remaining section.
-Cross-stage metadata semantics, ordinary production admission, accepted-branch
-coverage and the full DS26 population remain unqualified. The historical check
-uses the prior completed owned run; it is not a substitute for comparing the
-new full-path timing pair.
+and [16-section checkpoint](historical-comparison.json) are retained. The
+[17-section comparison](historical-17.json) also checks the numerical recovery
+decision, selected and rejected trials, retained result, every conditional reuse
+decision, completed targets, optimizer records and phase/domain updates.
+
+Its initial comparison found a real **counter-scope difference**, preserved in
+[the failure receipt](historical-before-count-mapping.json):
+
+| Numerical stage | Original worker constructions | Context-only constructions | Native stage constructions |
+| --- | ---: | ---: | ---: |
+| Target 1 inclusion | 22 | 2 | 20 |
+| Target 1 audit | 6 | 2 | 4 |
+
+The original worker rebuilds the two incumbent calibration arms before its stage.
+V3 reuses the already prepared context, so its numerical-policy receipt starts
+after that construction. An independent execution of the frozen original context
+under the original counter verifies exactly two problems and **zero optimizer
+calls or phase updates** in each worker. Twelve read inputs are bound to the
+original export. [Context trace](context-count-oracle.json),
+[external tool](../../tools/algo07v3_context_count_oracle.py).
+The comparator requires this hash-bound trace before mapping the counts; arbitrary
+counter changes, changed inputs, extra fitting, or other context branches fail.
+Every subsequent numerical value remains exactly compared. No tolerance was added.
+
+This is complete coverage of the **mapped scientific sections for this case**,
+not byte identity of differently structured legacy files or full release
+qualification. Excluded operational metadata semantics, ordinary admission,
+unexercised accepted branches and the full DS26 population remain open. The
+gate still returns `full_intermediate_equivalence=false` and exit code 2.
 
 ## Tests and remaining work
 
-The broad suite passed **743 tests**. A subsequent focused comparator run passed
-**57 tests**, including seven additional file/policy/cutoff tests; these runs
-cover **750 distinct test cases**. No fixture was changed. The kernel probe
+The final broad suite passed **777 tests**; eight separate tests cover the next
+experimental upper-root solver. No fixture was changed. The kernel probe
 tests include zero/nonzero feature widths, sparse C/Fortran arrays, preserved
 invalid-input errors and mismatch propagation that cannot become a fit rejection.
 The comparator tests reject changed owners, priors, replay values, target sets,
-unknown fields and unsupported branches. [Broad results](tests.xml),
-[focused results](comparator-tests.xml).
+unknown fields and unsupported branches. The new counter tests reject an incorrect
+adjustment, unbound input/source bytes, and attempted normalization of real
+optimizer work. [Final broad results](tests-final.xml), [upper-root tests](upper-tests.xml).
 
-Next: finish the complete pair, compare its full scientific archive and PNGs,
-and decide whether the observed total benefit warrants integration. Regardless
-of that outcome, the full DS26 denominator, final historical mapping, metadata,
-production deadlines and cumulative 10× target remain open. No deployment.
+Next: the transpose of the Cholesky root is already upper triangular. An external
+follow-up supplies it to the same LAPACK solve with identity pivots, avoiding a
+second redundant factorization while keeping right-hand sides separate. It
+passes [32 synthetic exactness cases](upper-synthetic.json) and eight regression
+tests. Its complete native exact-call probe is running at
+`/srv/bulk/leo-dev/algo07v3-upper-root-20261105`; no native pass or speed claim
+is made for it yet. Neither factorization variant is enabled in the runtime.
+The full DS26 denominator, metadata, production deadlines and cumulative 10×
+target remain open. No deployment.
 
-`render.py --root /srv/bulk/leo-dev/algo07v3-factor-reuse-20261105` checks input and
-source bindings, the complete native snapshot, all PNGs, the historical audit
-and test results before rendering this figure.
+`render.py` at the initial report commit reproduces the component figure.
+`render_pair.py --root /srv/bulk/leo-dev/algo07v3-factor-reuse-20261105` checks
+completed isolated runs, comparison/source bindings, the 17-section audit,
+counter trace and tests before rendering the complete-pair figure.
