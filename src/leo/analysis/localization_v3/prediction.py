@@ -5,6 +5,8 @@ Training uses fixed noise and unit family weights; prediction integrates
 receiver uncertainty, per-track bias and causal orbit/phase uncertainty.
 """
 
+import copy
+
 import numpy as np
 from scipy.linalg import cho_solve
 from scipy.stats import norm
@@ -77,6 +79,7 @@ def fit_training(
     target_family=None,
     events=None,
     reference_limit_s=15.0,
+    record_optimizer=False,
 ):
     if not 15 <= reference_limit_s <= 30:
         raise ValueError("reference-limit experiment is bounded to 15..30 seconds")
@@ -121,6 +124,8 @@ def fit_training(
             check["next_reference_domain"] = domain
         delta = check["phase_change_s"]
         history.append(dict(endpoint=x, **check))
+        if record_optimizer:
+            history[-1]["optimizer"] = copy.deepcopy(f)
         reference = phase
     return (
         p,

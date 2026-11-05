@@ -52,8 +52,12 @@ The [numerical-policy extraction](../../reports/2026_11_05_algo07v3_numerical/RE
 adds centered capped derivatives, bank-checked 30-second references and explicit
 stage-specific contraction order. All six numerical fits/audits and numerical
 receipts match frozen ALGO04; the original six predictive fits remain exact.
-Conditional annotation replay, stage reuse and additive incumbent adoption are
-still required before this becomes the complete numerical-recovery policy.
+The [conditional replay extraction](../../reports/2026_11_05_algo07v3_replay/README.md)
+now owns frozen-competition annotation replay, stage reuse and additive incumbent
+adoption. DS26-0044 annotation replay matches exactly; a fresh DS26-0002 prefix
+and two-target numerical controller matches independent individual references
+and all numerical receipts. Broader replay branches, timeout checkpoints and
+ordinary-clock admission remain unqualified.
 Inactive-fragment and successful shared inclusion qualification, fresh joint
 target-loop qualification, ordinary-clock admission, later recovery policies,
 reassociation and publication remain unfinished; full DS26 localization parity

@@ -258,3 +258,35 @@ def test_recovery_application_keeps_caller_admission_and_later_policies_explicit
         recovery_context=context, inventory=evidence), run_stage=stage, discovery_allowed=admission)
     assert result['recovery']['decision'] == 'ALGO03_single'
     assert result['recovery_complete'] is False
+
+
+def test_predictive_checkpoint_keeps_only_completed_stages_and_inventory_duration(monkeypatch):
+    values = iter([1., 4., 7.])
+
+    def recover(d, e, *, run_stage, discovery_allowed):
+        assert run_stage('done', lambda: {'scientific': True}) == (True, {'scientific': True})
+        assert run_stage('failed', lambda: None) == (False, None)
+        return dict(selected=None)
+
+    monkeypatch.setattr(app, 'recover_tracks', recover)
+    prepared = dict(status='track_recovery_prepared', recovery_context={}, inventory={})
+    result = app.recover_predictive_checkpoint(prepared,
+        run_stage=lambda name, operation: (True, operation()) if name == 'done' else (False, None),
+        discovery_allowed=lambda: True, clock=lambda: next(values), inventory_seconds=2.)
+    assert set(result['completed_stages']) == {'inventory', 'done'}
+    assert result['completed_stages']['done']['seconds'] == 3.
+    assert result['completed_stages']['inventory']['seconds'] == 2.
+    assert result['recovery_complete'] is False
+
+
+def test_numerical_application_uses_owned_checkpoint_and_retains_future_policy_boundary(monkeypatch):
+    calls = []
+    monkeypatch.setattr(app, 'replay_recovery', lambda *a, **kw: calls.append((a, kw)) or
+                        dict(decision='ALGO03_fallback'))
+    prepared = dict(recovery_context='owned', inventory='evidence')
+    predictive = dict(status='predictive_recovery_evaluated', recovery='incumbent', completed_stages='records')
+    ports = dict(run_stage='stage', discovery_allowed='admission', clock='clock', charge_reused='charge')
+    result = app.recover_numerical_tracks(prepared, predictive, **ports)
+    assert calls == [(('owned', 'evidence', 'incumbent', 'records'), ports)]
+    assert result['status'] == 'numerical_recovery_evaluated'
+    assert result['recovery_complete'] is False

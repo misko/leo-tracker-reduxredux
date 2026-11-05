@@ -75,6 +75,9 @@ def test_training_factory_removes_full_data_noise_and_family_weights(monkeypatch
     d = dict(scan=None, powers=np.array([.1,.2]), model={}, entries=[])
     prediction.fit_training(d, {}, np.ones(3,bool), 'c0')
     assert len(captured) == 5 and all(np.array_equal(v, [1.,1.]) for v in captured)
+    _, _, meta = prediction.fit_training(d, {}, np.ones(3,bool), 'c0', record_optimizer=True)
+    assert len(meta['history']) == 5
+    assert all(np.array_equal(row['optimizer']['parameters'], [0.,0.]) for row in meta['history'])
 
 
 def test_nomination_never_reads_held_target_values(monkeypatch):

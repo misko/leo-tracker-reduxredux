@@ -134,6 +134,17 @@ deadline policy and later recovery/publication qualification remain open.
 
 ## Measured improvements within the pipeline
 
+The [conditional replay extraction](../../reports/2026_11_05_algo07v3_replay/README.md)
+matches DS26-0044's complete annotation replay and DS26-0002's conditional
+selection/receipts, preserving the previously qualified predictive prefix.
+Annotation reference/candidate component durations are 76.949/66.798 seconds.
+The fresh candidate fitting prefix through numerical recovery takes 399.779
+seconds; the independent reference's 71.292 seconds covers only annotation and
+numerical inclusion. Those scopes cannot be used for a speedup. Five stages are
+reused and two recomputed in the numerical pass; all 2,783 scoped owners survive
+in both arms. Complete-path timing, full DS26, timeout policy and UI publication
+remain incomplete.
+
 The [numerical-policy extraction](../../reports/2026_11_05_algo07v3_numerical/README.md)
 matches all six frozen ALGO04 component fits/audits, including every orbital
 posterior coefficient and numerical receipt. Original predictive policy

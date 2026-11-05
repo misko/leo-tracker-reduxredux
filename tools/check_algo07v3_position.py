@@ -83,7 +83,8 @@ def run(args):
         scan = FreshScan(args.source, noise_mode='radio')
         point = native_point(scan, [0., 0.])
     annotation_mode = args.predictive_annotation or args.predictive_inclusion
-    inventory_mode = args.recovery_inventory or annotation_mode or args.predictive_recovery
+    recovery_mode = args.predictive_recovery or args.numerical_recovery
+    inventory_mode = args.recovery_inventory or annotation_mode or recovery_mode
     cavity_mode = args.cavity_policy or inventory_mode
     signed_mode = args.signed_policy or cavity_mode
     history_mode = args.history_policy or signed_mode
@@ -190,18 +191,24 @@ def run(args):
                                 prepare_recovery,
                             )
 
+                            inventory_began = time.monotonic()
                             recovery_context, inventory_result = prepare_recovery(
                                 scan, selected, observations,
                                 identities=args.scan_identities)
+                            inventory_seconds = time.monotonic() - inventory_began
                             result['recovery_inventory'] = fingerprint(inventory_result)
                             print('recovery inventory', inventory_result['eligible_targets'],
                                   flush=True)
-                            if args.predictive_recovery:
+                            if recovery_mode:
                                 from leo.analysis.localization_v3.recovery_controller import (
                                     recover_tracks,
                                 )
 
+                                completed_stages = {'inventory': dict(value=inventory_result,
+                                                                      seconds=inventory_seconds)}
+
                                 def complete_stage(name, operation):
+                                    began_stage = time.monotonic()
                                     try:
                                         value = operation()
                                     except Exception as error:
@@ -209,11 +216,39 @@ def run(args):
                                               str(error), flush=True)
                                         return False, None
                                     print('recovery stage complete', name, flush=True)
+                                    completed_stages[name] = dict(value=value,
+                                        seconds=time.monotonic()-began_stage)
                                     return True, value
 
                                 recovered = recover_tracks(recovery_context, inventory_result,
                                     run_stage=complete_stage, discovery_allowed=lambda: True)
                                 result['predictive_recovery'] = fingerprint(recovered)
+                                if args.numerical_recovery:
+                                    from leo.analysis.localization_v3.numerical_recovery import (
+                                        replay_recovery,
+                                    )
+
+                                    def numerical_stage(name, operation):
+                                        try:
+                                            return True, operation()
+                                        except Exception as error:
+                                            print('numerical stage failed', name,
+                                                  type(error).__name__, str(error), flush=True)
+                                            return False, None
+
+                                    replay = replay_recovery(recovery_context, inventory_result,
+                                        recovered, completed_stages, run_stage=numerical_stage,
+                                        discovery_allowed=lambda: True, clock=time.monotonic,
+                                        charge_reused=lambda _: None)
+                                    # All-work qualification: logical charge is not admission.
+                                    # Keep deterministic scientific reuse decisions separately.
+                                    result['numerical_recovery'] = fingerprint({
+                                        k:v for k,v in replay.items() if k != 'stage_replay'})
+                                    result['numerical_stage_replay'] = [{
+                                        k:v for k,v in row.items() if k not in (
+                                            'charged_original_seconds',
+                                            'additional_logical_seconds', 'reuse_wall_seconds')}
+                                        for row in replay['stage_replay']]
                             if annotation_mode:
                                 from leo.analysis.localization_v3.predictive_annotation import (
                                     annotate,
@@ -302,9 +337,9 @@ def run(args):
         signed_policy=signed_mode, cavity_policy=cavity_mode,
         recovery_inventory=inventory_mode, scan_identities=args.scan_identities,
         predictive_annotation=annotation_mode, predictive_inclusion=args.predictive_inclusion,
-        predictive_recovery=args.predictive_recovery,
+        predictive_recovery=recovery_mode, numerical_recovery=args.numerical_recovery,
         recovery_admission=('all predeclared targets; test harness only'
-                            if args.predictive_recovery else None),
+                            if recovery_mode else None),
         target_rank=args.target_rank,
         additional_inputs=additional_inputs,
         seed_budget=args.seed_budget, branch_budget=args.branch_budget,
@@ -348,6 +383,8 @@ if __name__ == '__main__':
     mode.add_argument('--predictive-inclusion', action='store_true')
     mode.add_argument('--predictive-recovery', action='store_true',
                       help='Test harness: complete all predeclared recovery work; no time-based omissions')
+    mode.add_argument('--numerical-recovery', action='store_true',
+                      help='Test harness: fresh predictive loop then conditional numerical replay')
     parser.add_argument('--target-rank', type=int, default=0)
     parser.add_argument('--scan-identities', nargs='+')
     parser.add_argument('--branch-budget', type=int, default=3)

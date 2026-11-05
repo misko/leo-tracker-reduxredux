@@ -13,6 +13,7 @@ from leo.analysis.localization_v3.family_cavity import cavity_policy, nominate_f
 from leo.analysis.localization_v3.history_policy import history_policy
 from leo.analysis.localization_v3.initial_search import initial_search
 from leo.analysis.localization_v3.noise import estimate_noise
+from leo.analysis.localization_v3.numerical_recovery import replay_recovery
 from leo.analysis.localization_v3.phase_prior import forecast
 from leo.analysis.localization_v3.predictive_annotation import annotate
 from leo.analysis.localization_v3.recovery_inclusion import include_annotation
@@ -169,3 +170,31 @@ def recover_predictive_tracks(prepared_recovery, *, run_stage, discovery_allowed
     result = recover_tracks(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
                             run_stage=run_stage, discovery_allowed=discovery_allowed)
     return dict(status='predictive_recovery_evaluated', recovery=result, recovery_complete=False)
+
+
+def recover_predictive_checkpoint(prepared_recovery, *, run_stage, discovery_allowed, clock,
+                                  inventory_seconds):
+    """Keep owned stage values for the immediately following numerical policy."""
+    completed = {'inventory': dict(value=prepared_recovery['inventory'], seconds=inventory_seconds)}
+
+    def captured(name, operation):
+        began = clock()
+        ok, value = run_stage(name, operation)
+        if ok:
+            completed[name] = dict(value=value, seconds=clock() - began)
+        return ok, value
+
+    result = recover_predictive_tracks(prepared_recovery, run_stage=captured,
+                                      discovery_allowed=discovery_allowed)
+    return dict(result, completed_stages=completed)
+
+
+def recover_numerical_tracks(prepared_recovery, predictive, *, run_stage,
+                             discovery_allowed, clock, charge_reused):
+    """Replay the owned checkpoint and retain the exact incumbent on rejection."""
+    if predictive['status'] != 'predictive_recovery_evaluated':
+        return dict(status=predictive['status'], recovery=None, recovery_complete=False)
+    result = replay_recovery(prepared_recovery['recovery_context'], prepared_recovery['inventory'],
+        predictive['recovery'], predictive['completed_stages'], run_stage=run_stage,
+        discovery_allowed=discovery_allowed, clock=clock, charge_reused=charge_reused)
+    return dict(status='numerical_recovery_evaluated', recovery=result, recovery_complete=False)
