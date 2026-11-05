@@ -3,7 +3,8 @@
 **Complete-path baseline/current latency and speedup: unavailable; zero matched
 native-input-to-publication scans.** The new prepared-input-to-PNG execution
 takes **484.617 seconds** on DS26-0002 under shared-host load. It includes all
-numerical policies, the diagnostic grid and eight rendered figures, but excludes
+numerical policies, the diagnostic grid, eight rendered figures and qualification
+fingerprint/JSON overhead, but excludes
 native preparation and WebUI publication. It is not a controlled speed comparison.
 
 V3 now constructs the recorded search path from its own accepted decisions. It
@@ -111,6 +112,53 @@ publication; restart/cancellation/deadline qualification; accepted-recovery
 artifact coverage; full DS26 equivalence with the full denominator; independent
 validation; package qualification; and controlled complete-path speed measurement.
 No deployment occurred, and the 10× target remains unproven.
+
+## Measured next optimization targets
+
+A separate `cProfile` execution produces the **identical complete result digest
+and all eight PNGs**. It records 350.494 seconds inside the harness timer and
+353.108 seconds across profiled functions, including startup. The lower elapsed
+time than the unprofiled run reflects different execution conditions, not a code
+change or measured speedup. Both executions use the same source and inputs.
+
+![Partial attribution of the separately profiled execution](profile-stages.png)
+
+The largest attributed stage is predictive track recovery, **115.184 seconds
+(32.6%)**. Initial regional search takes 44.691 seconds, conservative recovery
+26.409 seconds, and plot evidence/grid preparation 20.908 seconds. All stage
+values are in [profile-stages.md](profile-stages.md); raw summaries and function
+counts are in [profile.json](profile.json).
+
+Across stages, **6,772 hierarchical likelihood evaluations consume 163.129
+seconds inclusive (46.2%)**, including **92,133 posterior calculations**. This
+is a nested kernel measurement and must not be added to the stage totals.
+NumPy's general linear solves account for 59.018 seconds of self time across
+283,422 calls. Phase-state interpolation/rotation is another material target:
+5,306 full-bank phase-state evaluations consume 29.227 seconds inclusive, and
+56,331 paired-state evaluations consume 15.160 seconds inclusive.
+
+The suspected redundant integrated Gaussian calculation totals only **5.281
+seconds (1.5%)**. Even eliminating all its calls would not materially approach
+the 10× target. The higher-value next work is to measure exact repeated
+likelihood/geometry inputs and reuse validated results or immutable derived
+geometry, retaining identical arithmetic and stopping schedules. Solver changes
+that alter numerical output do not satisfy this task's equivalence requirement.
+
+This profile omits the harness and rendering wrapper frames, so **54.321
+seconds remain unattributed to the named stages**, including rendering, imports,
+serialization and harness work. The predictive stage is computed explicitly as
+the two-call controller total minus its one captured numerical-replay caller;
+the script verifies those call counts. It does not silently sum overlapping
+stages. The JSON-writing function itself accounts for 25.918 seconds inclusive
+in this instrumented qualification harness; those full fingerprints are test
+evidence rather than a required production output format. Explicit phase timers
+in the final application runner are still needed for complete attribution.
+
+`profile_summary.py` verifies exact scientific/PNG equality and source/input
+bindings before analyzing the locally generated profile. No inference code or
+production service changed during profiling. This remains one workload, without
+an accepted final reassociation; the cost mix must be checked on those other
+branches before generalizing it to DS26.
 
 ## Reproduction
 

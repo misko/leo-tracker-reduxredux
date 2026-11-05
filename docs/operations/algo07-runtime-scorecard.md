@@ -12,6 +12,12 @@ This excludes native preparation and atomic WebUI publication and has no matched
 full reference, so it establishes no speedup. The separate DS26-0084 comparison
 remains byte-exact with the owned path enabled. There are 515 passing focused
 tests. Complete-path matched scans remain zero; no deployment occurred.
+The separate cProfile run has identical outputs and identifies predictive
+recovery (115.184 s) and the cross-stage hierarchical likelihood (163.129 s
+inclusive) as major costs. These overlap and must not be summed. Qualified-run
+timing also includes fingerprint/JSON overhead; 25.918 s is attributed to JSON
+writing in the instrumented run. Missing profiler wrapper frames leave partial
+stage attribution. No profiled/unprofiled ratio is a speedup measurement.
 
 Latest presentation milestone: [owned selected-fit plot preparation](../../reports/2026_11_05_algo07v3_presentation/README.md).
 On DS26-0084, all plot data, 179/179 grid locations and eight PNG bytes match the
