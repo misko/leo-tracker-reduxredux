@@ -154,7 +154,7 @@ def fit(d, baseline_owners, arm, start, constrained=False, rounds=15):
     )
 
 
-def fit_rows(context, owners, starts, allowed, *, on_row=None):
+def fit_rows(context, owners, starts, allowed, *, on_row=None, state_sink=None):
     """Same two starts/budgets in both arms, complete failures never hidden.
 
     The application owns process deadlines and checkpoint persistence. It may
@@ -194,6 +194,10 @@ def fit_rows(context, owners, starts, allowed, *, on_row=None):
                 ).hexdigest()
                 row["native_ids_sha256"] = hashlib.sha256("\n".join(ids).encode()).hexdigest()
                 row.update(arm=arm, start=label, status="complete")
+                if state_sink is not None and row["qualified"]:
+                    # Internal ownership transfer: retain the already rebuilt
+                    # endpoint likelihood for presentation, without refitting.
+                    state_sink[(arm, label)] = (p, np.asarray(row["x"]).copy())
             except Exception as exc:
                 row = dict(
                     arm=arm, start=label, status="incomplete", qualified=False, reason=repr(exc)

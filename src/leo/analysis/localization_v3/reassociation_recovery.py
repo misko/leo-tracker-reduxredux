@@ -54,6 +54,7 @@ def recover(
     *,
     on_fit=None,
     on_record=None,
+    on_selected=None,
 ):
     """Finish admitted proposals; a partial fit always retains the exact baseline.
 
@@ -84,6 +85,7 @@ def recover(
         raise ValueError("Complete causal screening required")
     records, history, historical = [], None, None
     controls_by_target, fits_by_proposal = {}, {}
+    candidate_contexts, candidate_states = {}, {}
     ledger = catalogue["elements"]
 
     def fits(ctx, starts, allowed, target, name):
@@ -91,7 +93,13 @@ def recover(
             if on_fit is not None:
                 on_fit(dict(target=target, proposal=name, fit=row))
 
-        return fit_rows(ctx, owners, starts, allowed, on_row=completed)
+        kwargs = {}
+        if name is not None and on_selected is not None:
+            states = {}
+            candidate_states[name] = states
+            candidate_contexts[name] = ctx
+            kwargs["state_sink"] = states
+        return fit_rows(ctx, owners, starts, allowed, on_row=completed, **kwargs)
 
     for old in targets:
         proposals = [row["hypothesis"] for row in admission["admitted"] if row["target"] == old]
@@ -167,6 +175,16 @@ def recover(
             if on_record is not None:
                 on_record(deepcopy(record))
     choice = select(baseline, records, admission["guards"])
+    if choice["selected"] is not None and on_selected is not None:
+        name = choice["selected"]
+        row = next(record for record in records if record["name"] == name)
+        state = dict(
+            candidate_contexts[name],
+            problems={
+                arm: candidate_states[name][(arm, row["pair"][arm]["start"])] for arm in ARMS
+            },
+        )
+        on_selected(state, deepcopy(row["pair"]))
     return dict(
         choice,
         baseline=deepcopy(baseline),

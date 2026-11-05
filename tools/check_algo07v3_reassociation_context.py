@@ -53,6 +53,11 @@ def final_comparison(args, context, packet, catalogue, arms, owners, ranking, ta
             recover,
         )
 
+        retained = {}
+
+        def retain_selected(state, pair):
+            retained.update(context=state, pair=pair)
+
         admission = admit(context, owners, targets, catalogue, packet["scan_receipt"])
         result = recover(
             context,
@@ -62,7 +67,18 @@ def final_comparison(args, context, packet, catalogue, arms, owners, ranking, ta
             catalogue,
             packet["scan_receipt"],
             lambda request: select_history(history_bank, request),
+            on_selected=retain_selected,
         )
+        if result["selected"] is not None:
+            from leo.analysis.localization_v3.reassociation_context import objective
+
+            for arm, (problem, x) in retained["context"]["problems"].items():
+                row = retained["pair"][arm]
+                if not np.array_equal(x, row["x"]):
+                    raise ValueError("Retained endpoint changed")
+                delta = objective(problem, retained["context"], x) - row["objective"]
+                if not np.isfinite(delta) or abs(delta) > 1e-4:
+                    raise ValueError("Retained selected likelihood changed")
         # The frozen worker exposes this diagnostic through persisted JSON.
         # Match that representation without rounding or tolerance changes.
         result["trigger"] = json.loads(

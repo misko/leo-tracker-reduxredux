@@ -4,6 +4,15 @@ Updated 2026-11-05. **End-to-end speedup since optimization began: not yet
 established.** This is an unmeasured ratio, not a measured 1.00× result.
 The tenfold active-processing target remains open.
 
+Latest presentation milestone: [owned selected-fit plot preparation](../../reports/2026_11_05_algo07v3_presentation/README.md).
+On DS26-0084, all plot data, 179/179 grid locations and eight PNG bytes match the
+frozen renderer exactly. Reference/candidate fixture-to-PNG observations are
+**32.426 / 29.300 s** under concurrent shared-host load; preparation portions are
+23.504 / 20.234 s. These include external fixture reconstruction and are not a
+controlled speed ratio. The actual fresh numerical path is not yet connected
+through publication. Final fitting now retains the winning likelihood for
+presentation, eliminating a future need to reconstruct it from older exports.
+
 Latest v3 milestone: [complete final numerical reassociation](../../reports/2026_11_05_algo07v3_reassociation_final/README.md).
 The owned final numerical worker and all eight matched fits reproduce the frozen
 DS26-0066 research canary exactly. The connected DS26-0002 prepared-input path

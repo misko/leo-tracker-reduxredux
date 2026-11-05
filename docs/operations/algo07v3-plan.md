@@ -8,8 +8,10 @@ Current implementation status, 2026-11-05: the owned application is connected
 through final guarded numerical reassociation, including causal-history
 completion and matched replacement/control fitting. DS26-0066's final numerical
 worker and all eight fits match frozen ALGO07 exactly; a connected DS26-0002
-prepared-input run completes with its earlier science unchanged. Artifact
-generation/publication, full DS26 equivalence, cancellation qualification and the
+prepared-input run completes with its earlier science unchanged. Owned plot
+preparation now reproduces all eight PNGs and all 179 grid points exactly on
+the DS26-0084 retained-baseline fixture. Fresh-run recorded-path construction,
+complete publication, full DS26 equivalence, cancellation qualification and the
 10× complete-path metric remain unfinished or unproven. This is not yet the
 complete standalone production engine.
 
@@ -123,6 +125,15 @@ outside this comparison. The connected DS26-0002 prepared-input run finishes
 numerical recovery in 273.407 seconds, preserves all earlier scientific fields
 and retains 2,783 owners per arm without replacement. The suite passes 483 tests.
 Full DS26 localization/publication parity and complete-path speed remain open.
+The [selected-fit presentation adapter](../../reports/2026_11_05_algo07v3_presentation/README.md)
+now owns prediction/residual preparation and calibrated orbit lanes while reusing
+the existing PNG renderer. DS26-0084 matches the complete frozen plot packet,
+179/179 conditional grid locations and all eight PNG bytes. Selected endpoint
+likelihoods can be transferred from final fitting without another optimization;
+enabling this transfer preserves the complete DS26-0066 accepted-replacement
+result exactly. The suite passes 496 tests. The fixture's recorded path still
+comes from its public terminal; fresh owned audit-to-path assembly, publication
+and broader artifact branches remain to be connected and qualified.
 
 The requested outcome is one independently deployable ALGO07v3 engine, producing
 the same scientific and presentation outputs as production ALGO07, ten times

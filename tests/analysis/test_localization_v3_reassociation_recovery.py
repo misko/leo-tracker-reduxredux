@@ -40,7 +40,7 @@ def fixture(monkeypatch, *, admitted=True, fault=None):
         calls.append(("remap",))
         return dict(ctx, candidate=True)
 
-    def fit(ctx, owner_maps, starts, allowed, on_row):
+    def fit(ctx, owner_maps, starts, allowed, on_row, state_sink=None):
         candidate = ctx.get("candidate", False)
         assert owner_maps is owners and list(starts) == ["published", "family_omitted"]
         assert np.array_equal(starts["published"], [0.0, 0.0])
@@ -61,6 +61,11 @@ def fixture(monkeypatch, *, admitted=True, fault=None):
                 ):
                     row.update(status="incomplete", qualified=False)
                 rows.append(row)
+                if state_sink is not None:
+                    state_sink[(arm, label)] = (
+                        SimpleNamespace(arm=arm, start=label),
+                        np.array(row["x"]),
+                    )
                 on_row(deepcopy(row))
         return rows
 
@@ -148,3 +153,24 @@ def test_callback_cannot_change_final_decision(monkeypatch):
         row.clear()
 
     assert run(data, on_fit=fit_callback, on_record=record_callback)["selected"] == "replacement"
+
+
+def test_only_final_winner_transfers_its_selected_likelihood(monkeypatch):
+    data = fixture(monkeypatch)
+    selected = []
+    result = run(data, on_selected=lambda state, pair: selected.append((state, pair)))
+    assert len(selected) == 1 and result["selected"] == "replacement"
+    state, pair = selected[0]
+    assert state["candidate"] and state["history"]
+    for arm, (problem, x) in state["problems"].items():
+        assert problem.arm == arm and problem.start == pair[arm]["start"]
+        assert x.tolist() == pair[arm]["x"]
+    pair["c0"]["qualified"] = False
+    assert result["records"][0]["pair"]["c0"]["qualified"]
+
+
+def test_partial_candidate_cannot_transfer_any_state(monkeypatch):
+    data = fixture(monkeypatch, fault="candidate")
+    selected = []
+    assert run(data, on_selected=lambda *args: selected.append(args))["selected"] is None
+    assert not selected

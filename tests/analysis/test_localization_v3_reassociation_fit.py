@@ -88,3 +88,21 @@ def test_pair_chooses_best_qualified_row_per_arm():
     assert {arm: row["objective"] for arm, row in fitting.paired(rows).items()} == dict(
         c0=5, fitted_c=5
     )
+
+
+def test_selected_state_uses_existing_endpoint_likelihood_without_another_fit(monkeypatch):
+    context, owners, starts, calls = fixture(monkeypatch)
+    states = {}
+    rows = fitting.fit_rows(context, owners, starts, set(), state_sink=states)
+    assert len(calls) == len(rows) == len(states) == 4
+    for row in rows:
+        problem, x = states[(row["arm"], row["start"])]
+        assert problem is context["problems"]["fitted_c"][0]
+        assert x.tolist() == row["x"]
+
+
+def test_unqualified_fit_does_not_supply_a_selected_state(monkeypatch):
+    context, owners, starts, _ = fixture(monkeypatch, "boundary")
+    states = {}
+    fitting.fit_rows(context, owners, starts, set(), state_sink=states)
+    assert states == {}

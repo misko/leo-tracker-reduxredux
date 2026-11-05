@@ -392,7 +392,7 @@ def screen_reassociation_candidates(prepared, ranked, catalogue, scan_receipt, *
 
 
 def fit_reassociation(prepared, screened, catalogue, scan_receipt, collect_history,
-                      *, on_fit=None, on_record=None):
+                      *, on_fit=None, on_record=None, on_selected=None):
     """Finish matched identity repair; publication remains a separate boundary."""
     for result, status in ((prepared, 'reassociation_prepared'),
                            (screened, 'reassociation_candidates_screened')):
@@ -402,8 +402,11 @@ def fit_reassociation(prepared, screened, catalogue, scan_receipt, collect_histo
         raise ValueError('Reassociation catalogue cutoff changed')
     from leo.analysis.localization_v3.reassociation_recovery import baseline_from_selected, recover
     baseline = baseline_from_selected(prepared['arms'], prepared['owners'])
+    kwargs = dict(on_fit=on_fit, on_record=on_record)
+    if on_selected is not None:
+        kwargs['on_selected'] = on_selected
     result = recover(prepared['context'], prepared['owners'], baseline, screened['admission'],
-                     catalogue, scan_receipt, collect_history, on_fit=on_fit, on_record=on_record)
+                     catalogue, scan_receipt, collect_history, **kwargs)
     return dict(status='reassociation_evaluated', recovery=result,
                 recovery_complete=result['execution_status'] == 'complete')
 
