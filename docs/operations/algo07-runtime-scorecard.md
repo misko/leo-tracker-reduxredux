@@ -1,5 +1,17 @@
 # ALGO07 cumulative runtime scorecard
 
+The [DS26-0066 predictive profile](../../reports/2026_11_05_algo07v3_predictive_0066_profile/README.md)
+matches all scientific audits, both arms and eight PNGs against the unchanged
+owned result. Annotation consumes **264.864 of 327.726 profiled predictive
+seconds**; one fold dominates. An external paired-training prototype preserves
+all six complete fold outputs across three alternating pairs and averages
+**99.051 → 51.607 s (47.90% less elapsed)**, with CPU **99.035 → 100.827 s**.
+This is one prepared fold, not a complete-pipeline benchmark or deployed change.
+Integration must keep at most three active training workers across fold/arm
+tasks and pass fresh native comparisons. Complete candidate and cumulative
+speedups remain unmeasured for this experiment; the prior unprofiled complete
+DS26-0066 result remains 602.497 s.
+
 The [geometry follow-up](../../reports/2026_11_05_algo07v3_geometry_followup/README.md)
 passes the complete DS26-0066 comparison, including accepted reassociation,
 both arms and all eight PNGs. Total observed time is **667.114 → 602.497 s**,

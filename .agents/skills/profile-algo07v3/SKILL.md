@@ -149,3 +149,17 @@ Fresh context construction is outside the timer. Report nested discovery time,
 whole-stage time and parent-plus-child CPU separately. The current prototype
 saves 1.649 stage seconds but adds 2.449 CPU seconds on DS26-0002 and remains
 external. Do not equate reduced latency with better queue throughput.
+
+For the slow predictive annotation fold, the external
+`tools/probe_algo07v3_annotation_arms.py --request REQUEST --output FRESH_DIRECTORY
+--target 1 --fold 1 --repeats 3` compares serial with paired training. Pin three
+CPUs, one BLAS thread and an external `timeout -k 2 900`. Each trial rebuilds
+owned context before timing; both arms retain five phase rounds and 48 position
+iterations. Child results carry final-problem recipes, and reconstruction must
+match full calculation/state fingerprints before nomination. Every complete
+fold output must match. Numerical-policy replay is excluded, not silently
+parallelized. This is a single-fold experiment, not runtime integration or
+whole-pipeline speed evidence. For integration, use one bounded queue across
+fold/arm tasks; do not nest arm workers under the existing three fold workers.
+See the DS26-0066 predictive-profile report for exactness receipts and remaining
+qualification requirements.
